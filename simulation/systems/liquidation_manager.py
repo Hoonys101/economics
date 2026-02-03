@@ -1,12 +1,13 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, TYPE_CHECKING
+from typing import List, Dict, Any, TYPE_CHECKING, Optional
 import logging
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
     from simulation.finance.api import ISettlementSystem
     from simulation.dtos.api import SimulationState
+    from modules.system.api import IAssetRecoverySystem
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +25,9 @@ class LiquidationManager:
     Implements TD-187 Protocol.
     """
 
-    def __init__(self, settlement_system: ISettlementSystem):
+    def __init__(self, settlement_system: ISettlementSystem, public_manager: Optional[IAssetRecoverySystem] = None):
         self.settlement_system = settlement_system
+        self.public_manager = public_manager
 
     def initiate_liquidation(self, firm: Firm, state: SimulationState) -> None:
         """
@@ -36,6 +38,13 @@ class LiquidationManager:
             return
 
         current_tick = state.time
+
+        # 0. Asset Liquidation (TD-187-LEAK Fix)
+        # If public_manager is available, liquidate assets to generate cash.
+        if self.public_manager:
+            self._liquidate_assets(firm, state)
+
+        # Re-fetch cash after liquidation
         available_cash = firm.finance.balance
 
         # 1. Calculate Claims
@@ -48,6 +57,71 @@ class LiquidationManager:
 
         # 2. Execute Waterfall
         self.execute_waterfall(firm, claims, available_cash, state)
+
+    def _liquidate_assets(self, firm: Firm, state: SimulationState):
+        """
+        Liquidates non-cash assets (Inventory) by selling them to the PublicManager.
+        This prevents the 'Asset-Rich Cash-Poor' leak.
+        """
+        if not self.public_manager:
+            return
+
+        # Calculate Total Value
+        total_value = 0.0
+
+        # Use last prices or default config price
+        default_price = 10.0
+        if firm.config and hasattr(firm.config, "goods") and firm.config.goods:
+             # Just pick a random good's price or iterate? We need item specific.
+             pass
+
+        inventory_transfer = {}
+        for item_id, qty in firm.inventory.items():
+            if qty <= 0:
+                continue
+
+            # Determine fair value
+            price = firm.last_prices.get(item_id, 0.0)
+            if price <= 0:
+                # Fallback
+                if firm.config and hasattr(firm.config, "goods"):
+                     price = firm.config.goods.get(item_id, {}).get("initial_price", default_price)
+                else:
+                     price = default_price
+
+            # Apply Liquidation Discount (Haircut) e.g., 20%
+            haircut = 0.2
+            liquidation_value = price * qty * (1.0 - haircut)
+            total_value += liquidation_value
+            inventory_transfer[item_id] = qty
+
+        if total_value > 0:
+            # Transfer Funds: PublicManager -> Firm
+            # Note: PublicManager must implement IFinancialEntity to be a sender in SettlementSystem
+            # and it must have funds (System Treasury).
+            success = self.settlement_system.transfer(
+                self.public_manager,
+                firm,
+                total_value,
+                f"Asset Liquidation (Inventory) - Firm {firm.id}"
+            )
+
+            if success:
+                logger.info(f"LIQUIDATION_ASSET_SALE | Firm {firm.id} sold inventory to PublicManager for {total_value:.2f}.")
+
+                # Transfer Inventory
+                # We can use process_bankruptcy_event logic but manually, or rely on PublicManager to take it.
+                # Since we already paid, we just hand it over.
+                # PublicManager needs to receive it.
+                # Assuming PublicManager has a way to receive inventory without re-triggering logic.
+                if hasattr(self.public_manager, "managed_inventory"):
+                     for item, qty in inventory_transfer.items():
+                          self.public_manager.managed_inventory[item] += qty
+
+                # Clear Firm Inventory
+                firm.inventory.clear()
+            else:
+                logger.error(f"LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay {total_value:.2f} to Firm {firm.id}.")
 
     def calculate_claims(self, firm: Firm, state: SimulationState) -> List[Claim]:
         """

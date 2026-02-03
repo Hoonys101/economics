@@ -7,11 +7,17 @@ from simulation.firms import Firm
 from simulation.core_agents import Household
 from simulation.dtos.api import SimulationState
 from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.system.api import IAssetRecoverySystem
 
 class TestLiquidationWaterfallIntegration(unittest.TestCase):
     def setUp(self):
         self.mock_settlement = MagicMock()
-        self.manager = LiquidationManager(self.mock_settlement)
+        self.mock_public_manager = MagicMock(spec=IAssetRecoverySystem)
+        self.mock_public_manager.managed_inventory = {}
+        self.mock_public_manager.id = 999
+        self.mock_settlement.transfer.return_value = True # Default success
+
+        self.manager = LiquidationManager(self.mock_settlement, self.mock_public_manager)
 
         # Setup Config
         self.config = MagicMock(spec=FirmConfigDTO)
@@ -26,7 +32,10 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         self.firm.id = 1
         self.firm.config = self.config
         self.firm.finance = MagicMock()
+        self.firm.finance.balance = 0.0 # Start with 0 cash
         self.firm.finance.current_profit = 0.0 # Fix 1
+        self.firm.inventory = {}
+        self.firm.last_prices = {}
         self.firm.hr = MagicMock()
         self.firm.hr.employees = []
         self.firm.hr.employee_wages = {}
@@ -177,6 +186,80 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         self.assertAlmostEqual(paid_map[101], severance)
         self.assertAlmostEqual(paid_map["bank"], 5000.0)
         self.assertAlmostEqual(paid_map[201], equity_payout)
+
+    def test_asset_rich_cash_poor_liquidation(self):
+        """
+        TD-187-LEAK Fix Verification.
+        Scenario:
+        - Cash: 0.0
+        - Inventory: 100 units of 'Apples' @ 10.0 market price.
+        - Liquidation Value: 100 * 10 * 0.8 (haircut) = 800.0
+        - Severance Claim: 500.0
+
+        Expected:
+        - PublicManager buys inventory for 800.0.
+        - Firm Balance becomes 800.0.
+        - Employee paid 500.0.
+        - Equity (or Escheatment) gets 300.0.
+        """
+        self.firm.finance.balance = 0.0
+        self.firm.inventory = {"apples": 100.0}
+        self.firm.last_prices = {"apples": 10.0}
+
+        # Mock public manager managed inventory update
+        self.mock_public_manager.managed_inventory = {"apples": 0.0}
+
+        # Employee Claim 500.0
+        # 500 = Tenure * 2 * 7 * 100 => Tenure = 0.35 yrs
+        ticks = 0.357 * 365
+        emp = MagicMock(spec=Household)
+        emp.id = 101
+        emp._econ_state = MagicMock()
+        emp._econ_state.employment_start_tick = 2000 - int(ticks)
+
+        self.firm.hr.employees = [emp]
+        self.firm.hr.employee_wages = {101: 100.0}
+
+        self.state.agents[101] = emp
+
+        # To simulate cash update after transfer, we need side_effect on transfer
+        def transfer_side_effect(sender, receiver, amount, memo):
+            if receiver == self.firm:
+                self.firm.finance.balance += amount
+            return True
+
+        self.mock_settlement.transfer.side_effect = transfer_side_effect
+
+        # Run
+        self.manager.initiate_liquidation(self.firm, self.state)
+
+        # Verify
+        # 1. PublicManager -> Firm Transfer (800.0)
+        self.mock_settlement.transfer.assert_any_call(
+            self.mock_public_manager,
+            self.firm,
+            800.0,
+            "Asset Liquidation (Inventory) - Firm 1"
+        )
+
+        # 2. Firm -> Employee Transfer (500.0)
+        # Note: Match float roughly
+        # severance = 0.357 * 2.0 * 7.019 * 100 ~= 500
+
+        # Find payout
+        payout = 0.0
+        for call in self.mock_settlement.transfer.call_args_list:
+            if call[0][0] == self.firm and call[0][1] == emp:
+                payout = call[0][2]
+                break
+
+        self.assertGreater(payout, 490.0)
+        self.assertLess(payout, 510.0)
+
+        # 3. Verify Inventory Cleared
+        self.assertEqual(self.firm.inventory, {})
+        # 4. Verify Public Manager got inventory
+        self.assertEqual(self.mock_public_manager.managed_inventory["apples"], 100.0)
 
 if __name__ == '__main__':
     unittest.main()

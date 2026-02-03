@@ -36,7 +36,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         self.immigration_manager = ImmigrationManager(config_module=config_module, settlement_system=settlement_system)
 
         # TD-187: Liquidation Waterfall
-        self.liquidation_manager = LiquidationManager(settlement_system)
+        self.liquidation_manager = LiquidationManager(settlement_system, public_manager)
 
         self.breeding_planner = VectorizedHouseholdPlanner(config_module)
         self.logger = logger
@@ -251,18 +251,9 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             inv_value = self._calculate_inventory_value(firm.inventory, state.markets)
             capital_value = firm.capital_stock
 
-            # Phase 3: Asset Recovery
-            # Instead of destroying inventory, we transfer it to the PublicManager.
-            if firm.inventory:
-                 bankruptcy_event = {
-                     "agent_id": firm.id,
-                     "tick": state.time,
-                     "inventory": firm.inventory.copy()
-                 }
-                 self.public_manager.process_bankruptcy_event(bankruptcy_event)
-
             # TD-187: Liquidation Waterfall Protocol (Prioritized Claims)
             # Must run BEFORE employees are cleared to calculate severance/wages
+            # AND before PublicManager seizure (now handled internally by LiquidationManager)
             self.liquidation_manager.initiate_liquidation(firm, state)
 
             # Clear employees
