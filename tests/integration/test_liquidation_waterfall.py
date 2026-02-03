@@ -2,12 +2,16 @@ import unittest
 from unittest.mock import MagicMock, Mock
 from typing import List
 
-from simulation.systems.liquidation_manager import LiquidationManager, Claim
+from simulation.systems.liquidation_manager import LiquidationManager
+from modules.common.dtos import Claim
 from simulation.firms import Firm
 from simulation.core_agents import Household
 from simulation.dtos.api import SimulationState
 from simulation.dtos.config_dtos import FirmConfigDTO
 from modules.system.api import IAssetRecoverySystem
+from modules.system.registry import AgentRegistry
+from modules.hr.service import HRService
+from modules.finance.service import TaxService
 
 class TestLiquidationWaterfallIntegration(unittest.TestCase):
     def setUp(self):
@@ -17,7 +21,18 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         self.mock_public_manager.id = 999
         self.mock_settlement.transfer.return_value = True # Default success
 
-        self.manager = LiquidationManager(self.mock_settlement, self.mock_public_manager)
+        # Use Real Services
+        self.agent_registry = AgentRegistry()
+        self.hr_service = HRService()
+        self.tax_service = TaxService(self.agent_registry)
+
+        self.manager = LiquidationManager(
+            self.mock_settlement,
+            self.hr_service,
+            self.tax_service,
+            self.agent_registry,
+            self.mock_public_manager
+        )
 
         # Setup Config
         self.config = MagicMock(spec=FirmConfigDTO)
@@ -54,6 +69,9 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         # Mock shares_owned.get for government to avoid TypeError
         self.state.government.shares_owned.get.return_value = 0.0
 
+    def _setup_registry(self):
+        self.agent_registry.set_state(self.state)
+
     def test_severance_priority_over_shareholders(self):
         """
         Verify that employees receive severance before shareholders receive any dividends.
@@ -65,6 +83,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         - Shortfall: 600.
         - Expected: Employees get pro-rata (5000/5600 ratio). Shareholders get 0.
         """
+        self._setup_registry()
         self.firm.finance.balance = 5000.0
 
         # Employee A
@@ -130,6 +149,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         - Remaining: 3000.
         - Tier 5 (Equity): Should receive 3000.
         """
+        self._setup_registry()
         self.firm.finance.balance = 10000.0
 
         # Employee (Tier 1) - 2000 claim
@@ -202,6 +222,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         - Employee paid 500.0.
         - Equity (or Escheatment) gets 300.0.
         """
+        self._setup_registry()
         self.firm.finance.balance = 0.0
         self.firm.inventory = {"apples": 100.0}
         self.firm.last_prices = {"apples": 10.0}

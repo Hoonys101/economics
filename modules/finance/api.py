@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple, runtime_checkable, TYPE_CHECKING
 from dataclasses import dataclass
 import abc
@@ -7,6 +8,7 @@ from uuid import UUID
 if TYPE_CHECKING:
     from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
     from simulation.models import Order, Transaction
+    from modules.common.dtos import Claim
 
 # Forward reference for type hinting
 class Firm: pass
@@ -441,4 +443,10 @@ class IHeirProvider(Protocol):
 
     def get_heir(self) -> Any: # Should resolve to IPortfolioHandler & IFinancialEntity
         """Returns the designated heir, or None if there is no heir."""
+        ...
+
+class ITaxService(ABC):
+    @abstractmethod
+    def calculate_liquidation_tax_claims(self, firm: Firm) -> List[Claim]:
+        """Calculates corporate tax claims for a firm in liquidation."""
         ...
