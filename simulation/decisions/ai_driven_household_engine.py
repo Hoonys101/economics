@@ -8,12 +8,11 @@ from simulation.dtos import DecisionContext, MacroFinancialContext, DecisionOutp
 
 # Modular Managers
 from simulation.decisions.household.api import (
-    ConsumptionContext, LaborContext, AssetManagementContext, HousingContext
+    ConsumptionContext, LaborContext, AssetManagementContext
 )
 from simulation.decisions.household.consumption_manager import ConsumptionManager
 from simulation.decisions.household.labor_manager import LaborManager
 from simulation.decisions.household.asset_manager import AssetManager
-from simulation.decisions.household.housing_manager import HousingManager
 
 if TYPE_CHECKING:
     from simulation.ai.household_ai import HouseholdAI
@@ -40,7 +39,6 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
         self.consumption_manager = ConsumptionManager()
         self.labor_manager = LaborManager()
         self.asset_manager = AssetManager()
-        self.housing_manager = HousingManager(logger=self.logger)
 
         self.logger.info(
             "AIDrivenHouseholdDecisionEngine initialized (Modularized).",
@@ -121,14 +119,6 @@ class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
             stress_config=context.stress_scenario_config, logger=self.logger
         )
         orders.extend(self.asset_manager.decide_investments(asset_ctx))
-        
-        # 5. Housing
-        housing_ctx = HousingContext(
-             household=household, config=config, market_data=market_data,
-             market_snapshot=market_snapshot, current_time=current_time,
-             stress_config=context.stress_scenario_config, logger=self.logger
-        )
-        orders.extend(self.housing_manager.decide_housing(housing_ctx))
         
         return DecisionOutputDTO(orders=orders, metadata=action_vector)
 

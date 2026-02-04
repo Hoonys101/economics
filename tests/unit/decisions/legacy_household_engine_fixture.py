@@ -330,61 +330,8 @@ class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
 
         # 6. Real Estate Logic
         # Refactored for DTO Purity (WO-103)
-        if context.market_snapshot:
-             from simulation.decisions.housing_manager import HousingManager
-
-             # Use context.config (HouseholdConfigDTO)
-             housing_manager = HousingManager(household, context.config)
-
-             reference_standard = market_data.get("reference_standard", {})
-             mimicry_intent = housing_manager.decide_mimicry_purchase(reference_standard)
-
-             is_owner_occupier = household._econ_state.residing_property_id in household._econ_state.owned_properties
-             should_search = (not is_owner_occupier) or (mimicry_intent is not None)
-
-             if should_search:
-                 best_offer = None
-                 min_price = float('inf')
-
-                 # Iterate over snapshot asks to find housing units
-                 # Housing units are identified by 'unit_' prefix in item_id
-                 for item_id, orders_list in context.market_snapshot.asks.items():
-                     if not item_id.startswith("unit_"):
-                         continue
-                     if not orders_list:
-                         continue
-
-                     cheapest = orders_list[0] # Assuming sorted ascending
-                     if cheapest.price < min_price:
-                         min_price = cheapest.price
-                         best_offer = cheapest
-
-                 if best_offer:
-                     # Use market_data instead of live loan_market object (IBankService formalization)
-                     mortgage_rate = market_data.get("loan_market", {}).get("interest_rate", config.default_mortgage_rate)
-
-                     should_buy = False
-
-                     if mimicry_intent:
-                         should_buy = True
-                     elif not is_owner_occupier:
-                         should_buy = housing_manager.should_buy(
-                             best_offer.price,
-                             self.config_module.INITIAL_RENT_PRICE,
-                             mortgage_rate
-                         )
-
-                     if should_buy:
-                         buy_order = Order(
-                             household.id, "BUY", best_offer.item_id, 1.0, best_offer.price, "housing"
-                         )
-                         orders.append(buy_order)
-
-                         if mimicry_intent:
-                             self.logger.info(
-                                 f"MIMICRY_BUY | Household {household.id} panic buying housing due to relative deprivation.",
-                                 extra={"tick": current_time, "agent_id": household.id}
-                             )
+        # Housing Manager Logic removed as part of TD-197 cleanup (Saga Implementation supersedes)
+        pass
 
         return orders, action_vector
 
