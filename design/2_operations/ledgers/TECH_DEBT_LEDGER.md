@@ -50,10 +50,14 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-225 | 2026-02-04 | Dual Liquidation Logic Conflict | Write-off (Firm) vs Sell-off (Manager) mismatch | [Spec](../../3_work_artifacts/specs/TD-225_Unified_Liquidation.md) | **ACTIVE** |
-| (No Active Items) | | | | | |
-| TD-205 | 2026-02-04 | Phase3_Transaction God Class | Responsibility overload | [Spec](../../3_work_artifacts/specs/TD-205_Transaction_Decomposition.md) | **ACTIVE** |
-| TD-224 | 2026-02-04 | Advisor-Policy Hardcoded Mapping | Firing logic coupled to tags | [Review](../../_archive/gemini_output/pr_review_wo-4.4-policy-lockout-15026198363404100995.md) | **MEDIUM** |
+| TD-225 | 2026-02-04 | Dual Liquidation Logic Conflict | [Spec](../../3_work_artifacts/specs/TD-225_Unified_Liquidation.md) | **ACTIVE** |
+| TD-205 | 2026-02-04 | Phase3_Transaction God Class | [Spec](../../3_work_artifacts/specs/TD-205_Transaction_Decomposition.md) | **ACTIVE** |
+| TD-224 | 2026-02-04 | Advisor-Policy Hardcoded Mapping | [Review](../../_archive/gemini_output/pr_review_wo-4.4-policy-lockout-15026198363404100995.md) | **MEDIUM** |
+| TD-209 | 2026-02-04 | Hardcoded Agent Identifiers | [Review](../../_archive/gemini_output/pr_review_liquidation-manager-srp-1350862452554077041.md) | **MEDIUM** |
+| TD-220 | 2026-02-04 | Central Bank ID Mismatch (Str vs Int) | [Review](../../_archive/gemini_output/pr_review_wo-4.2a-wallet-abstraction-7751802173364783425.md) | **LOW** |
+| TD-183 | 2026-02-01 | Sequence Documentation | Migration gaps | **ACTIVE** |
+| TD-188 | 2026-02-01 | Config Path Doc Drift | `PROJECT_STATUS.md` stale | **ACTIVE** |
+| TD-193 | 2026-02-03 | Fragmented Politics | Spec vs Code drift | **WARNING** |
 | (No Active Items) | | | | |
 
 ---
