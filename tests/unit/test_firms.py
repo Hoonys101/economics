@@ -1,10 +1,10 @@
-
 import pytest
 from unittest.mock import Mock, MagicMock
 import math
 from simulation.firms import Firm
 from simulation.components.production_department import ProductionDepartment
 from simulation.components.sales_department import SalesDepartment
+from modules.system.api import DEFAULT_CURRENCY
 
 class TestFirmBookValue:
     @pytest.fixture
@@ -24,6 +24,7 @@ class TestFirmBookValue:
         dto.labor_alpha = 0.7
         dto.capital_depreciation_rate = 0.05
         dto.goods = {"test": {"quality_sensitivity": 0.5}}
+        dto.valuation_per_multiplier = 10.0 # Default if not set in factory
         return dto
 
     @pytest.fixture
@@ -42,49 +43,43 @@ class TestFirmBookValue:
     def test_book_value_no_liabilities(self, firm):
         # Assets 1000, Shares 100, Treasury 100
         firm.treasury_shares = 0
-        assert firm.finance.get_book_value_per_share() == 10.0
+        # Accessing FinanceDepartment directly returns MoneyDTO
+        result = firm.finance.get_book_value_per_share()
+        assert result['amount'] == 10.0
+        assert result['currency'] == DEFAULT_CURRENCY
 
     def test_book_value_with_liabilities(self, firm, mock_decision_engine):
         # Setup Liabilities
-        mock_loan_market = Mock()
-        mock_bank = Mock()
-
-        mock_decision_engine.loan_market = mock_loan_market
-        mock_loan_market.bank = mock_bank
         firm.treasury_shares = 0
 
-        # Mock both legacy and new interface to be safe
-        mock_bank.get_debt_summary.return_value = {"total_principal": 200.0}
-        mock_bank.get_debt_status.return_value = {"total_outstanding_debt": 200.0}
+        # New FinanceDepartment uses firm.total_debt
+        firm.total_debt = 200.0
 
         # Net Assets = 1000 - 200 = 800. Shares 100.
-        assert firm.finance.get_book_value_per_share() == 8.0
+        result = firm.finance.get_book_value_per_share()
+        assert result['amount'] == 8.0
 
     def test_book_value_with_treasury_shares(self, firm):
         firm.treasury_shares = 20.0
         # Assets 1000. Outstanding Shares 80.
-        assert firm.finance.get_book_value_per_share() == 12.5
+        result = firm.finance.get_book_value_per_share()
+        assert result['amount'] == 12.5
 
     def test_book_value_negative_net_assets(self, firm, mock_decision_engine):
          # Setup Huge Liabilities
-        mock_loan_market = Mock()
-        mock_bank = Mock()
-        mock_decision_engine.loan_market = mock_loan_market
-        mock_loan_market.bank = mock_bank
         firm.treasury_shares = 0
-
-        # Mock both legacy and new interface
-        mock_bank.get_debt_summary.return_value = {"total_principal": 2000.0}
-        mock_bank.get_debt_status.return_value = {"total_outstanding_debt": 2000.0}
+        firm.total_debt = 2000.0
 
         # Net Assets = 1000 - 2000 = -1000.
         # Should return 0.0
-        assert firm.finance.get_book_value_per_share() == 0.0
+        result = firm.finance.get_book_value_per_share()
+        assert result['amount'] == 0.0
 
     def test_book_value_zero_shares(self, firm):
         firm.total_shares = 0.0
         firm.treasury_shares = 0.0
-        assert firm.finance.get_book_value_per_share() == 0.0
+        result = firm.finance.get_book_value_per_share()
+        assert result['amount'] == 0.0
 
 class TestProductionDepartment:
     @pytest.fixture
@@ -115,6 +110,10 @@ class TestProductionDepartment:
         firm.base_quality = 1.0
         firm.hr.get_total_labor_skill.return_value = 5.0
         firm.hr.get_avg_skill.return_value = 1.0
+        # Mock finance balance for produce() check
+        firm.finance = Mock()
+        firm.finance.balance = {DEFAULT_CURRENCY: 1000.0}
+        firm.production_target = 100.0
         return firm
 
     def test_produce(self, firm, mock_config):
@@ -154,7 +153,8 @@ class TestSalesDepartment:
         firm.inventory_quality = {}
         firm.marketing_budget = 100.0
         firm.finance.last_marketing_spend = 50.0 # Lower spend last tick
-        firm.finance.revenue_this_turn = 200.0
+        # Update: revenue_this_turn is a dict
+        firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 200.0}
         firm.finance.last_revenue = 100.0
         firm.marketing_budget_rate = 0.1
         firm.logger = Mock()
@@ -172,7 +172,7 @@ class TestSalesDepartment:
     def test_adjust_marketing_budget_increase(self, firm, mock_config):
         # High ROI should increase the budget rate
         firm.finance.last_marketing_spend = 50.0
-        firm.finance.revenue_this_turn = 200.0
+        firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 200.0}
         firm.finance.last_revenue = 100.0
 
         sales_dept = SalesDepartment(firm, mock_config)
@@ -184,7 +184,7 @@ class TestSalesDepartment:
     def test_adjust_marketing_budget_decrease(self, firm, mock_config):
         # Low ROI should decrease the budget rate
         firm.finance.last_marketing_spend = 200.0 # High spend
-        firm.finance.revenue_this_turn = 110.0 # Low return
+        firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 110.0} # Low return
         firm.finance.last_revenue = 100.0
 
         sales_dept = SalesDepartment(firm, mock_config)

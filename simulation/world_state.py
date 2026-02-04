@@ -193,9 +193,19 @@ class WorldState:
     def get_total_system_money_for_diagnostics(self, target_currency: CurrencyCode = "USD") -> float:
         """
         Provides a single float value for total system money for backward compatibility
-        with diagnostic tools. Tracks only a single currency and ignores exchange rates.
+        with diagnostic tools. Converts all currencies to the target currency.
         """
         all_money = self.calculate_total_money()
+
+        # Use tracker's exchange engine if available
+        if self.tracker and hasattr(self.tracker, "exchange_engine"):
+            total = 0.0
+            for cur, amount in all_money.items():
+                converted = self.tracker.exchange_engine.convert(amount, cur, target_currency)
+                total += converted
+            return total
+
+        # Fallback if no exchange engine: just return the target currency balance
         return all_money.get(target_currency, 0.0)
 
     def resolve_agent_id(self, role: str) -> Optional[int]:

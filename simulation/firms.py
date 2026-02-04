@@ -24,6 +24,7 @@ from simulation.components.production_department import ProductionDepartment
 from simulation.components.sales_department import SalesDepartment
 from simulation.utils.shadow_logger import log_shadow
 from modules.finance.api import InsufficientFundsError
+from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
 from simulation.systems.api import ILearningAgent, LearningUpdateContext
 
 if TYPE_CHECKING:
@@ -273,7 +274,7 @@ class Firm(BaseAgent, ILearningAgent):
     def get_agent_data(self) -> Dict[str, Any]:
         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""
         return {
-            "assets": self.finance.balance, # Direct Access
+            "assets": MultiCurrencyWalletDTO(balances=self.finance.balance), # Direct Access wrapped in DTO
             "needs": self.needs.copy(),
             "inventory": self.inventory.copy(),
             "input_inventory": self.input_inventory.copy(), # WO-030
@@ -395,24 +396,33 @@ class Firm(BaseAgent, ILearningAgent):
         """
         [REFACTORED] Routes internal orders to the correct department.
         """
+        # Helper to extract amount from monetary_amount if present, else fallback to quantity
+        def get_amount(o: Order) -> float:
+            return o.monetary_amount['amount'] if o.monetary_amount else o.quantity
+
+        # Helper to get currency
+        def get_currency(o: Order) -> CurrencyCode:
+             return o.monetary_amount['currency'] if o.monetary_amount else DEFAULT_CURRENCY
+
         if order.order_type == "SET_TARGET":
             self.production.set_production_target(order.quantity)
 
         elif order.order_type == "INVEST_AUTOMATION":
-            self.production.invest_in_automation(order.quantity, government)
+            self.production.invest_in_automation(get_amount(order), government)
 
         elif order.order_type == "PAY_TAX":
             # Finance still handles this directly as it's purely financial
-            amount = order.quantity
+            amount = get_amount(order)
+            currency = get_currency(order)
             reason = order.item_id
             if government:
-                self.finance.pay_ad_hoc_tax(amount, reason, government, current_time)
+                self.finance.pay_ad_hoc_tax(amount, currency, reason, government, current_time)
 
         elif order.order_type == "INVEST_RD":
-            self.production.invest_in_rd(order.quantity, government, current_time)
+            self.production.invest_in_rd(get_amount(order), government, current_time)
 
         elif order.order_type == "INVEST_CAPEX":
-            self.production.invest_in_capex(order.quantity, government)
+            self.production.invest_in_capex(get_amount(order), government)
 
         elif order.order_type == "SET_DIVIDEND":
             self.finance.set_dividend_rate(order.quantity)
@@ -471,11 +481,14 @@ class Firm(BaseAgent, ILearningAgent):
             details=f"Item={self.specialization}, D={demand:.1f}, S={supply:.1f}, Ratio={excess_demand_ratio:.2f}"
         )
 
-    def generate_transactions(self, government: Optional[Any], market_data: Dict[str, Any], all_households: List[Household], current_time: int) -> List[Transaction]:
+    def generate_transactions(self, government: Optional[Any], market_data: Dict[str, Any], all_households: List[Household], current_time: int, exchange_rates: Dict[CurrencyCode, float] = None) -> List[Transaction]:
         """
         Generates all financial transactions for the tick (Wages, Taxes, Dividends, etc.).
         Phase 3 Architecture.
         """
+        if exchange_rates is None:
+            exchange_rates = {DEFAULT_CURRENCY: 1.0}
+
         transactions = []
 
         # 1. Wages & Income Tax (HR)
@@ -483,19 +496,25 @@ class Firm(BaseAgent, ILearningAgent):
         transactions.extend(tx_payroll)
 
         # 2. Finance Transactions (Holding, Maint, Corp Tax, Dividends, Bailout Repayment)
-        tx_finance = self.finance.generate_financial_transactions(government, all_households, current_time)
+        tx_finance = self.finance.generate_financial_transactions(government, all_households, current_time, exchange_rates)
         transactions.extend(tx_finance)
 
         # 3. Marketing (Direct Calculation here as per old update_needs)
-        usd_balance = self.finance.balance.get(DEFAULT_CURRENCY, 0.0)
-        usd_revenue = self.finance.revenue_this_turn.get(DEFAULT_CURRENCY, 0.0)
+        # Using primary currency for marketing budget logic
+        primary_cur = self.finance.primary_currency
+        primary_balance = self.finance.get_balance(primary_cur)
 
-        if usd_balance > 100.0:
-            marketing_spend = max(10.0, usd_revenue * self.marketing_budget_rate)
+        # Calculate total revenue in primary currency
+        total_revenue = 0.0
+        for cur, amount in self.finance.revenue_this_turn.items():
+            total_revenue += self.finance._convert_to_primary(amount, cur, exchange_rates)
+
+        if primary_balance > 100.0:
+            marketing_spend = max(10.0, total_revenue * self.marketing_budget_rate)
         else:
             marketing_spend = 0.0
 
-        if usd_balance < marketing_spend:
+        if primary_balance < marketing_spend:
              marketing_spend = 0.0
 
         if marketing_spend > 0:
@@ -543,18 +562,18 @@ class Firm(BaseAgent, ILearningAgent):
     # --- Delegated Methods (Facade Pattern) ---
 
     def get_book_value_per_share(self) -> float:
-        """Delegates to FinanceDepartment."""
-        return self.finance.get_book_value_per_share()
+        """Delegates to FinanceDepartment. Returns float (primary currency) for backward compatibility."""
+        return self.finance.get_book_value_per_share()['amount']
 
     def get_market_cap(self, stock_price: Optional[float] = None) -> float:
         """Delegates to FinanceDepartment."""
         return self.finance.get_market_cap(stock_price)
 
-    def calculate_valuation(self) -> float:
-        """Delegates to FinanceDepartment."""
-        return self.finance.calculate_valuation()
+    def calculate_valuation(self, exchange_rates: Dict[CurrencyCode, float] = None) -> float:
+        """Delegates to FinanceDepartment. Returns float (primary currency) for backward compatibility."""
+        return self.finance.calculate_valuation(exchange_rates)['amount']
 
-    def get_financial_snapshot(self) -> Dict[str, float]:
+    def get_financial_snapshot(self) -> Dict[str, Any]:
         """Delegates to FinanceDepartment."""
         return self.finance.get_financial_snapshot()
 

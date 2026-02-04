@@ -31,6 +31,7 @@ from unittest.mock import MagicMock
 from modules.household.dtos import HouseholdStateDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.api import Personality
+from modules.system.api import DEFAULT_CURRENCY
 
 # Attempt to import the new generic loader
 try:
@@ -314,6 +315,16 @@ class GoldenLoader:
             if not hasattr(mock, 'hr'):
                 mock.hr = MagicMock()
             mock.hr.employees = []
+
+            # Mock Finance & Wallet for multi-currency
+            mock.finance = MagicMock()
+            mock.wallet = MagicMock()
+            assets_val = f_data.get("assets", 0.0)
+            mock.finance.balance = {DEFAULT_CURRENCY: assets_val}
+            mock.finance.get_balance.side_effect = lambda c: assets_val if c == DEFAULT_CURRENCY else 0.0
+            mock.wallet.get_balance.side_effect = lambda c: assets_val if c == DEFAULT_CURRENCY else 0.0
+            mock.wallet.get_all_balances.return_value = {DEFAULT_CURRENCY: assets_val}
+
             mock.get_financial_snapshot = MagicMock(return_value={
                 "total_assets": f_data.get("assets", 0),
                 "working_capital": f_data.get("assets", 0),

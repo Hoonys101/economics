@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, TypedDict, Protocol, TYPE_CHECKING
 import uuid
+from modules.finance.dtos import MoneyDTO
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
@@ -24,6 +25,9 @@ class OrderDTO:
     target_agent_id: Optional[int] = None  # Brand Loyalty / Supply Chain
     brand_info: Optional[Dict[str, Any]] = None # Quality, Awareness
     metadata: Optional[Dict[str, Any]] = None # Side-effects (e.g. Loans)
+
+    # TD-213: Multi-Currency Support
+    monetary_amount: Optional[MoneyDTO] = None
 
     # Auto-generated ID
     id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
