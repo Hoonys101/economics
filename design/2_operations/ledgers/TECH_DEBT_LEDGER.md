@@ -50,7 +50,7 @@
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
 | TD-225 | 2026-02-04 | Dual Liquidation Logic Conflict | Write-off (Firm) vs Sell-off (Manager) mismatch | [Spec](../../3_work_artifacts/specs/TD-225_Unified_Liquidation.md) | **HIGH** |
-| TD-205 | 2026-02-04 | Phase3_Transaction God Class | Responsibility overload | [Spec](../../3_work_artifacts/specs/TD-205_Transaction_Decomposition.md) | **ACTIVE** |
+| (No Active Items) | | | | | |
 | (No Active Items) | | | | | |
 | (No Active Items) | | | | | |
 | (No Active Items) | | | | | |
@@ -107,6 +107,7 @@
 | TD-224 | 2026-02-04 | Governance Mapping Refactor | - | [Review](../../_archive/gemini_output/pr_review_identity-governance-refactor-17364238259413903980.md) |
 | TD-209 | 2026-02-04 | Identifier Decoupling | - | [Review](../../_archive/gemini_output/pr_review_identity-governance-refactor-17364238259413903980.md) |
 | TD-220 | 2026-02-04 | Central Bank ID Unification | - | [Review](../../_archive/gemini_output/pr_review_identity-governance-refactor-17364238259413903980.md) |
+| TD-205 | 2026-02-04 | Transaction Engine SRP Refactor | [Spec](../../3_work_artifacts/specs/spec_td205_transaction_decomposition.md) | [Insight](../../communications/insights/TD-205_Transaction_Engine.md) |
 
 ---
 
