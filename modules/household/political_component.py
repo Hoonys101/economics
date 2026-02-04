@@ -1,6 +1,7 @@
 import logging
 import random
-from typing import Dict, Any, Optional
+from typing import Tuple
+from modules.household.dtos import SocialStateDTO
 from simulation.ai.enums import Personality, PoliticalParty, PoliticalVision
 
 logger = logging.getLogger(__name__)
@@ -8,92 +9,69 @@ logger = logging.getLogger(__name__)
 class PoliticalComponent:
     """
     Household's political soul.
-    Calculates approval and trust based on internal vision and external reality.
-    
-    Vision: 0.0 (Safety/Equity) to 1.0 (Growth/Ladder)
+    Stateless component that operates on SocialStateDTO.
     """
 
-    def __init__(self, personality: Personality):
-        self._economic_vision: float = self._derive_vision(personality)
-        self._trust_score: float = 0.5
-        self._current_approval: float = 0.5
-        
-        # Determine discretized vision for convenience
-        self._vision_enum: PoliticalVision = (
-            PoliticalVision.GROWTH if self._economic_vision > 0.5 
-            else PoliticalVision.SAFETY
-        )
-
-    def _derive_vision(self, personality: Personality) -> float:
-        """Derives economic vision from personality with some noise."""
+    def initialize_state(self, personality: Personality) -> Tuple[float, float]:
+        """
+        Derives initial economic vision and trust score from personality.
+        Returns: (economic_vision, trust_score)
+        """
         vision_map = {
             Personality.GROWTH_ORIENTED: 0.9,
             Personality.STATUS_SEEKER: 0.8,
-            Personality.MISER: 0.4, # Misers often prefer conservative stability but might shift
-            Personality.CONSERVATIVE: 0.3, # Personality 'Conservative' usually favors stability/status-quo
+            Personality.MISER: 0.4,
+            Personality.CONSERVATIVE: 0.3,
             Personality.IMPULSIVE: 0.5
         }
         base = vision_map.get(personality, 0.5)
         # Add noise to ensure diversity within cohorts (Emergence)
-        return max(0.0, min(1.0, base + random.uniform(-0.15, 0.15)))
+        economic_vision = max(0.0, min(1.0, base + random.uniform(-0.15, 0.15)))
+        trust_score = 0.5
+        return economic_vision, trust_score
 
-    @property
-    def economic_vision(self) -> float:
-        return self._economic_vision
-
-    @property
-    def trust_score(self) -> float:
-        return self._trust_score
-
-    @property
-    def vision_enum(self) -> PoliticalVision:
-        return self._vision_enum
-
-    def calculate_approval(
-        self, 
-        survival_satisfaction: float, 
-        gov_party: PoliticalParty,
-        gov_stance: float
-    ) -> float:
+    def update_opinion(
+        self,
+        state: SocialStateDTO,
+        survival_need: float,
+        gov_party: PoliticalParty
+    ) -> SocialStateDTO:
         """
-        [ADR-2] The Happiness Index & Ideological Match.
-        
-        Approval = (0.4 * Economic Reality) + (0.6 * Ideological Match)
-        Modified by Trust.
+        Updates political approval based on satisfaction and ideological match.
         """
-        # 1. Economic Reality (0.0 - 1.0)
-        # Assuming survival_satisfaction is already normalized
-        economic_reality = max(0.0, min(1.0, survival_satisfaction))
+        new_state = state.copy()
 
-        # 2. Ideological Distance (0.0 - 1.0)
+        # 1. Derive Gov Stance from Party
+        # BLUE (Growth) -> 0.9, RED (Safety) -> 0.1
+        gov_stance = 0.9 if gov_party == PoliticalParty.BLUE else 0.1
+
+        # 2. Calculate Satisfaction
+        # High survival need = Low satisfaction
+        # Assuming survival_need is 0-100 scale where 100 is max need (bad)
+        discontent = min(1.0, survival_need / 100.0)
+        satisfaction = 1.0 - discontent
+        new_state.discontent = discontent
+
+        # 3. Calculate Ideological Match
         # Distance = |My Vision - Gov Stance|
-        # Match = 1.0 - Distance
-        ideological_match = 1.0 - abs(self._economic_vision - gov_stance)
+        ideological_match = 1.0 - abs(new_state.economic_vision - gov_stance)
 
-        # 3. Base Approval
-        base_approval = (0.4 * economic_reality) + (0.6 * ideological_match)
+        # 4. Update Trust (EMA)
+        # Trust grows with satisfaction, decays with dissatisfaction
+        # Using slow adaptation (alpha=0.05)
+        new_trust = 0.95 * new_state.trust_score + 0.05 * satisfaction
+        new_state.trust_score = max(0.0, min(1.0, new_trust))
 
-        # 4. Trust Damper
-        # If trust is extremely low, approval is cratered regardless of match
-        if self._trust_score < 0.2:
-            base_approval *= (self._trust_score / 0.2)
-            
-        self._current_approval = max(0.0, min(1.0, base_approval))
-        return self._current_approval
+        # 5. Calculate Approval
+        # Approval = 0.4 * Satisfaction + 0.6 * Match
+        approval_score = (0.4 * satisfaction) + (0.6 * ideological_match)
 
-    def update_trust(self, economic_satisfaction: float):
-        """
-        Updates trust based on economic outcomes. 
-        Uses an EMA to reflect 'Memory' but slow adaptation.
-        """
-        alpha = 0.05 # Trust changes slowly
-        self._trust_score = (1 - alpha) * self._trust_score + alpha * economic_satisfaction
-        self._trust_score = max(0.0, min(1.0, self._trust_score))
+        # 6. Trust Damper
+        if new_state.trust_score < 0.2:
+            approval_score = 0.0
 
-    def get_state_dict(self) -> Dict[str, Any]:
-        return {
-            "economic_vision": self._economic_vision,
-            "vision_enum": self._vision_enum.name,
-            "trust_score": self._trust_score,
-            "approval": self._current_approval
-        }
+        # 7. Update Binary Approval Rating
+        # Threshold 0.5
+        new_state.approval_rating = 1 if approval_score > 0.5 else 0
+
+        return new_state

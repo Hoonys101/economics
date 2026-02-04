@@ -167,6 +167,10 @@ class SocialStateDTO:
     # WO-157: Demand Elasticity
     demand_elasticity: float = 1.0
 
+    # WO-4.3: Political Component State
+    economic_vision: float = 0.5
+    trust_score: float = 0.5
+
     def copy(self) -> "SocialStateDTO":
         new_state = copy.copy(self)
         new_state.brand_loyalty = self.brand_loyalty.copy()

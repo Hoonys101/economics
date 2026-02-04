@@ -48,26 +48,6 @@ class SocialComponent(ISocialComponent):
 
         return new_state
 
-    def update_political_opinion(
-        self,
-        state: SocialStateDTO,
-        survival_need: float
-    ) -> SocialStateDTO:
-        """
-        Updates political approval based on needs.
-        Logic migrated from PsychologyComponent.update_political_opinion.
-        """
-        new_state = state.copy()
-        new_state.discontent = min(1.0, survival_need / 100.0)
-
-        # Determine Approval (Tolerance = 0.4)
-        if new_state.discontent < 0.4:
-            new_state.approval_rating = 1
-        else:
-            new_state.approval_rating = 0
-
-        return new_state
-
     def apply_leisure_effect(
         self,
         state: SocialStateDTO,

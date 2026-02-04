@@ -108,12 +108,18 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
     if state.bank:
         interest_rate = state.bank.base_rate
 
+    # 3. Government Data (WO-4.3)
+    gov_data = {"party": None}
+    if state.government and hasattr(state.government, "ruling_party"):
+        gov_data["party"] = state.government.ruling_party
+
     return {
         "time": state.time,
         "goods_market": goods_market_data,
         "housing_market": housing_market_data,
         "loan_market": {"interest_rate": interest_rate},
         "stock_market": stock_market_data,
+        "government": gov_data,
         "all_households": state.households,
         "avg_goods_price": avg_goods_price_for_market_data,
         "debt_data": debt_data_map,

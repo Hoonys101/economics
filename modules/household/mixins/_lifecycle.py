@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from modules.household.bio_component import BioComponent
     from modules.household.econ_component import EconComponent
     from modules.household.social_component import SocialComponent
+    from modules.household.political_component import PoliticalComponent
     from simulation.decisions.base_decision_engine import BaseDecisionEngine
 
 class HouseholdLifecycleMixin:
@@ -37,6 +38,7 @@ class HouseholdLifecycleMixin:
     bio_component: "BioComponent"
     econ_component: "EconComponent"
     social_component: "SocialComponent"
+    political_component: "PoliticalComponent"
     decision_engine: "BaseDecisionEngine"
 
     def consume(self, item_id: str, quantity: float, current_time: int) -> ConsumptionResult:
@@ -98,8 +100,14 @@ class HouseholdLifecycleMixin:
         self._bio_state.is_active = is_active
 
         # 3. Update Political Opinion
-        self._social_state = self.social_component.update_political_opinion(
-            self._social_state, self._bio_state.needs.get("survival", 0.0)
+        gov_party = None
+        if market_data and "government" in market_data:
+            gov_party = market_data["government"].get("party")
+
+        self._social_state = self.political_component.update_opinion(
+            self._social_state,
+            self._bio_state.needs.get("survival", 0.0),
+            gov_party
         )
 
         # 4. Aging (Bio) - Also checks natural death

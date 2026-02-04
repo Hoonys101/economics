@@ -155,15 +155,6 @@ class ISocialComponent(ABC):
         pass
 
     @abstractmethod
-    def update_political_opinion(
-        self,
-        state: SocialStateDTO,
-        survival_need: float
-    ) -> SocialStateDTO:
-        """Updates political approval based on needs."""
-        pass
-
-    @abstractmethod
     def apply_leisure_effect(
         self,
         state: SocialStateDTO,
