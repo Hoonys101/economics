@@ -3,6 +3,7 @@ import math
 import logging
 from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,15 @@ class InheritanceHandler(ITransactionHandler):
 
         # Round total cash to 2 decimals to prevent floating point dust propagation.
         # Any residual dust (< 0.01) remains on the deceased agent (effectively burnt or ignored).
-        total_cash = round(deceased_agent.assets, 2)
+        assets_val = 0.0
+        if hasattr(deceased_agent, 'wallet'):
+            assets_val = deceased_agent.wallet.get_balance(DEFAULT_CURRENCY)
+        elif hasattr(deceased_agent, 'assets') and isinstance(deceased_agent.assets, dict):
+            assets_val = deceased_agent.assets.get(DEFAULT_CURRENCY, 0.0)
+        elif hasattr(deceased_agent, 'assets'):
+            assets_val = float(deceased_agent.assets)
+
+        total_cash = round(assets_val, 2)
 
         if total_cash <= 0 or not heir_ids:
             context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no assets ({total_cash}) or heirs.")

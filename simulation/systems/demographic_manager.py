@@ -6,6 +6,7 @@ import math
 from simulation.core_agents import Household
 from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.dtos.strategy import ScenarioStrategy
@@ -101,7 +102,15 @@ class DemographicManager:
             # but usually children start with 0 or small amount.
             # Let's assume standard INITIAL_ASSETS or small portion from parent.
             # "Initial 자산은 부모 자산의 일부 이전"
-            initial_gift = max(0.0, min(parent.assets * 0.1, parent.assets))
+            parent_assets = 0.0
+            if hasattr(parent, 'wallet'):
+                parent_assets = parent.wallet.get_balance(DEFAULT_CURRENCY)
+            elif hasattr(parent, 'assets') and isinstance(parent.assets, dict):
+                parent_assets = parent.assets.get(DEFAULT_CURRENCY, 0.0)
+            elif hasattr(parent, 'assets'):
+                parent_assets = float(parent.assets)
+
+            initial_gift = max(0.0, min(parent_assets * 0.1, parent_assets))
 
             # WO-124: Removed direct asset modification. Transfer happens via SettlementSystem after creation.
 
@@ -282,7 +291,14 @@ class DemographicManager:
         if not getattr(simulation, "settlement_system", None):
             raise RuntimeError("SettlementSystem not found. Cannot execute inheritance.")
 
-        total_assets = deceased_agent.assets
+        total_assets = 0.0
+        if hasattr(deceased_agent, 'wallet'):
+            total_assets = deceased_agent.wallet.get_balance(DEFAULT_CURRENCY)
+        elif hasattr(deceased_agent, 'assets') and isinstance(deceased_agent.assets, dict):
+            total_assets = deceased_agent.assets.get(DEFAULT_CURRENCY, 0.0)
+        elif hasattr(deceased_agent, 'assets'):
+            total_assets = float(deceased_agent.assets)
+
         if total_assets <= 0:
             return
 

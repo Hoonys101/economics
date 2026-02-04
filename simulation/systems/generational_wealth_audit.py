@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Dict, Any
 import logging
 from simulation.core_agents import Household
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,14 @@ class GenerationalWealthAudit:
                 continue
 
             generation = getattr(agent, 'generation', 1)
-            wealth = agent.assets
+
+            wealth = 0.0
+            if hasattr(agent, 'wallet'):
+                wealth = agent.wallet.get_balance(DEFAULT_CURRENCY)
+            elif hasattr(agent, 'assets') and isinstance(agent.assets, dict):
+                wealth = agent.assets.get(DEFAULT_CURRENCY, 0.0)
+            elif hasattr(agent, 'assets'):
+                wealth = float(agent.assets)
 
             wealth_by_generation[generation] = wealth_by_generation.get(generation, 0.0) + wealth
             count_by_generation[generation] = count_by_generation.get(generation, 0) + 1

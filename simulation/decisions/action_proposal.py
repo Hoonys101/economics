@@ -2,6 +2,7 @@ import logging
 import random
 from typing import Optional, Any, List
 from simulation.models import Order
+from modules.system.api import DEFAULT_CURRENCY
 
 
 class ActionProposalEngine:
@@ -36,8 +37,17 @@ class ActionProposalEngine:
     def _propose_household_actions(
         self, agent: Any, current_time: int
     ) -> List[List[Order]]:
+        # Safe asset extraction
+        assets_val = 0.0
+        if hasattr(agent, 'wallet'):
+            assets_val = agent.wallet.get_balance(DEFAULT_CURRENCY)
+        elif hasattr(agent, 'assets') and isinstance(agent.assets, dict):
+            assets_val = agent.assets.get(DEFAULT_CURRENCY, 0.0)
+        elif hasattr(agent, 'assets'):
+            assets_val = float(agent.assets)
+
         self.logger.debug(
-            f"DEBUG: Entering _propose_household_actions for Household {agent.id}. Assets: {agent.assets:.2f}, is_employed: {agent.is_employed}",
+            f"DEBUG: Entering _propose_household_actions for Household {agent.id}. Assets: {assets_val:.2f}, is_employed: {agent.is_employed}",
             extra={
                 "tick": current_time,
                 "agent_id": agent.id,
@@ -56,7 +66,7 @@ class ActionProposalEngine:
             explore_labor_market = False
 
             condition_assets_low = (
-                agent.assets
+                assets_val
                 < self.config_module.HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY
             )
             condition_random_check = (
@@ -65,7 +75,7 @@ class ActionProposalEngine:
             )
 
             self.logger.debug(
-                f"DEBUG: Household {agent.id} labor conditions: is_employed={agent.is_employed}, assets={agent.assets:.2f} < threshold={self.config_module.HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY} ({condition_assets_low}), random_check={condition_random_check}",
+                f"DEBUG: Household {agent.id} labor conditions: is_employed={agent.is_employed}, assets={assets_val:.2f} < threshold={self.config_module.HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY} ({condition_assets_low}), random_check={condition_random_check}",
                 extra={
                     "tick": current_time,
                     "agent_id": agent.id,
@@ -109,7 +119,7 @@ class ActionProposalEngine:
                 )
             else:
                 # 상품 시장에서 상품 구매 주문
-                if agent.assets > 1:  # 최소한의 자산이 있을 때만 구매 시도
+                if assets_val > 1:  # 최소한의 자산이 있을 때만 구매 시도
                     # Read available goods from config with fallback
                     # Priority: ConfigManager.get() -> ConfigModule.HOUSEHOLD_CONSUMABLE_GOODS -> Default
                     if hasattr(self.config_module, "get"):
@@ -129,7 +139,7 @@ class ActionProposalEngine:
                     # --- 개선된 구매 수량 로직 ---
                     # 자산의 일부를 지출 예산으로 설정
                     spending_ratio = random.uniform(0.05, 0.3)  # 자산의 5% ~ 30% 사용
-                    budget = agent.assets * spending_ratio
+                    budget = assets_val * spending_ratio
 
                     # 인지된 가격 또는 기본 가격 사용
                     price = agent.perceived_avg_prices.get(
