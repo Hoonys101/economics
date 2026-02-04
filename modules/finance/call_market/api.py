@@ -91,13 +91,16 @@ class ICallMarket(Protocol):
         ...
 
     @abstractmethod
-    def clear_market(self) -> MarketClearingResultDTO:
+    def clear_market(self, tick: int) -> MarketClearingResultDTO:
         """
         Matches buy (request) and sell (offer) orders to clear the market.
 
         This process determines the clearing interest rate and the volume of
         loans transacted for the session. It should be called once per cycle
         after all bids and offers have been submitted.
+
+        Args:
+            tick: The current simulation tick, used for loan origination time.
 
         Returns:
             A DTO summarizing the loans that were matched and the market rate.
@@ -116,11 +119,14 @@ class ICallMarket(Protocol):
         ...
 
     @abstractmethod
-    def settle_matured_loans(self) -> None:
+    def settle_matured_loans(self, tick: int) -> None:
         """
         Processes loans that have reached their maturity date.
 
         This involves transferring the principal and accrued interest from the
         borrower's reserve account back to the lender's reserve account.
+
+        Args:
+            tick: The current simulation tick, used to check loan maturity.
         """
         ...
