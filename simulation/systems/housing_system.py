@@ -9,10 +9,9 @@ from modules.housing.dtos import (
 )
 from modules.market.housing_purchase_api import (
     HousingPurchaseSagaDTO,
-    HousingPurchaseSagaDataDTO,
-    MortgageApplicationDTO
+    HousingPurchaseSagaDataDTO
 )
-from modules.market.loan_api import MortgageApplicationRequestDTO
+from modules.finance.api import MortgageApplicationDTO
 from modules.system.api import DEFAULT_CURRENCY
 
 
@@ -214,10 +213,11 @@ class HousingSystem:
         else:
              loan_term = getattr(housing_config, 'mortgage_term_ticks', 300)
 
-        # [TD-206] Use MortgageApplicationRequestDTO
-        mortgage_app = MortgageApplicationRequestDTO(
+        # [TD-206] Use MortgageApplicationDTO
+        mortgage_app = MortgageApplicationDTO(
             applicant_id=buyer_id,
             requested_principal=principal,
+            purpose="MORTGAGE", # Required by DTO
             property_id=prop_id,
             property_value=offer_price,
             applicant_monthly_income=annual_income / 12.0, # Convert annual to monthly

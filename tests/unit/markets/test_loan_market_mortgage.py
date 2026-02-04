@@ -4,7 +4,7 @@ from typing import Any
 
 from simulation.loan_market import LoanMarket
 from simulation.bank import Bank
-from modules.market.loan_api import MortgageApplicationRequestDTO
+from modules.finance.api import MortgageApplicationDTO
 from modules.finance.api import LoanInfoDTO
 
 class TestLoanMarketMortgage:
@@ -37,9 +37,10 @@ class TestLoanMarketMortgage:
             )
 
     def test_evaluate_mortgage_success(self, loan_market):
-        app = MortgageApplicationRequestDTO(
+        app = MortgageApplicationDTO(
             applicant_id=1,
             requested_principal=80000.0,
+            purpose="MORTGAGE",
             property_id=100,
             property_value=100000.0,
             applicant_monthly_income=5000.0, # 60k annual
@@ -49,9 +50,10 @@ class TestLoanMarketMortgage:
         assert loan_market.evaluate_mortgage_application(app) is True
 
     def test_evaluate_mortgage_fail_ltv(self, loan_market):
-        app = MortgageApplicationRequestDTO(
+        app = MortgageApplicationDTO(
             applicant_id=1,
             requested_principal=90000.0, # 90% LTV
+            purpose="MORTGAGE",
             property_id=100,
             property_value=100000.0,
             applicant_monthly_income=20000.0, # High income, so DTI is fine
@@ -72,9 +74,10 @@ class TestLoanMarketMortgage:
         # Principal 100,000. Pmt ~536.
         # Income 1000. DTI ~0.53 > 0.43. Fail.
 
-        app = MortgageApplicationRequestDTO(
+        app = MortgageApplicationDTO(
             applicant_id=1,
             requested_principal=100000.0,
+            purpose="MORTGAGE",
             property_id=100,
             property_value=200000.0, # LTV 50% OK
             applicant_monthly_income=1000.0,
@@ -89,9 +92,10 @@ class TestLoanMarketMortgage:
         # Existing Debt Pmt 200.
         # Total 468. Ratio 0.468 > 0.43. Fail.
 
-        app = MortgageApplicationRequestDTO(
+        app = MortgageApplicationDTO(
             applicant_id=1,
             requested_principal=50000.0,
+            purpose="MORTGAGE",
             property_id=100,
             property_value=200000.0,
             applicant_monthly_income=1000.0,
@@ -101,9 +105,10 @@ class TestLoanMarketMortgage:
         assert loan_market.evaluate_mortgage_application(app) is False
 
     def test_stage_mortgage_success(self, loan_market, mock_bank):
-        app = MortgageApplicationRequestDTO(
+        app = MortgageApplicationDTO(
             applicant_id=1,
             requested_principal=80000.0,
+            purpose="MORTGAGE",
             property_id=100,
             property_value=100000.0,
             applicant_monthly_income=5000.0,
@@ -134,9 +139,10 @@ class TestLoanMarketMortgage:
         mock_bank.stage_loan.assert_called_once()
 
     def test_stage_mortgage_fail_eval(self, loan_market, mock_bank):
-        app = MortgageApplicationRequestDTO(
+        app = MortgageApplicationDTO(
             applicant_id=1,
             requested_principal=90000.0, # LTV Fail
+            purpose="MORTGAGE",
             property_id=100,
             property_value=100000.0,
             applicant_monthly_income=5000.0,

@@ -7,7 +7,7 @@ from modules.finance.api import IBankService, LoanNotFoundError, LoanRepaymentEr
 from modules.housing.dtos import MortgageApprovalDTO
 # Import from new API
 from modules.market.housing_planner_api import ILoanMarket
-from modules.market.loan_api import MortgageApplicationRequestDTO
+from modules.finance.api import MortgageApplicationDTO
 from modules.finance.api import LoanInfoDTO as LoanDTO
 
 if TYPE_CHECKING:
@@ -41,11 +41,11 @@ class LoanMarket(Market, ILoanMarket):
             },
         )
 
-    def evaluate_mortgage_application(self, application: MortgageApplicationRequestDTO) -> bool:
+    def evaluate_mortgage_application(self, application: MortgageApplicationDTO) -> bool:
         """
         Performs hard LTV/DTI checks. Returns True if approved, False if rejected.
         Implements ILoanMarket.evaluate_mortgage_application.
-        Uses [TD-206] MortgageApplicationRequestDTO for precise DTI calculation.
+        Uses [TD-206] MortgageApplicationDTO for precise DTI calculation.
         """
         # Canonical Keys from loan_api:
         # requested_principal, property_value, applicant_monthly_income, existing_monthly_debt_payments
@@ -123,14 +123,14 @@ class LoanMarket(Market, ILoanMarket):
 
         return True
 
-    def apply_for_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[LoanDTO]:
+    def apply_for_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
         """
         Processes a mortgage application with regulatory checks.
         Returns LoanInfoDTO if approved, None otherwise.
         """
         return self.stage_mortgage(application)
 
-    def stage_mortgage_application(self, application: MortgageApplicationRequestDTO) -> Optional[str]:
+    def stage_mortgage_application(self, application: MortgageApplicationDTO) -> Optional[str]:
         """
         Submits an application for asynchronous credit check.
         Returns a unique `staged_loan_id` for tracking, or None if invalid.
@@ -161,7 +161,7 @@ class LoanMarket(Market, ILoanMarket):
             return loan_info['loan_id']
         return None
 
-    def stage_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[LoanDTO]:
+    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
         """
         Legacy/Compat method.
         Stages a mortgage (creates loan record) without disbursing funds.
@@ -204,7 +204,7 @@ class LoanMarket(Market, ILoanMarket):
              return True
         return False
 
-    def request_mortgage(self, application: MortgageApplicationRequestDTO, household_agent: Any = None, current_tick: int = 0) -> Optional[MortgageApprovalDTO]:
+    def request_mortgage(self, application: MortgageApplicationDTO, household_agent: Any = None, current_tick: int = 0) -> Optional[MortgageApprovalDTO]:
         """
         Legacy/Compat method.
         Calls evaluate, then Bank.grant_loan (Full execution).

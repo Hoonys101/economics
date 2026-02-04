@@ -8,7 +8,6 @@ from modules.market.housing_planner_api import (
     HousingDecisionDTO,
     MortgageApplicationDTO
 )
-from modules.market.loan_api import MortgageApplicationRequestDTO
 
 logger = logging.getLogger(__name__)
 
@@ -130,9 +129,10 @@ class HousingPlanner(IHousingPlanner):
                 logger.error(f"HousingPlanner: Invalid property ID {best_prop.unit_id}")
                 return self._stay_decision()
 
-            mortgage_app = MortgageApplicationRequestDTO(
+            mortgage_app = MortgageApplicationDTO(
                 applicant_id=household.id,
                 requested_principal=loan_amount,
+                purpose="MORTGAGE",
                 property_id=prop_id,
                 property_value=offer_price,
                 applicant_monthly_income=annual_income / 12.0,
