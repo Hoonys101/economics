@@ -8,6 +8,10 @@ from simulation.core_agents import Household, Skill
 from simulation.firms import Firm
 from simulation.dtos.api import SimulationState
 from modules.housing.api import IHousingService
+from modules.system.constants import (
+    TX_LABOR, TX_RESEARCH_LABOR, TX_GOODS, TX_STOCK,
+    TX_EMERGENCY_BUY, TX_ASSET_TRANSFER, TX_HOUSING
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,25 +36,25 @@ class Registry(IRegistry):
         """
         tx_type = transaction.transaction_type
 
-        if tx_type in ["labor", "research_labor"]:
+        if tx_type in [TX_LABOR, TX_RESEARCH_LABOR]:
             self._handle_labor_registry(transaction, buyer, seller, state)
 
-        elif tx_type == "goods":
+        elif tx_type == TX_GOODS:
             self._handle_goods_registry(transaction, buyer, seller, state.time, state.config_module)
 
-        elif tx_type == "stock":
+        elif tx_type == TX_STOCK:
             self._handle_stock_registry(transaction, buyer, seller, state.stock_market, state.time)
 
-        elif tx_type.startswith("real_estate_") or tx_type == "housing":
+        elif tx_type.startswith("real_estate_") or tx_type == TX_HOUSING:
              if self.housing_service:
                  self.housing_service.process_transaction(transaction, state)
              else:
                  self.logger.error("Registry: HousingService not initialized but housing transaction received.")
 
-        elif tx_type == "emergency_buy":
+        elif tx_type == TX_EMERGENCY_BUY:
              self._handle_emergency_buy(transaction, buyer)
 
-        elif tx_type == "asset_transfer":
+        elif tx_type == TX_ASSET_TRANSFER:
              if transaction.item_id.startswith("stock_"):
                  self._handle_stock_registry(transaction, buyer, seller, state.stock_market, state.time)
              elif transaction.item_id.startswith("real_estate_"):
@@ -84,7 +88,7 @@ class Registry(IRegistry):
             # Research Labor Special Effect (Productivity)
             # Is this Registry or TechSystem? It modifies Firm state (productivity_factor).
             # Registry updates "Non-financial state". Productivity is state.
-            if tx.transaction_type == "research_labor" and isinstance(seller, Household):
+            if tx.transaction_type == TX_RESEARCH_LABOR and isinstance(seller, Household):
                 research_skill = seller.skills.get("research", Skill("research")).value
                 # Config access via state.config_module
                 multiplier = getattr(state.config_module, "RND_PRODUCTIVITY_MULTIPLIER", 0.0)

@@ -511,6 +511,10 @@ class GovernmentStateDTO:
     wage_sma: float
     approval_sma: float
     current_gdp: float
+    # WO-057-A: Added for AdaptiveGovBrain
+    gini_index: float = 0.0
+    approval_low_asset: float = 0.5
+    approval_high_asset: float = 0.5
 
 @dataclass
 class MacroFinancialContext:

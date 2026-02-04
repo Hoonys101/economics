@@ -53,6 +53,8 @@ class SensoryContext(TypedDict):
     tracker: 'EconomicIndicatorTracker'
     government: 'Government'
     time: int
+    inequality_tracker: Optional['InequalityTracker']
+    households: List['Household']
 
 class CommerceContext(TypedDict):
     """상거래 시스템이 소비를 실행하는 데 필요한 데이터입니다."""

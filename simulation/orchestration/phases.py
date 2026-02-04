@@ -82,7 +82,9 @@ class Phase0_PreSequence(IPhaseStrategy):
         sensory_context: SensoryContext = {
             "tracker": state.tracker,
             "government": state.government,
-            "time": state.time
+            "time": state.time,
+            "inequality_tracker": self.world_state.inequality_tracker,
+            "households": state.households
         }
 
         sensory_dto = GovernmentStateDTO(state.time, 0, 0, 0, 0, 0, 0)

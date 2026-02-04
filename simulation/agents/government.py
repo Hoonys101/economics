@@ -6,6 +6,7 @@ from simulation.ai.enums import PoliticalParty, PolicyActionTag, EconomicSchool
 from simulation.interfaces.policy_interface import IGovernmentPolicy
 from simulation.policies.taylor_rule_policy import TaylorRulePolicy
 from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
+from simulation.policies.adaptive_gov_policy import AdaptiveGovPolicy
 from simulation.dtos import GovernmentStateDTO
 from simulation.dtos.api import MarketSnapshotDTO
 from simulation.utils.shadow_logger import log_shadow
@@ -85,6 +86,8 @@ class Government(ICurrencyHolder):
         # --- Phase 24: Policy Strategy Selection ---
         policy_mode = getattr(config_module, "GOVERNMENT_POLICY_MODE", "TAYLOR_RULE")
         if policy_mode == "AI_ADAPTIVE":
+            self.policy_engine: IGovernmentPolicy = AdaptiveGovPolicy(self, config_module)
+        elif policy_mode == "AI_LEGACY":
             self.policy_engine: IGovernmentPolicy = SmartLeviathanPolicy(self, config_module)
         else:
             self.policy_engine: IGovernmentPolicy = TaylorRulePolicy(config_module)
