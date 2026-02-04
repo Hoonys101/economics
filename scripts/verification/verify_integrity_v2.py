@@ -13,10 +13,24 @@ from simulation.systems.central_bank_system import CentralBankSystem
 from simulation.systems.settlement_system import SettlementSystem
 from simulation.systems.handlers import InheritanceHandler
 from simulation.models import Transaction
+from modules.system.constants import ID_CENTRAL_BANK
 
 # Setup Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("VERIFICATION")
+
+class MockWallet:
+    def __init__(self, agent):
+        self.agent = agent
+        self.owner_id = agent.id
+    def get_balance(self, currency="USD"):
+        return self.agent.assets
+    def add(self, amount, currency="USD", memo=""):
+        pass
+    def subtract(self, amount, currency="USD", memo=""):
+        pass
+    def get_all_balances(self):
+        return {"USD": self.agent.assets}
 
 def verify_zero_sum():
     logger.info("Starting Zero-Sum Verification...")
@@ -29,13 +43,13 @@ def verify_zero_sum():
 
     # Mock Central Bank Agent
     cb_agent = MagicMock()
-    cb_agent.id = "CENTRAL_BANK"
+    cb_agent.id = ID_CENTRAL_BANK
     cb_agent.assets = {"cash": 0.0} # Not used by Settlement check for CB
 
     cb_system = CentralBankSystem(cb_agent, settlement, logger=logger)
 
     handlers = {
-        "inheritance_distribution": InheritanceHandler(settlement, logger=logger)
+        "inheritance_distribution": InheritanceHandler()
     }
 
     config = MagicMock()
@@ -49,7 +63,8 @@ def verify_zero_sum():
         central_bank_system=cb_system,
         config=config,
         handlers=handlers,
-        logger=logger
+        logger=logger,
+        escrow_agent=MagicMock()
     )
 
     # 2. Setup Agents
@@ -57,25 +72,28 @@ def verify_zero_sum():
     buyer.id = 1
     buyer.assets = 1000.0
     # Mock withdraw/deposit
-    def b_withdraw(amt): buyer.assets -= amt
-    def b_deposit(amt): buyer.assets += amt
+    def b_withdraw(amt, currency="USD"): buyer.assets -= amt
+    def b_deposit(amt, currency="USD"): buyer.assets += amt
     buyer.withdraw = b_withdraw
     buyer.deposit = b_deposit
+    buyer.wallet = MockWallet(buyer)
 
     seller = MagicMock()
     seller.id = 2
     seller.assets = 500.0
-    def s_withdraw(amt): seller.assets -= amt
-    def s_deposit(amt): seller.assets += amt
+    def s_withdraw(amt, currency="USD"): seller.assets -= amt
+    def s_deposit(amt, currency="USD"): seller.assets += amt
     seller.withdraw = s_withdraw
     seller.deposit = s_deposit
+    seller.wallet = MockWallet(seller)
 
     # Government (for tax)
     gov = MagicMock()
     gov.id = "GOV"
     gov.assets = 0.0
-    def g_deposit(amt): gov.assets += amt
+    def g_deposit(amt, currency="USD"): gov.assets += amt
     gov.deposit = g_deposit
+    gov.wallet = MockWallet(gov)
     # Mock collect_tax to just deposit
     def collect_tax(amount, type, payer, time):
         # We need to transfer from payer to gov

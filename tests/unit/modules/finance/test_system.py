@@ -3,6 +3,7 @@ from tests.utils.factories import create_firm_config_dto, create_household_confi
 from unittest.mock import Mock, MagicMock
 from modules.finance.system import FinanceSystem
 from modules.finance.api import InsufficientFundsError
+from modules.system.constants import ID_CENTRAL_BANK
 
 @pytest.fixture
 def mock_config():
@@ -55,7 +56,7 @@ class StubGovernment:
 
 class StubCentralBank:
     def __init__(self, cash=50000.0):
-        self.id = "CENTRAL_BANK"
+        self.id = ID_CENTRAL_BANK
         self._assets = {'cash': cash, 'bonds': []}
         self.base_rate = 0.02
 

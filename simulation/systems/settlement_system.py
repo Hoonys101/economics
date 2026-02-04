@@ -9,6 +9,7 @@ from modules.finance.api import (
 )
 from simulation.dtos.settlement_dtos import LegacySettlementAccount
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+from modules.system.constants import ID_CENTRAL_BANK
 from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO, IHousingTransactionSagaHandler
 from modules.finance.saga_handler import HousingTransactionSagaHandler
 from modules.market.housing_planner_api import MortgageApplicationDTO
@@ -414,7 +415,7 @@ class SettlementSystem(ISettlementSystem):
             return False
 
         is_central_bank = False
-        if hasattr(agent, "id") and str(agent.id) == "CENTRAL_BANK":
+        if hasattr(agent, "id") and agent.id == ID_CENTRAL_BANK:
              is_central_bank = True
         elif hasattr(agent, "__class__") and agent.__class__.__name__ == "CentralBank":
              is_central_bank = True
@@ -695,7 +696,7 @@ class SettlementSystem(ISettlementSystem):
         is_central_bank = False
         if hasattr(source_authority, "__class__") and source_authority.__class__.__name__ == "CentralBank":
             is_central_bank = True
-        elif hasattr(source_authority, "id") and str(source_authority.id) == "CENTRAL_BANK":
+        elif hasattr(source_authority, "id") and source_authority.id == ID_CENTRAL_BANK:
             is_central_bank = True
 
         if is_central_bank:
@@ -732,7 +733,7 @@ class SettlementSystem(ISettlementSystem):
         is_central_bank = False
         if hasattr(sink_authority, "__class__") and sink_authority.__class__.__name__ == "CentralBank":
             is_central_bank = True
-        elif hasattr(sink_authority, "id") and str(sink_authority.id) == "CENTRAL_BANK":
+        elif hasattr(sink_authority, "id") and sink_authority.id == ID_CENTRAL_BANK:
             is_central_bank = True
 
         if is_central_bank:

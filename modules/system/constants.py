@@ -17,4 +17,4 @@ TX_SUBSIDY = "subsidy"
 
 # Roles / IDs
 ID_GOVERNMENT = "government"
-ID_CENTRAL_BANK = "central_bank"
+ID_CENTRAL_BANK = 0  # Fixed ID for Central Bank (TD-220, TD-209)
