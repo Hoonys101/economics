@@ -11,7 +11,11 @@ class HouseholdSnapshotAssembler:
     """
 
     @staticmethod
-    def assemble(household: "Household") -> HouseholdSnapshotDTO:
+    def assemble(
+        household: "Household",
+        monthly_income: float = 0.0,
+        monthly_debt_payments: float = 0.0
+    ) -> HouseholdSnapshotDTO:
         """
         Creates a snapshot DTO from a household agent instance.
         Ensures internal state is copied to prevent accidental mutation.
@@ -28,5 +32,7 @@ class HouseholdSnapshotAssembler:
             id=household.id,
             bio_state=bio_state_copy,
             econ_state=econ_state_copy,
-            social_state=social_state_copy
+            social_state=social_state_copy,
+            monthly_income=monthly_income,
+            monthly_debt_payments=monthly_debt_payments
         )

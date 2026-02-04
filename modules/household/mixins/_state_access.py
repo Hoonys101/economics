@@ -5,6 +5,7 @@ import copy
 from modules.system.api import DEFAULT_CURRENCY
 from modules.household.dtos import HouseholdStateDTO, HouseholdSnapshotDTO
 from modules.household.services import HouseholdSnapshotAssembler
+from modules.market.loan_api import calculate_monthly_loan_payment
 
 if TYPE_CHECKING:
     from modules.household.dtos import BioStateDTO, EconStateDTO, SocialStateDTO
@@ -44,9 +45,45 @@ class HouseholdStateAccessMixin:
         Creates a structured snapshot of the household's current state.
         Uses HouseholdSnapshotAssembler to ensure deep copies of component states.
         """
+        # Calculate derived financial metrics for snapshot
+        ticks_per_year = getattr(self.config, 'ticks_per_year', 360)
+        monthly_income = (self._econ_state.current_wage * ticks_per_year) / 12.0
+
+        monthly_debt_payments = 0.0
+
+        # Access LoanMarket via DecisionEngine if available to get debt status
+        decision_engine = getattr(self, 'decision_engine', None)
+        loan_market = getattr(decision_engine, 'loan_market', None)
+
+        if loan_market and hasattr(loan_market, 'bank') and loan_market.bank:
+             try:
+                 debt_status = loan_market.bank.get_debt_status(self.id)
+                 if debt_status and 'loans' in debt_status:
+                     for loan in debt_status['loans']:
+                         principal = loan['original_amount']
+                         interest_rate = loan['interest_rate']
+                         start = loan['origination_tick']
+                         end = loan.get('due_tick')
+
+                         if end and start is not None:
+                             term_ticks = end - start
+                             if term_ticks > 0:
+                                 ticks_per_month = ticks_per_year / 12.0
+                                 term_months = term_ticks / ticks_per_month
+
+                                 pmt = calculate_monthly_loan_payment(principal, interest_rate, term_months)
+                                 monthly_debt_payments += pmt
+             except Exception:
+                 # Fail gracefully if bank access fails
+                 pass
+
         # We need to pass 'self' to assemble, but 'self' here is the mixin instance,
         # which will be the Household instance at runtime.
-        return HouseholdSnapshotAssembler.assemble(self)
+        return HouseholdSnapshotAssembler.assemble(
+            self,
+            monthly_income=monthly_income,
+            monthly_debt_payments=monthly_debt_payments
+        )
 
     def create_state_dto(self) -> HouseholdStateDTO:
         """
@@ -81,7 +118,9 @@ class HouseholdStateAccessMixin:
             perceived_fair_price=self._econ_state.perceived_avg_prices.copy(),
             sentiment_index=self._social_state.optimism,
             perceived_prices=self._econ_state.perceived_avg_prices.copy(),
-            demand_elasticity=getattr(self._social_state, 'demand_elasticity', 1.0)
+            demand_elasticity=getattr(self._social_state, 'demand_elasticity', 1.0),
+            monthly_income=(self._econ_state.current_wage * getattr(self.config, 'ticks_per_year', 360)) / 12.0,
+            monthly_debt_payments=0.0
         )
 
     def get_agent_data(self) -> Dict[str, Any]:

@@ -138,14 +138,15 @@ class MortgageApplicationDTO(TypedDict):
     """
     Represents a formal mortgage application sent to the LoanMarket.
     This is the primary instrument for the new credit pipeline.
+    [TD-206] Synced with MortgageApplicationRequestDTO for precision.
     """
     applicant_id: int
-    principal: float
+    requested_principal: float
     purpose: Literal["MORTGAGE"]
     property_id: int
     property_value: float # Market value for LTV calculation
-    applicant_income: float # For DTI calculation
-    applicant_existing_debt: float # For DTI calculation
+    applicant_monthly_income: float # For DTI calculation
+    existing_monthly_debt_payments: float # For DTI calculation
     loan_term: int # Added to support calculation (implied in logic)
 
 class ICreditScoringService(Protocol):

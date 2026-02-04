@@ -186,6 +186,8 @@ class HouseholdSnapshotDTO:
     bio_state: BioStateDTO
     econ_state: EconStateDTO
     social_state: SocialStateDTO
+    monthly_income: float = 0.0 # Added for precision in financial decisions (TD-206)
+    monthly_debt_payments: float = 0.0 # Added for precision in financial decisions (TD-206)
 
 @dataclass
 class HouseholdStateDTO:
@@ -228,6 +230,10 @@ class HouseholdStateDTO:
 
     # WO-157: Demand Elasticity
     demand_elasticity: float = 1.0
+
+    # TD-206: Financial Precision (Parity with Snapshot)
+    monthly_income: float = 0.0
+    monthly_debt_payments: float = 0.0
 
 @dataclass
 class CloningRequestDTO:

@@ -10,6 +10,7 @@ from modules.finance.sagas.housing_api import (
     ILoanMarket
 )
 from modules.market.housing_planner_api import MortgageApplicationDTO
+from modules.market.loan_api import calculate_monthly_loan_payment
 from modules.simulation.api import ISimulationState
 from simulation.finance.api import ISettlementSystem, IFinancialEntity
 from simulation.models import Transaction
@@ -119,19 +120,45 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         principal = saga['offer_price'] - saga['down_payment_amount']
         buyer = self.simulation.agents.get(saga['buyer_id'])
 
-        income = 0.0
+        # Calculate Monthly Income
+        ticks_per_year = getattr(self.simulation.config_module, 'TICKS_PER_YEAR', 360)
+        monthly_income = 0.0
         if buyer and hasattr(buyer, 'current_wage'):
-             ticks_per_year = getattr(self.simulation.config_module, 'TICKS_PER_YEAR', 100)
-             income = buyer.current_wage * ticks_per_year
+             # wage is per tick?
+             monthly_income = (buyer.current_wage * ticks_per_year) / 12.0
+
+        # Calculate Existing Monthly Debt Payments
+        existing_monthly_payments = 0.0
+        if self.simulation.bank:
+             try:
+                 debt_status = self.simulation.bank.get_debt_status(saga['buyer_id'])
+                 if debt_status and 'loans' in debt_status:
+                     for loan in debt_status['loans']:
+                         p_val = loan['original_amount']
+                         r_annual = loan['interest_rate']
+                         start = loan['origination_tick']
+                         end = loan.get('due_tick')
+
+                         if end and start is not None:
+                             term_ticks = end - start
+                             if term_ticks > 0:
+                                 # Convert ticks to months
+                                 ticks_per_month = ticks_per_year / 12.0
+                                 term_months = term_ticks / ticks_per_month
+
+                                 pmt = calculate_monthly_loan_payment(p_val, r_annual, term_months)
+                                 existing_monthly_payments += pmt
+             except Exception as e:
+                 logger.warning(f"SAGA_DEBT_CHECK_FAIL | Failed to calc debt for {saga['buyer_id']}: {e}")
 
         app_dto: MortgageApplicationDTO = {
             "applicant_id": saga['buyer_id'],
-            "principal": principal,
+            "requested_principal": principal,
             "purpose": "MORTGAGE",
             "property_id": saga['property_id'],
             "property_value": saga['offer_price'],
-            "applicant_income": income,
-            "applicant_existing_debt": 0.0,
+            "applicant_monthly_income": monthly_income,
+            "existing_monthly_debt_payments": existing_monthly_payments,
             "loan_term": 360
         }
         saga['loan_application'] = app_dto # type: ignore
