@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Any, TYPE_CHECKING
 import copy
+import logging
 
 from modules.system.api import DEFAULT_CURRENCY
 from modules.household.dtos import HouseholdStateDTO, HouseholdSnapshotDTO
@@ -10,6 +11,8 @@ from modules.market.loan_api import calculate_monthly_loan_payment
 if TYPE_CHECKING:
     from modules.household.dtos import BioStateDTO, EconStateDTO, SocialStateDTO
     from simulation.dtos.config_dtos import HouseholdConfigDTO
+
+logger = logging.getLogger(__name__)
 
 class HouseholdStateAccessMixin:
     """
@@ -40,20 +43,16 @@ class HouseholdStateAccessMixin:
         """Returns the social state DTO."""
         return self._social_state
 
-    def create_snapshot_dto(self) -> HouseholdSnapshotDTO:
+    def _calculate_monthly_debt_payments(self) -> float:
         """
-        Creates a structured snapshot of the household's current state.
-        Uses HouseholdSnapshotAssembler to ensure deep copies of component states.
+        Internal helper to calculate precise monthly debt payments by querying the bank.
+        Used by both snapshot and legacy DTO creation to ensure parity.
         """
-        # Calculate derived financial metrics for snapshot
-        ticks_per_year = getattr(self.config, 'ticks_per_year', 360)
-        monthly_income = (self._econ_state.current_wage * ticks_per_year) / 12.0
-
         monthly_debt_payments = 0.0
 
-        # Access LoanMarket via DecisionEngine if available to get debt status
         decision_engine = getattr(self, 'decision_engine', None)
-        loan_market = getattr(decision_engine, 'loan_market', None)
+        loan_market = getattr(decision_engine, 'loan_market', None) if decision_engine else None
+        ticks_per_year = getattr(self.config, 'ticks_per_year', 360)
 
         if loan_market and hasattr(loan_market, 'bank') and loan_market.bank:
              try:
@@ -73,9 +72,21 @@ class HouseholdStateAccessMixin:
 
                                  pmt = calculate_monthly_loan_payment(principal, interest_rate, term_months)
                                  monthly_debt_payments += pmt
-             except Exception:
-                 # Fail gracefully if bank access fails
-                 pass
+             except Exception as e:
+                 logger.warning(f"Failed to calculate debt payments for Household {self.id}: {e}")
+
+        return monthly_debt_payments
+
+    def create_snapshot_dto(self) -> HouseholdSnapshotDTO:
+        """
+        Creates a structured snapshot of the household's current state.
+        Uses HouseholdSnapshotAssembler to ensure deep copies of component states.
+        """
+        # Calculate derived financial metrics for snapshot
+        ticks_per_year = getattr(self.config, 'ticks_per_year', 360)
+        monthly_income = (self._econ_state.current_wage * ticks_per_year) / 12.0
+
+        monthly_debt_payments = self._calculate_monthly_debt_payments()
 
         # We need to pass 'self' to assemble, but 'self' here is the mixin instance,
         # which will be the Household instance at runtime.
@@ -90,6 +101,10 @@ class HouseholdStateAccessMixin:
         [DEPRECATED] Use create_snapshot_dto instead.
         Creates a comprehensive DTO of the household's current state (Adapter).
         """
+        ticks_per_year = getattr(self.config, 'ticks_per_year', 360)
+        monthly_income = (self._econ_state.current_wage * ticks_per_year) / 12.0
+        monthly_debt_payments = self._calculate_monthly_debt_payments()
+
         return HouseholdStateDTO(
             id=self.id,
             assets=self._econ_state.assets,
@@ -119,8 +134,8 @@ class HouseholdStateAccessMixin:
             sentiment_index=self._social_state.optimism,
             perceived_prices=self._econ_state.perceived_avg_prices.copy(),
             demand_elasticity=getattr(self._social_state, 'demand_elasticity', 1.0),
-            monthly_income=(self._econ_state.current_wage * getattr(self.config, 'ticks_per_year', 360)) / 12.0,
-            monthly_debt_payments=0.0
+            monthly_income=monthly_income,
+            monthly_debt_payments=monthly_debt_payments
         )
 
     def get_agent_data(self) -> Dict[str, Any]:
