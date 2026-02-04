@@ -29,6 +29,8 @@ class TestLiquidationManager(unittest.TestCase):
 
         self.firm = MagicMock()
         self.firm.id = 1
+        # Mock liquidate_assets to return cash balance
+        self.firm.liquidate_assets.return_value = 1000.0
         self.firm.finance.balance = 1000.0
         self.firm.total_shares = 1000.0
         self.firm.treasury_shares = 0.0
@@ -63,6 +65,9 @@ class TestLiquidationManager(unittest.TestCase):
 
         # Run
         self.manager.initiate_liquidation(self.firm, self.state)
+
+        # Verify Firm Write-off
+        self.firm.liquidate_assets.assert_called_once_with(self.state.time)
 
         # Verify Services Called
         self.mock_hr.calculate_liquidation_employee_claims.assert_called_once_with(self.firm, 100)
