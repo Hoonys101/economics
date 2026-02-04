@@ -130,10 +130,11 @@ class LoanMarket(Market, ILoanMarket):
         """
         return self.stage_mortgage(application)
 
-    def stage_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[LoanDTO]:
+    def stage_mortgage_application(self, application: MortgageApplicationRequestDTO) -> Optional[str]:
         """
-        Stages a mortgage (creates loan record) without disbursing funds.
-        Returns LoanInfoDTO if successful, None otherwise.
+        Submits an application for asynchronous credit check.
+        Returns a unique `staged_loan_id` for tracking, or None if invalid.
+        Implements ILoanMarket (Saga) interface.
         """
         # 1. Evaluate
         if not self.evaluate_mortgage_application(application):
@@ -156,7 +157,20 @@ class LoanMarket(Market, ILoanMarket):
             borrower_profile=None # Could construct from application
         )
 
-        return loan_info
+        if loan_info:
+            return loan_info['loan_id']
+        return None
+
+    def stage_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[LoanDTO]:
+        """
+        Legacy/Compat method.
+        Stages a mortgage (creates loan record) without disbursing funds.
+        Returns LoanInfoDTO if successful, None otherwise.
+        """
+        loan_id = self.stage_mortgage_application(application)
+        if loan_id:
+            return self.convert_staged_to_loan(loan_id)
+        return None
 
     def check_staged_application_status(self, staged_loan_id: str) -> Literal["PENDING", "APPROVED", "REJECTED"]:
         """Checks the status of a pending mortgage application."""

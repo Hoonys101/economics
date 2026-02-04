@@ -84,6 +84,14 @@ class ILoanMarket(ABC):
         ...
 
     @abstractmethod
+    def stage_mortgage_application(self, application: MortgageApplicationRequestDTO) -> Optional[str]:
+         """
+         Submits an application for asynchronous credit check.
+         Returns a unique `staged_loan_id` for tracking, or None if invalid.
+         """
+         ...
+
+    @abstractmethod
     def stage_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[dict]:
          """
          Stages a mortgage (creates loan record) without disbursing funds.

@@ -149,13 +149,13 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         saga['loan_application'] = app_dto # type: ignore
 
         # 4. Stage Mortgage
-        staged_id_info = self.loan_market.stage_mortgage(app_dto)
-        if not staged_id_info:
+        staged_loan_id = self.loan_market.stage_mortgage_application(app_dto)
+        if not staged_loan_id:
              saga['error_message'] = "Loan staging rejected"
              return self.compensate_step(saga)
 
-        # stage_mortgage returns dict, get 'loan_id'
-        saga['staged_loan_id'] = staged_id_info['loan_id']
+        # stage_mortgage_application returns str (loan_id)
+        saga['staged_loan_id'] = staged_loan_id
 
         saga['status'] = "CREDIT_CHECK"
         return saga
