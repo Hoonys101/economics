@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import MagicMock, PropertyMock, patch
 from simulation.systems.settlement_system import SettlementSystem
 from modules.finance.api import IFinancialEntity, InsufficientFundsError
+from modules.system.constants import ID_CENTRAL_BANK
 
 from modules.finance.api import IPortfolioHandler, IHeirProvider, PortfolioDTO, PortfolioAsset
 
@@ -12,6 +13,15 @@ class MockAgent(IFinancialEntity, IPortfolioHandler, IHeirProvider):
         self.portfolio = PortfolioDTO(assets=[])
         self._heir_id = heir_id
 
+        # Mock wallet to satisfy SettlementSystem checks
+        self._wallet = MagicMock()
+        self._wallet.get_balance.side_effect = lambda c=None: self._assets
+        self._wallet.owner_id = self._id
+
+    @property
+    def wallet(self):
+        return self._wallet
+
     @property
     def id(self):
         return self._id
@@ -20,12 +30,12 @@ class MockAgent(IFinancialEntity, IPortfolioHandler, IHeirProvider):
     def assets(self):
         return self._assets
 
-    def withdraw(self, amount):
+    def withdraw(self, amount, currency="USD"):
         if self._assets < amount:
             raise InsufficientFundsError("Insufficient funds")
         self._assets -= amount
 
-    def deposit(self, amount):
+    def deposit(self, amount, currency="USD"):
         self._assets += amount
 
     def _add_assets(self, amount):
@@ -48,7 +58,7 @@ class MockAgent(IFinancialEntity, IPortfolioHandler, IHeirProvider):
 
 class MockCentralBank(MockAgent):
     # Central Bank can withdraw infinitely (negative assets allowed for tracking)
-    def withdraw(self, amount):
+    def withdraw(self, amount, currency="USD"):
         self._assets -= amount
 
 class MockBank:
@@ -101,7 +111,7 @@ def test_transfer_insufficient_funds(settlement_system):
     assert receiver.assets == 50.0
 
 def test_create_and_transfer_minting(settlement_system):
-    cb = MockCentralBank("CENTRAL_BANK", 0.0)
+    cb = MockCentralBank(ID_CENTRAL_BANK, 0.0)
     receiver = MockAgent(1, 0.0)
 
     tx = settlement_system.create_and_transfer(cb, receiver, 100.0, "Minting", tick=5)
@@ -121,7 +131,7 @@ def test_create_and_transfer_government_grant(settlement_system):
     assert gov.assets == 900.0
 
 def test_transfer_and_destroy_burning(settlement_system):
-    cb = MockCentralBank("CENTRAL_BANK", 0.0)
+    cb = MockCentralBank(ID_CENTRAL_BANK, 0.0)
     sender = MockAgent(1, 100.0)
 
     tx = settlement_system.transfer_and_destroy(sender, cb, 50.0, "Burning", tick=5)

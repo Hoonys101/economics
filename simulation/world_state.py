@@ -41,6 +41,7 @@ if TYPE_CHECKING:
     from modules.common.config_manager.api import ConfigManager
     from simulation.dtos.scenario import StressScenarioConfig
 from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode # Added for Phase 33
+from modules.system.constants import ID_CENTRAL_BANK
 
 
 class WorldState:
@@ -138,7 +139,7 @@ class WorldState:
         totals: Dict[CurrencyCode, float] = {}
         for holder in self.currency_holders:
             # Exclude CentralBank from M0 summation (Source of Money)
-            if hasattr(holder, 'id') and str(holder.id) == "CENTRAL_BANK":
+            if hasattr(holder, 'id') and holder.id == ID_CENTRAL_BANK:
                 continue
             if hasattr(holder, '__class__') and holder.__class__.__name__ == "CentralBank":
                 continue

@@ -7,6 +7,7 @@ from simulation.agents.central_bank import CentralBank
 from simulation.core_agents import Household
 from simulation.systems.settlement_system import SettlementSystem
 from modules.common.config_manager.api import ConfigManager
+from modules.system.constants import ID_CENTRAL_BANK
 
 class TestM2Integrity:
     @pytest.fixture
@@ -36,7 +37,7 @@ class TestM2Integrity:
         # Agents Setup
         # 1. Central Bank
         cb = CentralBank(tracker=MagicMock(), config_module=config_module)
-        cb.id = "CENTRAL_BANK"
+        cb.id = ID_CENTRAL_BANK
         state.central_bank = cb
         # Initialize CB Cash (M0 issuer starts with 0 or negative, but let's say it issued initial money)
         # Actually in this sim, CB mints by 'deposit' or 'withdraw' (negative).
@@ -44,7 +45,7 @@ class TestM2Integrity:
         # For now, let's keep it clean.
 
         # 2. Government
-        gov = Government(id=0, initial_assets=1000.0, config_module=config_module)
+        gov = Government(id=99, initial_assets=1000.0, config_module=config_module)
         gov.settlement_system = settlement_system
         state.government = gov
 

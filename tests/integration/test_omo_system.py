@@ -5,6 +5,7 @@ from simulation.systems.transaction_manager import TransactionManager
 from simulation.systems.settlement_system import SettlementSystem
 from simulation.models import Order, Transaction
 from modules.finance.api import OMOInstructionDTO
+from modules.system.constants import ID_CENTRAL_BANK
 
 class MockAgent:
     def __init__(self, agent_id, assets=0.0):
@@ -15,12 +16,12 @@ class MockAgent:
         self._econ_state = MagicMock()
         self._econ_state.assets = self.assets
 
-    def deposit(self, amount):
+    def deposit(self, amount, currency="USD"):
         self.assets += amount
         self._econ_state.assets = self.assets
 
-    def withdraw(self, amount):
-        if self.id != "CENTRAL_BANK" and self.assets < amount:
+    def withdraw(self, amount, currency="USD"):
+        if self.id != ID_CENTRAL_BANK and self.assets < amount:
             from modules.finance.api import InsufficientFundsError
             raise InsufficientFundsError("Insufficient Funds")
         self.assets -= amount
@@ -29,7 +30,7 @@ class MockAgent:
 @pytest.fixture
 def omo_setup():
     # SettlementSystem checks for "CENTRAL_BANK" ID or "CentralBank" class name to allow overdraft (Minting)
-    cb_agent = MockAgent(agent_id="CENTRAL_BANK", assets=0.0)
+    cb_agent = MockAgent(agent_id=ID_CENTRAL_BANK, assets=0.0)
     gov_agent = MockAgent(agent_id=0, assets=1000.0)
     household = MockAgent(agent_id=1, assets=500.0)
 

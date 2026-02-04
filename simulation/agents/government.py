@@ -428,19 +428,26 @@ class Government(ICurrencyHolder):
             details=f"Inf={inflation:.2%}, Growth={real_gdp_growth:.2%}, Gap={gdp_gap:.2%}, RateGap={gap:.4f}"
         )
 
+    SCHOOL_TO_POLICY_MAP = {
+        EconomicSchool.KEYNESIAN: [PolicyActionTag.KEYNESIAN_FISCAL],
+        EconomicSchool.AUSTRIAN: [PolicyActionTag.AUSTRIAN_AUSTERITY],
+        EconomicSchool.MONETARIST: [PolicyActionTag.MONETARIST_RULES],
+    }
+
     def fire_advisor(self, school: EconomicSchool, current_tick: int) -> None:
         """
         Fires the advisor of a specific economic school and locks associated policies.
+        Decoupled mapping via SCHOOL_TO_POLICY_MAP (TD-224).
         """
         duration = 20
-        tags_to_lock = []
+        tags_to_lock = self.SCHOOL_TO_POLICY_MAP.get(school, [])
 
-        if school == EconomicSchool.KEYNESIAN:
-            tags_to_lock = [PolicyActionTag.KEYNESIAN_FISCAL]
-        elif school == EconomicSchool.AUSTRIAN:
-            tags_to_lock = [PolicyActionTag.AUSTRIAN_AUSTERITY]
-        elif school == EconomicSchool.MONETARIST:
-            tags_to_lock = [PolicyActionTag.MONETARIST_RULES]
+        if not tags_to_lock:
+            logger.warning(
+                f"ADVISOR_FIRED | Fired {school.name} advisor but no policies to lock found.",
+                extra={"tick": current_tick, "agent_id": self.id}
+            )
+            return
 
         for tag in tags_to_lock:
             self.policy_lockout_manager.lock_policy(tag, duration, current_tick)

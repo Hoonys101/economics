@@ -5,6 +5,7 @@ from modules.finance.api import InsufficientFundsError
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
 from modules.system.api import ICurrencyHolder, CurrencyCode, DEFAULT_CURRENCY
+from modules.system.constants import ID_CENTRAL_BANK
 
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
@@ -19,7 +20,7 @@ class CentralBank(ICurrencyHolder):
     """
 
     def __init__(self, tracker: Any, config_module: Any, memory_interface: Optional["MemoryV2Interface"] = None, strategy: Optional["ScenarioStrategy"] = None):
-        self.id = "CENTRAL_BANK" # Identifier for SettlementSystem
+        self.id = ID_CENTRAL_BANK # Identifier for SettlementSystem (TD-220)
         self.tracker = tracker
         self.config_module = config_module
         self.memory_v2 = memory_interface
@@ -27,10 +28,7 @@ class CentralBank(ICurrencyHolder):
 
         # Balance Sheet
         self.bonds: List[Any] = []
-        self.wallet = Wallet(0, allow_negative_balance=True) # 0 ID for CB? Or hash of string? owner_id is int.
-        # self.id is "CENTRAL_BANK" (str). IWallet expects int owner_id.
-        # I'll use a fixed ID for CB, e.g. 0 or 999999 (Treasury uses 999999 in memory).
-        # Let's use 0 for CB.
+        self.wallet = Wallet(self.id, allow_negative_balance=True)
 
         # Initial Rate
         self.base_rate = getattr(config_module, "INITIAL_BASE_ANNUAL_RATE", 0.05)
