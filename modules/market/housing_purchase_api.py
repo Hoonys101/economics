@@ -3,8 +3,7 @@ from abc import ABC, abstractmethod
 from modules.household.dtos import HouseholdStateDTO
 from modules.system.api import HousingMarketSnapshotDTO
 from modules.finance.api import LoanInfoDTO as LoanDTO
-from modules.market.housing_planner_api import MortgageApplicationDTO
-from modules.market.loan_api import MortgageApplicationRequestDTO
+from modules.finance.api import MortgageApplicationDTO
 
 # Pre-existing DTOs (Aliases if needed, or imported elsewhere)
 # from modules.market.housing_planner_api import HousingOfferRequestDTO, HousingDecisionDTO
@@ -18,7 +17,7 @@ class HousingPurchaseSagaDataDTO(TypedDict):
     property_id: int
     offer_price: float
     down_payment: float
-    mortgage_application: MortgageApplicationRequestDTO
+    mortgage_application: MortgageApplicationDTO
     # This will be populated once the loan is approved
     approved_loan_id: Optional[int]
     seller_id: int
@@ -50,7 +49,7 @@ class ILoanMarket(ABC):
     Interface for the LoanMarket, now including regulatory checks.
     """
     @abstractmethod
-    def apply_for_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[LoanDTO]:
+    def apply_for_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
         """
         Processes a mortgage application.
         - Enforces hard LTV/DTI limits from SimulationConfig.
@@ -59,7 +58,7 @@ class ILoanMarket(ABC):
         ...
 
     @abstractmethod
-    def evaluate_mortgage_application(self, application: MortgageApplicationRequestDTO) -> bool:
+    def evaluate_mortgage_application(self, application: MortgageApplicationDTO) -> bool:
         """
         Performs hard LTV/DTI checks. Returns True if approved, False if rejected.
         """

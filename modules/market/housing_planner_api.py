@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from modules.household.dtos import HouseholdSnapshotDTO
 from modules.system.api import HousingMarketSnapshotDTO
 from modules.finance.api import MortgageApplicationDTO
-from modules.market.loan_api import MortgageApplicationRequestDTO
 
 class LoanMarketSnapshotDTO(TypedDict):
     """
@@ -34,7 +33,7 @@ class HousingDecisionDTO(TypedDict):
     decision_type: Literal["MAKE_OFFER", "RENT", "STAY"]
     target_property_id: Optional[int]
     offer_price: Optional[float]
-    mortgage_application: Optional[MortgageApplicationRequestDTO]
+    mortgage_application: Optional[MortgageApplicationDTO]
 
 class MortgageApprovalDTO(TypedDict):
     """
@@ -77,14 +76,14 @@ class ILoanMarket(ABC):
     Expanded interface for the LoanMarket to include regulatory checks.
     """
     @abstractmethod
-    def evaluate_mortgage_application(self, application: MortgageApplicationRequestDTO) -> bool:
+    def evaluate_mortgage_application(self, application: MortgageApplicationDTO) -> bool:
         """
         Performs hard LTV/DTI checks. Returns True if approved, False if rejected.
         """
         ...
 
     @abstractmethod
-    def stage_mortgage_application(self, application: MortgageApplicationRequestDTO) -> Optional[str]:
+    def stage_mortgage_application(self, application: MortgageApplicationDTO) -> Optional[str]:
          """
          Submits an application for asynchronous credit check.
          Returns a unique `staged_loan_id` for tracking, or None if invalid.
@@ -92,7 +91,7 @@ class ILoanMarket(ABC):
          ...
 
     @abstractmethod
-    def stage_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[dict]:
+    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[dict]:
          """
          Stages a mortgage (creates loan record) without disbursing funds.
          Returns LoanInfoDTO (as dict) if successful, None otherwise.
