@@ -6,7 +6,10 @@ import logging
 from modules.system.api import DEFAULT_CURRENCY
 from modules.household.dtos import HouseholdStateDTO, HouseholdSnapshotDTO
 from modules.household.services import HouseholdSnapshotAssembler
-from modules.market.loan_api import calculate_monthly_loan_payment
+from modules.market.loan_api import (
+    calculate_monthly_income,
+    calculate_total_monthly_debt_payments
+)
 
 if TYPE_CHECKING:
     from modules.household.dtos import BioStateDTO, EconStateDTO, SocialStateDTO
@@ -48,34 +51,15 @@ class HouseholdStateAccessMixin:
         Internal helper to calculate precise monthly debt payments by querying the bank.
         Used by both snapshot and legacy DTO creation to ensure parity.
         """
-        monthly_debt_payments = 0.0
-
         decision_engine = getattr(self, 'decision_engine', None)
         loan_market = getattr(decision_engine, 'loan_market', None) if decision_engine else None
         ticks_per_year = getattr(self.config, 'ticks_per_year', 360)
 
-        if loan_market and hasattr(loan_market, 'bank') and loan_market.bank:
-             try:
-                 debt_status = loan_market.bank.get_debt_status(self.id)
-                 if debt_status and 'loans' in debt_status:
-                     for loan in debt_status['loans']:
-                         principal = loan['original_amount']
-                         interest_rate = loan['interest_rate']
-                         start = loan['origination_tick']
-                         end = loan.get('due_tick')
+        bank_service = None
+        if loan_market and hasattr(loan_market, 'bank'):
+            bank_service = loan_market.bank
 
-                         if end and start is not None:
-                             term_ticks = end - start
-                             if term_ticks > 0:
-                                 ticks_per_month = ticks_per_year / 12.0
-                                 term_months = term_ticks / ticks_per_month
-
-                                 pmt = calculate_monthly_loan_payment(principal, interest_rate, term_months)
-                                 monthly_debt_payments += pmt
-             except Exception as e:
-                 logger.warning(f"Failed to calculate debt payments for Household {self.id}: {e}")
-
-        return monthly_debt_payments
+        return calculate_total_monthly_debt_payments(bank_service, self.id, ticks_per_year)
 
     def create_snapshot_dto(self) -> HouseholdSnapshotDTO:
         """
@@ -84,7 +68,7 @@ class HouseholdStateAccessMixin:
         """
         # Calculate derived financial metrics for snapshot
         ticks_per_year = getattr(self.config, 'ticks_per_year', 360)
-        monthly_income = (self._econ_state.current_wage * ticks_per_year) / 12.0
+        monthly_income = calculate_monthly_income(self._econ_state.current_wage, ticks_per_year)
 
         monthly_debt_payments = self._calculate_monthly_debt_payments()
 
@@ -102,7 +86,7 @@ class HouseholdStateAccessMixin:
         Creates a comprehensive DTO of the household's current state (Adapter).
         """
         ticks_per_year = getattr(self.config, 'ticks_per_year', 360)
-        monthly_income = (self._econ_state.current_wage * ticks_per_year) / 12.0
+        monthly_income = calculate_monthly_income(self._econ_state.current_wage, ticks_per_year)
         monthly_debt_payments = self._calculate_monthly_debt_payments()
 
         return HouseholdStateDTO(
