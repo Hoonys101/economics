@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# Patterns to watch
+PATTERNS="analysis_report/WO-.*\.md|reports/audits/AUDIT-.*\.md"
+
+# Get staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=A | grep -E "$PATTERNS")
+
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+for file in $STAGED_FILES; do
+    echo "New audit file detected: $file"
+
+    # Get Next ID
+    NEXT_ID=$(python scripts/ledger_manager.py next-id)
+    if [ $? -ne 0 ]; then
+        echo "Error generating TD ID. Aborting commit."
+        exit 1
+    fi
+    NEXT_ID=$(echo "$NEXT_ID" | tr -d '\r\n') # Clean output
+
+    DESCRIPTION="New audit file created: $file"
+
+    echo "Registering $NEXT_ID for $file..."
+
+    python scripts/ledger_manager.py register \
+        --id "$NEXT_ID" \
+        --desc "$DESCRIPTION" \
+        --impact "TBD" \
+        --status "ACTIVE"
+
+    if [ $? -ne 0 ]; then
+        echo "Error registering TD item. Aborting commit."
+        exit 1
+    fi
+
+    # Add the ledger to the commit
+    # Assuming relative path from repo root
+    git add design/2_operations/ledgers/TECH_DEBT_LEDGER.md
+done
+
+exit 0
