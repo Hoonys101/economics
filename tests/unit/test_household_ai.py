@@ -64,7 +64,7 @@ def ai_engine_setup():
     return ai_engine_registry, value_orientation
 
 def create_mock_snapshot(market_data):
-    housing_snapshot = HousingMarketSnapshotDTO(for_sale_units=[], avg_rent_price=100.0, avg_sale_price=24000.0)
+    housing_snapshot = HousingMarketSnapshotDTO(for_sale_units=[], units_for_rent=[], avg_rent_price=100.0, avg_sale_price=24000.0)
     loan_snapshot = LoanMarketSnapshotDTO(interest_rate=0.05)
     labor_snapshot = LaborMarketSnapshotDTO(avg_wage=0.0)
 

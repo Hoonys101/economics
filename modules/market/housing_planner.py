@@ -10,6 +10,7 @@ from modules.housing.dtos import (
     HousingRentalDecisionDTO,
     HousingStayDecisionDTO
 )
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,13 @@ class HousingPlanner(IHousingPlanner):
 
         # 1. Evaluate "Buy" Option
         # Use simple affordability metric: Price <= Assets / DownPaymentPct
-        max_price = household.econ_state.assets / self.DEFAULT_DOWN_PAYMENT_PCT
+        assets = household.econ_state.assets
+        if isinstance(assets, dict):
+            assets = assets.get(DEFAULT_CURRENCY, 0.0)
+        else:
+            assets = float(assets)
+
+        max_price = assets / self.DEFAULT_DOWN_PAYMENT_PCT
 
         affordable_properties = []
         if market.for_sale_units:
@@ -87,7 +94,13 @@ class HousingPlanner(IHousingPlanner):
         required_down = offer_price * self.DEFAULT_DOWN_PAYMENT_PCT
 
         # Ensure household has enough for down payment (already checked by max_price but good to be safe)
-        if household.econ_state.assets < required_down:
+        assets = household.econ_state.assets
+        if isinstance(assets, dict):
+            assets = assets.get(DEFAULT_CURRENCY, 0.0)
+        else:
+            assets = float(assets)
+
+        if assets < required_down:
              # Fallback: Can't afford down payment despite max_price check (maybe floating point or rounding)
              pass
 

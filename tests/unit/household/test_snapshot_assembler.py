@@ -20,6 +20,7 @@ class TestHouseholdSnapshotAssembler:
             children_ids=[1, 2]
         )
         household._bio_state = bio_state
+        household.get_bio_state.return_value = bio_state
 
         # Mock Econ State
         econ_state = EconStateDTO(
@@ -34,6 +35,7 @@ class TestHouseholdSnapshotAssembler:
             labor_income_this_tick=0, capital_income_this_tick=0
         )
         household._econ_state = econ_state
+        household.get_econ_state.return_value = econ_state
 
         # Mock Social State
         social_state = SocialStateDTO(
@@ -42,6 +44,7 @@ class TestHouseholdSnapshotAssembler:
             patience=0.5, optimism=0.5, ambition=0.5, last_leisure_type="IDLE"
         )
         household._social_state = social_state
+        household.get_social_state.return_value = social_state
 
         return household
 
