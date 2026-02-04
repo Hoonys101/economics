@@ -2,8 +2,8 @@ import pytest
 from unittest.mock import Mock, MagicMock
 from simulation.agents.government import Government
 from modules.finance.system import FinanceSystem
-from simulation.agents.central_bank import CentralBank
-from simulation.bank import Bank
+# from simulation.agents.central_bank import CentralBank # Removed to avoid numpy import
+# from simulation.bank import Bank # Removed to avoid extra imports
 
 @pytest.fixture
 def mock_config():
@@ -47,14 +47,14 @@ def mock_central_bank(mock_tracker, mock_config):
     """Provides a mock CentralBank."""
     # Using a real instance might be better if its logic is simple
     # but for now, a mock is sufficient.
-    cb = Mock(spec=CentralBank)
+    cb = Mock() # spec=CentralBank removed to avoid numpy import
     cb.get_base_rate.return_value = 0.02
     return cb
 
 @pytest.fixture
 def mock_bank():
     """Provides a mock commercial Bank."""
-    bank = Mock(spec=Bank)
+    bank = Mock() # spec=Bank removed
     bank._assets = 5000000.0
     return bank
 
