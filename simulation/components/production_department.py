@@ -121,9 +121,11 @@ class ProductionDepartment:
                      wage_bill += wage
 
                  # Refactor: Use finance.balance instead of firm.assets
-                 if self.firm.finance.balance < wage_bill:
+                 # Fix: Handle Dict[CurrencyCode, float] vs float comparison
+                 cash_balance = self.firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+                 if cash_balance < wage_bill:
                      reason = "LIQUIDITY_CRUNCH"
-                     context = {"cash": self.firm.finance.balance, "wage_bill": wage_bill}
+                     context = {"cash": cash_balance, "wage_bill": wage_bill}
 
                  # 3. Check Input Shortage
                  elif produced_quantity > 0:

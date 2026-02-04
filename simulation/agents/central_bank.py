@@ -197,15 +197,15 @@ class CentralBank(ICurrencyHolder):
             }
         )
 
-    def _internal_add_assets(self, amount: float) -> None:
+    def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """[INTERNAL ONLY] Increase cash reserves."""
-        self.wallet.add(amount, memo="Internal Add")
+        self.wallet.add(amount, currency=currency, memo="Internal Add")
 
-    def _internal_sub_assets(self, amount: float) -> None:
+    def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """[INTERNAL ONLY] Decrease cash reserves."""
         # Central Bank can withdraw (create money) even if it results in negative cash
         # This represents expansion of the monetary base.
-        self.wallet.subtract(amount, memo="Internal Sub")
+        self.wallet.subtract(amount, currency=currency, memo="Internal Sub")
 
     def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Deposits a given amount into the central bank's cash reserves."""

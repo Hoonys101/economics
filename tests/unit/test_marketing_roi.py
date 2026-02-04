@@ -3,6 +3,7 @@ from unittest.mock import Mock, MagicMock
 import config
 from simulation.firms import Firm
 from tests.utils.factories import create_firm_config_dto
+from modules.system.api import DEFAULT_CURRENCY
 
 class TestMarketingROI(unittest.TestCase):
     def setUp(self):
@@ -48,7 +49,7 @@ class TestMarketingROI(unittest.TestCase):
         # Step 2: Current tick - High Revenue Increase
         # Target Efficiency: delta_revenue / last_spend > 1.5
         # 1.6 = (Current_Rev - 1000) / 100 => Current_Rev - 1000 = 160 => Current_Rev = 1160
-        self.firm.finance.revenue_this_turn = 1200.0  # Delta = 200, Eff = 2.0
+        self.firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 1200.0}  # Delta = 200, Eff = 2.0
 
         # Run adjustment
         self.firm._adjust_marketing_budget()
@@ -69,7 +70,7 @@ class TestMarketingROI(unittest.TestCase):
         # Step 2: Current tick - Low Revenue Increase
         # Target Efficiency: delta_revenue / last_spend < 0.8
         # 0.5 = (Current_Rev - 1000) / 100 => Current_Rev = 1050
-        self.firm.finance.revenue_this_turn = 1050.0 # Delta = 50, Eff = 0.5
+        self.firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 1050.0} # Delta = 50, Eff = 0.5
 
         # Run adjustment
         self.firm._adjust_marketing_budget()
@@ -86,7 +87,7 @@ class TestMarketingROI(unittest.TestCase):
         self.firm.last_revenue = 1000.0
 
         # High Efficiency scenario, but saturated
-        self.firm.finance.revenue_this_turn = 1500.0 # Delta = 500, Eff = 5.0 (Very High)
+        self.firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 1500.0} # Delta = 500, Eff = 5.0 (Very High)
         self.firm.brand_manager.brand_awareness = 0.95 # Saturated (> 0.9)
 
         # Run adjustment
@@ -100,7 +101,7 @@ class TestMarketingROI(unittest.TestCase):
         """Test that adjustment is skipped on first tick (no previous spend)."""
         self.firm.last_marketing_spend = 0.0
         self.firm.marketing_budget = 50.0
-        self.firm.finance.revenue_this_turn = 100.0
+        self.firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 100.0}
 
         self.firm._adjust_marketing_budget()
 

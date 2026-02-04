@@ -277,7 +277,7 @@ class SettlementSystem(ISettlementSystem):
 
             try:
                 # Direct Deposit (Source is Void/Escrow)
-                recipient.deposit(amount)
+                recipient.deposit(amount, currency=DEFAULT_CURRENCY)
                 total_distributed += amount
 
                 # Create Receipt
@@ -596,7 +596,7 @@ class SettlementSystem(ISettlementSystem):
             if amount <= 0:
                 continue
             try:
-                credit_agent.deposit(amount)
+                credit_agent.deposit(amount, currency=DEFAULT_CURRENCY)
                 completed_credits.append((credit_agent, amount))
             except Exception as e:
                 self.logger.error(
@@ -606,13 +606,13 @@ class SettlementSystem(ISettlementSystem):
                 # 1. Reverse completed credits
                 for ca, amt in completed_credits:
                     try:
-                        ca.withdraw(amt)
+                        ca.withdraw(amt, currency=DEFAULT_CURRENCY)
                     except Exception as rb_err:
                         self.logger.critical(f"SETTLEMENT_FATAL | Credit Rollback failed for {ca.id}. {rb_err}")
 
                 # 2. Refund debit agent
                 try:
-                    debit_agent.deposit(total_debit)
+                    debit_agent.deposit(total_debit, currency=DEFAULT_CURRENCY)
                 except Exception as rb_err:
                     self.logger.critical(f"SETTLEMENT_FATAL | Debit Refund failed for {debit_agent.id}. {rb_err}")
 

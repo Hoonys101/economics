@@ -12,6 +12,7 @@ from simulation.dtos.api import SimulationState
 from simulation.models import Transaction
 from simulation.core_agents import Household
 from simulation.firms import Firm
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,7 @@ class TransactionManager(SystemInterface):
                 # Debit Buyer & Credit Public Manager
                 try:
                     # Manually withdraw from buyer (simulating payment to system)
-                    buyer.withdraw(trade_value)
+                    buyer.withdraw(trade_value, currency=DEFAULT_CURRENCY)
 
                     # Credit Public Manager Treasury
                     if hasattr(state, "public_manager") and state.public_manager:
@@ -162,7 +163,13 @@ class TransactionManager(SystemInterface):
 
                 # Solvency Check (Legacy compatibility)
                 if hasattr(buyer, 'check_solvency'):
-                    if buyer.assets < total_cost:
+                    buyer_assets = buyer.assets
+                    if isinstance(buyer_assets, dict):
+                         buyer_assets = buyer_assets.get(DEFAULT_CURRENCY, 0.0)
+                    elif hasattr(buyer, 'wallet'):
+                         buyer_assets = buyer.wallet.get_balance(DEFAULT_CURRENCY)
+
+                    if buyer_assets < total_cost:
                         buyer.check_solvency(government)
 
                 # --- 3-Step Escrow Logic (Atomic) ---

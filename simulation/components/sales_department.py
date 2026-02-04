@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from simulation.markets.order_book_market import OrderBookMarket
 
 from simulation.models import Order
+from modules.system.api import DEFAULT_CURRENCY
 
 class SalesDepartment:
     """Handles the sales and marketing logic for a firm."""
@@ -55,12 +56,16 @@ class SalesDepartment:
         # Skip first tick or zero previous spend
         # Note: We use last_marketing_spend from PREVIOUS tick to calculate ROI of THAT spend.
         # But we also need to avoid division by zero.
+
+        # Fix: Extract DEFAULT_CURRENCY from revenue_this_turn (Dict)
+        current_revenue = self.firm.finance.revenue_this_turn.get(DEFAULT_CURRENCY, 0.0)
+
         if delta_spend <= 0 or self.firm.finance.last_marketing_spend <= 0:
-            self.firm.finance.last_revenue = self.firm.finance.revenue_this_turn
+            self.firm.finance.last_revenue = current_revenue
             self.firm.finance.last_marketing_spend = self.firm.marketing_budget
             return
 
-        delta_revenue = self.firm.finance.revenue_this_turn - self.firm.finance.last_revenue
+        delta_revenue = current_revenue - self.firm.finance.last_revenue
         efficiency = delta_revenue / self.firm.finance.last_marketing_spend
 
         # Decision Rules
@@ -78,7 +83,7 @@ class SalesDepartment:
             self.firm.marketing_budget_rate = max(min_rate, self.firm.marketing_budget_rate * 0.9)
 
         # Update tracking
-        self.firm.finance.last_revenue = self.firm.finance.revenue_this_turn
+        self.firm.finance.last_revenue = current_revenue
         self.firm.finance.last_marketing_spend = self.firm.marketing_budget
 
     def set_price(self, item_id: str, price: float) -> None:
