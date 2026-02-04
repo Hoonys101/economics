@@ -130,6 +130,20 @@
     - [ ] **Seamless Payment Integration**: Atomic home purchase saga.
     - [ ] **Bubble Observatory**: M2 surge and Housing Price Index monitoring.
 
+### Phase 34: Operation Clean Hands (Foundation Prep) ⭐ **[CURRENT]**
+ - **Goal**: Resolve Government Module God Class and Circular Dependencies (Pre-requisite for Phase 5).
+ - **Tasks**:
+     - [ ] **TD-226~229 Resolution**: Decouple `Government` from `Welfare`, `Tax`, and `Bond` logic.
+     - [ ] **Service Extraction**: Transition to independent `GovernmentService` components.
+     - [ ] **Multi-Currency Migration (TD-213-B)**: Firms and AI decision engines parity.
+
+### Phase 35: Phase 5 - The Pulse of Money (Interbank) 🏗️
+ - **Goal**: Implement Interbank Settlement and Base Rate mechanisms.
+ - **Tasks**:
+     - [ ] **Call Market Implementation**: Interbank reserve lending.
+     - [ ] **Central Bank Scaffolding**: Policy rate logic and Bond market integration.
+     - [ ] **Systemic Risk Monitor**: Expansion of Bubble Observatory.
+ 
 ### Phase 28: Structural Stabilization & Verification ⭐ **[CURRENT]**
 - **Goal**: Clean up technical debt from rapid architectural changes and verify the new economic engine.
 - **Tasks**:
