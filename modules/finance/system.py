@@ -120,7 +120,12 @@ class FinanceSystem(IFinanceSystem):
         else:
             # Commercial bank buys it
             # Optimistic check for Phase B
-            if self.bank.assets >= amount:
+            bank_assets = self.bank.assets
+            bank_assets_val = bank_assets
+            if isinstance(bank_assets, dict):
+                bank_assets_val = bank_assets.get(DEFAULT_CURRENCY, 0.0)
+
+            if bank_assets_val >= amount:
                 buyer = self.bank
             else:
                 logger.warning("BOND_ISSUANCE_FAILED | No buyer found (Bank insufficient funds).")
@@ -292,8 +297,13 @@ class FinanceSystem(IFinanceSystem):
         Returns the loan DTO and Transaction.
         """
         # Enforce Government Budget Constraint
-        if self.government.assets < amount:
-            logger.warning(f"BAILOUT_DENIED | Government insufficient funds: {self.government.assets:.2f} < {amount:.2f}")
+        gov_assets = self.government.assets
+        gov_assets_val = gov_assets
+        if isinstance(gov_assets, dict):
+            gov_assets_val = gov_assets.get(DEFAULT_CURRENCY, 0.0)
+
+        if gov_assets_val < amount:
+            logger.warning(f"BAILOUT_DENIED | Government insufficient funds: {gov_assets_val:.2f} < {amount:.2f}")
             return None, []
 
         base_rate = self.central_bank.get_base_rate()

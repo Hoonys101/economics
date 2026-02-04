@@ -44,7 +44,7 @@ class MinistryOfEducation:
         if not teachers:
             teachers = active_households
 
-        active_households.sort(key=lambda x: x._econ_state.assets)
+        active_households.sort(key=lambda x: x._econ_state.wallet.get_balance(DEFAULT_CURRENCY))
         cutoff_idx = int(len(active_households) * getattr(self.config_module, "SCHOLARSHIP_WEALTH_PERCENTILE", 0.20))
         poor_households = set(h.id for h in active_households[:cutoff_idx])
 
@@ -89,7 +89,7 @@ class MinistryOfEducation:
                     subsidy = cost * 0.8
                     student_share = cost * 0.2
 
-                    if edu_budget >= subsidy and agent._econ_state.assets >= student_share:
+                    if edu_budget >= subsidy and agent._econ_state.wallet.get_balance(DEFAULT_CURRENCY) >= student_share:
                         # 1. Government Subsidy Tx (Gov -> Teacher)
                         tx_subsidy = Transaction(
                             buyer_id=government.id,

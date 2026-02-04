@@ -4,9 +4,10 @@ from typing import List, Dict, Optional, TYPE_CHECKING, override
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from simulation.models import Skill, Talent
 from simulation.portfolio import Portfolio
+from simulation.ai.api import Personality
 
 if TYPE_CHECKING:
-    from modules.household.dtos import BioStateDTO, EconStateDTO
+    from modules.household.dtos import BioStateDTO, EconStateDTO, SocialStateDTO
 
 class HouseholdPropertiesMixin:
     """
@@ -17,6 +18,7 @@ class HouseholdPropertiesMixin:
     # Type hints for properties expected on self
     _econ_state: "EconStateDTO"
     _bio_state: "BioStateDTO"
+    _social_state: "SocialStateDTO"
     _assets: Dict[CurrencyCode, float] # BaseAgent attribute
 
     @property
@@ -164,3 +166,8 @@ class HouseholdPropertiesMixin:
     def demographics(self) -> BioStateDTO:
         """[Legacy] Exposes bio_state as demographics."""
         return self._bio_state
+
+    @property
+    def personality(self) -> Personality:
+        """Exposes personality from social_state."""
+        return self._social_state.personality

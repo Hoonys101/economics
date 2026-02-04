@@ -51,6 +51,11 @@ class CentralBank(ICurrencyHolder):
             extra={"tick": 0, "tags": ["central_bank", "init"]}
         )
 
+    @property
+    def assets(self) -> Dict[CurrencyCode, float]:
+        """Legacy compatibility accessor."""
+        return self.wallet.get_all_balances()
+
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
         """Implementation of ICurrencyHolder."""
         return self.wallet.get_all_balances()

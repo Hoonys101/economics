@@ -78,7 +78,13 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
     households = []
     initial_balances: Dict[int, float] = {}  # WO-124: Collect intended initial balances
 
+    # Reserve IDs 0-99 for System Agents (CentralBank, Government, Bank, etc)
+    # Households start at 100
+    START_ID_HOUSEHOLDS = 100
+
     for i in range(num_households):
+        agent_id = START_ID_HOUSEHOLDS + i
+        agent_id = START_ID_HOUSEHOLDS + i
         initial_assets = config.INITIAL_HOUSEHOLD_ASSETS_MEAN * (
             1
             + random.uniform(
@@ -86,7 +92,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
                 config.INITIAL_HOUSEHOLD_ASSETS_RANGE,
             )
         )
-        initial_balances[i] = initial_assets  # Record intended balance
+        initial_balances[agent_id] = initial_assets  # Record intended balance
 
         initial_liquidity_need = config.INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN * (
             1
@@ -146,7 +152,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
 
         # Instantiate HouseholdAI
         ai_decision_engine_instance = ai_trainer.get_engine(value_orientation)
-        household_ai_instance = HouseholdAI(agent_id=i, ai_decision_engine=ai_decision_engine_instance)
+        household_ai_instance = HouseholdAI(agent_id=agent_id, ai_decision_engine=ai_decision_engine_instance)
 
         # Instantiate HouseholdDecisionEngine with the HouseholdAI instance and config_module
         # Check config for decision engine preference
@@ -165,7 +171,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         risk_aversion = random.uniform(0.1, 10.0)
 
         household = Household(
-            id=i,
+            id=agent_id,
             talent=Talent(max(0.5, random.gauss(1.0, 0.2)), {}), # WO-023-B: The Lottery of Birth
             goods_data=goods_data,
             initial_assets=0.0,  # WO-124: Start empty (Genesis Protocol)
@@ -185,8 +191,10 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         households.append(household)
 
     firms = []
+    START_ID_FIRMS = START_ID_HOUSEHOLDS + num_households
+
     for i in range(num_firms):
-        firm_id = i + num_households
+        firm_id = START_ID_FIRMS + i
         initial_capital = config.INITIAL_FIRM_CAPITAL_MEAN * (
             1
             + random.uniform(

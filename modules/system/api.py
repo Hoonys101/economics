@@ -1,12 +1,13 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import TypedDict, List, Dict, Optional, Any, Protocol, TYPE_CHECKING, TypeAlias
+from typing import TypedDict, List, Dict, Optional, Any, Protocol, TYPE_CHECKING, TypeAlias, runtime_checkable
 from abc import ABC, abstractmethod
 
 # --- Phase 33: Multi-Polar WorldState Foundation ---
 CurrencyCode: TypeAlias = str
 DEFAULT_CURRENCY: CurrencyCode = "USD"
 
+@runtime_checkable
 class ICurrencyHolder(Protocol):
     """
     An interface for any entity that holds assets in one or more currencies.
