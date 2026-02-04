@@ -1,7 +1,8 @@
 import logging
 import random
-from typing import List, Any, Optional, TYPE_CHECKING
+from typing import List, Any, Optional, TYPE_CHECKING, Dict
 from simulation.models import Transaction
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.models import Transaction
@@ -20,7 +21,18 @@ class MinistryOfEducation:
         transactions = []
         budget_ratio = getattr(self.config_module, "PUBLIC_EDU_BUDGET_RATIO", 0.20)
         # WO-057 Deficit Spending: Budget is based on REVENUE, not ASSETS
-        edu_budget = government.revenue_this_tick * budget_ratio
+
+        # Handle revenue_this_tick being Dict or float
+        revenue = 0.0
+        if isinstance(government.revenue_this_tick, dict):
+            revenue = government.revenue_this_tick.get(DEFAULT_CURRENCY, 0.0)
+        else:
+            try:
+                revenue = float(government.revenue_this_tick)
+            except (ValueError, TypeError):
+                revenue = 0.0
+
+        edu_budget = revenue * budget_ratio
         
         active_households = [h for h in households if h._bio_state.is_active]
         if not active_households:

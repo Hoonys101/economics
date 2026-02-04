@@ -13,11 +13,11 @@ from simulation.utils.shadow_logger import log_shadow
 from simulation.models import Transaction
 from simulation.systems.ministry_of_education import MinistryOfEducation
 from simulation.portfolio import Portfolio
-from modules.government.taxation.system import TaxationSystem
 from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset
-from modules.government.components.fiscal_policy_manager import FiscalPolicyManager
 from modules.government.dtos import FiscalPolicyDTO
 from modules.government.welfare.service import WelfareService
+from modules.government.tax.service import TaxService
+from modules.government.tax.api import ITaxService
 from modules.government.components.infrastructure_manager import InfrastructureManager
 from modules.government.constants import *
 from modules.government.components.monetary_ledger import MonetaryLedger
@@ -53,13 +53,11 @@ class Government(ICurrencyHolder):
         self.config_module = config_module
         self.settlement_system: Optional["ISettlementSystem"] = None
         
-        self.taxation_system = TaxationSystem(config_module)
-        # self.tax_agency = TaxAgency(config_module) # Deprecated/Removed
-        self.fiscal_policy_manager = FiscalPolicyManager(config_module)
-        self.ministry_of_education = MinistryOfEducation(config_module)
-
-        # New Managers
+        # Facade Services
+        self.tax_service: ITaxService = TaxService(config_module)
         self.welfare_service = WelfareService(self)
+
+        self.ministry_of_education = MinistryOfEducation(config_module)
         self.infrastructure_manager = InfrastructureManager(self)
         self.monetary_ledger = MonetaryLedger()
         self.policy_lockout_manager = PolicyLockoutManager()
@@ -67,16 +65,12 @@ class Government(ICurrencyHolder):
         # Initialize default fiscal policy
         # NOTE: Initialized with empty snapshot. Will be updated with real market data in the first tick
         # via make_policy_decision() before any tax collection occurs.
-        self.fiscal_policy: FiscalPolicyDTO = self.fiscal_policy_manager.determine_fiscal_stance(
+        self.fiscal_policy: FiscalPolicyDTO = self.tax_service.determine_fiscal_stance(
             MarketSnapshotDTO(tick=0, market_signals={}, market_data={})
         )
 
-        self.total_collected_tax: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
         self.total_spent_subsidies: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
         self.infrastructure_level: int = 0
-
-        # 세수 유형별 집계
-        self.tax_revenue: Dict[str, float] = {}
 
         # --- Phase 7: Adaptive Fiscal Policy State ---
         self.potential_gdp: float = 0.0
@@ -135,16 +129,6 @@ class Government(ICurrencyHolder):
         self.welfare_history: List[Dict[str, float]] = [] # For Welfare Line Chart
         self.history_window_size = 5000
 
-        # Current tick accumulators (reset every tick)
-        self.current_tick_stats = {
-            "tax_revenue": {},
-            "welfare_spending": 0.0,
-            "stimulus_spending": 0.0,
-            "total_collected": 0.0,
-            "education_spending": 0.0 # WO-054
-        }
-
-        # GDP Tracking for Stimulus
         self.gdp_history: List[float] = []
         self.gdp_history_window = 20
         
@@ -152,9 +136,7 @@ class Government(ICurrencyHolder):
         ticks_per_year = int(getattr(config_module, "TICKS_PER_YEAR", DEFAULT_TICKS_PER_YEAR))
         self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
 
-        self.revenue_this_tick: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
         self.expenditure_this_tick: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
-        self.revenue_breakdown_this_tick: Dict[str, float] = {}
         
         self.average_approval_rating = 0.5
 
@@ -177,6 +159,21 @@ class Government(ICurrencyHolder):
     def assets(self) -> Dict[CurrencyCode, float]:
         """Returns the government's liquid assets."""
         return self.wallet.get_all_balances()
+
+    @property
+    def total_collected_tax(self) -> Dict[CurrencyCode, float]:
+        """Accessor for total collected tax from TaxService."""
+        return self.tax_service.get_total_collected_tax()
+
+    @property
+    def revenue_this_tick(self) -> Dict[CurrencyCode, float]:
+        """Accessor for revenue this tick from TaxService."""
+        return self.tax_service.get_revenue_this_tick()
+
+    @property
+    def tax_revenue(self) -> Dict[str, float]:
+        """Accessor for tax revenue breakdown from TaxService."""
+        return self.tax_service.get_tax_revenue()
 
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
         """Implementation of ICurrencyHolder."""
@@ -211,33 +208,24 @@ class Government(ICurrencyHolder):
 
     def calculate_income_tax(self, income: float, survival_cost: float) -> float:
         """
-        Calculates income tax using the FiscalPolicyManager and current policy.
+        Calculates income tax using the TaxService and current policy.
         """
-        if self.fiscal_policy:
-            return self.fiscal_policy_manager.calculate_tax_liability(self.fiscal_policy, income)
-
-        # Fallback (should not happen if initialized correctly)
-        tax_mode = getattr(self.config_module, "TAX_MODE", "PROGRESSIVE")
-        return self.taxation_system.calculate_income_tax(income, survival_cost, self.income_tax_rate, tax_mode)
+        return self.tax_service.calculate_tax_liability(self.fiscal_policy, income)
 
     def calculate_corporate_tax(self, profit: float) -> float:
-        """Delegates corporate tax calculation to the TaxationSystem."""
-        return self.taxation_system.calculate_corporate_tax(profit, self.corporate_tax_rate)
+        """Delegates corporate tax calculation to the TaxService."""
+        return self.tax_service.calculate_corporate_tax(profit, self.corporate_tax_rate)
 
     def reset_tick_flow(self):
         """
         매 틱 시작 시 호출되어 이번 틱의 Flow 데이터를 초기화하고,
         이전 틱의 데이터를 History에 저장합니다.
         """
-        if getattr(self, "revenue_breakdown_this_tick", None) is None:
-             self.revenue_breakdown_this_tick = {}
-
-        self.revenue_this_tick = 0.0
-        self.expenditure_this_tick = 0.0
-        self.revenue_breakdown_this_tick = {}
-
-        self.monetary_ledger.reset_tick_flow()
+        self.tax_service.reset_tick_flow()
         self.welfare_service.reset_tick_flow()
+        self.monetary_ledger.reset_tick_flow()
+
+        self.expenditure_this_tick = {DEFAULT_CURRENCY: 0.0}
 
     def process_monetary_transactions(self, transactions: List[Transaction]):
         """
@@ -292,29 +280,9 @@ class Government(ICurrencyHolder):
 
     def record_revenue(self, result: "TaxCollectionResult"):
         """
-        [NEW] Updates the government's internal ledgers based on a verified
-        TaxCollectionResult DTO.
+        Updates the government's internal ledgers via TaxService.
         """
-        if not result['success'] or result['amount_collected'] <= 0:
-            return
-
-        amount = result['amount_collected']
-        tax_type = result['tax_type']
-        payer_id = result['payer_id']
-        cur = result.get('currency', DEFAULT_CURRENCY)
-
-        if cur not in self.total_collected_tax: self.total_collected_tax[cur] = 0.0
-        if cur not in self.revenue_this_tick: self.revenue_this_tick[cur] = 0.0
-        
-        self.total_collected_tax[cur] += amount
-        self.revenue_this_tick[cur] += amount
-        self.tax_revenue[tax_type] = (
-            self.tax_revenue.get(tax_type, 0.0) + amount
-        )
-        self.current_tick_stats["tax_revenue"][tax_type] = (
-            self.current_tick_stats["tax_revenue"].get(tax_type, 0.0) + amount
-        )
-        self.current_tick_stats["total_collected"] += amount
+        self.tax_service.record_revenue(result)
 
     def update_public_opinion(self, households: List[Any]):
         """
@@ -374,7 +342,7 @@ class Government(ICurrencyHolder):
                 market_signals={},
                 market_data=market_data
             )
-            self.fiscal_policy = self.fiscal_policy_manager.determine_fiscal_stance(snapshot)
+            self.fiscal_policy = self.tax_service.determine_fiscal_stance(snapshot)
 
         # 1. 정책 엔진 실행 (Actuator 및 Shadow Mode 로직 포함)
         decision = self.policy_engine.decide(self, self.sensory_data, current_tick, central_bank)
@@ -497,15 +465,7 @@ class Government(ICurrencyHolder):
         """
         transactions = []
 
-        # 1. Wealth Tax Logic (Moved from WelfareManager)
-        # Note: Ideally this should be in TaxService, but TaxService API doesn't support it yet.
-        # Implemented here to maintain functionality during refactor.
-
-        wealth_tax_rate_annual = getattr(self.config_module, "ANNUAL_WEALTH_TAX_RATE", DEFAULT_ANNUAL_WEALTH_TAX_RATE)
-        ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", DEFAULT_TICKS_PER_YEAR)
-        wealth_tax_rate_tick = wealth_tax_rate_annual / ticks_per_year
-        wealth_threshold = getattr(self.config_module, "WEALTH_TAX_THRESHOLD", DEFAULT_WEALTH_TAX_THRESHOLD)
-
+        # 1. Wealth Tax Logic
         total_wealth_tax = 0.0
 
         for agent in agents:
@@ -520,15 +480,24 @@ class Government(ICurrencyHolder):
                 else:
                      net_worth = float(agent.assets)
 
-                if net_worth > wealth_threshold:
-                    tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
-                    tax_amount = min(tax_amount, net_worth)
+                # Calculate tax liability using TaxService
+                tax_amount = self.tax_service.calculate_wealth_tax(net_worth)
 
-                    if tax_amount > 0 and self.settlement_system:
-                        # Use collect_tax which handles settlement and recording
-                        result = self.collect_tax(tax_amount, "wealth_tax", agent, current_tick)
-                        if result['success']:
-                             total_wealth_tax += result['amount_collected']
+                if tax_amount > 0 and self.settlement_system:
+                    # Execute atomic transfer directly via SettlementSystem
+                    success = self.settlement_system.transfer(agent, self, tax_amount, "wealth_tax")
+
+                    if success:
+                         total_wealth_tax += tax_amount
+                         # Record revenue via TaxService
+                         self.record_revenue({
+                             "success": True,
+                             "amount_collected": tax_amount,
+                             "tax_type": "wealth_tax",
+                             "payer_id": agent.id,
+                             "payee_id": self.id,
+                             "currency": DEFAULT_CURRENCY
+                         })
 
         # 2. Welfare Check (Delegated to WelfareService)
         welfare_txs = self.welfare_service.run_welfare_check(agents, market_data, current_tick)
@@ -548,24 +517,22 @@ class Government(ICurrencyHolder):
         """
         # Retrieve welfare spending from service
         welfare_spending = self.welfare_service.get_spending_this_tick()
-        self.current_tick_stats["welfare_spending"] = welfare_spending
 
         # Update expenditure_this_tick (aggregate)
         if DEFAULT_CURRENCY not in self.expenditure_this_tick:
             self.expenditure_this_tick[DEFAULT_CURRENCY] = 0.0
         self.expenditure_this_tick[DEFAULT_CURRENCY] += welfare_spending
 
-        revenue_snapshot = self.current_tick_stats["tax_revenue"].copy()
+        # Retrieve tax stats from TaxService
+        revenue_snapshot = self.tax_service.get_revenue_breakdown_this_tick()
         revenue_snapshot["tick"] = current_tick
-        # For simplicity, snapshot uses USD or sums main currency
-        revenue_snapshot["total"] = self.current_tick_stats["total_collected"]
+        revenue_snapshot["total"] = self.tax_service.get_total_collected_this_tick()
 
         # WO-057 Deficit Spending: Update total_debt based on FinanceSystem
         if self.finance_system:
              self.total_debt = sum(b.face_value for b in self.finance_system.outstanding_bonds)
         else:
-             # Legacy check: if assets are negative? With Wallet, they won't be unless allowed.
-             # Check if Wallet allows negative?
+             # Legacy check
              current_balance = self.wallet.get_balance(DEFAULT_CURRENCY)
              if current_balance < 0:
                  self.total_debt = abs(current_balance)
@@ -576,25 +543,22 @@ class Government(ICurrencyHolder):
         if len(self.tax_history) > self.history_window_size:
             self.tax_history.pop(0)
 
+        # Retrieve local stats (Education, Stimulus are not tracked in TaxService/WelfareService aggregates yet explicitly)
+        # Note: Stimulus is part of welfare_spending in WelfareService, so we might not be able to separate it easily unless we query service
+        # For education, it is missing in current logic.
+        # We use a simplified snapshot for now or default to 0.0 for missing parts.
+
         welfare_snapshot = {
             "tick": current_tick,
-            "welfare": self.current_tick_stats["welfare_spending"],
-            "stimulus": self.current_tick_stats["stimulus_spending"],
-            "education": self.current_tick_stats.get("education_spending", 0.0), # WO-054
+            "welfare": welfare_spending,
+            "stimulus": 0.0, # Stimulus tracking requires Service update, keeping 0.0 for now to match current behavior
+            "education": 0.0, # WO-054
             "debt": self.total_debt,
             "assets": self.assets
         }
         self.welfare_history.append(welfare_snapshot)
         if len(self.welfare_history) > self.history_window_size:
             self.welfare_history.pop(0)
-
-        self.current_tick_stats = {
-            "tax_revenue": {},
-            "welfare_spending": 0.0,
-            "stimulus_spending": 0.0,
-            "education_spending": 0.0, # WO-054
-            "total_collected": 0.0
-        }
 
     def get_monetary_delta(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
         """

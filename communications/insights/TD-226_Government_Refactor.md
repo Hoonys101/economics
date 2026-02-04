@@ -29,3 +29,22 @@ This mission focuses on Phase 1 of the Government Module Decomposition. The goal
 - Move Wealth Tax logic to `TaxService`.
 - Refactor `Government` to use `FiscalService`.
 - Update tests to use the new service boundaries.
+
+## [2026-02-04] Government Class Refactor (Tax & Welfare Integration)
+
+### Achievements
+- Refactored `Government` to use `TaxService` and `WelfareService` via Composition (Facade Pattern).
+- Removed direct dependencies on `TaxationSystem` and `FiscalPolicyManager` from `Government`.
+- Migrated Wealth Tax calculation logic to `TaxService.calculate_wealth_tax`, cleaning up `Government.run_welfare_check`.
+- Maintained backward compatibility for `revenue_this_tick`, `total_collected_tax`, and `tax_revenue` via properties delegating to `TaxService`.
+- Fixed a crash risk in `MinistryOfEducation` where it assumed `revenue_this_tick` was a float (it is now strictly `Dict[CurrencyCode, float]`).
+
+### Technical Debt Identified
+- **Settlement System Coupling**: `Government` still manually orchestrates tax collection via `settlement_system.transfer` and then calls `tax_service.record_revenue`. Ideally, `TaxService` or a `TaxCollector` component should handle the settlement + recording atomically to prevent drift.
+- **Welfare Service Dependency**: `WelfareService` still depends on `Government` instance. This circularity is managed via `TYPE_CHECKING` but remains architecturally unclean.
+- **Stimulus Spending Tracking**: `Government.finalize_tick` assumes `stimulus_spending` in `current_tick_stats`, but `WelfareService` aggregates it into `spending_this_tick` without separating it explicitly in a way `Government` can easily read for the snapshot (currently defaults to 0.0 in snapshot).
+- **Fiscal Service Pending**: `FiscalService` is defined but not implemented. Fiscal responsibilities (`InfrastructureManager`, Bailouts) are still loosely held by `Government`.
+
+### Insights
+- **Type Safety**: The explicit typing in `TaxService` revealed type inconsistencies in legacy code (`MinistryOfEducation`). Strong typing in new services helps catch legacy bugs.
+- **State Migration**: Moving state (`revenue_this_tick`, etc.) to services requires careful handling of public properties to avoid breaking consumers like `MinistryOfEducation` or external observers/tests.
