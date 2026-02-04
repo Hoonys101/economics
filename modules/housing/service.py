@@ -4,6 +4,7 @@ import logging
 
 from modules.housing.api import IHousingService
 from modules.finance.api import LienDTO
+from modules.common.interfaces import IPropertyOwner, IResident
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
@@ -99,10 +100,14 @@ class HousingService(IHousingService):
                 unit.owner_id = buyer.id
 
                 if seller:
-                     if hasattr(seller, "owned_properties") and unit_id in seller.owned_properties:
+                     if isinstance(seller, IPropertyOwner):
+                          seller.remove_property(unit_id)
+                     elif hasattr(seller, "owned_properties") and unit_id in seller.owned_properties:
                           seller.owned_properties.remove(unit_id)
 
-                if hasattr(buyer, "owned_properties"):
+                if isinstance(buyer, IPropertyOwner):
+                     buyer.add_property(unit_id)
+                elif hasattr(buyer, "owned_properties"):
                      buyer.owned_properties.append(unit_id)
 
                 self.logger.info(f"RE_TX | Unit {unit_id} transferred from {seller_id} to {buyer.id}")
@@ -144,19 +149,22 @@ class HousingService(IHousingService):
 
             # Update Seller (if not None/Govt)
             if seller:
-                if hasattr(seller, "owned_properties"):
+                if isinstance(seller, IPropertyOwner):
+                    seller.remove_property(unit_id)
+                elif hasattr(seller, "owned_properties"):
                     if unit_id in seller.owned_properties:
                         seller.owned_properties.remove(unit_id)
 
             # Update Buyer
             if buyer:
-                if hasattr(buyer, "owned_properties"):
+                if isinstance(buyer, IPropertyOwner):
+                    buyer.add_property(unit_id)
+                elif hasattr(buyer, "owned_properties"):
                     if unit_id not in buyer.owned_properties:
                         buyer.owned_properties.append(unit_id)
 
                 # Housing System Logic: Auto-move-in if homeless
-                from simulation.core_agents import Household
-                if isinstance(buyer, Household):
+                if isinstance(buyer, IResident):
                     if buyer.residing_property_id is None:
                         unit.occupant_id = buyer.id
                         buyer.residing_property_id = unit_id

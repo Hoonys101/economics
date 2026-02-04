@@ -5,7 +5,8 @@ from simulation.models import Transaction
 from modules.market.api import IHousingTransactionHandler, HousingConfigDTO
 from modules.finance.api import BorrowerProfileDTO, LienDTO
 from modules.system.escrow_agent import EscrowAgent
-from simulation.core_agents import Household
+from modules.common.interfaces import IPropertyOwner, IResident, IMortgageBorrower
+from modules.system.api import DEFAULT_CURRENCY
 from simulation.firms import Firm
 
 logger = logging.getLogger(__name__)
@@ -68,16 +69,28 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
         down_payment = sale_price
 
         # Determine Mortgage Eligibility
-        # Only Households get mortgages usually.
-        is_household = isinstance(buyer, Household)
-        use_mortgage = is_household and context.bank is not None
+        # Only Agents implementing IMortgageBorrower get mortgages usually.
+        is_borrower = isinstance(buyer, IMortgageBorrower)
+        use_mortgage = is_borrower and context.bank is not None
 
         if use_mortgage:
             loan_amount = sale_price * max_ltv
             down_payment = sale_price - loan_amount
 
         # Check Buyer Funds for Down Payment
-        buyer_assets = buyer.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
+        if isinstance(buyer, IMortgageBorrower):
+            # Safe extraction for protocols using Dict assets
+            buyer_assets = buyer.assets.get(DEFAULT_CURRENCY, 0.0)
+        elif hasattr(buyer, "assets"):
+            # Legacy/Firm fallback
+            attr = getattr(buyer, "assets", 0.0)
+            if isinstance(attr, dict):
+                 buyer_assets = attr.get(DEFAULT_CURRENCY, 0.0)
+            else:
+                 buyer_assets = float(attr)
+        else:
+             buyer_assets = 0.0
+
         if buyer_assets < down_payment:
             context.logger.info(f"HOUSING | Buyer {buyer.id} insufficient funds for down payment {down_payment:.2f}")
             return False
@@ -197,16 +210,10 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                 pass
             return False
 
-    def _create_borrower_profile(self, buyer: Household, trade_value: float, context: TransactionContext) -> BorrowerProfileDTO:
+    def _create_borrower_profile(self, buyer: Any, trade_value: float, context: TransactionContext) -> BorrowerProfileDTO:
         gross_income = 0.0
-        if isinstance(buyer, Household):
+        if isinstance(buyer, IMortgageBorrower) or hasattr(buyer, "current_wage"):
              # Estimate monthly income
-             work_hours = getattr(context.config_module, "WORK_HOURS_PER_DAY", 8.0)
-             ticks_per_year = getattr(context.config_module, "TICKS_PER_YEAR", 100.0)
-             ticks_per_month = ticks_per_year / 12.0
-             gross_income = buyer.current_wage * work_hours * ticks_per_month
-        elif hasattr(buyer, "current_wage"):
-             # Fallback
              work_hours = getattr(context.config_module, "WORK_HOURS_PER_DAY", 8.0)
              ticks_per_year = getattr(context.config_module, "TICKS_PER_YEAR", 100.0)
              ticks_per_month = ticks_per_year / 12.0
@@ -219,14 +226,21 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                  existing_debt = status.total_outstanding_debt
              except: pass
 
-        assets = buyer.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
+        if isinstance(buyer, IMortgageBorrower):
+            assets_val = buyer.assets.get(DEFAULT_CURRENCY, 0.0)
+        else:
+            attr = getattr(buyer, "assets", 0.0)
+            if isinstance(attr, dict):
+                 assets_val = attr.get(DEFAULT_CURRENCY, 0.0)
+            else:
+                 assets_val = float(attr)
 
         return BorrowerProfileDTO(
             borrower_id=str(buyer.id),
             gross_income=gross_income,
             existing_debt_payments=existing_debt * 0.01, # Approx
             collateral_value=trade_value,
-            existing_assets=assets
+            existing_assets=assets_val
         )
 
     def _void_loan_safely(self, context: TransactionContext, loan_id: str):
@@ -271,25 +285,25 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
              unit.liens.append(new_lien)
 
         # Update Seller (if not None/Govt)
-        if seller:
-            if isinstance(seller, Household):
-                 seller.remove_property(unit_id)
-            elif hasattr(seller, "owned_properties"):
-                 # Legacy/Other agents fallback
-                 if hasattr(seller, "remove_property"):
-                      seller.remove_property(unit_id)
-                 elif unit_id in seller.owned_properties:
-                      seller.owned_properties.remove(unit_id)
+        if seller and isinstance(seller, IPropertyOwner):
+             seller.remove_property(unit_id)
+        elif seller and hasattr(seller, "owned_properties"):
+             # Legacy/Other agents fallback
+             if hasattr(seller, "remove_property"):
+                  seller.remove_property(unit_id)
+             elif unit_id in seller.owned_properties:
+                  seller.owned_properties.remove(unit_id)
 
         # Update Buyer
-        if isinstance(buyer, Household):
+        if isinstance(buyer, IPropertyOwner):
             buyer.add_property(unit_id)
 
             # Auto-move-in if homeless
-            if buyer.residing_property_id is None:
-                unit.occupant_id = buyer.id
-                buyer.residing_property_id = unit_id
-                buyer.is_homeless = False
+            if isinstance(buyer, IResident):
+                if buyer.residing_property_id is None:
+                    unit.occupant_id = buyer.id
+                    buyer.residing_property_id = unit_id
+                    buyer.is_homeless = False
         elif hasattr(buyer, "owned_properties"):
             if unit_id not in buyer.owned_properties:
                 buyer.owned_properties.append(unit_id)
