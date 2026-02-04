@@ -36,6 +36,7 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
+| TD-223 | 2026-02-04 | Loan DTO Duplication | Conflict between MortgageApplication and Request DTOs | [Review](../../_archive/gemini_output/pr_review_loan-saga-pattern-7704923262937636606.md) | **LOW** |
 | (No Active Items) | | | | | |
 
 ## 🧱 7. INFRASTRUCTURE & TESTING
@@ -59,7 +60,7 @@
 | (No Active Items) | | | | | |
 | TD-204 | 2026-02-03 | BubbleObservatory SRP | God class risk | [Insight](../../communications/insights/TD-161_SRP.md) | **MEDIUM** |
 | TD-205 | 2026-02-03 | Phase3_Transaction God Class | Responsibility overload | [Insight](../../communications/insights/TD-161_SRP.md) | **MEDIUM** |
-| TD-188 | 2026-02-04 | Dual Liquidation Logic Conflict | Write-off (Firm) vs Sell-off (Manager) mismatch | [Insight](../../communications/insights/TD-187_LIQUIDATION_REFACTOR.md) | **MEDIUM** |
+| TD-225 | 2026-02-04 | Dual Liquidation Logic Conflict | Write-off (Firm) vs Sell-off (Manager) mismatch | [Insight](../../communications/insights/TD-187_LIQUIDATION_REFACTOR.md) | **MEDIUM** |
 | TD-208 | (RESOLVED) | | | | |
 | TD-209 | 2026-02-04 | Hardcoded Agent Identifiers | String-based IDs in Registry | [Review](../../_archive/gemini_output/pr_review_liquidation-manager-srp-1350862452554077041.md) | **MEDIUM** |
 | TD-213 | 2026-02-03 | Multi-Currency Transition Debt | Logic still dependent on `DEFAULT_CURRENCY` | [Insight](../../communications/insights/PH33_DEBUG.md) | **MEDIUM** |
