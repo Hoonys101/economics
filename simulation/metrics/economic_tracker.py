@@ -8,7 +8,8 @@ if TYPE_CHECKING:
 from simulation.core_agents import Household
 from simulation.firms import Firm
 from simulation.core_markets import Market
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+from modules.finance.exchange.engine import CurrencyExchangeEngine
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,8 @@ class EconomicIndicatorTracker:
             "total_sales_volume": [],
         }
         self.config_module = config_module  # Store config_module
+        self.exchange_engine = CurrencyExchangeEngine(config_module) # TD-213: Initialize Exchange Engine
+
         self.all_fieldnames: List[
             str
         ] = [  # Keep for record structure, but not for CSV writing
@@ -53,6 +56,24 @@ class EconomicIndicatorTracker:
             "avg_survival_need",
         ]
         self.logger = logging.getLogger(__name__)
+
+    def _calculate_total_wallet_value(self, wallet_dict: Dict[CurrencyCode, float]) -> float:
+        """
+        TD-213: Calculates total value of a wallet in DEFAULT_CURRENCY.
+        Iterates over all currencies and converts them using CurrencyExchangeEngine.
+        """
+        total = 0.0
+        if not wallet_dict:
+            return 0.0
+
+        # Optimize: if only DEFAULT_CURRENCY exists
+        if len(wallet_dict) == 1 and DEFAULT_CURRENCY in wallet_dict:
+            return wallet_dict[DEFAULT_CURRENCY]
+
+        for currency, amount in wallet_dict.items():
+            if amount == 0: continue
+            total += self.exchange_engine.convert(amount, currency, DEFAULT_CURRENCY)
+        return total
 
     def track(
         self,
@@ -73,10 +94,11 @@ class EconomicIndicatorTracker:
         record["money_supply"] = money_supply
 
         # Perform calculations...
-        # TD-213: Tracks only DEFAULT_CURRENCY assets. Multi-currency support requires exchange rate normalization.
+        # TD-213: Tracks all assets converted to DEFAULT_CURRENCY.
         total_household_assets = sum(
-            h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0) for h in households if h._bio_state.is_active
+            self._calculate_total_wallet_value(h._econ_state.assets) for h in households if h._bio_state.is_active
         )
+
         # WO-106: Initial Sink Fix
         # Use get_financial_snapshot to include Capital Stock and Inventory in Total Assets
         total_firm_assets = 0.0
@@ -84,11 +106,25 @@ class EconomicIndicatorTracker:
              if not getattr(f, "is_active", False):
                  continue
 
+             firm_wallet_value = self._calculate_total_wallet_value(f.assets)
+
              if hasattr(f, "get_financial_snapshot"):
                  snap = f.get_financial_snapshot()
-                 total_firm_assets += snap.get("total_assets", f.assets.get(DEFAULT_CURRENCY, 0.0))
+                 # TD-213: Snapshot flaw fix.
+                 # snap["total_assets"] includes USD cash, inventory, capital stock.
+                 # We want: (All Cash converted to USD) + Inventory + Capital Stock
+                 # So we subtract USD cash from snap["total_assets"] and add firm_wallet_value.
+
+                 snap_total_assets = snap.get("total_assets", 0.0)
+                 # Reconstruct non-cash assets (Inventory + Capital Stock)
+                 # Assumption: get_financial_snapshot uses f.assets.get(DEFAULT_CURRENCY)
+                 usd_cash_in_snapshot = f.assets.get(DEFAULT_CURRENCY, 0.0)
+
+                 non_cash_assets = snap_total_assets - usd_cash_in_snapshot
+                 total_firm_assets += firm_wallet_value + non_cash_assets
              else:
-                 total_firm_assets += f.assets.get(DEFAULT_CURRENCY, 0.0)
+                 total_firm_assets += firm_wallet_value
+
         record["total_household_assets"] = total_household_assets
         record["total_firm_assets"] = total_firm_assets
 
@@ -294,33 +330,33 @@ class EconomicIndicatorTracker:
         This calculation excludes the Central Bank's balance which is used for
         system-level integrity checks.
 
-        TD-213: Currently tracks only DEFAULT_CURRENCY.
+        TD-213: Aggregates all currency holdings converted to DEFAULT_CURRENCY.
         """
         total = 0.0
 
         # 1. Households
         for h in world_state.households:
             if h._bio_state.is_active:
-                total += h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0)
+                total += self._calculate_total_wallet_value(h._econ_state.assets)
 
         # 2. Firms
         for f in world_state.firms:
             if getattr(f, "is_active", False):
-                total += f.assets.get(DEFAULT_CURRENCY, 0.0)
+                total += self._calculate_total_wallet_value(f.assets)
 
         # 3. Bank Reserves
         if world_state.bank:
             if isinstance(world_state.bank.assets, dict):
-                 total += world_state.bank.assets.get(DEFAULT_CURRENCY, 0.0)
+                 total += self._calculate_total_wallet_value(world_state.bank.assets)
             else:
-                 total += world_state.bank.assets
+                 total += world_state.bank.assets # Fallback for scalar
 
         # 4. Government Assets
         if world_state.government:
              if isinstance(world_state.government.assets, dict):
-                 total += world_state.government.assets.get(DEFAULT_CURRENCY, 0.0)
+                 total += self._calculate_total_wallet_value(world_state.government.assets)
              else:
-                 total += world_state.government.assets
+                 total += world_state.government.assets # Fallback for scalar
 
         # NOTE: world_state.central_bank.assets is INTENTIONALLY EXCLUDED.
 
