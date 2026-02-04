@@ -1,0 +1,232 @@
+diff --git a/communications/insights/mission_fix_leak.md b/communications/insights/mission_fix_leak.md
+new file mode 100644
+index 00000000..7a2b9ee7
+--- /dev/null
++++ b/communications/insights/mission_fix_leak.md
+@@ -0,0 +1,22 @@
++# Mission Insight: Fix Leak and Arithmetic Errors
++
++## Technical Debt Addressed
++
++1.  **Multi-Currency Support in Financial Calls**:
++    *   Updated `IFinancialEntity.deposit` and `withdraw` calls in `SettlementSystem` and `TransactionManager` to explicitly pass `currency=DEFAULT_CURRENCY`.
++    *   This ensures that future multi-currency features won't silently default to USD without explicit intent.
++    *   Updated `CentralBank` internal asset management to respect currency arguments.
++
++2.  **Arithmetic Safety with Dictionaries**:
++    *   Fixed `ProductionDepartment` and `SalesDepartment` where `Dict[CurrencyCode, float]` (e.g., `balance`, `revenue_this_turn`) was being treated as `float`.
++    *   This prevents runtime crashes (`AttributeError: 'float' object has no attribute 'get'` or `TypeError`).
++
++3.  **Trace Leak Verification**:
++    *   Verified `trace_leak.py` passes with `0.0000` leak.
++    *   Ensured that Mock agents in tests align with the system's explicit currency usage.
++
++## Insights
++
++*   **Type Safety Risks**: The transition from `float` assets/revenue to `Dict` requires careful auditing of all arithmetic operations. `mypy` or similar static analysis would catch these, but runtime checks or strict DTO typing is crucial.
++*   **Explicit vs Implicit**: Explicitly passing `currency` makes the code more verbose but significantly safer for a multi-currency simulation. Implicit defaults hide assumptions that break when new currencies are introduced.
++*   **Test Alignment**: Unit tests must mirror the production architecture. `test_marketing_roi.py` was failing because it mocked data as `float` while the system now enforces `Dict`. Tests should be updated alongside refactors.
+diff --git a/simulation/agents/central_bank.py b/simulation/agents/central_bank.py
+index cf5f6adf..04bd0c55 100644
+--- a/simulation/agents/central_bank.py
++++ b/simulation/agents/central_bank.py
+@@ -197,15 +197,15 @@ class CentralBank(ICurrencyHolder):
+             }
+         )
+ 
+-    def _internal_add_assets(self, amount: float) -> None:
++    def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         """[INTERNAL ONLY] Increase cash reserves."""
+-        self.wallet.add(amount, memo="Internal Add")
++        self.wallet.add(amount, currency=currency, memo="Internal Add")
+ 
+-    def _internal_sub_assets(self, amount: float) -> None:
++    def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         """[INTERNAL ONLY] Decrease cash reserves."""
+         # Central Bank can withdraw (create money) even if it results in negative cash
+         # This represents expansion of the monetary base.
+-        self.wallet.subtract(amount, memo="Internal Sub")
++        self.wallet.subtract(amount, currency=currency, memo="Internal Sub")
+ 
+     def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         """Deposits a given amount into the central bank's cash reserves."""
+diff --git a/simulation/components/production_department.py b/simulation/components/production_department.py
+index 735a4952..6e3213ab 100644
+--- a/simulation/components/production_department.py
++++ b/simulation/components/production_department.py
+@@ -121,9 +121,11 @@ class ProductionDepartment:
+                      wage_bill += wage
+ 
+                  # Refactor: Use finance.balance instead of firm.assets
+-                 if self.firm.finance.balance < wage_bill:
++                 # Fix: Handle Dict[CurrencyCode, float] vs float comparison
++                 cash_balance = self.firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
++                 if cash_balance < wage_bill:
+                      reason = "LIQUIDITY_CRUNCH"
+-                     context = {"cash": self.firm.finance.balance, "wage_bill": wage_bill}
++                     context = {"cash": cash_balance, "wage_bill": wage_bill}
+ 
+                  # 3. Check Input Shortage
+                  elif produced_quantity > 0:
+diff --git a/simulation/components/sales_department.py b/simulation/components/sales_department.py
+index d4f3a9ac..d805962e 100644
+--- a/simulation/components/sales_department.py
++++ b/simulation/components/sales_department.py
+@@ -7,6 +7,7 @@ if TYPE_CHECKING:
+     from simulation.markets.order_book_market import OrderBookMarket
+ 
+ from simulation.models import Order
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ class SalesDepartment:
+     """Handles the sales and marketing logic for a firm."""
+@@ -55,12 +56,16 @@ class SalesDepartment:
+         # Skip first tick or zero previous spend
+         # Note: We use last_marketing_spend from PREVIOUS tick to calculate ROI of THAT spend.
+         # But we also need to avoid division by zero.
++
++        # Fix: Extract DEFAULT_CURRENCY from revenue_this_turn (Dict)
++        current_revenue = self.firm.finance.revenue_this_turn.get(DEFAULT_CURRENCY, 0.0)
++
+         if delta_spend <= 0 or self.firm.finance.last_marketing_spend <= 0:
+-            self.firm.finance.last_revenue = self.firm.finance.revenue_this_turn
++            self.firm.finance.last_revenue = current_revenue
+             self.firm.finance.last_marketing_spend = self.firm.marketing_budget
+             return
+ 
+-        delta_revenue = self.firm.finance.revenue_this_turn - self.firm.finance.last_revenue
++        delta_revenue = current_revenue - self.firm.finance.last_revenue
+         efficiency = delta_revenue / self.firm.finance.last_marketing_spend
+ 
+         # Decision Rules
+@@ -78,7 +83,7 @@ class SalesDepartment:
+             self.firm.marketing_budget_rate = max(min_rate, self.firm.marketing_budget_rate * 0.9)
+ 
+         # Update tracking
+-        self.firm.finance.last_revenue = self.firm.finance.revenue_this_turn
++        self.firm.finance.last_revenue = current_revenue
+         self.firm.finance.last_marketing_spend = self.firm.marketing_budget
+ 
+     def set_price(self, item_id: str, price: float) -> None:
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index cc083cf3..b56b9f16 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -277,7 +277,7 @@ class SettlementSystem(ISettlementSystem):
+ 
+             try:
+                 # Direct Deposit (Source is Void/Escrow)
+-                recipient.deposit(amount)
++                recipient.deposit(amount, currency=DEFAULT_CURRENCY)
+                 total_distributed += amount
+ 
+                 # Create Receipt
+@@ -596,7 +596,7 @@ class SettlementSystem(ISettlementSystem):
+             if amount <= 0:
+                 continue
+             try:
+-                credit_agent.deposit(amount)
++                credit_agent.deposit(amount, currency=DEFAULT_CURRENCY)
+                 completed_credits.append((credit_agent, amount))
+             except Exception as e:
+                 self.logger.error(
+@@ -606,13 +606,13 @@ class SettlementSystem(ISettlementSystem):
+                 # 1. Reverse completed credits
+                 for ca, amt in completed_credits:
+                     try:
+-                        ca.withdraw(amt)
++                        ca.withdraw(amt, currency=DEFAULT_CURRENCY)
+                     except Exception as rb_err:
+                         self.logger.critical(f"SETTLEMENT_FATAL | Credit Rollback failed for {ca.id}. {rb_err}")
+ 
+                 # 2. Refund debit agent
+                 try:
+-                    debit_agent.deposit(total_debit)
++                    debit_agent.deposit(total_debit, currency=DEFAULT_CURRENCY)
+                 except Exception as rb_err:
+                     self.logger.critical(f"SETTLEMENT_FATAL | Debit Refund failed for {debit_agent.id}. {rb_err}")
+ 
+diff --git a/simulation/systems/transaction_manager.py b/simulation/systems/transaction_manager.py
+index 4e6d6a66..394459e6 100644
+--- a/simulation/systems/transaction_manager.py
++++ b/simulation/systems/transaction_manager.py
+@@ -12,6 +12,7 @@ from simulation.dtos.api import SimulationState
+ from simulation.models import Transaction
+ from simulation.core_agents import Household
+ from simulation.firms import Firm
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -69,7 +70,7 @@ class TransactionManager(SystemInterface):
+                 # Debit Buyer & Credit Public Manager
+                 try:
+                     # Manually withdraw from buyer (simulating payment to system)
+-                    buyer.withdraw(trade_value)
++                    buyer.withdraw(trade_value, currency=DEFAULT_CURRENCY)
+ 
+                     # Credit Public Manager Treasury
+                     if hasattr(state, "public_manager") and state.public_manager:
+@@ -162,7 +163,13 @@ class TransactionManager(SystemInterface):
+ 
+                 # Solvency Check (Legacy compatibility)
+                 if hasattr(buyer, 'check_solvency'):
+-                    if buyer.assets < total_cost:
++                    buyer_assets = buyer.assets
++                    if isinstance(buyer_assets, dict):
++                         buyer_assets = buyer_assets.get(DEFAULT_CURRENCY, 0.0)
++                    elif hasattr(buyer, 'wallet'):
++                         buyer_assets = buyer.wallet.get_balance(DEFAULT_CURRENCY)
++
++                    if buyer_assets < total_cost:
+                         buyer.check_solvency(government)
+ 
+                 # --- 3-Step Escrow Logic (Atomic) ---
+diff --git a/tests/unit/test_marketing_roi.py b/tests/unit/test_marketing_roi.py
+index b9df55bc..d713fd56 100644
+--- a/tests/unit/test_marketing_roi.py
++++ b/tests/unit/test_marketing_roi.py
+@@ -3,6 +3,7 @@ from unittest.mock import Mock, MagicMock
+ import config
+ from simulation.firms import Firm
+ from tests.utils.factories import create_firm_config_dto
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ class TestMarketingROI(unittest.TestCase):
+     def setUp(self):
+@@ -48,7 +49,7 @@ class TestMarketingROI(unittest.TestCase):
+         # Step 2: Current tick - High Revenue Increase
+         # Target Efficiency: delta_revenue / last_spend > 1.5
+         # 1.6 = (Current_Rev - 1000) / 100 => Current_Rev - 1000 = 160 => Current_Rev = 1160
+-        self.firm.finance.revenue_this_turn = 1200.0  # Delta = 200, Eff = 2.0
++        self.firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 1200.0}  # Delta = 200, Eff = 2.0
+ 
+         # Run adjustment
+         self.firm._adjust_marketing_budget()
+@@ -69,7 +70,7 @@ class TestMarketingROI(unittest.TestCase):
+         # Step 2: Current tick - Low Revenue Increase
+         # Target Efficiency: delta_revenue / last_spend < 0.8
+         # 0.5 = (Current_Rev - 1000) / 100 => Current_Rev = 1050
+-        self.firm.finance.revenue_this_turn = 1050.0 # Delta = 50, Eff = 0.5
++        self.firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 1050.0} # Delta = 50, Eff = 0.5
+ 
+         # Run adjustment
+         self.firm._adjust_marketing_budget()
+@@ -86,7 +87,7 @@ class TestMarketingROI(unittest.TestCase):
+         self.firm.last_revenue = 1000.0
+ 
+         # High Efficiency scenario, but saturated
+-        self.firm.finance.revenue_this_turn = 1500.0 # Delta = 500, Eff = 5.0 (Very High)
++        self.firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 1500.0} # Delta = 500, Eff = 5.0 (Very High)
+         self.firm.brand_manager.brand_awareness = 0.95 # Saturated (> 0.9)
+ 
+         # Run adjustment
+@@ -100,7 +101,7 @@ class TestMarketingROI(unittest.TestCase):
+         """Test that adjustment is skipped on first tick (no previous spend)."""
+         self.firm.last_marketing_spend = 0.0
+         self.firm.marketing_budget = 50.0
+-        self.firm.finance.revenue_this_turn = 100.0
++        self.firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 100.0}
+ 
+         self.firm._adjust_marketing_budget()
+ 

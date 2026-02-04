@@ -120,10 +120,10 @@ class ProductionDepartment:
                      wage = self.firm.hr.calculate_wage(employee, base)
                      wage_bill += wage
 
-                 # Refactor: Use finance.balance instead of firm.assets
-                 if self.firm.finance.balance < wage_bill:
+                 balance_usd = self.firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+                 if balance_usd < wage_bill:
                      reason = "LIQUIDITY_CRUNCH"
-                     context = {"cash": self.firm.finance.balance, "wage_bill": wage_bill}
+                     context = {"cash": balance_usd, "wage_bill": wage_bill}
 
                  # 3. Check Input Shortage
                  elif produced_quantity > 0:

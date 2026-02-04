@@ -18,6 +18,7 @@
 
 ### 4. 지식 및 매뉴얼화 (Knowledge & Manualization)
 - **Insight Reporting Check**: 이번 구현 과정에서 발견된 기술 부채나 인사이트가 `communications/insights/[Mission_Key].md` 파일에 기록되었는지 확인하십시오.
+- **Insight Evaluation**: Jules(수행자)가 작성한 인사이트의 기술적 깊이와 정확성을 평가하십시오. 단순히 "작성됨"을 확인하는 것을 넘어, 내용의 타당성을 검토해야 합니다.
 - **Decentralized Protocol**: 공용 매뉴얼(`design/2_operations/ledgers/TECH_DEBT_LEDGER.md` 등)을 직접 수정하는 대신, 미션별 독립 로그 파일이 생성되었는지 검토하십시오.
 - **Template Match**: 기록된 인사이트가 `현상/원인/해결/교훈` 형식을 준수하고 실제 코드 기반의 구체적인 정보를 담고 있는지 확인하십시오.
 
@@ -32,7 +33,10 @@
 2.  **🚨 Critical Issues**: 즉시 수정이 필요한 보안 위반, 돈 복사 버그, 하드코딩.
 3.  **⚠️ Logic & Spec Gaps**: 기획 의도와 다른 구현, 누락된 기능, 잠재적 버그.
 4.  **💡 Suggestions**: 더 나은 구현 방법이나 리팩토링 제안.
-5.  **🧠 Manual Update Proposal**: 
+5.  **🧠 Implementation Insight Evaluation**:
+    - **Original Insight**: [Jules가 작성한 `communications/insights/*.md`의 내용을 그대로 인용]
+    - **Reviewer Evaluation**: [원문 인사이트에 대한 검토 및 가치 평가. 지적된 기술 부채나 교훈이 타당한지, 누락된 통찰은 없는지 기술]
+6.  **📚 Manual Update Proposal**: 
     - **Target File**: [인사이트를 추가할 기존 파일 경로 (예: `design/2_operations/ledgers/ECONOMIC_INSIGHTS.md`)]
     - **Update Content**: [해당 파일의 템플릿에 맞춘 구체적인 업데이트 내용]
 6.  **✅ Verdict**:
