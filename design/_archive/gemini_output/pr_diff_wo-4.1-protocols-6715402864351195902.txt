@@ -1,0 +1,361 @@
+diff --git a/communications/insights/WO-4.1.md b/communications/insights/WO-4.1.md
+new file mode 100644
+index 0000000..c05f569
+--- /dev/null
++++ b/communications/insights/WO-4.1.md
+@@ -0,0 +1,22 @@
++# WO-4.1 Market Handler Abstraction Insights
++
++## Status
++- **Date**: 2025-05-23
++- **Author**: Jules
++- **Mission**: WO-4.1 Market Decoupling (TD-215)
++
++## Overview
++Successfully decoupled `HousingTransactionHandler` and `HousingService` from the concrete `Household` class using Protocol-based abstractions (`IPropertyOwner`, `IResident`, `IMortgageBorrower`).
++
++## Technical Insights
++1.  **Protocol Adoption**: The introduction of `IMortgageBorrower` allows for any agent to potentially apply for a mortgage, provided they expose `assets` (Dict) and `current_wage`. Currently, only `Household` fits this, but `Firm` could be adapted if `current_wage` is generalized to `monthly_income`.
++2.  **Asset Type Safety**: During refactoring, a potential bug was identified and fixed in `HousingTransactionHandler`. The original code accessed `buyer.assets` which returns a `Dict` for Households, but performed a less-than comparison with a float (`down_payment`). The refactored code correctly extracts `DEFAULT_CURRENCY` from the asset dictionary.
++3.  **Legacy Support**: `HousingService` and `HousingTransactionHandler` still retain `hasattr` checks for `owned_properties` and `assets` to support legacy agents or non-conforming agents (like `Firm` which has `assets` as property but might not implement `IMortgageBorrower`).
++
++## Technical Debt / Future Work
++1.  **EscrowAgent Dependency**: `HousingTransactionHandler` relies on `isinstance(a, EscrowAgent)` to find the escrow agent. This makes testing difficult and couples the handler to the concrete implementation. Recommend introducing `IEscrowAgent`.
++2.  **Firm Mortgage Eligibility**: `Firm` cannot currently implement `IMortgageBorrower` because it lacks `current_wage`. If commercial mortgages are needed, the protocol should be generalized (e.g., `get_monthly_income()`).
++3.  **Cleanup**: Once all relevant agents implement `IPropertyOwner` and `IMortgageBorrower`, the `hasattr` fallback logic should be removed to enforce stricter typing.
++
++## Verification
++- Created `tests/test_wo_4_1_protocols.py` verifying that a `MockAgent` implementing the protocols can successfully navigate the housing transaction saga.
+diff --git a/modules/common/interfaces.py b/modules/common/interfaces.py
+new file mode 100644
+index 0000000..995fd35
+--- /dev/null
++++ b/modules/common/interfaces.py
+@@ -0,0 +1,26 @@
++from typing import Protocol, List, Dict, Any, Optional, runtime_checkable
++from modules.system.api import CurrencyCode
++
++@runtime_checkable
++class IPropertyOwner(Protocol):
++    """Protocol for agents that can own real estate properties."""
++    owned_properties: List[int]
++
++    def add_property(self, property_id: int) -> None:
++        ...
++
++    def remove_property(self, property_id: int) -> None:
++        ...
++
++@runtime_checkable
++class IResident(Protocol):
++    """Protocol for agents that can reside in a property."""
++    residing_property_id: Optional[int]
++    is_homeless: bool
++
++@runtime_checkable
++class IMortgageBorrower(Protocol):
++    """Protocol for agents that can apply for a mortgage."""
++    id: int
++    assets: Dict[CurrencyCode, float]
++    current_wage: float
+diff --git a/modules/housing/service.py b/modules/housing/service.py
+index 26f710a..79591ff 100644
+--- a/modules/housing/service.py
++++ b/modules/housing/service.py
+@@ -4,6 +4,7 @@ import logging
+ 
+ from modules.housing.api import IHousingService
+ from modules.finance.api import LienDTO
++from modules.common.interfaces import IPropertyOwner, IResident
+ 
+ if TYPE_CHECKING:
+     from simulation.dtos.api import SimulationState
+@@ -99,10 +100,14 @@ class HousingService(IHousingService):
+                 unit.owner_id = buyer.id
+ 
+                 if seller:
+-                     if hasattr(seller, "owned_properties") and unit_id in seller.owned_properties:
++                     if isinstance(seller, IPropertyOwner):
++                          seller.remove_property(unit_id)
++                     elif hasattr(seller, "owned_properties") and unit_id in seller.owned_properties:
+                           seller.owned_properties.remove(unit_id)
+ 
+-                if hasattr(buyer, "owned_properties"):
++                if isinstance(buyer, IPropertyOwner):
++                     buyer.add_property(unit_id)
++                elif hasattr(buyer, "owned_properties"):
+                      buyer.owned_properties.append(unit_id)
+ 
+                 self.logger.info(f"RE_TX | Unit {unit_id} transferred from {seller_id} to {buyer.id}")
+@@ -144,19 +149,22 @@ class HousingService(IHousingService):
+ 
+             # Update Seller (if not None/Govt)
+             if seller:
+-                if hasattr(seller, "owned_properties"):
++                if isinstance(seller, IPropertyOwner):
++                    seller.remove_property(unit_id)
++                elif hasattr(seller, "owned_properties"):
+                     if unit_id in seller.owned_properties:
+                         seller.owned_properties.remove(unit_id)
+ 
+             # Update Buyer
+             if buyer:
+-                if hasattr(buyer, "owned_properties"):
++                if isinstance(buyer, IPropertyOwner):
++                    buyer.add_property(unit_id)
++                elif hasattr(buyer, "owned_properties"):
+                     if unit_id not in buyer.owned_properties:
+                         buyer.owned_properties.append(unit_id)
+ 
+                 # Housing System Logic: Auto-move-in if homeless
+-                from simulation.core_agents import Household
+-                if isinstance(buyer, Household):
++                if isinstance(buyer, IResident):
+                     if buyer.residing_property_id is None:
+                         unit.occupant_id = buyer.id
+                         buyer.residing_property_id = unit_id
+diff --git a/modules/market/handlers/housing_transaction_handler.py b/modules/market/handlers/housing_transaction_handler.py
+index c9e0ce9..07bac40 100644
+--- a/modules/market/handlers/housing_transaction_handler.py
++++ b/modules/market/handlers/housing_transaction_handler.py
+@@ -5,7 +5,8 @@ from simulation.models import Transaction
+ from modules.market.api import IHousingTransactionHandler, HousingConfigDTO
+ from modules.finance.api import BorrowerProfileDTO, LienDTO
+ from modules.system.escrow_agent import EscrowAgent
+-from simulation.core_agents import Household
++from modules.common.interfaces import IPropertyOwner, IResident, IMortgageBorrower
++from modules.system.api import DEFAULT_CURRENCY
+ from simulation.firms import Firm
+ 
+ logger = logging.getLogger(__name__)
+@@ -68,16 +69,28 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+         down_payment = sale_price
+ 
+         # Determine Mortgage Eligibility
+-        # Only Households get mortgages usually.
+-        is_household = isinstance(buyer, Household)
+-        use_mortgage = is_household and context.bank is not None
++        # Only Agents implementing IMortgageBorrower get mortgages usually.
++        is_borrower = isinstance(buyer, IMortgageBorrower)
++        use_mortgage = is_borrower and context.bank is not None
+ 
+         if use_mortgage:
+             loan_amount = sale_price * max_ltv
+             down_payment = sale_price - loan_amount
+ 
+         # Check Buyer Funds for Down Payment
+-        buyer_assets = buyer.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
++        if isinstance(buyer, IMortgageBorrower):
++            # Safe extraction for protocols using Dict assets
++            buyer_assets = buyer.assets.get(DEFAULT_CURRENCY, 0.0)
++        elif hasattr(buyer, "assets"):
++            # Legacy/Firm fallback
++            attr = getattr(buyer, "assets", 0.0)
++            if isinstance(attr, dict):
++                 buyer_assets = attr.get(DEFAULT_CURRENCY, 0.0)
++            else:
++                 buyer_assets = float(attr)
++        else:
++             buyer_assets = 0.0
++
+         if buyer_assets < down_payment:
+             context.logger.info(f"HOUSING | Buyer {buyer.id} insufficient funds for down payment {down_payment:.2f}")
+             return False
+@@ -197,20 +210,14 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+                 pass
+             return False
+ 
+-    def _create_borrower_profile(self, buyer: Household, trade_value: float, context: TransactionContext) -> BorrowerProfileDTO:
++    def _create_borrower_profile(self, buyer: Any, trade_value: float, context: TransactionContext) -> BorrowerProfileDTO:
+         gross_income = 0.0
+-        if isinstance(buyer, Household):
++        if isinstance(buyer, IMortgageBorrower) or hasattr(buyer, "current_wage"):
+              # Estimate monthly income
+              work_hours = getattr(context.config_module, "WORK_HOURS_PER_DAY", 8.0)
+              ticks_per_year = getattr(context.config_module, "TICKS_PER_YEAR", 100.0)
+              ticks_per_month = ticks_per_year / 12.0
+              gross_income = buyer.current_wage * work_hours * ticks_per_month
+-        elif hasattr(buyer, "current_wage"):
+-             # Fallback
+-             work_hours = getattr(context.config_module, "WORK_HOURS_PER_DAY", 8.0)
+-             ticks_per_year = getattr(context.config_module, "TICKS_PER_YEAR", 100.0)
+-             ticks_per_month = ticks_per_year / 12.0
+-             gross_income = buyer.current_wage * work_hours * ticks_per_month
+ 
+         existing_debt = 0.0
+         if context.bank:
+@@ -219,14 +226,21 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+                  existing_debt = status.total_outstanding_debt
+              except: pass
+ 
+-        assets = buyer.assets if isinstance(buyer, Household) else getattr(buyer, "assets", 0.0)
++        if isinstance(buyer, IMortgageBorrower):
++            assets_val = buyer.assets.get(DEFAULT_CURRENCY, 0.0)
++        else:
++            attr = getattr(buyer, "assets", 0.0)
++            if isinstance(attr, dict):
++                 assets_val = attr.get(DEFAULT_CURRENCY, 0.0)
++            else:
++                 assets_val = float(attr)
+ 
+         return BorrowerProfileDTO(
+             borrower_id=str(buyer.id),
+             gross_income=gross_income,
+             existing_debt_payments=existing_debt * 0.01, # Approx
+             collateral_value=trade_value,
+-            existing_assets=assets
++            existing_assets=assets_val
+         )
+ 
+     def _void_loan_safely(self, context: TransactionContext, loan_id: str):
+@@ -271,25 +285,25 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+              unit.liens.append(new_lien)
+ 
+         # Update Seller (if not None/Govt)
+-        if seller:
+-            if isinstance(seller, Household):
+-                 seller.remove_property(unit_id)
+-            elif hasattr(seller, "owned_properties"):
+-                 # Legacy/Other agents fallback
+-                 if hasattr(seller, "remove_property"):
+-                      seller.remove_property(unit_id)
+-                 elif unit_id in seller.owned_properties:
+-                      seller.owned_properties.remove(unit_id)
++        if seller and isinstance(seller, IPropertyOwner):
++             seller.remove_property(unit_id)
++        elif seller and hasattr(seller, "owned_properties"):
++             # Legacy/Other agents fallback
++             if hasattr(seller, "remove_property"):
++                  seller.remove_property(unit_id)
++             elif unit_id in seller.owned_properties:
++                  seller.owned_properties.remove(unit_id)
+ 
+         # Update Buyer
+-        if isinstance(buyer, Household):
++        if isinstance(buyer, IPropertyOwner):
+             buyer.add_property(unit_id)
+ 
+             # Auto-move-in if homeless
+-            if buyer.residing_property_id is None:
+-                unit.occupant_id = buyer.id
+-                buyer.residing_property_id = unit_id
+-                buyer.is_homeless = False
++            if isinstance(buyer, IResident):
++                if buyer.residing_property_id is None:
++                    unit.occupant_id = buyer.id
++                    buyer.residing_property_id = unit_id
++                    buyer.is_homeless = False
+         elif hasattr(buyer, "owned_properties"):
+             if unit_id not in buyer.owned_properties:
+                 buyer.owned_properties.append(unit_id)
+diff --git a/tests/test_wo_4_1_protocols.py b/tests/test_wo_4_1_protocols.py
+new file mode 100644
+index 0000000..8ec6eec
+--- /dev/null
++++ b/tests/test_wo_4_1_protocols.py
+@@ -0,0 +1,105 @@
++import pytest
++from unittest.mock import MagicMock, ANY
++from typing import List, Dict, Optional
++from modules.common.interfaces import IPropertyOwner, IResident, IMortgageBorrower
++from modules.market.handlers.housing_transaction_handler import HousingTransactionHandler
++from simulation.models import Transaction
++from modules.system.escrow_agent import EscrowAgent
++from modules.system.api import DEFAULT_CURRENCY
++
++class MockAgent:
++    def __init__(self, id, assets=None):
++        self.id = id
++        self.assets = assets or {DEFAULT_CURRENCY: 100000.0}
++        self.current_wage = 5000.0
++        self.owned_properties: List[int] = []
++        self.residing_property_id: Optional[int] = None
++        self.is_homeless: bool = True
++
++    def add_property(self, property_id: int) -> None:
++        self.owned_properties.append(property_id)
++
++    def remove_property(self, property_id: int) -> None:
++        if property_id in self.owned_properties:
++            self.owned_properties.remove(property_id)
++
++def test_housing_handler_with_protocol_agent():
++    # Setup
++    handler = HousingTransactionHandler()
++
++    buyer = MockAgent(id=101)
++    # Ensure buyer implements protocols (runtime check)
++    assert isinstance(buyer, IMortgageBorrower)
++    assert isinstance(buyer, IPropertyOwner)
++    assert isinstance(buyer, IResident)
++
++    seller = MockAgent(id=102)
++    seller.add_property(999)
++
++    # Context mocks
++    context = MagicMock()
++    context.time = 1
++
++    # Escrow Agent
++    escrow = EscrowAgent(id=9999)
++    context.agents = {
++        101: buyer,
++        102: seller,
++        9999: escrow
++    }
++
++    # Unit
++    unit = MagicMock()
++    unit.id = 999
++    unit.liens = []
++    context.real_estate_units = [unit]
++
++    # Config
++    context.config_module.housing = {"max_ltv_ratio": 0.8, "mortgage_term_ticks": 300}
++    context.config_module.MORTGAGE_INTEREST_RATE = 0.05
++    context.config_module.WORK_HOURS_PER_DAY = 8.0
++    context.config_module.TICKS_PER_YEAR = 100.0
++
++    # Bank
++    context.bank = MagicMock()
++    context.bank.grant_loan.return_value = ({"loan_id": "loan_1"}, MagicMock())
++    context.bank.withdraw_for_customer.return_value = True
++    context.bank.id = 8888
++
++    # Settlement
++    context.settlement_system.transfer.return_value = True
++
++    # Transaction
++    tx = Transaction(
++        buyer_id=101,
++        seller_id=102,
++        item_id="unit_999",
++        quantity=1,
++        price=1000.0,
++        market_id="housing_market",
++        transaction_type="housing",
++        time=1,
++        metadata={}
++    )
++
++    # Execute
++    result = handler.handle(tx, buyer, seller, context)
++
++    # Verify
++    assert result is True
++    assert 999 in buyer.owned_properties
++    # Mock unit update
++    assert unit.owner_id == 101
++
++    # Verify banking logic was triggered (grant_loan called)
++    context.bank.grant_loan.assert_called()
++
++    # Verify remove property called on seller
++    assert 999 not in seller.owned_properties
++
++def test_protocol_compliance():
++    """Verify MockAgent satisfies protocols via isinstance check."""
++    agent = MockAgent(1)
++    assert isinstance(agent, IMortgageBorrower)
++    assert isinstance(agent, IPropertyOwner)
++    assert isinstance(agent, IResident)

@@ -6,7 +6,7 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-214 | 2026-02-04 | `Household` God Class (Saturation) | Maintenance deadlock (>900 lines) | [Insight](../../3_work_artifacts/reports/inbound/structural-god-class-9257244532893801478_audit_structural_god_class.md) | **HIGH** |
+| (No Active Items) | | | | |
 
 ## 🏭 2. FIRMS & CORPORATE
 
@@ -24,7 +24,7 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-215 | 2026-02-04 | Abstraction Leaks in Transaction Handlers | Tight coupling to `Household`/`Firm` | [Insight](../../3_work_artifacts/reports/inbound/structural-god-class-9257244532893801478_audit_structural_god_class.md) | **MEDIUM** |
+| (No Active Items) | | | | |
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
 
@@ -66,7 +66,7 @@
 | TD-208 | 2026-02-04 | Secured Loan SRP (Liquidation) | Logic inside Manager | [Review](../../_archive/gemini_output/pr_review_liquidation-manager-srp-1350862452554077041.md) | **MEDIUM** |
 | TD-209 | 2026-02-04 | Hardcoded Agent Identifiers | String-based IDs in Registry | [Review](../../_archive/gemini_output/pr_review_liquidation-manager-srp-1350862452554077041.md) | **MEDIUM** |
 | TD-213 | 2026-02-03 | Multi-Currency Transition Debt | Logic still dependent on `DEFAULT_CURRENCY` | [Insight](../../communications/insights/PH33_DEBUG.md) | **MEDIUM** |
-| TD-217 | 2026-02-04 | Protected Member Access in Snapshotting | Assembler high coupling to internal state | [Insight](../../3_work_artifacts/reports/inbound/structural-god-class-9257244532893801478_audit_structural_god_class.md) | **LOW** |
+| (No Active Items) | | | | |
 
 ---
 
@@ -91,6 +91,9 @@
 | TD-211 | 2026-02-03 | `trace_leak.py` NameError Fix | [Spec](../../3_work_artifacts/drafts/draft_183800_Author_specification_for_Multi.md) | [Insight](../../communications/insights/PH33_DEBUG.md) |
 | TD-160 | 2026-02-04 | Non-Atomic Inheritance | Fixed via deferred asset_transfer & inheritance manager | [Merge_8a7cff1](../../files_in_commit.txt) |
 | TD-192 | 2026-02-04 | Direct Asset Manipulation in Emergency | Fixed via atomic sales_tax settlement in emergency handler | [Merge_8a7cff1](../../files_in_commit.txt) |
+| TD-214 | 2026-02-04 | `Household` God Class Decomposition | [Spec](../../3_work_artifacts/specs/WO-4.0_Household_Mixins.md) | [Insight](../../communications/insights/WO-4.0.md) |
+| TD-217 | 2026-02-04 | Protected Member Access (Snapshotting) | ^ | ^ |
+| TD-215 | 2026-02-04 | Market Handler Abstraction Leaks | [Spec](../../3_work_artifacts/specs/WO-4.1_Market_Decoupling.md) | [Review](../../_archive/gemini_output/pr_review_wo-4.1-protocols-6715402864351195902.md) |
 
 ---
 
