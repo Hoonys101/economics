@@ -9,3 +9,12 @@ chaos_events:
     type: "recession_shock"
     value: 0.5
 active_scenario: "phase29_depression"
+
+currency_exchange:
+  parity:
+    USD: 1.0
+    KRW: 1300.0
+    EUR: 0.92
+    JPY: 135.0
+    GBP: 0.79
+    CNY: 7.0
