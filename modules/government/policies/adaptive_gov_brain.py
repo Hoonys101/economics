@@ -99,6 +99,15 @@ class AdaptiveGovBrain:
                 tag=PolicyActionTag.GENERAL_ADMIN,
                 action_type="DO_NOTHING",
                 params={}
+            ),
+
+            # 4. Scapegoat (Emergency Political Action)
+            PolicyActionDTO(
+                name="Fire Advisor (Scapegoat)",
+                utility=0.0,
+                tag=PolicyActionTag.GENERAL_ADMIN,
+                action_type="FIRE_ADVISOR",
+                params={}
             )
         ]
         return candidates
@@ -154,6 +163,17 @@ class AdaptiveGovBrain:
                 next_state.approval_high_asset = max(0.0, current.approval_high_asset - 0.02)
                 next_state.gdp_growth_sma -= 0.002
 
+        elif action.action_type == "FIRE_ADVISOR":
+             # Scapegoating provides immediate temporary relief in approval
+             # Only effective if approval is low (Crisis Management)
+             # If approval is decent (> 0.4), firing advisors looks desperate/incompetent.
+             if current.approval_low_asset < 0.4 or current.approval_high_asset < 0.4:
+                 next_state.approval_low_asset = min(1.0, current.approval_low_asset + 0.20)
+                 next_state.approval_high_asset = min(1.0, current.approval_high_asset + 0.20)
+             else:
+                 # No boost, or maybe penalty? For now, just no boost.
+                 pass
+
         # DO_NOTHING assumes slight trend continuation or decay,
         # but for comparison we can keep it static or apply slight reversion.
 
@@ -163,10 +183,20 @@ class AdaptiveGovBrain:
         """
         Party-specific Utility Function.
         """
+        # WO-4.6: Political Business Cycle
+        # Election is every 100 ticks. If we are within 20 ticks of election, prioritize Approval.
+        # Assuming election happens at tick 100, 200...
+        # So tick % 100 >= 80 is "Election Near".
+        is_election_near = (state.tick % 100) >= 80
+
         if party == PoliticalParty.RED:
             # RED Utility: U = 0.7 * LowAssetApproval + 0.3 * (1 - Gini)
             # Focus on Equality and Working Class
-            u = 0.7 * state.approval_low_asset + 0.3 * (1.0 - state.gini_index)
+            if is_election_near:
+                 # Panic Mode: Ignore inequality, get votes!
+                 u = 0.9 * state.approval_low_asset + 0.1 * (1.0 - state.gini_index)
+            else:
+                 u = 0.7 * state.approval_low_asset + 0.3 * (1.0 - state.gini_index)
             return u
 
         elif party == PoliticalParty.BLUE:
@@ -175,7 +205,11 @@ class AdaptiveGovBrain:
             # Note: GDP Growth is typically small (0.02).
             # We might want to scale it or just accept it's a small component relative to approval.
             # Using raw values as per spec.
-            u = 0.6 * state.approval_high_asset + 0.4 * state.gdp_growth_sma
+            if is_election_near:
+                # Panic Mode: Ignore GDP, get votes!
+                u = 0.9 * state.approval_high_asset + 0.1 * state.gdp_growth_sma
+            else:
+                u = 0.6 * state.approval_high_asset + 0.4 * state.gdp_growth_sma
             return u
 
         return 0.0
