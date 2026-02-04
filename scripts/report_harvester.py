@@ -4,11 +4,6 @@ import re
 from typing import List, Set
 
 # Configuration
-BRANCH_PATTERNS = [
-    "refactor*", "observer*", "audit*", "structural*", "parity*", "economic*", 
-    "wo*", "mission*", "phenomena*", "verify*", "feat*", "fix*", "cleanup*",
-    "*-action-plan-*", "*-proposal-*", "*-audit-*", "*-report-*"
-]
 REPORT_DIRS = ["design/3_work_artifacts/reports/", "design/_archive/gemini_output/", "design/gemini_output/", "reports/"]
 LOCAL_STORAGE_DIR = "design/3_work_artifacts/reports/inbound/"
 LOG_FILE = "design/2_operations/ledgers/INBOUND_REPORTS.md"
@@ -38,27 +33,13 @@ def get_remote_branches() -> List[str]:
         branch = line.strip()
         if not branch or "->" in branch:
             continue
+        # Exclude main to avoid empty diff comparisons
+        if branch == "origin/main":
+            continue
         all_remote_branches.append(branch)
 
-    # 1. Mandatory: Top 3 latest 'audit-' branches (The Audit Triad)
-    audit_branches = [b for b in all_remote_branches if b.startswith("origin/audit-")]
-    top_audit_triad = audit_branches[:3]
-    
-    # 2. Optional: Other matching branches (wo-*, phenomena-*, etc.)
-    other_matches = []
-    for branch in all_remote_branches:
-        if branch in top_audit_triad:
-            continue
-        clean_name = branch.replace("origin/", "")
-        for pattern in BRANCH_PATTERNS:
-            if pattern.startswith("audit"): continue # Already handled separately
-            regex = pattern.replace("*", ".*").replace("-", "[-/]")
-            if re.match(f"^{regex}$", clean_name, re.IGNORECASE):
-                other_matches.append(branch)
-                break
-    
-    final_list = top_audit_triad + other_matches
-    return list(set(final_list))
+    # Return only the top 3 latest branches (Recency-based harvesting)
+    return all_remote_branches[:3]
 
 def get_new_files_in_branch(branch: str) -> List[str]:
     # Use 'git diff origin/main...branch' to get only files changed/added in this branch relative to main
