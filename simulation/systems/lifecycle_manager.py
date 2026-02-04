@@ -272,6 +272,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             # TD-187: Liquidation Waterfall Protocol (Prioritized Claims)
             # Must run BEFORE employees are cleared to calculate severance/wages
             # AND before PublicManager seizure (now handled internally by LiquidationManager)
+            # WO-212: initiate_liquidation now handles "Firm Write-offs" (Inventory, Capital Stock) atomically.
             self.liquidation_manager.initiate_liquidation(firm, state)
 
             # Clear employees
@@ -280,8 +281,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                     employee.is_employed = False
                     employee.employer_id = None
             firm.hr.employees = []
-            firm.inventory.clear()
-            firm.capital_stock = 0.0
+            # firm.inventory and firm.capital_stock are cleared in initiate_liquidation -> firm.liquidate_assets
 
             # Record Liquidation (Destruction of real assets & Escheatment)
             # Only Capital Stock is destroyed now (machines, buildings), inventory is recovered.

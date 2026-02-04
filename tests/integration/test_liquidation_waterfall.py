@@ -8,7 +8,7 @@ from simulation.firms import Firm
 from simulation.core_agents import Household
 from simulation.dtos.api import SimulationState
 from simulation.dtos.config_dtos import FirmConfigDTO
-from modules.system.api import IAssetRecoverySystem
+from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY
 from modules.system.registry import AgentRegistry
 from modules.hr.service import HRService
 from modules.finance.service import TaxService
@@ -49,6 +49,10 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         self.firm.finance = MagicMock()
         self.firm.finance.balance = 0.0 # Start with 0 cash
         self.firm.finance.current_profit = 0.0 # Fix 1
+
+        # Configure liquidate_assets to return current balance
+        self.firm.liquidate_assets.side_effect = lambda tick: self.firm.finance.balance
+
         self.firm.inventory = {}
         self.firm.last_prices = {}
         self.firm.hr = MagicMock()
@@ -245,7 +249,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         self.state.agents[101] = emp
 
         # To simulate cash update after transfer, we need side_effect on transfer
-        def transfer_side_effect(sender, receiver, amount, memo):
+        def transfer_side_effect(sender, receiver, amount, memo, currency=None):
             if receiver == self.firm:
                 self.firm.finance.balance += amount
             return True
@@ -261,7 +265,8 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
             self.mock_public_manager,
             self.firm,
             800.0,
-            "Asset Liquidation (Inventory) - Firm 1"
+            "Asset Liquidation (Inventory) - Firm 1",
+            currency=DEFAULT_CURRENCY
         )
 
         # 2. Firm -> Employee Transfer (500.0)

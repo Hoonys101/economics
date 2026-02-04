@@ -49,15 +49,14 @@ class LiquidationManager:
         current_tick = state.time
 
         # 0. Asset Liquidation (TD-187-LEAK Fix)
-        # Use registered handlers to liquidate assets.
+        # Use registered handlers to liquidate assets (Sell-offs).
         for handler in self.handlers:
             handler.liquidate(firm, state)
 
-        # Re-fetch cash after liquidation
-        available_cash_raw = firm.finance.balance
-        available_cash = available_cash_raw
-        if isinstance(available_cash_raw, dict):
-            available_cash = available_cash_raw.get(DEFAULT_CURRENCY, 0.0)
+        # 1. Firm Write-offs (WO-212 Atomicity)
+        # Write off remaining assets (Inventory, Capital Stock) and finalize bankruptcy.
+        # Returns the final cash balance for distribution.
+        available_cash = firm.liquidate_assets(state.time)
 
         all_claims: List[Claim] = []
 
