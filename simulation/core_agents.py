@@ -114,7 +114,7 @@ class Household(
         self.social_component = SocialComponent()
         self.consumption_manager = ConsumptionManager()
         self.decision_unit = DecisionUnit()
-        self.political_component = PoliticalComponent(personality)
+        self.political_component = PoliticalComponent()
 
         # --- Initialize Internal State DTOs ---
 
@@ -244,6 +244,11 @@ class Household(
             self._social_state.desire_weights = {"survival": 1.0, "asset": 0.5, "social": 0.5, "improvement": 1.5, "quality": 1.0}
         else:
              self._social_state.desire_weights = {"survival": 1.0, "asset": 1.0, "social": 1.0, "improvement": 1.0, "quality": 1.0}
+
+        # WO-4.3: Initialize Political State
+        e_vision, t_score = self.political_component.initialize_state(personality)
+        self._social_state.economic_vision = e_vision
+        self._social_state.trust_score = t_score
 
         self.goods_info_map = {g["id"]: g for g in goods_data}
         self.risk_aversion = risk_aversion
