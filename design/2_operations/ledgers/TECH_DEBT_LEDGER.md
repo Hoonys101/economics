@@ -30,15 +30,13 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-187 | 2026-02-02 | Severance Pay Race Condition | Over-withdrawal during liq. | [Spec](../../3_work_artifacts/specs/TD-187_Severance_Waterfall.md) | **HIGH** |
-| TD-187-DEBT | 2026-02-03 | Hardcoded Logic in Liquidation | Breaking encapsulation | - | Refactoring |
+| (No Active Items) | | | | | |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-194 | 2026-02-03 | HouseholdStateDTO Fragmentation | Missing critical fields | - | **MEDIUM** |
-| TD-206 | 2026-02-03 | MortgageApplicationDTO Precision | Debt vs Payment mismatch | - | **MEDIUM** |
+| (No Active Items) | | | | | |
 
 ## 🧱 7. INFRASTRUCTURE & TESTING
 
@@ -47,7 +45,6 @@
 | TD-196 | 2026-02-03 | ConfigManager Tight Coupling | Hard to mock; requires manual instantiation | - | **LOW** |
 | TD-203 | 2026-02-03 | SettlementSystem Unit Test Stale | Tests not updated after Saga refactor | - | **HIGH** |
 | TD-210 | 2026-02-04 | Test Dependency Bloat (`numpy`) | `conftest.py` imports CentralBank | [Review](../../_archive/gemini_output/pr_review_settlement-system-tests-2138438581752818541.md) | **LOW** |
-| (No Active Items) | | | | | |
 | (No Active Items) | | | | | |
 
 
@@ -59,15 +56,15 @@
 | TD-183 | 2026-02-01 | Sequence Documentation | Migration gaps | - | **ACTIVE** |
 | TD-188 | 2026-02-01 | Config Path Doc Drift | `PROJECT_STATUS.md` stale | - | **ACTIVE** |
 | TD-193 | 2026-02-03 | Fragmented Politics | Spec vs Code drift | - | **WARNING** |
-| TD-197 | 2026-02-03 | HousingManager Legacy | Architectural confusion | - | **MEDIUM** |
+| (No Active Items) | | | | | |
 | TD-204 | 2026-02-03 | BubbleObservatory SRP | God class risk | [Insight](../../communications/insights/TD-161_SRP.md) | **MEDIUM** |
 | TD-205 | 2026-02-03 | Phase3_Transaction God Class | Responsibility overload | [Insight](../../communications/insights/TD-161_SRP.md) | **MEDIUM** |
-| TD-207 | 2026-02-03 | Synchronous Loan Staging | Logic drift | - | **LOW** |
-| TD-208 | 2026-02-04 | Secured Loan SRP (Liquidation) | Logic inside Manager | [Review](../../_archive/gemini_output/pr_review_liquidation-manager-srp-1350862452554077041.md) | **MEDIUM** |
+| TD-188 | 2026-02-04 | Dual Liquidation Logic Conflict | Write-off (Firm) vs Sell-off (Manager) mismatch | [Insight](../../communications/insights/TD-187_LIQUIDATION_REFACTOR.md) | **MEDIUM** |
+| TD-208 | (RESOLVED) | | | | |
 | TD-209 | 2026-02-04 | Hardcoded Agent Identifiers | String-based IDs in Registry | [Review](../../_archive/gemini_output/pr_review_liquidation-manager-srp-1350862452554077041.md) | **MEDIUM** |
 | TD-213 | 2026-02-03 | Multi-Currency Transition Debt | Logic still dependent on `DEFAULT_CURRENCY` | [Insight](../../communications/insights/PH33_DEBUG.md) | **MEDIUM** |
 | TD-220 | 2026-02-04 | Central Bank ID Mismatch (Str vs Int) | Inconsistent mapping in Wallet owner_id | [Review](../../_archive/gemini_output/pr_review_wo-4.2a-wallet-abstraction-7751802173364783425.md) | **LOW** |
-| TD-221 | 2026-02-04 | DTO Copy Policy Ambiguity (Wallet) | Shallow vs Deep copy policy for Wallet in DTOs | [Review](../../_archive/gemini_output/pr_review_wo-4.2a-wallet-abstraction-7751802173364783425.md) | **LOW** |
+| TD-224 | 2026-02-04 | Advisor-Policy Hardcoded Mapping | Firing logic coupled to tags | [Review](../../_archive/gemini_output/pr_review_wo-4.4-policy-lockout-15026198363404100995.md) | **MEDIUM** |
 | (No Active Items) | | | | |
 
 ---
@@ -98,6 +95,12 @@
 | TD-215 | 2026-02-04 | Market Handler Abstraction Leaks | [Spec](../../3_work_artifacts/specs/WO-4.1_Market_Decoupling.md) | [Review](../../_archive/gemini_output/pr_review_wo-4.1-protocols-6715402864351195902.md) |
 | TD-212 | 2026-02-04 | Legacy Assets (Float) Callers | [Spec](../../3_work_artifacts/specs/WO-4.2A_Wallet_Abstraction.md) | [Insight](../../communications/insights/WO-4.2A.md) |
 | TD-216 | 2026-02-04 | TickOrchestrator Coupling | [Spec](../../3_work_artifacts/specs/WO-4.2B_Orchestrator_Alignment.md) | [Insight](../../communications/insights/WO-4.2B_Orchestrator_Alignment.md) |
+| TD-187 | 2026-02-04 | Severance/Liquidation SRP | [Spec](../../3_work_artifacts/specs/TD-187_Severance_Waterfall.md) | [Insight](../../communications/insights/TD-187_LIQUIDATION_REFACTOR.md) |
+| TD-207 | 2026-02-04 | Loan Saga Pattern | - | [Insight](../../communications/insights/LOAN_SAGA_REFACTOR.md) |
+| TD-208 | 2026-02-04 | Liquidation Manager SRP | - | [Insight](../../communications/insights/TD-187_LIQUIDATION_REFACTOR.md) |
+| TD-197 | 2026-02-04 | HousingManager Cleanup | - | [Insight](../../communications/insights/TD-197_HousingManager_Cleanup.md) |
+| TD-194 | 2026-02-04 | Household DTO Sync | - | [Insight](../../communications/insights/TD-194_DTO_SYNC.md) |
+| TD-206 | 2026-02-04 | Mortgage DTO Precision | - | [Insight](../../communications/insights/TD-206_PRECISION.md) |
 
 ---
 

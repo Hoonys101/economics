@@ -1,0 +1,137 @@
+diff --git a/communications/insights/LOAN_SAGA_REFACTOR.md b/communications/insights/LOAN_SAGA_REFACTOR.md
+new file mode 100644
+index 0000000..84b653e
+--- /dev/null
++++ b/communications/insights/LOAN_SAGA_REFACTOR.md
+@@ -0,0 +1,26 @@
++# Mission Report: Loan Saga Refactor
++
++## 1. Overview
++This mission focuses on refactoring the `LoanManager` (specifically `LoanMarket` in `simulation/loan_market.py`) to align with the new Saga pattern guidelines, ensuring synchronous logic does not block tick flow in the future and strictly adhering to the `ILoanMarket` interface defined in `modules/finance/sagas/housing_api.py`.
++
++## 2. Technical Debt & Insights
++
++### TD-New: Interface Duplication for `ILoanMarket`
++- **Location**: `modules/market/housing_planner_api.py` and `modules/finance/sagas/housing_api.py`.
++- **Description**: Two conflicting definitions of `ILoanMarket` exist. One expects `stage_mortgage` returning `LoanDTO` (legacy/sync), the other expects `stage_mortgage_application` returning `str` (Saga/async).
++- **Impact**: Confusion in type hints and potential runtime errors if consumers assume one interface but get the implementation of the other. `HousingTransactionSagaHandler` was importing the Saga version but calling methods from the Legacy version.
++- **Resolution**: Refactoring `LoanMarket` to implement the Saga interface and updating the legacy interface definition to match.
++
++### TD-New: Synchronous Bank Dependency
++- **Location**: `simulation/loan_market.py` -> `IBankService`.
++- **Description**: `LoanMarket` depends on `IBankService.stage_loan`, which returns a `LoanDTO` immediately. This forces `LoanMarket` to be synchronous.
++- **Impact**: "Non-blocking" behavior is simulated. True async processing would require the Bank to accept a request and process it in a future tick.
++- **Mitigation**: We wrap the synchronous call in a method with an async-compatible signature (`stage_mortgage_application` returning ID), allowing future refactoring of the Bank without breaking the Loan Market interface.
++
++### Insight: DTO Alignment
++- `MortgageApplicationDTO` (Finance API) and `MortgageApplicationRequestDTO` (Loan API) are structurally similar but separate types. Sagas use the former, `LoanMarket` logic uses the latter. Duck typing (using `TypedDict` compatibility) is currently bridging this gap.
++
++## 3. Changes
++- Refactored `LoanMarket` to expose `stage_mortgage_application`.
++- Updated `HousingTransactionSagaHandler` to use the new method.
++- Updated `ILoanMarket` protocol in `modules/market/housing_planner_api.py`.
+diff --git a/modules/finance/saga_handler.py b/modules/finance/saga_handler.py
+index fc63e08..ec0327d 100644
+--- a/modules/finance/saga_handler.py
++++ b/modules/finance/saga_handler.py
+@@ -149,13 +149,13 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+         saga['loan_application'] = app_dto # type: ignore
+ 
+         # 4. Stage Mortgage
+-        staged_id_info = self.loan_market.stage_mortgage(app_dto)
+-        if not staged_id_info:
++        staged_loan_id = self.loan_market.stage_mortgage_application(app_dto)
++        if not staged_loan_id:
+              saga['error_message'] = "Loan staging rejected"
+              return self.compensate_step(saga)
+ 
+-        # stage_mortgage returns dict, get 'loan_id'
+-        saga['staged_loan_id'] = staged_id_info['loan_id']
++        # stage_mortgage_application returns str (loan_id)
++        saga['staged_loan_id'] = staged_loan_id
+ 
+         saga['status'] = "CREDIT_CHECK"
+         return saga
+diff --git a/modules/market/housing_planner_api.py b/modules/market/housing_planner_api.py
+index 30c5b37..75bbfad 100644
+--- a/modules/market/housing_planner_api.py
++++ b/modules/market/housing_planner_api.py
+@@ -83,6 +83,14 @@ class ILoanMarket(ABC):
+         """
+         ...
+ 
++    @abstractmethod
++    def stage_mortgage_application(self, application: MortgageApplicationRequestDTO) -> Optional[str]:
++         """
++         Submits an application for asynchronous credit check.
++         Returns a unique `staged_loan_id` for tracking, or None if invalid.
++         """
++         ...
++
+     @abstractmethod
+     def stage_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[dict]:
+          """
+diff --git a/simulation/loan_market.py b/simulation/loan_market.py
+index 22dfbe8..2042a0d 100644
+--- a/simulation/loan_market.py
++++ b/simulation/loan_market.py
+@@ -130,10 +130,11 @@ class LoanMarket(Market, ILoanMarket):
+         """
+         return self.stage_mortgage(application)
+ 
+-    def stage_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[LoanDTO]:
++    def stage_mortgage_application(self, application: MortgageApplicationRequestDTO) -> Optional[str]:
+         """
+-        Stages a mortgage (creates loan record) without disbursing funds.
+-        Returns LoanInfoDTO if successful, None otherwise.
++        Submits an application for asynchronous credit check.
++        Returns a unique `staged_loan_id` for tracking, or None if invalid.
++        Implements ILoanMarket (Saga) interface.
+         """
+         # 1. Evaluate
+         if not self.evaluate_mortgage_application(application):
+@@ -156,7 +157,20 @@ class LoanMarket(Market, ILoanMarket):
+             borrower_profile=None # Could construct from application
+         )
+ 
+-        return loan_info
++        if loan_info:
++            return loan_info['loan_id']
++        return None
++
++    def stage_mortgage(self, application: MortgageApplicationRequestDTO) -> Optional[LoanDTO]:
++        """
++        Legacy/Compat method.
++        Stages a mortgage (creates loan record) without disbursing funds.
++        Returns LoanInfoDTO if successful, None otherwise.
++        """
++        loan_id = self.stage_mortgage_application(application)
++        if loan_id:
++            return self.convert_staged_to_loan(loan_id)
++        return None
+ 
+     def check_staged_application_status(self, staged_loan_id: str) -> Literal["PENDING", "APPROVED", "REJECTED"]:
+         """Checks the status of a pending mortgage application."""
+diff --git a/tests/unit/markets/test_loan_market_mortgage.py b/tests/unit/markets/test_loan_market_mortgage.py
+index 19a0127..b8c10dd 100644
+--- a/tests/unit/markets/test_loan_market_mortgage.py
++++ b/tests/unit/markets/test_loan_market_mortgage.py
+@@ -116,6 +116,18 @@ class TestLoanMarketMortgage:
+             "original_amount": 80000.0
+         }
+ 
++        # Mock the loan existing in the bank for convert_staged_to_loan
++        mock_loan = MagicMock()
++        mock_loan.borrower_id = 1
++        mock_loan.principal = 80000.0
++        mock_loan.remaining_balance = 80000.0
++        mock_loan.annual_interest_rate = 0.05
++        mock_loan.origination_tick = 0
++        mock_loan.start_tick = 0
++        mock_loan.term_ticks = 360
++
++        mock_bank.loans = {"loan_123": mock_loan}
++
+         result = loan_market.stage_mortgage(app)
+         assert result is not None
+         assert result["loan_id"] == "loan_123"

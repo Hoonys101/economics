@@ -1,0 +1,237 @@
+diff --git a/communications/insights/WO-4.4.md b/communications/insights/WO-4.4.md
+new file mode 100644
+index 0000000..2e27ed7
+--- /dev/null
++++ b/communications/insights/WO-4.4.md
+@@ -0,0 +1,25 @@
++# Mission WO-4.4 Insights: Policy Lockout Manager
++
++## Overview
++Implemented `PolicyLockoutManager` to handle the "Scapegoat Mechanic" where firing an advisor locks their associated policies for a set duration (20 ticks).
++
++## Implementation Details
++- **Component**: `PolicyLockoutManager` in `modules/government/components/policy_lockout_manager.py`.
++- **Integration**: `Government` agent instantiates the manager and checks it during key actions.
++- **Trigger**: `Government.fire_advisor(school)` triggers the lockout.
++- **Enforcement**:
++    - `provide_household_support` checks `KEYNESIAN_FISCAL`.
++    - `provide_firm_bailout` checks `KEYNESIAN_FISCAL`.
++
++## Insights & Technical Debt
++
++### Insights
++1. **Government "God Object" Risk**: The `Government` class is accumulating many responsibilities (Taxation, Welfare, Infra, Monetary, Politics). While specialized managers (`WelfareManager`, `InfrastructureManager`) help, the `Government` class itself acts as a heavy facade.
++2. **Policy Tagging**: Currently, tags are checked explicitly in methods. A decorator-based approach or a `PolicyEnforcer` middleware might be cleaner for "Tag all government actions" in the future, especially if the number of tags grows.
++
++### Technical Debt
++1. **Hardcoded Mappings**: The mapping between `EconomicSchool` and `PolicyActionTag` is currently hardcoded within `Government.fire_advisor`.
++    - *Risk*: Violation of Open/Closed Principle. Adding a new school requires modifying `Government.py`.
++    - *Recommendation*: Move this mapping to `PolicyLockoutManager` or a dedicated config/enum map.
++2. **Partial Enforcement**: Only `provide_household_support` and `provide_firm_bailout` are currently guarded. Other implicit Keynesian actions (if any exist in `FiscalPolicyManager` logic) might not be strictly locked out, although `FiscalPolicyManager` is where the "stance" is determined.
++    - *Note*: `fire_advisor` is a political action, so blocking the *execution* of specific high-level actions is a reasonable approximation for now.
+diff --git a/modules/government/components/policy_lockout_manager.py b/modules/government/components/policy_lockout_manager.py
+new file mode 100644
+index 0000000..c0a5a93
+--- /dev/null
++++ b/modules/government/components/policy_lockout_manager.py
+@@ -0,0 +1,60 @@
++from typing import Dict, List, Optional
++import logging
++from simulation.ai.enums import PolicyActionTag
++
++logger = logging.getLogger(__name__)
++
++class PolicyLockoutManager:
++    """
++    Manages the 'Scapegoat Mechanic' for government policies.
++    When a political advisor is fired, associated policies are locked out for a duration.
++    This prevents the government from immediately re-adopting policies associated with a failed advisor.
++    """
++
++    def __init__(self):
++        # Maps PolicyActionTag to the tick number when the lock expires (exclusive)
++        self._lockouts: Dict[PolicyActionTag, int] = {}
++
++    def lock_policy(self, tag: PolicyActionTag, duration: int, current_tick: int) -> None:
++        """
++        Locks a policy tag until current_tick + duration.
++        If already locked, extends the lock if the new end time is later.
++
++        Args:
++            tag: The policy tag to lock.
++            duration: Number of ticks the lock should last.
++            current_tick: The current simulation tick.
++        """
++        lock_end = current_tick + duration
++        current_end = self._lockouts.get(tag, -1)
++
++        if lock_end > current_end:
++            self._lockouts[tag] = lock_end
++            logger.info(f"POLICY_LOCKOUT | Locked {tag.name} until tick {lock_end} (Duration: {duration})")
++
++    def is_locked(self, tag: PolicyActionTag, current_tick: int) -> bool:
++        """
++        Checks if a policy tag is currently locked.
++
++        Args:
++            tag: The policy tag to check.
++            current_tick: The current simulation tick.
++
++        Returns:
++            True if the policy is locked, False otherwise.
++        """
++        if tag not in self._lockouts:
++            return False
++
++        is_active = current_tick < self._lockouts[tag]
++        if not is_active and tag in self._lockouts:
++             # Clean up expired lock (optional, but keeps dict clean)
++             # However, keeping it might be useful for history.
++             # Let's keep it simple and just return the check.
++             pass
++
++        return is_active
++
++    def get_lockout_end_tick(self, tag: PolicyActionTag) -> Optional[int]:
++        """Returns the tick when the lockout expires, or None if not locked."""
++        return self._lockouts.get(tag)
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index 768f3bf..8ccbd62 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -2,7 +2,7 @@ import logging
+ import warnings
+ from typing import Dict, List, Any, Deque, Tuple, Optional, TYPE_CHECKING
+ from collections import deque
+-from simulation.ai.enums import PoliticalParty
++from simulation.ai.enums import PoliticalParty, PolicyActionTag, EconomicSchool
+ from simulation.interfaces.policy_interface import IGovernmentPolicy
+ from simulation.policies.taylor_rule_policy import TaylorRulePolicy
+ from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
+@@ -20,6 +20,7 @@ from modules.government.components.welfare_manager import WelfareManager
+ from modules.government.components.infrastructure_manager import InfrastructureManager
+ from modules.government.constants import *
+ from modules.government.components.monetary_ledger import MonetaryLedger
++from modules.government.components.policy_lockout_manager import PolicyLockoutManager
+ from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
+ from modules.finance.wallet.wallet import Wallet
+ from modules.finance.wallet.api import IWallet
+@@ -60,6 +61,7 @@ class Government(ICurrencyHolder):
+         self.welfare_manager = WelfareManager(self)
+         self.infrastructure_manager = InfrastructureManager(self)
+         self.monetary_ledger = MonetaryLedger()
++        self.policy_lockout_manager = PolicyLockoutManager()
+ 
+         # Initialize default fiscal policy
+         # NOTE: Initialized with empty snapshot. Will be updated with real market data in the first tick
+@@ -423,12 +425,43 @@ class Government(ICurrencyHolder):
+             details=f"Inf={inflation:.2%}, Growth={real_gdp_growth:.2%}, Gap={gdp_gap:.2%}, RateGap={gap:.4f}"
+         )
+ 
++    def fire_advisor(self, school: EconomicSchool, current_tick: int) -> None:
++        """
++        Fires the advisor of a specific economic school and locks associated policies.
++        """
++        duration = 20
++        tags_to_lock = []
++
++        if school == EconomicSchool.KEYNESIAN:
++            tags_to_lock = [PolicyActionTag.KEYNESIAN_FISCAL]
++        elif school == EconomicSchool.AUSTRIAN:
++            tags_to_lock = [PolicyActionTag.AUSTRIAN_AUSTERITY]
++        elif school == EconomicSchool.MONETARIST:
++            tags_to_lock = [PolicyActionTag.MONETARIST_RULES]
++
++        for tag in tags_to_lock:
++            self.policy_lockout_manager.lock_policy(tag, duration, current_tick)
++
++        logger.info(
++            f"ADVISOR_FIRED | Fired {school.name} advisor. Locked tags: {[t.name for t in tags_to_lock]} for {duration} ticks.",
++            extra={"tick": current_tick, "agent_id": self.id}
++        )
++
+     def provide_household_support(self, household: Any, amount: float, current_tick: int) -> List[Transaction]:
+         """Delegates to WelfareManager."""
++        # Scapegoat Lockout Check: Keynesian Fiscal (Stimulus)
++        if self.policy_lockout_manager.is_locked(PolicyActionTag.KEYNESIAN_FISCAL, current_tick):
++            return []
++
+         return self.welfare_manager.provide_household_support(household, amount, current_tick)
+ 
+     def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:
+         """Provides a bailout loan to a firm if it's eligible. Returns (LoanDTO, Transactions)."""
++        # Scapegoat Lockout Check: Keynesian Fiscal (Bailout is Stimulus)
++        if self.policy_lockout_manager.is_locked(PolicyActionTag.KEYNESIAN_FISCAL, current_tick):
++            logger.info("BAILOUT_BLOCKED | Keynesian Fiscal Policy is locked.")
++            return None, []
++
+         if self.finance_system.evaluate_solvency(firm, current_tick):
+             logger.info(f"BAILOUT_APPROVED | Firm {firm.id} is eligible for a bailout.")
+             # FinanceSystem now returns (loan, transactions)
+diff --git a/tests/test_policy_lockout.py b/tests/test_policy_lockout.py
+new file mode 100644
+index 0000000..569db76
+--- /dev/null
++++ b/tests/test_policy_lockout.py
+@@ -0,0 +1,61 @@
++import unittest
++from unittest.mock import MagicMock
++from simulation.ai.enums import EconomicSchool, PolicyActionTag
++from modules.government.components.policy_lockout_manager import PolicyLockoutManager
++from simulation.agents.government import Government
++
++class TestPolicyLockout(unittest.TestCase):
++    def test_manager_lockout(self):
++        manager = PolicyLockoutManager()
++        tag = PolicyActionTag.KEYNESIAN_FISCAL
++        current_tick = 100
++        duration = 20
++
++        # Initial check
++        self.assertFalse(manager.is_locked(tag, current_tick))
++
++        # Lock
++        manager.lock_policy(tag, duration, current_tick)
++
++        # Check during lockout (100 to 119)
++        self.assertTrue(manager.is_locked(tag, 100))
++        self.assertTrue(manager.is_locked(tag, 110))
++        self.assertTrue(manager.is_locked(tag, 119))
++
++        # Check after lockout (120)
++        self.assertFalse(manager.is_locked(tag, 120))
++
++        # Extend lock
++        manager.lock_policy(tag, 30, 100) # Ends at 130
++        self.assertTrue(manager.is_locked(tag, 125))
++        self.assertFalse(manager.is_locked(tag, 130))
++
++    def test_government_fire_advisor(self):
++        # Mock dependencies
++        config_mock = MagicMock()
++        config_mock.TICKS_PER_YEAR = 360
++        config_mock.GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"
++        config_mock.INCOME_TAX_RATE = 0.1
++        config_mock.CORPORATE_TAX_RATE = 0.2
++        config_mock.TAX_MODE = "PROGRESSIVE"
++
++        # Instantiate Government
++        gov = Government(id=1, initial_assets=1000.0, config_module=config_mock)
++
++        # Ensure manager is initialized
++        self.assertIsInstance(gov.policy_lockout_manager, PolicyLockoutManager)
++
++        # Fire advisor
++        current_tick = 500
++        gov.fire_advisor(EconomicSchool.KEYNESIAN, current_tick)
++
++        # Verify lockout
++        self.assertTrue(gov.policy_lockout_manager.is_locked(PolicyActionTag.KEYNESIAN_FISCAL, 500))
++        self.assertTrue(gov.policy_lockout_manager.is_locked(PolicyActionTag.KEYNESIAN_FISCAL, 519))
++        self.assertFalse(gov.policy_lockout_manager.is_locked(PolicyActionTag.KEYNESIAN_FISCAL, 520))
++
++        # Verify other tags are NOT locked
++        self.assertFalse(gov.policy_lockout_manager.is_locked(PolicyActionTag.AUSTRIAN_AUSTERITY, 500))
++
++if __name__ == '__main__':
++    unittest.main()
