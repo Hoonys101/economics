@@ -1,0 +1,230 @@
+diff --git a/communications/insights/TD-226_Government_Refactor.md b/communications/insights/TD-226_Government_Refactor.md
+index 3c442a1..6acb36b 100644
+--- a/communications/insights/TD-226_Government_Refactor.md
++++ b/communications/insights/TD-226_Government_Refactor.md
+@@ -7,13 +7,17 @@ This mission focuses on Phase 1 of the Government Module Decomposition. The goal
+ - Created `modules/government/tax/api.py` (ITaxService)
+ - Created `modules/government/welfare/api.py` (IWelfareService)
+ - Created `modules/government/fiscal/api.py` (IFiscalService)
++- Implemented `modules/government/tax/service.py` (TaxService)
++  - Encapsulates `TaxationSystem` and `FiscalPolicyManager`.
++  - Validated with unit tests in `modules/government/tax/tests/test_service.py`.
+ 
+ ## Technical Debt & Observations
+ - **Duplicate/Ambiguous Structure**: `modules/government/taxation` already exists. The new spec mandates `modules/government/tax`. This creates potential confusion during the transition period. Future steps must ensure `taxation` is deprecated or merged into `tax`.
+ - **Any Type Usage**: The new interfaces use `Any` for `firm` and `household` arguments to avoid circular imports. This is a temporary measure (TD-227 resolution). Ideally, specific Protocols (e.g., `IFirm`, `IHousehold`) should be defined in `modules/common/interfaces.py` to replace `Any`.
+ - **God Class Persistence**: The `Government` class currently still holds all logic. These interfaces are just the first step. The implementation phase (Phase 2) will require careful migration to avoid breaking existing tests that rely on `Government` methods directly.
++- **Bug Fix in Legacy Logic**: During extraction, a bug was identified in `Government.reset_tick_flow` where `revenue_this_tick` was reset to `0.0` (float) instead of a dictionary. This has been corrected in `TaxService` to ensure `revenue_this_tick` is always a `Dict[CurrencyCode, float]`.
+ 
+ ## Next Steps
+-- Implement `TaxService`, `WelfareService`, and `FiscalService` classes.
++- Implement `WelfareService` and `FiscalService` classes.
+ - Refactor `Government` to use these services.
+ - Update tests to use the new service boundaries.
+diff --git a/modules/government/tax/service.py b/modules/government/tax/service.py
+new file mode 100644
+index 0000000..563a0ba
+--- /dev/null
++++ b/modules/government/tax/service.py
+@@ -0,0 +1,94 @@
++from typing import Any, Dict, Optional
++from modules.government.tax.api import ITaxService
++from modules.government.taxation.system import TaxationSystem
++from modules.government.components.fiscal_policy_manager import FiscalPolicyManager
++from modules.government.dtos import FiscalPolicyDTO
++from modules.finance.api import TaxCollectionResult
++from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
++
++class TaxService(ITaxService):
++    """
++    Implementation of the ITaxService.
++    Encapsulates tax calculation and revenue recording logic.
++    """
++
++    def __init__(self, config_module: Any):
++        self.config_module = config_module
++
++        # Composition of existing logic components
++        self.taxation_system = TaxationSystem(config_module)
++        self.fiscal_policy_manager = FiscalPolicyManager(config_module)
++
++        # State initialization (extracted from Government agent)
++        self.total_collected_tax: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
++        self.revenue_this_tick: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
++        self.tax_revenue: Dict[str, float] = {}
++
++        # Detailed stats for the current tick
++        self.current_tick_stats: Dict[str, Any] = {
++            "tax_revenue": {},
++            "total_collected": 0.0
++        }
++
++    def calculate_tax_liability(self, policy: FiscalPolicyDTO, income: float) -> float:
++        """Calculates the tax amount for a given income and fiscal policy."""
++        return self.fiscal_policy_manager.calculate_tax_liability(policy, income)
++
++    def calculate_corporate_tax(self, profit: float, rate: float) -> float:
++        """Calculates corporate tax based on profit and a flat rate."""
++        return self.taxation_system.calculate_corporate_tax(profit, rate)
++
++    def record_revenue(self, result: TaxCollectionResult) -> None:
++        """
++        Updates internal ledgers based on a verified tax collection result.
++        """
++        if not result['success'] or result['amount_collected'] <= 0:
++            return
++
++        amount = result['amount_collected']
++        tax_type = result['tax_type']
++        # payer_id is available in result but not currently used for aggregate stats
++
++        cur = result.get('currency', DEFAULT_CURRENCY)
++
++        # Initialize currency buckets if new currency encountered
++        if cur not in self.total_collected_tax:
++            self.total_collected_tax[cur] = 0.0
++        if cur not in self.revenue_this_tick:
++            self.revenue_this_tick[cur] = 0.0
++
++        # Update accumulators
++        self.total_collected_tax[cur] += amount
++        self.revenue_this_tick[cur] += amount
++
++        # Update tax type breakdown (all-time)
++        self.tax_revenue[tax_type] = (
++            self.tax_revenue.get(tax_type, 0.0) + amount
++        )
++
++        # Update tick stats
++        current_breakdown = self.current_tick_stats["tax_revenue"]
++        current_breakdown[tax_type] = current_breakdown.get(tax_type, 0.0) + amount
++
++        self.current_tick_stats["total_collected"] += amount
++
++    def get_revenue_this_tick(self) -> Dict[CurrencyCode, float]:
++        """Returns the total revenue collected in the current tick."""
++        return self.revenue_this_tick.copy()
++
++    def get_revenue_breakdown_this_tick(self) -> Dict[str, float]:
++        """Returns the breakdown of revenue by tax type for the current tick."""
++        return self.current_tick_stats["tax_revenue"].copy()
++
++    def reset_tick_flow(self) -> None:
++        """Resets the per-tick revenue accumulators."""
++        # Reset revenue for this tick.
++        # We re-initialize with DEFAULT_CURRENCY: 0.0 to match initialization state,
++        # but empty dict is also valid as record_revenue handles missing keys.
++        # Keeping consistent with __init__.
++        self.revenue_this_tick = {DEFAULT_CURRENCY: 0.0}
++
++        self.current_tick_stats = {
++            "tax_revenue": {},
++            "total_collected": 0.0
++        }
+diff --git a/modules/government/tax/tests/test_service.py b/modules/government/tax/tests/test_service.py
+new file mode 100644
+index 0000000..f20247f
+--- /dev/null
++++ b/modules/government/tax/tests/test_service.py
+@@ -0,0 +1,101 @@
++import unittest
++from unittest.mock import MagicMock, patch
++from modules.government.tax.service import TaxService
++from modules.finance.api import TaxCollectionResult
++from modules.government.dtos import FiscalPolicyDTO
++from modules.system.api import DEFAULT_CURRENCY
++
++class TestTaxService(unittest.TestCase):
++    def setUp(self):
++        self.config_mock = MagicMock()
++
++    @patch('modules.government.tax.service.TaxationSystem')
++    @patch('modules.government.tax.service.FiscalPolicyManager')
++    def test_initialization(self, MockFiscalPolicyManager, MockTaxationSystem):
++        service = TaxService(self.config_mock)
++
++        MockTaxationSystem.assert_called_with(self.config_mock)
++        MockFiscalPolicyManager.assert_called_with(self.config_mock)
++
++        self.assertEqual(service.total_collected_tax[DEFAULT_CURRENCY], 0.0)
++        self.assertEqual(service.revenue_this_tick[DEFAULT_CURRENCY], 0.0)
++
++    @patch('modules.government.tax.service.TaxationSystem')
++    @patch('modules.government.tax.service.FiscalPolicyManager')
++    def test_calculate_tax_liability(self, MockFiscalPolicyManager, MockTaxationSystem):
++        service = TaxService(self.config_mock)
++        mock_fpm = MockFiscalPolicyManager.return_value
++        mock_fpm.calculate_tax_liability.return_value = 100.0
++
++        policy = MagicMock(spec=FiscalPolicyDTO)
++        result = service.calculate_tax_liability(policy, 1000.0)
++
++        mock_fpm.calculate_tax_liability.assert_called_with(policy, 1000.0)
++        self.assertEqual(result, 100.0)
++
++    @patch('modules.government.tax.service.TaxationSystem')
++    @patch('modules.government.tax.service.FiscalPolicyManager')
++    def test_calculate_corporate_tax(self, MockFiscalPolicyManager, MockTaxationSystem):
++        service = TaxService(self.config_mock)
++        mock_ts = MockTaxationSystem.return_value
++        mock_ts.calculate_corporate_tax.return_value = 50.0
++
++        result = service.calculate_corporate_tax(500.0, 0.1)
++
++        mock_ts.calculate_corporate_tax.assert_called_with(500.0, 0.1)
++        self.assertEqual(result, 50.0)
++
++    @patch('modules.government.tax.service.TaxationSystem')
++    @patch('modules.government.tax.service.FiscalPolicyManager')
++    def test_record_revenue(self, MockFiscalPolicyManager, MockTaxationSystem):
++        service = TaxService(self.config_mock)
++
++        result_data: TaxCollectionResult = {
++            "success": True,
++            "amount_collected": 100.0,
++            "tax_type": "income_tax",
++            "payer_id": "agent_1",
++            "payee_id": "gov_1",
++            "error_message": None,
++            "currency": "USD"
++        }
++
++        service.record_revenue(result_data)
++
++        self.assertEqual(service.revenue_this_tick["USD"], 100.0)
++        self.assertEqual(service.total_collected_tax["USD"], 100.0)
++        self.assertEqual(service.current_tick_stats["tax_revenue"]["income_tax"], 100.0)
++        self.assertEqual(service.current_tick_stats["total_collected"], 100.0)
++
++    @patch('modules.government.tax.service.TaxationSystem')
++    @patch('modules.government.tax.service.FiscalPolicyManager')
++    def test_record_revenue_failure(self, MockFiscalPolicyManager, MockTaxationSystem):
++        service = TaxService(self.config_mock)
++
++        result_data: TaxCollectionResult = {
++            "success": False,
++            "amount_collected": 100.0,
++            "tax_type": "income_tax",
++            "payer_id": "agent_1",
++            "payee_id": "gov_1",
++            "error_message": "Failed"
++        }
++
++        service.record_revenue(result_data)
++
++        self.assertEqual(service.revenue_this_tick[DEFAULT_CURRENCY], 0.0)
++
++    @patch('modules.government.tax.service.TaxationSystem')
++    @patch('modules.government.tax.service.FiscalPolicyManager')
++    def test_reset_tick_flow(self, MockFiscalPolicyManager, MockTaxationSystem):
++        service = TaxService(self.config_mock)
++
++        # Setup some state
++        service.revenue_this_tick["USD"] = 100.0
++        service.current_tick_stats["total_collected"] = 100.0
++
++        service.reset_tick_flow()
++
++        self.assertEqual(service.revenue_this_tick, {DEFAULT_CURRENCY: 0.0})
++        self.assertEqual(service.current_tick_stats["total_collected"], 0.0)
++        self.assertEqual(service.current_tick_stats["tax_revenue"], {})
