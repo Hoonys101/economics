@@ -116,6 +116,18 @@ class TestLoanMarketMortgage:
             "original_amount": 80000.0
         }
 
+        # Mock the loan existing in the bank for convert_staged_to_loan
+        mock_loan = MagicMock()
+        mock_loan.borrower_id = 1
+        mock_loan.principal = 80000.0
+        mock_loan.remaining_balance = 80000.0
+        mock_loan.annual_interest_rate = 0.05
+        mock_loan.origination_tick = 0
+        mock_loan.start_tick = 0
+        mock_loan.term_ticks = 360
+
+        mock_bank.loans = {"loan_123": mock_loan}
+
         result = loan_market.stage_mortgage(app)
         assert result is not None
         assert result["loan_id"] == "loan_123"
