@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 from typing import Any, Optional, Dict
 from simulation.agents.government import Government
 from modules.finance.api import TaxCollectionResult
+from modules.system.api import DEFAULT_CURRENCY
 
 # Mock classes
 class MockConfig:
@@ -49,7 +50,10 @@ class MockSettlementSystem:
         })
         if debit_agent.assets >= amount:
             debit_agent._sub_assets(amount)
-            credit_agent._add_assets(amount)
+            if hasattr(credit_agent, 'deposit'):
+                 credit_agent.deposit(amount)
+            else:
+                 credit_agent._add_assets(amount)
             return True
         return False
 
@@ -70,11 +74,11 @@ def test_atomic_wealth_tax_collection_success():
     txs = gov.run_welfare_check([household], market_data, current_tick=1)
 
     # Check assets transferred
-    assert household._econ_state.assets == 2000.0 - 0.2
-    assert gov.assets == 0.2
+    assert household.assets == 2000.0 - 0.2
+    assert gov.assets[DEFAULT_CURRENCY] == 0.2
 
     # Check stats
-    assert gov.total_collected_tax == 0.2
+    assert gov.total_collected_tax[DEFAULT_CURRENCY] == 0.2
     assert gov.tax_revenue["wealth_tax"] == 0.2
 
     # Check transactions: NO transaction objects for tax should be returned
@@ -100,11 +104,11 @@ def test_atomic_wealth_tax_collection_insufficient_funds():
     gov.run_welfare_check([household], market_data, current_tick=1)
 
     # Assets unchanged
-    assert household._econ_state.assets == 2000.0
-    assert gov.assets == 0.0
+    assert household.assets == 2000.0
+    assert gov.assets[DEFAULT_CURRENCY] == 0.0
 
     # Stats unchanged
-    assert gov.total_collected_tax == 0.0
+    assert gov.total_collected_tax[DEFAULT_CURRENCY] == 0.0
     assert gov.tax_revenue.get("wealth_tax", 0.0) == 0.0
 
 def test_government_collect_tax_adapter_success():
@@ -121,8 +125,8 @@ def test_government_collect_tax_adapter_success():
     assert collected['amount_collected'] == 10.0
     assert collected['success'] is True
     assert payer.assets == 90.0
-    assert gov.assets == 10.0
-    assert gov.total_collected_tax == 10.0
+    assert gov.assets[DEFAULT_CURRENCY] == 10.0
+    assert gov.total_collected_tax[DEFAULT_CURRENCY] == 10.0
     assert gov.tax_revenue["test_tax"] == 10.0
 
 def test_government_collect_tax_adapter_failure():
@@ -139,6 +143,6 @@ def test_government_collect_tax_adapter_failure():
     assert collected['amount_collected'] == 0.0
     assert collected['success'] is False
     assert payer.assets == 5.0
-    assert gov.assets == 0.0
-    assert gov.total_collected_tax == 0.0
+    assert gov.assets[DEFAULT_CURRENCY] == 0.0
+    assert gov.total_collected_tax[DEFAULT_CURRENCY] == 0.0
     assert "test_tax" not in gov.tax_revenue
