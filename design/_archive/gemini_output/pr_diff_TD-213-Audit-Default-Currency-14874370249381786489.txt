@@ -1,0 +1,327 @@
+diff --git a/communications/insights/TD-213.md b/communications/insights/TD-213.md
+new file mode 100644
+index 0000000..e7ada2e
+--- /dev/null
++++ b/communications/insights/TD-213.md
+@@ -0,0 +1,37 @@
++# TD-213: Multi-Currency Transition Audit
++
++## Overview
++This document records the findings of the audit for `DEFAULT_CURRENCY` hardcodings and the state of the transition to a multi-currency system.
++
++## Findings
++
++### 1. Hardcoded `DEFAULT_CURRENCY` Logic
++The following areas heavily rely on `DEFAULT_CURRENCY` (USD) and effectively ignore other currencies:
++
++*   **`simulation/metrics/economic_tracker.py`**:
++    *   `track` method calculates `total_household_assets`, `total_firm_assets` by summing `assets.get(DEFAULT_CURRENCY, 0.0)`.
++    *   `get_m2_money_supply` sums up `DEFAULT_CURRENCY` across agents.
++    *   **Impact**: Assets held in other currencies are invisible to global economic metrics.
++    *   **Mitigation**: Pending implementation of an Exchange Rate Mechanism to normalize values.
++
++*   **`simulation/firms.py`**:
++    *   `Firm` decision making (`make_decision`) and transaction generation (`generate_transactions`) primarily check `DEFAULT_CURRENCY` balance for liquidity and budgeting.
++    *   Marketing budget is determined solely by `DEFAULT_CURRENCY` balance.
++    *   `liquidate_assets` returns `DEFAULT_CURRENCY` balance.
++    *   **Impact**: Firms operating in foreign markets or alternative currencies may fail to budget correctly or appear bankrupt.
++
++*   **`modules/market/housing_planner.py`**:
++    *   `calculate_affordability` checks `DEFAULT_CURRENCY` for down payments.
++
++### 2. Transaction Model Limitations
++*   `Transaction` dataclass in `simulation/models.py` previously lacked a `currency` field, implicitly assuming all transactions were in `DEFAULT_CURRENCY`.
++*   **Resolution**: `currency` field added to `Transaction` (part of this task).
++
++### 3. Handler Specifics
++*   `HousingTransactionHandler`: Previously hardcoded to check `DEFAULT_CURRENCY`. Updated to respect `tx.currency`.
++
++## Recommendation for Future Work
++To fully support a multi-currency simulation, the following are required:
++1.  **Exchange Rate Mechanism**: A system to query exchange rates between currencies.
++2.  **Currency Normalization Service**: A service to convert asset bundles into a base currency for reporting (Metrics) and decision making (Agents).
++3.  **Multi-Currency Order Books**: Markets need to support asking/bidding in different currencies (or explicit currency pairs).
+diff --git a/modules/market/handlers/housing_transaction_handler.py b/modules/market/handlers/housing_transaction_handler.py
+index 07bac40..0a7f7aa 100644
+--- a/modules/market/handlers/housing_transaction_handler.py
++++ b/modules/market/handlers/housing_transaction_handler.py
+@@ -77,15 +77,18 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+             loan_amount = sale_price * max_ltv
+             down_payment = sale_price - loan_amount
+ 
++        # TD-213: Support Multi-Currency Transactions
++        tx_currency = getattr(tx, "currency", DEFAULT_CURRENCY)
++
+         # Check Buyer Funds for Down Payment
+         if isinstance(buyer, IMortgageBorrower):
+             # Safe extraction for protocols using Dict assets
+-            buyer_assets = buyer.assets.get(DEFAULT_CURRENCY, 0.0)
++            buyer_assets = buyer.assets.get(tx_currency, 0.0)
+         elif hasattr(buyer, "assets"):
+             # Legacy/Firm fallback
+             attr = getattr(buyer, "assets", 0.0)
+             if isinstance(attr, dict):
+-                 buyer_assets = attr.get(DEFAULT_CURRENCY, 0.0)
++                 buyer_assets = attr.get(tx_currency, 0.0)
+             else:
+                  buyer_assets = float(attr)
+         else:
+@@ -97,7 +100,8 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+ 
+         # 2. Saga Step A: Secure Down Payment (Buyer -> Escrow)
+         memo_down = f"escrow_hold:down_payment:{tx.item_id}"
+-        if not context.settlement_system.transfer(buyer, escrow_agent, down_payment, memo_down, tick=context.time):
++        # TD-213: Pass currency to settlement system
++        if not context.settlement_system.transfer(buyer, escrow_agent, down_payment, memo_down, tick=context.time, currency=tx_currency):
+             context.logger.warning(f"HOUSING | Failed to secure down payment from {buyer.id}")
+             return False
+ 
+@@ -109,7 +113,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+         try:
+             # 3. Saga Step B: Create Mortgage (if applicable)
+             if use_mortgage:
+-                borrower_profile = self._create_borrower_profile(buyer, sale_price, context)
++                borrower_profile = self._create_borrower_profile(buyer, sale_price, context, currency=tx_currency)
+                 # Estimate due tick
+                 due_tick = context.time + mortgage_term
+ 
+@@ -124,7 +128,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+                 if not grant_result:
+                     context.logger.warning(f"HOUSING | Bank rejected mortgage for {buyer.id}")
+                     # Compensate Step A
+-                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:loan_rejected", tick=context.time)
++                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:loan_rejected", tick=context.time, currency=tx_currency)
+                     return False
+ 
+                 new_loan_dto, credit_tx = grant_result
+@@ -144,22 +148,22 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+                     if not withdrawal_success:
+                         context.logger.critical(f"HOUSING | Failed to withdraw loan deposit from Buyer {buyer.id}. Aborting.")
+                         self._void_loan_safely(context, loan_id)
+-                        context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time)
++                        context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
+                         return False
+                 except Exception as e:
+                     context.logger.critical(f"HOUSING | Error withdrawing loan deposit: {e}")
+                     self._void_loan_safely(context, loan_id)
+-                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time)
++                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
+                     return False
+ 
+                 memo_disburse = f"escrow_hold:loan_proceeds:{tx.item_id}"
+                 # Transfer from BANK (Reserves) to Escrow
+-                if not context.settlement_system.transfer(context.bank, escrow_agent, loan_amount, memo_disburse, tick=context.time):
++                if not context.settlement_system.transfer(context.bank, escrow_agent, loan_amount, memo_disburse, tick=context.time, currency=tx_currency):
+                     context.logger.critical(f"HOUSING | Failed to move loan proceeds from Bank to Escrow for {buyer.id}")
+                     # Compensate: Terminate Loan (Asset), Return Down Payment
+                     # Note: We cannot use _void_loan_safely because the deposit is already gone (withdrawn).
+                     self._terminate_loan_safely(context, loan_id)
+-                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time)
++                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
+                     return False
+ 
+             # 5. Saga Step D: Final Settlement (Escrow -> Seller)
+@@ -170,16 +174,16 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+             # Usually Housing Sale is Asset Transfer.
+             # If Seller is Government, we transfer to Government.
+ 
+-            if not context.settlement_system.transfer(escrow_agent, seller, sale_price, memo_settle, tick=context.time):
++            if not context.settlement_system.transfer(escrow_agent, seller, sale_price, memo_settle, tick=context.time, currency=tx_currency):
+                 context.logger.critical(f"HOUSING | CRITICAL: Failed to pay seller {seller.id} from escrow.")
+                 # Compensate:
+                 # 1. Return Loan Proceeds to BANK (since we withdrew form Buyer and sent to Escrow from Bank)
+                 if use_mortgage:
+-                    context.settlement_system.transfer(escrow_agent, context.bank, loan_amount, "reversal:loan_return_to_bank", tick=context.time)
++                    context.settlement_system.transfer(escrow_agent, context.bank, loan_amount, "reversal:loan_return_to_bank", tick=context.time, currency=tx_currency)
+                     self._terminate_loan_safely(context, loan_id)
+ 
+                 # 2. Return Down Payment to Buyer
+-                context.settlement_system.transfer(escrow_agent, buyer, down_payment, "reversal:down_payment_return", tick=context.time)
++                context.settlement_system.transfer(escrow_agent, buyer, down_payment, "reversal:down_payment_return", tick=context.time, currency=tx_currency)
+                 return False
+ 
+             # Success!
+@@ -210,7 +214,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+                 pass
+             return False
+ 
+-    def _create_borrower_profile(self, buyer: Any, trade_value: float, context: TransactionContext) -> BorrowerProfileDTO:
++    def _create_borrower_profile(self, buyer: Any, trade_value: float, context: TransactionContext, currency: str = DEFAULT_CURRENCY) -> BorrowerProfileDTO:
+         gross_income = 0.0
+         if isinstance(buyer, IMortgageBorrower) or hasattr(buyer, "current_wage"):
+              # Estimate monthly income
+@@ -227,11 +231,11 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+              except: pass
+ 
+         if isinstance(buyer, IMortgageBorrower):
+-            assets_val = buyer.assets.get(DEFAULT_CURRENCY, 0.0)
++            assets_val = buyer.assets.get(currency, 0.0)
+         else:
+             attr = getattr(buyer, "assets", 0.0)
+             if isinstance(attr, dict):
+-                 assets_val = attr.get(DEFAULT_CURRENCY, 0.0)
++                 assets_val = attr.get(currency, 0.0)
+             else:
+                  assets_val = float(attr)
+ 
+diff --git a/simulation/metrics/economic_tracker.py b/simulation/metrics/economic_tracker.py
+index 70ca825..0da9b06 100644
+--- a/simulation/metrics/economic_tracker.py
++++ b/simulation/metrics/economic_tracker.py
+@@ -73,6 +73,7 @@ class EconomicIndicatorTracker:
+         record["money_supply"] = money_supply
+ 
+         # Perform calculations...
++        # TD-213: Tracks only DEFAULT_CURRENCY assets. Multi-currency support requires exchange rate normalization.
+         total_household_assets = sum(
+             h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0) for h in households if h._bio_state.is_active
+         )
+@@ -292,6 +293,8 @@ class EconomicIndicatorTracker:
+ 
+         This calculation excludes the Central Bank's balance which is used for
+         system-level integrity checks.
++
++        TD-213: Currently tracks only DEFAULT_CURRENCY.
+         """
+         total = 0.0
+ 
+diff --git a/simulation/models.py b/simulation/models.py
+index 124cde0..73ff8a9 100644
+--- a/simulation/models.py
++++ b/simulation/models.py
+@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any, List, TYPE_CHECKING
+ import uuid
+ from modules.market.api import OrderDTO
+ from modules.finance.api import LienDTO
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ # Alias for backward compatibility and migration
+ Order = OrderDTO
+@@ -19,6 +20,7 @@ class Transaction:
+     market_id: str  # Added market_id
+     transaction_type: str  # 'goods', 'labor', 'dividend', 'stock' 등 거래 유형
+     time: int  # 거래가 발생한 시뮬레이션 틱
++    currency: str = DEFAULT_CURRENCY # TD-213: Multi-currency support
+     quality: float = 1.0  # Phase 15: Durables Quality
+     metadata: Optional[Dict[str, Any]] = None  # WO-109: Metadata for side-effects
+ 
+diff --git a/tests/unit/markets/test_housing_transaction_handler.py b/tests/unit/markets/test_housing_transaction_handler.py
+index 24e02b7..3dc89d2 100644
+--- a/tests/unit/markets/test_housing_transaction_handler.py
++++ b/tests/unit/markets/test_housing_transaction_handler.py
+@@ -1,9 +1,10 @@
+ import pytest
+-from unittest.mock import MagicMock, call
++from unittest.mock import MagicMock, call, ANY
+ from modules.market.handlers.housing_transaction_handler import HousingTransactionHandler
+ from simulation.models import Transaction
+ from modules.system.escrow_agent import EscrowAgent
+ from simulation.core_agents import Household
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ @pytest.fixture
+ def handler():
+@@ -35,9 +36,13 @@ def buyer():
+     b = MagicMock(spec=Household)
+     b.id = 1
+ 
+-    # Mock _econ_state
++    # Mock assets property to behave like a dict
++    b.assets = {DEFAULT_CURRENCY: 100000.0}
++    b.current_wage = 100.0 # Required for IMortgageBorrower protocol
++
++    # Also mock _econ_state for legacy checks if any (though handler checks buyer.assets now)
+     b._econ_state = MagicMock()
+-    b._econ_state.assets = 100000.0
++    b._econ_state.assets = {DEFAULT_CURRENCY: 100000.0}
+     b._econ_state.owned_properties = []
+     b._econ_state.residing_property_id = None
+     b._econ_state.is_homeless = True
+@@ -72,7 +77,7 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
+ 
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
+-        market_id="housing", transaction_type="housing", time=0
++        market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
+     )
+ 
+     # Mock Settlement Success: DownPayment(True), Disbursement(True), FinalSettlement(True)
+@@ -91,7 +96,7 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
+     # Loan (80% of 1000 = 800)
+ 
+     # 1. Down Payment: Buyer -> Escrow (200)
+-    context.settlement_system.transfer.assert_any_call(buyer, escrow_agent, 200.0, "escrow_hold:down_payment:unit_101", tick=0)
++    context.settlement_system.transfer.assert_any_call(buyer, escrow_agent, 200.0, "escrow_hold:down_payment:unit_101", tick=0, currency=DEFAULT_CURRENCY)
+ 
+     # 2. Loan Grant called
+     context.bank.grant_loan.assert_called()
+@@ -100,26 +105,35 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
+     context.bank.withdraw_for_customer.assert_called_with(1, 800.0)
+ 
+     # 3. Disbursement: BANK -> Escrow (800)
+-    context.settlement_system.transfer.assert_any_call(context.bank, escrow_agent, 800.0, "escrow_hold:loan_proceeds:unit_101", tick=0)
++    context.settlement_system.transfer.assert_any_call(context.bank, escrow_agent, 800.0, "escrow_hold:loan_proceeds:unit_101", tick=0, currency=DEFAULT_CURRENCY)
+ 
+     # 4. Final Settlement: Escrow -> Seller (1000)
+-    context.settlement_system.transfer.assert_any_call(escrow_agent, seller, 1000.0, "final_settlement:unit_101", tick=0)
++    context.settlement_system.transfer.assert_any_call(escrow_agent, seller, 1000.0, "final_settlement:unit_101", tick=0, currency=DEFAULT_CURRENCY)
+ 
+     # 5. Side Effects
+     assert unit.owner_id == buyer.id
+-    assert unit.mortgage_id == "loan_123"
+-    assert 101 in buyer._econ_state.owned_properties
+-    assert 101 not in seller.owned_properties
++    # Note: mortgage_id property on unit assumes list traversal, but we appended directly to liens list in handler.
++    # We need to verify liens list content.
++    has_mortgage = any(l['loan_id'] == "loan_123" and l['lien_type'] == 'MORTGAGE' for l in unit.liens)
++    assert has_mortgage
++
++    # Check method calls instead of state mutation for Mocks
++    buyer.add_property.assert_called_with(101)
++
++    # Seller might call remove_property or modify list depending on structure
++    # Since seller is MagicMock, hasattr(seller, 'remove_property') is True, so it calls it.
++    seller.remove_property.assert_called_with(101)
++
+     assert tx.metadata["mortgage_id"] == "loan_123"
+ 
+ def test_housing_transaction_insufficient_down_payment(handler, context, buyer, seller, unit, escrow_agent):
+     context.real_estate_units = [unit]
+     context.agents = {99: escrow_agent}
+-    buyer._econ_state.assets = 10.0 # Insufficient
++    buyer.assets = {DEFAULT_CURRENCY: 10.0} # Insufficient
+ 
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
+-        market_id="housing", transaction_type="housing", time=0
++        market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
+     )
+ 
+     result = handler.handle(tx, buyer, seller, context)
+@@ -132,7 +146,7 @@ def test_housing_transaction_loan_rejected(handler, context, buyer, seller, unit
+ 
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
+-        market_id="housing", transaction_type="housing", time=0
++        market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
+     )
+ 
+     # Down payment success
+@@ -154,6 +168,8 @@ def test_housing_transaction_loan_rejected(handler, context, buyer, seller, unit
+     assert calls[1][0][0] == escrow_agent
+     assert calls[1][0][1] == buyer
+     assert "escrow_reversal" in calls[1][0][3]
++    # Check kwargs for currency if possible, or use ANY
++    # call.kwargs.get('currency') == DEFAULT_CURRENCY
+ 
+ def test_housing_transaction_disbursement_failed(handler, context, buyer, seller, unit, escrow_agent):
+     context.real_estate_units = [unit]
+@@ -161,7 +177,7 @@ def test_housing_transaction_disbursement_failed(handler, context, buyer, seller
+ 
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
+-        market_id="housing", transaction_type="housing", time=0
++        market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
+     )
+ 
+     # 1. Down Payment Success

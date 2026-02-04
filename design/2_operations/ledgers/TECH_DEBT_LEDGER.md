@@ -43,9 +43,6 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-196 | 2026-02-03 | ConfigManager Tight Coupling | Hard to mock; requires manual instantiation | - | **LOW** |
-| TD-203 | 2026-02-03 | SettlementSystem Unit Test Stale | Tests not updated after Saga refactor | - | **HIGH** |
-| TD-210 | 2026-02-04 | Test Dependency Bloat (`numpy`) | `conftest.py` imports CentralBank | [Review](../../_archive/gemini_output/pr_review_settlement-system-tests-2138438581752818541.md) | **LOW** |
 | (No Active Items) | | | | | |
 
 
@@ -53,18 +50,9 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-150 | 2026-01-29 | Ledger Process | Loss of context | [Spec](../../3_work_artifacts/specs/spec_td150_ledger_automation.md) | **ACTIVE** |
-| TD-183 | 2026-02-01 | Sequence Documentation | Migration gaps | - | **ACTIVE** |
-| TD-188 | 2026-02-01 | Config Path Doc Drift | `PROJECT_STATUS.md` stale | - | **ACTIVE** |
-| TD-193 | 2026-02-03 | Fragmented Politics | Spec vs Code drift | - | **WARNING** |
+| TD-225 | 2026-02-04 | Dual Liquidation Logic Conflict | Write-off (Firm) vs Sell-off (Manager) mismatch | [Spec](../../3_work_artifacts/specs/TD-225_Unified_Liquidation.md) | **ACTIVE** |
 | (No Active Items) | | | | | |
-| TD-204 | 2026-02-03 | BubbleObservatory SRP | God class risk | [Insight](../../communications/insights/TD-161_SRP.md) | **MEDIUM** |
-| TD-205 | 2026-02-03 | Phase3_Transaction God Class | Responsibility overload | [Insight](../../communications/insights/TD-161_SRP.md) | **MEDIUM** |
-| TD-225 | 2026-02-04 | Dual Liquidation Logic Conflict | Write-off (Firm) vs Sell-off (Manager) mismatch | [Insight](../../communications/insights/TD-187_LIQUIDATION_REFACTOR.md) | **MEDIUM** |
-| TD-208 | (RESOLVED) | | | | |
-| TD-209 | 2026-02-04 | Hardcoded Agent Identifiers | String-based IDs in Registry | [Review](../../_archive/gemini_output/pr_review_liquidation-manager-srp-1350862452554077041.md) | **MEDIUM** |
-| TD-213 | 2026-02-03 | Multi-Currency Transition Debt | Logic still dependent on `DEFAULT_CURRENCY` | [Insight](../../communications/insights/PH33_DEBUG.md) | **MEDIUM** |
-| TD-220 | 2026-02-04 | Central Bank ID Mismatch (Str vs Int) | Inconsistent mapping in Wallet owner_id | [Review](../../_archive/gemini_output/pr_review_wo-4.2a-wallet-abstraction-7751802173364783425.md) | **LOW** |
+| TD-205 | 2026-02-04 | Phase3_Transaction God Class | Responsibility overload | [Spec](../../3_work_artifacts/specs/TD-205_Transaction_Decomposition.md) | **ACTIVE** |
 | TD-224 | 2026-02-04 | Advisor-Policy Hardcoded Mapping | Firing logic coupled to tags | [Review](../../_archive/gemini_output/pr_review_wo-4.4-policy-lockout-15026198363404100995.md) | **MEDIUM** |
 | (No Active Items) | | | | |
 
@@ -102,6 +90,12 @@
 | TD-197 | 2026-02-04 | HousingManager Cleanup | - | [Insight](../../communications/insights/TD-197_HousingManager_Cleanup.md) |
 | TD-194 | 2026-02-04 | Household DTO Sync | - | [Insight](../../communications/insights/TD-194_DTO_SYNC.md) |
 | TD-206 | 2026-02-04 | Mortgage DTO Precision | - | [Insight](../../communications/insights/TD-206_PRECISION.md) |
+| TD-203 | 2026-02-04 | SettlementSystem Test Upgrade | - | [Insight](../../communications/insights/INFRA_DEBT_BUNDLE_202602.md) |
+| TD-204 | 2026-02-04 | BubbleObservatory SRP Refactor | - | [Insight](../../communications/insights/INFRA_DEBT_BUNDLE_202602.md) |
+| TD-210 | 2026-02-04 | Test Dependency Cleanup | - | [Insight](../../communications/insights/INFRA_DEBT_BUNDLE_202602.md) |
+| TD-223 | 2026-02-04 | Mortgage DTO Unification | - | [Insight](../../communications/insights/INFRA_DEBT_BUNDLE_202602.md) |
+| TD-213 | 2026-02-04 | Multi-Currency Audit | - | [Insight](../../communications/insights/TD-213.md) |
+| TD-150 | 2026-02-04 | Ledger Automation | - | [Insight](../../communications/insights/TD-150_Ledger_Automation.md) |
 
 ---
 
