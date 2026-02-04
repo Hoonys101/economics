@@ -1,52 +1,50 @@
 import pytest
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
 from simulation.agents.government import Government
 
 @pytest.fixture
-def government_setup(mocker):
+def government_setup():
     # Mocking patches
     # TaxAgency is removed, use TaxationSystem
-    mock_taxation_system_cls = mocker.patch('simulation.agents.government.TaxationSystem')
-    mock_education_ministry_cls = mocker.patch('simulation.agents.government.MinistryOfEducation')
-    mock_fiscal_policy_manager_cls = mocker.patch('simulation.agents.government.FiscalPolicyManager')
+    with patch('simulation.agents.government.TaxationSystem') as mock_taxation_system_cls, \
+         patch('simulation.agents.government.MinistryOfEducation') as mock_education_ministry_cls, \
+         patch('simulation.agents.government.FiscalPolicyManager') as mock_fiscal_policy_manager_cls, \
+         patch('simulation.agents.government.WelfareService') as mock_welfare_service_cls, \
+         patch('simulation.agents.government.InfrastructureManager') as mock_infra_manager_cls:
 
-    # Mock new components
-    mock_welfare_manager_cls = mocker.patch('simulation.agents.government.WelfareManager')
-    mock_infra_manager_cls = mocker.patch('simulation.agents.government.InfrastructureManager')
+        mock_taxation_system_instance = mock_taxation_system_cls.return_value
+        mock_education_ministry_instance = mock_education_ministry_cls.return_value
+        mock_fiscal_policy_manager_instance = mock_fiscal_policy_manager_cls.return_value
+        mock_welfare_service_instance = mock_welfare_service_cls.return_value
+        mock_infra_manager_instance = mock_infra_manager_cls.return_value
 
-    mock_taxation_system_instance = mock_taxation_system_cls.return_value
-    mock_education_ministry_instance = mock_education_ministry_cls.return_value
-    mock_fiscal_policy_manager_instance = mock_fiscal_policy_manager_cls.return_value
-    mock_welfare_manager_instance = mock_welfare_manager_cls.return_value
-    mock_infra_manager_instance = mock_infra_manager_cls.return_value
+        mock_config = Mock()
+        mock_config.GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"
+        mock_config.TICKS_PER_YEAR = 100
+        mock_config.INCOME_TAX_RATE = 0.1 # This is the initial rate
+        mock_config.CORPORATE_TAX_RATE = 0.2
+        mock_config.TAX_MODE = "PROGRESSIVE"
+        mock_config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
+        mock_config.TAX_BRACKETS = []
 
-    mock_config = Mock()
-    mock_config.GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"
-    mock_config.TICKS_PER_YEAR = 100
-    mock_config.INCOME_TAX_RATE = 0.1 # This is the initial rate
-    mock_config.CORPORATE_TAX_RATE = 0.2
-    mock_config.TAX_MODE = "PROGRESSIVE"
-    mock_config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
-    mock_config.TAX_BRACKETS = []
+        government = Government(id=1, initial_assets=100000, config_module=mock_config)
+        # Mock settlement system
+        government.settlement_system = Mock()
 
-    government = Government(id=1, initial_assets=100000, config_module=mock_config)
-    # Mock settlement system
-    government.settlement_system = Mock()
+        # Manually set a different tax rate on the government instance to test that
+        # the *current* rate is passed, not the initial config rate.
+        government.income_tax_rate = 0.15
+        government.corporate_tax_rate = 0.25
 
-    # Manually set a different tax rate on the government instance to test that
-    # the *current* rate is passed, not the initial config rate.
-    government.income_tax_rate = 0.15
-    government.corporate_tax_rate = 0.25
-
-    return {
-        "government": government,
-        "mock_taxation_system": mock_taxation_system_instance,
-        "mock_education_ministry": mock_education_ministry_instance,
-        "mock_fiscal_policy_manager": mock_fiscal_policy_manager_instance,
-        "mock_welfare_manager": mock_welfare_manager_instance,
-        "mock_infra_manager": mock_infra_manager_instance,
-        "mock_config": mock_config
-    }
+        yield {
+            "government": government,
+            "mock_taxation_system": mock_taxation_system_instance,
+            "mock_education_ministry": mock_education_ministry_instance,
+            "mock_fiscal_policy_manager": mock_fiscal_policy_manager_instance,
+            "mock_welfare_service": mock_welfare_service_instance,
+            "mock_infra_manager": mock_infra_manager_instance,
+            "mock_config": mock_config
+        }
 
 def test_calculate_income_tax_delegation(government_setup):
     env = government_setup
@@ -129,13 +127,13 @@ def deficit_government_setup():
     # Mock settlement system to handle transfer
     government.settlement_system = Mock()
 
-    # For this test, we want real WelfareManager logic or mock it?
+    # For this test, we want real WelfareService logic or mock it?
     # The original tests tested logic inside provide_household_support.
-    # Since we moved logic to WelfareManager, we should check if Government delegates correctly.
-    # OR if we want to test the logic, we should use real WelfareManager.
+    # Since we moved logic to WelfareService, we should check if Government delegates correctly.
+    # OR if we want to test the logic, we should use real WelfareService.
     # The deficit_government_setup in original test was implicit.
-    # Now Government initializes `self.welfare_manager = WelfareManager(self)`.
-    # So it uses real WelfareManager unless mocked.
+    # Now Government initializes `self.welfare_service = WelfareService(self)`.
+    # So it uses real WelfareService unless mocked.
     # `government_setup` fixture mocks it. `deficit_government_setup` does NOT mock it explicitly.
     # So it uses the real one (which is what we want for integration-like testing of logic).
 
@@ -159,7 +157,8 @@ def test_deficit_spending_allowed_within_limit(deficit_government_setup):
 def test_deficit_spending_blocked_beyond_limit(deficit_government_setup):
     """Test that spending is blocked when it would exceed the debt/GDP limit."""
     government = deficit_government_setup
-    government._assets = -2900
+    # Manually set wallet balance to negative to force bond issuance
+    government.wallet._balances['USD'] = -2900
     target_agent = Mock()
     target_agent.id = "target_1"
 

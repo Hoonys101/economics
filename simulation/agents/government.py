@@ -17,7 +17,7 @@ from modules.government.taxation.system import TaxationSystem
 from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset
 from modules.government.components.fiscal_policy_manager import FiscalPolicyManager
 from modules.government.dtos import FiscalPolicyDTO
-from modules.government.components.welfare_manager import WelfareManager
+from modules.government.welfare.service import WelfareService
 from modules.government.components.infrastructure_manager import InfrastructureManager
 from modules.government.constants import *
 from modules.government.components.monetary_ledger import MonetaryLedger
@@ -59,7 +59,7 @@ class Government(ICurrencyHolder):
         self.ministry_of_education = MinistryOfEducation(config_module)
 
         # New Managers
-        self.welfare_manager = WelfareManager(self)
+        self.welfare_service = WelfareService(self)
         self.infrastructure_manager = InfrastructureManager(self)
         self.monetary_ledger = MonetaryLedger()
         self.policy_lockout_manager = PolicyLockoutManager()
@@ -237,6 +237,7 @@ class Government(ICurrencyHolder):
         self.revenue_breakdown_this_tick = {}
 
         self.monetary_ledger.reset_tick_flow()
+        self.welfare_service.reset_tick_flow()
 
     def process_monetary_transactions(self, transactions: List[Transaction]):
         """
@@ -458,12 +459,12 @@ class Government(ICurrencyHolder):
         )
 
     def provide_household_support(self, household: Any, amount: float, current_tick: int) -> List[Transaction]:
-        """Delegates to WelfareManager."""
+        """Delegates to WelfareService."""
         # Scapegoat Lockout Check: Keynesian Fiscal (Stimulus)
         if self.policy_lockout_manager.is_locked(PolicyActionTag.KEYNESIAN_FISCAL, current_tick):
             return []
 
-        return self.welfare_manager.provide_household_support(household, amount, current_tick)
+        return self.welfare_service.provide_household_support(household, amount, current_tick)
 
     def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:
         """Provides a bailout loan to a firm if it's eligible. Returns (LoanDTO, Transactions)."""
@@ -486,14 +487,54 @@ class Government(ICurrencyHolder):
             return None, []
 
     def get_survival_cost(self, market_data: Dict[str, Any]) -> float:
-        """ Calculates current survival cost based on food prices. Delegates to WelfareManager. """
-        return self.welfare_manager.get_survival_cost(market_data)
+        """ Calculates current survival cost based on food prices. Delegates to WelfareService. """
+        return self.welfare_service.get_survival_cost(market_data)
 
     def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int) -> List[Transaction]:
         """
-        Delegates to WelfareManager.
+        Runs welfare checks and wealth tax collection.
+        Delegates welfare logic to WelfareService.
         """
-        return self.welfare_manager.run_welfare_check(agents, market_data, current_tick)
+        transactions = []
+
+        # 1. Wealth Tax Logic (Moved from WelfareManager)
+        # Note: Ideally this should be in TaxService, but TaxService API doesn't support it yet.
+        # Implemented here to maintain functionality during refactor.
+
+        wealth_tax_rate_annual = getattr(self.config_module, "ANNUAL_WEALTH_TAX_RATE", DEFAULT_ANNUAL_WEALTH_TAX_RATE)
+        ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", DEFAULT_TICKS_PER_YEAR)
+        wealth_tax_rate_tick = wealth_tax_rate_annual / ticks_per_year
+        wealth_threshold = getattr(self.config_module, "WEALTH_TAX_THRESHOLD", DEFAULT_WEALTH_TAX_THRESHOLD)
+
+        total_wealth_tax = 0.0
+
+        for agent in agents:
+            if not getattr(agent, "is_active", False):
+                continue
+
+            if hasattr(agent, "needs") and hasattr(agent, "is_employed"): # Identifying households
+                # Safely get net worth (float)
+                net_worth = 0.0
+                if isinstance(agent.assets, dict):
+                     net_worth = agent.assets.get(DEFAULT_CURRENCY, 0.0)
+                else:
+                     net_worth = float(agent.assets)
+
+                if net_worth > wealth_threshold:
+                    tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
+                    tax_amount = min(tax_amount, net_worth)
+
+                    if tax_amount > 0 and self.settlement_system:
+                        # Use collect_tax which handles settlement and recording
+                        result = self.collect_tax(tax_amount, "wealth_tax", agent, current_tick)
+                        if result['success']:
+                             total_wealth_tax += result['amount_collected']
+
+        # 2. Welfare Check (Delegated to WelfareService)
+        welfare_txs = self.welfare_service.run_welfare_check(agents, market_data, current_tick)
+        transactions.extend(welfare_txs)
+
+        return transactions
 
     def invest_infrastructure(self, current_tick: int, households: List[Any] = None) -> List[Transaction]:
         """
@@ -505,6 +546,15 @@ class Government(ICurrencyHolder):
         """
         Called at the end of every tick to finalize statistics and push to history buffers.
         """
+        # Retrieve welfare spending from service
+        welfare_spending = self.welfare_service.get_spending_this_tick()
+        self.current_tick_stats["welfare_spending"] = welfare_spending
+
+        # Update expenditure_this_tick (aggregate)
+        if DEFAULT_CURRENCY not in self.expenditure_this_tick:
+            self.expenditure_this_tick[DEFAULT_CURRENCY] = 0.0
+        self.expenditure_this_tick[DEFAULT_CURRENCY] += welfare_spending
+
         revenue_snapshot = self.current_tick_stats["tax_revenue"].copy()
         revenue_snapshot["tick"] = current_tick
         # For simplicity, snapshot uses USD or sums main currency
