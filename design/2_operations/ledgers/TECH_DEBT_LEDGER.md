@@ -10,8 +10,8 @@
 
 ## 🏭 2. FIRMS & CORPORATE
 
-| TD-213-B | 2026-02-04 | Logic-wide Multi-Currency Migration | Firms, Metrics, and AI still hardcoded to `DEFAULT_CURRENCY` | [Report](../../reports/temp/report_20260204_141709_Architectural.md) | **CRITICAL** |
-| (No Active Items) | | | | | |
+| TD-213-B | 2026-02-04 | Logic-wide Multi-Currency Migration | Firms, Metrics, and AI still hardcoded to `DEFAULT_CURRENCY` | [Spec](../../3_work_artifacts/drafts/draft_232153__ObjectivenResolve_TD213B.md) | **SPECCED** |
+| TD-233 | 2026-02-05 | FinanceDepartment Law of Demeter Violation | Directly accesses `Household._econ_state` in profit dist | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-structural-001-15007860028193717728_audit_structural_STRUCTURAL-001.md) | **HIGH** |
 
 ## 🧠 3. DECISION & AI ENGINE (`ARCH_AI_ENGINE.md`)
 
@@ -23,12 +23,14 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
+| TD-231 | 2026-02-05 | CommerceSystem Sales Tax Planning Leak | Planning ignores tax, leading to execution failures | [Economic Audit](../../3_work_artifacts/reports/inbound/refactor_sales-tax-atomicity-inheritance-381587902011087733_audit_economic_WO_SALESTAX.md) | **HIGH** |
 | (No Active Items) | | | | |
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
+| TD-232 | 2026-02-05 | InheritanceManager Encapsulation Violation | Bypasses `TransactionProcessor`, manually mutates state | [Economic Audit](../../3_work_artifacts/reports/inbound/refactor_sales-tax-atomicity-inheritance-381587902011087733_audit_economic_WO_SALESTAX.md) | **MEDIUM** |
 | (No Active Items) | | | | | |
 
 ## 📦 6. DATA & DTO CONTRACTS
@@ -42,6 +44,7 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
+| TD-238 | 2026-02-05 | Phases Monolith (760+ Lines) | Nearing 800 line limit, hard to maintain | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-structural-001-15007860028193717728_audit_structural_STRUCTURAL-001.md) | **MEDIUM** |
 | (No Active Items) | | | | | |
 
 
@@ -50,18 +53,15 @@
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
 | TD-225 | 2026-02-04 | Dual Liquidation Logic Conflict | Write-off (Firm) vs Sell-off (Manager) mismatch | [Spec](../../3_work_artifacts/specs/TD-225_Unified_Liquidation.md) | **HIGH** |
-| (No Active Items) | | | | | |
-| (No Active Items) | | | | | |
-| (No Active Items) | | | | | |
-| (No Active Items) | | | | | |
 | TD-183 | 2026-02-04 | Sequence Documentation Drift | Need to update Gov decision loops | **ACTIVE** |
 | TD-188 | 2026-02-04 | Config Path Doc Drift | `PROJECT_STATUS.md` stale | **ACTIVE** |
 | TD-193 | 2026-02-04 | Fragmented Politics Sync | Spec vs Code drift | [Spec](../../3_work_artifacts/specs/WO-4.5_Adaptive_Brain.md) | **RESOLVED** |
-| TD-226 | 2026-02-04 | Government God Class & Hidden Deps | Components tightly coupled to central Agent | [Audit](../../3_work_artifacts/drafts/draft_134448_Synchronize_project_documentat.md) | **NEW** |
-| TD-227 | 2026-02-04 | Gov Module Circular Dependency | Agent vs Components high-risk loop | ^ | **NEW** |
-| TD-228 | 2026-02-04 | WelfareManager SRP Violation | Handles Tax, Welfare, and Stimulus | ^ | **NEW** |
-| TD-229 | 2026-02-04 | Gov Module Test Coverage | High risk of undetected regressions | ^ | **CRITICAL** |
-| TD-300 | 2026-02-04 | Unstable Gov DTO structures | Defensive `hasattr` checks required in snapshots | ^ | **NEW** |
+| TD-226 | 2026-02-04 | Government God Class & Hidden Deps | Components tightly coupled to central Agent | [Spec](../../3_work_artifacts/drafts/draft_232211__ObjectivenResolve_TD226_.md) | **SPECCED** |
+| TD-227 | 2026-02-04 | Gov Module Circular Dependency | Agent vs Components high-risk loop | [Spec](../../3_work_artifacts/drafts/draft_232211__ObjectivenResolve_TD226_.md) | **SPECCED** |
+| TD-228 | 2026-02-04 | WelfareManager SRP & State Leak | Handles Tax/Welfare + Modifies Gov history | [Spec](../../3_work_artifacts/drafts/draft_232211__ObjectivenResolve_TD226_.md) | **SPECCED** |
+| TD-229 | 2026-02-04 | Gov Module Test Coverage | High risk of undetected regressions | [Spec](../../3_work_artifacts/drafts/draft_232146__ObjectivenResolve_TD229_b.md) | **SPECCED** |
+| TD-300 | 2026-02-04 | Unstable Gov DTO structures | Defensive `hasattr` checks required in snapshots | [Spec](../../3_work_artifacts/drafts/draft_232211__ObjectivenResolve_TD226_.md) | **SPECCED** |
+| TD-234 | 2026-02-05 | WelfareService Abstraction Leak | Uses `hasattr` on raw agents instead of DTOs/Protocols | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-structural-001-15007860028193717728_audit_structural_STRUCTURAL-001.md) | **ACTIVE** |
 | (No Active Items) | | | | |
 
 ---

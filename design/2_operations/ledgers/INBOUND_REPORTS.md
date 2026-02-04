@@ -13,3 +13,8 @@
 ## Harvested on 2026-02-04 07:06:12
 - **audit_structural_god_class.md** (from `audit-structural-god-class-9257244532893801478`) -> `structural-god-class-9257244532893801478_audit_structural_god_class.md`
 - **audit_parity_AUDIT-PARITY-JULES.md** (from `audit-parity-jules-7170558188652712354`) -> `parity-jules-7170558188652712354_audit_parity_AUDIT-PARITY-JULES.md`
+
+## Harvested on 2026-02-05 06:45:41
+- **audit_economic_WO_SALESTAX.md** (from `refactor/sales-tax-atomicity-inheritance-381587902011087733`) -> `refactor_sales-tax-atomicity-inheritance-381587902011087733_audit_economic_WO_SALESTAX.md`
+- **audit_parity_WO_AUDIT.md** (from `audit-parity-WO-AUDIT-6735611159449386022`) -> `parity-wo-audit-6735611159449386022_audit_parity_WO_AUDIT.md`
+- **audit_structural_STRUCTURAL-001.md** (from `audit-structural-STRUCTURAL-001-15007860028193717728`) -> `structural-structural-001-15007860028193717728_audit_structural_STRUCTURAL-001.md`

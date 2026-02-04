@@ -11,6 +11,7 @@
 - **현재 단계:**
     - **`Phase 6: Interbank Markets & Macro-Prudential Regs`** 🏗️
         - **Goal**: Implement interbank lending, reserve requirements, and systemic risk monitoring.
+        - **Current Focus**: **Architectural Hardening (TD-226~229, 213-B, 231~234)**. Governance decoupling and multi-currency migration are pre-requisites for systemic safety in Phase 6.
 
 - **완료된 단계(Recent)**:
     - **Phase 5: Central Bank & Call Market Integration** ✅ (2026-02-04)

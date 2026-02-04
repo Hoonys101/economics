@@ -1,90 +1,54 @@
-# HANDOVER: 2026-02-03 (Phase 33: Multi-Currency Foundation)
+# HANDOVER: 2026-02-04 (Phase 5 Completion & Phase 6 Start)
 
 ## 1. Executive Summary
 
-This session implemented the **Multi-Currency Foundation** for Phase 33 (Multi-Polar World). All core agents now manage assets as `Dict[CurrencyCode, float]` and implement the `ICurrencyHolder` protocol. This lays the groundwork for future multi-nation and FX market features.
+Phase 5 (**Central Bank & Call Market Integration**) has been successfully completed today. The simulation maintains a **0.0000 money leak** status even with complex monetary flows (CB Services, Call Market, and the newborn tracking fix). We are now officially entering **Phase 6: Interbank Markets & Macro-Prudential Regs**.
 
 ---
 
-## 2. Completed Work
+## 2. Completed Work (Phase 5) ✅
 
-### Phase 33-Foundation ✅
 | Component | Change | Status |
 |:----------|:-------|:-------|
-| `modules/system/api.py` | Added `CurrencyCode`, `DEFAULT_CURRENCY`, `ICurrencyHolder` | ✅ |
-| `simulation/world_state.py` | Added `governments`, `currency_holders`, `get_total_system_money_for_diagnostics()` | ✅ |
-| `simulation/firms.py` | `assets` → `Dict`, `deposit`/`withdraw` currency-aware | ✅ |
-| `simulation/bank.py` | `ICurrencyHolder` implementation, multi-currency reserves | ✅ |
-| `simulation/agents/government.py` | `ICurrencyHolder` implementation, fiscal tracking as `Dict` | ✅ |
-| `modules/system/execution/public_manager.py` | `ICurrencyHolder` implementation, treasury as `Dict` | ✅ |
-| `scripts/trace_leak.py` | Updated for new diagnostic interface | ⚠️ Pending Debug |
+| `CentralBankService` | Integrated into simulation engine and `SettlementSystem`. | ✅ |
+| `Call Market` | Matching logic implemented and monetary delta verified. | ✅ |
+| `M2 Integrity` | Fixed newborn tracking leak (TD-230). 0.0000 leak confirmed. | ✅ |
+| `Transaction Coverage` | Interest, wages, marketing, and welfare now fully settled. | ✅ |
 
 ### Documentation Updates ✅
-- `PROJECT_STATUS.md`: Updated with Phase 33-Foundation completion and roadmap (33-A/B).
-- `TECH_DEBT_LEDGER.md`: Added TD-211 (trace_leak bug) and TD-212 (legacy float callers).
+- `PROJECT_STATUS.md`: Updated to Phase 6 status.
+- `TECH_DEBT_LEDGER.md`: Resolved Phase 5 items, added Government module decoupling debts (TD-226~229).
 
 ---
 
-## 3. Pending Work (Next Session)
+## 3. Current Focus & Pending Work
 
-### 🔴 CRITICAL: Jules Debugging Mission
-**Mission Key**: `PH33_DEBUG`
-**Target**: `scripts/trace_leak.py`
-**Issue**: `NameError: name 'DEFAULT_CURRENCY' is not defined`
-**Action**: Run `.\jules-go.bat` to execute the armed mission.
+### 🔴 CRITICAL: Government Module Decoupling (TD-226~229)
+Phase 4/5 integration revealed that `simulation/agents/government.py` has become a "God Class" with circular dependencies and SRP violations (WelfareManager handling Tax, etc.). This is the primary blocker for systemic safety.
 
-### Phase 4 Finalization (Gemini)
-The following Gemini missions are armed in `command_registry.json`:
+**Next Missions**:
+1. **TD-226/227**: Resolve circular dependencies and "God Class" patterns in Government.
+2. **TD-228**: Extract welfare/tax logic into dedicated SRP-compliant managers.
+3. **TD-229**: Improve Gov module unit test coverage.
 
-| Key | Title | Worker | Purpose |
-|:----|:------|:-------|:--------|
-| `PH33_HANDOVER` | Phase 33 Handover Report | `reporter` | Generate formal handover to `_archive/handovers/` |
-| `PH33_LEDGER_UPDATE` | Update Tech Debt Ledger | `audit` | Verify ledger consistency |
-| `PH33_STATUS_UPDATE` | Update Project Status | `context` | Verify status doc alignment |
-
-**Action**: Run `.\gemini-go.bat` after Jules completes debugging.
+### 🏗️ Phase 6: Interbank Markets
+1. **Reserve Requirements**: Implementing commercial bank reserve ratios.
+2. **Overnight Repo Market**: Interbank lending infrastructure.
+3. **Systemic Risk Monitor**: Expansion of `BubbleObservatory`.
 
 ---
 
-## 4. Roadmap: Phase 33 (Multi-Polar World)
+## 4. Key Technical Decisions (Session 2026-02-04)
 
-| Sub-Phase | Description | Status |
-|:----------|:------------|:-------|
-| **33-Foundation** | Multi-Currency Asset Representation (`ICurrencyHolder`) | ✅ Done |
-| **33-A** | Exogenous Foreign Economy API (Lightweight, Abstract) | 🔲 Next |
-| **33-B** | Full Agent-Based Multi-Nation (High Compute, Optional) | 🔲 Pending Analysis |
-| **FX Market** | Atomic Currency Exchange via SettlementSystem | 🔲 Future |
-| **Cross-Border Trade** | Import/Export Logic | 🔲 Future |
-
-> **Design Note**: Given the ~1000 agent population, **Phase 33-A (API-based)** is the pragmatic first step. Phase 33-B (full simulation) requires a compute feasibility study.
+1. **Newborn Tracker Fix**: Updated `LifecycleManager` to ensure newly spawned agents are registered in `WorldState.currency_holders` immediately, preventing M2 calculation drift.
+2. **Protocol-Driven Settlement**: Finalized Phase 5 using the `SettlementSystem` as the single point of truth for monetary movement.
 
 ---
 
-## 5. Key Technical Decisions
+## 5. Next Agent Instruction
 
-1. **`ICurrencyHolder` Protocol**: Decouples `WorldState` money calculation from concrete agent types (OCP/SRP).
-2. **`DEFAULT_CURRENCY = "USD"`**: All legacy float-based logic defaults to USD for backward compatibility.
-3. **Diagnostic Interface**: `get_total_system_money_for_diagnostics()` sums USD holdings across all `ICurrencyHolder` instances.
-
----
-
-## 6. Files Modified
-
-- `modules/system/api.py`
-- `simulation/world_state.py`
-- `simulation/firms.py`
-- `simulation/bank.py`
-- `simulation/agents/government.py`
-- `modules/system/execution/public_manager.py`
-- `simulation/components/finance_department.py`
-- `simulation/dtos/api.py`
-- `modules/household/dtos.py`
-- `simulation/dtos/firm_state_dto.py`
-- `modules/government/dtos.py`
-- `scripts/trace_leak.py`
-- `PROJECT_STATUS.md`
-- `TECH_DEBT_LEDGER.md`
+- **Planning**: Draft an implementation plan for **Government Module Decoupling (TD-226~229)**. This should be prioritized over Phase 6 features to ensure the structural integrity of the "Leviathan".
+- **Execution**: Arm Gemini for specification writing and Jules for the extraction of `WelfareManager` (TD-228).
 
 ---
-
-> **Next Agent Instruction**: Execute `.\jules-go.bat` for `PH33_DEBUG`, then `.\gemini-go.bat` for Phase 4 finalization.
+*Report prepared by Antigravity (Team Lead).*
