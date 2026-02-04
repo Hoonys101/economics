@@ -1,281 +1,451 @@
-# Spec: Central Bank & Call Market (Phase 5)
+I will now create the two `api.py` files and the `spec.md` file as requested.
 
-## 1. Overview
-This document specifies the architecture for Phase 5, introducing key monetary policy instruments. It defines the interfaces for a central bank (`ICentralBank`) responsible for setting the policy rate and conducting open market operations, and a call market (`ICallMarket`) for inter-agent reserve lending. This design integrates with the `ITreasuryService` to ensure a cohesive financial system.
+First, `modules/finance/central_bank/api.py`:
+I will now create the two `api.py` files and the `spec.md` file as requested.
 
-## 2. Core Components
-
-### 2.1. `ICentralBank`
-- **Responsibility**: Manages the economy's base interest rate and influences liquidity by transacting with the Treasury.
-- **Key Functions**: Setting the policy rate, buying/selling government bonds.
-
-### 2.2. `ICallMarket`
-- **Responsibility**: Facilitates short-term (e.g., single-tick) lending and borrowing of base reserves between financial agents (e.g., Firms).
-- **Key Functions**: Matching lenders with borrowers, determining the market-clearing call rate based on supply, demand, and the policy rate.
-
-### 2.3. `ITreasuryService` (External Dependency)
-- **Responsibility**: Manages government debt and finances.
-- **Assumed Interface**: Must provide a mechanism for the Central Bank to purchase bonds (`sell_bonds_to_central_bank`).
-
-## 3. Interface & DTO Definitions
+First, `modules/finance/central_bank/api.py`:
 
 ```python
-# In: modules/finance/api.py
+# --- modules/finance/central_bank/api.py ---
+from __future__ import annotations
+from typing import Protocol, TypedDict, Literal, List, TYPE_CHECKING
+from abc import abstractmethod
 
-from typing import Protocol, TypedDict, Optional
+if TYPE_CHECKING:
+    # This service is expected to be defined in a government module,
+    # managing the issuance and market for government securities.
+    # This is a forward reference to avoid circular imports.
+    from modules.government.treasury.api import ITreasuryService, BondDTO
 
-# --- DTOs for Data Transfer ---
+# ==============================================================================
+# Data Transfer Objects (DTOs)
+# ==============================================================================
 
 class PolicyRateDTO(TypedDict):
-    """Data Transfer Object for the policy interest rate."""
+    """
+    Represents the central bank's policy interest rate.
+    This is a pure data object for inter-system communication.
+    """
     rate: float
-    tick: int
+    effective_tick: int
+    decision_tick: int
 
 class OpenMarketOperationResultDTO(TypedDict):
-    """Result of an open market operation."""
+    """
+    Summarizes the outcome of an open market operation, ensuring a clear
+    record of the transaction for auditing and analysis.
+    """
     success: bool
-    bonds_transacted: int
+    operation_type: Literal["purchase", "sale"]
+    bonds_transacted_count: int
     cash_transferred: float
     message: str
 
-class CallLoanRequestDTO(TypedDict):
-    """Request from an agent to borrow from the call market."""
-    borrower_id: str
-    amount: float
+# ==============================================================================
+# Exceptions
+# ==============================================================================
 
-class CallLoanResponseDTO(TypedDict):
-    """Response to a call loan request."""
-    success: bool
-    loan_id: Optional[str]
-    amount_granted: float
-    interest_rate: float
-    message: str
+class InvalidPolicyRateError(Exception):
+    """Raised when an attempt is made to set an invalid policy rate (e.g., negative)."""
+    pass
 
-class TreasurySaleResponseDTO(TypedDict):
-    """A generic response from the Treasury for a sales operation."""
-    success: bool
-    details: str
-
-# --- Interfaces (Protocols) ---
-
-class ITreasuryService(Protocol):
+class TreasuryServiceError(Exception):
     """
-    Assumed interface for the Treasury. The Central Bank will interact with this
-    to conduct open market operations.
+    Raised when an interaction with the ITreasuryService fails, for example,
+    if there are not enough bonds available for purchase.
     """
-    def sell_bonds_to_central_bank(self, quantity: int, price: float) -> TreasurySaleResponseDTO:
-        """Sells a specified quantity of bonds to the central bank."""
-        ...
+    pass
+
+# ==============================================================================
+# Interface
+# ==============================================================================
 
 class ICentralBank(Protocol):
     """
-    Interface for the central monetary authority.
+    Defines the contract for the Central Bank, responsible for monetary policy
+    execution. Its primary levers are the policy rate and open market operations,
+    which are used to influence the money supply and steer market rates.
     """
-    def set_policy_rate(self, rate: float, tick: int) -> None:
+
+    @abstractmethod
+    def set_policy_rate(self, rate: float) -> PolicyRateDTO:
         """
-        Sets the base policy interest rate for the economy.
-        This is a key lever for monetary policy.
+        Sets the main policy interest rate for the economy.
+
+        This rate acts as a crucial benchmark for the entire financial system,
+        heavily influencing inter-bank lending rates (e.g., in the call market)
+        and subsequent commercial lending rates to firms and households.
+
+        Args:
+            rate: The new policy interest rate (e.g., 0.05 for 5%).
+
+        Returns:
+            A DTO confirming the new rate and the tick it becomes effective.
+
+        Raises:
+            InvalidPolicyRateError: If the provided rate is outside a valid range.
         """
         ...
 
+    @abstractmethod
     def get_policy_rate(self) -> PolicyRateDTO:
-        """Retrieves the current policy rate."""
+        """
+        Retrieves the current policy interest rate.
+
+        Returns:
+            A DTO containing the current rate information.
+        """
         ...
 
-    def conduct_open_market_operations(
+    @abstractmethod
+    def conduct_open_market_operation(
         self,
-        treasury: ITreasuryService,
-        quantity_to_buy: int
+        treasury_service: "ITreasuryService",
+        operation_type: Literal["purchase", "sale"],
+        target_cash_amount: float
     ) -> OpenMarketOperationResultDTO:
         """
-        Injects liquidity by purchasing bonds from the treasury.
-        A negative quantity would signify selling bonds to withdraw liquidity.
-        """
-        ...
+        Executes open market operations by buying or selling government bonds.
 
+        - 'purchase': The central bank buys bonds from commercial banks,
+                      injecting cash (reserves) into the banking system.
+        - 'sale': The central bank sells bonds to commercial banks,
+                  withdrawing cash (reserves) from the banking system.
 
-class ICallMarket(Protocol):
-    """
-    Interface for the short-term inter-agent lending market.
-    """
-    def request_loan(self, request: CallLoanRequestDTO) -> CallLoanResponseDTO:
-        """An agent requests a loan for the current tick."""
-        ...
+        This is the primary mechanism for managing the level of reserves in the
+        banking system to keep the inter-bank lending rate close to the policy rate.
 
-    def supply_reserves(self, lender_id: str, amount: float) -> None:
-        """An agent supplies reserves to the market for lending."""
-        ...
+        Args:
+            treasury_service: The interface for accessing the government bond market.
+            operation_type: The type of operation to execute ('purchase' or 'sale').
+            target_cash_amount: The total cash value of bonds to be transacted.
 
-    def process_market_clearing(self, policy_rate: float) -> float:
-        """
-        Matches lenders and borrowers, calculates the call rate, and executes loans.
-        This should be called once per tick by the simulation engine.
-        Returns the calculated market-clearing call rate for the tick.
+        Returns:
+            A DTO summarizing the result of the operation.
+
+        Raises:
+            TreasuryServiceError: If the treasury service cannot fulfill the request.
         """
         ...
 ```
 
-## 4. Logic Steps (Pseudo-code)
+Second, `modules/finance/call_market/api.py`:
 
-### 4.1. `ICentralBank.conduct_open_market_operations`
-1.  Determine the target quantity of bonds to buy or sell.
-2.  Query a market module (TBD) for the current price of government bonds. If unavailable, use face value.
-3.  Call `treasury.sell_bonds_to_central_bank(quantity, price)`.
-4.  If the treasury operation is successful:
-    a.  Debit the Central Bank's cash reserves by `quantity * price`.
-    b.  Credit the Central Bank's bond assets by `quantity`.
-    c.  Credit the Treasury's cash account (and by extension, the reserves in the system).
-5.  Return an `OpenMarketOperationResultDTO` detailing the transaction.
-
-### 4.2. `ICallMarket.process_market_clearing`
-1.  Sum the total reserves supplied by all lenders for the current tick.
-2.  Sum the total loan amounts requested by all borrowers.
-3.  Calculate the liquidity ratio: `liquidity_ratio = total_supplied / total_requested`.
-4.  Define a spread based on demand. E.g., `spread = max(0, (1 - liquidity_ratio) * SPREAD_SENSITIVITY_PARAM)`.
-5.  Calculate the market-clearing call rate: `call_rate = policy_rate + spread`.
-6.  **If `liquidity_ratio >= 1` (Sufficient Funds):**
-    a.  Iterate through all loan requests.
-    b.  Grant each loan in full at the calculated `call_rate`.
-    c.  Create a loan record (due next tick).
-    d.  Update lender and borrower balance sheets.
-7.  **If `liquidity_ratio < 1` (Insufficient Funds):**
-    a.  Iterate through all loan requests.
-    b.  Grant a prorated loan amount: `amount_granted = request.amount * liquidity_ratio`.
-    c.  Create loan records for the prorated amounts at the calculated `call_rate`.
-    d.  Update balance sheets.
-8.  Return the calculated `call_rate`.
-9.  Clear all supplied reserves and pending requests for the next tick.
-
-## 5. Exception Handling
-- **`ICentralBank`**:
-  - `TreasuryOperationError`: Raised if `treasury.sell_bonds_to_central_bank` returns `success: false`. The OMO fails.
-- **`ICallMarket`**:
-  - `InsufficientLiquidityError`: While not an exception that stops the process, the log should clearly state when demand exceeds supply and loans are prorated.
-  - `InvalidAgentIDError`: Raised if a `borrower_id` or `lender_id` does not exist in the agent registry.
-
-## 6. Verification Plan
-- **Unit Tests**:
-  - `test_central_bank_set_rate`: Verify `set_policy_rate` updates the internal state correctly.
-  - `test_call_market_clearing_sufficient_liquidity`: Scenario where supply >= demand. Verify all loans are granted and `call_rate` is close to `policy_rate`.
-  - `test_call_market_clearing_insufficient_liquidity`: Scenario where supply < demand. Verify loans are prorated and `call_rate` is significantly higher than `policy_rate`.
-- **Integration Test (`test_monetary_policy_channel`)**:
-  1.  Setup: Use `golden_firms` fixture. Designate 2 firms as lenders, 2 as borrowers.
-  2.  Action 1: `ICentralBank.set_policy_rate(0.05)`.
-  3.  Action 2: Lenders supply reserves to `ICallMarket`. Borrowers request loans.
-  4.  Action 3: `ICallMarket.process_market_clearing()`.
-  5.  Assert: Verify the final `call_rate` and that balance sheets were updated correctly.
-  6.  Action 4: `ICentralBank.conduct_open_market_operations(treasury_mock, quantity_to_buy=1000)`.
-  7.  Action 5: Rerun `ICallMarket.process_market_clearing()` with the same requests.
-  8.  Assert: The increased system liquidity should lower the new `call_rate` compared to the previous one.
-
-## 7. Mocking Guide
-- **`ITreasuryService`**: For all unit and most integration tests, a mock implementation of `ITreasuryService` will be required. This mock should simply return `success: true` and allow inspection of the `quantity` and `price` it was called with.
-- **Agents**: All participating agents (lenders, borrowers) will be drawn from the `golden_firms` and `golden_households` conftest fixtures. **DO NOT** use `MagicMock()` to create new agents, as this breaks type contracts and validation.
-- **Custom Scenarios**: If a test requires a specific agent balance sheet that is not in the golden set, use `scripts/fixture_harvester.py`'s `GoldenLoader` to load a specific snapshot.
-
-## 8. 🚨 Schema Change Notice
-The introduction of `PolicyRateDTO`, `CallLoanRequestDTO`, etc., constitutes a schema change. If the state of the call market or central bank needs to be persisted in simulation snapshots, the `fixture_harvester.py` script and its underlying schemas may need to be updated to recognize these new objects.
-
-## 9. 🚨 Risk & Impact Audit (Technology Risk Analysis)
-- **Circular Dependency Risk**: `modules.finance` (this spec) will have a dependency on `modules.government.treasury` (via `ITreasuryService`). The implementation must ensure that `treasury` does not, in turn, import from `finance` to avoid a circular import. The dependency must be one-way.
-- **Test Impact**: Existing integration tests that run the full simulation loop will fail without a concrete implementation of `ICentralBank` and `ICallMarket` being provided to the simulation runner. A default "do-nothing" implementation may be required to prevent breaking unrelated tests.
-- **Configuration Dependency**: The simulation will require new parameters in `economy_params.yaml`, such as `initial_policy_rate` and `call_market_spread_sensitivity`. The implementation must handle the absence of these configs gracefully (e.g., by using default values) but log a clear warning.
-- **Precedent Work**: This entire feature is blocked until `ITreasuryService` and its `sell_bonds_to_central_bank` method are defined and implemented in Thread 1. The contract must be agreed upon and finalized before implementation begins.
-
----
-*Generated by Scribe-Assistant. Ready for `gemini_worker.py`.*
----
 ```python
-# Path: modules/finance/api.py
-from typing import Protocol, TypedDict, Optional, List
+# --- modules/finance/call_market/api.py ---
+from __future__ import annotations
+from typing import Protocol, TypedDict, List, Optional
+from abc import abstractmethod
 
-# --- DTOs for Data Transfer ---
-
-class PolicyRateDTO(TypedDict):
-    """Data Transfer Object for the policy interest rate."""
-    rate: float
-    tick: int
-
-class OpenMarketOperationResultDTO(TypedDict):
-    """Result of an open market operation."""
-    success: bool
-    bonds_transacted: int
-    cash_transferred: float
-    message: str
+# ==============================================================================
+# Data Transfer Objects (DTOs)
+# ==============================================================================
 
 class CallLoanRequestDTO(TypedDict):
-    """Request from an agent to borrow from the call market."""
-    borrower_id: str
+    """
+    A request from a commercial bank to borrow reserves.
+    """
+    borrower_id: int
     amount: float
+    max_interest_rate: float # The highest rate the borrower is willing to pay.
 
-class CallLoanResponseDTO(TypedDict):
-    """Response to a call loan request."""
-    success: bool
-    loan_id: Optional[str]
-    amount_granted: float
+class CallLoanOfferDTO(TypedDict):
+    """
+    An offer from a commercial bank to lend reserves.
+    """
+    lender_id: int
+    amount: float
+    min_interest_rate: float # The lowest rate the lender is willing to accept.
+
+class CallLoanDTO(TypedDict):
+    """
+    Represents a successfully matched loan in the call market.
+    This is an immutable record of a completed transaction.
+    """
+    loan_id: str
+    lender_id: int
+    borrower_id: int
+    amount: float
     interest_rate: float
-    message: str
+    origination_tick: int
+    maturity_tick: int
 
-class TreasurySaleResponseDTO(TypedDict):
-    """A generic response from the Treasury for a sales operation."""
-    success: bool
-    details: str
-
-# --- Interfaces (Protocols) ---
-
-class ITreasuryService(Protocol):
+class MarketClearingResultDTO(TypedDict):
     """
-    Assumed interface for the Treasury. The Central Bank will interact with this
-    to conduct open market operations.
+    Summarizes the state of the market after a clearing event.
     """
-    def sell_bonds_to_central_bank(self, quantity: int, price: float) -> TreasurySaleResponseDTO:
-        """Sells a specified quantity of bonds to the central bank."""
-        ...
+    cleared_volume: float
+    weighted_average_rate: float
+    matched_loans: List[CallLoanDTO]
 
-class ICentralBank(Protocol):
-    """
-    Interface for the central monetary authority.
-    """
-    def set_policy_rate(self, rate: float, tick: int) -> None:
-        """
-        Sets the base policy interest rate for the economy.
-        This is a key lever for monetary policy.
-        """
-        ...
+# ==============================================================================
+# Exceptions
+# ==============================================================================
 
-    def get_policy_rate(self) -> PolicyRateDTO:
-        """Retrieves the current policy rate."""
-        ...
+class InsufficientReservesError(Exception):
+    """Raised if a bank attempts to offer a loan with reserves it does not have."""
+    pass
 
-    def conduct_open_market_operations(
-        self,
-        treasury: ITreasuryService,
-        quantity_to_buy: int
-    ) -> OpenMarketOperationResultDTO:
-        """
-        Injects liquidity by purchasing bonds from the treasury.
-        A negative quantity would signify selling bonds to withdraw liquidity.
-        """
-        ...
-
+# ==============================================================================
+# Interface
+# ==============================================================================
 
 class ICallMarket(Protocol):
     """
-    Interface for the short-term inter-agent lending market.
+    Defines the contract for the Call Market, an inter-bank market for short-term
+    (typically overnight) lending and borrowing of reserves.
+
+    This market is crucial for banks to manage their daily liquidity needs and
+    meet reserve requirements. The interest rate in this market is a key
+    target of central bank monetary policy.
     """
-    def request_loan(self, request: CallLoanRequestDTO) -> CallLoanResponseDTO:
-        """An agent requests a loan for the current tick."""
-        ...
 
-    def supply_reserves(self, lender_id: str, amount: float) -> None:
-        """An agent supplies reserves to the market for lending."""
-        ...
-
-    def process_market_clearing(self, policy_rate: float) -> float:
+    @abstractmethod
+    def submit_loan_request(self, request: CallLoanRequestDTO) -> None:
         """
-        Matches lenders and borrowers, calculates the call rate, and executes loans.
-        This should be called once per tick by the simulation engine.
-        Returns the calculated market-clearing call rate for the tick.
+        A bank submits a bid to borrow reserves.
+
+        Args:
+            request: A DTO containing the details of the borrowing request.
         """
         ...
+
+    @abstractmethod
+    def submit_loan_offer(self, offer: CallLoanOfferDTO) -> None:
+        """
+        A bank submits an offer to lend reserves.
+
+        Args:
+            offer: A DTO containing the details of the lending offer.
+
+        Raises:
+            InsufficientReservesError: If the lending bank does not have enough
+                                       reserves to cover the offer.
+        """
+        ...
+
+    @abstractmethod
+    def clear_market(self) -> MarketClearingResultDTO:
+        """
+        Matches buy (request) and sell (offer) orders to clear the market.
+
+        This process determines the clearing interest rate and the volume of
+        loans transacted for the session. It should be called once per cycle
+        after all bids and offers have been submitted.
+
+        Returns:
+            A DTO summarizing the loans that were matched and the market rate.
+        """
+        ...
+
+    @abstractmethod
+    def get_market_rate(self) -> float:
+        """
+        Retrieves the last calculated weighted average interest rate for the market.
+
+        Returns:
+            The interest rate from the last market clearing. Returns a default or
+            last known value if the market has not cleared yet.
+        """
+        ...
+
+    @abstractmethod
+    def settle_matured_loans(self) -> None:
+        """
+        Processes loans that have reached their maturity date.
+
+        This involves transferring the principal and accrued interest from the
+        borrower's reserve account back to the lender's reserve account.
+        """
+        ...
+```
+
+Third, `design/3_work_artifacts/specs/phase5_monetary_policy_spec.md`:
+
+```markdown
+# Spec: Phase 5 - Monetary Policy Engine
+**Domain**: Finance
+**Author**: Gemini (Scribe)
+**Status**: Draft
+
+## 1. Overview & Goals
+This specification details the architecture for two core components of the monetary system: `ICentralBank` and `ICallMarket`. The goal is to establish a framework where the central bank can implement monetary policy, influencing the economy by setting a policy rate and managing liquidity, with the effects propagating through an inter-bank lending market.
+
+This system directly integrates with the `ITreasuryService` for conducting open market operations.
+
+## 2. Component: `ICentralBank`
+The `ICentralBank` is the primary agent of monetary policy. It has two main tools: setting the policy rate and conducting Open Market Operations (OMO).
+
+### 2.1. API & DTOs
+- **`ICentralBank(Protocol)`**:
+  - `set_policy_rate(rate: float) -> PolicyRateDTO`
+  - `get_policy_rate() -> PolicyRateDTO`
+  - `conduct_open_market_operation(...) -> OpenMarketOperationResultDTO`
+- **DTOs**:
+  - `PolicyRateDTO`: `{rate: float, effective_tick: int, decision_tick: int}`
+  - `OpenMarketOperationResultDTO`: `{success: bool, operation_type: Literal, ...}`
+
+### 2.2. Logic (Pseudo-code)
+
+#### `set_policy_rate`
+```pseudo
+FUNCTION set_policy_rate(rate):
+  IF rate < 0:
+    RAISE InvalidPolicyRateError("Rate cannot be negative")
+  
+  self.state.policy_rate = rate
+  self.state.effective_tick = current_tick + 1
+  
+  RETURN PolicyRateDTO(rate=rate, effective_tick=self.state.effective_tick, ...)
+```
+
+#### `conduct_open_market_operation`
+This function is the bridge to the `ITreasuryService`.
+```pseudo
+FUNCTION conduct_open_market_operation(treasury_service, type, amount):
+  // 1. Central Bank requests to buy or sell bonds from the Treasury Service
+  //    The treasury service is assumed to handle the transaction with the market (commercial banks)
+  IF type == "purchase":
+    // CB wants to inject money. It buys bonds from commercial banks.
+    // The treasury_service finds sellers and facilitates the transfer.
+    // The result includes the cash transferred and bonds exchanged.
+    result = treasury_service.execute_market_purchase(
+        buyer_id="CENTRAL_BANK", 
+        target_cash_amount=amount
+    )
+  ELSE: // "sale"
+    // CB wants to remove money. It sells its own bond holdings to commercial banks.
+    result = treasury_service.execute_market_sale(
+        seller_id="CENTRAL_BANK",
+        target_cash_amount=amount
+    )
+
+  // 2. The transaction settlement (handled by a SettlementSystem) will move cash
+  //    between the commercial banks and the central bank, thus changing the
+  //    total reserves in the banking system.
+  
+  IF result.success == FALSE:
+    RAISE TreasuryServiceError(result.message)
+
+  RETURN OpenMarketOperationResultDTO(
+      success=true,
+      bonds_transacted_count=result.bonds_exchanged,
+      cash_transferred=result.cash_exchanged,
+      ...
+  )
+```
+
+### 2.3. Exception Handling
+- `InvalidPolicyRateError`: Thrown if `set_policy_rate` receives a negative value.
+- `TreasuryServiceError`: Thrown if `conduct_open_market_operation` fails because the `ITreasuryService` cannot execute the trade (e.g., no bonds available to purchase).
+
+## 3. Component: `ICallMarket`
+The `ICallMarket` is where commercial banks lend and borrow reserves among themselves on a short-term basis. The interest rate here (`call_rate`) is heavily influenced by the supply of reserves, which is controlled by the `ICentralBank`.
+
+### 3.1. API & DTOs
+- **`ICallMarket(Protocol)`**:
+  - `submit_loan_request(request: CallLoanRequestDTO)`
+  - `submit_loan_offer(offer: CallLoanOfferDTO)`
+  - `clear_market() -> MarketClearingResultDTO`
+  - `get_market_rate() -> float`
+  - `settle_matured_loans()`
+- **DTOs**:
+  - `CallLoanRequestDTO`: `{borrower_id: int, amount: float, max_interest_rate: float}`
+  - `CallLoanOfferDTO`: `{lender_id: int, amount: float, min_interest_rate: float}`
+  - `CallLoanDTO`: `{loan_id: str, lender_id: int, borrower_id: int, ...}`
+  - `MarketClearingResultDTO`: `{cleared_volume: float, weighted_average_rate: float, ...}`
+
+### 3.2. Logic (Pseudo-code)
+
+#### `clear_market`
+```pseudo
+FUNCTION clear_market():
+  // 1. Get all submitted offers and requests for the current tick.
+  offers = self.get_pending_offers() // -> List[CallLoanOfferDTO]
+  requests = self.get_pending_requests() // -> List[CallLoanRequestDTO]
+
+  // 2. Sort orders to facilitate matching.
+  SORT offers by min_interest_rate ASCENDING
+  SORT requests by max_interest_rate DESCENDING
+
+  matched_loans = []
+  total_volume = 0
+  total_rate_volume = 0
+
+  // 3. Iterate and match.
+  offer_idx = 0
+  request_idx = 0
+  WHILE offer_idx < len(offers) AND request_idx < len(requests):
+    current_offer = offers[offer_idx]
+    current_request = requests[request_idx]
+
+    // Condition to match: borrower's max rate is >= lender's min rate
+    IF current_request.max_interest_rate >= current_offer.min_interest_rate:
+      // Match found. Determine clearing rate and volume.
+      clearing_rate = (current_request.max_interest_rate + current_offer.min_interest_rate) / 2
+      clearing_volume = min(current_offer.amount, current_request.amount)
+      
+      // Create the loan record.
+      loan = create_loan_dto(
+          lender=current_offer.lender_id,
+          borrower=current_request.borrower_id,
+          amount=clearing_volume,
+          rate=clearing_rate
+      )
+      matched_loans.append(loan)
+
+      // Update aggregates
+      total_volume += clearing_volume
+      total_rate_volume += clearing_volume * clearing_rate
+
+      // Update amounts and advance indices
+      current_offer.amount -= clearing_volume
+      current_request.amount -= clearing_volume
+      IF current_offer.amount == 0:
+        offer_idx += 1
+      IF current_request.amount == 0:
+        request_idx += 1
+    ELSE:
+      // No match possible at this price point.
+      BREAK
+
+  // 4. Trigger settlement for the newly created loans via SettlementSystem.
+  //    This will move reserves between the banks' accounts.
+  settlement_system.settle_call_loans(matched_loans)
+  
+  // 5. Return summary
+  avg_rate = total_rate_volume / total_volume IF total_volume > 0 ELSE 0
+  RETURN MarketClearingResultDTO(
+      cleared_volume=total_volume,
+      weighted_average_rate=avg_rate,
+      matched_loans=matched_loans
+  )
+```
+
+### 3.3. Exception Handling
+- `InsufficientReservesError`: Thrown if a bank calls `submit_loan_offer` with an amount greater than its available reserves. This check must happen before the offer is accepted by the market.
+
+## 4. Verification & Mocking
+
+### 4.1. Golden Data & Mock Strategy
+- **`ITreasuryService` Mock**: A mock implementation of `ITreasuryService` is essential. It should have a predictable inventory of bonds and be able to simulate successful and failed purchase/sale operations.
+- **Commercial Bank Fixtures**: Tests should use `golden_firms` or similar fixtures to represent commercial banks. These fixtures must be initialized with a `wallet` and a `reserve_account`.
+  - **Setup**: `tests/conftest.py` will need to be extended to ensure test banks have a starting quantity of reserves.
+- **Scenario Testing**:
+  1. **Liquidity Squeeze**: Test a scenario where `ICentralBank` performs a bond `sale`, draining reserves. Verify that the `call_rate` in `ICallMarket` rises as a result.
+  2. **Liquidity Glut**: Test a scenario where `ICentralBank` performs a bond `purchase`, injecting reserves. Verify that the `call_rate` falls.
+  3. **No Match**: Test `clear_market` when `max_interest_rate` of all requests is below `min_interest_rate` of all offers. Verify `cleared_volume` is 0.
+
+### 4.2. Schema Change Notice
+- Any change to `BondDTO` in the `ITreasuryService` will require updating the mock `ITreasuryService` and any related test fixtures.
+
+## 5. Risk & Impact Audit
+
+- **[High] Circular Dependency**: `ICentralBank` depends on `ITreasuryService`. Care must be taken to ensure that `ITreasuryService` does not have a hard dependency back on `ICentralBank` within the same transaction tick, as this could cause a deadlock or infinite loop. The dependency should be one-way: `CentralBank -> TreasuryService`.
+- **[Medium] Test Impact**: Existing tests for commercial banks that only model a simple `wallet` will need to be updated. The concept of `reserves` vs. `deposits` must be clearly delineated, and bank tests must account for reserve changes from call market and OMO activities.
+- **[Low] Configuration Dependency**: `economy_params.yaml` will need new entries:
+  - `central_bank.initial_policy_rate`
+  - `call_market.loan_duration_ticks` (e.g., 1 for overnight)
+- **[Medium] Settlement Logic**: The design assumes a `SettlementSystem` is responsible for the atomic transfer of reserves and bonds. The implementation of this system is critical. A failure in settlement would break the entire monetary engine. The interfaces for settlement must be robust.
+- **[Recommendation] Precedent Task**: Before implementing `conduct_open_market_operation`, the `ITreasuryService` API must be finalized and a stable mock implementation must be available.
 ```

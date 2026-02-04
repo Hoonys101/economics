@@ -1,380 +1,315 @@
-# Design Document: Transaction Engine
+# Spec: Transaction Engine
 
-## 1. Introduction
+## 1. Overview
 
-- **Purpose**: To design a robust, SRP-compliant engine for handling all financial transactions within the simulation.
-- **Scope**: This design covers the validation and execution of transfers between any two accounts (e.g., household to firm, firm to government).
-- **Goals**:
-    - **Decoupling**: Strictly separate transaction validation from execution.
-    - **Atomicity**: Ensure transactions are all-or-nothing.
-    - **Extensibility**: Prepare for multi-currency support from the ground up.
-    - **Testability**: Design for easy unit testing with clear dependencies.
+This document specifies the design for a Transaction Engine module. The primary goal is to create a robust, maintainable, and testable system for handling all financial transactions within the simulation.
 
-## 2. System Architecture (High-Level)
+The design adheres strictly to the Single Responsibility Principle (SRP) by decoupling the core stages of a transaction: Validation, Execution, and Recording. This architecture prepares the system for future enhancements, such as multi-currency support and transaction fees, without requiring major refactoring.
 
-The engine follows a pipeline architecture, ensuring Single Responsibility at each stage.
+## 2. Logic Steps (Pseudo-code)
 
-```
-+-----------------------+      +-------------------------+      +------------------------+      +-----------------------+
-|        Client         |----->|   ITransactionEngine    |----->|  ITransactionValidator |----->|   ITransactionExecutor  |
-| (e.g., Market, Govt)  |      | (Orchestrator)          |      | (Pre-flight Checks)    |      | (Atomic Execution)    |
-+-----------------------+      +-------------------------+      +------------------------+      +-----------+-----------+
-                                                                                                              |
-                                                                                                              v
-                                                                                                   +-----------------------+
-                                                                                                   |   IAccountServiceDAO  |
-                                                                                                   | (Ledger Interaction)  |
-                                                                                                   +-----------------------+
-```
+The `TransactionEngine` will orchestrate the process, delegating tasks to specialized components.
 
-- **ITransactionEngine**: The public-facing entry point. It orchestrates the validation and execution process.
-- **ITransactionValidator**: Performs all possible pre-flight checks that don't require locking resources (e.g., schema validation, account existence).
-- **ITransactionExecutor**: Performs the atomic transfer, including the final balance check and updates. This is the only component that mutates state.
-- **IAccountServiceDAO**: A Data Access Object responsible for abstracting the underlying ledger or account database.
-
-## 3. Detailed Design
-
-### 3.1. API/Interface (`api.py`)
-
-#### **Data Transfer Objects (DTOs)**
 ```python
-# In: modules/finance/dtos.py (or a new api.py)
+# Inside TransactionEngine.process_transaction method:
 
-from typing import TypedDict, Optional, Literal, List
-from decimal import Decimal
-
-class TransactionRequestDTO(TypedDict):
-    """Data required to request a transaction."""
-    sender_id: str
-    receiver_id: str
-    amount: Decimal
-    currency: str
-    memo: Optional[str]
-    # To prevent double-spending in async scenarios
-    idempotency_key: str 
-
-class ValidationResultDTO(TypedDict):
-    """Result of a pre-flight validation check."""
-    is_valid: bool
-    reasons: List[str]
-
-class TransactionRecordDTO(TypedDict):
-    """A record of a completed and committed transaction."""
-    transaction_id: str
-    sender_id: str
-    receiver_id: str
-    amount: Decimal
-    currency: str
-    timestamp: float # Unix timestamp
-    memo: Optional[str]
-
-class TransactionResultDTO(TypedDict):
-    """Final result returned to the client."""
-    status: Literal["SUCCESS", "FAILED"]
-    message: str
-    transaction_id: Optional[str]
-```
-
-#### **Interfaces (Protocols)**
-```python
-# In: modules/finance/api.py
-
-from typing import Protocol
-from decimal import Decimal
-# from .dtos import ...
-
-class InsufficientFundsError(Exception):
-    pass
-
-class AccountNotFoundError(Exception):
-    pass
-
-class InvalidCurrencyError(Exception):
-    pass
-
-class IAccountServiceDAO(Protocol):
-    """Interface for accessing account data."""
-
-    def get_balance(self, account_id: str, currency: str) -> Decimal:
-        """Gets the current balance for a given account and currency."""
-        ...
-
-    def update_balance(self, account_id: str, delta: Decimal, currency: str) -> None:
-        """Updates an account's balance by a delta amount. For atomicity."""
-        ...
-    
-    def account_exists(self, account_id: str) -> bool:
-        """Checks if an account exists."""
-        ...
-
-class ITransactionValidator(Protocol):
-    """Validates a transaction request without mutating state."""
-
-    def validate(self, request: TransactionRequestDTO, dao: IAccountServiceDAO) -> ValidationResultDTO:
-        """Performs pre-flight checks."""
-        ...
-
-class ITransactionExecutor(Protocol):
-    """Executes the transaction atomically."""
-
-    def execute(self, request: TransactionRequestDTO, dao: IAccountServiceDAO) -> TransactionRecordDTO:
-        """Performs the debit and credit operations."""
-        ...
-
-class ITransactionEngine(Protocol):
-    """Orchestrates the entire transaction process."""
-
-    def process_transaction(self, request: TransactionRequestDTO) -> TransactionResultDTO:
-        """The main entry point for processing a transaction."""
-        ...
-```
-
-### 3.2. Logic Steps (Pseudo-code)
-
-#### **TransactionEngine (Default Implementation)**
-```python
-class TransactionEngine:
-    def __init__(self, validator: ITransactionValidator, executor: ITransactionExecutor, dao: IAccountServiceDAO):
-        self.validator = validator
-        self.executor = executor
-        self.dao = dao
-
-    def process_transaction(self, request: TransactionRequestDTO) -> TransactionResultDTO:
-        # 1. Validation
-        validation_result = self.validator.validate(request, self.dao)
-        if not validation_result['is_valid']:
-            return {
-                "status": "FAILED",
-                "message": f"Validation failed: {'; '.join(validation_result['reasons'])}",
-                "transaction_id": None
-            }
-
-        # 2. Execution
-        try:
-            # The DAO should handle atomicity (e.g., via DB transaction or lock)
-            # This is where the core logic happens.
-            record = self.executor.execute(request, self.dao)
-            return {
-                "status": "SUCCESS",
-                "message": "Transaction successful.",
-                "transaction_id": record['transaction_id']
-            }
-        except (InsufficientFundsError, AccountNotFoundError, InvalidCurrencyError) as e:
-            # Executor failed, DAO should have rolled back.
-            return {
-                "status": "FAILED",
-                "message": str(e),
-                "transaction_id": None
-            }
-        except Exception as e:
-            # Catch-all for unexpected errors
-            # Log the full error here
-            return {
-                "status": "FAILED",
-                "message": f"An unexpected error occurred: {e}",
-                "transaction_id": None
-            }
-```
-
-#### **TransactionExecutor (Default Implementation)**
-```python
-class TransactionExecutor:
-    def execute(self, request: TransactionRequestDTO, dao: IAccountServiceDAO) -> TransactionRecordDTO:
-        sender_balance = dao.get_balance(request['sender_id'], request['currency'])
-        
-        # Final, just-in-time check
-        if sender_balance < request['amount']:
-            raise InsufficientFundsError(f"Insufficient funds for sender {request['sender_id']}.")
-
-        # Atomicity must be guaranteed by the DAO's implementation
-        dao.update_balance(request['sender_id'], -request['amount'], request['currency'])
-        dao.update_balance(request['receiver_id'], request['amount'], request['currency'])
-        
-        # Create and return the record
-        # ... (generate id, timestamp)
-        return transaction_record
-```
-
-## 4. Technical Considerations
-
-- **Error Handling**: Custom, specific exceptions (`InsufficientFundsError`, `AccountNotFoundError`) are raised from the `Executor` to be caught by the `Engine`. The `Engine` is responsible for translating these into a user-friendly `TransactionResultDTO`.
-- **Concurrency**: The `IAccountServiceDAO` implementation is responsible for guaranteeing atomicity. If it's a database, it should use `BEGIN TRANSACTION...COMMIT/ROLLBACK`. If it's in-memory, it must use locks (`threading.Lock`). An `idempotency_key` is included in the request DTO to prevent duplicate processing from retries.
-- **Data Integrity**: Use of the `Decimal` type is mandatory for all currency amounts to prevent floating-point arithmetic errors.
-
-## 5. Verification Plan
-
-### Test Cases
-- **Success**: A valid transaction between two existing accounts.
-- **Failure (Validation)**:
-    - Negative or zero transaction amount.
-    - Non-existent sender or receiver account.
-    - Request DTO missing required fields.
-- **Failure (Execution)**:
-    - Sender has insufficient funds (the most critical test).
-    - An error during the receiver's credit after the sender's debit (requires rollback).
-- **Concurrency Test**: Two simultaneous transactions from the same account that, combined, exceed its balance. Only one should succeed.
-
-### Golden Sample
-```python
-# Used to test the transaction engine
-golden_transaction_request = TransactionRequestDTO(
-    sender_id='firm_1',      # From golden_firms fixture
-    receiver_id='household_101', # From golden_households fixture
-    amount=Decimal('150.75'),
-    currency='USD',
-    memo='Weekly salary payment.',
-    idempotency_key='tx-20260204-abc-123'
+# 1. Initialization & DTO Creation
+transaction_id = self.id_generator.generate()
+transaction_dto = TransactionDTO(
+    transaction_id=transaction_id,
+    source_account_id=source_account_id,
+    destination_account_id=destination_account_id,
+    amount=amount,
+    currency=currency,
+    description=description
 )
+
+# 2. Validation Stage (Guard Clause)
+try:
+    # The validator checks rules like account existence, sufficient funds, etc.
+    self.validator.validate(transaction_dto)
+except ValidationError as e:
+    # If validation fails, create a failed result and exit immediately.
+    failed_result = TransactionResultDTO(
+        transaction=transaction_dto,
+        status='FAILED',
+        message=str(e),
+        timestamp=self.clock.get_time()
+    )
+    # The ledger may optionally record failed attempts for auditing.
+    self.ledger.record(failed_result)
+    return failed_result
+
+# 3. Execution Stage
+try:
+    # The executor performs the actual state change (debit/credit).
+    # This component trusts that the transaction is valid.
+    self.executor.execute(transaction_dto)
+except ExecutionError as e:
+    # This indicates a critical, unexpected error during state change.
+    # A potential rollback mechanism would be triggered here in a more complex system.
+    critical_failure_result = TransactionResultDTO(
+        transaction=transaction_dto,
+        status='CRITICAL_FAILURE',
+        message=f"Execution failed post-validation: {e}",
+        timestamp=self.clock.get_time()
+    )
+    self.ledger.record(critical_failure_result)
+    # This case requires special monitoring.
+    return critical_failure_result
+
+# 4. Recording & Success
+successful_result = TransactionResultDTO(
+    transaction=transaction_dto,
+    status='COMPLETED',
+    message='Transaction successful.',
+    timestamp=self.clock.get_time()
+)
+# The ledger records the successful transaction.
+self.ledger.record(successful_result)
+
+# 5. Return successful result object
+return successful_result
 ```
 
-## 6. Mocking Guide
+## 3. Exception Handling
 
-- **DO NOT** use `unittest.mock.MagicMock` for the DAO. This breaks type safety and hides interface mismatches.
-- **DO** create a dedicated `MockAccountServiceDAO` that implements the `IAccountServiceDAO` protocol.
-- **Mechanism**: The mock DAO can be initialized with a dictionary representing the ledger.
+The engine will use a hierarchy of custom exceptions to provide clear error contexts.
 
-```python
-# In: tests/mocks/finance_mocks.py
-class MockAccountServiceDAO:
-    def __init__(self, initial_balances: dict[str, Decimal]):
-        self._balances = initial_balances.copy()
-        self._accounts = set(initial_balances.keys())
+-   `TransactionError` (Base Exception)
+    -   `ValidationError(TransactionError)`: Raised by the Validator component for any business rule violation.
+        -   `InsufficientFundsError(ValidationError)`: Source account balance is too low.
+        -   `InvalidAccountError(ValidationError)`: Source or destination account does not exist or is inactive.
+        -   `NegativeAmountError(ValidationError)`: Transaction amount is zero or negative.
+    -   `ExecutionError(TransactionError)`: Raised by the Executor if the state change fails for an unexpected reason after validation has passed. This signals a potentially inconsistent state.
 
-    def get_balance(self, account_id: str, currency: str) -> Decimal:
-        # For simplicity, this mock ignores currency. A real one wouldn't.
-        if not self.account_exists(account_id):
-            raise AccountNotFoundError(f"Account {account_id} not found.")
-        return self._balances.get(account_id, Decimal('0'))
+## 4. Interface 명세 (DTOs)
 
-    # ... implement other methods
-```
-- **Usage**: In `pytest`, create a fixture that provides an instance of this mock, populated with data from `golden_households` and `golden_firms`.
-
-- **🚨 Schema Change Notice**: If `TransactionRequestDTO` or other DTOs are modified, the `golden_transaction_request` sample and any related fixtures **MUST** be updated. The `fixture_harvester.py` script may need to be run to regenerate snapshots if the underlying agent schemas change.
-
-## 7. 🚨 Risk & Impact Audit
-
-- **Circular Dependency**: High Risk. The `finance` module is a low-level service. The `TransactionEngine` and its `DAO` MUST NOT import from higher-level business logic modules (like `household` or `market`). All dependencies must flow downwards. The `Client -> Engine` direction must be respected.
-- **Test Impact**: Medium Risk. Any existing tests that directly manipulate agent balances (e.g., `test_household_consumption`) will need to be refactored to use the `TransactionEngine` or a mock that correctly simulates its behavior. Direct balance manipulation in tests should be deprecated.
-- **Configuration Dependency**: Low Risk. The engine may require a list of supported currencies. This should be added to `config/finance.yaml` and loaded via the `SimulationConfig` object, not hardcoded.
-- **Pre-requisite Work**:
-    1.  **TD-L-01 (Ledger Abstraction)**: A concrete `IAccountServiceDAO` implementation is a blocker. An interface must be finalized and a default implementation (e.g., `SQLiteAccountServiceDAO`) must be created before this engine can be fully implemented.
-    2.  **Refactor Agent Initialization**: All agents (`Household`, `Firm`, etc.) must be guaranteed to have an account created via the `IAccountServiceDAO` upon their creation.
-
----
----
+Data will be passed between components using strictly-defined Data Transfer Objects.
 
 ```python
-# In: modules/finance/api.py
+# In modules/finance/transaction/api.py
 
-from typing import Protocol, TypedDict, Optional, Literal, List
-from decimal import Decimal
+from typing import TypedDict, Literal
 
-# DTOs
-# =================================================================
-
-class TransactionRequestDTO(TypedDict):
-    """Data required to request a transaction."""
-    sender_id: str
-    receiver_id: str
-    amount: Decimal
-    currency: str
-    memo: Optional[str]
-    idempotency_key: str
-
-class ValidationResultDTO(TypedDict):
-    """Result of a pre-flight validation check."""
-    is_valid: bool
-    reasons: List[str]
-
-class TransactionRecordDTO(TypedDict):
-    """A record of a completed and committed transaction."""
+# The core data describing a transaction request.
+class TransactionDTO(TypedDict):
     transaction_id: str
-    sender_id: str
-    receiver_id: str
-    amount: Decimal
-    currency: str
-    timestamp: float # Unix timestamp
-    memo: Optional[str]
+    source_account_id: str
+    destination_account_id: str
+    amount: float
+    currency: str  # e.g., "GOLD", "USD"
+    description: str
+
+# The object returned by the engine after processing is complete.
+class TransactionResultDTO(TypedDict):
+    transaction: TransactionDTO
+    status: Literal['COMPLETED', 'FAILED', 'CRITICAL_FAILURE']
+    message: str
+    timestamp: float # Simulation timestamp
+```
+
+## 5. 검증 계획 (Verification Plan)
+
+-   **Unit Test `validator`**:
+    -   Test case for sufficient funds (should pass).
+    -   Test case for insufficient funds (should raise `InsufficientFundsError`).
+    -   Test case for invalid source account (should raise `InvalidAccountError`).
+    -   Test case for zero or negative amount (should raise `NegativeAmountError`).
+-   **Unit Test `executor`**:
+    -   Given a valid `TransactionDTO`, verify that `source.balance` is debited and `destination.balance` is credited correctly.
+    -   Mock the account objects to simulate `update_balance` methods.
+-   **Integration Test `TransactionEngine`**:
+    -   **Happy Path**: A valid transfer from one household to another. Verify a `COMPLETED` `TransactionResultDTO` is returned and balances are updated.
+    -   **Failure Path**: An invalid transfer (e.g., insufficient funds). Verify a `FAILED` `TransactionResultDTO` is returned and balances remain unchanged.
+    -   Verify the `ITransactionLedger.record` method is called exactly once in all scenarios with the correct result object.
+
+## 6. Mocking 가이드
+
+-   **Data Source**: All tests involving accounts **MUST** use the `golden_households` and `golden_firms` fixtures from `tests/conftest.py`. These provide realistic, schema-compliant data. Do **NOT** create agents manually with `MagicMock`.
+
+    ```python
+    # Correct usage of fixtures
+    def test_firm_pays_household(golden_firms, golden_households):
+        firm = golden_firms[0]
+        household = golden_households[0]
+        # ... proceed with test using these agent instances
+    ```
+
+-   **Component Mocking**: The engine's dependencies (`validator`, `executor`, `ledger`) **SHOULD** be mocked during the engine's unit tests using `pytest-mock`'s `mocker` fixture. This isolates the engine's orchestration logic for testing.
+
+    ```python
+    def test_engine_calls_validator(mocker):
+        mock_validator = mocker.patch('modules.finance.transaction.api.ITransactionValidator')
+        # ... setup engine with mock_validator
+        # ... run engine and assert mock_validator.validate.assert_called_once()
+    ```
+
+-   **🚨 Schema Change Notice**: If the `TransactionDTO` or related agent schemas change, the "Golden" data snapshots in `design/_archive/snapshots/` may become outdated. A "Harvesting" step using `scripts/fixture_harvester.py` **MUST** be included in the implementation plan to regenerate these fixtures and ensure test validity.
+
+## 7. 🚨 Risk & Impact Audit (기술적 위험 분석)
+
+-   **순환 참조 위험 (Medium)**: The `TransactionValidator` will need access to account data (e.g., from `household` or `government` modules). Those modules might, in turn, need to use the `TransactionEngine`. This creates a high risk of circular imports.
+    -   **Mitigation**: Employ strict Dependency Injection. The engine and its components should receive interfaces to data accessors (e.g., an `IAccountAccessor` protocol) in their constructors, rather than importing concrete modules directly.
+
+-   **테스트 영향도 (High)**: This engine centralizes all value transfers. Existing tests that manually manipulate agent balances (`agent.balance += 100`) will become invalid as they bypass the official transaction logic and ledger.
+    -   **Mitigation**: A significant, project-wide refactoring effort will be required to replace all manual balance adjustments with calls to the new `TransactionEngine`. This task should be logged in the `TECH_DEBT_LEDGER.md` and planned accordingly.
+
+-   **설정 의존성 (Low)**: The initial design has no direct config dependencies. However, future features like transaction fees or currency conversion rates will require additions to `finance.yaml` or `economy_params.yaml`.
+
+-   **선행 작업 권고 (High)**: Due to the high impact on testing and existing code, the implementation of this Transaction Engine should be considered a foundational task. It is recommended to pause development on new features that involve monetary transfers until this engine is implemented and integrated. A task should be created to audit the codebase for all instances of manual balance manipulation.
+
+---
+
+```python
+# Path: modules/finance/transaction/api.py
+from typing import Protocol, TypedDict, Literal
+
+# ==============================================================================
+# DATA TRANSFER OBJECTS (DTOs)
+# ==============================================================================
+
+class TransactionDTO(TypedDict):
+    """
+    A pure data container describing a single transaction request.
+    This object is immutable once created and is passed between components.
+    """
+    transaction_id: str
+    source_account_id: str
+    destination_account_id: str
+    amount: float
+    currency: str  # e.g., "GOLD", "USD"
+    description: str
+
 
 class TransactionResultDTO(TypedDict):
-    """Final result returned to the client."""
-    status: Literal["SUCCESS", "FAILED"]
+    """
+    A data container representing the final outcome of a transaction attempt.
+    This is what the TransactionEngine returns to the caller.
+    """
+    transaction: TransactionDTO
+    status: Literal['COMPLETED', 'FAILED', 'CRITICAL_FAILURE']
     message: str
-    transaction_id: Optional[str]
+    timestamp: float # Simulation timestamp
 
 
-# Exceptions
-# =================================================================
+# ==============================================================================
+# EXCEPTIONS
+# ==============================================================================
 
-class InsufficientFundsError(Exception):
-    """Raised when an account has insufficient funds for a debit."""
-    pass
-
-class AccountNotFoundError(Exception):
-    """Raised when a requested account does not exist."""
-    pass
-
-class InvalidCurrencyError(Exception):
-    """Raised when a transaction involves an unsupported currency."""
+class TransactionError(Exception):
+    """Base exception for all transaction-related errors."""
     pass
 
 
-# Interfaces (Protocols)
-# =================================================================
+class ValidationError(TransactionError):
+    """Raised by the validator when a business rule is violated."""
+    pass
 
-class IAccountServiceDAO(Protocol):
+
+class InsufficientFundsError(ValidationError):
+    """Raised when the source account has an insufficient balance."""
+    pass
+
+
+class InvalidAccountError(ValidationError):
+    """Raised when the source or destination account is invalid or inactive."""
+    pass
+
+
+class NegativeAmountError(ValidationError):
+    """Raised when the transaction amount is not a positive number."""
+    pass
+
+
+class ExecutionError(TransactionError):
     """
-    Interface for accessing and modifying account data in the ledger.
-    Implementations of this protocol are responsible for ensuring atomicity.
+    Raised by the executor for critical failures after validation has passed.
+    This may indicate an inconsistent state.
     """
+    pass
 
-    def get_balance(self, account_id: str, currency: str) -> Decimal:
-        """Gets the current balance for a given account and currency."""
-        ...
 
-    def update_balance(self, account_id: str, delta: Decimal, currency: str) -> None:
-        """
-        Updates an account's balance by a delta amount.
-        Should be part of an atomic operation managed by the DAO.
-        """
-        ...
-    
-    def account_exists(self, account_id: str) -> bool:
-        """Checks if an account exists in the ledger."""
-        ...
-
+# ==============================================================================
+# COMPONENT INTERFACES (Protocols)
+# ==============================================================================
 
 class ITransactionValidator(Protocol):
-    """Interface for validating a transaction request without mutating state."""
-
-    def validate(self, request: TransactionRequestDTO, dao: IAccountServiceDAO) -> ValidationResultDTO:
+    """
+    Interface for a component that validates a transaction against business rules.
+    It should not modify any state.
+    """
+    def validate(self, transaction: TransactionDTO) -> None:
         """
-        Performs pre-flight checks, such as schema validation,
-        account existence, and non-negative amounts.
+        Checks if the transaction is valid.
+        
+        Args:
+            transaction: The transaction data to validate.
+            
+        Raises:
+            ValidationError or its subclasses if the transaction is invalid.
         """
         ...
 
 
 class ITransactionExecutor(Protocol):
-    """Interface for executing the transaction atomically."""
-
-    def execute(self, request: TransactionRequestDTO, dao: IAccountServiceDAO) -> TransactionRecordDTO:
+    """
+    Interface for a component that executes a transaction.
+    It assumes the transaction has already been validated.
+    """
+    def execute(self, transaction: TransactionDTO) -> None:
         """
-        Performs the debit and credit operations. This is the only
-        component that should cause state mutation in the ledger.
-        It must raise specific errors on failure.
+        Performs the state change for the transaction (e.g., debit/credit).
+        
+        Args:
+            transaction: The validated transaction data to execute.
+            
+        Raises:
+            ExecutionError if the state change fails unexpectedly.
+        """
+        ...
+
+
+class ITransactionLedger(Protocol):
+    """
+    Interface for a Data Access Object (DAO) that records transaction results.
+    This is the persistence layer.
+    """
+    def record(self, result: TransactionResultDTO) -> None:
+        """
+        Saves the result of a transaction to a persistent store.
+        
+        Args:
+            result: The final result object of the transaction.
         """
         ...
 
 
 class ITransactionEngine(Protocol):
-    """Interface for orchestrating the entire transaction process."""
-
-    def process_transaction(self, request: TransactionRequestDTO) -> TransactionResultDTO:
+    """
+    Interface for the main engine that orchestrates the entire transaction process.
+    This is the primary entry point for external modules.
+    """
+    def process_transaction(
+        self,
+        source_account_id: str,
+        destination_account_id: str,
+        amount: float,
+        currency: str,
+        description: str
+    ) -> TransactionResultDTO:
         """
-        The main public entry point for processing a transaction.
-        Coordinates the validator and executor.
+        Processes a complete financial transaction from validation to recording.
+        
+        Args:
+            source_account_id: The ID of the account to debit.
+            destination_account_id: The ID of the account to credit.
+            amount: The amount to transfer.
+            currency: The currency of the transaction.
+            description: A human-readable description of the transaction.
+            
+        Returns:
+            A DTO containing the full transaction details and its final status.
         """
         ...
 

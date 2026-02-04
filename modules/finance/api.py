@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from simulation.models import Order, Transaction
     from modules.common.dtos import Claim
     from modules.finance.wallet.api import IWallet
+    from modules.system.api import CurrencyCode
 
 # Forward reference for type hinting
 class Firm: pass
@@ -178,15 +179,15 @@ class IFinancialEntity(Protocol):
     def wallet(self) -> IWallet: ...
 
     @property
-    def assets(self) -> float: ...
+    def assets(self) -> Dict[CurrencyCode, float]: ...
 
-    def deposit(self, amount: float) -> None:
-        """Deposits a given amount into the entity's account."""
+    def deposit(self, amount: float, currency: CurrencyCode = "USD") -> None:
+        """Deposits a given amount into the entity's account for a specific currency."""
         ...
 
-    def withdraw(self, amount: float) -> None:
+    def withdraw(self, amount: float, currency: CurrencyCode = "USD") -> None:
         """
-        Withdraws a given amount from the entity's account.
+        Withdraws a given amount from the entity's account for a specific currency.
 
         Raises:
             InsufficientFundsError: If the withdrawal amount exceeds available funds.

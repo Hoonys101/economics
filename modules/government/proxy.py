@@ -1,5 +1,6 @@
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, Dict
 from modules.finance.api import IFinancialEntity, TaxCollectionResult
+from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.agents.government import Government
@@ -18,14 +19,14 @@ class GovernmentFiscalProxy(IFinancialEntity):
         return self._government.id
 
     @property
-    def assets(self) -> float:
+    def assets(self) -> Dict[CurrencyCode, float]:
         return self._government.assets
 
-    def deposit(self, amount: float) -> None:
-        self._government.deposit(amount)
+    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._government.deposit(amount, currency)
 
-    def withdraw(self, amount: float) -> None:
-        self._government.withdraw(amount)
+    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._government.withdraw(amount, currency)
 
     def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> TaxCollectionResult:
         """

@@ -8,6 +8,7 @@ import random
 if TYPE_CHECKING:
     from simulation.firms import Firm
     from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -216,7 +217,8 @@ class ProductionDepartment:
         self.firm.research_history["total_spent"] += budget
 
         # Revenue logic should be via finance
-        denominator = max(self.firm.finance.revenue_this_turn * 0.2, 100.0)
+        revenue_usd = self.firm.finance.revenue_this_turn.get(simulation.DEFAULT_CURRENCY, 0.0)
+        denominator = max(revenue_usd * 0.2, 100.0)
         base_chance = min(1.0, budget / denominator)
 
         avg_skill = 1.0
