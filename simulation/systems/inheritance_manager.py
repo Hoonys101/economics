@@ -85,34 +85,28 @@ class InheritanceManager:
                     price = current_prices.get(firm_id, 0.0)
                     proceeds = round(share.quantity * price, 2)
 
-                    # Execute Atomic Transfer: Gov Cash -> Deceased Cash (Simulated)
-                    # We use settlement_system.transfer to maintain zero-sum
-                    if settlement_system.transfer(government, deceased, proceeds, "liquidation_stock", tick=current_tick):
-                        # Update Asset Ownership
-                        # Deceased -> Government (or Market/System)
-                        # Remove from Deceased Portfolio
-                        del deceased._econ_state.portfolio.holdings[firm_id]
+                    # TD-232: Use TransactionProcessor for atomic execution + side effects
+                    tx = Transaction(
+                        buyer_id=government.id,
+                        seller_id=deceased.id,
+                        item_id=f"stock_{firm_id}",
+                        quantity=share.quantity,
+                        price=price,
+                        market_id="stock_market",
+                        transaction_type="asset_liquidation",
+                        time=current_tick,
+                        metadata={"executed": False}
+                    )
+
+                    results = simulation.transaction_processor.execute(simulation.world_state, [tx])
+
+                    if results and results[0].success:
+                        # Success - proceeds have been transferred and assets moved by Handler
                         if firm_id in portfolio_holdings:
                              del portfolio_holdings[firm_id] # Keep local copy in sync
 
-                        # Add to Government Portfolio (if Government holds stocks)
-                        # Or assume destroyed/market absorption.
-                        # For zero-sum asset integrity, someone must hold it.
-                        # Let's assign to Government for now (Escheatment logic).
-                        pass # Gov portfolio update skipped for brevity or handled by caller if Gov is agent
-
-                        # Record TX
-                        tx = Transaction(
-                            buyer_id=government.id,
-                            seller_id=deceased.id,
-                            item_id=f"stock_{firm_id}",
-                            quantity=share.quantity,
-                            price=price,
-                            market_id="stock_market",
-                            transaction_type="asset_liquidation",
-                            time=current_tick,
-                            metadata={"executed": True}
-                        )
+                        # Mark as executed for reporting
+                        tx.metadata["executed"] = True
                         transactions.append(tx)
 
                         cash += proceeds
@@ -126,30 +120,24 @@ class InheritanceManager:
                 for unit in list(deceased_units):
                     sale_price = round(unit.estimated_value * fire_sale_ratio, 2)
 
-                    if settlement_system.transfer(government, deceased, sale_price, "liquidation_re", tick=current_tick):
-                        # Update Ownership (Manual update required for immediate cash flow logic)
-                        unit.owner_id = government.id
+                    # TD-232: Use TransactionProcessor
+                    tx = Transaction(
+                        buyer_id=government.id,
+                        seller_id=deceased.id,
+                        item_id=f"real_estate_{unit.id}",
+                        quantity=1.0,
+                        price=sale_price,
+                        market_id="real_estate_market",
+                        transaction_type="asset_liquidation",
+                        time=current_tick,
+                        metadata={"executed": False}
+                    )
 
-                        # Fix Leak: Update owned_properties lists
-                        if hasattr(deceased, "owned_properties") and unit.id in deceased.owned_properties:
-                            deceased.owned_properties.remove(unit.id)
-                        if hasattr(government, "owned_properties"):
-                             if unit.id not in government.owned_properties:
-                                government.owned_properties.append(unit.id)
+                    results = simulation.transaction_processor.execute(simulation.world_state, [tx])
 
+                    if results and results[0].success:
                         deceased_units.remove(unit)
-
-                        tx = Transaction(
-                            buyer_id=government.id,
-                            seller_id=deceased.id,
-                            item_id=f"real_estate_{unit.id}",
-                            quantity=1.0,
-                            price=sale_price,
-                            market_id="real_estate_market",
-                            transaction_type="asset_liquidation",
-                            time=current_tick,
-                            metadata={"executed": True}
-                        )
+                        tx.metadata["executed"] = True
                         transactions.append(tx)
 
                         cash += sale_price
@@ -200,7 +188,7 @@ class InheritanceManager:
             # Escheat remaining Assets
             # Portfolio Transfer is handled by SettlementSystem (Atomic).
 
-            # Real Estate Transfer (Deferred via AssetTransferHandler)
+            # Real Estate Transfer (Execute Synchronously)
             for unit in deceased_units:
                  tx = Transaction(
                         buyer_id=government.id,
@@ -213,7 +201,11 @@ class InheritanceManager:
                         time=current_tick,
                         metadata={"executed": False}
                      )
-                 transactions.append(tx)
+
+                 results = simulation.transaction_processor.execute(simulation.world_state, [tx])
+                 if results and results[0].success:
+                     tx.metadata["executed"] = True
+                     transactions.append(tx)
 
         else:
             # Distribute to Heirs
@@ -228,11 +220,10 @@ class InheritanceManager:
             # Portfolio Transfer is handled by SettlementSystem (Atomic) to the designated heir (Primary).
             # Note: This changes from equal split to single heir for portfolio assets to ensure atomicity.
 
-            # Distribute Real Estate (Round Robin)
+            # Distribute Real Estate (Round Robin - Synchronous)
             for i, unit in enumerate(deceased_units):
                 recipient = heirs[i % count]
-                # We do NOT set unit.owner_id here manually.
-                # AssetTransferHandler will handle it when processing the transaction.
+
                 tx = Transaction(
                         buyer_id=recipient.id,
                         seller_id=deceased.id,
@@ -244,7 +235,11 @@ class InheritanceManager:
                         time=current_tick,
                         metadata={"executed": False}
                      )
-                transactions.append(tx)
+
+                results = simulation.transaction_processor.execute(simulation.world_state, [tx])
+                if results and results[0].success:
+                    tx.metadata["executed"] = True
+                    transactions.append(tx)
 
         # 5. Execute Settlement (Cash)
         # ------------------------------------------------------------------

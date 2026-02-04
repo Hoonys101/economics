@@ -227,6 +227,15 @@ class Government(ICurrencyHolder):
 
         self.expenditure_this_tick = {DEFAULT_CURRENCY: 0.0}
 
+    def record_gdp(self, gdp: float) -> None:
+        """
+        Records the GDP for the current tick.
+        Encapsulates gdp_history mutation (TD-234).
+        """
+        self.gdp_history.append(gdp)
+        if len(self.gdp_history) > self.gdp_history_window:
+            self.gdp_history.pop(0)
+
     def process_monetary_transactions(self, transactions: List[Transaction]):
         """
         Delegates monetary transaction processing to the MonetaryLedger.

@@ -38,27 +38,24 @@ class StockTransactionHandler(ITransactionHandler):
             return
 
         # 1. Seller Holdings
-        if isinstance(seller, Household):
+        if hasattr(seller, "portfolio"):
+            seller.portfolio.remove(firm_id, tx.quantity)
+        elif isinstance(seller, Household) and hasattr(seller, "shares_owned"):
+             # Legacy Fallback
             current_shares = seller.shares_owned.get(firm_id, 0)
             seller.shares_owned[firm_id] = max(0, current_shares - tx.quantity)
             if seller.shares_owned[firm_id] <= 0 and firm_id in seller.shares_owned:
                 del seller.shares_owned[firm_id]
-            if hasattr(seller, "portfolio"):
-                seller.portfolio.remove(firm_id, tx.quantity)
         elif isinstance(seller, Firm) and seller.id == firm_id:
             # Firm selling its own treasury shares
             seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
-        elif hasattr(seller, "portfolio"):
-            # Secondary market trade for Firms/Institutions
-            seller.portfolio.remove(firm_id, tx.quantity)
 
         # 2. Buyer Holdings
-        if isinstance(buyer, Household):
+        if hasattr(buyer, "portfolio"):
+            buyer.portfolio.add(firm_id, tx.quantity, tx.price)
+        elif isinstance(buyer, Household) and hasattr(buyer, "shares_owned"):
+            # Legacy Fallback
             buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
-            if hasattr(buyer, "portfolio"):
-                buyer.portfolio.add(firm_id, tx.quantity, tx.price)
-                # Sync legacy dict
-                buyer.shares_owned[firm_id] = buyer.portfolio.holdings[firm_id].quantity
         elif isinstance(buyer, Firm) and buyer.id == firm_id:
             # Firm buying back shares (Treasury)
             buyer.treasury_shares += tx.quantity

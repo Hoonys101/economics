@@ -146,6 +146,14 @@ class HouseholdFinancialsMixin:
 
     # --- IPortfolioHandler Implementation ---
 
+    @property
+    def portfolio(self) -> Portfolio:
+        """
+        Direct access to the internal portfolio object.
+        Resolves TD-233 (FinanceDept LoD) and TD-232 (Inheritance).
+        """
+        return self._econ_state.portfolio
+
     def get_portfolio(self) -> PortfolioDTO:
         assets = []
         for firm_id, share in self._econ_state.portfolio.holdings.items():

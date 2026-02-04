@@ -80,9 +80,14 @@ class CommerceSystem(ICommerceSystem):
                     # Stock Out. Could we afford it?
                     default_price = getattr(self.config, 'DEFAULT_FALLBACK_PRICE', 5.0)
                     price = batch_decisions.get('price', default_price)
-                    if household._econ_state.assets < price:
+
+                    # TD-231: Account for Sales Tax in affordability check
+                    tax_rate = getattr(self.config, 'SALES_TAX_RATE', 0.05)
+                    price_with_tax = price * (1 + tax_rate)
+
+                    if household._econ_state.assets < price_with_tax:
                         reason = "INSOLVENT"
-                        context_data = {"cash": household._econ_state.assets, "price": price, "need": survival_need}
+                        context_data = {"cash": household._econ_state.assets, "price": price, "price_with_tax": price_with_tax, "need": survival_need}
                     else:
                         reason = "STOCK_OUT"
                         context_data = {"inventory": household._econ_state.inventory.copy(), "cash": household._econ_state.assets}
@@ -130,7 +135,9 @@ class CommerceSystem(ICommerceSystem):
 
                     else:
                         # Legacy Emergency Buy
-                        cost = b_amt * food_price
+                        tax_rate = getattr(self.config, 'SALES_TAX_RATE', 0.05)
+                        cost = b_amt * food_price * (1 + tax_rate) # TD-231: Include tax
+
                         if household._econ_state.assets >= cost:
                             planned_consumptions[household.id]["buy_amount"] = b_amt
                             government = context.get("government")

@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from simulation.components.finance_department import FinanceDepartment
 from simulation.firms import Firm
+from modules.system.api import DEFAULT_CURRENCY
 
 class TestFinanceDepartmentBankruptcy:
     @pytest.fixture
@@ -32,12 +33,12 @@ class TestFinanceDepartmentBankruptcy:
         # Threshold is 5.
         # Simulate 4 losses
         for _ in range(4):
-            finance.current_profit = -100.0
+            finance.current_profit[DEFAULT_CURRENCY] = -100.0
             finance.check_bankruptcy()
             assert not firm.is_bankrupt
 
         # 5th loss
-        finance.current_profit = -100.0
+        finance.current_profit[DEFAULT_CURRENCY] = -100.0
         finance.check_bankruptcy()
         assert firm.is_bankrupt
 
@@ -55,12 +56,12 @@ class TestFinanceDepartmentBankruptcy:
 
         # So firm should survive 6 losses.
         for _ in range(6):
-            finance.current_profit = -100.0
+            finance.current_profit[DEFAULT_CURRENCY] = -100.0
             finance.check_bankruptcy()
             assert not firm.is_bankrupt
 
         # 7th loss
-        finance.current_profit = -100.0
+        finance.current_profit[DEFAULT_CURRENCY] = -100.0
         finance.check_bankruptcy()
         assert firm.is_bankrupt
 
@@ -69,16 +70,16 @@ class TestFinanceDepartmentBankruptcy:
 
         # 3 losses
         for _ in range(3):
-            finance.current_profit = -100.0
+            finance.current_profit[DEFAULT_CURRENCY] = -100.0
             finance.check_bankruptcy()
 
         # 1 profit
-        finance.current_profit = 100.0
+        finance.current_profit[DEFAULT_CURRENCY] = 100.0
         finance.check_bankruptcy()
         assert finance.consecutive_loss_turns == 0
 
         # 3 losses again
         for _ in range(3):
-            finance.current_profit = -100.0
+            finance.current_profit[DEFAULT_CURRENCY] = -100.0
             finance.check_bankruptcy()
             assert not firm.is_bankrupt

@@ -1,7 +1,7 @@
 from typing import List, Any, Dict, TYPE_CHECKING, Optional
 import logging
 from simulation.models import Transaction
-from modules.government.welfare.api import IWelfareService
+from modules.government.welfare.api import IWelfareService, IWelfareRecipient
 from modules.government.constants import (
     DEFAULT_UNEMPLOYMENT_BENEFIT_RATIO,
     DEFAULT_STIMULUS_TRIGGER_GDP_DROP, DEFAULT_HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK,
@@ -95,23 +95,23 @@ class WelfareService(IWelfareService):
         total_welfare_paid = 0.0
 
         for agent in households:
-            if not getattr(agent, "is_active", False):
+            if not isinstance(agent, IWelfareRecipient):
                 continue
 
-            if hasattr(agent, "needs") and hasattr(agent, "is_employed"):
-                # Unemployment Benefit
-                if not agent.is_employed:
-                    txs = self.provide_household_support(agent, benefit_amount, current_tick)
-                    transactions.extend(txs)
-                    total_welfare_paid += benefit_amount
+            if not agent.is_active:
+                continue
+
+            # Unemployment Benefit
+            if not agent.is_employed:
+                txs = self.provide_household_support(agent, benefit_amount, current_tick)
+                transactions.extend(txs)
+                total_welfare_paid += benefit_amount
 
         # 3. Stimulus Check
         current_gdp = market_data.get("total_production", 0.0)
 
-        # NOTE: We access and modify government.gdp_history as it is the source of truth
-        self.government.gdp_history.append(current_gdp)
-        if len(self.government.gdp_history) > self.government.gdp_history_window:
-            self.government.gdp_history.pop(0)
+        # TD-234: Use record_gdp encapsulation
+        self.government.record_gdp(current_gdp)
 
         trigger_drop = getattr(self.config, "STIMULUS_TRIGGER_GDP_DROP", DEFAULT_STIMULUS_TRIGGER_GDP_DROP)
 
@@ -125,7 +125,7 @@ class WelfareService(IWelfareService):
 
         if should_stimulus:
              stimulus_amount = survival_cost * 5.0
-             active_households = [a for a in households if hasattr(a, "is_employed") and getattr(a, "is_active", False)]
+             active_households = [a for a in households if isinstance(a, IWelfareRecipient) and a.is_active]
 
              total_stimulus = 0.0
              for h in active_households:

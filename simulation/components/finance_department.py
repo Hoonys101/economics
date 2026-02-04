@@ -183,7 +183,8 @@ class FinanceDepartment:
             total_shares = self.firm.total_shares
             if total_shares > 0:
                 for household in households:
-                    shares = household._econ_state.portfolio.to_legacy_dict().get(self.firm.id, 0.0)
+                    # TD-233: Use portfolio property (LoD fix)
+                    shares = household.portfolio.to_legacy_dict().get(self.firm.id, 0.0)
                     if shares > 0:
                         dividend_amount = distributable_profit * (shares / total_shares)
                         transactions.append(

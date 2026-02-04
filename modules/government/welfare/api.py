@@ -1,6 +1,17 @@
 # modules/government/welfare/api.py
-from typing import Protocol, List, Dict, Any
+from typing import Protocol, List, Dict, Any, runtime_checkable
 from simulation.models import Transaction
+
+@runtime_checkable
+class IWelfareRecipient(Protocol):
+    """
+    Protocol for agents that can receive welfare.
+    """
+    id: int
+    is_active: bool
+    is_employed: bool
+    assets: Any # Can be float or dict
+    needs: Dict[str, float]
 
 class IWelfareService(Protocol):
     """
