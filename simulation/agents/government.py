@@ -20,6 +20,8 @@ from modules.government.components.welfare_manager import WelfareManager
 from modules.government.components.infrastructure_manager import InfrastructureManager
 from modules.government.constants import *
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
+from modules.finance.wallet.wallet import Wallet
+from modules.finance.wallet.api import IWallet
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -36,11 +38,15 @@ class Government(ICurrencyHolder):
 
     def __init__(self, id: int, initial_assets: float = 0.0, config_module: Any = None, strategy: Optional["ScenarioStrategy"] = None):
         self.id = id
-        self._assets: Dict[CurrencyCode, float] = {}
+
+        initial_balance_dict = {}
         if isinstance(initial_assets, dict):
-            self._assets = initial_assets.copy()
+            initial_balance_dict = initial_assets.copy()
         else:
-            self._assets[DEFAULT_CURRENCY] = float(initial_assets)
+            initial_balance_dict[DEFAULT_CURRENCY] = float(initial_assets)
+
+        self.wallet = Wallet(self.id, initial_balance_dict)
+
         self.config_module = config_module
         self.settlement_system: Optional["ISettlementSystem"] = None
         
@@ -164,34 +170,30 @@ class Government(ICurrencyHolder):
         self.portfolio = Portfolio(self.id)
 
         logger.info(
-            f"Government {self.id} initialized with assets: {self.assets}",
+            f"Government {self.id} initialized with assets: {self.wallet.get_all_balances()}",
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "government"]},
         )
 
     @property
     def assets(self) -> Dict[CurrencyCode, float]:
         """Returns the government's liquid assets."""
-        return self._assets
+        return self.wallet.get_all_balances()
 
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
         """Implementation of ICurrencyHolder."""
-        return self._assets.copy()
+        return self.wallet.get_all_balances()
 
     def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         [INTERNAL ONLY] Increase assets.
         """
-        if currency not in self._assets:
-            self._assets[currency] = 0.0
-        self._assets[currency] += amount
+        self.wallet.add(amount, currency, memo="Internal Add")
 
     def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         [INTERNAL ONLY] Decrease assets.
         """
-        if currency not in self._assets:
-            self._assets[currency] = 0.0
-        self._assets[currency] -= amount
+        self.wallet.subtract(amount, currency, memo="Internal Sub")
 
     def update_sensory_data(self, dto: GovernmentStateDTO):
         """
@@ -489,10 +491,14 @@ class Government(ICurrencyHolder):
         # WO-057 Deficit Spending: Update total_debt based on FinanceSystem
         if self.finance_system:
              self.total_debt = sum(b.face_value for b in self.finance_system.outstanding_bonds)
-        elif self.assets < 0:
-             self.total_debt = abs(self.assets)
         else:
-             self.total_debt = 0.0
+             # Legacy check: if assets are negative? With Wallet, they won't be unless allowed.
+             # Check if Wallet allows negative?
+             current_balance = self.wallet.get_balance(DEFAULT_CURRENCY)
+             if current_balance < 0:
+                 self.total_debt = abs(current_balance)
+             else:
+                 self.total_debt = 0.0
 
         self.tax_history.append(revenue_snapshot)
         if len(self.tax_history) > self.history_window_size:
@@ -549,14 +555,13 @@ class Government(ICurrencyHolder):
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the government's assets."""
         if amount > 0:
-            self._internal_add_assets(amount)
+            self.wallet.add(amount)
 
     def withdraw(self, amount: float) -> None:
         """Withdraws a given amount from the government's assets."""
         if amount > 0:
-            if self.assets < amount:
-                raise InsufficientFundsError(f"Government {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
-            self._internal_sub_assets(amount)
+            # Wallet checks sufficiency
+            self.wallet.subtract(amount)
 
     # WO-054: Public Education System
     def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int) -> List[Transaction]:

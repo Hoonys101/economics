@@ -23,6 +23,7 @@ from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.systems.api import LifecycleContext, MarketInteractionContext, LearningUpdateContext, ILearningAgent
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+from modules.finance.wallet.wallet import Wallet
 import simulation
 
 # New Components
@@ -152,7 +153,7 @@ class Household(
         initial_assets_dict = {DEFAULT_CURRENCY: float(initial_assets)}
 
         self._econ_state = EconStateDTO(
-            assets=initial_assets_dict,
+            wallet=Wallet(id, initial_assets_dict),
             inventory={},
             inventory_quality={},
             durable_assets=[],
@@ -264,6 +265,9 @@ class Household(
             logger=logger,
             **kwargs,
         )
+
+        # Ensure BaseAgent uses the same wallet as EconStateDTO
+        self._wallet = self._econ_state.wallet
 
         # WO-123: Memory Logging - Record Birth
         if self.memory_v2:

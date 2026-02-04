@@ -157,10 +157,15 @@ class SettlementSystem(ISettlementSystem):
             self.logger.warning(f"Agent {agent_id} does not implement IPortfolioHandler. Portfolio not captured.")
 
         # 2. Atomic Transfer: Cash
-        cash_balance_raw = agent.assets
-        cash_balance = cash_balance_raw
-        if isinstance(cash_balance_raw, dict):
-            cash_balance = cash_balance_raw.get(DEFAULT_CURRENCY, 0.0)
+        cash_balance = 0.0
+        if hasattr(agent, 'wallet'):
+            cash_balance = agent.wallet.get_balance(DEFAULT_CURRENCY)
+        else:
+            # Fallback
+            cash_balance_raw = agent.assets
+            cash_balance = cash_balance_raw
+            if isinstance(cash_balance_raw, dict):
+                cash_balance = cash_balance_raw.get(DEFAULT_CURRENCY, 0.0)
 
         if cash_balance > 0:
             agent.withdraw(cash_balance, currency=DEFAULT_CURRENCY)
@@ -368,18 +373,25 @@ class SettlementSystem(ISettlementSystem):
 
         # WO-178: Escheatment Logic
         if government_agent:
+            current_assets_val = 0.0
             try:
+                if hasattr(agent, 'wallet'):
+                    current_assets_val = agent.wallet.get_balance(DEFAULT_CURRENCY)
                 # TD-073: Check finance.balance first for Firms
-                if hasattr(agent, 'finance') and hasattr(agent.finance, 'balance'):
+                elif hasattr(agent, 'finance') and hasattr(agent.finance, 'balance'):
                     current_assets = agent.finance.balance
+                    if isinstance(current_assets, dict):
+                        current_assets_val = current_assets.get(DEFAULT_CURRENCY, 0.0)
+                    else:
+                        current_assets_val = current_assets
                 else:
                     current_assets = float(agent.assets) if hasattr(agent, 'assets') else 0.0
+                    if isinstance(current_assets, dict):
+                        current_assets_val = current_assets.get(DEFAULT_CURRENCY, 0.0)
+                    else:
+                        current_assets_val = current_assets
             except (TypeError, ValueError):
-                current_assets = 0.0
-
-            current_assets_val = current_assets
-            if isinstance(current_assets, dict):
-                current_assets_val = current_assets.get(DEFAULT_CURRENCY, 0.0)
+                current_assets_val = 0.0
 
             if current_assets_val > 0:
                 self.transfer(
@@ -418,14 +430,17 @@ class SettlementSystem(ISettlementSystem):
         # 2. Standard Agent Checks (Compatible with TD-073 Firm Refactor)
         current_cash = 0.0
 
-        # Check for Firm's finance component first
-        if hasattr(agent, 'finance') and hasattr(agent.finance, 'balance'):
+        # Priority: Wallet -> Finance -> EconState -> Assets
+        if hasattr(agent, 'wallet'):
+            current_cash = agent.wallet.get_balance(currency)
+        # Check for Firm's finance component first (Legacy fallback)
+        elif hasattr(agent, 'finance') and hasattr(agent.finance, 'balance'):
              current_cash_raw = agent.finance.balance
              if isinstance(current_cash_raw, dict):
                  current_cash = current_cash_raw.get(currency, 0.0)
              else:
                  current_cash = current_cash_raw
-        # Check for Household's EconComponent state
+        # Check for Household's EconComponent state (Legacy fallback)
         elif hasattr(agent, '_econ_state') and hasattr(agent._econ_state, 'assets'):
              current_cash_raw = agent._econ_state.assets
              if isinstance(current_cash_raw, dict):

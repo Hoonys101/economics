@@ -22,31 +22,24 @@ class HouseholdFinancialsMixin:
     logger: Logger
     config: "HouseholdConfigDTO"
     _econ_state: "EconStateDTO"
-    _assets: Dict[CurrencyCode, float]
 
     @override
     def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        if currency not in self._econ_state.assets:
-            self._econ_state.assets[currency] = 0.0
-        self._econ_state.assets[currency] += amount
-        self._assets = self._econ_state.assets
+        self._econ_state.wallet.add(amount, currency, memo="Internal Add")
 
     @override
     def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        if currency not in self._econ_state.assets:
-            self._econ_state.assets[currency] = 0.0
-        self._econ_state.assets[currency] -= amount
-        self._assets = self._econ_state.assets
+        self._econ_state.wallet.subtract(amount, currency, memo="Internal Sub")
 
     @override
-    def adjust_assets(self, delta: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def adjust_assets(self, delta: float, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "", tick: int = -1) -> None:
         """
         Adjusts assets by delta (positive or negative).
         """
-        if currency not in self._econ_state.assets:
-            self._econ_state.assets[currency] = 0.0
-        self._econ_state.assets[currency] += delta
-        self._assets = self._econ_state.assets
+        if delta > 0:
+            self._econ_state.wallet.add(delta, currency, memo, tick)
+        elif delta < 0:
+            self._econ_state.wallet.subtract(abs(delta), currency, memo, tick)
 
     def modify_inventory(self, item_id: str, quantity: float) -> None:
         if item_id not in self._econ_state.inventory:

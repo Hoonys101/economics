@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
     from simulation.models import Order, Transaction
     from modules.common.dtos import Claim
+    from modules.finance.wallet.api import IWallet
 
 # Forward reference for type hinting
 class Firm: pass
@@ -171,6 +172,9 @@ class IFinancialEntity(Protocol):
 
     @property
     def id(self) -> int: ...
+
+    @property
+    def wallet(self) -> IWallet: ...
 
     @property
     def assets(self) -> float: ...

@@ -8,6 +8,7 @@ from simulation.ai.api import Personality
 from simulation.models import Share, Skill, Talent, Order
 from simulation.portfolio import Portfolio
 from modules.system.api import CurrencyCode # Added for Phase 33
+from modules.finance.wallet.api import IWallet
 
 if TYPE_CHECKING:
     from simulation.core_markets import Market
@@ -37,7 +38,8 @@ class BioStateDTO:
 class EconStateDTO:
     """Internal state for EconComponent."""
     # Assets & Inventory
-    assets: Dict[CurrencyCode, float] # Changed for Phase 33
+    wallet: IWallet # Changed for WO-4.2A Wallet Abstraction
+    # assets: Dict[CurrencyCode, float] # DEPRECATED, access via wallet
     inventory: Dict[str, float]
     inventory_quality: Dict[str, float]
     durable_assets: List[Dict[str, Any]]
@@ -89,8 +91,27 @@ class EconStateDTO:
     credit_frozen_until_tick: int = 0
     initial_assets_record: float = 0.0
 
+    @property
+    def assets(self) -> Dict[CurrencyCode, float]:
+        """Legacy compatibility accessor."""
+        return self.wallet.get_all_balances()
+
     def copy(self) -> "EconStateDTO":
         new_state = copy.copy(self)
+        # Wallet is mutable but we probably shouldn't deep copy it for simulation logic unless intent is cloning.
+        # But DTO copy is used for decision making snapshots usually?
+        # If it's for snapshot, it should be a copy.
+        # But Wallet is an object.
+        # DTO copy is shallow for attributes not explicitly handled.
+        # If we want read-only snapshot, Wallet interface might need to be careful.
+        # For now, we keep reference or new wallet?
+        # Typically copy() is used for creating new state for next tick or planning.
+        # But Wallet is the source of truth.
+        # Ideally, we pass the SAME wallet reference if it's the agent's wallet.
+        # Or if this is a snapshot, we should pass a ReadOnly wallet wrapper or just the balance.
+        # However, EconStateDTO is the internal state of EconComponent.
+        # So we keep the reference.
+
         new_state.inventory = self.inventory.copy()
         new_state.inventory_quality = self.inventory_quality.copy()
         # Deep copy durable assets as they are dicts

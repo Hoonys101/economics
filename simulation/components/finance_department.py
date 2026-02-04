@@ -25,7 +25,7 @@ class FinanceDepartment:
         self.config = config
 
         # Centralized Assets (WO-103 Phase 1)
-        self._balance: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: initial_capital}
+        # self._balance replaced by self.firm.wallet (BaseAgent.wallet)
 
         # Financial State
         self.retained_earnings: float = 0.0 # This might stay float as a net equity measure
@@ -55,19 +55,15 @@ class FinanceDepartment:
 
     @property
     def balance(self) -> Dict[CurrencyCode, float]:
-        return self._balance
+        return self.firm.wallet.get_all_balances()
 
     def credit(self, amount: float, description: str = "", currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Adds funds to the firm's cash reserves."""
-        if currency not in self._balance:
-            self._balance[currency] = 0.0
-        self._balance[currency] += amount
+        self.firm.wallet.add(amount, currency, memo=description)
 
     def debit(self, amount: float, description: str = "", currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Deducts funds from the firm's cash reserves."""
-        if currency not in self._balance:
-            self._balance[currency] = 0.0
-        self._balance[currency] -= amount
+        self.firm.wallet.subtract(amount, currency, memo=description)
 
     def record_revenue(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY):
         if currency not in self.revenue_this_turn:
@@ -112,7 +108,8 @@ class FinanceDepartment:
     def generate_maintenance_transaction(self, government: IFinancialEntity, current_time: int) -> Optional[Transaction]:
         """Generates maintenance fee transaction."""
         fee = self.config.firm_maintenance_fee
-        payment = min(self._balance.get(DEFAULT_CURRENCY, 0.0), fee)
+        current_balance = self.firm.wallet.get_balance(DEFAULT_CURRENCY)
+        payment = min(current_balance, fee)
 
         if payment > 0:
             self.record_expense(payment)
@@ -233,7 +230,7 @@ class FinanceDepartment:
         weekly_burn_rate = maintenance_fee + (avg_wage * len(employees))
         required_reserves = weekly_burn_rate * reserve_period
 
-        usd_balance = self._balance.get(DEFAULT_CURRENCY, 0.0)
+        usd_balance = self.firm.wallet.get_balance(DEFAULT_CURRENCY)
         distributable_cash = usd_balance - required_reserves
 
         transactions = []
@@ -272,7 +269,7 @@ class FinanceDepartment:
         self.firm.total_debt += amount
 
     def calculate_altman_z_score(self) -> float:
-        usd_balance = self._balance.get(DEFAULT_CURRENCY, 0.0)
+        usd_balance = self.firm.wallet.get_balance(DEFAULT_CURRENCY)
         total_assets = usd_balance + self.firm.capital_stock + self.get_inventory_value()
         if total_assets == 0: return 0.0
         working_capital = usd_balance - getattr(self.firm, 'total_debt', 0.0)
@@ -297,7 +294,7 @@ class FinanceDepartment:
 
     def check_cash_crunch(self) -> bool:
         threshold = 0.1 * self.last_daily_expenses
-        return self._balance.get(DEFAULT_CURRENCY, 0.0) < threshold
+        return self.firm.wallet.get_balance(DEFAULT_CURRENCY) < threshold
 
     def trigger_emergency_liquidation(self) -> List[Order]:
         orders = []
@@ -313,7 +310,7 @@ class FinanceDepartment:
         return orders
 
     def calculate_valuation(self) -> float:
-        usd_balance = self._balance.get(DEFAULT_CURRENCY, 0.0)
+        usd_balance = self.firm.wallet.get_balance(DEFAULT_CURRENCY)
         net_assets = usd_balance + self.get_inventory_value() + self.firm.capital_stock
         avg_profit = sum(self.profit_history) / len(self.profit_history) if self.profit_history else 0.0
         self.firm.valuation = net_assets + max(0.0, avg_profit) * self.config.valuation_per_multiplier
@@ -327,7 +324,7 @@ class FinanceDepartment:
         return total_val
 
     def get_financial_snapshot(self) -> Dict[str, float]:
-        usd_balance = self._balance.get(DEFAULT_CURRENCY, 0.0)
+        usd_balance = self.firm.wallet.get_balance(DEFAULT_CURRENCY)
         total_assets = usd_balance + self.get_inventory_value() + getattr(self.firm, 'capital_stock', 0.0)
         current_liabilities = getattr(self.firm, "total_debt", 0.0)
         avg_profit = self.current_profit.get(DEFAULT_CURRENCY, 0.0)
@@ -351,7 +348,7 @@ class FinanceDepartment:
         outstanding_shares = self.firm.total_shares - self.firm.treasury_shares
         if outstanding_shares <= 0: return 0.0
         debt = getattr(self.firm, 'total_debt', 0.0)
-        net_assets = self._balance.get(DEFAULT_CURRENCY, 0.0) - debt
+        net_assets = self.firm.wallet.get_balance(DEFAULT_CURRENCY) - debt
         return max(0.0, net_assets) / outstanding_shares
 
     def get_market_cap(self, stock_price: Optional[float] = None) -> float:
@@ -359,15 +356,15 @@ class FinanceDepartment:
         return (self.firm.total_shares - self.firm.treasury_shares) * stock_price
 
     def get_assets(self) -> float:
-        return self._balance.get(DEFAULT_CURRENCY, 0.0)
+        return self.firm.wallet.get_balance(DEFAULT_CURRENCY)
 
     def invest_in_automation(self, amount: float, government: Optional[IFinancialEntity] = None) -> bool:
-        if self._balance.get(DEFAULT_CURRENCY, 0.0) < amount: return False
+        if self.firm.wallet.get_balance(DEFAULT_CURRENCY) < amount: return False
         if not self.firm.settlement_system or not government: return False
         return self.firm.settlement_system.transfer(self.firm, government, amount, "Automation", currency=DEFAULT_CURRENCY)
 
     def invest_in_rd(self, amount: float, government: Optional[IFinancialEntity] = None) -> bool:
-        if self._balance.get(DEFAULT_CURRENCY, 0.0) < amount: return False
+        if self.firm.wallet.get_balance(DEFAULT_CURRENCY) < amount: return False
         if not self.firm.settlement_system or not government: return False
         if self.firm.settlement_system.transfer(self.firm, government, amount, "R&D", currency=DEFAULT_CURRENCY):
             self.record_expense(amount)
@@ -375,7 +372,7 @@ class FinanceDepartment:
         return False
 
     def invest_in_capex(self, amount: float, government: Optional[IFinancialEntity] = None) -> bool:
-        if self._balance.get(DEFAULT_CURRENCY, 0.0) < amount: return False
+        if self.firm.wallet.get_balance(DEFAULT_CURRENCY) < amount: return False
         if not self.firm.settlement_system or not government: return False
         return self.firm.settlement_system.transfer(self.firm, government, amount, "CAPEX", currency=DEFAULT_CURRENCY)
 
@@ -383,14 +380,14 @@ class FinanceDepartment:
         self.firm.dividend_rate = rate
 
     def pay_severance(self, employee: Household, amount: float) -> bool:
-        if self._balance.get(DEFAULT_CURRENCY, 0.0) >= amount and self.firm.settlement_system:
+        if self.firm.wallet.get_balance(DEFAULT_CURRENCY) >= amount and self.firm.settlement_system:
             if self.firm.settlement_system.transfer(self.firm, employee, amount, "Severance", currency=DEFAULT_CURRENCY):
                 self.record_expense(amount)
                 return True
         return False
 
     def pay_ad_hoc_tax(self, amount: float, tax_type: str, government: Any, current_time: int) -> bool:
-        if self._balance.get(DEFAULT_CURRENCY, 0.0) >= amount and self.firm.settlement_system:
+        if self.firm.wallet.get_balance(DEFAULT_CURRENCY) >= amount and self.firm.settlement_system:
             if self.firm.settlement_system.transfer(self.firm, government, amount, tax_type, currency=DEFAULT_CURRENCY):
                 self.record_expense(amount)
                 return True

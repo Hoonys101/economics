@@ -146,37 +146,8 @@ class Firm(BaseAgent, ILearningAgent):
         self.has_bailout_loan = False
         self.decision_engine.loan_market = loan_market
 
-    @property
-    @override
-    def assets(self) -> Dict[CurrencyCode, float]:
-        """Returns the firm's liquid assets."""
-        return self.finance.balance
-
-    @assets.setter
-    def assets(self, value: Dict[CurrencyCode, float]) -> None:
-        """Sets the firm's liquid assets (Compatibility)."""
-        self.finance._balance = value # Direct internal access for override
-        self._assets = value
-
-    def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        """[PROTECTED] Delegate to FinanceDepartment and sync legacy storage."""
-        if hasattr(self, 'finance'):
-            self.finance.credit(amount, "Settlement Transfer", currency=currency)
-            self._assets = self.finance.balance
-        else:
-            if currency not in self._assets:
-                self._assets[currency] = 0.0
-            self._assets[currency] += amount
-
-    def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        """[PROTECTED] Delegate to FinanceDepartment and sync legacy storage."""
-        if hasattr(self, 'finance'):
-            self.finance.debit(amount, "Settlement Transfer", currency=currency)
-            self._assets = self.finance.balance
-        else:
-            if currency not in self._assets:
-                self._assets[currency] = 0.0
-            self._assets[currency] -= amount
+    # assets property and _internal_* methods are inherited from BaseAgent which uses Wallet.
+    # We remove overrides to ensure single source of truth (Wallet).
 
     def init_ipo(self, stock_market: StockMarket):
         """Register firm in stock market order book."""

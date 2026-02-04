@@ -2,6 +2,8 @@ import logging
 from typing import Any, List, Optional, Dict, TYPE_CHECKING
 import numpy as np
 from modules.finance.api import InsufficientFundsError
+from modules.finance.wallet.wallet import Wallet
+from modules.finance.wallet.api import IWallet
 
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
@@ -23,7 +25,11 @@ class CentralBank:
         self.strategy = strategy
 
         # Balance Sheet
-        self.assets: Dict[str, Any] = {"bonds": [], "cash": 0.0}
+        self.bonds: List[Any] = []
+        self.wallet = Wallet(0, allow_negative_balance=True) # 0 ID for CB? Or hash of string? owner_id is int.
+        # self.id is "CENTRAL_BANK" (str). IWallet expects int owner_id.
+        # I'll use a fixed ID for CB, e.g. 0 or 999999 (Treasury uses 999999 in memory).
+        # Let's use 0 for CB.
 
         # Initial Rate
         self.base_rate = getattr(config_module, "INITIAL_BASE_ANNUAL_RATE", 0.05)
@@ -51,10 +57,10 @@ class CentralBank:
         Purchases government bonds, adding them to the Central Bank's balance sheet.
         This is a key part of Quantitative Easing (QE).
         """
-        self.assets["bonds"].append(bond)
+        self.bonds.append(bond)
         logger.info(
             f"CENTRAL_BANK_QE | Purchased bond {bond.id} for {bond.face_value:.2f}. "
-            f"Total bonds held: {len(self.assets['bonds'])}",
+            f"Total bonds held: {len(self.bonds)}",
             extra={"tags": ["central_bank", "qe"]}
         )
 
@@ -185,19 +191,18 @@ class CentralBank:
 
     def _internal_add_assets(self, amount: float) -> None:
         """[INTERNAL ONLY] Increase cash reserves."""
-        self.assets['cash'] = self.assets.get('cash', 0) + amount
+        self.wallet.add(amount, memo="Internal Add")
 
     def _internal_sub_assets(self, amount: float) -> None:
         """[INTERNAL ONLY] Decrease cash reserves."""
-        current_cash = self.assets.get('cash', 0)
         # Central Bank can withdraw (create money) even if it results in negative cash
         # This represents expansion of the monetary base.
-        self.assets['cash'] = current_cash - amount
+        self.wallet.subtract(amount, memo="Internal Sub")
 
     def deposit(self, amount: float) -> None:
         """Deposits a given amount into the central bank's cash reserves."""
         if amount > 0:
-            self._internal_add_assets(amount)
+            self.wallet.add(amount, memo="Deposit")
 
     def mint(self, amount: float) -> None:
         """
@@ -212,4 +217,4 @@ class CentralBank:
         As a Fiat Currency Issuer, the Central Bank can have a negative balance (creating money).
         """
         if amount > 0:
-            self._internal_sub_assets(amount)
+            self.wallet.subtract(amount, memo="Withdraw")

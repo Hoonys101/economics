@@ -3,6 +3,8 @@ from typing import Dict, Any, Optional, TYPE_CHECKING
 import logging
 from modules.finance.api import InsufficientFundsError
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
+from modules.finance.wallet.wallet import Wallet
+from modules.finance.wallet.api import IWallet
 
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
@@ -21,11 +23,15 @@ class BaseAgent(ICurrencyHolder, ABC):
         memory_interface: Optional["MemoryV2Interface"] = None,
     ):
         self.id = id
-        self._assets: Dict[CurrencyCode, float] = {}
+
+        initial_balance_dict = {}
         if isinstance(initial_assets, dict):
-            self._assets = initial_assets.copy()
+            initial_balance_dict = initial_assets.copy()
         else:
-            self._assets[DEFAULT_CURRENCY] = float(initial_assets)
+            initial_balance_dict[DEFAULT_CURRENCY] = float(initial_assets)
+
+        self._wallet = Wallet(self.id, initial_balance_dict)
+
         self.needs = initial_needs
         self.decision_engine = decision_engine
         self.value_orientation = value_orientation
@@ -46,44 +52,43 @@ class BaseAgent(ICurrencyHolder, ABC):
         self.memory_v2 = memory_interface
 
     @property
+    def wallet(self) -> IWallet:
+        return self._wallet
+
+    @property
     def assets(self) -> Dict[CurrencyCode, float]:
         """Current assets keyed by currency (Read-Only)."""
-        return self._assets
+        return self._wallet.get_all_balances()
 
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
         """Implementation of ICurrencyHolder."""
-        return self._assets.copy()
+        return self._wallet.get_all_balances()
 
     def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         [INTERNAL ONLY] Increase assets.
         """
-        if currency not in self._assets:
-            self._assets[currency] = 0.0
-        self._assets[currency] += amount
+        self._wallet.add(amount, currency, memo="Internal Add")
 
     def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         [INTERNAL ONLY] Decrease assets.
         """
-        if currency not in self._assets:
-             self._assets[currency] = 0.0
-        self._assets[currency] -= amount
+        # Checks are handled by Wallet.subtract unless allow_negative_balance is True
+        self._wallet.subtract(amount, currency, memo="Internal Sub")
 
     def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Deposits a given amount into the entity's account."""
         if amount > 0:
-            self._internal_add_assets(amount, currency)
+            self._wallet.add(amount, currency, memo="Deposit")
 
     def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         Withdraws a given amount from the entity's account.
         """
         if amount > 0:
-            current_bal = self._assets.get(currency, 0.0)
-            if current_bal < amount:
-                raise InsufficientFundsError(f"Agent {self.id} has insufficient funds for withdrawal of {amount:.2f} {currency}. Available: {current_bal:.2f}")
-            self._internal_sub_assets(amount, currency)
+            # Wallet raises InsufficientFundsError automatically
+            self._wallet.subtract(amount, currency, memo="Withdraw")
 
     def get_agent_data(self) -> Dict[str, Any]:
         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""
