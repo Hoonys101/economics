@@ -418,6 +418,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         # 1. Market
         sim.transaction_processor.register_handler("goods", GoodsTransactionHandler())
         sim.transaction_processor.register_handler("labor", LaborTransactionHandler())
+        sim.transaction_processor.register_handler("wage", LaborTransactionHandler())
         sim.transaction_processor.register_handler("research_labor", LaborTransactionHandler())
         sim.transaction_processor.register_handler("stock", StockTransactionHandler())
 
@@ -436,16 +437,21 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         financial_handler = FinancialTransactionHandler()
         sim.transaction_processor.register_handler("interest_payment", financial_handler)
+        sim.transaction_processor.register_handler("loan_interest", financial_handler)
+        sim.transaction_processor.register_handler("deposit_interest", financial_handler)
         sim.transaction_processor.register_handler("dividend", financial_handler)
         sim.transaction_processor.register_handler("tax", financial_handler)
 
         sim.transaction_processor.register_handler("escheatment", EscheatmentHandler())
 
         # 4. Specialized
-        # Note: inheritance_handler uses settle_atomic (ported from TP)
         sim.transaction_processor.register_handler("inheritance_distribution", InheritanceHandler())
 
-        sim.transaction_processor.register_handler("infrastructure_spending", GovernmentSpendingHandler())
+        spending_handler = GovernmentSpendingHandler()
+        sim.transaction_processor.register_handler("infrastructure_spending", spending_handler)
+        sim.transaction_processor.register_handler("welfare", spending_handler)
+        sim.transaction_processor.register_handler("marketing", spending_handler)
+
         sim.transaction_processor.register_handler("emergency_buy", EmergencyTransactionHandler())
 
         # 5. Public Manager

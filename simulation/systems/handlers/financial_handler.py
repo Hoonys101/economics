@@ -21,8 +21,8 @@ class FinancialTransactionHandler(ITransactionHandler):
 
         success = False
 
-        if tx_type == "interest_payment":
-             success = context.settlement_system.transfer(buyer, seller, trade_value, "interest_payment")
+        if tx_type in ["interest_payment", "loan_interest", "deposit_interest"]:
+             success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
 
              if success and isinstance(buyer, Firm):
                  buyer.finance.record_expense(trade_value)

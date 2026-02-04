@@ -15,7 +15,7 @@ from simulation.systems.firm_management import FirmSystem
 from simulation.systems.liquidation_manager import LiquidationManager
 from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 from simulation.finance.api import ISettlementSystem
-from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY
+from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY, ICurrencyHolder
 from modules.system.registry import AgentRegistry
 from modules.hr.service import HRService
 from modules.finance.service import TaxService
@@ -223,6 +223,10 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             state.agents[agent.id] = agent
             agent.decision_engine.markets = state.markets
             agent.decision_engine.goods_data = state.goods_data
+
+            # WO-218: Track new agent as currency holder for M2 integrity
+            if isinstance(agent, ICurrencyHolder):
+                state.currency_holders.append(agent)
 
             # Ensure agent has settlement system
             if hasattr(agent, 'settlement_system'):

@@ -119,6 +119,7 @@ class TickOrchestrator:
             ai_trainer=state.ai_trainer,
             settlement_system=state.settlement_system,
             taxation_system=state.taxation_system,
+            currency_holders=state.currency_holders,
             next_agent_id=state.next_agent_id,
             real_estate_units=state.real_estate_units,
             injectable_sensory_dto=injectable_sensory_dto,

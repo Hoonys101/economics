@@ -247,6 +247,7 @@ class SimulationState:
     effects_queue: List[Dict[str, Any]] = None # WO-109: Queue for side-effects
     inactive_agents: Dict[int, Any] = None # WO-109: Store inactive agents
     taxation_system: Optional[Any] = None # WO-116: Taxation System
+    currency_holders: List[Any] = None # Added for M2 tracking (Phase 33/5)
 
     # --- NEW TRANSIENT FIELDS ---
     # From Phase 1 (Decisions)
@@ -272,6 +273,8 @@ class SimulationState:
             self.effects_queue = []
         if self.inactive_agents is None:
             self.inactive_agents = {}
+        if self.currency_holders is None:
+            self.currency_holders = []
         if self.firm_pre_states is None:
             self.firm_pre_states = {}
         if self.household_pre_states is None:

@@ -107,7 +107,10 @@
 | TD-224 | 2026-02-04 | Governance Mapping Refactor | - | [Review](../../_archive/gemini_output/pr_review_identity-governance-refactor-17364238259413903980.md) |
 | TD-209 | 2026-02-04 | Identifier Decoupling | - | [Review](../../_archive/gemini_output/pr_review_identity-governance-refactor-17364238259413903980.md) |
 | TD-220 | 2026-02-04 | Central Bank ID Unification | - | [Review](../../_archive/gemini_output/pr_review_identity-governance-refactor-17364238259413903980.md) |
-| TD-205 | 2026-02-04 | Transaction Engine SRP Refactor | [Spec](../../3_work_artifacts/specs/spec_td205_transaction_decomposition.md) | [Insight](../../communications/insights/TD-205_Transaction_Engine.md) |
+| TD-205 | 2026-10-04 | Transaction Engine SRP Refactor | [Spec](../../3_work_artifacts/specs/spec_td205_transaction_decomposition.md) | [Insight](../../communications/insights/TD-205_Transaction_Engine.md) |
+| PH35-J2 | 2026-02-04 | Central Bank Service Implementation | [Spec](../../3_work_artifacts/specs/spec_phase35_central_bank.md) | [Insight](../../communications/insights/Mission_Phase5_Interfaces.md) |
+| PH35-J3 | 2026-02-04 | Call Market Implementation | ^ | [Insight](../../communications/insights/CallMarket_Impl.md) |
+| TD-230 | 2026-02-04 | M2 Integrity: Newborn Tracking leak | Fixed via LifecycleManager currency_holders update | [Walkthrough](../../../brain/a4ca8651-e1d6-40f9-96b7-5133429de32b/walkthrough.md) |
 
 ---
 
