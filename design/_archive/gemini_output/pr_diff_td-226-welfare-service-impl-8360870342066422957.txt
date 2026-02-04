@@ -1,0 +1,428 @@
+diff --git a/communications/insights/TD-226_Government_Refactor.md b/communications/insights/TD-226_Government_Refactor.md
+index 6acb36b..b9a9324 100644
+--- a/communications/insights/TD-226_Government_Refactor.md
++++ b/communications/insights/TD-226_Government_Refactor.md
+@@ -10,14 +10,22 @@ This mission focuses on Phase 1 of the Government Module Decomposition. The goal
+ - Implemented `modules/government/tax/service.py` (TaxService)
+   - Encapsulates `TaxationSystem` and `FiscalPolicyManager`.
+   - Validated with unit tests in `modules/government/tax/tests/test_service.py`.
++- **[NEW] Implemented `modules/government/welfare/service.py` (WelfareService)**
++  - Extracted welfare logic (Survival Cost, Unemployment, Stimulus) from `WelfareManager`.
++  - Refactored `Government` to use `WelfareService`.
++  - Deprecated and removed `WelfareManager`.
+ 
+ ## Technical Debt & Observations
+ - **Duplicate/Ambiguous Structure**: `modules/government/taxation` already exists. The new spec mandates `modules/government/tax`. This creates potential confusion during the transition period. Future steps must ensure `taxation` is deprecated or merged into `tax`.
+ - **Any Type Usage**: The new interfaces use `Any` for `firm` and `household` arguments to avoid circular imports. This is a temporary measure (TD-227 resolution). Ideally, specific Protocols (e.g., `IFirm`, `IHousehold`) should be defined in `modules/common/interfaces.py` to replace `Any`.
+ - **God Class Persistence**: The `Government` class currently still holds all logic. These interfaces are just the first step. The implementation phase (Phase 2) will require careful migration to avoid breaking existing tests that rely on `Government` methods directly.
+ - **Bug Fix in Legacy Logic**: During extraction, a bug was identified in `Government.reset_tick_flow` where `revenue_this_tick` was reset to `0.0` (float) instead of a dictionary. This has been corrected in `TaxService` to ensure `revenue_this_tick` is always a `Dict[CurrencyCode, float]`.
++- **[NEW] WelfareManager SRP Violation**: `WelfareManager` contained Wealth Tax logic, which is taxation, not welfare. During extraction, this logic was moved back to `Government` temporarily (inline) because `TaxService` didn't have an explicit API for it and the scope was `WelfareService`. **Action Item**: Move Wealth Tax logic to `TaxService` in the next iteration.
++- **[NEW] Service Coupling**: `WelfareService` currently depends on the full `Government` instance to access `finance_system`, `wallet`, and `gdp_history`. This creates a circular dependency (`Government -> WelfareService -> Government`). **Action Item**: Inject specific interfaces (`IFinanceSystem`, `IWallet`) and shared state containers instead of the parent agent.
++- **[NEW] Shared State (GDP History)**: `gdp_history` is used by both the Policy Engine (Taylor Rule) and Welfare Service (Stimulus). Currently, `WelfareService` accesses/modifies `Government.gdp_history` directly. This shared mutable state needs a better home (e.g., `EconomicIndicatorsDTO` or a shared `HistoryManager`).
+ 
+ ## Next Steps
+-- Implement `WelfareService` and `FiscalService` classes.
+-- Refactor `Government` to use these services.
++- Implement `FiscalService` class.
++- Move Wealth Tax logic to `TaxService`.
++- Refactor `Government` to use `FiscalService`.
+ - Update tests to use the new service boundaries.
+diff --git a/modules/government/components/welfare_manager.py b/modules/government/welfare/service.py
+similarity index 64%
+rename from modules/government/components/welfare_manager.py
+rename to modules/government/welfare/service.py
+index d82f379..56a8949 100644
+--- a/modules/government/components/welfare_manager.py
++++ b/modules/government/welfare/service.py
+@@ -1,9 +1,9 @@
+ from typing import List, Any, Dict, TYPE_CHECKING, Optional
+ import logging
+ from simulation.models import Transaction
++from modules.government.welfare.api import IWelfareService
+ from modules.government.constants import (
+-    DEFAULT_ANNUAL_WEALTH_TAX_RATE, DEFAULT_TICKS_PER_YEAR,
+-    DEFAULT_WEALTH_TAX_THRESHOLD, DEFAULT_UNEMPLOYMENT_BENEFIT_RATIO,
++    DEFAULT_UNEMPLOYMENT_BENEFIT_RATIO,
+     DEFAULT_STIMULUS_TRIGGER_GDP_DROP, DEFAULT_HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK,
+     DEFAULT_BASIC_FOOD_PRICE
+ )
+@@ -14,10 +14,11 @@ if TYPE_CHECKING:
+ 
+ logger = logging.getLogger(__name__)
+ 
+-class WelfareManager:
++class WelfareService(IWelfareService):
+     def __init__(self, government: 'Government'):
+         self.government = government
+         self.config = government.config_module
++        self.spending_this_tick: float = 0.0
+ 
+     def get_survival_cost(self, market_data: Dict[str, Any]) -> float:
+         """ Calculates current survival cost based on food prices. """
+@@ -68,16 +69,8 @@ class WelfareManager:
+         )
+         transactions.append(tx)
+ 
+-        # Update stats (Dict safe)
+-        if DEFAULT_CURRENCY not in self.government.total_spent_subsidies:
+-            self.government.total_spent_subsidies[DEFAULT_CURRENCY] = 0.0
+-        self.government.total_spent_subsidies[DEFAULT_CURRENCY] += effective_amount
+-
+-        if DEFAULT_CURRENCY not in self.government.expenditure_this_tick:
+-             self.government.expenditure_this_tick[DEFAULT_CURRENCY] = 0.0
+-        self.government.expenditure_this_tick[DEFAULT_CURRENCY] += effective_amount
+-
+-        self.government.current_tick_stats["welfare_spending"] += effective_amount
++        # Update local stats
++        self.spending_this_tick += effective_amount
+ 
+         logger.info(
+             f"HOUSEHOLD_SUPPORT | Generated support tx of {effective_amount:.2f} to {household.id}",
+@@ -85,56 +78,28 @@ class WelfareManager:
+         )
+         return transactions
+ 
+-    def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int) -> List[Transaction]:
++    def run_welfare_check(self, households: List[Any], market_data: Dict[str, Any], current_tick: int) -> List[Transaction]:
+         """
+-        Government Main Loop Step.
+-        Returns List of Transactions.
++        Identifies households in need and provides basic support.
++        Returns a list of payment transactions.
+         """
+         transactions = []
+-        self.government.reset_tick_flow()
+ 
+         # 1. Calculate Survival Cost (Dynamic)
+         survival_cost = self.get_survival_cost(market_data)
+ 
+-        # 2. Wealth Tax & Unemployment Benefit
+-        wealth_tax_rate_annual = getattr(self.config, "ANNUAL_WEALTH_TAX_RATE", DEFAULT_ANNUAL_WEALTH_TAX_RATE)
+-        ticks_per_year = getattr(self.config, "TICKS_PER_YEAR", DEFAULT_TICKS_PER_YEAR)
+-        wealth_tax_rate_tick = wealth_tax_rate_annual / ticks_per_year
+-        wealth_threshold = getattr(self.config, "WEALTH_TAX_THRESHOLD", DEFAULT_WEALTH_TAX_THRESHOLD)
+-
++        # 2. Unemployment Benefit
+         unemployment_ratio = getattr(self.config, "UNEMPLOYMENT_BENEFIT_RATIO", DEFAULT_UNEMPLOYMENT_BENEFIT_RATIO)
+         benefit_amount = survival_cost * unemployment_ratio
+ 
+-        total_wealth_tax = 0.0
+         total_welfare_paid = 0.0
+ 
+-        for agent in agents:
++        for agent in households:
+             if not getattr(agent, "is_active", False):
+                 continue
+ 
+             if hasattr(agent, "needs") and hasattr(agent, "is_employed"):
+-                # A. Wealth Tax (Synchronous & Atomic)
+-                # Safely get net worth (float)
+-                net_worth = 0.0
+-                if isinstance(agent.assets, dict):
+-                     net_worth = agent.assets.get(DEFAULT_CURRENCY, 0.0)
+-                else:
+-                     net_worth = float(agent.assets)
+-
+-                if net_worth > wealth_threshold:
+-                    tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
+-                    # Ensure we don't tax more than they have (safety, though collect_tax checks too)
+-                    tax_amount = min(tax_amount, net_worth)
+-
+-                    if tax_amount > 0 and self.government.settlement_system:
+-                        # Replaced TaxAgency call with internal collect_tax or direct transfer
+-                        # Using collect_tax (even if deprecated for external) is fine for internal shortcut
+-                        # to handle recording.
+-                        result = self.government.collect_tax(tax_amount, "wealth_tax", agent, current_tick)
+-                        if result['success']:
+-                             total_wealth_tax += result['amount_collected']
+-
+-                # B. Unemployment Benefit
++                # Unemployment Benefit
+                 if not agent.is_employed:
+                     txs = self.provide_household_support(agent, benefit_amount, current_tick)
+                     transactions.extend(txs)
+@@ -142,6 +107,8 @@ class WelfareManager:
+ 
+         # 3. Stimulus Check
+         current_gdp = market_data.get("total_production", 0.0)
++
++        # NOTE: We access and modify government.gdp_history as it is the source of truth
+         self.government.gdp_history.append(current_gdp)
+         if len(self.government.gdp_history) > self.government.gdp_history_window:
+             self.government.gdp_history.pop(0)
+@@ -158,15 +125,13 @@ class WelfareManager:
+ 
+         if should_stimulus:
+              stimulus_amount = survival_cost * 5.0
+-             active_households = [a for a in agents if hasattr(a, "is_employed") and getattr(a, "is_active", False)]
++             active_households = [a for a in households if hasattr(a, "is_employed") and getattr(a, "is_active", False)]
+ 
+              total_stimulus = 0.0
+              for h in active_households:
+                  txs = self.provide_household_support(h, stimulus_amount, current_tick)
+                  transactions.extend(txs)
+ 
+-                 # Calculate total from txs for logging?
+-                 # Assuming 1 welfare tx per support call
+                  for tx in txs:
+                      if tx.transaction_type == 'welfare':
+                          total_stimulus += tx.price
+@@ -179,3 +144,11 @@ class WelfareManager:
+                  )
+ 
+         return transactions
++
++    def get_spending_this_tick(self) -> float:
++        """Returns total welfare spending for the current tick."""
++        return self.spending_this_tick
++
++    def reset_tick_flow(self) -> None:
++        """Resets the per-tick spending accumulator."""
++        self.spending_this_tick = 0.0
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index b183e99..bce8785 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -17,7 +17,7 @@ from modules.government.taxation.system import TaxationSystem
+ from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset
+ from modules.government.components.fiscal_policy_manager import FiscalPolicyManager
+ from modules.government.dtos import FiscalPolicyDTO
+-from modules.government.components.welfare_manager import WelfareManager
++from modules.government.welfare.service import WelfareService
+ from modules.government.components.infrastructure_manager import InfrastructureManager
+ from modules.government.constants import *
+ from modules.government.components.monetary_ledger import MonetaryLedger
+@@ -59,7 +59,7 @@ class Government(ICurrencyHolder):
+         self.ministry_of_education = MinistryOfEducation(config_module)
+ 
+         # New Managers
+-        self.welfare_manager = WelfareManager(self)
++        self.welfare_service = WelfareService(self)
+         self.infrastructure_manager = InfrastructureManager(self)
+         self.monetary_ledger = MonetaryLedger()
+         self.policy_lockout_manager = PolicyLockoutManager()
+@@ -237,6 +237,7 @@ class Government(ICurrencyHolder):
+         self.revenue_breakdown_this_tick = {}
+ 
+         self.monetary_ledger.reset_tick_flow()
++        self.welfare_service.reset_tick_flow()
+ 
+     def process_monetary_transactions(self, transactions: List[Transaction]):
+         """
+@@ -458,12 +459,12 @@ class Government(ICurrencyHolder):
+         )
+ 
+     def provide_household_support(self, household: Any, amount: float, current_tick: int) -> List[Transaction]:
+-        """Delegates to WelfareManager."""
++        """Delegates to WelfareService."""
+         # Scapegoat Lockout Check: Keynesian Fiscal (Stimulus)
+         if self.policy_lockout_manager.is_locked(PolicyActionTag.KEYNESIAN_FISCAL, current_tick):
+             return []
+ 
+-        return self.welfare_manager.provide_household_support(household, amount, current_tick)
++        return self.welfare_service.provide_household_support(household, amount, current_tick)
+ 
+     def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:
+         """Provides a bailout loan to a firm if it's eligible. Returns (LoanDTO, Transactions)."""
+@@ -486,14 +487,54 @@ class Government(ICurrencyHolder):
+             return None, []
+ 
+     def get_survival_cost(self, market_data: Dict[str, Any]) -> float:
+-        """ Calculates current survival cost based on food prices. Delegates to WelfareManager. """
+-        return self.welfare_manager.get_survival_cost(market_data)
++        """ Calculates current survival cost based on food prices. Delegates to WelfareService. """
++        return self.welfare_service.get_survival_cost(market_data)
+ 
+     def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int) -> List[Transaction]:
+         """
+-        Delegates to WelfareManager.
++        Runs welfare checks and wealth tax collection.
++        Delegates welfare logic to WelfareService.
+         """
+-        return self.welfare_manager.run_welfare_check(agents, market_data, current_tick)
++        transactions = []
++
++        # 1. Wealth Tax Logic (Moved from WelfareManager)
++        # Note: Ideally this should be in TaxService, but TaxService API doesn't support it yet.
++        # Implemented here to maintain functionality during refactor.
++
++        wealth_tax_rate_annual = getattr(self.config_module, "ANNUAL_WEALTH_TAX_RATE", DEFAULT_ANNUAL_WEALTH_TAX_RATE)
++        ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", DEFAULT_TICKS_PER_YEAR)
++        wealth_tax_rate_tick = wealth_tax_rate_annual / ticks_per_year
++        wealth_threshold = getattr(self.config_module, "WEALTH_TAX_THRESHOLD", DEFAULT_WEALTH_TAX_THRESHOLD)
++
++        total_wealth_tax = 0.0
++
++        for agent in agents:
++            if not getattr(agent, "is_active", False):
++                continue
++
++            if hasattr(agent, "needs") and hasattr(agent, "is_employed"): # Identifying households
++                # Safely get net worth (float)
++                net_worth = 0.0
++                if isinstance(agent.assets, dict):
++                     net_worth = agent.assets.get(DEFAULT_CURRENCY, 0.0)
++                else:
++                     net_worth = float(agent.assets)
++
++                if net_worth > wealth_threshold:
++                    tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
++                    tax_amount = min(tax_amount, net_worth)
++
++                    if tax_amount > 0 and self.settlement_system:
++                        # Use collect_tax which handles settlement and recording
++                        result = self.collect_tax(tax_amount, "wealth_tax", agent, current_tick)
++                        if result['success']:
++                             total_wealth_tax += result['amount_collected']
++
++        # 2. Welfare Check (Delegated to WelfareService)
++        welfare_txs = self.welfare_service.run_welfare_check(agents, market_data, current_tick)
++        transactions.extend(welfare_txs)
++
++        return transactions
+ 
+     def invest_infrastructure(self, current_tick: int, households: List[Any] = None) -> List[Transaction]:
+         """
+@@ -505,6 +546,15 @@ class Government(ICurrencyHolder):
+         """
+         Called at the end of every tick to finalize statistics and push to history buffers.
+         """
++        # Retrieve welfare spending from service
++        welfare_spending = self.welfare_service.get_spending_this_tick()
++        self.current_tick_stats["welfare_spending"] = welfare_spending
++
++        # Update expenditure_this_tick (aggregate)
++        if DEFAULT_CURRENCY not in self.expenditure_this_tick:
++            self.expenditure_this_tick[DEFAULT_CURRENCY] = 0.0
++        self.expenditure_this_tick[DEFAULT_CURRENCY] += welfare_spending
++
+         revenue_snapshot = self.current_tick_stats["tax_revenue"].copy()
+         revenue_snapshot["tick"] = current_tick
+         # For simplicity, snapshot uses USD or sums main currency
+diff --git a/tests/unit/agents/test_government.py b/tests/unit/agents/test_government.py
+index 4f5b61c..d38cf12 100644
+--- a/tests/unit/agents/test_government.py
++++ b/tests/unit/agents/test_government.py
+@@ -1,52 +1,50 @@
+ import pytest
+-from unittest.mock import MagicMock, Mock
++from unittest.mock import MagicMock, Mock, patch
+ from simulation.agents.government import Government
+ 
+ @pytest.fixture
+-def government_setup(mocker):
++def government_setup():
+     # Mocking patches
+     # TaxAgency is removed, use TaxationSystem
+-    mock_taxation_system_cls = mocker.patch('simulation.agents.government.TaxationSystem')
+-    mock_education_ministry_cls = mocker.patch('simulation.agents.government.MinistryOfEducation')
+-    mock_fiscal_policy_manager_cls = mocker.patch('simulation.agents.government.FiscalPolicyManager')
+-
+-    # Mock new components
+-    mock_welfare_manager_cls = mocker.patch('simulation.agents.government.WelfareManager')
+-    mock_infra_manager_cls = mocker.patch('simulation.agents.government.InfrastructureManager')
+-
+-    mock_taxation_system_instance = mock_taxation_system_cls.return_value
+-    mock_education_ministry_instance = mock_education_ministry_cls.return_value
+-    mock_fiscal_policy_manager_instance = mock_fiscal_policy_manager_cls.return_value
+-    mock_welfare_manager_instance = mock_welfare_manager_cls.return_value
+-    mock_infra_manager_instance = mock_infra_manager_cls.return_value
+-
+-    mock_config = Mock()
+-    mock_config.GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"
+-    mock_config.TICKS_PER_YEAR = 100
+-    mock_config.INCOME_TAX_RATE = 0.1 # This is the initial rate
+-    mock_config.CORPORATE_TAX_RATE = 0.2
+-    mock_config.TAX_MODE = "PROGRESSIVE"
+-    mock_config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
+-    mock_config.TAX_BRACKETS = []
+-
+-    government = Government(id=1, initial_assets=100000, config_module=mock_config)
+-    # Mock settlement system
+-    government.settlement_system = Mock()
+-
+-    # Manually set a different tax rate on the government instance to test that
+-    # the *current* rate is passed, not the initial config rate.
+-    government.income_tax_rate = 0.15
+-    government.corporate_tax_rate = 0.25
+-
+-    return {
+-        "government": government,
+-        "mock_taxation_system": mock_taxation_system_instance,
+-        "mock_education_ministry": mock_education_ministry_instance,
+-        "mock_fiscal_policy_manager": mock_fiscal_policy_manager_instance,
+-        "mock_welfare_manager": mock_welfare_manager_instance,
+-        "mock_infra_manager": mock_infra_manager_instance,
+-        "mock_config": mock_config
+-    }
++    with patch('simulation.agents.government.TaxationSystem') as mock_taxation_system_cls, \
++         patch('simulation.agents.government.MinistryOfEducation') as mock_education_ministry_cls, \
++         patch('simulation.agents.government.FiscalPolicyManager') as mock_fiscal_policy_manager_cls, \
++         patch('simulation.agents.government.WelfareService') as mock_welfare_service_cls, \
++         patch('simulation.agents.government.InfrastructureManager') as mock_infra_manager_cls:
++
++        mock_taxation_system_instance = mock_taxation_system_cls.return_value
++        mock_education_ministry_instance = mock_education_ministry_cls.return_value
++        mock_fiscal_policy_manager_instance = mock_fiscal_policy_manager_cls.return_value
++        mock_welfare_service_instance = mock_welfare_service_cls.return_value
++        mock_infra_manager_instance = mock_infra_manager_cls.return_value
++
++        mock_config = Mock()
++        mock_config.GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"
++        mock_config.TICKS_PER_YEAR = 100
++        mock_config.INCOME_TAX_RATE = 0.1 # This is the initial rate
++        mock_config.CORPORATE_TAX_RATE = 0.2
++        mock_config.TAX_MODE = "PROGRESSIVE"
++        mock_config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
++        mock_config.TAX_BRACKETS = []
++
++        government = Government(id=1, initial_assets=100000, config_module=mock_config)
++        # Mock settlement system
++        government.settlement_system = Mock()
++
++        # Manually set a different tax rate on the government instance to test that
++        # the *current* rate is passed, not the initial config rate.
++        government.income_tax_rate = 0.15
++        government.corporate_tax_rate = 0.25
++
++        yield {
++            "government": government,
++            "mock_taxation_system": mock_taxation_system_instance,
++            "mock_education_ministry": mock_education_ministry_instance,
++            "mock_fiscal_policy_manager": mock_fiscal_policy_manager_instance,
++            "mock_welfare_service": mock_welfare_service_instance,
++            "mock_infra_manager": mock_infra_manager_instance,
++            "mock_config": mock_config
++        }
+ 
+ def test_calculate_income_tax_delegation(government_setup):
+     env = government_setup
+@@ -129,13 +127,13 @@ def deficit_government_setup():
+     # Mock settlement system to handle transfer
+     government.settlement_system = Mock()
+ 
+-    # For this test, we want real WelfareManager logic or mock it?
++    # For this test, we want real WelfareService logic or mock it?
+     # The original tests tested logic inside provide_household_support.
+-    # Since we moved logic to WelfareManager, we should check if Government delegates correctly.
+-    # OR if we want to test the logic, we should use real WelfareManager.
++    # Since we moved logic to WelfareService, we should check if Government delegates correctly.
++    # OR if we want to test the logic, we should use real WelfareService.
+     # The deficit_government_setup in original test was implicit.
+-    # Now Government initializes `self.welfare_manager = WelfareManager(self)`.
+-    # So it uses real WelfareManager unless mocked.
++    # Now Government initializes `self.welfare_service = WelfareService(self)`.
++    # So it uses real WelfareService unless mocked.
+     # `government_setup` fixture mocks it. `deficit_government_setup` does NOT mock it explicitly.
+     # So it uses the real one (which is what we want for integration-like testing of logic).
+ 
+@@ -159,7 +157,8 @@ def test_deficit_spending_allowed_within_limit(deficit_government_setup):
+ def test_deficit_spending_blocked_beyond_limit(deficit_government_setup):
+     """Test that spending is blocked when it would exceed the debt/GDP limit."""
+     government = deficit_government_setup
+-    government._assets = -2900
++    # Manually set wallet balance to negative to force bond issuance
++    government.wallet._balances['USD'] = -2900
+     target_agent = Mock()
+     target_agent.id = "target_1"
+ 
