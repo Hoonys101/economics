@@ -2,7 +2,7 @@ import logging
 import warnings
 from typing import Dict, List, Any, Deque, Tuple, Optional, TYPE_CHECKING
 from collections import deque
-from simulation.ai.enums import PoliticalParty
+from simulation.ai.enums import PoliticalParty, PolicyActionTag, EconomicSchool
 from simulation.interfaces.policy_interface import IGovernmentPolicy
 from simulation.policies.taylor_rule_policy import TaylorRulePolicy
 from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
@@ -20,6 +20,7 @@ from modules.government.components.welfare_manager import WelfareManager
 from modules.government.components.infrastructure_manager import InfrastructureManager
 from modules.government.constants import *
 from modules.government.components.monetary_ledger import MonetaryLedger
+from modules.government.components.policy_lockout_manager import PolicyLockoutManager
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
@@ -60,6 +61,7 @@ class Government(ICurrencyHolder):
         self.welfare_manager = WelfareManager(self)
         self.infrastructure_manager = InfrastructureManager(self)
         self.monetary_ledger = MonetaryLedger()
+        self.policy_lockout_manager = PolicyLockoutManager()
 
         # Initialize default fiscal policy
         # NOTE: Initialized with empty snapshot. Will be updated with real market data in the first tick
@@ -423,12 +425,43 @@ class Government(ICurrencyHolder):
             details=f"Inf={inflation:.2%}, Growth={real_gdp_growth:.2%}, Gap={gdp_gap:.2%}, RateGap={gap:.4f}"
         )
 
+    def fire_advisor(self, school: EconomicSchool, current_tick: int) -> None:
+        """
+        Fires the advisor of a specific economic school and locks associated policies.
+        """
+        duration = 20
+        tags_to_lock = []
+
+        if school == EconomicSchool.KEYNESIAN:
+            tags_to_lock = [PolicyActionTag.KEYNESIAN_FISCAL]
+        elif school == EconomicSchool.AUSTRIAN:
+            tags_to_lock = [PolicyActionTag.AUSTRIAN_AUSTERITY]
+        elif school == EconomicSchool.MONETARIST:
+            tags_to_lock = [PolicyActionTag.MONETARIST_RULES]
+
+        for tag in tags_to_lock:
+            self.policy_lockout_manager.lock_policy(tag, duration, current_tick)
+
+        logger.info(
+            f"ADVISOR_FIRED | Fired {school.name} advisor. Locked tags: {[t.name for t in tags_to_lock]} for {duration} ticks.",
+            extra={"tick": current_tick, "agent_id": self.id}
+        )
+
     def provide_household_support(self, household: Any, amount: float, current_tick: int) -> List[Transaction]:
         """Delegates to WelfareManager."""
+        # Scapegoat Lockout Check: Keynesian Fiscal (Stimulus)
+        if self.policy_lockout_manager.is_locked(PolicyActionTag.KEYNESIAN_FISCAL, current_tick):
+            return []
+
         return self.welfare_manager.provide_household_support(household, amount, current_tick)
 
     def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:
         """Provides a bailout loan to a firm if it's eligible. Returns (LoanDTO, Transactions)."""
+        # Scapegoat Lockout Check: Keynesian Fiscal (Bailout is Stimulus)
+        if self.policy_lockout_manager.is_locked(PolicyActionTag.KEYNESIAN_FISCAL, current_tick):
+            logger.info("BAILOUT_BLOCKED | Keynesian Fiscal Policy is locked.")
+            return None, []
+
         if self.finance_system.evaluate_solvency(firm, current_tick):
             logger.info(f"BAILOUT_APPROVED | Firm {firm.id} is eligible for a bailout.")
             # FinanceSystem now returns (loan, transactions)
