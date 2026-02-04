@@ -48,7 +48,7 @@
 | TD-203 | 2026-02-03 | SettlementSystem Unit Test Stale | Tests not updated after Saga refactor | - | **HIGH** |
 | TD-210 | 2026-02-04 | Test Dependency Bloat (`numpy`) | `conftest.py` imports CentralBank | [Review](../../_archive/gemini_output/pr_review_settlement-system-tests-2138438581752818541.md) | **LOW** |
 | (No Active Items) | | | | | |
-| TD-216 | 2026-02-04 | Orchestrator Coupling (`TickOrchestrator`) | Direct dependency on `Government` methods | [Insight](../../3_work_artifacts/reports/inbound/structural-god-class-9257244532893801478_audit_structural_god_class.md) | **MEDIUM** |
+| (No Active Items) | | | | | |
 
 
 ## 📜 8. OPERATIONS & DOCUMENTATION
@@ -97,6 +97,7 @@
 | TD-217 | 2026-02-04 | Protected Member Access (Snapshotting) | ^ | ^ |
 | TD-215 | 2026-02-04 | Market Handler Abstraction Leaks | [Spec](../../3_work_artifacts/specs/WO-4.1_Market_Decoupling.md) | [Review](../../_archive/gemini_output/pr_review_wo-4.1-protocols-6715402864351195902.md) |
 | TD-212 | 2026-02-04 | Legacy Assets (Float) Callers | [Spec](../../3_work_artifacts/specs/WO-4.2A_Wallet_Abstraction.md) | [Insight](../../communications/insights/WO-4.2A.md) |
+| TD-216 | 2026-02-04 | TickOrchestrator Coupling | [Spec](../../3_work_artifacts/specs/WO-4.2B_Orchestrator_Alignment.md) | [Insight](../../communications/insights/WO-4.2B_Orchestrator_Alignment.md) |
 
 ---
 
