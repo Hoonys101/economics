@@ -1,5 +1,6 @@
-from dataclasses import dataclass
-from typing import List, Optional, Dict
+from dataclasses import dataclass, field
+from typing import List, Optional, Dict, Any
+from simulation.ai.enums import PolicyActionTag
 
 @dataclass
 class TaxHistoryItemDTO:
@@ -43,3 +44,12 @@ class MacroEconomicSnapshotDTO:
     nominal_gdp: float
     potential_gdp: float
     unemployment_rate: float
+
+@dataclass
+class PolicyActionDTO:
+    """Represents a proposed government policy action."""
+    name: str
+    utility: float
+    tag: PolicyActionTag
+    action_type: str
+    params: Dict[str, Any] = field(default_factory=dict)

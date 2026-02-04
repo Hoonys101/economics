@@ -7,6 +7,7 @@ from modules.government.constants import (
     DEFAULT_STIMULUS_TRIGGER_GDP_DROP, DEFAULT_HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK,
     DEFAULT_BASIC_FOOD_PRICE
 )
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.agents.government import Government
@@ -39,8 +40,14 @@ class WelfareManager:
             return []
 
         # Check budget, issue bonds if needed (Optimistic check)
-        if self.government.assets < effective_amount:
-            needed = effective_amount - self.government.assets
+        current_balance = 0.0
+        if isinstance(self.government.assets, dict):
+             current_balance = self.government.assets.get(DEFAULT_CURRENCY, 0.0)
+        else:
+             current_balance = float(self.government.assets)
+
+        if current_balance < effective_amount:
+            needed = effective_amount - current_balance
             # FinanceSystem now returns (bonds, transactions)
             bonds, txs = self.government.finance_system.issue_treasury_bonds(needed, current_tick)
             if not bonds:
@@ -61,8 +68,15 @@ class WelfareManager:
         )
         transactions.append(tx)
 
-        self.government.total_spent_subsidies += effective_amount
-        self.government.expenditure_this_tick += effective_amount
+        # Update stats (Dict safe)
+        if DEFAULT_CURRENCY not in self.government.total_spent_subsidies:
+            self.government.total_spent_subsidies[DEFAULT_CURRENCY] = 0.0
+        self.government.total_spent_subsidies[DEFAULT_CURRENCY] += effective_amount
+
+        if DEFAULT_CURRENCY not in self.government.expenditure_this_tick:
+             self.government.expenditure_this_tick[DEFAULT_CURRENCY] = 0.0
+        self.government.expenditure_this_tick[DEFAULT_CURRENCY] += effective_amount
+
         self.government.current_tick_stats["welfare_spending"] += effective_amount
 
         logger.info(
@@ -100,11 +114,17 @@ class WelfareManager:
 
             if hasattr(agent, "needs") and hasattr(agent, "is_employed"):
                 # A. Wealth Tax (Synchronous & Atomic)
-                net_worth = agent.assets
+                # Safely get net worth (float)
+                net_worth = 0.0
+                if isinstance(agent.assets, dict):
+                     net_worth = agent.assets.get(DEFAULT_CURRENCY, 0.0)
+                else:
+                     net_worth = float(agent.assets)
+
                 if net_worth > wealth_threshold:
                     tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
                     # Ensure we don't tax more than they have (safety, though collect_tax checks too)
-                    tax_amount = min(tax_amount, agent.assets)
+                    tax_amount = min(tax_amount, net_worth)
 
                     if tax_amount > 0 and self.government.settlement_system:
                         # Replaced TaxAgency call with internal collect_tax or direct transfer
