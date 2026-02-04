@@ -73,6 +73,7 @@ class EconomicIndicatorTracker:
         record["money_supply"] = money_supply
 
         # Perform calculations...
+        # TD-213: Tracks only DEFAULT_CURRENCY assets. Multi-currency support requires exchange rate normalization.
         total_household_assets = sum(
             h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0) for h in households if h._bio_state.is_active
         )
@@ -292,6 +293,8 @@ class EconomicIndicatorTracker:
 
         This calculation excludes the Central Bank's balance which is used for
         system-level integrity checks.
+
+        TD-213: Currently tracks only DEFAULT_CURRENCY.
         """
         total = 0.0
 

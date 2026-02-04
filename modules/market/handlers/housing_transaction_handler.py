@@ -77,15 +77,18 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
             loan_amount = sale_price * max_ltv
             down_payment = sale_price - loan_amount
 
+        # TD-213: Support Multi-Currency Transactions
+        tx_currency = getattr(tx, "currency", DEFAULT_CURRENCY)
+
         # Check Buyer Funds for Down Payment
         if isinstance(buyer, IMortgageBorrower):
             # Safe extraction for protocols using Dict assets
-            buyer_assets = buyer.assets.get(DEFAULT_CURRENCY, 0.0)
+            buyer_assets = buyer.assets.get(tx_currency, 0.0)
         elif hasattr(buyer, "assets"):
             # Legacy/Firm fallback
             attr = getattr(buyer, "assets", 0.0)
             if isinstance(attr, dict):
-                 buyer_assets = attr.get(DEFAULT_CURRENCY, 0.0)
+                 buyer_assets = attr.get(tx_currency, 0.0)
             else:
                  buyer_assets = float(attr)
         else:
@@ -97,7 +100,8 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
 
         # 2. Saga Step A: Secure Down Payment (Buyer -> Escrow)
         memo_down = f"escrow_hold:down_payment:{tx.item_id}"
-        if not context.settlement_system.transfer(buyer, escrow_agent, down_payment, memo_down, tick=context.time):
+        # TD-213: Pass currency to settlement system
+        if not context.settlement_system.transfer(buyer, escrow_agent, down_payment, memo_down, tick=context.time, currency=tx_currency):
             context.logger.warning(f"HOUSING | Failed to secure down payment from {buyer.id}")
             return False
 
@@ -109,7 +113,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
         try:
             # 3. Saga Step B: Create Mortgage (if applicable)
             if use_mortgage:
-                borrower_profile = self._create_borrower_profile(buyer, sale_price, context)
+                borrower_profile = self._create_borrower_profile(buyer, sale_price, context, currency=tx_currency)
                 # Estimate due tick
                 due_tick = context.time + mortgage_term
 
@@ -124,7 +128,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                 if not grant_result:
                     context.logger.warning(f"HOUSING | Bank rejected mortgage for {buyer.id}")
                     # Compensate Step A
-                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:loan_rejected", tick=context.time)
+                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:loan_rejected", tick=context.time, currency=tx_currency)
                     return False
 
                 new_loan_dto, credit_tx = grant_result
@@ -144,22 +148,22 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                     if not withdrawal_success:
                         context.logger.critical(f"HOUSING | Failed to withdraw loan deposit from Buyer {buyer.id}. Aborting.")
                         self._void_loan_safely(context, loan_id)
-                        context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time)
+                        context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
                         return False
                 except Exception as e:
                     context.logger.critical(f"HOUSING | Error withdrawing loan deposit: {e}")
                     self._void_loan_safely(context, loan_id)
-                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time)
+                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
                     return False
 
                 memo_disburse = f"escrow_hold:loan_proceeds:{tx.item_id}"
                 # Transfer from BANK (Reserves) to Escrow
-                if not context.settlement_system.transfer(context.bank, escrow_agent, loan_amount, memo_disburse, tick=context.time):
+                if not context.settlement_system.transfer(context.bank, escrow_agent, loan_amount, memo_disburse, tick=context.time, currency=tx_currency):
                     context.logger.critical(f"HOUSING | Failed to move loan proceeds from Bank to Escrow for {buyer.id}")
                     # Compensate: Terminate Loan (Asset), Return Down Payment
                     # Note: We cannot use _void_loan_safely because the deposit is already gone (withdrawn).
                     self._terminate_loan_safely(context, loan_id)
-                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time)
+                    context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
                     return False
 
             # 5. Saga Step D: Final Settlement (Escrow -> Seller)
@@ -170,16 +174,16 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
             # Usually Housing Sale is Asset Transfer.
             # If Seller is Government, we transfer to Government.
 
-            if not context.settlement_system.transfer(escrow_agent, seller, sale_price, memo_settle, tick=context.time):
+            if not context.settlement_system.transfer(escrow_agent, seller, sale_price, memo_settle, tick=context.time, currency=tx_currency):
                 context.logger.critical(f"HOUSING | CRITICAL: Failed to pay seller {seller.id} from escrow.")
                 # Compensate:
                 # 1. Return Loan Proceeds to BANK (since we withdrew form Buyer and sent to Escrow from Bank)
                 if use_mortgage:
-                    context.settlement_system.transfer(escrow_agent, context.bank, loan_amount, "reversal:loan_return_to_bank", tick=context.time)
+                    context.settlement_system.transfer(escrow_agent, context.bank, loan_amount, "reversal:loan_return_to_bank", tick=context.time, currency=tx_currency)
                     self._terminate_loan_safely(context, loan_id)
 
                 # 2. Return Down Payment to Buyer
-                context.settlement_system.transfer(escrow_agent, buyer, down_payment, "reversal:down_payment_return", tick=context.time)
+                context.settlement_system.transfer(escrow_agent, buyer, down_payment, "reversal:down_payment_return", tick=context.time, currency=tx_currency)
                 return False
 
             # Success!
@@ -210,7 +214,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                 pass
             return False
 
-    def _create_borrower_profile(self, buyer: Any, trade_value: float, context: TransactionContext) -> BorrowerProfileDTO:
+    def _create_borrower_profile(self, buyer: Any, trade_value: float, context: TransactionContext, currency: str = DEFAULT_CURRENCY) -> BorrowerProfileDTO:
         gross_income = 0.0
         if isinstance(buyer, IMortgageBorrower) or hasattr(buyer, "current_wage"):
              # Estimate monthly income
@@ -227,11 +231,11 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
              except: pass
 
         if isinstance(buyer, IMortgageBorrower):
-            assets_val = buyer.assets.get(DEFAULT_CURRENCY, 0.0)
+            assets_val = buyer.assets.get(currency, 0.0)
         else:
             attr = getattr(buyer, "assets", 0.0)
             if isinstance(attr, dict):
-                 assets_val = attr.get(DEFAULT_CURRENCY, 0.0)
+                 assets_val = attr.get(currency, 0.0)
             else:
                  assets_val = float(attr)
 

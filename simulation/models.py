@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any, List, TYPE_CHECKING
 import uuid
 from modules.market.api import OrderDTO
 from modules.finance.api import LienDTO
+from modules.system.api import DEFAULT_CURRENCY
 
 # Alias for backward compatibility and migration
 Order = OrderDTO
@@ -19,6 +20,7 @@ class Transaction:
     market_id: str  # Added market_id
     transaction_type: str  # 'goods', 'labor', 'dividend', 'stock' 등 거래 유형
     time: int  # 거래가 발생한 시뮬레이션 틱
+    currency: str = DEFAULT_CURRENCY # TD-213: Multi-currency support
     quality: float = 1.0  # Phase 15: Durables Quality
     metadata: Optional[Dict[str, Any]] = None  # WO-109: Metadata for side-effects
 

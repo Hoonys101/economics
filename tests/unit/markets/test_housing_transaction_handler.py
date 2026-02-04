@@ -1,9 +1,10 @@
 import pytest
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock, call, ANY
 from modules.market.handlers.housing_transaction_handler import HousingTransactionHandler
 from simulation.models import Transaction
 from modules.system.escrow_agent import EscrowAgent
 from simulation.core_agents import Household
+from modules.system.api import DEFAULT_CURRENCY
 
 @pytest.fixture
 def handler():
@@ -35,9 +36,13 @@ def buyer():
     b = MagicMock(spec=Household)
     b.id = 1
 
-    # Mock _econ_state
+    # Mock assets property to behave like a dict
+    b.assets = {DEFAULT_CURRENCY: 100000.0}
+    b.current_wage = 100.0 # Required for IMortgageBorrower protocol
+
+    # Also mock _econ_state for legacy checks if any (though handler checks buyer.assets now)
     b._econ_state = MagicMock()
-    b._econ_state.assets = 100000.0
+    b._econ_state.assets = {DEFAULT_CURRENCY: 100000.0}
     b._econ_state.owned_properties = []
     b._econ_state.residing_property_id = None
     b._econ_state.is_homeless = True
@@ -72,7 +77,7 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
 
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
-        market_id="housing", transaction_type="housing", time=0
+        market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
     )
 
     # Mock Settlement Success: DownPayment(True), Disbursement(True), FinalSettlement(True)
@@ -91,7 +96,7 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
     # Loan (80% of 1000 = 800)
 
     # 1. Down Payment: Buyer -> Escrow (200)
-    context.settlement_system.transfer.assert_any_call(buyer, escrow_agent, 200.0, "escrow_hold:down_payment:unit_101", tick=0)
+    context.settlement_system.transfer.assert_any_call(buyer, escrow_agent, 200.0, "escrow_hold:down_payment:unit_101", tick=0, currency=DEFAULT_CURRENCY)
 
     # 2. Loan Grant called
     context.bank.grant_loan.assert_called()
@@ -100,26 +105,35 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
     context.bank.withdraw_for_customer.assert_called_with(1, 800.0)
 
     # 3. Disbursement: BANK -> Escrow (800)
-    context.settlement_system.transfer.assert_any_call(context.bank, escrow_agent, 800.0, "escrow_hold:loan_proceeds:unit_101", tick=0)
+    context.settlement_system.transfer.assert_any_call(context.bank, escrow_agent, 800.0, "escrow_hold:loan_proceeds:unit_101", tick=0, currency=DEFAULT_CURRENCY)
 
     # 4. Final Settlement: Escrow -> Seller (1000)
-    context.settlement_system.transfer.assert_any_call(escrow_agent, seller, 1000.0, "final_settlement:unit_101", tick=0)
+    context.settlement_system.transfer.assert_any_call(escrow_agent, seller, 1000.0, "final_settlement:unit_101", tick=0, currency=DEFAULT_CURRENCY)
 
     # 5. Side Effects
     assert unit.owner_id == buyer.id
-    assert unit.mortgage_id == "loan_123"
-    assert 101 in buyer._econ_state.owned_properties
-    assert 101 not in seller.owned_properties
+    # Note: mortgage_id property on unit assumes list traversal, but we appended directly to liens list in handler.
+    # We need to verify liens list content.
+    has_mortgage = any(l['loan_id'] == "loan_123" and l['lien_type'] == 'MORTGAGE' for l in unit.liens)
+    assert has_mortgage
+
+    # Check method calls instead of state mutation for Mocks
+    buyer.add_property.assert_called_with(101)
+
+    # Seller might call remove_property or modify list depending on structure
+    # Since seller is MagicMock, hasattr(seller, 'remove_property') is True, so it calls it.
+    seller.remove_property.assert_called_with(101)
+
     assert tx.metadata["mortgage_id"] == "loan_123"
 
 def test_housing_transaction_insufficient_down_payment(handler, context, buyer, seller, unit, escrow_agent):
     context.real_estate_units = [unit]
     context.agents = {99: escrow_agent}
-    buyer._econ_state.assets = 10.0 # Insufficient
+    buyer.assets = {DEFAULT_CURRENCY: 10.0} # Insufficient
 
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
-        market_id="housing", transaction_type="housing", time=0
+        market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
     )
 
     result = handler.handle(tx, buyer, seller, context)
@@ -132,7 +146,7 @@ def test_housing_transaction_loan_rejected(handler, context, buyer, seller, unit
 
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
-        market_id="housing", transaction_type="housing", time=0
+        market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
     )
 
     # Down payment success
@@ -154,6 +168,8 @@ def test_housing_transaction_loan_rejected(handler, context, buyer, seller, unit
     assert calls[1][0][0] == escrow_agent
     assert calls[1][0][1] == buyer
     assert "escrow_reversal" in calls[1][0][3]
+    # Check kwargs for currency if possible, or use ANY
+    # call.kwargs.get('currency') == DEFAULT_CURRENCY
 
 def test_housing_transaction_disbursement_failed(handler, context, buyer, seller, unit, escrow_agent):
     context.real_estate_units = [unit]
@@ -161,7 +177,7 @@ def test_housing_transaction_disbursement_failed(handler, context, buyer, seller
 
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
-        market_id="housing", transaction_type="housing", time=0
+        market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
     )
 
     # 1. Down Payment Success
