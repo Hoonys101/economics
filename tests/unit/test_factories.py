@@ -42,7 +42,8 @@ class TestMarketSnapshotFactory:
         signal_factory = MagicMock(spec=MarketSignalFactory)
         signal_factory.create_market_signals.return_value = {}
 
-        factory = MarketSnapshotFactory(signal_factory)
+        factory = MarketSnapshotFactory()
+        factory.signal_factory = signal_factory
 
         state = MagicMock(spec=SimulationState)
         state.time = 50
@@ -82,6 +83,8 @@ class TestDecisionInputFactory:
         state.goods_data = {}
         state.market_data = {}
         state.time = 10
+        state.tracker = MagicMock()
+        state.tracker.capture_market_context.return_value = MagicMock()
 
         # Mock WorldState
         world_state = MagicMock()

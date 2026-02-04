@@ -5,6 +5,7 @@ import logging
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
 
+from simulation.dtos.api import MarketContextDTO
 from simulation.core_agents import Household
 from simulation.firms import Firm
 from simulation.core_markets import Market
@@ -56,6 +57,14 @@ class EconomicIndicatorTracker:
             "avg_survival_need",
         ]
         self.logger = logging.getLogger(__name__)
+
+    def capture_market_context(self) -> MarketContextDTO:
+        """
+        Captures the current exchange rates and other global market context.
+        Tick-Snapshot Injection to ensure O(1) access for AI agents.
+        """
+        exchange_rates = self.exchange_engine.get_all_rates()
+        return MarketContextDTO(exchange_rates=exchange_rates)
 
     def _calculate_total_wallet_value(self, wallet_dict: Dict[CurrencyCode, float]) -> float:
         """

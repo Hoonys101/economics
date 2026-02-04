@@ -312,6 +312,7 @@ class Household(
         market_snapshot = input_dto.market_snapshot
         government_policy = input_dto.government_policy
         agent_registry = input_dto.agent_registry or {}
+        market_context = input_dto.market_context
 
         # 0. Update Social Status (Before Decision)
         self._social_state = self.social_component.calculate_social_status(
@@ -349,7 +350,8 @@ class Household(
             stress_scenario_config=stress_scenario_config,
             market_snapshot=market_snapshot,
             government_policy=government_policy,
-            agent_registry=agent_registry or {}
+            agent_registry=agent_registry or {},
+            market_context=market_context
         )
 
         # 2. Run Decision Engine (Logic moved from DecisionUnit.make_decision)

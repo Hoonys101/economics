@@ -121,6 +121,14 @@ class MarketHistoryDTO(TypedDict, total=False):
     worst_bid: float
 
 @dataclass
+class MarketContextDTO:
+    """
+    Provides global market context including exchange rates and other
+    universal indicators to ensure O(1) access for AI agents.
+    """
+    exchange_rates: Dict[CurrencyCode, float]
+
+@dataclass
 class OrderDTO:
     agent_id: int
     item_id: str
@@ -164,6 +172,7 @@ class DecisionInputDTO:
     government_policy: Optional[GovernmentPolicyDTO] = None
     agent_registry: Optional[Dict[str, int]] = None
     housing_system: Optional[Any] = None # Added for Saga initiation
+    market_context: Optional[MarketContextDTO] = None
 
 
 @dataclass
@@ -190,6 +199,9 @@ class DecisionContext:
 
     # Agent Discovery Registry (WO-138)
     agent_registry: Dict[str, int] = field(default_factory=dict)
+
+    # Tick-Snapshot Injection
+    market_context: Optional[MarketContextDTO] = None
 
 
 @dataclass

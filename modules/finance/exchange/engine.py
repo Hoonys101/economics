@@ -39,6 +39,10 @@ class CurrencyExchangeEngine:
         parities = self._load_parity()
         return parities.get(currency.upper(), 1.0)
 
+    def get_all_rates(self) -> Dict[str, float]:
+        """Returns a snapshot of all exchange rates."""
+        return self._load_parity().copy()
+
     def convert(self, amount: float, from_currency: CurrencyCode, to_currency: CurrencyCode) -> float:
         """Converts an amount from one currency to another."""
         if from_currency == to_currency:

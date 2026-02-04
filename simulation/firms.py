@@ -322,6 +322,7 @@ class Firm(BaseAgent, ILearningAgent):
         market_snapshot = input_dto.market_snapshot
         government_policy = input_dto.government_policy
         agent_registry = input_dto.agent_registry or {}
+        market_context = input_dto.market_context
 
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         # SoC Refactor
@@ -349,7 +350,8 @@ class Firm(BaseAgent, ILearningAgent):
             stress_scenario_config=stress_scenario_config,
             market_snapshot=market_snapshot,
             government_policy=government_policy,
-            agent_registry=agent_registry or {}
+            agent_registry=agent_registry or {},
+            market_context=market_context
         )
         decision_output = self.decision_engine.make_decisions(context)
         

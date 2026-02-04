@@ -140,6 +140,11 @@ class DecisionInputFactory:
         market_snapshot: MarketSnapshotDTO
     ) -> DecisionInputDTO:
 
+        # Tick-Snapshot Injection (O(1) AI Access)
+        market_context = None
+        if state.tracker and hasattr(state.tracker, "capture_market_context"):
+            market_context = state.tracker.capture_market_context()
+
         gov = state.government
         bank = state.bank
         gov_policy = GovernmentPolicyDTO(
@@ -189,5 +194,6 @@ class DecisionInputFactory:
              agent_registry=agent_registry,
              stress_scenario_config=world_state.stress_scenario_config,
              macro_context=macro_financial_context,
-             housing_system=world_state.housing_system if hasattr(world_state, 'housing_system') else None
+             housing_system=world_state.housing_system if hasattr(world_state, 'housing_system') else None,
+             market_context=market_context
         )
