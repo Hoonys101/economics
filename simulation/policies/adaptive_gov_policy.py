@@ -1,6 +1,7 @@
 from typing import Dict, Any, TYPE_CHECKING
 from simulation.interfaces.policy_interface import IGovernmentPolicy
 from modules.government.policies.adaptive_gov_brain import AdaptiveGovBrain
+from simulation.ai.enums import EconomicSchool
 import logging
 
 if TYPE_CHECKING:
@@ -79,6 +80,11 @@ class AdaptiveGovPolicy(IGovernmentPolicy):
              delta = action.params.get("rate_delta", 0.0)
              government.income_tax_rate += delta
              government.income_tax_rate = max(0.05, min(0.6, government.income_tax_rate))
+
+         elif action.action_type == "FIRE_ADVISOR":
+             # For now, default to firing the Keynesian advisor as they advocate for spending/intervention
+             # Ideally, we should track which school's policies were active.
+             government.fire_advisor(EconomicSchool.KEYNESIAN, tick)
 
          elif action.action_type == "DO_NOTHING":
              pass
