@@ -169,7 +169,7 @@ class SocialComponent(ISocialComponent):
         else:
             new_state.survival_need_high_turns = 0
 
-        if new_state.survival_need_high_turns >= turns_threshold:
+        if new_state.survival_need_high_turns >= config.survival_need_death_ticks_threshold:
             is_active = False
             # Logging handled by caller
 

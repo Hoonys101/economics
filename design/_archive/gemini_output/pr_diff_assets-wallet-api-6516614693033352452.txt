@@ -1,0 +1,332 @@
+diff --git a/communications/insights/AssetsRefactor.md b/communications/insights/AssetsRefactor.md
+new file mode 100644
+index 00000000..7fe4fbf9
+--- /dev/null
++++ b/communications/insights/AssetsRefactor.md
+@@ -0,0 +1,31 @@
++# Insight Report: Assets Refactor (Mission: Replace 'self.cash' with 'self.wallet')
++
++## Overview
++This mission aimed to enforce the usage of `Wallet` API across all agents and ensure consistency in asset access, replacing the legacy `self.cash` float and unsafe `agent.assets` float usage.
++
++## Technical Debt Identified
++1.  **Implicit Float Assumption on Assets**:
++    - Many subsystems (`Bank`, `ActionProposalEngine`, `System2Planner`, `EventSystem`, `DemographicManager`, `InheritanceHandler`) implicitly assumed `agent.assets` was a `float`.
++    - With the introduction of `Wallet` and multi-currency support, `agent.assets` became a `Dict[CurrencyCode, float]`.
++    - This caused potential `TypeError` (e.g., `dict >= float`) in logic that wasn't updated.
++
++2.  **Duplicate Asset Access Logic**:
++    - Various systems implemented ad-hoc checks for `assets` type (float vs dict) instead of using a standardized accessor or interface.
++
++## Architectural Insights
++1.  **Wallet as Single Source of Truth**:
++    - The `Wallet` class (and `ICurrencyHolder` interface) provides a robust way to manage multi-currency balances.
++    - All financial interactions should go through `SettlementSystem` or strict `Wallet` API calls, avoiding direct property access like `.assets`.
++
++2.  **Interface Enforcement**:
++    - Future refactoring should strictly enforce `ICurrencyHolder` on all agents involved in financial transactions to prevent regression.
++    - `BaseAgent` and its subclasses now correctly expose `wallet`, but external consumers needed patching.
++
++## Actions Taken
++- Refactored `simulation/bank.py`, `simulation/decisions/action_proposal.py`, `simulation/ai/system2_planner.py`, `simulation/systems/handlers/inheritance_handler.py`, `simulation/systems/event_system.py`, `simulation/systems/demographic_manager.py`, `simulation/systems/generational_wealth_audit.py`, and `simulation/systems/persistence_manager.py`.
++- Implemented safe asset extraction logic that prioritizes `agent.wallet.get_balance(DEFAULT_CURRENCY)`, falls back to `agent.assets.get(...)` (if dict), and `float(agent.assets)` (legacy).
++- Verified fixes using a reproduction script `repro_assets_float.py`.
++
++## Recommendations
++- Deprecate `BaseAgent.assets` property entirely in a future phase to force usage of `wallet`.
++- Introduce a static helper or service method for "get_primary_currency_balance(agent)" if `DEFAULT_CURRENCY` logic is ubiquitous, to reduce code duplication.
+diff --git a/simulation/ai/system2_planner.py b/simulation/ai/system2_planner.py
+index 3d7bfe9c..c91b70d0 100644
+--- a/simulation/ai/system2_planner.py
++++ b/simulation/ai/system2_planner.py
+@@ -1,6 +1,7 @@
+ from typing import Any, Dict, List, Tuple, Optional
+ import math
+ import logging
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -35,7 +36,14 @@ class System2Planner:
+         self.last_calc_tick = current_tick
+ 
+         # 1. Gather Inputs
+-        current_wealth = self.agent.assets
++        current_wealth = 0.0
++        if hasattr(self.agent, 'wallet'):
++            current_wealth = self.agent.wallet.get_balance(DEFAULT_CURRENCY)
++        elif hasattr(self.agent, 'assets') and isinstance(self.agent.assets, dict):
++            current_wealth = self.agent.assets.get(DEFAULT_CURRENCY, 0.0)
++        elif hasattr(self.agent, 'assets'):
++            current_wealth = float(self.agent.assets)
++
+         expected_wage = getattr(self.agent, "expected_wage", 10.0)
+ 
+         # Survival Cost
+diff --git a/simulation/bank.py b/simulation/bank.py
+index c63ce064..8a43b36f 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -447,7 +447,16 @@ class Bank(IBankService, ICurrencyHolder):
+             interest_payment = (loan.remaining_balance * loan.annual_interest_rate) / ticks_per_year
+             payment = interest_payment
+ 
+-            if agent.assets >= payment:
++            # Safe asset extraction
++            assets_val = 0.0
++            if hasattr(agent, 'wallet'):
++                assets_val = agent.wallet.get_balance(DEFAULT_CURRENCY)
++            elif hasattr(agent, 'assets') and isinstance(agent.assets, dict):
++                assets_val = agent.assets.get(DEFAULT_CURRENCY, 0.0)
++            elif hasattr(agent, 'assets'):
++                assets_val = float(agent.assets)
++
++            if assets_val >= payment:
+                 tx = Transaction(
+                     buyer_id=agent.id,
+                     seller_id=self.id,
+@@ -466,7 +475,7 @@ class Bank(IBankService, ICurrencyHolder):
+                 if default_tx:
+                     generated_transactions.append(default_tx)
+ 
+-                partial = agent.assets
++                partial = assets_val
+                 if partial > 0:
+                     tx = Transaction(
+                         buyer_id=agent.id,
+diff --git a/simulation/decisions/action_proposal.py b/simulation/decisions/action_proposal.py
+index d117c046..bf8edf56 100644
+--- a/simulation/decisions/action_proposal.py
++++ b/simulation/decisions/action_proposal.py
+@@ -2,6 +2,7 @@ import logging
+ import random
+ from typing import Optional, Any, List
+ from simulation.models import Order
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ 
+ class ActionProposalEngine:
+@@ -36,8 +37,17 @@ class ActionProposalEngine:
+     def _propose_household_actions(
+         self, agent: Any, current_time: int
+     ) -> List[List[Order]]:
++        # Safe asset extraction
++        assets_val = 0.0
++        if hasattr(agent, 'wallet'):
++            assets_val = agent.wallet.get_balance(DEFAULT_CURRENCY)
++        elif hasattr(agent, 'assets') and isinstance(agent.assets, dict):
++            assets_val = agent.assets.get(DEFAULT_CURRENCY, 0.0)
++        elif hasattr(agent, 'assets'):
++            assets_val = float(agent.assets)
++
+         self.logger.debug(
+-            f"DEBUG: Entering _propose_household_actions for Household {agent.id}. Assets: {agent.assets:.2f}, is_employed: {agent.is_employed}",
++            f"DEBUG: Entering _propose_household_actions for Household {agent.id}. Assets: {assets_val:.2f}, is_employed: {agent.is_employed}",
+             extra={
+                 "tick": current_time,
+                 "agent_id": agent.id,
+@@ -56,7 +66,7 @@ class ActionProposalEngine:
+             explore_labor_market = False
+ 
+             condition_assets_low = (
+-                agent.assets
++                assets_val
+                 < self.config_module.HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY
+             )
+             condition_random_check = (
+@@ -65,7 +75,7 @@ class ActionProposalEngine:
+             )
+ 
+             self.logger.debug(
+-                f"DEBUG: Household {agent.id} labor conditions: is_employed={agent.is_employed}, assets={agent.assets:.2f} < threshold={self.config_module.HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY} ({condition_assets_low}), random_check={condition_random_check}",
++                f"DEBUG: Household {agent.id} labor conditions: is_employed={agent.is_employed}, assets={assets_val:.2f} < threshold={self.config_module.HOUSEHOLD_ASSETS_THRESHOLD_FOR_LABOR_SUPPLY} ({condition_assets_low}), random_check={condition_random_check}",
+                 extra={
+                     "tick": current_time,
+                     "agent_id": agent.id,
+@@ -109,7 +119,7 @@ class ActionProposalEngine:
+                 )
+             else:
+                 # 상품 시장에서 상품 구매 주문
+-                if agent.assets > 1:  # 최소한의 자산이 있을 때만 구매 시도
++                if assets_val > 1:  # 최소한의 자산이 있을 때만 구매 시도
+                     # Read available goods from config with fallback
+                     # Priority: ConfigManager.get() -> ConfigModule.HOUSEHOLD_CONSUMABLE_GOODS -> Default
+                     if hasattr(self.config_module, "get"):
+@@ -129,7 +139,7 @@ class ActionProposalEngine:
+                     # --- 개선된 구매 수량 로직 ---
+                     # 자산의 일부를 지출 예산으로 설정
+                     spending_ratio = random.uniform(0.05, 0.3)  # 자산의 5% ~ 30% 사용
+-                    budget = agent.assets * spending_ratio
++                    budget = assets_val * spending_ratio
+ 
+                     # 인지된 가격 또는 기본 가격 사용
+                     price = agent.perceived_avg_prices.get(
+diff --git a/simulation/systems/demographic_manager.py b/simulation/systems/demographic_manager.py
+index ed47e739..ce978b15 100644
+--- a/simulation/systems/demographic_manager.py
++++ b/simulation/systems/demographic_manager.py
+@@ -6,6 +6,7 @@ import math
+ from simulation.core_agents import Household
+ from simulation.utils.config_factory import create_config_dto
+ from simulation.dtos.config_dtos import HouseholdConfigDTO
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     from simulation.dtos.strategy import ScenarioStrategy
+@@ -101,7 +102,15 @@ class DemographicManager:
+             # but usually children start with 0 or small amount.
+             # Let's assume standard INITIAL_ASSETS or small portion from parent.
+             # "Initial 자산은 부모 자산의 일부 이전"
+-            initial_gift = max(0.0, min(parent.assets * 0.1, parent.assets))
++            parent_assets = 0.0
++            if hasattr(parent, 'wallet'):
++                parent_assets = parent.wallet.get_balance(DEFAULT_CURRENCY)
++            elif hasattr(parent, 'assets') and isinstance(parent.assets, dict):
++                parent_assets = parent.assets.get(DEFAULT_CURRENCY, 0.0)
++            elif hasattr(parent, 'assets'):
++                parent_assets = float(parent.assets)
++
++            initial_gift = max(0.0, min(parent_assets * 0.1, parent_assets))
+ 
+             # WO-124: Removed direct asset modification. Transfer happens via SettlementSystem after creation.
+ 
+@@ -282,7 +291,14 @@ class DemographicManager:
+         if not getattr(simulation, "settlement_system", None):
+             raise RuntimeError("SettlementSystem not found. Cannot execute inheritance.")
+ 
+-        total_assets = deceased_agent.assets
++        total_assets = 0.0
++        if hasattr(deceased_agent, 'wallet'):
++            total_assets = deceased_agent.wallet.get_balance(DEFAULT_CURRENCY)
++        elif hasattr(deceased_agent, 'assets') and isinstance(deceased_agent.assets, dict):
++            total_assets = deceased_agent.assets.get(DEFAULT_CURRENCY, 0.0)
++        elif hasattr(deceased_agent, 'assets'):
++            total_assets = float(deceased_agent.assets)
++
+         if total_assets <= 0:
+             return
+ 
+diff --git a/simulation/systems/event_system.py b/simulation/systems/event_system.py
+index e2f56026..585631ef 100644
+--- a/simulation/systems/event_system.py
++++ b/simulation/systems/event_system.py
+@@ -5,6 +5,7 @@ from typing import Dict, Any, List, Optional, TYPE_CHECKING
+ import logging
+ from simulation.systems.api import IEventSystem, EventContext
+ from simulation.finance.api import ISettlementSystem
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     from simulation.dtos.scenario import StressScenarioConfig
+@@ -42,7 +43,16 @@ class EventSystem(IEventSystem):
+         if config.scenario_name == 'hyperinflation' and config.demand_shock_cash_injection > 0:
+             if central_bank and self.settlement_system:
+                 for h in households:
+-                    amount = h._econ_state.assets * config.demand_shock_cash_injection
++                    assets_val = 0.0
++                    if hasattr(h, 'wallet'):
++                        assets_val = h.wallet.get_balance(DEFAULT_CURRENCY)
++                    elif hasattr(h._econ_state, 'assets') and isinstance(h._econ_state.assets, dict):
++                         assets_val = h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0)
++                    else:
++                         # Fallback
++                         assets_val = float(h._econ_state.assets) if hasattr(h._econ_state, 'assets') else 0.0
++
++                    amount = assets_val * config.demand_shock_cash_injection
+                     self.settlement_system.create_and_transfer(
+                         source_authority=central_bank,
+                         destination=h,
+@@ -58,7 +68,15 @@ class EventSystem(IEventSystem):
+         if config.scenario_name == 'deflation' and config.asset_shock_reduction > 0:
+             if central_bank and self.settlement_system:
+                 for agent in households + firms:
+-                    amount_to_destroy = agent.assets * config.asset_shock_reduction
++                    assets_val = 0.0
++                    if hasattr(agent, 'wallet'):
++                        assets_val = agent.wallet.get_balance(DEFAULT_CURRENCY)
++                    elif hasattr(agent, 'assets') and isinstance(agent.assets, dict):
++                        assets_val = agent.assets.get(DEFAULT_CURRENCY, 0.0)
++                    elif hasattr(agent, 'assets'):
++                        assets_val = float(agent.assets)
++
++                    amount_to_destroy = assets_val * config.asset_shock_reduction
+                     self.settlement_system.transfer_and_destroy(
+                         source=agent,
+                         sink_authority=central_bank,
+diff --git a/simulation/systems/generational_wealth_audit.py b/simulation/systems/generational_wealth_audit.py
+index b1ec26a4..3efc696a 100644
+--- a/simulation/systems/generational_wealth_audit.py
++++ b/simulation/systems/generational_wealth_audit.py
+@@ -2,6 +2,7 @@ from __future__ import annotations
+ from typing import List, Dict, Any
+ import logging
+ from simulation.core_agents import Household
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -30,7 +31,14 @@ class GenerationalWealthAudit:
+                 continue
+ 
+             generation = getattr(agent, 'generation', 1)
+-            wealth = agent.assets
++
++            wealth = 0.0
++            if hasattr(agent, 'wallet'):
++                wealth = agent.wallet.get_balance(DEFAULT_CURRENCY)
++            elif hasattr(agent, 'assets') and isinstance(agent.assets, dict):
++                wealth = agent.assets.get(DEFAULT_CURRENCY, 0.0)
++            elif hasattr(agent, 'assets'):
++                wealth = float(agent.assets)
+ 
+             wealth_by_generation[generation] = wealth_by_generation.get(generation, 0.0) + wealth
+             count_by_generation[generation] = count_by_generation.get(generation, 0) + 1
+diff --git a/simulation/systems/handlers/inheritance_handler.py b/simulation/systems/handlers/inheritance_handler.py
+index 1b883321..aec6f5c9 100644
+--- a/simulation/systems/handlers/inheritance_handler.py
++++ b/simulation/systems/handlers/inheritance_handler.py
+@@ -3,6 +3,7 @@ import math
+ import logging
+ from simulation.systems.api import ITransactionHandler, TransactionContext
+ from simulation.models import Transaction
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -26,7 +27,15 @@ class InheritanceHandler(ITransactionHandler):
+ 
+         # Round total cash to 2 decimals to prevent floating point dust propagation.
+         # Any residual dust (< 0.01) remains on the deceased agent (effectively burnt or ignored).
+-        total_cash = round(deceased_agent.assets, 2)
++        assets_val = 0.0
++        if hasattr(deceased_agent, 'wallet'):
++            assets_val = deceased_agent.wallet.get_balance(DEFAULT_CURRENCY)
++        elif hasattr(deceased_agent, 'assets') and isinstance(deceased_agent.assets, dict):
++            assets_val = deceased_agent.assets.get(DEFAULT_CURRENCY, 0.0)
++        elif hasattr(deceased_agent, 'assets'):
++            assets_val = float(deceased_agent.assets)
++
++        total_cash = round(assets_val, 2)
+ 
+         if total_cash <= 0 or not heir_ids:
+             context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no assets ({total_cash}) or heirs.")
+diff --git a/simulation/systems/persistence_manager.py b/simulation/systems/persistence_manager.py
+index 7a8905d7..4db3fcd6 100644
+--- a/simulation/systems/persistence_manager.py
++++ b/simulation/systems/persistence_manager.py
+@@ -106,7 +106,14 @@ class PersistenceManager:
+         total_capital_income = sum(getattr(h, "capital_income_this_tick", 0.0) for h in simulation.households)
+ 
+         # Calculate Wealth Distribution (Snapshot)
+-        total_assets = sum(h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0) for h in simulation.households)
++        total_assets = 0.0
++        for h in simulation.households:
++            if hasattr(h, 'wallet'):
++                total_assets += h.wallet.get_balance(DEFAULT_CURRENCY)
++            elif hasattr(h, 'assets') and isinstance(h.assets, dict):
++                total_assets += h.assets.get(DEFAULT_CURRENCY, 0.0)
++            elif hasattr(h, 'assets'):
++                total_assets += float(h.assets)
+         
+         # Prepare asset dicts for DTO
+         hh_assets = tracker_indicators.get("total_household_assets", 0.0)

@@ -1,0 +1,134 @@
+diff --git a/communications/insights/Liquidation_Atomicity.md b/communications/insights/Liquidation_Atomicity.md
+new file mode 100644
+index 00000000..88668a54
+--- /dev/null
++++ b/communications/insights/Liquidation_Atomicity.md
+@@ -0,0 +1,15 @@
++# Insight: Liquidation Atomicity (WO-212)
++
++## Overview
++This mission unifies the "Firm write-offs" and "Manager sell-offs" into an atomic sequence within `LiquidationManager`. This prevents monetary leaks where assets could be destroyed without compensation or compensation received without asset destruction, ensuring accounting integrity.
++
++## Changes
++- **Atomic Sequence**: `LiquidationManager.initiate_liquidation` now orchestrates the entire process:
++  1. **Sell-offs**: Handlers (e.g., `InventoryLiquidationHandler`) sell assets to `PublicManager`.
++  2. **Write-offs**: `Firm.liquidate_assets()` is called to write off remaining assets (Inventory, Capital Stock, Automation) and finalize bankruptcy state.
++- **Redundancy Removal**: Removed manual asset clearing from `AgentLifecycleManager` to prevent race conditions and duplicate logic.
++
++## Technical Debt & Observations
++- **`Firm.liquidate_assets` Scope**: Currently, this method handles inventory, capital stock, and automation. If future assets are added, they must be included here or in a handler.
++- **Handler vs. Write-off Overlap**: `InventoryLiquidationHandler` clears inventory upon successful sale. `Firm.liquidate_assets` clears inventory unconditionally. This redundancy is safe (clearing empty dict) and ensures no assets leak if the handler fails or skips.
++- **Dependency on `PublicManager`**: The liquidation process heavily relies on `PublicManager` having funds to buy assets. If `PublicManager` is insolvent, assets are written off (destroyed) via `Firm.liquidate_assets`, which is the correct fallback behavior (loss realized).
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index 6855f0c3..b8f666a9 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -272,6 +272,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+             # TD-187: Liquidation Waterfall Protocol (Prioritized Claims)
+             # Must run BEFORE employees are cleared to calculate severance/wages
+             # AND before PublicManager seizure (now handled internally by LiquidationManager)
++            # WO-212: initiate_liquidation now handles "Firm Write-offs" (Inventory, Capital Stock) atomically.
+             self.liquidation_manager.initiate_liquidation(firm, state)
+ 
+             # Clear employees
+@@ -280,8 +281,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+                     employee.is_employed = False
+                     employee.employer_id = None
+             firm.hr.employees = []
+-            firm.inventory.clear()
+-            firm.capital_stock = 0.0
++            # firm.inventory and firm.capital_stock are cleared in initiate_liquidation -> firm.liquidate_assets
+ 
+             # Record Liquidation (Destruction of real assets & Escheatment)
+             # Only Capital Stock is destroyed now (machines, buildings), inventory is recovered.
+diff --git a/simulation/systems/liquidation_manager.py b/simulation/systems/liquidation_manager.py
+index 0d245107..ee7d2407 100644
+--- a/simulation/systems/liquidation_manager.py
++++ b/simulation/systems/liquidation_manager.py
+@@ -49,15 +49,14 @@ class LiquidationManager:
+         current_tick = state.time
+ 
+         # 0. Asset Liquidation (TD-187-LEAK Fix)
+-        # Use registered handlers to liquidate assets.
++        # Use registered handlers to liquidate assets (Sell-offs).
+         for handler in self.handlers:
+             handler.liquidate(firm, state)
+ 
+-        # Re-fetch cash after liquidation
+-        available_cash_raw = firm.finance.balance
+-        available_cash = available_cash_raw
+-        if isinstance(available_cash_raw, dict):
+-            available_cash = available_cash_raw.get(DEFAULT_CURRENCY, 0.0)
++        # 1. Firm Write-offs (WO-212 Atomicity)
++        # Write off remaining assets (Inventory, Capital Stock) and finalize bankruptcy.
++        # Returns the final cash balance for distribution.
++        available_cash = firm.liquidate_assets(state.time)
+ 
+         all_claims: List[Claim] = []
+ 
+diff --git a/tests/integration/test_liquidation_waterfall.py b/tests/integration/test_liquidation_waterfall.py
+index b40daa41..9bbe1b2b 100644
+--- a/tests/integration/test_liquidation_waterfall.py
++++ b/tests/integration/test_liquidation_waterfall.py
+@@ -8,7 +8,7 @@ from simulation.firms import Firm
+ from simulation.core_agents import Household
+ from simulation.dtos.api import SimulationState
+ from simulation.dtos.config_dtos import FirmConfigDTO
+-from modules.system.api import IAssetRecoverySystem
++from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY
+ from modules.system.registry import AgentRegistry
+ from modules.hr.service import HRService
+ from modules.finance.service import TaxService
+@@ -49,6 +49,10 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
+         self.firm.finance = MagicMock()
+         self.firm.finance.balance = 0.0 # Start with 0 cash
+         self.firm.finance.current_profit = 0.0 # Fix 1
++
++        # Configure liquidate_assets to return current balance
++        self.firm.liquidate_assets.side_effect = lambda tick: self.firm.finance.balance
++
+         self.firm.inventory = {}
+         self.firm.last_prices = {}
+         self.firm.hr = MagicMock()
+@@ -245,7 +249,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
+         self.state.agents[101] = emp
+ 
+         # To simulate cash update after transfer, we need side_effect on transfer
+-        def transfer_side_effect(sender, receiver, amount, memo):
++        def transfer_side_effect(sender, receiver, amount, memo, currency=None):
+             if receiver == self.firm:
+                 self.firm.finance.balance += amount
+             return True
+@@ -261,7 +265,8 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
+             self.mock_public_manager,
+             self.firm,
+             800.0,
+-            "Asset Liquidation (Inventory) - Firm 1"
++            "Asset Liquidation (Inventory) - Firm 1",
++            currency=DEFAULT_CURRENCY
+         )
+ 
+         # 2. Firm -> Employee Transfer (500.0)
+diff --git a/tests/unit/systems/test_liquidation_manager.py b/tests/unit/systems/test_liquidation_manager.py
+index 029cca56..3bcce4d3 100644
+--- a/tests/unit/systems/test_liquidation_manager.py
++++ b/tests/unit/systems/test_liquidation_manager.py
+@@ -29,6 +29,8 @@ class TestLiquidationManager(unittest.TestCase):
+ 
+         self.firm = MagicMock()
+         self.firm.id = 1
++        # Mock liquidate_assets to return cash balance
++        self.firm.liquidate_assets.return_value = 1000.0
+         self.firm.finance.balance = 1000.0
+         self.firm.total_shares = 1000.0
+         self.firm.treasury_shares = 0.0
+@@ -64,6 +66,9 @@ class TestLiquidationManager(unittest.TestCase):
+         # Run
+         self.manager.initiate_liquidation(self.firm, self.state)
+ 
++        # Verify Firm Write-off
++        self.firm.liquidate_assets.assert_called_once_with(self.state.time)
++
+         # Verify Services Called
+         self.mock_hr.calculate_liquidation_employee_claims.assert_called_once_with(self.firm, 100)
+         self.mock_tax.calculate_liquidation_tax_claims.assert_called_once_with(self.firm)
