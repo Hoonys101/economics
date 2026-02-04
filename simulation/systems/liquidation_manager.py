@@ -3,6 +3,7 @@ from typing import List, TYPE_CHECKING, Optional, Any
 import logging
 from modules.common.dtos import Claim
 from modules.system.api import DEFAULT_CURRENCY
+from simulation.systems.liquidation_handlers import InventoryLiquidationHandler, ILiquidationHandler
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -33,6 +34,10 @@ class LiquidationManager:
         self.agent_registry = agent_registry
         self.public_manager = public_manager
 
+        self.handlers: List[ILiquidationHandler] = []
+        if self.public_manager:
+            self.handlers.append(InventoryLiquidationHandler(self.settlement_system, self.public_manager))
+
     def initiate_liquidation(self, firm: Firm, state: SimulationState) -> None:
         """
         Executes the liquidation waterfall.
@@ -44,9 +49,9 @@ class LiquidationManager:
         current_tick = state.time
 
         # 0. Asset Liquidation (TD-187-LEAK Fix)
-        # If public_manager is available, liquidate assets to generate cash.
-        if self.public_manager:
-            self._liquidate_assets(firm, state)
+        # Use registered handlers to liquidate assets.
+        for handler in self.handlers:
+            handler.liquidate(firm, state)
 
         # Re-fetch cash after liquidation
         available_cash_raw = firm.finance.balance
@@ -88,68 +93,6 @@ class LiquidationManager:
 
         # 4. Execute Waterfall
         self.execute_waterfall(firm, all_claims, available_cash, state)
-
-    def _liquidate_assets(self, firm: Firm, state: SimulationState):
-        """
-        Liquidates non-cash assets (Inventory) by selling them to the PublicManager.
-        This prevents the 'Asset-Rich Cash-Poor' leak.
-        """
-        if not self.public_manager:
-            return
-
-        # Calculate Total Value
-        total_value = 0.0
-
-        # Use last prices or default config price from firm's config
-        # Default price fallback: 10.0 if not found in config
-        default_price = 10.0
-        if firm.config and hasattr(firm.config, "goods_initial_price") and isinstance(firm.config.goods_initial_price, dict):
-             default_price = firm.config.goods_initial_price.get("default", 10.0)
-
-        # Configurable Haircut (Default 20%)
-        haircut = getattr(firm.config, "liquidation_haircut", 0.2)
-
-        inventory_transfer = {}
-        for item_id, qty in firm.inventory.items():
-            if qty <= 0:
-                continue
-
-            # Determine fair value
-            price = firm.last_prices.get(item_id, 0.0)
-            if price <= 0:
-                # Fallback to configured initial price if available
-                if firm.config and hasattr(firm.config, "goods") and isinstance(firm.config.goods, dict):
-                     price = firm.config.goods.get(item_id, {}).get("initial_price", default_price)
-                else:
-                     price = default_price
-
-            # Apply Liquidation Discount (Haircut)
-            liquidation_value = price * qty * (1.0 - haircut)
-            total_value += liquidation_value
-            inventory_transfer[item_id] = qty
-
-        if total_value > 0:
-            # Transfer Funds: PublicManager -> Firm
-            # Note: PublicManager must implement IFinancialEntity to be a sender in SettlementSystem
-            # and it must have funds (System Treasury).
-            success = self.settlement_system.transfer(
-                self.public_manager,
-                firm,
-                total_value,
-                f"Asset Liquidation (Inventory) - Firm {firm.id}",
-                currency=DEFAULT_CURRENCY
-            )
-
-            if success:
-                logger.info(f"LIQUIDATION_ASSET_SALE | Firm {firm.id} sold inventory to PublicManager for {total_value:.2f}.")
-
-                # Transfer Inventory via Interface (Encapsulation)
-                self.public_manager.receive_liquidated_assets(inventory_transfer)
-
-                # Clear Firm Inventory
-                firm.inventory.clear()
-            else:
-                logger.error(f"LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay {total_value:.2f} to Firm {firm.id}.")
 
     def execute_waterfall(self, firm: Firm, claims: List[Claim], available_cash: float, state: SimulationState) -> None:
         """

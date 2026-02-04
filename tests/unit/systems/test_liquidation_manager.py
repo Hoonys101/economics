@@ -6,7 +6,7 @@ from simulation.systems.liquidation_manager import LiquidationManager
 from modules.common.dtos import Claim
 from simulation.firms import Firm
 from simulation.dtos.api import SimulationState
-from modules.system.api import IAssetRecoverySystem, IAgentRegistry
+from modules.system.api import IAssetRecoverySystem, IAgentRegistry, DEFAULT_CURRENCY
 from modules.hr.api import IHRService
 from modules.finance.api import ITaxService
 from simulation.finance.api import ISettlementSystem
@@ -71,8 +71,8 @@ class TestLiquidationManager(unittest.TestCase):
         # Verify Transfers
         # Expect transfers for both claims
         self.mock_settlement.transfer.assert_has_calls([
-            call(self.firm, agent_101, 100.0, "Liquidation Payout: Wage"),
-            call(self.firm, agent_gov, 50.0, "Liquidation Payout: Tax")
+            call(self.firm, agent_101, 100.0, "Liquidation Payout: Wage", currency=DEFAULT_CURRENCY),
+            call(self.firm, agent_gov, 50.0, "Liquidation Payout: Tax", currency=DEFAULT_CURRENCY)
         ], any_order=True)
 
     def test_bank_claim_handling(self):
@@ -93,5 +93,32 @@ class TestLiquidationManager(unittest.TestCase):
 
         # Check transfer to bank
         self.mock_settlement.transfer.assert_called_with(
-            self.firm, bank_agent, 500.0, "Liquidation Payout: Secured Loan"
+            self.firm, bank_agent, 500.0, "Liquidation Payout: Secured Loan", currency=DEFAULT_CURRENCY
         )
+
+    def test_asset_liquidation_integration(self):
+        # Setup Inventory
+        self.firm.inventory = {"apple": 10}
+        self.firm.last_prices = {"apple": 5.0}
+        self.firm.config.liquidation_haircut = 0.2
+        self.firm.config.goods_initial_price = {"default": 10.0}
+        self.firm.config.goods = {}
+
+        self.mock_settlement.transfer.return_value = True
+
+        self.manager.initiate_liquidation(self.firm, self.state)
+
+        # Check transfer for asset liquidation
+        # 10 * 5.0 * 0.8 = 40.0
+        self.mock_settlement.transfer.assert_any_call(
+            self.mock_public,
+            self.firm,
+            40.0,
+            "Asset Liquidation (Inventory) - Firm 1",
+            currency=DEFAULT_CURRENCY
+        )
+
+        # Also check receive_liquidated_assets
+        self.mock_public.receive_liquidated_assets.assert_called_with({"apple": 10})
+        # Check inventory is cleared
+        self.assertEqual(self.firm.inventory, {})
