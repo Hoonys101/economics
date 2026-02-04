@@ -17,11 +17,11 @@ from simulation.models import Transaction
 logger = logging.getLogger(__name__)
 
 class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
-    def __init__(self, simulation: ISimulationState):
+    def __init__(self, simulation: ISimulationState, housing_service: Optional[Any] = None):
         self.simulation = simulation
         self.settlement_system: ISettlementSystem = simulation.settlement_system
         # Note: Registry in simulation must implement IPropertyRegistry methods
-        self.housing_service = simulation.housing_service
+        self.housing_service = housing_service or getattr(simulation, 'housing_service', None)
         self.loan_market = simulation.markets.get("loan")
 
     def execute_step(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:

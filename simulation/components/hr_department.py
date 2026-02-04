@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
 import logging
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
@@ -66,7 +67,8 @@ class HRDepartment:
 
             # Affordability Check (Optimistic)
             # Refactor: Use finance.balance
-            if self.firm.finance.balance >= wage:
+            current_balance = self.firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+            if current_balance >= wage:
                 # Calculate Tax
                 income_tax = 0.0
                 if government:
@@ -122,7 +124,8 @@ class HRDepartment:
         severance_pay = wage * severance_weeks
 
         # Refactor: Use finance.balance
-        if self.firm.finance.balance >= severance_pay:
+        current_balance = self.firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+        if current_balance >= severance_pay:
             # Fire with severance (Transaction)
             tx = Transaction(
                 buyer_id=self.firm.id,
@@ -163,7 +166,7 @@ class HRDepartment:
 
             self.firm.logger.warning(
                 f"ZOMBIE | Firm {self.firm.id} cannot afford wage for Household {employee.id}. Recorded as unpaid wage.",
-                extra={"tick": current_time, "agent_id": self.firm.id, "wage_deficit": wage - self.firm.finance.balance, "total_unpaid": len(self.unpaid_wages[employee.id])}
+                extra={"tick": current_time, "agent_id": self.firm.id, "wage_deficit": wage - current_balance, "total_unpaid": len(self.unpaid_wages[employee.id])}
             )
 
     def hire(self, employee: Household, wage: float, current_tick: int = 0):

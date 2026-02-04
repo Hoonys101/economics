@@ -27,7 +27,12 @@ class HousingPlanner(IHousingPlanner):
 
         # 1. Evaluate "Buy" Option
         # Use simple affordability metric: Price <= Assets / DownPaymentPct
-        max_price = household.econ_state.assets / self.DEFAULT_DOWN_PAYMENT_PCT
+        household_assets_val = household.econ_state.assets
+        if isinstance(household_assets_val, dict):
+            from modules.system.api import DEFAULT_CURRENCY
+            household_assets_val = household_assets_val.get(DEFAULT_CURRENCY, 0.0)
+
+        max_price = household_assets_val / self.DEFAULT_DOWN_PAYMENT_PCT
 
         affordable_properties = []
         if market.for_sale_units:
@@ -87,7 +92,12 @@ class HousingPlanner(IHousingPlanner):
         required_down = offer_price * self.DEFAULT_DOWN_PAYMENT_PCT
 
         # Ensure household has enough for down payment (already checked by max_price but good to be safe)
-        if household.econ_state.assets < required_down:
+        household_assets_val = household.econ_state.assets
+        if isinstance(household_assets_val, dict):
+            from modules.system.api import DEFAULT_CURRENCY
+            household_assets_val = household_assets_val.get(DEFAULT_CURRENCY, 0.0)
+
+        if household_assets_val < required_down:
              # Fallback: Can't afford down payment despite max_price check (maybe floating point or rounding)
              pass
 

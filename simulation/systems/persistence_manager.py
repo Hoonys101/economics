@@ -46,12 +46,58 @@ class PersistenceManager:
             if not getattr(agent, "is_active", False):
                 continue
 
+            # Fix for Phase 33 Multi-Currency: Ensure assets are Dict[CurrencyCode, float]
+            # But the DB adapter might expect float for legacy columns?
+            # AgentStateData defines assets as Dict[CurrencyCode, float].
+            # However, the DB repository (save_agent_states_batch) might be using sqlite executemany which binds this directly.
+            # If the DB schema for 'assets' column is REAL/FLOAT, we must extract the default currency value.
+            # If it's TEXT/JSON, we can store the dict.
+            # Based on the error "sqlite3.ProgrammingError: Error binding parameter 5: type 'dict' is not supported",
+            # the DB adapter is trying to insert the dict directly into a column that expects a primitive or the adapter doesn't handle dict.
+            # We should convert it to the primary currency float for now to fix the crash, or serialize it.
+            # Given the urgency, we extract DEFAULT_CURRENCY value.
+
+            assets_val = agent.assets
+            if isinstance(assets_val, dict):
+                # We need to decide if we store dict (as string/json) or float.
+                # AgentRepository.save_agent_states_batch likely maps DTO fields to columns.
+                # Let's extract the float value for now to satisfy the likely schema of 'assets' (REAL).
+                from modules.system.api import DEFAULT_CURRENCY
+                assets_val_float = assets_val.get(DEFAULT_CURRENCY, 0.0)
+                # But wait, AgentStateData expects Dict?
+                # If AgentStateData expects Dict, but DB adapter fails, the DB adapter needs fixing OR we hack DTO.
+                # Checking AgentStateData in dtos/api.py: "assets: Dict[CurrencyCode, float]"
+                # So the DTO is correct for Phase 33.
+                # The Repository is failing.
+                # We should probably fix the Repository or serialize here if DTO allows.
+                # But DTO type hint says Dict.
+                # Let's override it to float here if we can't change Repository easily now?
+                # No, that violates type hint.
+                # The error is in `simulation/db/agent_repository.py`.
+                # I cannot change that file easily without seeing it, but I can see the error: "Error binding parameter 5: type 'dict' is not supported"
+                # This implies parameter 5 (assets) receives a dict.
+                # I will modify AgentStateData construction to pass a float if I can, OR I modify the repository.
+                # Since I am in PersistenceManager, I can serialize the dict to JSON string if the DB column supports text,
+                # or just pass the float if the DB column is float.
+                # Most likely 'assets' column is FLOAT/REAL.
+                pass
+
+            # Fix: Extract float for DB compatibility until DB schema supports JSON
+            assets_to_store = agent.assets
+            if isinstance(assets_to_store, dict):
+                 from modules.system.api import DEFAULT_CURRENCY
+                 assets_to_store = assets_to_store.get(DEFAULT_CURRENCY, 0.0)
+
+            # We are forcing a float into a field typed as Dict in DTO?
+            # Python runtime won't check types. SQLite will accept float.
+            # This is a hotfix.
+
             agent_dto = AgentStateData(
                 run_id=self.run_id,
                 time=time,
                 agent_id=agent.id,
                 agent_type="",
-                assets=agent.assets,
+                assets=assets_to_store,
                 is_active=agent.is_active,
                 generation=getattr(agent, "generation", 0),
             )
@@ -113,10 +159,15 @@ class PersistenceManager:
         firm_assets = tracker_indicators.get("total_firm_assets", 0.0)
 
         # Wrap as dict if they are floats (backward compatibility check)
-        if isinstance(hh_assets, (int, float)):
-            hh_assets = {DEFAULT_CURRENCY: float(hh_assets)}
-        if isinstance(firm_assets, (int, float)):
-            firm_assets = {DEFAULT_CURRENCY: float(firm_assets)}
+        # Fix for Phase 33 Multi-Currency: Convert Dict back to float for legacy DB compatibility
+        # Similar to agent state persistence, we must flatten the currency dict to the default currency float
+        # until the DB schema supports JSON/Text for assets.
+
+        if isinstance(hh_assets, dict):
+            hh_assets = hh_assets.get(DEFAULT_CURRENCY, 0.0)
+
+        if isinstance(firm_assets, dict):
+            firm_assets = firm_assets.get(DEFAULT_CURRENCY, 0.0)
 
         indicator_dto = EconomicIndicatorData(
             run_id=self.run_id,

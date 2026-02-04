@@ -43,6 +43,8 @@ class SimulationLogger:
         Logs a high-level snapshot of the simulation state.
         snapshot_data is expected to be an object (e.g. DTO) or dict with gdp, m2, cpi, transaction_count.
         """
+        from modules.system.api import DEFAULT_CURRENCY
+
         # Handle both dict and object (DTO) access
         if isinstance(snapshot_data, dict):
             gdp = snapshot_data.get('gdp')
@@ -54,6 +56,12 @@ class SimulationLogger:
             m2 = getattr(snapshot_data, 'm2', None)
             cpi = getattr(snapshot_data, 'cpi', None)
             transaction_count = getattr(snapshot_data, 'transaction_count', None)
+
+        # Handle M2 as Dict (Phase 33)
+        if isinstance(m2, dict):
+            m2 = m2.get(DEFAULT_CURRENCY, 0.0)
+        elif m2 is None:
+            m2 = 0.0
 
         self.snapshot_buffer.append((
             tick,

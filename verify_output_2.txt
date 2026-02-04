@@ -1,0 +1,1284 @@
+Starting verification for WO-4.2...
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 8. Error: 'Household' object has no attribute 'personality'
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 16. Error: 'Household' object has no attribute 'personality'
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 4 critical need 106.44. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 5 critical need 101.97. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 6 critical need 100.54. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 7 critical need 99.82. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 8 critical need 103.65. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 9 critical need 105.00. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 10 critical need 99.08. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 11 critical need 99.48. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 12 critical need 102.04. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 13 critical need 104.90. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 14 critical need 98.16. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 15 critical need 96.37. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 16 critical need 100.84. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 17 critical need 103.65. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 18 critical need 98.34. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 19 critical need 96.66. Panic buying basic_food at 0.22
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 4 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 5 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 6 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 7 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 8 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 9 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 10 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 11 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 12 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 13 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 14 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 15 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 16 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 17 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 18 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 19 triggering emergency liquidation. Generated 1 orders.
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 8. Error: 'Household' object has no attribute 'personality'
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 16. Error: 'Household' object has no attribute 'personality'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga 6b589971-6718-4d09-ba1f-b53b668e4d5b failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga 6b589971-6718-4d09-ba1f-b53b668e4d5b from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga 6b589971-6718-4d09-ba1f-b53b668e4d5b. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga 482014b4-c1b4-4712-a6c4-03d45b00ed7d failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga 482014b4-c1b4-4712-a6c4-03d45b00ed7d from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga 482014b4-c1b4-4712-a6c4-03d45b00ed7d. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga 13d2a136-5bef-4d9b-91c7-6fa6b6ec9a2f failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga 13d2a136-5bef-4d9b-91c7-6fa6b6ec9a2f from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga 13d2a136-5bef-4d9b-91c7-6fa6b6ec9a2f. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga 0502eb2d-c8b6-4270-907f-6c5d71de72d8 failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga 0502eb2d-c8b6-4270-907f-6c5d71de72d8 from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga 0502eb2d-c8b6-4270-907f-6c5d71de72d8. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga 6d9cbd81-0a4d-4e45-b427-f3ffa987a4fa failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga 6d9cbd81-0a4d-4e45-b427-f3ffa987a4fa from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga 6d9cbd81-0a4d-4e45-b427-f3ffa987a4fa. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga 2dce2e61-1464-4624-acb2-6d42e0f0189f failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga 2dce2e61-1464-4624-acb2-6d42e0f0189f from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga 2dce2e61-1464-4624-acb2-6d42e0f0189f. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga 118fd097-e9b3-4388-80dc-45a5d21e90a7 failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga 118fd097-e9b3-4388-80dc-45a5d21e90a7 from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga 118fd097-e9b3-4388-80dc-45a5d21e90a7. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga e05f46e0-7bac-4d76-9f71-70a92251af50 failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga e05f46e0-7bac-4d76-9f71-70a92251af50 from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga e05f46e0-7bac-4d76-9f71-70a92251af50. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga 04ec4156-f387-4737-b44b-391265126410 failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga 04ec4156-f387-4737-b44b-391265126410 from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga 04ec4156-f387-4737-b44b-391265126410. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga 159b3eea-70a0-4c09-8736-4d560af94f05 failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga 159b3eea-70a0-4c09-8736-4d560af94f05 from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga 159b3eea-70a0-4c09-8736-4d560af94f05. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga 66597cb9-f89e-49ca-8787-ef4a6944fbce failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga 66597cb9-f89e-49ca-8787-ef4a6944fbce from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga 66597cb9-f89e-49ca-8787-ef4a6944fbce. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga cae514c3-0eb4-4d3c-9839-de63615b60f6 failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga cae514c3-0eb4-4d3c-9839-de63615b60f6 from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga cae514c3-0eb4-4d3c-9839-de63615b60f6. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga 9a20ba06-f96a-4300-bfef-2951cb84801d failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga 9a20ba06-f96a-4300-bfef-2951cb84801d from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga 9a20ba06-f96a-4300-bfef-2951cb84801d. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga 4de37b30-280e-4a45-9a66-427411e96023 failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga 4de37b30-280e-4a45-9a66-427411e96023 from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga 4de37b30-280e-4a45-9a66-427411e96023. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga 9e7091ef-6265-46c9-a7d0-2f69d1133418 failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga 9e7091ef-6265-46c9-a7d0-2f69d1133418 from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga 9e7091ef-6265-46c9-a7d0-2f69d1133418. 'property_id'
+ERROR:utils.simulation_builder:SAGA_PROCESS_ERROR | Saga 72ffed14-81dc-4774-bd0f-71cbc383ebc9 failed. 'buyer_id'
+WARNING:modules.finance.saga_handler:SAGA_COMPENSATE | Rolling back saga 72ffed14-81dc-4774-bd0f-71cbc383ebc9 from STARTED
+CRITICAL:modules.finance.saga_handler:SAGA_ROLLBACK_FAIL | Failed to rollback saga 72ffed14-81dc-4774-bd0f-71cbc383ebc9. 'property_id'
+WARNING:utils.simulation_builder:Transfer of non-positive amount (0.0) attempted. Memo: M&A Acquisition 20
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 4 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 5 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 6 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 7 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 8 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 9 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 10 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 11 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 12 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 13 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 14 critical need 139.16. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 15 critical need 137.37. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 16 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 17 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 18 critical need 139.34. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 19 critical need 137.66. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 4 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 5 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 6 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 7 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 8 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 9 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 10 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 11 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 12 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 13 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 14 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 15 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 16 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 17 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 18 triggering emergency liquidation. Generated 1 orders.
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 19 triggering emergency liquidation. Generated 1 orders.
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 8. Error: 'Household' object has no attribute 'personality'
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 16. Error: 'Household' object has no attribute 'personality'
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.35 out of bounds [1.34, 1.91]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.35 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 4 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 5 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 6 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 7 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 8 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 9 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 10 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 11 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 12 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 13 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 14 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 15 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 16 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 17 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 18 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 19 critical need 140.00. Panic buying basic_food at 2.16
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.16 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 4 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 5 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 6 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 7 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 8 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 9 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 10 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 11 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 12 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 13 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 14 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 15 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 16 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 17 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 18 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 19 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 8. Error: 'Household' object has no attribute 'personality'
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 16. Error: 'Household' object has no attribute 'personality'
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 4 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 5 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 6 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 7 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 8 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 9 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 10 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 11 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 12 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 13 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 14 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 15 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 16 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 17 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 18 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 19 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 4 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 5 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 6 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 7 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 8 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 9 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 10 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 11 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 12 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 13 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 14 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 15 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 16 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 17 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 18 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 19 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 8. Error: 'Household' object has no attribute 'personality'
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 16. Error: 'Household' object has no attribute 'personality'
+WARNING:utils.simulation_builder:Transfer of non-positive amount (0.0) attempted. Memo: M&A Acquisition 21
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 4 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 5 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 6 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 7 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 8 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 9 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 10 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 11 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 12 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 13 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 14 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 15 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 16 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 17 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 18 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 19 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 4 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 5 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 6 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 7 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 8 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 9 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 10 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 11 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 12 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 13 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 14 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 15 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 16 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 17 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 18 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 19 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 4 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 5 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 6 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 7 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 8 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 9 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 10 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 11 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 12 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 13 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 14 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 15 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 16 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 17 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 18 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 19 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 4 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 5 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 6 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 7 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 8 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 9 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 10 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 11 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 12 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 13 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 14 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 15 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 16 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 17 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 18 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 19 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 16. Error: 'Household' object has no attribute 'personality'
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 4 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 5 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 6 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 7 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 8 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 9 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 10 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 11 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 12 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 13 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 14 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 15 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 16 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 17 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 18 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 19 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 4 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 5 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 6 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 7 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 8 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 9 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 10 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 11 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 12 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 13 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 14 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 15 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 16 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 17 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 18 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 19 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 16. Error: 'Household' object has no attribute 'personality'
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 4 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 5 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 6 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 7 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 8 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 9 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 10 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 11 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 12 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 13 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 14 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 15 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 16 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 17 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 18 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 19 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 4 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 5 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 6 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 7 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 8 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 9 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 10 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 11 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 12 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 13 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 14 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 15 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 16 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 17 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 18 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 19 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 16. Error: 'Household' object has no attribute 'personality'
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 4 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 5 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 6 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 7 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 8 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 9 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 10 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 11 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 12 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 13 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 14 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 15 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 16 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 17 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 18 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 19 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 4 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 5 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 6 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 7 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 8 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 9 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 10 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 11 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 12 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 13 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 14 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 15 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 16 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 17 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 18 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 19 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+Tick 10: M2=1497800.02, Gov Issued=0.00, Gov Destroyed=0.00
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 4 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 5 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 6 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 7 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 8 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 9 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 10 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 11 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 12 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 13 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 14 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 15 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 16 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 17 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 18 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 19 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 4 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 5 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 6 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 7 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 8 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 9 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 10 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 11 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 12 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 13 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 14 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 15 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 16 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 17 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 18 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 19 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 4 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 5 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 6 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 7 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 8 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 9 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 10 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 11 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 12 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 13 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 14 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 15 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 16 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 17 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 18 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 19 critical need 140.00. Panic buying basic_food at 1.80
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 4 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 5 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 6 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 7 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 8 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 9 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 10 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 11 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 12 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 13 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 14 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 15 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 16 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 17 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 18 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 19 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.34, 1.91]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 4 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 5 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 6 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 7 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 8 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 9 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 10 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 11 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 12 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 13 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 14 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 15 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 16 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 17 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 18 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 19 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 14 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 15 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 18 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:GRACE_PROTOCOL | Household 19 triggering emergency liquidation. Generated 1 orders.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [1.44, 1.98]
+WARNING:PublicManager:Processing bankruptcy for Agent 4 at tick 13. Recovering inventory.
+WARNING:PublicManager:Processing bankruptcy for Agent 5 at tick 13. Recovering inventory.
+WARNING:PublicManager:Processing bankruptcy for Agent 6 at tick 13. Recovering inventory.
+WARNING:PublicManager:Processing bankruptcy for Agent 7 at tick 13. Recovering inventory.
+WARNING:PublicManager:Processing bankruptcy for Agent 8 at tick 13. Recovering inventory.
+WARNING:PublicManager:Processing bankruptcy for Agent 9 at tick 13. Recovering inventory.
+WARNING:PublicManager:Processing bankruptcy for Agent 10 at tick 13. Recovering inventory.
+WARNING:PublicManager:Processing bankruptcy for Agent 11 at tick 13. Recovering inventory.
+WARNING:PublicManager:Processing bankruptcy for Agent 12 at tick 13. Recovering inventory.
+WARNING:PublicManager:Processing bankruptcy for Agent 13 at tick 13. Recovering inventory.
+WARNING:PublicManager:Processing bankruptcy for Agent 16 at tick 13. Recovering inventory.
+WARNING:PublicManager:Processing bankruptcy for Agent 17 at tick 13. Recovering inventory.
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 14 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 15 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 18 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:SURVIVAL_OVERRIDE | Agent 19 critical need 140.00. Panic buying basic_food at 1.98
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 1.98 out of bounds [1.44, 1.98]
+WARNING:PublicManager:Processing bankruptcy for Agent 14 at tick 14. Recovering inventory.
+WARNING:PublicManager:Processing bankruptcy for Agent 15 at tick 14. Recovering inventory.
+WARNING:PublicManager:Processing bankruptcy for Agent 18 at tick 14. Recovering inventory.
+WARNING:PublicManager:Processing bankruptcy for Agent 19 at tick 14. Recovering inventory.
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 0. Error: 'Household' object has no attribute 'personality'
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 2. Error: 'Household' object has no attribute 'personality'
+WARNING:utils.simulation_builder:Stock order price 0.32 out of limit range [0.01, 0.01] for firm 22
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 0. Error: 'Household' object has no attribute 'personality'
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 2. Error: 'Household' object has no attribute 'personality'
+WARNING:utils.simulation_builder:Stock order price 0.32 out of limit range [0.01, 0.01] for firm 22
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 0. Error: 'Household' object has no attribute 'personality'
+WARNING:utils.simulation_builder:Stock order price 0.30 out of limit range [0.01, 0.01] for firm 22
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 0. Error: 'Household' object has no attribute 'personality'
+WARNING:utils.simulation_builder:Stock order price 0.29 out of limit range [0.01, 0.01] for firm 22
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 0. Error: 'Household' object has no attribute 'personality'
+WARNING:utils.simulation_builder:Stock order price 0.27 out of limit range [0.01, 0.01] for firm 22
+WARNING:utils.simulation_builder:FIRM_INACTIVE | Firm 22 closed down. Assets: 9834.30, Consecutive Loss Turns: 20
+WARNING:utils.simulation_builder:FIRM_INACTIVE | Firm 23 closed down. Assets: 90272.87, Consecutive Loss Turns: 20
+ERROR:utils.simulation_builder:SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 999999. Cash: 0.00, Bank: 0.00, Total: 0.00. Required: 111182.92. Memo: Asset Liquidation (Inventory) - Firm 22
+ERROR:simulation.systems.liquidation_manager:LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 111182.92 to Firm 22.
+ERROR:utils.simulation_builder:SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 999999. Cash: 0.00, Bank: 0.00, Total: 0.00. Required: 181872.89. Memo: Asset Liquidation (Inventory) - Firm 23
+ERROR:simulation.systems.liquidation_manager:LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 181872.89 to Firm 23.
+Tick 20: M2=1497800.01, Gov Issued=0.00, Gov Destroyed=0.00
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+Tick 30: M2=1497800.01, Gov Issued=0.00, Gov Destroyed=0.00
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1467850.01, Expected: 1497800.02, Delta: -29950.0114
+/app/simulation/metrics/stock_tracker.py:39: RuntimeWarning: divide by zero encountered in log
+  log_returns = np.log(prices[1:]) - np.log(prices[:-1])
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/numpy/_core/_methods.py:188: RuntimeWarning: invalid value encountered in subtract
+  x = um.subtract(arr, arrmean, out=...)
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1471476.72, Expected: 1497800.02, Delta: -26323.3064
+/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/numpy/_core/_methods.py:168: RuntimeWarning: invalid value encountered in reduce
+  arrmean = umr_sum(arr, axis, dtype, keepdims=True, where=where)
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.42 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1444691.02, Expected: 1497800.02, Delta: -53109.0063
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.40 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1431536.89, Expected: 1497800.02, Delta: -66263.1341
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.38 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1421031.18, Expected: 1497800.02, Delta: -76768.8461
+Tick 40: M2=1421031.18, Gov Issued=0.00, Gov Destroyed=0.00
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.38 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.31 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.31 out of bounds [1.44, 1.98]
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 0. Error: 'Household' object has no attribute 'personality'
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1437406.72, Expected: 1497800.02, Delta: -60393.3043
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.38 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.25 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.30 out of bounds [1.44, 1.98]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.38 out of bounds [1.44, 1.98]
+ERROR:simulation.systems.demographic_manager:BIRTH_FAILED | Failed to create child for parent 2. Error: 'Household' object has no attribute 'personality'
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1456531.40, Expected: 1497800.02, Delta: -41268.6224
+WARNING:utils.simulation_builder:Stock order price 1.27 out of limit range [0.01, 0.01] for firm 27
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.38 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.25 out of limit range [0.01, 0.01] for firm 28
+WARNING:utils.simulation_builder:Stock order price 0.94 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.28 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1465678.72, Expected: 1497800.02, Delta: -32121.3063
+WARNING:utils.simulation_builder:Stock order price 1.27 out of limit range [0.01, 0.01] for firm 27
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.38 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.25 out of limit range [0.01, 0.01] for firm 28
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1469731.27, Expected: 1497800.02, Delta: -28068.7507
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 27
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.25 out of limit range [0.01, 0.01] for firm 28
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1471467.77, Expected: 1497800.02, Delta: -26332.2516
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 27
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.19 out of limit range [0.01, 0.01] for firm 28
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1473382.99, Expected: 1497800.02, Delta: -24417.0355
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 27
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.13 out of limit range [0.01, 0.01] for firm 28
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1474626.12, Expected: 1497800.02, Delta: -23173.9053
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 27
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.13 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [9.33, 13.75]
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1476133.43, Expected: 1497800.02, Delta: -21666.5957
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 27
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.08 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [9.33, 13.75]
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1477460.36, Expected: 1497800.02, Delta: -20339.6682
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 27
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.03 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [9.33, 13.75]
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.15 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.35 out of bounds [1.44, 1.98]
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1478611.16, Expected: 1497800.02, Delta: -19188.8663
+Tick 50: M2=1478611.16, Gov Issued=0.00, Gov Destroyed=0.00
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 27
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.03 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [9.33, 13.75]
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.15 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.35 out of bounds [1.44, 1.98]
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1479681.69, Expected: 1497800.02, Delta: -18118.3301
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 27
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 0.98 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [9.33, 13.75]
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.15 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.35 out of bounds [1.44, 1.98]
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1480615.59, Expected: 1497800.02, Delta: -17184.4374
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 27
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 0.93 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [9.33, 13.75]
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.15 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.35 out of bounds [1.44, 1.98]
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1481903.35, Expected: 1497800.02, Delta: -15896.6707
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 27
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 0.93 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [9.33, 13.75]
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.15 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.35 out of bounds [1.44, 1.98]
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1482661.63, Expected: 1497800.02, Delta: -15138.3948
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 27
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 0.93 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [9.33, 13.75]
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.15 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.35 out of bounds [1.44, 1.98]
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1483340.93, Expected: 1497800.02, Delta: -14459.0991
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 27
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.36 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 0.93 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [9.33, 13.75]
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.15 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.35 out of bounds [1.44, 1.98]
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:utils.simulation_builder:FIRM_INACTIVE | Firm 27 closed down. Assets: 3518.33, Consecutive Loss Turns: 20
+ERROR:utils.simulation_builder:SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 999999. Cash: 0.00, Bank: 0.00, Total: 0.00. Required: 14492.81. Memo: Asset Liquidation (Inventory) - Firm 27
+ERROR:simulation.systems.liquidation_manager:LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 14492.81 to Firm 27.
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1487420.55, Expected: 1497800.02, Delta: -10379.4785
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 4.00 out of bounds [9.33, 13.75]
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.15 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.35 out of bounds [1.44, 1.98]
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1487654.76, Expected: 1497800.02, Delta: -10145.2623
+WARNING:utils.simulation_builder:Stock order price 0.85 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 0.85 out of bounds [9.33, 13.75]
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.15 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.35 out of bounds [1.44, 1.98]
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1487887.03, Expected: 1497800.02, Delta: -9912.9947
+WARNING:utils.simulation_builder:Stock order price 0.85 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 0.85 out of bounds [9.33, 13.75]
+WARNING:utils.simulation_builder:Stock order price 0.89 out of limit range [0.01, 0.01] for firm 29
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:Stock order price 1.15 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.35 out of bounds [1.44, 1.98]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:utils.simulation_builder:FIRM_INACTIVE | Firm 29 closed down. Assets: 2594.85, Consecutive Loss Turns: 20
+ERROR:utils.simulation_builder:SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 999999. Cash: 0.00, Bank: 0.00, Total: 0.00. Required: 29564.03. Memo: Asset Liquidation (Inventory) - Firm 29
+ERROR:simulation.systems.liquidation_manager:LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 29564.03 to Firm 29.
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1490643.21, Expected: 1497800.02, Delta: -7156.8168
+WARNING:utils.simulation_builder:Stock order price 0.81 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 0.81 out of bounds [9.33, 13.75]
+WARNING:utils.simulation_builder:Stock order price 1.15 out of limit range [0.01, 0.01] for firm 30
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 0.35 out of bounds [1.44, 1.98]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:FIRM_INACTIVE | Firm 30 closed down. Assets: 1957.13, Consecutive Loss Turns: 20
+ERROR:utils.simulation_builder:SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 999999. Cash: 0.00, Bank: 0.00, Total: 0.00. Required: 27971.31. Memo: Asset Liquidation (Inventory) - Firm 30
+ERROR:simulation.systems.liquidation_manager:LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 27971.31 to Firm 30.
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1462756.46, Expected: 1497800.02, Delta: -35043.5691
+Tick 60: M2=1462756.46, Gov Issued=0.00, Gov Destroyed=0.00
+WARNING:utils.simulation_builder:Stock order price 0.77 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 0.77 out of bounds [9.33, 13.75]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:Market_labor:Unknown side for _add_order: QUIT
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1433271.42, Expected: 1497800.02, Delta: -64528.6060
+WARNING:utils.simulation_builder:Stock order price 0.73 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 0.73 out of bounds [9.33, 13.75]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.86 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 0.00 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.86 out of bounds [7.63, 10.73]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1406700.63, Expected: 1497800.02, Delta: -91099.3967
+WARNING:utils.simulation_builder:Stock order price 0.73 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 0.73 out of bounds [9.33, 13.75]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.76 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.76 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1383237.52, Expected: 1497800.02, Delta: -114562.5037
+WARNING:utils.simulation_builder:Stock order price 0.73 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 0.73 out of bounds [9.33, 13.75]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.67 out of bounds [7.63, 10.73]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 0.00 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.67 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:Transfer of non-positive amount (0.0) attempted. Memo: M&A Acquisition 33
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1398841.71, Expected: 1497800.02, Delta: -98958.3184
+WARNING:utils.simulation_builder:Stock order price 0.73 out of limit range [0.01, 0.01] for firm 28
+WARNING:Market_luxury_food:CIRCUIT_BREAKER | Order rejected. Price 0.73 out of bounds [9.33, 13.75]
+WARNING:utils.simulation_builder:Stock order price 0.97 out of limit range [0.01, 0.01] for firm 32
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.57 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 0.00 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.57 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:Transfer of non-positive amount (0.0) attempted. Memo: M&A Acquisition 28
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1403647.02, Expected: 1497800.02, Delta: -94153.0067
+WARNING:utils.simulation_builder:Stock order price 0.97 out of limit range [0.01, 0.01] for firm 32
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.48 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 0.00 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.48 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.22 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1410979.42, Expected: 1497800.02, Delta: -86820.6052
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 9.00 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.97 out of limit range [0.01, 0.01] for firm 32
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.39 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.39 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.13 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1418670.86, Expected: 1497800.02, Delta: -79129.1599
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 9.00 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.92 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 1.21 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.30 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.30 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.05 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1428767.25, Expected: 1497800.02, Delta: -69032.7753
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 9.00 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.88 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 1.15 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.22 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.22 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.97 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1433035.62, Expected: 1497800.02, Delta: -64764.4018
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 8.00 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.88 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 1.15 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.13 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.13 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.89 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1437127.05, Expected: 1497800.02, Delta: -60672.9703
+Tick 70: M2=1437127.05, Gov Issued=0.00, Gov Destroyed=0.00
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 9.00 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.88 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 1.10 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.05 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.05 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.81 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1440950.50, Expected: 1497800.02, Delta: -56849.5238
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 9.00 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.83 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 1.05 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.97 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.97 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.74 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1443080.69, Expected: 1497800.02, Delta: -54719.3363
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 9.00 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.83 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 0.97 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.89 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.89 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.66 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1444319.63, Expected: 1497800.02, Delta: -53480.3918
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 9.00 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.83 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 0.90 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.81 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.81 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.59 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1445076.92, Expected: 1497800.02, Delta: -52723.1022
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 9.00 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.83 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 0.90 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.74 out of bounds [7.63, 10.73]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.74 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.52 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1445818.11, Expected: 1497800.02, Delta: -51981.9171
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 9.00 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.83 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 0.90 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.66 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 0.00 out of bounds [7.63, 10.73]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.66 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.45 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1446222.16, Expected: 1497800.02, Delta: -51577.8676
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 1.19 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.83 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 0.86 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.59 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.59 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.38 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1446622.23, Expected: 1497800.02, Delta: -51177.7900
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 1.13 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.83 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 0.86 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.52 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 0.00 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.52 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.31 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1446998.87, Expected: 1497800.02, Delta: -50801.1563
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 1.08 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.83 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 0.86 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.45 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.45 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.24 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1447362.41, Expected: 1497800.02, Delta: -50437.6119
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 1.03 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.83 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 0.86 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.38 out of bounds [7.63, 10.73]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.38 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.18 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1447723.15, Expected: 1497800.02, Delta: -50076.8748
+Tick 80: M2=1447723.15, Gov Issued=0.00, Gov Destroyed=0.00
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 0.98 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.83 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 0.86 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.31 out of bounds [7.63, 10.73]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 0.00 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.31 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.12 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:FIRM_INACTIVE | Firm 32 closed down. Assets: 1886.66, Consecutive Loss Turns: 20
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1449917.79, Expected: 1497800.02, Delta: -47882.2388
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 0.93 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.86 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.24 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.24 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.05 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1450223.04, Expected: 1497800.02, Delta: -47576.9824
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 0.89 out of bounds [14.35, 20.83]
+WARNING:utils.simulation_builder:Stock order price 0.86 out of limit range [0.01, 0.01] for firm 34
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.18 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.18 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.99 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:FIRM_INACTIVE | Firm 34 closed down. Assets: 1703.39, Consecutive Loss Turns: 20
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1454406.61, Expected: 1497800.02, Delta: -43393.4156
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 0.84 out of bounds [14.35, 20.83]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.12 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 0.00 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.12 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.93 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1454634.27, Expected: 1497800.02, Delta: -43165.7515
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 0.80 out of bounds [14.35, 20.83]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.05 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 0.00 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 3.05 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.87 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1424909.56, Expected: 1497800.02, Delta: -72890.4687
+WARNING:Market_education_service:CIRCUIT_BREAKER | Order rejected. Price 0.76 out of bounds [14.35, 20.83]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.99 out of bounds [7.63, 10.73]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.99 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.82 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:FIRM_INACTIVE | Firm 31 closed down. Assets: 16718.81, Consecutive Loss Turns: 20
+ERROR:utils.simulation_builder:SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 999999. Cash: 0.00, Bank: 0.00, Total: 0.00. Required: 480996.32. Memo: Asset Liquidation (Inventory) - Firm 31
+ERROR:simulation.systems.liquidation_manager:LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 480996.32 to Firm 31.
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1452403.36, Expected: 1497800.02, Delta: -45396.6615
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.93 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 6.30 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.93 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.76 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1429055.68, Expected: 1497800.02, Delta: -68744.3487
+WARNING:utils.simulation_builder:Stock order price 1.00 out of limit range [0.01, 0.01] for firm 32
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.87 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 6.17 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.87 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.71 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1410253.12, Expected: 1497800.02, Delta: -87546.9090
+WARNING:utils.simulation_builder:Stock order price 0.95 out of limit range [0.01, 0.01] for firm 32
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.82 out of bounds [7.63, 10.73]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 6.05 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.82 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.65 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1416609.94, Expected: 1497800.02, Delta: -81190.0812
+WARNING:utils.simulation_builder:Stock order price 0.95 out of limit range [0.01, 0.01] for firm 32
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.76 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 5.93 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.76 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.60 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1421536.37, Expected: 1497800.02, Delta: -76263.6525
+Tick 90: M2=1421536.37, Gov Issued=0.00, Gov Destroyed=0.00
+WARNING:utils.simulation_builder:Stock order price 0.95 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 1.19 out of limit range [0.01, 0.01] for firm 33
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.70 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 5.81 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.70 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.55 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1425376.02, Expected: 1497800.02, Delta: -72424.0014
+WARNING:utils.simulation_builder:Stock order price 0.95 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 1.19 out of limit range [0.01, 0.01] for firm 33
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.65 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 5.69 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.65 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.50 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1428404.11, Expected: 1497800.02, Delta: -69395.9174
+WARNING:utils.simulation_builder:Stock order price 0.95 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 1.19 out of limit range [0.01, 0.01] for firm 33
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.60 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 5.58 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.60 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.45 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1400107.96, Expected: 1497800.02, Delta: -97692.0615
+WARNING:utils.simulation_builder:Stock order price 0.95 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 1.13 out of limit range [0.01, 0.01] for firm 33
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.55 out of bounds [7.63, 10.73]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 5.47 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.55 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1412100.38, Expected: 1497800.02, Delta: -85699.6415
+WARNING:utils.simulation_builder:Stock order price 0.95 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 1.13 out of limit range [0.01, 0.01] for firm 33
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.49 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 5.36 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.49 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1419656.90, Expected: 1497800.02, Delta: -78143.1242
+WARNING:utils.simulation_builder:Stock order price 0.90 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 1.08 out of limit range [0.01, 0.01] for firm 33
+WARNING:utils.simulation_builder:Stock order price 1.49 out of limit range [0.01, 0.01] for firm 35
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.44 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 5.25 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.44 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1425983.36, Expected: 1497800.02, Delta: -71816.6617
+WARNING:utils.simulation_builder:Stock order price 0.86 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 0.97 out of limit range [0.01, 0.01] for firm 33
+WARNING:utils.simulation_builder:Stock order price 1.49 out of limit range [0.01, 0.01] for firm 35
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:Market_basic_food:CIRCUIT_BREAKER | Order rejected. Price 2.27 out of bounds [1.44, 1.98]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 5.14 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1426885.94, Expected: 1497800.02, Delta: -70914.0859
+WARNING:utils.simulation_builder:Stock order price 0.86 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 0.97 out of limit range [0.01, 0.01] for firm 33
+WARNING:utils.simulation_builder:Stock order price 1.42 out of limit range [0.01, 0.01] for firm 35
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 5.04 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1427343.94, Expected: 1497800.02, Delta: -70456.0840
+WARNING:utils.simulation_builder:Stock order price 0.86 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 0.97 out of limit range [0.01, 0.01] for firm 33
+WARNING:utils.simulation_builder:Stock order price 1.42 out of limit range [0.01, 0.01] for firm 35
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.94 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1427736.98, Expected: 1497800.02, Delta: -70063.0435
+WARNING:simulation.agents.government:ELECTION_RESULTS | REGIME CHANGE! BLUE -> RED. Approval: 0.00
+WARNING:utils.simulation_builder:Stock order price 0.86 out of limit range [0.01, 0.01] for firm 32
+WARNING:utils.simulation_builder:Stock order price 0.93 out of limit range [0.01, 0.01] for firm 33
+WARNING:utils.simulation_builder:Stock order price 1.35 out of limit range [0.01, 0.01] for firm 35
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 4.84 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:Market_labor:CIRCUIT_BREAKER | Order rejected. Price 2.40 out of bounds [7.63, 10.73]
+WARNING:utils.simulation_builder:MONEY_SUPPLY_CHECK | Current: 1428189.73, Expected: 1497800.02, Delta: -69610.2984
+Tick 100: M2=1428189.73, Gov Issued=0.00, Gov Destroyed=0.00
+Verification run completed.

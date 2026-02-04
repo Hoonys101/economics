@@ -17,10 +17,15 @@ class MinistryOfEducation:
         WO-054: Public Education System Implementation.
         Returns a list of Transactions.
         """
+        from modules.system.api import DEFAULT_CURRENCY
+
         transactions = []
         budget_ratio = getattr(self.config_module, "PUBLIC_EDU_BUDGET_RATIO", 0.20)
         # WO-057 Deficit Spending: Budget is based on REVENUE, not ASSETS
-        edu_budget = government.revenue_this_tick * budget_ratio
+        rev = government.revenue_this_tick
+        if isinstance(rev, dict):
+             rev = rev.get(DEFAULT_CURRENCY, 0.0)
+        edu_budget = rev * budget_ratio
         
         active_households = [h for h in households if h._bio_state.is_active]
         if not active_households:
@@ -32,7 +37,13 @@ class MinistryOfEducation:
         if not teachers:
             teachers = active_households
 
-        active_households.sort(key=lambda x: x._econ_state.assets)
+        def get_assets(h):
+            val = h._econ_state.assets
+            if isinstance(val, dict):
+                return val.get(DEFAULT_CURRENCY, 0.0)
+            return val
+
+        active_households.sort(key=get_assets)
         cutoff_idx = int(len(active_households) * getattr(self.config_module, "SCHOLARSHIP_WEALTH_PERCENTILE", 0.20))
         poor_households = set(h.id for h in active_households[:cutoff_idx])
 
@@ -77,7 +88,7 @@ class MinistryOfEducation:
                     subsidy = cost * 0.8
                     student_share = cost * 0.2
 
-                    if edu_budget >= subsidy and agent._econ_state.assets >= student_share:
+                    if edu_budget >= subsidy and get_assets(agent) >= student_share:
                         # 1. Government Subsidy Tx (Gov -> Teacher)
                         tx_subsidy = Transaction(
                             buyer_id=government.id,

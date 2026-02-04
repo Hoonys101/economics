@@ -43,6 +43,10 @@ class Phase0_PreSequence(IPhaseStrategy):
         self.mp_manager = MonetaryPolicyManager(world_state.config_module)
 
     def execute(self, state: SimulationState) -> SimulationState:
+        # TD-177: Reset tick flow counters at the start of the sequence
+        if state.government and hasattr(state.government, "reset_tick_flow"):
+            state.government.reset_tick_flow()
+
         # WO-109: Pre-Sequence Stabilization
         if state.bank and hasattr(state.bank, "generate_solvency_transactions"):
             stabilization_txs = state.bank.generate_solvency_transactions(state.government)
@@ -567,7 +571,14 @@ class Phase3_Transaction(IPhaseStrategy):
         if self.world_state.transaction_processor:
             # TD-192: Pass combined transactions to ensure execution of drained (historic) and current items
             combined_txs = list(self.world_state.transactions) + list(state.transactions)
+
             results = self.world_state.transaction_processor.execute(state, transactions=combined_txs)
+
+            # WO-024: Process monetary transactions (Credit Creation/Destruction)
+            # Moved from TickOrchestrator._drain_and_sync_state
+            # Placed AFTER execution to align with strict phase sequencing (Phase 3 End).
+            if state.government and hasattr(state.government, "process_monetary_transactions"):
+                state.government.process_monetary_transactions(combined_txs)
 
             # WO-116: Record Revenue (Saga Pattern)
             if state.taxation_system:
@@ -722,11 +733,22 @@ class Phase5_PostSequence(IPhaseStrategy):
 
         for f in state.firms:
             if hasattr(f, 'finance'):
-                f.finance.last_daily_expenses = f.finance.expenses_this_tick
+                from modules.system.api import DEFAULT_CURRENCY
+
+                # Handle expenses safely (dict vs float)
+                expenses = 0.0
+                if isinstance(f.finance.expenses_this_tick, dict):
+                    expenses = sum(f.finance.expenses_this_tick.values())
+                else:
+                    expenses = float(f.finance.expenses_this_tick)
+
+                f.finance.last_daily_expenses = expenses
                 f.finance.last_sales_volume = f.finance.sales_volume_this_tick
                 f.finance.sales_volume_this_tick = 0.0
-                f.finance.expenses_this_tick = 0.0
-                f.finance.revenue_this_tick = 0.0
+
+                # Reset counters to dicts
+                f.finance.expenses_this_tick = {DEFAULT_CURRENCY: 0.0}
+                f.finance.revenue_this_tick = {DEFAULT_CURRENCY: 0.0}
 
         if self.world_state.generational_wealth_audit and state.time % 100 == 0:
              self.world_state.generational_wealth_audit.run_audit(state.households, state.time)

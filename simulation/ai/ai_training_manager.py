@@ -113,7 +113,14 @@ class AITrainingManager:
         if not self.agents:
             return []
 
-        sorted_agents = sorted(self.agents, key=lambda x: x.assets, reverse=True)
+        # Fix for Phase 33 Multi-Currency
+        def get_assets(a):
+            if isinstance(a.assets, dict):
+                 from modules.system.api import DEFAULT_CURRENCY
+                 return a.assets.get(DEFAULT_CURRENCY, 0.0)
+            return a.assets
+
+        sorted_agents = sorted(self.agents, key=get_assets, reverse=True)
         top_n = max(1, int(len(self.agents) * percentile))
         return sorted_agents[:top_n]
 
@@ -124,7 +131,14 @@ class AITrainingManager:
         if not self.agents:
             return []
 
-        sorted_agents = sorted(self.agents, key=lambda x: x.assets) # Ascending
+        # Fix for Phase 33 Multi-Currency
+        def get_assets(a):
+            if isinstance(a.assets, dict):
+                 from modules.system.api import DEFAULT_CURRENCY
+                 return a.assets.get(DEFAULT_CURRENCY, 0.0)
+            return a.assets
+
+        sorted_agents = sorted(self.agents, key=get_assets) # Ascending
         bottom_n = max(1, int(len(self.agents) * percentile))
         return sorted_agents[:bottom_n]
 

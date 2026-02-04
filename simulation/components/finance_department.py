@@ -80,6 +80,10 @@ class FinanceDepartment:
         self.current_profit[currency] += amount
 
     def record_expense(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY):
+        if not isinstance(self.cost_this_turn, dict): self.cost_this_turn = {currency: 0.0}
+        if not isinstance(self.expenses_this_tick, dict): self.expenses_this_tick = {currency: 0.0}
+        if not isinstance(self.current_profit, dict): self.current_profit = {currency: 0.0}
+
         if currency not in self.cost_this_turn:
             self.cost_this_turn[currency] = 0.0
             self.expenses_this_tick[currency] = 0.0
@@ -104,8 +108,7 @@ class FinanceDepartment:
                 price=holding_cost,
                 market_id="system",
                 transaction_type="holding_cost",
-                time=current_time,
-                currency=DEFAULT_CURRENCY
+                time=current_time
             )
         return None
 
@@ -124,8 +127,7 @@ class FinanceDepartment:
                 price=payment,
                 market_id="system",
                 transaction_type="tax",
-                time=current_time,
-                currency=DEFAULT_CURRENCY
+                time=current_time
             )
         return None
 
@@ -141,8 +143,7 @@ class FinanceDepartment:
                 price=amount,
                 market_id="system",
                 transaction_type="marketing",
-                time=current_time,
-                currency=DEFAULT_CURRENCY
+                time=current_time
             )
         return None
 
@@ -165,8 +166,7 @@ class FinanceDepartment:
                     price=repayment,
                     market_id="system",
                     transaction_type="repayment",
-                    time=current_time,
-                    currency=DEFAULT_CURRENCY
+                    time=current_time
                 )
             )
 
@@ -198,8 +198,7 @@ class FinanceDepartment:
                                 price=dividend_amount,
                                 market_id="financial",
                                 transaction_type="dividend",
-                                time=current_time,
-                                currency=DEFAULT_CURRENCY
+                                time=current_time
                             )
                         )
                         self.dividends_paid_last_tick += dividend_amount
@@ -247,8 +246,7 @@ class FinanceDepartment:
                     price=distributable_cash,
                     market_id="financial",
                     transaction_type="dividend",
-                    time=current_time,
-                    currency=DEFAULT_CURRENCY
+                    time=current_time
                 )
             )
             self.dividends_paid_last_tick += distributable_cash
@@ -284,7 +282,10 @@ class FinanceDepartment:
 
     def get_estimated_unit_cost(self, item_id: str) -> float:
         target = getattr(self.firm, 'production_target', 10.0)
-        return self.last_daily_expenses / max(1.0, target)
+        expenses = self.last_daily_expenses
+        if isinstance(expenses, dict):
+             expenses = expenses.get(DEFAULT_CURRENCY, 0.0)
+        return expenses / max(1.0, target)
 
     def check_bankruptcy(self):
         if self.current_profit.get(DEFAULT_CURRENCY, 0.0) < 0:
@@ -296,7 +297,11 @@ class FinanceDepartment:
             self.firm.is_bankrupt = True
 
     def check_cash_crunch(self) -> bool:
-        threshold = 0.1 * self.last_daily_expenses
+        expenses = self.last_daily_expenses
+        if isinstance(expenses, dict):
+             expenses = expenses.get(DEFAULT_CURRENCY, 0.0)
+
+        threshold = 0.1 * expenses
         return self._balance.get(DEFAULT_CURRENCY, 0.0) < threshold
 
     def trigger_emergency_liquidation(self) -> List[Order]:

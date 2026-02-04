@@ -483,7 +483,10 @@ class Bank(IBankService, ICurrencyHolder):
             if not agent:
                 continue
             interest_payout = (deposit.amount * deposit.annual_interest_rate) / ticks_per_year
-            if self.assets >= interest_payout:
+
+            # Check assets (dict vs float)
+            current_assets = self._assets.get(DEFAULT_CURRENCY, 0.0)
+            if current_assets >= interest_payout:
                  tx = Transaction(
                     buyer_id=self.id,
                     seller_id=agent.id,

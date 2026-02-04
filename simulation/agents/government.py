@@ -231,9 +231,9 @@ class Government(ICurrencyHolder):
         if getattr(self, "revenue_breakdown_this_tick", None) is None:
              self.revenue_breakdown_this_tick = {}
 
-        self.revenue_this_tick = 0.0
-        self.expenditure_this_tick = 0.0
-        self.credit_delta_this_tick = 0.0
+        self.revenue_this_tick = {DEFAULT_CURRENCY: 0.0}
+        self.expenditure_this_tick = {DEFAULT_CURRENCY: 0.0}
+        self.credit_delta_this_tick = {DEFAULT_CURRENCY: 0.0}
         self.revenue_breakdown_this_tick = {}
 
         # Snapshot for delta calculation
@@ -546,17 +546,19 @@ class Government(ICurrencyHolder):
         debt = max(0.0, -self.assets)
         return debt / self.sensory_data.current_gdp
 
-    def deposit(self, amount: float) -> None:
+    def deposit(self, amount: float, currency: str = None) -> None:
         """Deposits a given amount into the government's assets."""
         if amount > 0:
-            self._internal_add_assets(amount)
+            self._internal_add_assets(amount, currency=currency or DEFAULT_CURRENCY)
 
-    def withdraw(self, amount: float) -> None:
+    def withdraw(self, amount: float, currency: str = None) -> None:
         """Withdraws a given amount from the government's assets."""
+        currency = currency or DEFAULT_CURRENCY
         if amount > 0:
-            if self.assets < amount:
-                raise InsufficientFundsError(f"Government {self.id} has insufficient funds for withdrawal of {amount:.2f}. Available: {self.assets:.2f}")
-            self._internal_sub_assets(amount)
+            current_assets = self._assets.get(currency, 0.0)
+            if current_assets < amount:
+                raise InsufficientFundsError(f"Government {self.id} has insufficient funds for withdrawal of {amount:.2f} {currency}. Available: {current_assets:.2f}")
+            self._internal_sub_assets(amount, currency=currency)
 
     # WO-054: Public Education System
     def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int) -> List[Transaction]:

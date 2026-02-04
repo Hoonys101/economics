@@ -261,6 +261,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         )
         sim.government.settlement_system = sim.settlement_system
         sim.agents[sim.government.id] = sim.government
+        sim.governments = [sim.government] # Populate list for legacy access
         sim.next_agent_id += 1
 
         # Inject government into bank for monetary tracking
@@ -393,6 +394,10 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.housing_service = HousingService(logger=self.logger)
         sim.housing_service.set_real_estate_units(sim.real_estate_units)
 
+        # Inject HousingService into SettlementSystem
+        if hasattr(sim.settlement_system, 'set_housing_service'):
+            sim.settlement_system.set_housing_service(sim.housing_service)
+
         # WO-124: Initialize Legacy Components (kept for compatibility)
         sim.registry = Registry(housing_service=sim.housing_service, logger=self.logger)
         sim.accounting_system = AccountingSystem(logger=self.logger)
@@ -419,6 +424,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.transaction_processor.register_handler("goods", GoodsTransactionHandler())
         sim.transaction_processor.register_handler("labor", LaborTransactionHandler())
         sim.transaction_processor.register_handler("research_labor", LaborTransactionHandler())
+        sim.transaction_processor.register_handler("wage", LaborTransactionHandler())
         sim.transaction_processor.register_handler("stock", StockTransactionHandler())
 
         # 2. Asset & Housing
@@ -433,11 +439,16 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.transaction_processor.register_handler("bond_repayment", monetary_handler)
         sim.transaction_processor.register_handler("omo_purchase", monetary_handler)
         sim.transaction_processor.register_handler("omo_sale", monetary_handler)
+        sim.transaction_processor.register_handler("deposit", monetary_handler)
 
         financial_handler = FinancialTransactionHandler()
         sim.transaction_processor.register_handler("interest_payment", financial_handler)
+        sim.transaction_processor.register_handler("loan_interest", financial_handler)
+        sim.transaction_processor.register_handler("deposit_interest", financial_handler)
         sim.transaction_processor.register_handler("dividend", financial_handler)
         sim.transaction_processor.register_handler("tax", financial_handler)
+        sim.transaction_processor.register_handler("holding_cost", financial_handler)
+        sim.transaction_processor.register_handler("marketing", financial_handler)
 
         sim.transaction_processor.register_handler("escheatment", EscheatmentHandler())
 
@@ -446,6 +457,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.transaction_processor.register_handler("inheritance_distribution", InheritanceHandler())
 
         sim.transaction_processor.register_handler("infrastructure_spending", GovernmentSpendingHandler())
+        sim.transaction_processor.register_handler("welfare", GovernmentSpendingHandler())
         sim.transaction_processor.register_handler("emergency_buy", EmergencyTransactionHandler())
 
         # 5. Public Manager
@@ -499,6 +511,15 @@ class SimulationInitializer(SimulationInitializerInterface):
             f"Simulation run started with run_id: {sim.run_id}",
             extra={"run_id": sim.run_id},
         )
+
+        # WO-4.2: Populate WorldState.currency_holders for M0/M2 calculation
+        # We include all economic agents holding currency.
+        # CentralBank is excluded as it is the issuer (its 'cash' is out of circulation).
+        sim.world_state.currency_holders = []
+        sim.world_state.currency_holders.extend(sim.households)
+        sim.world_state.currency_holders.extend(sim.firms)
+        sim.world_state.currency_holders.append(sim.government)
+        sim.world_state.currency_holders.append(sim.bank)
 
         self.logger.info(f"Simulation fully initialized with run_id: {sim.run_id}")
 

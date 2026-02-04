@@ -80,9 +80,16 @@ class CommerceSystem(ICommerceSystem):
                     # Stock Out. Could we afford it?
                     default_price = getattr(self.config, 'DEFAULT_FALLBACK_PRICE', 5.0)
                     price = batch_decisions.get('price', default_price)
-                    if household._econ_state.assets < price:
+
+                    # Fix for Phase 33 Multi-Currency
+                    hh_assets_val = household._econ_state.assets
+                    if isinstance(hh_assets_val, dict):
+                        from modules.system.api import DEFAULT_CURRENCY
+                        hh_assets_val = hh_assets_val.get(DEFAULT_CURRENCY, 0.0)
+
+                    if hh_assets_val < price:
                         reason = "INSOLVENT"
-                        context_data = {"cash": household._econ_state.assets, "price": price, "need": survival_need}
+                        context_data = {"cash": hh_assets_val, "price": price, "need": survival_need}
                     else:
                         reason = "STOCK_OUT"
                         context_data = {"inventory": household._econ_state.inventory.copy(), "cash": household._econ_state.assets}
@@ -131,7 +138,14 @@ class CommerceSystem(ICommerceSystem):
                     else:
                         # Legacy Emergency Buy
                         cost = b_amt * food_price
-                        if household._econ_state.assets >= cost:
+
+                        # Fix for Phase 33 Multi-Currency
+                        hh_assets_val = household._econ_state.assets
+                        if isinstance(hh_assets_val, dict):
+                            from modules.system.api import DEFAULT_CURRENCY
+                            hh_assets_val = hh_assets_val.get(DEFAULT_CURRENCY, 0.0)
+
+                        if hh_assets_val >= cost:
                             planned_consumptions[household.id]["buy_amount"] = b_amt
                             government = context.get("government")
                             seller_id = government.id if government else 999999

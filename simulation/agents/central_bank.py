@@ -194,19 +194,19 @@ class CentralBank:
         # This represents expansion of the monetary base.
         self.assets['cash'] = current_cash - amount
 
-    def deposit(self, amount: float) -> None:
+    def deposit(self, amount: float, currency: str = None) -> None:
         """Deposits a given amount into the central bank's cash reserves."""
         if amount > 0:
             self._internal_add_assets(amount)
 
-    def mint(self, amount: float) -> None:
+    def mint(self, amount: float, currency: str = None) -> None:
         """
         Mints new currency (adds to cash reserves).
         Alias for deposit but semantically distinct for Genesis Protocol.
         """
-        self.deposit(amount)
+        self.deposit(amount, currency=currency)
 
-    def withdraw(self, amount: float) -> None:
+    def withdraw(self, amount: float, currency: str = None) -> None:
         """
         Withdraws a given amount from the central bank's cash reserves.
         As a Fiat Currency Issuer, the Central Bank can have a negative balance (creating money).

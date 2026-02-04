@@ -30,7 +30,12 @@ class GenerationalWealthAudit:
                 continue
 
             generation = getattr(agent, 'generation', 1)
-            wealth = agent.assets
+
+            wealth = 0.0
+            if isinstance(agent.assets, dict):
+                wealth = sum(agent.assets.values())
+            elif isinstance(agent.assets, (int, float)):
+                wealth = float(agent.assets)
 
             wealth_by_generation[generation] = wealth_by_generation.get(generation, 0.0) + wealth
             count_by_generation[generation] = count_by_generation.get(generation, 0) + 1

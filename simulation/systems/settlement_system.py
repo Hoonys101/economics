@@ -30,9 +30,13 @@ class SettlementSystem(ISettlementSystem):
     def __init__(self, logger: Optional[logging.Logger] = None, bank: Optional[Any] = None):
         self.logger = logger if logger else logging.getLogger(__name__)
         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
+        self.housing_service = None
         self.total_liquidation_losses: float = 0.0
         self.settlement_accounts: Dict[int, LegacySettlementAccount] = {} # TD-160
         self.active_sagas: Dict[UUID, HousingTransactionSagaStateDTO] = {}
+
+    def set_housing_service(self, service: Any) -> None:
+        self.housing_service = service
 
     def submit_saga(self, saga: Any) -> bool:
         """
@@ -56,7 +60,7 @@ class SettlementSystem(ISettlementSystem):
         if not self.active_sagas:
             return
 
-        handler = HousingTransactionSagaHandler(simulation_state)
+        handler = HousingTransactionSagaHandler(simulation_state, housing_service=self.housing_service)
 
         # Iterate over copy to allow modification/deletion
         for saga_id, saga in list(self.active_sagas.items()):
@@ -406,13 +410,21 @@ class SettlementSystem(ISettlementSystem):
              is_central_bank = True
         elif hasattr(agent, "__class__") and agent.__class__.__name__ == "CentralBank":
              is_central_bank = True
+        # WO-198: Allow PublicManager (System Treasury) to print money for liquidations
+        elif hasattr(agent, "id") and str(agent.id) == "999999":
+             is_central_bank = True
 
         if is_central_bank:
              try:
-                 agent.withdraw(amount, currency=currency)
+                 # Check if agent has withdraw method (PublicManager might not, if it's not IFinancialEntity)
+                 if hasattr(agent, "withdraw"):
+                     agent.withdraw(amount, currency=currency)
+                 else:
+                     # If PublicManager acts as a void, we just proceed (minting from thin air)
+                     pass
                  return True
              except Exception as e:
-                 self.logger.error(f"SETTLEMENT_FAIL | Central Bank withdrawal failed. {e}")
+                 self.logger.error(f"SETTLEMENT_FAIL | Authority withdrawal failed. {e}")
                  return False
 
         # 2. Standard Agent Checks (Compatible with TD-073 Firm Refactor)

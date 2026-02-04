@@ -101,7 +101,13 @@ class DemographicManager:
             # but usually children start with 0 or small amount.
             # Let's assume standard INITIAL_ASSETS or small portion from parent.
             # "Initial 자산은 부모 자산의 일부 이전"
-            initial_gift = max(0.0, min(parent.assets * 0.1, parent.assets))
+            # Fix for Phase 33 Multi-Currency
+            parent_assets_val = parent.assets
+            if isinstance(parent_assets_val, dict):
+                from modules.system.api import DEFAULT_CURRENCY
+                parent_assets_val = parent_assets_val.get(DEFAULT_CURRENCY, 0.0)
+
+            initial_gift = max(0.0, min(parent_assets_val * 0.1, parent_assets_val))
 
             # WO-124: Removed direct asset modification. Transfer happens via SettlementSystem after creation.
 

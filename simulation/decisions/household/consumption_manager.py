@@ -53,7 +53,12 @@ class ConsumptionManager:
             # If ask_price was found and is valid
             if ask_price is not None:
                 # Affordability Check
-                if household.assets >= ask_price:
+                assets_val = household.assets
+                if isinstance(assets_val, dict):
+                    from modules.system.api import DEFAULT_CURRENCY
+                    assets_val = assets_val.get(DEFAULT_CURRENCY, 0.0)
+
+                if assets_val >= ask_price:
                      premium = getattr(config, 'survival_bid_premium', 0.1)
                      if not isinstance(premium, (int, float)):
                          premium = 0.1
@@ -167,9 +172,15 @@ class ConsumptionManager:
                     quantity_to_buy *= (1.0 + 0.2 * conformity)
 
             # 5. Budget Constraint (Zero-Sum Integrity)
-            budget_limit = household.assets * config.budget_limit_normal_ratio
+            # Fix for Phase 33 Multi-Currency
+            household_assets_val = household.assets
+            if isinstance(household_assets_val, dict):
+                from modules.system.api import DEFAULT_CURRENCY
+                household_assets_val = household_assets_val.get(DEFAULT_CURRENCY, 0.0)
+
+            budget_limit = household_assets_val * config.budget_limit_normal_ratio
             if max_need_value > config.budget_limit_urgent_need:
-                budget_limit = household.assets * config.budget_limit_urgent_ratio
+                budget_limit = household_assets_val * config.budget_limit_urgent_ratio
 
             # Determine Bid Price First
             # WO-157: Bid slightly above avg_price to ensure execution if urgent, capped at max_affordable_price.

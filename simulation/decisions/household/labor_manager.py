@@ -67,7 +67,13 @@ class LaborManager:
             food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
             if food_price <= 0: food_price = 10.0
 
-            survival_days = food_inventory + (household.assets / food_price)
+            # Fix for Phase 33 Multi-Currency
+            household_assets_val = household.assets
+            if isinstance(household_assets_val, dict):
+                from modules.system.api import DEFAULT_CURRENCY
+                household_assets_val = household_assets_val.get(DEFAULT_CURRENCY, 0.0)
+
+            survival_days = food_inventory + (household_assets_val / food_price)
             critical_turns = getattr(config, "survival_critical_turns", 5)
 
             is_panic = False

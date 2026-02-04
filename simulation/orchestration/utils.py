@@ -93,8 +93,16 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
                 price = state.stock_market.get_best_ask(firm.id) or 0
             if price <= 0:
                 # Refactor: Use finance.balance
-                assets = firm.finance.balance if hasattr(firm, 'finance') else firm.assets
-                price = assets / firm.total_shares if firm.total_shares > 0 else 10.0
+                from modules.system.api import DEFAULT_CURRENCY
+
+                assets_raw = firm.finance.balance if hasattr(firm, 'finance') else firm.assets
+                assets_val = 0.0
+                if isinstance(assets_raw, dict):
+                    assets_val = assets_raw.get(DEFAULT_CURRENCY, 0.0)
+                else:
+                    assets_val = float(assets_raw)
+
+                price = assets_val / firm.total_shares if firm.total_shares > 0 else 10.0
             stock_market_data[firm_item_id] = {"avg_price": price}
 
     rent_prices = [u.rent_price for u in state.real_estate_units if u.owner_id is not None]

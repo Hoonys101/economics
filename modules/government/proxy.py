@@ -21,10 +21,10 @@ class GovernmentFiscalProxy(IFinancialEntity):
     def assets(self) -> float:
         return self._government.assets
 
-    def deposit(self, amount: float) -> None:
+    def deposit(self, amount: float, currency: str = None) -> None:
         self._government.deposit(amount)
 
-    def withdraw(self, amount: float) -> None:
+    def withdraw(self, amount: float, currency: str = None) -> None:
         self._government.withdraw(amount)
 
     def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> TaxCollectionResult:

@@ -43,7 +43,12 @@ class FirmSystem:
 
         # 2. Capital Deduction Check
         try:
-            current_assets = float(founder_household.assets)
+            current_assets = founder_household.assets
+            if isinstance(current_assets, dict):
+                 from modules.system.api import DEFAULT_CURRENCY
+                 current_assets = current_assets.get(DEFAULT_CURRENCY, 0.0)
+
+            current_assets = float(current_assets)
         except (TypeError, ValueError, AttributeError):
             current_assets = 0.0
 
@@ -172,10 +177,18 @@ class FirmSystem:
         else:
             trigger_probability = spirit
 
-        wealthy_households = [
-            h for h in simulation.households
-            if h.is_active and h.assets > startup_cost * capital_multiplier
-        ]
+        wealthy_households = []
+        for h in simulation.households:
+            if not h.is_active:
+                continue
+
+            assets_val = h.assets
+            if isinstance(assets_val, dict):
+                from modules.system.api import DEFAULT_CURRENCY
+                assets_val = assets_val.get(DEFAULT_CURRENCY, 0.0)
+
+            if assets_val > startup_cost * capital_multiplier:
+                wealthy_households.append(h)
 
         for household in wealthy_households:
             if random.random() < trigger_probability:

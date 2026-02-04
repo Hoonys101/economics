@@ -53,14 +53,14 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder):
         self.deposit_revenue(amount, currency=currency)
 
     def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        """Withdraws funds from treasury."""
+        """Withdraws funds from treasury. Allows overdraft (System Liquidity Provider)."""
         if amount < 0:
             raise ValueError("Cannot withdraw negative amount.")
         
-        current_bal = self.system_treasury.get(currency, 0.0)
-        if current_bal < amount:
-            raise InsufficientFundsError(f"PublicManager insufficient funds. Required: {amount} {currency}, Available: {current_bal}")
+        if currency not in self.system_treasury:
+            self.system_treasury[currency] = 0.0
 
+        # PublicManager acts as Buyer of Last Resort, so we allow negative balance (deficit).
         self.system_treasury[currency] -= amount
         # Note: withdrawals don't usually track 'revenue', so we don't update last_tick_revenue here.
 

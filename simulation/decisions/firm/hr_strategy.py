@@ -105,11 +105,21 @@ class HRStrategy:
         """
         WO-047-B: Competitive Bidding Logic (DTO version).
         """
+        from modules.system.api import DEFAULT_CURRENCY
+
         current_employees = len(firm.hr.employees)
         vacancies = max(0, needed_labor - current_employees)
 
         if vacancies <= 0:
             return base_offer_wage
+
+        # Helper to get balance
+        def get_balance(balance_data):
+            if isinstance(balance_data, dict):
+                return balance_data.get(DEFAULT_CURRENCY, 0.0)
+            return float(balance_data)
+
+        current_balance = get_balance(firm.finance.balance)
 
         # 1. Solvency Check
         # Need liabilities. DTO doesn't have it explicitly.
@@ -120,7 +130,7 @@ class HRStrategy:
             total_liabilities = debt_info.get("total_principal", 0.0)
 
         if total_liabilities > 0:
-            solvency_ratio = firm.finance.balance / total_liabilities
+            solvency_ratio = current_balance / total_liabilities
             if solvency_ratio < 1.5:
                 return base_offer_wage
 
@@ -129,7 +139,7 @@ class HRStrategy:
         if firm.hr.employees_data:
             wage_bill = sum(e['wage'] for e in firm.hr.employees_data.values())
 
-        if wage_bill > 0 and firm.finance.balance < wage_bill * 2:
+        if wage_bill > 0 and current_balance < wage_bill * 2:
              return base_offer_wage
 
         # 3. Calculate Increase
@@ -137,7 +147,7 @@ class HRStrategy:
         new_wage = base_offer_wage * (1.0 + increase_rate)
 
         # 4. Absolute Ceiling
-        max_affordable = firm.finance.balance / (current_employees + vacancies + 1)
+        max_affordable = current_balance / (current_employees + vacancies + 1)
         if new_wage > max_affordable:
             new_wage = max(base_offer_wage, max_affordable)
 

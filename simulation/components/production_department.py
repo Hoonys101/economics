@@ -213,10 +213,17 @@ class ProductionDepartment:
 
     def _execute_rd_outcome(self, budget: float, current_time: int) -> None:
         """Executes the probabilistic outcome of R&D investment."""
+        from modules.system.api import DEFAULT_CURRENCY
         self.firm.research_history["total_spent"] += budget
 
         # Revenue logic should be via finance
-        denominator = max(self.firm.finance.revenue_this_turn * 0.2, 100.0)
+        revenue = 0.0
+        if isinstance(self.firm.finance.revenue_this_turn, dict):
+             revenue = self.firm.finance.revenue_this_turn.get(DEFAULT_CURRENCY, 0.0)
+        else:
+             revenue = float(self.firm.finance.revenue_this_turn)
+
+        denominator = max(revenue * 0.2, 100.0)
         base_chance = min(1.0, budget / denominator)
 
         avg_skill = 1.0

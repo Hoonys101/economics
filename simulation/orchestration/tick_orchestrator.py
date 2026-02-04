@@ -64,10 +64,6 @@ class TickOrchestrator:
             extra={"tick": state.time, "tags": ["tick_start"]},
         )
 
-        # TD-177: Ensure flow counters are reset at the start of the tick
-        if state.government and hasattr(state.government, "reset_tick_flow"):
-            state.government.reset_tick_flow()
-
         # 1. Create the comprehensive state DTO for this tick
         sim_state = self._create_simulation_state_dto(injectable_sensory_dto)
 
@@ -149,12 +145,6 @@ class TickOrchestrator:
             sim_state.inter_tick_queue.clear() # Prevent double-processing
 
         if sim_state.transactions:
-            # TD-177: Structural Guarantee for M2 Integrity
-            # Process monetary transactions incrementally as they are drained.
-            # This ensures ALL transactions, including late-bound ones, are captured.
-            if sim_state.government and hasattr(sim_state.government, "process_monetary_transactions"):
-                sim_state.government.process_monetary_transactions(sim_state.transactions)
-
             ws.transactions.extend(sim_state.transactions)
             sim_state.transactions.clear() # Prevent double-processing
 

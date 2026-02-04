@@ -172,6 +172,7 @@ class TaxationSystem:
         """
         # Avoid circular import at runtime
         from simulation.models import Transaction
+        from modules.system.api import DEFAULT_CURRENCY
 
         intents = []
 
@@ -193,7 +194,13 @@ class TaxationSystem:
             # Determine Profit Base (Net Profit = Revenue - Costs)
             profit = 0.0
             if hasattr(firm, 'finance'):
-                profit = firm.finance.revenue_this_turn - firm.finance.cost_this_turn
+                rev = firm.finance.revenue_this_turn
+                cost = firm.finance.cost_this_turn
+
+                rev_val = rev.get(DEFAULT_CURRENCY, 0.0) if isinstance(rev, dict) else float(rev)
+                cost_val = cost.get(DEFAULT_CURRENCY, 0.0) if isinstance(cost, dict) else float(cost)
+
+                profit = rev_val - cost_val
 
             if profit <= 0:
                 continue
