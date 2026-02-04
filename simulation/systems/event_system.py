@@ -5,6 +5,7 @@ from typing import Dict, Any, List, Optional, TYPE_CHECKING
 import logging
 from simulation.systems.api import IEventSystem, EventContext
 from simulation.finance.api import ISettlementSystem
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.dtos.scenario import StressScenarioConfig
@@ -42,7 +43,16 @@ class EventSystem(IEventSystem):
         if config.scenario_name == 'hyperinflation' and config.demand_shock_cash_injection > 0:
             if central_bank and self.settlement_system:
                 for h in households:
-                    amount = h._econ_state.assets * config.demand_shock_cash_injection
+                    assets_val = 0.0
+                    if hasattr(h, 'wallet'):
+                        assets_val = h.wallet.get_balance(DEFAULT_CURRENCY)
+                    elif hasattr(h._econ_state, 'assets') and isinstance(h._econ_state.assets, dict):
+                         assets_val = h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0)
+                    else:
+                         # Fallback
+                         assets_val = float(h._econ_state.assets) if hasattr(h._econ_state, 'assets') else 0.0
+
+                    amount = assets_val * config.demand_shock_cash_injection
                     self.settlement_system.create_and_transfer(
                         source_authority=central_bank,
                         destination=h,
@@ -58,7 +68,15 @@ class EventSystem(IEventSystem):
         if config.scenario_name == 'deflation' and config.asset_shock_reduction > 0:
             if central_bank and self.settlement_system:
                 for agent in households + firms:
-                    amount_to_destroy = agent.assets * config.asset_shock_reduction
+                    assets_val = 0.0
+                    if hasattr(agent, 'wallet'):
+                        assets_val = agent.wallet.get_balance(DEFAULT_CURRENCY)
+                    elif hasattr(agent, 'assets') and isinstance(agent.assets, dict):
+                        assets_val = agent.assets.get(DEFAULT_CURRENCY, 0.0)
+                    elif hasattr(agent, 'assets'):
+                        assets_val = float(agent.assets)
+
+                    amount_to_destroy = assets_val * config.asset_shock_reduction
                     self.settlement_system.transfer_and_destroy(
                         source=agent,
                         sink_authority=central_bank,

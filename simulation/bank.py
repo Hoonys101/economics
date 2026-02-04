@@ -447,7 +447,16 @@ class Bank(IBankService, ICurrencyHolder):
             interest_payment = (loan.remaining_balance * loan.annual_interest_rate) / ticks_per_year
             payment = interest_payment
 
-            if agent.assets >= payment:
+            # Safe asset extraction
+            assets_val = 0.0
+            if hasattr(agent, 'wallet'):
+                assets_val = agent.wallet.get_balance(DEFAULT_CURRENCY)
+            elif hasattr(agent, 'assets') and isinstance(agent.assets, dict):
+                assets_val = agent.assets.get(DEFAULT_CURRENCY, 0.0)
+            elif hasattr(agent, 'assets'):
+                assets_val = float(agent.assets)
+
+            if assets_val >= payment:
                 tx = Transaction(
                     buyer_id=agent.id,
                     seller_id=self.id,
@@ -466,7 +475,7 @@ class Bank(IBankService, ICurrencyHolder):
                 if default_tx:
                     generated_transactions.append(default_tx)
 
-                partial = agent.assets
+                partial = assets_val
                 if partial > 0:
                     tx = Transaction(
                         buyer_id=agent.id,

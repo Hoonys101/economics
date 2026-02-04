@@ -106,7 +106,7 @@ class PersistenceManager:
         total_capital_income = sum(getattr(h, "capital_income_this_tick", 0.0) for h in simulation.households)
 
         # Calculate Wealth Distribution (Snapshot)
-        total_assets = sum(h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0) for h in simulation.households)
+        total_assets = sum(h.wallet.get_balance(DEFAULT_CURRENCY) for h in simulation.households)
         
         # Prepare asset dicts for DTO
         hh_assets = tracker_indicators.get("total_household_assets", 0.0)

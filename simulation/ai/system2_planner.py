@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Tuple, Optional
 import math
 import logging
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,14 @@ class System2Planner:
         self.last_calc_tick = current_tick
 
         # 1. Gather Inputs
-        current_wealth = self.agent.assets
+        current_wealth = 0.0
+        if hasattr(self.agent, 'wallet'):
+            current_wealth = self.agent.wallet.get_balance(DEFAULT_CURRENCY)
+        elif hasattr(self.agent, 'assets') and isinstance(self.agent.assets, dict):
+            current_wealth = self.agent.assets.get(DEFAULT_CURRENCY, 0.0)
+        elif hasattr(self.agent, 'assets'):
+            current_wealth = float(self.agent.assets)
+
         expected_wage = getattr(self.agent, "expected_wage", 10.0)
 
         # Survival Cost
