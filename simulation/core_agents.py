@@ -286,6 +286,11 @@ class Household(
         )
 
     @override
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
+        """Implementation of ICurrencyHolder."""
+        return self._econ_state.wallet.get_all_balances()
+
+    @override
     def make_decision(
         self,
         input_dto: DecisionInputDTO

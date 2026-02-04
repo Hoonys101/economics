@@ -72,7 +72,7 @@ class Bank(IBankService, ICurrencyHolder):
         else:
             initial_balance_dict[DEFAULT_CURRENCY] = float(initial_assets)
 
-        self.wallet = Wallet(self.id, initial_balance_dict)
+        self._wallet = Wallet(self.id, initial_balance_dict)
 
         self.config_manager = config_manager
         self.settlement_system = settlement_system
@@ -104,22 +104,26 @@ class Bank(IBankService, ICurrencyHolder):
         self._id = value
 
     @property
+    def wallet(self) -> IWallet:
+        return self._wallet
+
+    @property
     def assets(self) -> Dict[CurrencyCode, float]:
         """Returns the bank's liquid assets (reserves)."""
-        return self.wallet.get_all_balances()
+        return self._wallet.get_all_balances()
 
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
         """Implementation of ICurrencyHolder."""
-        return self.wallet.get_all_balances()
+        return self._wallet.get_all_balances()
 
     def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """[INTERNAL ONLY] Increase assets. Do not call directly."""
-        self.wallet.add(amount, currency, memo="Internal Add")
+        self._wallet.add(amount, currency, memo="Internal Add")
 
     def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """[INTERNAL ONLY] Decrease assets. Do not call directly."""
         # Wallet checks funds
-        self.wallet.subtract(amount, currency, memo="Internal Sub")
+        self._wallet.subtract(amount, currency, memo="Internal Sub")
 
     def get_interest_rate(self) -> float:
         return self.base_rate
@@ -159,7 +163,7 @@ class Bank(IBankService, ICurrencyHolder):
 
         # Step 2: Solvency Check (Reserve Requirement)
         gold_standard_mode = self._get_config("gold_standard_mode", False)
-        usd_assets = self.wallet.get_balance(DEFAULT_CURRENCY)
+        usd_assets = self._wallet.get_balance(DEFAULT_CURRENCY)
         if gold_standard_mode:
             if usd_assets < amount:
                 return None
@@ -247,7 +251,7 @@ class Bank(IBankService, ICurrencyHolder):
 
         # Step 2: Liquidity Check (Direct Funding from Reserves)
         # Since this is a direct transfer of reserves, we must have the cash.
-        usd_assets = self.wallet.get_balance(DEFAULT_CURRENCY)
+        usd_assets = self._wallet.get_balance(DEFAULT_CURRENCY)
         if usd_assets < amount:
             logger.warning(f"LOAN_DENIED | Bank {self.id} insufficient liquidity for direct funding. Assets: {usd_assets:.2f} < Req: {amount:.2f}")
             return None
@@ -397,11 +401,11 @@ class Bank(IBankService, ICurrencyHolder):
 
     def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         if amount > 0:
-            self.wallet.add(amount, currency, memo="Deposit")
+            self._wallet.add(amount, currency, memo="Deposit")
 
     def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         if amount > 0:
-            self.wallet.subtract(amount, currency, memo="Withdraw")
+            self._wallet.subtract(amount, currency, memo="Withdraw")
 
     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
         """Legacy method used by TickScheduler etc. until refactored."""
@@ -520,7 +524,7 @@ class Bank(IBankService, ICurrencyHolder):
         WO-109: Generate 'lender_of_last_resort' transactions if insolvent.
         This replaces the old direct-modification `check_solvency`.
         """
-        usd_assets = self.wallet.get_balance(DEFAULT_CURRENCY)
+        usd_assets = self._wallet.get_balance(DEFAULT_CURRENCY)
         if usd_assets < 0:
             solvency_buffer = self._get_config("bank.solvency_buffer", getattr(config, "BANK_SOLVENCY_BUFFER", 1000.0))
             borrow_amount = abs(usd_assets) + solvency_buffer

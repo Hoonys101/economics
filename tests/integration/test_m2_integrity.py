@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 from simulation.world_state import WorldState
 from simulation.bank import Bank, Deposit, Loan
 from simulation.agents.government import Government
@@ -70,16 +70,38 @@ class TestM2Integrity:
 
         # Household must support withdraw/deposit for SettlementSystem
         # And keep _econ_state.assets in sync for WorldState calculations
-        def withdraw(amount):
-            hh.assets -= amount
-            hh._econ_state.assets -= amount
+        def withdraw(amount, currency="USD"):
+            if currency == "USD":
+                hh.assets -= amount
+                hh._econ_state.assets -= amount
 
-        def deposit(amount):
-            hh.assets += amount
-            hh._econ_state.assets += amount
+        def deposit(amount, currency="USD"):
+            if currency == "USD":
+                hh.assets += amount
+                hh._econ_state.assets += amount
 
         hh.withdraw = withdraw
         hh.deposit = deposit
+
+        # Mock Wallet for HH to support SettlementSystem and ICurrencyHolder
+        wallet_mock = MagicMock()
+        wallet_mock.get_all_balances.side_effect = lambda: {"USD": hh.assets}
+        wallet_mock.get_balance.side_effect = lambda c: hh.assets if c == "USD" else 0.0
+
+        def wallet_add(amount, currency="USD", memo=""):
+            if currency == "USD":
+                hh.assets += amount
+                hh._econ_state.assets += amount
+
+        def wallet_sub(amount, currency="USD", memo=""):
+            if currency == "USD":
+                hh.assets -= amount
+                hh._econ_state.assets -= amount
+
+        wallet_mock.add.side_effect = wallet_add
+        wallet_mock.subtract.side_effect = wallet_sub
+        type(hh).wallet = PropertyMock(return_value=wallet_mock)
+        hh.get_assets_by_currency.side_effect = wallet_mock.get_all_balances
 
         state.households.append(hh)
         state.agents[hh.id] = hh
@@ -87,12 +109,15 @@ class TestM2Integrity:
         state.agents[bank.id] = bank
         state.agents[cb.id] = cb # CB ID is string usually
 
+        # Populate currency_holders for WorldState calculations
+        state.currency_holders = [gov, bank, cb, hh]
+
         return state, cb, gov, bank, hh
 
     def test_credit_expansion(self, setup_world):
         state, cb, gov, bank, hh = setup_world
 
-        initial_m2 = state.calculate_total_money()
+        initial_m2 = state.calculate_total_money().get("USD", 0.0)
 
         # Grant Loan
         loan_amount = 500.0
@@ -102,12 +127,12 @@ class TestM2Integrity:
         assert tx.transaction_type == "credit_creation"
 
         # Verify M2 Increase
-        final_m2 = state.calculate_total_money()
+        final_m2 = state.calculate_total_money().get("USD", 0.0)
         assert final_m2 == initial_m2 + loan_amount
 
         # Verify M0 Integrity (if implemented)
         if hasattr(state, "calculate_base_money"):
-            m0 = state.calculate_base_money()
+            m0 = state.calculate_base_money().get("USD", 0.0)
             # M0 = Currency (Gov 1000 + HH 1000) + Reserves (Bank 5000) = 7000
             assert m0 == 7000.0
 
@@ -123,19 +148,19 @@ class TestM2Integrity:
         # Setup: Grant Loan
         loan_amount = 500.0
         bank.grant_loan(str(hh.id), loan_amount, 0.05)
-        m2_after_loan = state.calculate_total_money()
+        m2_after_loan = state.calculate_total_money().get("USD", 0.0)
 
         # Repay/Void Loan
         loan_id = list(bank.loans.keys())[0]
         bank.void_loan(loan_id)
 
-        m2_after_void = state.calculate_total_money()
+        m2_after_void = state.calculate_total_money().get("USD", 0.0)
         assert m2_after_void == m2_after_loan - loan_amount
 
     def test_settlement_purity(self, setup_world):
         state, cb, gov, bank, hh = setup_world
 
-        initial_m2 = state.calculate_total_money()
+        initial_m2 = state.calculate_total_money().get("USD", 0.0)
         amount = 100.0
 
         # Use SettlementSystem
@@ -143,13 +168,16 @@ class TestM2Integrity:
         # gov and bank are real objects (or close), hh is MagicMock but patched with withdraw/deposit.
 
         res = state.settlement_system.transfer(gov, hh, amount, "Test Transfer")
-        assert res is not None
+        # transfer returns Transaction dict (truthy)
+        assert res
 
         # Check balances
-        assert gov.assets == 900.0
+        # gov.assets now returns dict, so we need to check balance or access dict
+        gov_balance = gov.wallet.get_balance("USD")
+        assert gov_balance == 900.0
         assert hh.assets == 1100.0
 
-        final_m2 = state.calculate_total_money()
+        final_m2 = state.calculate_total_money().get("USD", 0.0)
         assert final_m2 == initial_m2
 
     def test_m0_integrity(self, setup_world):
@@ -158,18 +186,18 @@ class TestM2Integrity:
         if not hasattr(state, "calculate_base_money"):
             pytest.skip("calculate_base_money not implemented yet")
 
-        initial_m0 = state.calculate_base_money()
+        initial_m0 = state.calculate_base_money().get("USD", 0.0)
         # Expect M0 = 1000(Gov) + 1000(HH) + 5000(Bank) = 7000
         assert initial_m0 == 7000.0
 
         # 1. Credit Expansion should NOT change M0
         bank.grant_loan(str(hh.id), 500.0, 0.05)
-        m0_after_loan = state.calculate_base_money()
+        m0_after_loan = state.calculate_base_money().get("USD", 0.0)
         assert m0_after_loan == initial_m0
 
         # 2. Settlement Transfer should NOT change M0
         state.settlement_system.transfer(gov, hh, 100.0, "Tx")
-        m0_after_tx = state.calculate_base_money()
+        m0_after_tx = state.calculate_base_money().get("USD", 0.0)
         assert m0_after_tx == initial_m0
 
         # 3. Central Bank OMO (Purchase Bond) -> Increases M0
@@ -183,7 +211,7 @@ class TestM2Integrity:
 
         state.settlement_system.create_and_transfer(cb, gov, 200.0, "OMO Purchase", 0)
 
-        m0_after_omo = state.calculate_base_money()
+        m0_after_omo = state.calculate_base_money().get("USD", 0.0)
         # Gov assets increased by 200.
         # M0 should increase by 200.
         assert m0_after_omo == initial_m0 + 200.0

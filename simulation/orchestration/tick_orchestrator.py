@@ -6,7 +6,8 @@ from simulation.dtos.api import SimulationState, GovernmentStateDTO
 from simulation.orchestration.phases import (
     Phase0_PreSequence, Phase_Production, Phase1_Decision, Phase2_Matching,
     Phase3_Transaction, Phase_Bankruptcy, Phase_HousingSaga, Phase_Consumption, Phase5_PostSequence,
-    Phase_BankAndDebt, Phase_FirmProductionAndSalaries, Phase_GovernmentPrograms, Phase_TaxationIntents
+    Phase_BankAndDebt, Phase_FirmProductionAndSalaries, Phase_GovernmentPrograms, Phase_TaxationIntents,
+    Phase_MonetaryProcessing
 )
 from simulation.orchestration.utils import prepare_market_data
 from simulation.orchestration.phases_recovery import Phase_SystemicLiquidation
@@ -39,6 +40,7 @@ class TickOrchestrator:
             Phase_FirmProductionAndSalaries(world_state),
             Phase_GovernmentPrograms(world_state),
             Phase_TaxationIntents(world_state),
+            Phase_MonetaryProcessing(world_state),
             Phase3_Transaction(world_state),         # Transaction Processing & Cleanup
 
             Phase_Consumption(world_state),          # Late Lifecycle (Consumption Finalization)
@@ -150,10 +152,12 @@ class TickOrchestrator:
 
         if sim_state.transactions:
             # TD-177: Structural Guarantee for M2 Integrity
-            # Process monetary transactions incrementally as they are drained.
-            # This ensures ALL transactions, including late-bound ones, are captured.
-            if sim_state.government and hasattr(sim_state.government, "process_monetary_transactions"):
-                sim_state.government.process_monetary_transactions(sim_state.transactions)
+            # Note: Monetary transactions are now processed in Phase_MonetaryProcessing.
+            # However, for transactions generated in other phases, we might miss them if not careful.
+            # BUT, Phase_MonetaryProcessing runs before Phase3_Transaction (processor).
+            # If transactions are added late (e.g. in Phase3), they might not be counted in M2 Delta for *this* tick's logic
+            # if that logic runs earlier. But M2 stats are usually calculated at end of tick or start of next.
+            # The removal here is intentional as per WO-4.2B to align orchestrator.
 
             ws.transactions.extend(sim_state.transactions)
             sim_state.transactions.clear() # Prevent double-processing

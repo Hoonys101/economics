@@ -49,6 +49,10 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
     finance_system = FinanceSystem(gov, central_bank, bank, config, settlement_system)
     gov.finance_system = finance_system
 
+    # Mock Sensory Data for FinanceSystem (GDP needed for bond issuance check)
+    gov.sensory_data = MagicMock()
+    gov.sensory_data.current_gdp = 10000.0
+
     # Setup Households for Public Works
     h1 = MagicMock(spec=Household)
     h1.id = 101
@@ -76,8 +80,8 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
     # The SPENDING (5000) is returned as transactions, NOT executed immediately.
     # So Gov assets should be 1000 + 4000 = 5000.
 
-    assert gov.assets == 5000.0
-    assert bank.assets == 6000.0 # 10000 - 4000
+    assert gov.assets['USD'] == 5000.0
+    assert bank.assets['USD'] == 6000.0 # 10000 - 4000
 
     # 2. Transactions
     # TD-177: Transactions now include bond purchase (4000) and infrastructure spending (5000)
@@ -148,8 +152,8 @@ def test_education_spending_generates_transactions_only():
     # Verification
 
     # 1. No Bond Issuance (Assets unchanged)
-    assert gov.assets == 100.0
-    assert bank.assets == 10000.0
+    assert gov.assets['USD'] == 100.0
+    assert bank.assets['USD'] == 10000.0
 
     # 2. Transactions
     # Should be 1 transaction of 500 (Grant)

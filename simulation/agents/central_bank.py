@@ -4,6 +4,7 @@ import numpy as np
 from modules.finance.api import InsufficientFundsError
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
+from modules.system.api import ICurrencyHolder, CurrencyCode, DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
@@ -11,7 +12,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class CentralBank:
+class CentralBank(ICurrencyHolder):
     """
     Phase 10: Central Bank Agent.
     Implements Taylor Rule to dynamically adjust interest rates.
@@ -51,6 +52,10 @@ class CentralBank:
             f"CENTRAL_BANK_INIT | Rate: {self.base_rate:.2%}, Target Infl: {self.inflation_target:.2%}",
             extra={"tick": 0, "tags": ["central_bank", "init"]}
         )
+
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
+        """Implementation of ICurrencyHolder."""
+        return self.wallet.get_all_balances()
 
     def purchase_bonds(self, bond: Any) -> None:
         """
@@ -199,22 +204,22 @@ class CentralBank:
         # This represents expansion of the monetary base.
         self.wallet.subtract(amount, memo="Internal Sub")
 
-    def deposit(self, amount: float) -> None:
+    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Deposits a given amount into the central bank's cash reserves."""
         if amount > 0:
-            self.wallet.add(amount, memo="Deposit")
+            self.wallet.add(amount, currency, memo="Deposit")
 
-    def mint(self, amount: float) -> None:
+    def mint(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         Mints new currency (adds to cash reserves).
         Alias for deposit but semantically distinct for Genesis Protocol.
         """
-        self.deposit(amount)
+        self.deposit(amount, currency)
 
-    def withdraw(self, amount: float) -> None:
+    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         Withdraws a given amount from the central bank's cash reserves.
         As a Fiat Currency Issuer, the Central Bank can have a negative balance (creating money).
         """
         if amount > 0:
-            self.wallet.subtract(amount, memo="Withdraw")
+            self.wallet.subtract(amount, currency, memo="Withdraw")

@@ -19,6 +19,7 @@ from modules.government.dtos import FiscalPolicyDTO
 from modules.government.components.welfare_manager import WelfareManager
 from modules.government.components.infrastructure_manager import InfrastructureManager
 from modules.government.constants import *
+from modules.government.components.monetary_ledger import MonetaryLedger
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
@@ -58,6 +59,7 @@ class Government(ICurrencyHolder):
         # New Managers
         self.welfare_manager = WelfareManager(self)
         self.infrastructure_manager = InfrastructureManager(self)
+        self.monetary_ledger = MonetaryLedger()
 
         # Initialize default fiscal policy
         # NOTE: Initialized with empty snapshot. Will be updated with real market data in the first tick
@@ -70,14 +72,6 @@ class Government(ICurrencyHolder):
         self.total_spent_subsidies: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
         self.infrastructure_level: int = 0
 
-        # Money Tracking (Gold Standard & Fractional Reserve)
-        self.total_money_issued: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
-        self.total_money_destroyed: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
-        self.start_tick_money_issued: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
-        self.start_tick_money_destroyed: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
-        # WO-024: Fractional Reserve Credit Tracking
-        self.credit_delta_this_tick: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
-        
         # 세수 유형별 집계
         self.tax_revenue: Dict[str, float] = {}
 
@@ -235,32 +229,17 @@ class Government(ICurrencyHolder):
 
         self.revenue_this_tick = 0.0
         self.expenditure_this_tick = 0.0
-        self.credit_delta_this_tick = 0.0
         self.revenue_breakdown_this_tick = {}
 
-        # Snapshot for delta calculation
-        self.start_tick_money_issued = self.total_money_issued.copy()
-        self.start_tick_money_destroyed = self.total_money_destroyed.copy()
+        self.monetary_ledger.reset_tick_flow()
 
     def process_monetary_transactions(self, transactions: List[Transaction]):
         """
-        Processes transactions related to monetary policy (Credit Creation/Destruction).
-        Called by the orchestrator or systems generating these transactions.
+        Delegates monetary transaction processing to the MonetaryLedger.
+        DEPRECATED: Should be called via Phase_MonetaryProcessing -> MonetaryLedger directly.
+        Kept for backward compatibility if any direct calls remain.
         """
-        for tx in transactions:
-            cur = getattr(tx, 'currency', DEFAULT_CURRENCY)
-            if tx.transaction_type == "credit_creation":
-                if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0.0
-                if cur not in self.total_money_issued: self.total_money_issued[cur] = 0.0
-                self.credit_delta_this_tick[cur] += tx.price
-                self.total_money_issued[cur] += tx.price
-                logger.debug(f"MONETARY_EXPANSION | Credit created: {tx.price:.2f} {cur}")
-            elif tx.transaction_type == "credit_destruction":
-                if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0.0
-                if cur not in self.total_money_destroyed: self.total_money_destroyed[cur] = 0.0
-                self.credit_delta_this_tick[cur] -= tx.price
-                self.total_money_destroyed[cur] += tx.price
-                logger.debug(f"MONETARY_CONTRACTION | Credit destroyed: {tx.price:.2f} {cur}")
+        self.monetary_ledger.process_transactions(transactions)
 
     def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> "TaxCollectionResult":
         """
@@ -527,10 +506,9 @@ class Government(ICurrencyHolder):
     def get_monetary_delta(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
         """
         Returns the net change in the money supply authorized this tick for a specific currency.
+        Delegates to MonetaryLedger.
         """
-        issued_delta = self.total_money_issued.get(currency, 0.0) - self.start_tick_money_issued.get(currency, 0.0)
-        destroyed_delta = self.total_money_destroyed.get(currency, 0.0) - self.start_tick_money_destroyed.get(currency, 0.0)
-        return issued_delta - destroyed_delta
+        return self.monetary_ledger.get_monetary_delta(currency)
 
     def get_agent_data(self) -> Dict[str, Any]:
         return {
@@ -552,16 +530,16 @@ class Government(ICurrencyHolder):
         debt = max(0.0, -self.assets)
         return debt / self.sensory_data.current_gdp
 
-    def deposit(self, amount: float) -> None:
+    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Deposits a given amount into the government's assets."""
         if amount > 0:
-            self.wallet.add(amount)
+            self.wallet.add(amount, currency)
 
-    def withdraw(self, amount: float) -> None:
+    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Withdraws a given amount from the government's assets."""
         if amount > 0:
             # Wallet checks sufficiency
-            self.wallet.subtract(amount)
+            self.wallet.subtract(amount, currency)
 
     # WO-054: Public Education System
     def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int) -> List[Transaction]:

@@ -132,10 +132,17 @@ class WorldState:
     def calculate_base_money(self) -> Dict[CurrencyCode, float]:
         """
         Calculates M0 (Base Money) for each currency.
-        M0 = Sum of all assets held by ICurrencyHolder implementations.
+        M0 = Sum of assets held by all agents EXCEPT Central Bank.
+        (Central Bank assets represented as negative would cancel out creation).
         """
         totals: Dict[CurrencyCode, float] = {}
         for holder in self.currency_holders:
+            # Exclude CentralBank from M0 summation (Source of Money)
+            if hasattr(holder, 'id') and str(holder.id) == "CENTRAL_BANK":
+                continue
+            if hasattr(holder, '__class__') and holder.__class__.__name__ == "CentralBank":
+                continue
+
             assets_dict = holder.get_assets_by_currency()
             for cur, amount in assets_dict.items():
                 totals[cur] = totals.get(cur, 0.0) + amount
@@ -144,11 +151,43 @@ class WorldState:
     def calculate_total_money(self) -> Dict[CurrencyCode, float]:
         """
         Calculates M2 (Total Money Supply).
-        In this foundational phase, M2 calculation is refactored to use ICurrencyHolder.
-        Specific M2 logic (deposits vs reserves) should be handled by the Bank's
-        ICurrencyHolder implementation.
+        M2 = M0 - Bank Reserves + Bank Deposits.
+        (Currency in Circulation + Deposits).
         """
-        return self.calculate_base_money() # Placeholder until Bank/Finance refactor
+        m2_totals = self.calculate_base_money()
+
+        # Adjust for Fractional Reserve Banking
+        # 1. Deduct Bank Reserves (Vault Cash) from M0 to get Currency in Circulation
+        # 2. Add Bank Deposits (Created Money)
+
+        # We need to identify Banks.
+        # Assuming currency_holders includes banks.
+        for holder in self.currency_holders:
+            is_bank = False
+            if hasattr(holder, '__class__') and holder.__class__.__name__ == "Bank":
+                is_bank = True
+            elif hasattr(holder, 'id') and str(holder.id).startswith("bank"): # Heuristic?
+                # Better to check class or interface if possible, or rely on explicit list
+                pass
+
+            # Explicit check for Bank class
+            if hasattr(holder, 'deposits') and hasattr(holder, 'wallet'):
+                 is_bank = True
+
+            if is_bank:
+                # 1. Deduct Reserves
+                reserves = holder.get_assets_by_currency()
+                for cur, amount in reserves.items():
+                    m2_totals[cur] = m2_totals.get(cur, 0.0) - amount
+
+                # 2. Add Deposits
+                # Bank.deposits is Dict[str, Deposit]. Deposit has amount and currency.
+                if hasattr(holder, 'deposits'):
+                    for deposit in holder.deposits.values():
+                        cur = getattr(deposit, 'currency', "USD") # Default to USD/DEFAULT
+                        m2_totals[cur] = m2_totals.get(cur, 0.0) + deposit.amount
+
+        return m2_totals
 
     def get_total_system_money_for_diagnostics(self, target_currency: CurrencyCode = "USD") -> float:
         """
