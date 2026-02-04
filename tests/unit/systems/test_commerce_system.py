@@ -8,20 +8,18 @@ def commerce_system():
     config = MagicMock()
     # Mock config values
     config.FOOD_CONSUMPTION_QUANTITY = 1.0
+    config.SALES_TAX_RATE = 0.05
     return CommerceSystem(config)
 
-def test_execute_consumption_and_leisure(commerce_system):
+def test_plan_consumption_and_leisure_generates_transaction(commerce_system):
     # Setup Households
     h1 = MagicMock()
     h1.id = 1
     h1.is_active = True
-    h1._assets = 100.0
-    h1.inventory = {"basic_food": 0}
-    # Mock apply_leisure_effect return
-    effect_dto = MagicMock()
-    effect_dto.utility_gained = 5.0
-    effect_dto.leisure_type = "IDLE"
-    h1.apply_leisure_effect.return_value = effect_dto
+    h1._econ_state.assets = 100.0
+    h1._econ_state.inventory = {"basic_food": 0}
+    h1._bio_state.needs = {"survival": 80.0}
+    h1._bio_state.is_active = True
 
     households = [h1]
 
@@ -33,75 +31,71 @@ def test_execute_consumption_and_leisure(commerce_system):
         "buy": [2.0],
         "price": 10.0
     }
+    planner.survival_threshold = 50.0
 
     # Mock Context
-    mock_reflux = MagicMock()
     context: CommerceContext = {
         "households": households,
         "breeding_planner": planner,
         "household_time_allocation": {1: 8.0},
-        "reflux_system": mock_reflux,
         "market_data": {},
         "config": commerce_system.config,
         "time": 1
     }
 
     # Execute
-    leisure_effects = commerce_system.execute_consumption_and_leisure(context)
+    planned, transactions = commerce_system.plan_consumption_and_leisure(context)
 
     # Verify
-    # 1. Purchase: Buy 2.0 @ 10.0 = 20.0 cost
-    assert h1.assets == 80.0 # 100 - 20
-    assert h1.inventory["basic_food"] == 2.0
+    # Should generate 1 transaction
+    assert len(transactions) == 1
+    tx = transactions[0]
+    assert tx.buyer_id == 1
+    assert tx.quantity == 2.0
+    assert tx.price == 10.0
+    assert tx.item_id == "basic_food"
 
-    # 2. Consumption: Consume 1.0 (Fast Consumption)
-    h1.consume.assert_called_with("basic_food", 1.0, 1)
+    # Verify Plan
+    assert planned[1]["buy_amount"] == 2.0
+    assert planned[1]["consume_amount"] == 1.0
 
-    # 3. Leisure
-    h1.apply_leisure_effect.assert_called_with(8.0, {'basic_food': 1.0})
-
-    # 4. Return Value
-    assert leisure_effects[1] == 5.0
-
-    # 5. Lifecycle Update called
-    h1.update_needs.assert_called_once()
-
-    # 6. Reflux Capture
-    mock_reflux.capture.assert_called_with(20.0, source="Household_1", category="emergency_food")
-
-def test_fast_track_consumption_if_needed(commerce_system):
-    # Case: Inventory 0, Consumes 0 (in vector), Buys 2.
-    # Should trigger immediate consumption from bought items.
-
+def test_plan_consumption_refuses_when_tax_unaffordable(commerce_system):
+    # Setup Households
     h1 = MagicMock()
     h1.id = 1
     h1.is_active = True
-    h1._assets = 100.0
-    h1.inventory = {"basic_food": 0}
+    # Assets enough for Price (10.0 * 2 = 20.0), but not Price + Tax (20.0 * 1.05 = 21.0)
+    h1._econ_state.assets = 20.5
+    h1._econ_state.inventory = {"basic_food": 0}
+    h1._bio_state.needs = {"survival": 80.0}
+    h1._bio_state.is_active = True
 
-    effect_dto = MagicMock()
-    effect_dto.utility_gained = 0.0
-    h1.apply_leisure_effect.return_value = effect_dto
+    households = [h1]
 
+    # Mock Vector Planner
     planner = MagicMock()
+    # h1 consumes 1, buys 2
     planner.decide_consumption_batch.return_value = {
-        "consume": [0.0], # Planner says consume 0 because inventory was 0
+        "consume": [1.0],
         "buy": [2.0],
         "price": 10.0
     }
+    planner.survival_threshold = 50.0
 
+    # Mock Context
     context: CommerceContext = {
-        "households": [h1],
+        "households": households,
         "breeding_planner": planner,
-        "household_time_allocation": {},
-        "reflux_system": commerce_system.reflux_system,
+        "household_time_allocation": {1: 8.0},
         "market_data": {},
         "config": commerce_system.config,
         "time": 1
     }
 
-    commerce_system.execute_consumption_and_leisure(context)
+    # Execute
+    planned, transactions = commerce_system.plan_consumption_and_leisure(context)
 
-    # Verify Immediate Consumption
-    # Expect consume call with default 1.0 (from config) or min(bought, default)
-    h1.consume.assert_called_with("basic_food", 1.0, 1)
+    # Verify
+    # Should NOT generate transaction because 20.5 < 21.0
+    assert len(transactions) == 0
+    assert planned[1].get("buy_amount", 0.0) == 0.0

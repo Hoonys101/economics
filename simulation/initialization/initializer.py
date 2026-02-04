@@ -414,6 +414,10 @@ class SimulationInitializer(SimulationInitializerInterface):
         # TD-191: TransactionProcessor (Dispatcher) + Handlers
         sim.transaction_processor = TransactionProcessor(config_module=self.config)
 
+        # WO-SALESTAX: Inject TransactionProcessor into InheritanceManager
+        if sim.inheritance_manager:
+            sim.inheritance_manager.transaction_processor = sim.transaction_processor
+
         # Register Handlers
         # 1. Market
         sim.transaction_processor.register_handler("goods", GoodsTransactionHandler())

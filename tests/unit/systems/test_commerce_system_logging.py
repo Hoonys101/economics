@@ -7,15 +7,18 @@ from simulation.systems.api import CommerceContext
 def test_log_reject_when_stock_out_and_insolvent(mock_simulation):
     # Setup
     config = MagicMock()
+    config.SALES_TAX_RATE = 0.05
     commerce_system = CommerceSystem(config)
 
     # Mock Household
     h1 = MagicMock()
     h1.id = 1
     h1.is_active = True
-    h1.assets = 10.0
-    h1.inventory = {"basic_food": 0}
-    h1.needs = {"survival": 80.0}
+    # Update for Econ/Bio component structure
+    h1._econ_state.assets = 10.0
+    h1._econ_state.inventory = {"basic_food": 0}
+    h1._bio_state.needs = {"survival": 80.0}
+    h1._bio_state.is_active = True
 
     # Mock Planner
     planner = MagicMock()
@@ -51,15 +54,17 @@ def test_log_reject_when_stock_out_and_insolvent(mock_simulation):
 def test_log_reject_when_stock_out_but_solvent(mock_simulation):
     # Setup
     config = MagicMock()
+    config.SALES_TAX_RATE = 0.05
     commerce_system = CommerceSystem(config)
 
     # Mock Household
     h1 = MagicMock()
     h1.id = 1
     h1.is_active = True
-    h1.assets = 100.0 # Solvent
-    h1.inventory = {"basic_food": 0}
-    h1.needs = {"survival": 80.0}
+    h1._econ_state.assets = 100.0 # Solvent
+    h1._econ_state.inventory = {"basic_food": 0}
+    h1._bio_state.needs = {"survival": 80.0}
+    h1._bio_state.is_active = True
 
     # Mock Planner
     planner = MagicMock()

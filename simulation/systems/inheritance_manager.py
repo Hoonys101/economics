@@ -17,6 +17,7 @@ class InheritanceManager:
     def __init__(self, config_module: Any):
         self.config_module = config_module
         self.logger = logging.getLogger("simulation.systems.inheritance_manager")
+        self.transaction_processor: Any = None
 
     def process_death(self, deceased: Household, government: Government, simulation: Any) -> List[Transaction]:
         """
@@ -85,34 +86,32 @@ class InheritanceManager:
                     price = current_prices.get(firm_id, 0.0)
                     proceeds = round(share.quantity * price, 2)
 
-                    # Execute Atomic Transfer: Gov Cash -> Deceased Cash (Simulated)
-                    # We use settlement_system.transfer to maintain zero-sum
-                    if settlement_system.transfer(government, deceased, proceeds, "liquidation_stock", tick=current_tick):
-                        # Update Asset Ownership
-                        # Deceased -> Government (or Market/System)
-                        # Remove from Deceased Portfolio
-                        del deceased._econ_state.portfolio.holdings[firm_id]
+                    # Create Transaction Intent
+                    tx = Transaction(
+                        buyer_id=government.id,
+                        seller_id=deceased.id,
+                        item_id=f"stock_{firm_id}",
+                        quantity=share.quantity,
+                        price=price,
+                        market_id="stock_market",
+                        transaction_type="asset_liquidation",
+                        time=current_tick,
+                        metadata={"executed": False} # Will be set to True by processor
+                    )
+
+                    # WO-SALESTAX: Use TransactionProcessor to ensure atomic asset transfer and remove direct mutation leaks
+                    # Handles both money transfer and asset updates via MonetaryTransactionHandler
+                    # Note: simulation argument here is effectively 'state' (SimulationState)
+                    results = self.transaction_processor.execute(simulation, [tx])
+
+                    if results and results[0].success:
+                        # Update local tracking variables
                         if firm_id in portfolio_holdings:
-                             del portfolio_holdings[firm_id] # Keep local copy in sync
+                             del portfolio_holdings[firm_id]
 
-                        # Add to Government Portfolio (if Government holds stocks)
-                        # Or assume destroyed/market absorption.
-                        # For zero-sum asset integrity, someone must hold it.
-                        # Let's assign to Government for now (Escheatment logic).
-                        pass # Gov portfolio update skipped for brevity or handled by caller if Gov is agent
-
-                        # Record TX
-                        tx = Transaction(
-                            buyer_id=government.id,
-                            seller_id=deceased.id,
-                            item_id=f"stock_{firm_id}",
-                            quantity=share.quantity,
-                            price=price,
-                            market_id="stock_market",
-                            transaction_type="asset_liquidation",
-                            time=current_tick,
-                            metadata={"executed": True}
-                        )
+                        # Note: TransactionProcessor marks metadata['executed'] = True (indirectly via handler logic or we assume done)
+                        # We append the original tx which now represents an executed event
+                        tx.metadata["executed"] = True
                         transactions.append(tx)
 
                         cash += proceeds
@@ -126,30 +125,25 @@ class InheritanceManager:
                 for unit in list(deceased_units):
                     sale_price = round(unit.estimated_value * fire_sale_ratio, 2)
 
-                    if settlement_system.transfer(government, deceased, sale_price, "liquidation_re", tick=current_tick):
-                        # Update Ownership (Manual update required for immediate cash flow logic)
-                        unit.owner_id = government.id
+                    tx = Transaction(
+                        buyer_id=government.id,
+                        seller_id=deceased.id,
+                        item_id=f"real_estate_{unit.id}",
+                        quantity=1.0,
+                        price=sale_price,
+                        market_id="real_estate_market",
+                        transaction_type="asset_liquidation",
+                        time=current_tick,
+                        metadata={"executed": False}
+                    )
 
-                        # Fix Leak: Update owned_properties lists
-                        if hasattr(deceased, "owned_properties") and unit.id in deceased.owned_properties:
-                            deceased.owned_properties.remove(unit.id)
-                        if hasattr(government, "owned_properties"):
-                             if unit.id not in government.owned_properties:
-                                government.owned_properties.append(unit.id)
+                    # WO-SALESTAX: Use TransactionProcessor
+                    results = self.transaction_processor.execute(simulation, [tx])
 
+                    if results and results[0].success:
                         deceased_units.remove(unit)
 
-                        tx = Transaction(
-                            buyer_id=government.id,
-                            seller_id=deceased.id,
-                            item_id=f"real_estate_{unit.id}",
-                            quantity=1.0,
-                            price=sale_price,
-                            market_id="real_estate_market",
-                            transaction_type="asset_liquidation",
-                            time=current_tick,
-                            metadata={"executed": True}
-                        )
+                        tx.metadata["executed"] = True
                         transactions.append(tx)
 
                         cash += sale_price
