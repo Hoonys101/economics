@@ -2,6 +2,7 @@
 from __future__ import annotations
 from typing import Protocol, TypedDict, Literal, List, TYPE_CHECKING
 from abc import abstractmethod
+from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     # This service is expected to be defined in a government module,
@@ -94,7 +95,8 @@ class ICentralBank(Protocol):
         self,
         treasury_service: "ITreasuryService",
         operation_type: Literal["purchase", "sale"],
-        target_cash_amount: float
+        target_cash_amount: float,
+        currency: CurrencyCode = DEFAULT_CURRENCY
     ) -> OpenMarketOperationResultDTO:
         """
         Executes open market operations by buying or selling government bonds.
@@ -111,6 +113,7 @@ class ICentralBank(Protocol):
             treasury_service: The interface for accessing the government bond market.
             operation_type: The type of operation to execute ('purchase' or 'sale').
             target_cash_amount: The total cash value of bonds to be transacted.
+            currency: The currency in which the operation is conducted (default: DEFAULT_CURRENCY).
 
         Returns:
             A DTO summarizing the result of the operation.
