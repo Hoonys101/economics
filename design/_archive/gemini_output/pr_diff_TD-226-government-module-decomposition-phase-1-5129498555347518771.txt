@@ -1,0 +1,159 @@
+diff --git a/communications/insights/TD-226_Government_Refactor.md b/communications/insights/TD-226_Government_Refactor.md
+new file mode 100644
+index 0000000..3c442a1
+--- /dev/null
++++ b/communications/insights/TD-226_Government_Refactor.md
+@@ -0,0 +1,19 @@
++# Insight: Government Refactor (TD-226)
++
++## Overview
++This mission focuses on Phase 1 of the Government Module Decomposition. The goal is to break down the `Government` God Class into smaller, single-responsibility services: Tax, Welfare, and Fiscal.
++
++## Current Progress
++- Created `modules/government/tax/api.py` (ITaxService)
++- Created `modules/government/welfare/api.py` (IWelfareService)
++- Created `modules/government/fiscal/api.py` (IFiscalService)
++
++## Technical Debt & Observations
++- **Duplicate/Ambiguous Structure**: `modules/government/taxation` already exists. The new spec mandates `modules/government/tax`. This creates potential confusion during the transition period. Future steps must ensure `taxation` is deprecated or merged into `tax`.
++- **Any Type Usage**: The new interfaces use `Any` for `firm` and `household` arguments to avoid circular imports. This is a temporary measure (TD-227 resolution). Ideally, specific Protocols (e.g., `IFirm`, `IHousehold`) should be defined in `modules/common/interfaces.py` to replace `Any`.
++- **God Class Persistence**: The `Government` class currently still holds all logic. These interfaces are just the first step. The implementation phase (Phase 2) will require careful migration to avoid breaking existing tests that rely on `Government` methods directly.
++
++## Next Steps
++- Implement `TaxService`, `WelfareService`, and `FiscalService` classes.
++- Refactor `Government` to use these services.
++- Update tests to use the new service boundaries.
+diff --git a/modules/government/fiscal/__init__.py b/modules/government/fiscal/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/modules/government/fiscal/api.py b/modules/government/fiscal/api.py
+new file mode 100644
+index 0000000..8aa233b
+--- /dev/null
++++ b/modules/government/fiscal/api.py
+@@ -0,0 +1,35 @@
++# modules/government/fiscal/api.py
++from typing import Protocol, List, Tuple, Optional, Any
++from simulation.models import Transaction
++from modules.finance.api import BailoutLoanDTO
++
++class IFiscalService(Protocol):
++    """
++    Interface for fiscal policy actions like bailouts and infrastructure investment.
++    """
++
++    def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int) -> Tuple[Optional[BailoutLoanDTO], List[Transaction]]:
++        """
++        Evaluates and provides a bailout loan to a firm.
++        Returns the loan details and settlement transactions.
++        """
++        ...
++
++    def invest_infrastructure(self, current_tick: int, households: List[Any]) -> List[Transaction]:
++        """
++        Executes infrastructure investment, potentially boosting productivity.
++        Returns a list of payment transactions.
++        """
++        ...
++
++    def get_stimulus_spending_this_tick(self) -> float:
++        """Returns total stimulus spending for the current tick."""
++        ...
++
++    def get_infrastructure_level(self) -> int:
++        """Returns the current national infrastructure level."""
++        ...
++
++    def reset_tick_flow(self) -> None:
++        """Resets the per-tick spending accumulators."""
++        ...
+diff --git a/modules/government/tax/__init__.py b/modules/government/tax/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/modules/government/tax/api.py b/modules/government/tax/api.py
+new file mode 100644
+index 0000000..d9c0e38
+--- /dev/null
++++ b/modules/government/tax/api.py
+@@ -0,0 +1,37 @@
++# modules/government/tax/api.py
++from typing import Protocol, Dict
++from modules.finance.api import TaxCollectionResult
++from modules.government.dtos import FiscalPolicyDTO
++from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
++
++class ITaxService(Protocol):
++    """
++    Interface for the taxation service.
++    """
++
++    def calculate_tax_liability(self, policy: FiscalPolicyDTO, income: float) -> float:
++        """Calculates the tax amount for a given income and fiscal policy."""
++        ...
++
++    def calculate_corporate_tax(self, profit: float, rate: float) -> float:
++        """Calculates corporate tax based on profit and a flat rate."""
++        ...
++
++    def record_revenue(self, result: TaxCollectionResult) -> None:
++        """
++        Updates internal ledgers based on a verified tax collection result.
++        This method should be the single source of truth for tax revenue logging.
++        """
++        ...
++
++    def get_revenue_this_tick(self) -> Dict[CurrencyCode, float]:
++        """Returns the total revenue collected in the current tick."""
++        ...
++
++    def get_revenue_breakdown_this_tick(self) -> Dict[str, float]:
++        """Returns the breakdown of revenue by tax type for the current tick."""
++        ...
++
++    def reset_tick_flow(self) -> None:
++        """Resets the per-tick revenue accumulators."""
++        ...
+diff --git a/modules/government/welfare/__init__.py b/modules/government/welfare/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/modules/government/welfare/api.py b/modules/government/welfare/api.py
+new file mode 100644
+index 0000000..2e8f5ee
+--- /dev/null
++++ b/modules/government/welfare/api.py
+@@ -0,0 +1,35 @@
++# modules/government/welfare/api.py
++from typing import Protocol, List, Dict, Any
++from simulation.models import Transaction
++
++class IWelfareService(Protocol):
++    """
++    Interface for the welfare service.
++    Handles social safety nets and support for households.
++    """
++
++    def get_survival_cost(self, market_data: Dict[str, Any]) -> float:
++        """Calculates current survival cost based on market prices."""
++        ...
++
++    def run_welfare_check(self, households: List[Any], market_data: Dict[str, Any], current_tick: int) -> List[Transaction]:
++        """
++        Identifies households in need and provides basic support.
++        Returns a list of payment transactions.
++        """
++        ...
++
++    def provide_household_support(self, household: Any, amount: float, current_tick: int) -> List[Transaction]:
++        """
++        Provides a direct subsidy to a specific household.
++        Returns a list of payment transactions.
++        """
++        ...
++
++    def get_spending_this_tick(self) -> float:
++        """Returns total welfare spending for the current tick."""
++        ...
++
++    def reset_tick_flow(self) -> None:
++        """Resets the per-tick spending accumulator."""
++        ...
