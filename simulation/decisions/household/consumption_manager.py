@@ -2,6 +2,7 @@ from typing import List, Any, Optional, Tuple
 import random
 from simulation.models import Order
 from simulation.decisions.household.api import ConsumptionContext
+from modules.system.api import DEFAULT_CURRENCY
 from simulation.schemas import HouseholdActionVector
 
 class ConsumptionManager:
@@ -53,7 +54,13 @@ class ConsumptionManager:
             # If ask_price was found and is valid
             if ask_price is not None:
                 # Affordability Check
-                if household.assets >= ask_price:
+                household_assets = household.assets
+                if isinstance(household_assets, dict):
+                    household_assets = household_assets.get(DEFAULT_CURRENCY, 0.0)
+                else:
+                    household_assets = float(household_assets)
+
+                if household_assets >= ask_price:
                      premium = getattr(config, 'survival_bid_premium', 0.1)
                      if not isinstance(premium, (int, float)):
                          premium = 0.1
@@ -167,9 +174,15 @@ class ConsumptionManager:
                     quantity_to_buy *= (1.0 + 0.2 * conformity)
 
             # 5. Budget Constraint (Zero-Sum Integrity)
-            budget_limit = household.assets * config.budget_limit_normal_ratio
+            household_assets = household.assets
+            if isinstance(household_assets, dict):
+                household_assets = household_assets.get(DEFAULT_CURRENCY, 0.0)
+            else:
+                household_assets = float(household_assets)
+
+            budget_limit = household_assets * config.budget_limit_normal_ratio
             if max_need_value > config.budget_limit_urgent_need:
-                budget_limit = household.assets * config.budget_limit_urgent_ratio
+                budget_limit = household_assets * config.budget_limit_urgent_ratio
 
             # Determine Bid Price First
             # WO-157: Bid slightly above avg_price to ensure execution if urgent, capped at max_affordable_price.

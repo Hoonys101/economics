@@ -2,6 +2,7 @@ from typing import List
 import random
 from simulation.models import Order
 from simulation.decisions.household.api import LaborContext
+from modules.system.api import DEFAULT_CURRENCY
 
 class LaborManager:
     """
@@ -67,7 +68,13 @@ class LaborManager:
             food_price = market_data.get("goods_market", {}).get("basic_food_avg_traded_price", 10.0)
             if food_price <= 0: food_price = 10.0
 
-            survival_days = food_inventory + (household.assets / food_price)
+            household_assets = household.assets
+            if isinstance(household_assets, dict):
+                household_assets = household_assets.get(DEFAULT_CURRENCY, 0.0)
+            else:
+                household_assets = float(household_assets)
+
+            survival_days = food_inventory + (household_assets / food_price)
             critical_turns = getattr(config, "survival_critical_turns", 5)
 
             is_panic = False

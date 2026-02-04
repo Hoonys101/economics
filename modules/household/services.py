@@ -19,12 +19,10 @@ class HouseholdSnapshotAssembler:
         # We assume the household components expose their state DTOs
         # and that we should copy them for the snapshot to be immutable.
 
-        # Access internal states directly from the agent facade as it exposes them
-        # (The Household class in core_agents.py stores them in _bio_state, _econ_state, _social_state)
-
-        bio_state_copy = household._bio_state.copy()
-        econ_state_copy = household._econ_state.copy()
-        social_state_copy = household._social_state.copy()
+        # Access internal states via public accessors (TD-217)
+        bio_state_copy = household.get_bio_state().copy()
+        econ_state_copy = household.get_econ_state().copy()
+        social_state_copy = household.get_social_state().copy()
 
         return HouseholdSnapshotDTO(
             id=household.id,
