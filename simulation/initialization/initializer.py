@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 from modules.common.config_manager.api import ConfigManager
 from simulation.initialization.api import SimulationInitializerInterface
 from simulation.models import Order, RealEstateUnit
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder
 from simulation.core_agents import Household
 from simulation.firms import Firm
 from simulation.core_markets import Market
@@ -475,6 +475,16 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.crisis_monitor = CrisisMonitor(logger=self.logger, run_id=sim.run_id)
 
         sim.household_time_allocation: Dict[int, float] = {}
+
+        # Populate Currency Holders for M2 Calculation
+        sim.world_state.currency_holders = []
+        if isinstance(sim.central_bank, ICurrencyHolder):
+            sim.world_state.currency_holders.append(sim.central_bank)
+
+        for agent in sim.agents.values():
+            if isinstance(agent, ICurrencyHolder):
+                sim.world_state.currency_holders.append(agent)
+
         sim.inflation_buffer = deque(maxlen=10)
         sim.unemployment_buffer = deque(maxlen=10)
         sim.gdp_growth_buffer = deque(maxlen=10)

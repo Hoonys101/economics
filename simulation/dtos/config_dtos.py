@@ -87,6 +87,7 @@ class HouseholdConfigDTO:
     survival_need_death_threshold: float
     assets_death_threshold: float
     household_death_turns_threshold: float
+    survival_need_death_ticks_threshold: float
     initial_wage: float
     education_cost_multipliers: Dict[int, float]
 

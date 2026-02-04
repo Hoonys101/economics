@@ -49,6 +49,14 @@ def trace():
                 sim.government.process_monetary_transactions([credit_tx])
                 print(f"Loan granted to Firm {target_firm.id} for {loan_amount:,.2f}. Credit TX processed.")
 
+    # Monkey patch to retain transactions
+    sim.retained_transactions = []
+    original_finalize = sim.tick_orchestrator._finalize_tick
+    def patched_finalize(sim_state):
+        sim.retained_transactions = list(sim.world_state.transactions)
+        original_finalize(sim_state)
+    sim.tick_orchestrator._finalize_tick = patched_finalize
+
     sim.run_tick()
     
     current_money = sim.world_state.get_total_system_money_for_diagnostics()
@@ -63,14 +71,23 @@ def trace():
     if 'grant_result' in locals() and grant_result:
         authorized_delta += loan_amount
 
-    # --- JULES UPDATE: Account for Fiscal Activities (Infrastructure / Bond Sales) ---
+    # --- JULES UPDATE: Account for Fiscal Activities (Infrastructure / Bond Sales / Interest) ---
     cb_bond_buys = 0.0
+    comm_bank_bond_buys = 0.0
+    deposit_interest = 0.0
+    loan_interest = 0.0
     infra_spending = 0.0
 
     cb_id = sim.central_bank.id if sim.central_bank else None
+    comm_bank_id = sim.bank.id if sim.bank else None
 
-    if hasattr(sim.world_state, "transactions"):
-        for tx in sim.world_state.transactions:
+    transactions_to_check = getattr(sim, "retained_transactions", [])
+    if not transactions_to_check and hasattr(sim.world_state, "transactions"):
+        transactions_to_check = sim.world_state.transactions
+
+    if transactions_to_check:
+        print(f"DEBUG: Found {len(transactions_to_check)} transactions.")
+        for tx in transactions_to_check:
             # Check if tx is object or dict
             if isinstance(tx, dict):
                  t_type = tx.get("transaction_type")
@@ -80,20 +97,50 @@ def trace():
             else:
                  t_type = getattr(tx, "transaction_type", None)
                  t_buyer = getattr(tx, "buyer_id", None)
+                 t_seller = getattr(tx, "seller_id", None)
                  t_price = getattr(tx, "price", 0.0)
                  t_qty = getattr(tx, "quantity", 0.0)
 
-            # Bond Purchase by Central Bank (Credit Creation)
-            if t_type == "bond_purchase" and str(t_buyer) == str(cb_id):
-                cb_bond_buys += t_price
+            tx_val = t_price * t_qty
+
+            # DEBUG
+            if isinstance(tx, dict):
+                t_seller = tx.get("seller_id")
+
+            print(f"DEBUG TX: {t_type} | Buyer: {t_buyer} | Seller: {t_seller} | Val: {tx_val:.2f}")
+
+            # Bond Purchase (Creation if by Bank or CB)
+            if t_type == "bond_purchase":
+                if str(t_buyer) == str(cb_id):
+                    cb_bond_buys += tx_val
+                elif str(t_buyer) == str(comm_bank_id):
+                    comm_bank_bond_buys += tx_val
+
+            # Interest
+            if t_type == "deposit_interest":
+                deposit_interest += tx_val
+            elif t_type == "loan_interest":
+                loan_interest += tx_val
 
             # Infrastructure Spending (Transfer, but useful diagnostic)
             if t_type == "infrastructure_spending":
-                infra_spending += (t_price * t_qty)
+                infra_spending += tx_val
 
     if cb_bond_buys > 0:
         print(f"Detected Untracked CB Bond Purchases: {cb_bond_buys:,.2f}")
         authorized_delta += cb_bond_buys
+
+    if comm_bank_bond_buys > 0:
+        print(f"Detected Commercial Bank Bond Purchases (M2 Creation): {comm_bank_bond_buys:,.2f}")
+        authorized_delta += comm_bank_bond_buys
+
+    if deposit_interest > 0:
+        print(f"Detected Deposit Interest (M2 Creation): {deposit_interest:,.2f}")
+        authorized_delta += deposit_interest
+
+    if loan_interest > 0:
+        print(f"Detected Loan Interest (M2 Destruction): {loan_interest:,.2f}")
+        authorized_delta -= loan_interest
 
     if infra_spending > 0:
         print(f"Detected Infrastructure Spending: {infra_spending:,.2f}")

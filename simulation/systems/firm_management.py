@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional, Dict, Any
 
 from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.utils.config_factory import create_config_dto
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.engine import Simulation
@@ -42,10 +43,14 @@ class FirmSystem:
              final_startup_cost *= 1.5
 
         # 2. Capital Deduction Check
-        try:
-            current_assets = float(founder_household.assets)
-        except (TypeError, ValueError, AttributeError):
-            current_assets = 0.0
+        assets = founder_household.assets
+        if isinstance(assets, dict):
+            current_assets = assets.get(DEFAULT_CURRENCY, 0.0)
+        else:
+            try:
+                current_assets = float(assets)
+            except (TypeError, ValueError):
+                current_assets = 0.0
 
         if current_assets < final_startup_cost:
             return None
@@ -172,10 +177,22 @@ class FirmSystem:
         else:
             trigger_probability = spirit
 
-        wealthy_households = [
-            h for h in simulation.households
-            if h.is_active and h.assets > startup_cost * capital_multiplier
-        ]
+        wealthy_households = []
+        for h in simulation.households:
+            if not h.is_active:
+                continue
+
+            assets = h.assets
+            if isinstance(assets, dict):
+                val = assets.get(DEFAULT_CURRENCY, 0.0)
+            else:
+                try:
+                    val = float(assets)
+                except (TypeError, ValueError):
+                    val = 0.0
+
+            if val > startup_cost * capital_multiplier:
+                wealthy_households.append(h)
 
         for household in wealthy_households:
             if random.random() < trigger_probability:
