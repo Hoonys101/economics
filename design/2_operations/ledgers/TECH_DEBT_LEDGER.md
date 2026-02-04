@@ -47,7 +47,7 @@
 | TD-196 | 2026-02-03 | ConfigManager Tight Coupling | Hard to mock; requires manual instantiation | - | **LOW** |
 | TD-203 | 2026-02-03 | SettlementSystem Unit Test Stale | Tests not updated after Saga refactor | - | **HIGH** |
 | TD-210 | 2026-02-04 | Test Dependency Bloat (`numpy`) | `conftest.py` imports CentralBank | [Review](../../_archive/gemini_output/pr_review_settlement-system-tests-2138438581752818541.md) | **LOW** |
-| TD-212 | 2026-02-03 | Float-based Asset Callers | Legacy code accessing `assets` as `float` | [Spec](../../3_work_artifacts/drafts/draft_183800_Author_specification_for_Multi.md) | **MEDIUM** |
+| (No Active Items) | | | | | |
 | TD-216 | 2026-02-04 | Orchestrator Coupling (`TickOrchestrator`) | Direct dependency on `Government` methods | [Insight](../../3_work_artifacts/reports/inbound/structural-god-class-9257244532893801478_audit_structural_god_class.md) | **MEDIUM** |
 
 
@@ -66,6 +66,8 @@
 | TD-208 | 2026-02-04 | Secured Loan SRP (Liquidation) | Logic inside Manager | [Review](../../_archive/gemini_output/pr_review_liquidation-manager-srp-1350862452554077041.md) | **MEDIUM** |
 | TD-209 | 2026-02-04 | Hardcoded Agent Identifiers | String-based IDs in Registry | [Review](../../_archive/gemini_output/pr_review_liquidation-manager-srp-1350862452554077041.md) | **MEDIUM** |
 | TD-213 | 2026-02-03 | Multi-Currency Transition Debt | Logic still dependent on `DEFAULT_CURRENCY` | [Insight](../../communications/insights/PH33_DEBUG.md) | **MEDIUM** |
+| TD-220 | 2026-02-04 | Central Bank ID Mismatch (Str vs Int) | Inconsistent mapping in Wallet owner_id | [Review](../../_archive/gemini_output/pr_review_wo-4.2a-wallet-abstraction-7751802173364783425.md) | **LOW** |
+| TD-221 | 2026-02-04 | DTO Copy Policy Ambiguity (Wallet) | Shallow vs Deep copy policy for Wallet in DTOs | [Review](../../_archive/gemini_output/pr_review_wo-4.2a-wallet-abstraction-7751802173364783425.md) | **LOW** |
 | (No Active Items) | | | | |
 
 ---
@@ -94,6 +96,7 @@
 | TD-214 | 2026-02-04 | `Household` God Class Decomposition | [Spec](../../3_work_artifacts/specs/WO-4.0_Household_Mixins.md) | [Insight](../../communications/insights/WO-4.0.md) |
 | TD-217 | 2026-02-04 | Protected Member Access (Snapshotting) | ^ | ^ |
 | TD-215 | 2026-02-04 | Market Handler Abstraction Leaks | [Spec](../../3_work_artifacts/specs/WO-4.1_Market_Decoupling.md) | [Review](../../_archive/gemini_output/pr_review_wo-4.1-protocols-6715402864351195902.md) |
+| TD-212 | 2026-02-04 | Legacy Assets (Float) Callers | [Spec](../../3_work_artifacts/specs/WO-4.2A_Wallet_Abstraction.md) | [Insight](../../communications/insights/WO-4.2A.md) |
 
 ---
 
