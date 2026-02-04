@@ -288,11 +288,12 @@ class LedgerManager:
             if not target_block:
                 # Fallback to the last table block if not found, or first?
                 # Or "General" if we created one?
-                # Let's fallback to any table that isn't ABORTED
+                # Let's fallback to any table that isn't ABORTED or RESOLVED
                 for block in blocks:
-                    if isinstance(block, TableBlock) and "ABORTED" not in block.section_title.upper():
-                         target_block = block
-                         # break? maybe prefer explicit match
+                    if isinstance(block, TableBlock):
+                        title_upper = block.section_title.upper()
+                        if "ABORTED" not in title_upper and "RESOLVED" not in title_upper and "ARCHIVE" not in title_upper:
+                             target_block = block
 
             if not target_block:
                 raise ValueError(f"Could not find a suitable table section to insert {new_item_data['id']}")
@@ -320,6 +321,22 @@ class LedgerManager:
         finally:
             self._release_lock()
 
+    def get_next_id(self) -> str:
+        blocks = self._parse_ledger()
+        max_id = 0
+        for block in blocks:
+            if isinstance(block, TableBlock):
+                for row in block.rows:
+                    item_id = row['id'].strip()
+                    # Expect TD-XXX
+                    match = re.match(r'^TD-(\d+)$', item_id)
+                    if match:
+                        num = int(match.group(1))
+                        if num > max_id:
+                            max_id = num
+
+        return f"TD-{max_id + 1}"
+
     def sync_with_codebase(self):
         print("Syncing ledger with codebase...")
         blocks = self._parse_ledger()
@@ -332,7 +349,7 @@ class LedgerManager:
                 for row in block.rows:
                     status = row['status'].upper().replace('*', '').strip()
                     item_id = row['id'].strip()
-                    if item_id == "(Empty)":
+                    if item_id in ("(Empty)", "(No Active Items)"):
                         continue
                     if status not in ('RESOLVED', 'COMPLETED'):
                         active_ids.add(item_id)
@@ -431,6 +448,9 @@ def main():
     reg_parser.add_argument("--impact", required=True, help="Impact")
     reg_parser.add_argument("--status", required=True, help="Status (ACTIVE, etc)")
 
+    # Next ID
+    subparsers.add_parser("next-id", help="Get the next available TD ID")
+
     args = parser.parse_args()
 
     # Paths
@@ -460,6 +480,8 @@ def main():
             'impact': args.impact,
             'status': args.status
         })
+    elif args.command == "next-id":
+        print(manager.get_next_id())
     else:
         parser.print_help()
 
