@@ -2,6 +2,7 @@
 from __future__ import annotations
 from typing import Protocol, TypedDict, Literal, List
 from dataclasses import dataclass
+from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 
 # ==============================================================================
 # Data Transfer Objects (DTOs)
@@ -36,14 +37,14 @@ class ITreasuryService(Protocol):
     interacting with the Central Bank for open market operations.
     """
 
-    def execute_market_purchase(self, buyer_id: int | str, target_cash_amount: float) -> TreasuryOperationResultDTO:
+    def execute_market_purchase(self, buyer_id: int | str, target_cash_amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> TreasuryOperationResultDTO:
         """
         Executes a purchase of bonds from the market (e.g. by Central Bank).
         The caller (buyer) provides cash, and receives bonds.
         """
         ...
 
-    def execute_market_sale(self, seller_id: int | str, target_cash_amount: float) -> TreasuryOperationResultDTO:
+    def execute_market_sale(self, seller_id: int | str, target_cash_amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> TreasuryOperationResultDTO:
         """
         Executes a sale of bonds to the market (e.g. by Central Bank).
         The caller (seller) provides bonds, and receives cash.
