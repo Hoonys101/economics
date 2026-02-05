@@ -85,7 +85,8 @@ def test_generate_transactions_dividends(firm_mock, config_mock):
     # Mock households
     h1 = Mock()
     h1.id = 101
-    h1._econ_state.portfolio.to_legacy_dict.return_value = {1: 50.0} # owns 50%
+    # TD-233 Fix: Mock get_stock_quantity instead of to_legacy_dict
+    h1.portfolio.get_stock_quantity.side_effect = lambda fid: 50.0 if fid == 1 else 0.0
 
     exchange_rates = {DEFAULT_CURRENCY: 1.0, "EUR": 1.1}
 
@@ -100,3 +101,28 @@ def test_generate_transactions_dividends(firm_mock, config_mock):
 
     assert usd_tx.price == 5.0
     assert eur_tx.price == 2.5
+
+def test_altman_z_score_multi_currency(firm_mock, config_mock):
+    # TD-240 Verification
+    finance = FinanceDepartment(firm_mock, config_mock)
+    exchange_rates = {DEFAULT_CURRENCY: 1.0, "EUR": 1.2}
+
+    # USD Balance: 1000.0
+    # EUR Balance: 500.0 -> 600.0 USD
+    # Total Cash: 1600.0 USD
+    # Capital Stock: 100.0 USD
+    # Inventory: 0.0
+    # Total Assets = 1700.0
+
+    # Working Capital = 1600.0
+    # Retained Earnings = 0.0
+    # Avg Profit = 0.0
+
+    # x1 = 1600/1700 = 0.941176
+
+    score = finance.calculate_altman_z_score(exchange_rates)
+
+    expected_x1 = 1600.0 / 1700.0
+    expected_score = 1.2 * expected_x1
+
+    assert score == pytest.approx(expected_score, abs=0.0001)

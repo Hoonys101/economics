@@ -231,7 +231,7 @@ class FinanceDepartment(IFinanceDepartment):
 
                 for household in households:
                     # TD-233: Use portfolio property (LoD fix)
-                    shares = household.portfolio.to_legacy_dict().get(self.firm.id, 0.0)
+                    shares = household.portfolio.get_stock_quantity(self.firm.id)
                     if shares > 0:
                         dividend_amount = distributable_profit * (shares / total_shares)
                         transactions.append(
@@ -249,6 +249,12 @@ class FinanceDepartment(IFinanceDepartment):
                         )
 
         # Reset period counters
+        # TD-213-B: Update last_revenue before reset
+        total_revenue_primary = 0.0
+        for cur, amount in self.revenue_this_turn.items():
+            total_revenue_primary += self._convert_to_primary(amount, cur, exchange_rates)
+        self.last_revenue = total_revenue_primary
+
         for cur in list(self.current_profit.keys()): # List copy to avoid runtime error if we modify keys
              self.current_profit[cur] = 0.0
              self.revenue_this_turn[cur] = 0.0
@@ -274,11 +280,19 @@ class FinanceDepartment(IFinanceDepartment):
             self.firm.total_debt = 0.0
         self.firm.total_debt += amount
 
-    def calculate_altman_z_score(self) -> float:
-        # Assuming primary currency for score
-        usd_balance = self.firm.wallet.get_balance(self.primary_currency)
+    def calculate_altman_z_score(self, exchange_rates: Optional[Dict[CurrencyCode, float]] = None) -> float:
+        # TD-240: Multi-currency support
+        if exchange_rates is None:
+            exchange_rates = {DEFAULT_CURRENCY: 1.0}
+
+        # Calculate Total Assets (Sum of all currencies converted + Capital + Inventory)
+        usd_balance = 0.0
+        for cur, amount in self.firm.wallet.get_all_balances().items():
+             usd_balance += self._convert_to_primary(amount, cur, exchange_rates)
+
         total_assets = usd_balance + self.firm.capital_stock + self.get_inventory_value()
         if total_assets == 0: return 0.0
+
         working_capital = usd_balance - getattr(self.firm, 'total_debt', 0.0)
         x1 = working_capital / total_assets
         x2 = self.retained_earnings / total_assets
