@@ -7,6 +7,7 @@
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
 | TD-030 | 2026-02-05 | Agent Lifecycle-M2 Desync | Performance (O(N) rebuild) | [Walkthrough](../../../brain/7064e76f-bfd2-423d-9816-95b56f05a65f/walkthrough.md) | **ACTIVE** |
+| TD-252 | 2026-02-06 | Massive M2 Leak (571k at Tick 100) | Economic Integrity Failure | [Audit Summary](../../3_work_artifacts/reports/inbound/economic-jules-001-12984982393375704591_executive_summary_tick_00100_20260205_183844.md) | **CRITICAL** |
 
 ## 🏭 2. FIRMS & CORPORATE
 
@@ -18,7 +19,7 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| (Empty) | | | | |
+| TD-035 | 2026-02-06 | Hardcoded Political AI Heuristics | Model Inflexibility / Magic Numbers | [Parity Audit](../../3_work_artifacts/reports/inbound/parity-wo-6-audit-10828950733294323302_audit_parity_WO-6-AUDIT.md) | **ACTIVE** |
 
 ## 💹 4. MARKETS & ECONOMICS
 
@@ -33,6 +34,10 @@
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
 | TD-034 | 2026-02-05 | Bank Profit Absorption Logic | M2 formula/dividend gap | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | **ACTIVE** |
+| TD-253 | 2026-02-06 | SettlementSystem God Class (785 lines) | High Coupling / Maintenance Risk | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-god-class-check-2584000745385775058_audit_structural_001.md) | **HIGH** |
+| TD-254 | 2026-02-06 | Settlement Abstraction Leak (hasattr) | Violation of Open/Closed Principle | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-god-class-check-2584000745385775058_audit_structural_001.md) | **HIGH** |
+| TD-255 | 2026-02-06 | Housing Saga DTO Purity Breach | Raw Agent Mutation Leaks | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-god-class-check-2584000745385775058_audit_structural_001.md) | **MEDIUM** |
+| TD-256 | 2026-02-06 | Lack of Inventory Abstraction (Direct Mutation) | Goods Transfer Atomicity Risks | [Economic Audit](../../3_work_artifacts/reports/inbound/economic-jules-001-12984982393375704591_audit_economic_JULES_001.md) | **MEDIUM** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
@@ -80,6 +85,7 @@
 | TD-193 | 2026-02-04 | Fragmented Politics Sync | [Spec](../../3_work_artifacts/specs/WO-4.5_Adaptive_Brain.md) | - |
 | TD-238 | 2026-02-05 | Phases.py Decomposition | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-structural-001-15007860028193717728_audit_structural_STRUCTURAL-001.md) | [Insight](../../communications/insights/Bundle_C_System_Integrity.md) |
 
+| TD-250 | 2026-02-06 | Sales Tax & Inheritance Atomicity | [Audit](../../3_work_artifacts/reports/inbound/economic-jules-001-12984982393375704591_audit_economic_JULES_001.md) | [Insight](../../communications/insights/mission_report_economic_integrity.md) |
 | TD-015 | 2026-02-05 | Divergent Metric Calculation (M0/M1/M2) | [Review](../../_archive/gemini_output/pr_review_watchtower-backend-6136124806422059806.md) | [Insight](../../communications/insights/PH6_STABILIZATION_REPORT.md) |
 | TD-125 | 2026-02-05 | Watchtower Backend Refactor (DTO Sync) | [Review](../../_archive/gemini_output/pr_review_watchtower-backend-6136124806422059806.md) | [Insight](../../communications/insights/PH6_STABILIZATION_REPORT.md) |
 | TD-029 | 2026-02-05 | Residual Macro Leak Identification | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | [Insight](../../communications/insights/PH6_STABILIZATION_REPORT.md) |
