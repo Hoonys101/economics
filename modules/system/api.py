@@ -67,6 +67,8 @@ class HousingMarketSnapshotDTO:
 class LoanMarketSnapshotDTO:
     """Contains a snapshot of the loan market's state."""
     interest_rate: float
+    max_ltv: float = 0.8
+    max_dti: float = 0.43
 
 @dataclass(frozen=True)
 class LaborMarketSnapshotDTO:

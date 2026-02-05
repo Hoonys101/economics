@@ -4,16 +4,8 @@ from abc import ABC, abstractmethod
 # Import external DTOs
 # Note: Adjust imports based on actual file structure
 from modules.household.dtos import HouseholdSnapshotDTO
-from modules.system.api import HousingMarketSnapshotDTO
+from modules.system.api import HousingMarketSnapshotDTO, LoanMarketSnapshotDTO
 from modules.finance.api import MortgageApplicationDTO
-
-class LoanMarketSnapshotDTO(TypedDict):
-    """
-    Snapshot of the loan market conditions.
-    """
-    interest_rate: float
-    max_ltv: float
-    max_dti: float
 
 class HousingOfferRequestDTO(TypedDict):
     """

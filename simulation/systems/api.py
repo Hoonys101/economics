@@ -66,6 +66,7 @@ class CommerceContext(TypedDict):
     market_data: Dict[str, Any]
     config: Any
     time: int
+    sales_tax_rate: float
 
 class LifecycleContext(TypedDict):
     """에이전트 생명주기 관리에 필요한 데이터입니다."""

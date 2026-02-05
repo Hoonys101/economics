@@ -8,7 +8,7 @@ from modules.system.api import (
 )
 
 def create_mock_snapshot(time=100):
-    housing_snapshot = HousingMarketSnapshotDTO(for_sale_units=[], avg_rent_price=100.0, avg_sale_price=24000.0)
+    housing_snapshot = HousingMarketSnapshotDTO(for_sale_units=[], units_for_rent=[], avg_rent_price=100.0, avg_sale_price=24000.0)
     loan_snapshot = LoanMarketSnapshotDTO(interest_rate=0.05)
     labor_snapshot = LaborMarketSnapshotDTO(avg_wage=0.0)
 
@@ -27,12 +27,18 @@ class TestPhase1DecisionRefactor:
         world_state = MagicMock()
         state = MagicMock(spec=SimulationState)
         state.time = 100
+        state.tracker = MagicMock() # Mock tracker
+        state.stock_market = MagicMock() # Mock stock_market
+        state.stock_market.get_daily_avg_price.return_value = 10.0 # Return mock float
+        state.goods_data = {} # Mock goods_data
         state.markets = {"market1": MagicMock()}
+        state.real_estate_units = [] # Mock empty list
         state.firms = []
         state.households = []
         state.agents = {}
         state.government = MagicMock()
         state.bank = MagicMock()
+        state.central_bank = MagicMock()
         state.config_module = MagicMock()
         state.config_module.MACRO_PORTFOLIO_ADJUSTMENT_ENABLED = False
         state.config_module.SALES_TAX_RATE = 0.05
@@ -47,18 +53,13 @@ class TestPhase1DecisionRefactor:
         # Phase1_Decision instantiates factories in __init__
         # We need to mock them *after* instantiation or patch the classes
 
-        with patch('simulation.orchestration.phases.MarketSignalFactory') as MockSignalFactory, \
-             patch('simulation.orchestration.phases.DecisionInputFactory') as MockInputFactory, \
-             patch('simulation.orchestration.phases.MarketSnapshotFactory') as MockSnapshotFactory, \
-             patch('simulation.orchestration.phases.prepare_market_data') as mock_prepare_data:
+        with patch('simulation.orchestration.phases.decision.DecisionInputFactory') as MockInputFactory, \
+             patch('simulation.orchestration.phases.decision.MarketSnapshotFactory') as MockSnapshotFactory, \
+             patch('simulation.orchestration.phases.decision.prepare_market_data') as mock_prepare_data:
 
             mock_prepare_data.return_value = {}
 
             phase = Phase1_Decision(world_state)
-
-            # Setup factory returns
-            mock_signal_factory_instance = MockSignalFactory.return_value
-            mock_signal_factory_instance.create_market_signals.return_value = {"signal": "mock"}
 
             mock_snapshot_factory_instance = MockSnapshotFactory.return_value
             snapshot = create_mock_snapshot(state.time)
@@ -73,11 +74,17 @@ class TestPhase1DecisionRefactor:
                 current_time=100
             )
 
+            # Note: We mocked MarketSnapshotFactory class, and Phase1_Decision instantiates it in __init__.
+            # So `phase.snapshot_factory` is the mock instance created during __init__.
+            # `MockSnapshotFactory.return_value` gives us that instance.
+            # We already set `mock_snapshot_factory_instance.create_snapshot.return_value = snapshot` above.
+
             # Execute
             phase.execute(state)
 
             # Verify Factory Calls
-            mock_snapshot_factory_instance.create_snapshot.assert_called_once_with(state)
+            # Use `phase.snapshot_factory` which is the actual mock instance used by the phase
+            phase.snapshot_factory.create_snapshot.assert_called_once_with(state)
             mock_input_factory_instance.create_decision_input.assert_called_once()
 
             # Verify market data preparation
@@ -93,9 +100,16 @@ class TestPhase1DecisionRefactor:
 
         state = MagicMock(spec=SimulationState)
         state.time = 100
+        state.tracker = MagicMock() # Mock tracker
+        state.stock_market = MagicMock() # Mock stock_market
+        state.stock_market.get_daily_avg_price.return_value = 10.0 # Return mock float
+        state.bank = MagicMock() # Mock bank
+        state.goods_data = {} # Mock goods_data
         state.markets = {}
+        state.real_estate_units = [] # Mock empty list
         state.agents = {}
         state.government = MagicMock()
+        state.central_bank = MagicMock()
         state.config_module = MagicMock()
         state.config_module.MAX_WORK_HOURS = 10.0
         state.config_module.HOURS_PER_TICK = 24.0
@@ -114,10 +128,9 @@ class TestPhase1DecisionRefactor:
         state.firms = [firm]
         state.households = [household]
 
-        with patch('simulation.orchestration.phases.MarketSignalFactory'), \
-             patch('simulation.orchestration.phases.DecisionInputFactory') as MockInputFactory, \
-             patch('simulation.orchestration.phases.MarketSnapshotFactory') as MockSnapshotFactory, \
-             patch('simulation.orchestration.phases.prepare_market_data', return_value={}):
+        with patch('simulation.orchestration.phases.decision.DecisionInputFactory') as MockInputFactory, \
+             patch('simulation.orchestration.phases.decision.MarketSnapshotFactory') as MockSnapshotFactory, \
+             patch('simulation.orchestration.phases.decision.prepare_market_data', return_value={}):
 
             phase = Phase1_Decision(world_state)
 

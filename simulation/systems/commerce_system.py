@@ -82,7 +82,7 @@ class CommerceSystem(ICommerceSystem):
                     price = batch_decisions.get('price', default_price)
 
                     # TD-231: Account for Sales Tax in affordability check
-                    tax_rate = getattr(self.config, 'SALES_TAX_RATE', 0.05)
+                    tax_rate = context.get('sales_tax_rate', 0.05)
                     price_with_tax = price * (1 + tax_rate)
 
                     if household._econ_state.assets < price_with_tax:
@@ -135,7 +135,7 @@ class CommerceSystem(ICommerceSystem):
 
                     else:
                         # Legacy Emergency Buy
-                        tax_rate = getattr(self.config, 'SALES_TAX_RATE', 0.05)
+                        tax_rate = context.get('sales_tax_rate', 0.05)
                         cost = b_amt * food_price * (1 + tax_rate) # TD-231: Include tax
 
                         if household._econ_state.assets >= cost:

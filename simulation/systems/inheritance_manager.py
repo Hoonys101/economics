@@ -32,7 +32,7 @@ class InheritanceManager:
         """
         transactions: List[Transaction] = []
         current_tick = simulation.time
-        settlement_system = simulation.settlement_system
+        # settlement_system = simulation.settlement_system # TD-232: Removed direct dependency
 
         # 1. Valuation & Asset Gathering
         # ------------------------------------------------------------------
@@ -145,31 +145,31 @@ class InheritanceManager:
                         if needed <= 0:
                             break
 
-        # 3. Create Settlement Account (Freezing)
-        # ------------------------------------------------------------------
-        # Move remaining assets to Settlement Account
-        # Logic: We define them here, and clear them from Deceased.
-        account = settlement_system.create_settlement(
-            agent=deceased,
-            tick=current_tick
-        )
+        # 3. TD-232: Removed explicit Settlement Account creation.
+        # Assets remain on Deceased agent until moved by TransactionProcessor.
 
-        # ATOMIC CLEAR: Handled by create_settlement via IPortfolioHandler interface.
-        # RE units remaining in `deceased_units` still point to `deceased.id`.
-
-        # 4. Plan Distribution
+        # 4. Plan Distribution & Execution
         # ------------------------------------------------------------------
-        distribution_plan = [] # List[Tuple[Recipient, Amount, Memo, TxType]]
 
         # A. Tax
-        # If we have enough cash (from liquidation or original), pay tax.
-        # If not (e.g. liquidation failed or insufficient total wealth), pay what we have.
         tax_to_pay = min(cash, tax_amount)
         if tax_to_pay > 0:
-            distribution_plan.append((government, tax_to_pay, "inheritance_tax", "tax"))
-            cash -= tax_to_pay
+            tx = Transaction(
+                buyer_id=deceased.id, # Payer
+                seller_id=government.id, # Payee
+                item_id="inheritance_tax",
+                quantity=1.0,
+                price=tax_to_pay,
+                market_id="system",
+                transaction_type="tax",
+                time=current_tick
+            )
+            results = simulation.transaction_processor.execute(simulation.world_state, [tx])
+            if results and results[0].success:
+                transactions.append(tx)
+                cash -= tax_to_pay
 
-        # B. Heirs
+        # B. Heirs & Escheatment
         heirs = []
         for child_id in deceased._bio_state.children_ids:
             child = simulation.agents.get(child_id)
@@ -179,16 +179,24 @@ class InheritanceManager:
         if not heirs:
             # Escheatment (To Gov)
             if cash > 0:
-                distribution_plan.append((government, cash, "escheatment_cash", "escheatment"))
-            else:
-                # TD-160: Ensure Gov is in plan for portfolio transfer even if cash is 0
-                # SettlementSystem requires a recipient in the plan to trigger receive_portfolio
-                distribution_plan.append((government, 0.0, "escheatment_portfolio_trigger", "escheatment"))
+                # TD-232: Escheatment via TransactionProcessor
+                # Note: EscheatmentHandler transfers ALL assets.
+                # Since we already paid tax, remaining cash is escheated.
+                tx = Transaction(
+                    buyer_id=deceased.id,
+                    seller_id=government.id,
+                    item_id="escheatment",
+                    quantity=1.0,
+                    price=cash, # Used for record, handler takes all
+                    market_id="system",
+                    transaction_type="escheatment",
+                    time=current_tick
+                )
+                results = simulation.transaction_processor.execute(simulation.world_state, [tx])
+                if results and results[0].success:
+                    transactions.append(tx)
 
-            # Escheat remaining Assets
-            # Portfolio Transfer is handled by SettlementSystem (Atomic).
-
-            # Real Estate Transfer (Execute Synchronously)
+            # Escheat remaining Real Estate (Execute Synchronously)
             for unit in deceased_units:
                  tx = Transaction(
                         buyer_id=government.id,
@@ -209,18 +217,25 @@ class InheritanceManager:
 
         else:
             # Distribute to Heirs
-            # Equal Split for now
-            count = len(heirs)
+            # Cash & Portfolio via InheritanceHandler (Single Transaction)
             if cash > 0:
-                share_cash = cash / count
-                for heir in heirs:
-                    distribution_plan.append((heir, share_cash, "inheritance_distribution", "inheritance_distribution"))
-
-            # Distribute Assets
-            # Portfolio Transfer is handled by SettlementSystem (Atomic) to the designated heir (Primary).
-            # Note: This changes from equal split to single heir for portfolio assets to ensure atomicity.
+                tx = Transaction(
+                    buyer_id=deceased.id,
+                    seller_id=None, # System distribution
+                    item_id="estate_distribution",
+                    quantity=1.0,
+                    price=cash, # Informational
+                    market_id="system",
+                    transaction_type="inheritance_distribution",
+                    time=current_tick,
+                    metadata={"heir_ids": [h.id for h in heirs]}
+                )
+                results = simulation.transaction_processor.execute(simulation.world_state, [tx])
+                if results and results[0].success:
+                    transactions.append(tx)
 
             # Distribute Real Estate (Round Robin - Synchronous)
+            count = len(heirs)
             for i, unit in enumerate(deceased_units):
                 recipient = heirs[i % count]
 
@@ -241,21 +256,14 @@ class InheritanceManager:
                     tx.metadata["executed"] = True
                     transactions.append(tx)
 
-        # 5. Execute Settlement (Cash)
-        # ------------------------------------------------------------------
-        receipts = settlement_system.execute_settlement(account.deceased_agent_id, distribution_plan, current_tick)
+        # 5. TD-232: Removed execute_settlement as we dispatched transactions directly.
 
-        # Convert dict receipts to Transaction objects
-        for receipt in receipts:
-            transactions.append(self._dict_to_transaction(receipt))
-
-        # 6. Close
-        # ------------------------------------------------------------------
-        settlement_system.verify_and_close(account.deceased_agent_id, current_tick)
+        # 6. TD-232: Removed verify_and_close as no Settlement Account was created.
 
         return transactions
 
     def _dict_to_transaction(self, tx_dict: dict) -> Transaction:
+         # Deprecated but kept if needed by other methods not shown
          return Transaction(
              buyer_id=tx_dict["buyer_id"],
              seller_id=tx_dict["seller_id"],
