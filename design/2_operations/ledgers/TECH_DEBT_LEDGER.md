@@ -13,7 +13,7 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-032 | 2026-02-05 | Multi-Currency Operational Blindness | Departments ignore FX | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | **ACTIVE** |
+| (No Active Items) | | | | | |
 
 ## 🧠 3. DECISION & AI ENGINE (`ARCH_AI_ENGINE.md`)
 
@@ -25,7 +25,7 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-033 | 2026-02-05 | Foreign Asset Loss on Liquidation | Only primary currency liquified | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | **ACTIVE** |
+| (No Active Items) | | | | | |
 | TD-251 | 2026-02-05 | Stock Market IPO/SEO NULL Seller ID | Simulation Crash at Tick 50 | [Crash Log](../../../last_crash.log) | **CRITICAL** |
 
 
@@ -33,7 +33,7 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-034 | 2026-02-05 | Bank Profit Absorption Logic | M2 formula/dividend gap | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | **ACTIVE** |
+| (No Active Items) | | | | | |
 | TD-253 | 2026-02-06 | SettlementSystem God Class (785 lines) | High Coupling / Maintenance Risk | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-god-class-check-2584000745385775058_audit_structural_001.md) | **HIGH** |
 | TD-254 | 2026-02-06 | Settlement Abstraction Leak (hasattr) | Violation of Open/Closed Principle | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-god-class-check-2584000745385775058_audit_structural_001.md) | **HIGH** |
 | TD-255 | 2026-02-06 | Housing Saga DTO Purity Breach | Raw Agent Mutation Leaks | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-god-class-check-2584000745385775058_audit_structural_001.md) | **MEDIUM** |

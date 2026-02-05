@@ -1,0 +1,374 @@
+diff --git a/communications/insights/TD-032.md b/communications/insights/TD-032.md
+new file mode 100644
+index 00000000..8403ef49
+--- /dev/null
++++ b/communications/insights/TD-032.md
+@@ -0,0 +1,37 @@
++# Technical Insight Report: TD-032 Multi-Currency Operational Awareness
++
++## 1. Problem Phenomenon
++In a multi-currency simulation environment, agents (specifically Firms) fail to accurately assess their financial health and operational metrics because their internal departments (Finance, HR, Sales) rely on hardcoded "primary currency" (e.g., USD/`DEFAULT_CURRENCY`) values or naive aggregations.
++
++**Symptoms:**
++*   **Finance**: `finalize_tick` sums expenses across all currencies without conversion (`sum(expenses.values())`). If a firm spends 100 USD and 100 KRW, it records 200 "units" of expense, treating 1 KRW as equal to 1 USD, leading to massively inflated expense tracking and incorrect solvency metrics.
++*   **Sales**: Marketing budget ROI calculation (`adjust_marketing_budget`) only looks at `revenue_this_turn` in `DEFAULT_CURRENCY`. Revenue generated in other currencies is ignored, causing the firm to undervalue marketing effectiveness in foreign markets and potentially cut budgets incorrectly.
++*   **HR**: Payroll logic (`process_payroll`) checks `DEFAULT_CURRENCY` balance for affordability. A firm with 0 USD but 1,000,000 EUR in assets might fire employees due to "insolvency" because it fails to consider its total liquid assets across currencies.
++
++## 2. Root Cause Analysis
++*   **Legacy Assumptions**: The codebase evolved from a single-currency model. Many methods were refactored to accept `Dict[CurrencyCode, float]` but implementation details often defaulted to `.get(DEFAULT_CURRENCY)` or simple sums.
++*   **Lack of Context Propagation**: `exchange_rates` are not consistently available to all operational methods. While `Firm.generate_transactions` receives them, it does not propagate them to `HRDepartment` or `SalesDepartment`. `FinanceDepartment.finalize_tick` is called in a separate phase (`PostSequence`) which historically did not fetch or pass exchange rates.
++*   **Encapsulation Barriers**: Currency conversion logic was hidden in `FinanceDepartment._convert_to_primary` (protected method), making it difficult for sibling departments (HR, Sales) to perform consistent valuations without code duplication or violation of access modifiers.
++
++## 3. Solution Implementation Details
++To resolve TD-032, we implemented "Multi-Currency Operational Awareness" by injecting `exchange_rates` into key operational lifecycle methods and exposing conversion logic:
++
++1.  **FinanceDepartment**:
++    *   Exposed `convert_to_primary(amount, currency, exchange_rates)` as a public method to serve as the single source of truth for currency valuation within the Firm.
++    *   Updated `finalize_tick(exchange_rates)` to convert all expenses to the primary currency before aggregation.
++    *   Verified `calculate_altman_z_score` and `calculate_valuation` use exchange rates correctly.
++
++2.  **SalesDepartment**:
++    *   Updated `adjust_marketing_budget(exchange_rates)` to sum revenue across all currencies (converted to primary via `finance.convert_to_primary`) when calculating ROI.
++
++3.  **HRDepartment**:
++    *   Updated `process_payroll(..., exchange_rates)` to use Total Liquid Assets (converted) for the "insolvency firing" check, ensuring firms don't fire employees just because they hold the wrong currency denomination (operational awareness).
++
++4.  **Orchestration**:
++    *   Updated `Phase5_PostSequence` to fetch market context (exchange rates) and pass them to `finalize_tick`.
++    *   Updated `Firm.generate_transactions` to propagate rates to HR and Sales.
++
++## 4. Lessons Learned & Technical Debt
++*   **Context Objects**: Passing `exchange_rates` as an argument is a temporary fix. A better approach (TD-Future) would be to inject a scoped `MarketContext` or `PricingService` into the departments upon initialization or method call, reducing signature bloat.
++*   **Currency Agnosticism**: Logic should ideally work on `Money` objects that handle conversion internally, rather than raw floats and explicit conversion loops in business logic.
++*   **Testing Gaps**: The lack of multi-currency integration tests (scenarios where firms earn in EUR and pay in USD) allowed these naive implementations to persist.
+diff --git a/simulation/components/finance_department.py b/simulation/components/finance_department.py
+index 29d1c331..1fb97ae8 100644
+--- a/simulation/components/finance_department.py
++++ b/simulation/components/finance_department.py
+@@ -101,7 +101,7 @@ class FinanceDepartment(IFinanceDepartment):
+         self.expenses_this_tick[currency] += amount
+         self.current_profit[currency] -= amount
+ 
+-    def _convert_to_primary(self, amount: float, currency: CurrencyCode, exchange_rates: Dict[CurrencyCode, float]) -> float:
++    def convert_to_primary(self, amount: float, currency: CurrencyCode, exchange_rates: Dict[CurrencyCode, float]) -> float:
+         """Helper to convert any currency to primary currency."""
+         if currency == self.primary_currency:
+             return amount
+@@ -184,7 +184,7 @@ class FinanceDepartment(IFinanceDepartment):
+         # Calculate total profit in primary currency for history tracking
+         total_profit_primary = 0.0
+         for cur, profit in self.current_profit.items():
+-            total_profit_primary += self._convert_to_primary(profit, cur, exchange_rates)
++            total_profit_primary += self.convert_to_primary(profit, cur, exchange_rates)
+ 
+         self.profit_history.append(total_profit_primary)
+ 
+@@ -227,7 +227,7 @@ class FinanceDepartment(IFinanceDepartment):
+             distributable_profit = max(0, profit * self.firm.dividend_rate)
+             if distributable_profit > 0 and total_shares > 0:
+                 # Add to total paid (converted)
+-                self.dividends_paid_last_tick += self._convert_to_primary(distributable_profit, cur, exchange_rates)
++                self.dividends_paid_last_tick += self.convert_to_primary(distributable_profit, cur, exchange_rates)
+ 
+                 for household in households:
+                     # TD-233: Use portfolio property (LoD fix)
+@@ -252,7 +252,7 @@ class FinanceDepartment(IFinanceDepartment):
+         # TD-213-B: Update last_revenue before reset
+         total_revenue_primary = 0.0
+         for cur, amount in self.revenue_this_turn.items():
+-            total_revenue_primary += self._convert_to_primary(amount, cur, exchange_rates)
++            total_revenue_primary += self.convert_to_primary(amount, cur, exchange_rates)
+         self.last_revenue = total_revenue_primary
+ 
+         for cur in list(self.current_profit.keys()): # List copy to avoid runtime error if we modify keys
+@@ -288,7 +288,7 @@ class FinanceDepartment(IFinanceDepartment):
+         # Calculate Total Assets (Sum of all currencies converted + Capital + Inventory)
+         usd_balance = 0.0
+         for cur, amount in self.firm.wallet.get_all_balances().items():
+-             usd_balance += self._convert_to_primary(amount, cur, exchange_rates)
++             usd_balance += self.convert_to_primary(amount, cur, exchange_rates)
+ 
+         total_assets = usd_balance + self.firm.capital_stock + self.get_inventory_value()
+         if total_assets == 0: return 0.0
+@@ -356,7 +356,7 @@ class FinanceDepartment(IFinanceDepartment):
+         total_assets_val = 0.0
+         # Cash
+         for cur, amount in self.firm.wallet.get_all_balances().items():
+-            total_assets_val += self._convert_to_primary(amount, cur, exchange_rates)
++            total_assets_val += self.convert_to_primary(amount, cur, exchange_rates)
+ 
+         # Inventory & Capital Stock (Assuming priced in primary)
+         total_assets_val += self.get_inventory_value() + self.firm.capital_stock
+@@ -474,15 +474,15 @@ class FinanceDepartment(IFinanceDepartment):
+             if self.firm.settlement_system.transfer(self.firm, government, amount, reason, currency=currency):
+                 self.record_expense(amount, currency)
+ 
+-    def finalize_tick(self) -> None:
++    def finalize_tick(self, exchange_rates: Dict[CurrencyCode, float]) -> None:
+         """
+         Resets tick-specific counters and updates history.
+         Called by PostSequence phase.
+         """
+-        # 1. Update last_daily_expenses (SUM of all currency expenses)
+-        # Note: Ideally this should use exchange rates, but we sum raw values
+-        # as a heuristic for solvency metrics when rates aren't available in this context.
+-        total_expenses = sum(self.expenses_this_tick.values())
++        # 1. Update last_daily_expenses (SUM of all currency expenses converted to primary)
++        total_expenses = 0.0
++        for cur, amount in self.expenses_this_tick.items():
++            total_expenses += self.convert_to_primary(amount, cur, exchange_rates)
+         self.last_daily_expenses = total_expenses
+ 
+         # 2. Update last_sales_volume
+diff --git a/simulation/components/hr_department.py b/simulation/components/hr_department.py
+index 6ce1f5d4..b201efcf 100644
+--- a/simulation/components/hr_department.py
++++ b/simulation/components/hr_department.py
+@@ -1,7 +1,7 @@
+ from __future__ import annotations
+ from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
+ import logging
+-from modules.system.api import DEFAULT_CURRENCY
++from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+ 
+ if TYPE_CHECKING:
+     from simulation.core_agents import Household
+@@ -35,10 +35,11 @@ class HRDepartment:
+ 
+         return base_wage * actual_skill * halo_modifier
+ 
+-    def process_payroll(self, current_time: int, government: Optional[Any], market_data: Optional[Dict[str, Any]]) -> List[Transaction]:
++    def process_payroll(self, current_time: int, government: Optional[Any], market_data: Optional[Dict[str, Any]], exchange_rates: Dict[CurrencyCode, float]) -> List[Transaction]:
+         """
+         Pays wages to employees. Handles insolvency firing if assets are insufficient.
+         Returns list of Transactions.
++        Refactored for Multi-Currency Operational Awareness (TD-032).
+         """
+         from simulation.models import Transaction
+ 
+@@ -65,9 +66,15 @@ class HRDepartment:
+             base_wage = self.employee_wages.get(employee.id, self.firm.config.labor_market_min_wage)
+             wage = self.calculate_wage(employee, base_wage)
+ 
+-            # Affordability Check (Optimistic)
+-            # Refactor: Use finance.balance (Dict -> Float)
++            # Affordability Check (Operational Awareness: Total Liquid Assets)
++            # TD-032: Check total liquid assets converted to primary to prevent firing if solvent in other currencies.
++            total_liquid_assets = 0.0
++            for cur, amount in self.firm.finance.balance.items():
++                total_liquid_assets += self.firm.finance.convert_to_primary(amount, cur, exchange_rates)
++
++            # Check if we can pay specifically in the wage currency (assumed DEFAULT_CURRENCY for now)
+             current_balance = self.firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
++
+             if current_balance >= wage:
+                 # Calculate Tax
+                 income_tax = 0.0
+@@ -107,12 +114,40 @@ class HRDepartment:
+                 if hasattr(employee, "labor_income_this_tick"):
+                     employee.labor_income_this_tick += net_wage
+ 
++            elif total_liquid_assets >= wage:
++                # TD-032: Solvent but Illiquid in Wage Currency -> Zombie (Unpaid Wage) without Firing
++                self._record_zombie_wage(employee, wage, current_time)
+             else:
+-                # Insolvency Handling
++                # Insolvent -> Fire (via insolvency handler)
+                 self._handle_insolvency_transactions(employee, wage, current_time, generated_transactions)
+ 
+         return generated_transactions
+ 
++    def _record_zombie_wage(self, employee: Household, wage: float, current_time: int) -> None:
++        """Records an unpaid wage without firing the employee."""
++        # Record unpaid wage for Tier 1 claim in liquidation
++        if employee.id not in self.unpaid_wages:
++            self.unpaid_wages[employee.id] = []
++
++        self.unpaid_wages[employee.id].append((current_time, wage))
++
++        # Prune old unpaid wages (older than 3 months)
++        ticks_per_year = getattr(self.firm.config, "ticks_per_year", 365)
++        # 3 months = 1/4 year
++        cutoff_tick = current_time - (ticks_per_year // 4)
++
++        self.unpaid_wages[employee.id] = [
++            (t, w) for t, w in self.unpaid_wages[employee.id]
++            if t >= cutoff_tick
++        ]
++
++        # Use balance.get for logging deficit
++        current_balance = self.firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
++        self.firm.logger.warning(
++            f"ZOMBIE | Firm {self.firm.id} cannot afford wage for Household {employee.id}. Recorded as unpaid wage.",
++            extra={"tick": current_time, "agent_id": self.firm.id, "wage_deficit": wage - current_balance, "total_unpaid": len(self.unpaid_wages[employee.id])}
++        )
++
+     def _handle_insolvency_transactions(self, employee: Household, wage: float, current_time: int, tx_list: List[Transaction]):
+         """
+         Handles case where firm cannot afford wage.
+@@ -147,27 +182,8 @@ class HRDepartment:
+             employee.quit()
+             self.remove_employee(employee)
+         else:
+-            # Zombie Employee (Unpaid Wage Tracking)
+-            # Record unpaid wage for Tier 1 claim in liquidation
+-            if employee.id not in self.unpaid_wages:
+-                self.unpaid_wages[employee.id] = []
+-
+-            self.unpaid_wages[employee.id].append((current_time, wage))
+-
+-            # Prune old unpaid wages (older than 3 months)
+-            ticks_per_year = getattr(self.firm.config, "ticks_per_year", 365)
+-            # 3 months = 1/4 year
+-            cutoff_tick = current_time - (ticks_per_year // 4)
+-
+-            self.unpaid_wages[employee.id] = [
+-                (t, w) for t, w in self.unpaid_wages[employee.id]
+-                if t >= cutoff_tick
+-            ]
+-
+-            self.firm.logger.warning(
+-                f"ZOMBIE | Firm {self.firm.id} cannot afford wage for Household {employee.id}. Recorded as unpaid wage.",
+-                extra={"tick": current_time, "agent_id": self.firm.id, "wage_deficit": wage - current_balance, "total_unpaid": len(self.unpaid_wages[employee.id])}
+-            )
++            # Fallback to Zombie if we can't even afford severance
++            self._record_zombie_wage(employee, wage, current_time)
+ 
+     def hire(self, employee: Household, wage: float, current_tick: int = 0):
+         self.employees.append(employee)
+diff --git a/simulation/components/sales_department.py b/simulation/components/sales_department.py
+index f2341a9a..78fda1c6 100644
+--- a/simulation/components/sales_department.py
++++ b/simulation/components/sales_department.py
+@@ -1,6 +1,6 @@
+ from __future__ import annotations
+ from typing import TYPE_CHECKING, Dict, Any
+-from modules.system.api import DEFAULT_CURRENCY
++from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+ 
+ if TYPE_CHECKING:
+     from simulation.firms import Firm
+@@ -49,12 +49,14 @@ class SalesDepartment:
+ 
+         return order
+ 
+-    def adjust_marketing_budget(self) -> None:
++    def adjust_marketing_budget(self, exchange_rates: Dict[CurrencyCode, float]) -> None:
+         """Adjust marketing budget rate based on ROI."""
+         delta_spend = self.firm.marketing_budget  # Current tick spend
+ 
+-        # Extract primary currency revenue (approximate ROI for now)
+-        current_revenue_usd = self.firm.finance.revenue_this_turn.get(DEFAULT_CURRENCY, 0.0)
++        # Extract total revenue converted to primary currency
++        current_revenue_usd = 0.0
++        for cur, amount in self.firm.finance.revenue_this_turn.items():
++            current_revenue_usd += self.firm.finance.convert_to_primary(amount, cur, exchange_rates)
+ 
+         # Skip first tick or zero previous spend
+         # Note: We use last_marketing_spend from PREVIOUS tick to calculate ROI of THAT spend.
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 233f4032..662f1c6f 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -232,8 +232,10 @@ class Firm(BaseAgent, ILearningAgent):
+ 
+         return brand_premium
+ 
+-    def _adjust_marketing_budget(self) -> None:
+-        self.sales.adjust_marketing_budget()
++    def _adjust_marketing_budget(self, exchange_rates: Dict[CurrencyCode, float] = None) -> None:
++        if exchange_rates is None:
++            exchange_rates = {DEFAULT_CURRENCY: 1.0}
++        self.sales.adjust_marketing_budget(exchange_rates)
+ 
+     def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
+         self.current_production = self.production.produce(current_time, technology_manager)
+@@ -492,7 +494,7 @@ class Firm(BaseAgent, ILearningAgent):
+         transactions = []
+ 
+         # 1. Wages & Income Tax (HR)
+-        tx_payroll = self.hr.process_payroll(current_time, government, market_data)
++        tx_payroll = self.hr.process_payroll(current_time, government, market_data, exchange_rates)
+         transactions.extend(tx_payroll)
+ 
+         # 2. Finance Transactions (Holding, Maint, Corp Tax, Dividends, Bailout Repayment)
+@@ -507,7 +509,7 @@ class Firm(BaseAgent, ILearningAgent):
+         # Calculate total revenue in primary currency
+         total_revenue = 0.0
+         for cur, amount in self.finance.revenue_this_turn.items():
+-            total_revenue += self.finance._convert_to_primary(amount, cur, exchange_rates)
++            total_revenue += self.finance.convert_to_primary(amount, cur, exchange_rates)
+ 
+         if primary_balance > 100.0:
+             marketing_spend = max(10.0, total_revenue * self.marketing_budget_rate)
+@@ -526,7 +528,7 @@ class Firm(BaseAgent, ILearningAgent):
+         self.marketing_budget = marketing_spend
+         # Brand Update: Needs to happen (optimistic about spend success)
+         self.brand_manager.update(marketing_spend, self.productivity_factor / 10.0)
+-        self.sales.adjust_marketing_budget()
++        self.sales.adjust_marketing_budget(exchange_rates)
+ 
+         return transactions
+ 
+diff --git a/simulation/orchestration/phases/post_sequence.py b/simulation/orchestration/phases/post_sequence.py
+index 1d755e3f..d7f66115 100644
+--- a/simulation/orchestration/phases/post_sequence.py
++++ b/simulation/orchestration/phases/post_sequence.py
+@@ -6,6 +6,7 @@ from simulation.orchestration.api import IPhaseStrategy
+ from simulation.dtos.api import SimulationState, AIDecisionData
+ from simulation.orchestration.utils import prepare_market_data
+ from simulation.systems.api import LearningUpdateContext
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     from simulation.world_state import WorldState
+@@ -109,10 +110,17 @@ class Phase5_PostSequence(IPhaseStrategy):
+              if hasattr(h, "reset_consumption_counters"):
+                  h.reset_consumption_counters()
+ 
++        # Fetch exchange rates for multi-currency finalization
++        exchange_rates = {DEFAULT_CURRENCY: 1.0}
++        if state.tracker and hasattr(state.tracker, "capture_market_context"):
++            ctx = state.tracker.capture_market_context()
++            if ctx and ctx.exchange_rates:
++                exchange_rates = ctx.exchange_rates
++
+         for f in state.firms:
+             if hasattr(f, 'finance') and hasattr(f.finance, 'finalize_tick'):
+                 # Correctly handles multi-currency reset and capitalization
+-                f.finance.finalize_tick()
++                f.finance.finalize_tick(exchange_rates)
+             else:
+                 logger.warning(
+                     f"FIRM_RESET_SKIPPED | Firm {f.id} skipped finance reset.",
+diff --git a/tests/unit/test_firms.py b/tests/unit/test_firms.py
+index 7b79462d..a82e314d 100644
+--- a/tests/unit/test_firms.py
++++ b/tests/unit/test_firms.py
+@@ -174,10 +174,12 @@ class TestSalesDepartment:
+         firm.finance.last_marketing_spend = 50.0
+         firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 200.0}
+         firm.finance.last_revenue = 100.0
++        # Mock convert_to_primary behavior on the mock object
++        firm.finance.convert_to_primary.side_effect = lambda amt, cur, rates: amt
+ 
+         sales_dept = SalesDepartment(firm, mock_config)
+         initial_rate = firm.marketing_budget_rate
+-        sales_dept.adjust_marketing_budget()
++        sales_dept.adjust_marketing_budget({DEFAULT_CURRENCY: 1.0})
+ 
+         assert firm.marketing_budget_rate > initial_rate
+ 
+@@ -186,9 +188,11 @@ class TestSalesDepartment:
+         firm.finance.last_marketing_spend = 200.0 # High spend
+         firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 110.0} # Low return
+         firm.finance.last_revenue = 100.0
++        # Mock convert_to_primary behavior on the mock object
++        firm.finance.convert_to_primary.side_effect = lambda amt, cur, rates: amt
+ 
+         sales_dept = SalesDepartment(firm, mock_config)
+         initial_rate = firm.marketing_budget_rate
+-        sales_dept.adjust_marketing_budget()
++        sales_dept.adjust_marketing_budget({DEFAULT_CURRENCY: 1.0})
+ 
+         assert firm.marketing_budget_rate < initial_rate
