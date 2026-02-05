@@ -77,6 +77,7 @@ def create_household_config_dto(**kwargs) -> HouseholdConfigDTO:
         "survival_need_death_threshold": 100.0,
         "assets_death_threshold": -100.0,
         "household_death_turns_threshold": 10,
+        "survival_need_death_ticks_threshold": 10.0,
         "initial_wage": 10.0,
         "education_cost_multipliers": {},
         "survival_need_emergency_threshold": 80.0,

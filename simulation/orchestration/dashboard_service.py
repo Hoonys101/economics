@@ -74,10 +74,11 @@ class DashboardService:
         savings_rate = max(0.0, loan_rate - 2.0) # Heuristic: Spread
 
         # Supply
-        m2 = tracker.get_m2_money_supply(state) if tracker else 0.0
+        monetary_aggregates = tracker.calculate_monetary_aggregates(state) if tracker else {"m0": 0.0, "m1": 0.0, "m2": 0.0}
+        m0 = monetary_aggregates["m0"]
+        m1 = monetary_aggregates["m1"]
+        m2 = monetary_aggregates["m2"]
         velocity = latest.get("velocity_of_money", 0.0)
-        m0 = m2 * 0.2 # Placeholder/Heuristic
-        m1 = m2 * 0.8 # Placeholder/Heuristic
 
         # --- 4. Politics ---
         # Approval
@@ -150,10 +151,11 @@ class DashboardService:
                 fiscal=PoliticsFiscalDTO(revenue=revenue, welfare=welfare, debt=debt)
             ),
             population=PopulationDTO(
-                                active_count=active_count,
-                                metrics=PopulationMetricsDTO(birth=birth_rate, death=death_rate)
-                            )
-                        )
+                distribution=PopulationDistributionDTO(q1=q1, q2=q2, q3=q3, q4=q4, q5=q5),
+                active_count=active_count,
+                metrics=PopulationMetricsDTO(birth=birth_rate, death=death_rate)
+            )
+        )
 
         self.persistence.save_snapshot(snapshot)
         return snapshot

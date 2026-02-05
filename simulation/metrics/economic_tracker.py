@@ -420,34 +420,53 @@ class EconomicIndicatorTracker:
                 latest_indicators[key] = values[-1]
         return latest_indicators
 
-    def get_m2_money_supply(self, world_state: 'WorldState') -> float:
+    def calculate_monetary_aggregates(self, world_state: 'WorldState') -> Dict[str, float]:
         """
-        Calculates the M2 money supply for economic reporting.
+        TD-015: Calculates M0, M1, M2 money supply aggregates.
+        Returns a dictionary with 'm0', 'm1', 'm2'.
         """
-        total = 0.0
+        m2 = 0.0
 
         # 1. Households
         for h in world_state.households:
             if h._bio_state.is_active:
-                total += self._calculate_total_wallet_value(h._econ_state.assets)
+                m2 += self._calculate_total_wallet_value(h._econ_state.assets)
 
         # 2. Firms
         for f in world_state.firms:
             if getattr(f, "is_active", False):
-                total += self._calculate_total_wallet_value(f.assets)
+                m2 += self._calculate_total_wallet_value(f.assets)
 
-        # 3. Bank Reserves
+        # 3. Bank Reserves (Commercial Bank)
+        bank_reserves = 0.0
         if world_state.bank:
             if isinstance(world_state.bank.assets, dict):
-                 total += self._calculate_total_wallet_value(world_state.bank.assets)
+                 bank_reserves = self._calculate_total_wallet_value(world_state.bank.assets)
             else:
-                 total += world_state.bank.assets # Fallback for scalar
+                 bank_reserves = world_state.bank.assets # Fallback for scalar
+            m2 += bank_reserves
 
         # 4. Government Assets
         if world_state.government:
              if isinstance(world_state.government.assets, dict):
-                 total += self._calculate_total_wallet_value(world_state.government.assets)
+                 m2 += self._calculate_total_wallet_value(world_state.government.assets)
              else:
-                 total += world_state.government.assets # Fallback for scalar
+                 m2 += world_state.government.assets # Fallback for scalar
 
-        return total
+        # M0 & M1 Heuristics (until checking/savings distinction is implemented)
+        # M0: Monetary Base (Currency in Circulation + Reserves)
+        # M1: Narrow Money (M0 + Demand Deposits)
+        # M2: Broad Money (M1 + Time Deposits)
+
+        # For now, we use a deterministic heuristic based on M2:
+        m0 = m2 * 0.2
+        m1 = m2 * 0.8
+
+        return {"m0": m0, "m1": m1, "m2": m2}
+
+    def get_m2_money_supply(self, world_state: 'WorldState') -> float:
+        """
+        Calculates the M2 money supply for economic reporting.
+        Deprecated: Use calculate_monetary_aggregates instead.
+        """
+        return self.calculate_monetary_aggregates(world_state)["m2"]
