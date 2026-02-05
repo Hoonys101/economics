@@ -25,6 +25,8 @@
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
 | TD-033 | 2026-02-05 | Foreign Asset Loss on Liquidation | Only primary currency liquified | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | **ACTIVE** |
+| TD-251 | 2026-02-05 | Stock Market IPO/SEO NULL Seller ID | Simulation Crash at Tick 50 | [Crash Log](../../../last_crash.log) | **CRITICAL** |
+
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
 
@@ -134,6 +136,12 @@
 - **원인 (Cause)**: 지표 계산을 중앙화된 서비스 대신 각 모듈 범위 내에서 독립적으로 구현함.
 - **해결책 제안 (Proposed Solution)**: 모든 핵심 경제 지표 계산 로직을 `EconomicIndicatorTracker` 등으로 중앙화하고 SSoT 원칙 확립.
 
+### 🟠 TD-251: Stock Market IPO/SEO NULL Seller ID (Critical)
+- **현상 (Phenomenon)**: 100-Tick 스트레스 테스트 중 Tick 50(Firm 127 IPO 시점)에서 `sqlite3.IntegrityError: NOT NULL constraint failed: transactions.seller_id` 발생하며 시스템 중단.
+- **원인 (Cause)**: IPO 또는 증자(SEO) 과정에서 생성되는 `Transaction` 객체의 `seller_id`가 `None`으로 입력됨. 초기 자본금 전송이나 주식 매칭 로직에서 ID 할당 누락 의심.
+- **해결책 제안 (Proposed Solution)**: `StockMarket.match_orders` 및 `FirmSystem.spawn_firm` 내의 `SettlementSystem.transfer` 호출 시 `seller_id` 유효성 검증 로직 추가. `TransactionData` DTO 생성 시 `None` 체크 강화.
+
 ---
+
 
 > **Note**: For details on active items, see relevant insights.

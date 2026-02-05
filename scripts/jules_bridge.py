@@ -112,6 +112,21 @@ class JulesBridge:
         if "|" in prompt:
             prompt = "[SYSTEM: Treat '|' as a newline character.] " + prompt
             
+        # Mandatory Insight Reporting Mandate (HITL 2.1)
+        insight_mandate = (
+            "\n\n" + "="*40 + "\n"
+            "🚨 MANDATORY REQUIREMENT: TECHNICAL INSIGHT REPORT\n"
+            "Before submitting this task, you MUST create a detailed technical report in "
+            "the `communications/insights/` directory. This report must include:\n"
+            "1. Problem Phenomenon (Stack traces, symptoms)\n"
+            "2. Root Cause Analysis\n"
+            "3. Solution Implementation Details\n"
+            "4. Lessons Learned & Technical Debt identified.\n"
+            "Failure to include this report in your PR will result in immediate rejection.\n"
+            "="*40
+        )
+        prompt += insight_mandate
+
         payload = {
             "prompt": prompt,
             "title": title,

@@ -10,7 +10,7 @@
 ### 1. 상세 설계 초안 작성 (Spec Writer)
 - 수석 아키텍트의 개념 기획을 수령하여 `spec.md` 및 `api.py` 초안 작성.
 - 반드시 DTO 필드 정의, DAO 인터페이스, 예외 처리 로직(Pseudo-code) 포함.
-- **[Routine] Mandatory Reporting**: 모든 명세 하단에 Jules가 작업 중 발견한 인사이트와 기술 부채를 `communications/insights/[Mission_Key].md` 파일에 독립적으로 기록하도록 강제합니다. 이는 공용 파일 충돌을 방지하기 위함입니다.
+- **[Routine] Mandatory Reporting**: 모든 명세 하단에 Jules가 작업 중 발견한 인사이트와 기술 부채를 `communications/insights/[Mission_Key].md` 파일에 독립적으로 기록하도록 강제합니다. **이는 선택 사항이 아닌 필수 요구사항(Hard-Requirement)입니다.**
 - **[Audit] Pre-Implementation Risk Analysis**: 모든 설계 초안 작성 시, 코드 구현 전 발생할 수 있는 '아키텍처적 지뢰'를 분석하여 보고하는 섹션을 포함해야 합니다. (순환 참조, 테스트 모킹 파괴, 설정값 누락 등)
 - **[Test] Golden Data & Mock Strategy**: 새 모듈/컴포넌트 설계 시, 실제 데이터 샘플(Golden Data)을 정의하고 이를 기반으로 한 전용 Mock 클래스 또는 Fixture 가이드를 설계에 포함합니다. 이는 `MagicMock` 사용으로 인한 타입 오류를 방지하고 테스트 안정성을 높이기 위함입니다.
 
@@ -65,6 +65,8 @@
     - **테스트 영향도**: 기존 유닛 테스트의 Mock 객체가 수정된 클래스/필드에 의존하고 있지는 않은가?
     - **설정 의존성**: `SimulationConfig`에 필요한 새로운 필드가 기존 코드에 정의되어 있는가?
     - **선행 작업 권고**: 구현 전 리팩토링이나 환경 정합성 작업이 선행되어야 하는지 명시 (예: "TD-045 선행 필요").
+- **🚨 Mandatory Reporting Verification**:
+    - 설계 혹은 분석 과정에서 발견된 모든 기술 부채와 인사이트를 `communications/insights/` 폴더 내에 별도 파일로 기록했음을 명시하십시오. 이 보고서가 없으면 미션은 실패(Hard-Fail)로 자격이 박탈됩니다.
 ---
 
 ## 🛠️ 작업 지침 (Instructions)

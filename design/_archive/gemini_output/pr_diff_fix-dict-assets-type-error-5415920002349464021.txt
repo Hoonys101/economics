@@ -1,0 +1,101 @@
+diff --git a/communications/insights/mission_fix_dict_assets.md b/communications/insights/mission_fix_dict_assets.md
+new file mode 100644
+index 00000000..0df2a705
+--- /dev/null
++++ b/communications/insights/mission_fix_dict_assets.md
+@@ -0,0 +1,19 @@
++# Fix TypeError in Orchestration and Systems due to Multi-Currency Assets
++
++## Phenomenon
++A `TypeError: unsupported operand type(s) for /: 'dict' and 'float'` was reported in `simulation/orchestration/utils.py` at line 97. This occurred when the code attempted to divide `firm.assets` (which had become a dictionary `{CurrencyCode: float}` in Phase 33) by `firm.total_shares` (a float). Similar type incompatibility issues were identified in `GoodsTransactionHandler` during solvency checks and in `TickOrchestrator` during economic tracking.
++
++## Root Cause
++1.  **Legacy Float Assumption:** Much of the legacy simulation logic assumed `agent.assets` (or `.balance`) was a simple `float` representing USD.
++2.  **Partial Migration to Multi-Currency:** Phase 33 introduced multi-currency support, changing `assets` to a `Dict[CurrencyCode, float]` or `MultiCurrencyWalletDTO`. While core systems were updated, peripheral logic in orchestration, handlers, and reporting was not fully audited for this type change.
++3.  **Ambiguous Type Handling:** `GoodsTransactionHandler` compared `buyer.assets` directly with `total_cost` (float), which fails when `assets` is a dictionary.
++
++## Solution
++1.  **Safe Asset Extraction in Utils:** Updated `simulation/orchestration/utils.py` to check if `assets` is a dictionary. If so, it extracts the value for `DEFAULT_CURRENCY` (defaulting to 0.0) before performing the division for stock price calculation.
++2.  **Currency-Aware Solvency Check:** Updated `simulation/systems/handlers/goods_handler.py` to identify the transaction currency (or fallback to default) and look up the specific balance in the buyer's asset dictionary for comparison against the cost.
++3.  **Scalar Money Supply for Tracker:** Updated `simulation/orchestration/tick_orchestrator.py` to convert the total money supply dictionary into a scalar value (USD/Default) using `state.get_total_system_money_for_diagnostics(DEFAULT_CURRENCY)` before passing it to `EconomicIndicatorTracker.track`, ensuring compatibility with the tracker's expected input.
++
++## Lessons Learned
++*   **Type Audits are Critical:** When changing the type of a core field like `assets`, a comprehensive audit (using `grep` or static analysis) of all usages is required, especially in "peripheral" code like utils, logging, and legacy handlers.
++*   **Defensive Coding:** Logic that interacts with potentially polymorphic fields (legacy float vs. new dict) should implement defensive type checks (`isinstance`) during the transition period.
++*   **Scalar Conversion for Reporting:** Reporting tools and trackers often expect scalar values. Explicit conversion layers should be used at the interface between the core multi-currency engine and legacy reporting systems.
+diff --git a/simulation/orchestration/tick_orchestrator.py b/simulation/orchestration/tick_orchestrator.py
+index ec8814c7..3a0acbb3 100644
+--- a/simulation/orchestration/tick_orchestrator.py
++++ b/simulation/orchestration/tick_orchestrator.py
+@@ -184,12 +184,14 @@ class TickOrchestrator:
+ 
+         # Track Economics
+         if state.tracker:
++             # TD-024: Ensure money_supply is scalar for tracker compatibility
++             money_supply_scalar = state.get_total_system_money_for_diagnostics(DEFAULT_CURRENCY)
+              state.tracker.track(
+                  time=state.time,
+                  households=state.households,
+                  firms=state.firms,
+                  markets=state.markets,
+-                 money_supply=state.calculate_total_money()
++                 money_supply=money_supply_scalar
+              )
+ 
+         # Money Supply Verification (Post-Tick)
+diff --git a/simulation/orchestration/utils.py b/simulation/orchestration/utils.py
+index 437c52d8..5f927131 100644
+--- a/simulation/orchestration/utils.py
++++ b/simulation/orchestration/utils.py
+@@ -4,6 +4,7 @@ from simulation.dtos.api import SimulationState
+ from simulation.core_agents import Household
+ from simulation.firms import Firm
+ from simulation.markets.order_book_market import OrderBookMarket
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     pass
+@@ -94,7 +95,12 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
+             if price <= 0:
+                 # Refactor: Use finance.balance
+                 assets = firm.finance.balance if hasattr(firm, 'finance') else firm.assets
+-                price = assets / firm.total_shares if firm.total_shares > 0 else 10.0
++                # TD-024: Handle multi-currency assets safely
++                if isinstance(assets, dict):
++                    asset_val = assets.get(DEFAULT_CURRENCY, 0.0)
++                else:
++                    asset_val = float(assets)
++                price = asset_val / firm.total_shares if firm.total_shares > 0 else 10.0
+             stock_market_data[firm_item_id] = {"avg_price": price}
+ 
+     rent_prices = [u.rent_price for u in state.real_estate_units if u.owner_id is not None]
+diff --git a/simulation/systems/handlers/goods_handler.py b/simulation/systems/handlers/goods_handler.py
+index 7a492b65..f153172e 100644
+--- a/simulation/systems/handlers/goods_handler.py
++++ b/simulation/systems/handlers/goods_handler.py
+@@ -4,6 +4,7 @@ from simulation.systems.api import ITransactionHandler, TransactionContext
+ from simulation.models import Transaction
+ from simulation.core_agents import Household
+ from simulation.firms import Firm
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -45,7 +46,16 @@ class GoodsTransactionHandler(ITransactionHandler):
+ 
+         # Solvency Check (Legacy compatibility)
+         if hasattr(buyer, 'check_solvency'):
+-            if buyer.assets < total_cost:
++            current_assets = buyer.assets
++            # TD-024: Handle multi-currency assets safely
++            if isinstance(current_assets, dict):
++                 # Assume transaction currency or fallback to DEFAULT
++                 tx_currency = getattr(tx, 'currency', DEFAULT_CURRENCY)
++                 check_val = current_assets.get(tx_currency, 0.0)
++            else:
++                 check_val = float(current_assets)
++
++            if check_val < total_cost:
+                 buyer.check_solvency(context.government)
+ 
+         # 2. Execute Settlement (Atomic)
