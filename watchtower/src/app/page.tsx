@@ -4,7 +4,7 @@ import { useWatchtowerStore } from "@/store/useWatchtowerStore";
 import { Activity, AlertTriangle, TrendingUp, Users } from "lucide-react";
 
 export default function OverviewPage() {
-  const { snapshot, isConnected } = useWatchtowerStore();
+  const { snapshot, isConnected, endpoint } = useWatchtowerStore();
 
   if (!isConnected || !snapshot) {
     return (
@@ -12,7 +12,7 @@ export default function OverviewPage() {
         <div className="text-center">
             <h1 className="text-2xl font-bold mb-2">Connecting to The Watchtower...</h1>
             <p className="text-gray-500">Waiting for simulation heartbeat...</p>
-            <div className="mt-4 text-xs text-gray-400">ws://localhost:8000/ws/live</div>
+            <div className="mt-4 text-xs text-gray-400">{endpoint}</div>
         </div>
       </div>
     );

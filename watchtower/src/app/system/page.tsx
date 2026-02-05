@@ -4,7 +4,7 @@ import { useWatchtowerStore } from "@/store/useWatchtowerStore";
 import { Server, CheckCircle, XCircle } from "lucide-react";
 
 export default function SystemPage() {
-  const { snapshot, isConnected } = useWatchtowerStore();
+  const { snapshot, isConnected, endpoint } = useWatchtowerStore();
 
   return (
     <div className="space-y-6">
@@ -25,7 +25,7 @@ export default function SystemPage() {
                 <span className="text-xl">{isConnected ? "Connected" : "Disconnected"}</span>
             </div>
             <div className="mt-2 text-sm text-gray-500">
-                Endpoint: ws://localhost:8000/ws/live
+                Endpoint: {endpoint}
             </div>
          </div>
 

@@ -7,9 +7,10 @@ interface WatchtowerState {
   connect: () => void;
   disconnect: () => void;
   setSnapshot: (snapshot: WatchtowerSnapshot) => void;
+  endpoint: string;
 }
 
-const WS_URL = 'ws://localhost:8000/ws/live';
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws/live';
 const INITIAL_RECONNECT_DELAY = 1000;
 const MAX_RECONNECT_DELAY = 30000;
 
@@ -19,6 +20,7 @@ let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 export const useWatchtowerStore = create<WatchtowerState>((set) => ({
   snapshot: null,
   isConnected: false,
+  endpoint: WS_URL,
 
   setSnapshot: (snapshot) => set({ snapshot }),
 
