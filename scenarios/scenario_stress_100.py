@@ -114,8 +114,8 @@ def run_stress_test():
                 for aid, d, atype in deltas[-10:]:
                     logger.error(f"   {atype} {aid}: {d:+.4f}")
 
-            # raise AssertionError(f"Monetary integrity failed at Tick {tick}. Leak: {leak}")
-            logger.warning(f"ignoring integrity fail to debug tick 2")
+            raise AssertionError(f"Monetary integrity failed at Tick {tick}. Leak: {leak}")
+            # logger.warning(f"ignoring integrity fail to debug tick 2")
 
         # Update Agent Balances
         for aid, agent in sim.agents.items():

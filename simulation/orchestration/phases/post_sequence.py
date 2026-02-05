@@ -6,6 +6,7 @@ from simulation.orchestration.api import IPhaseStrategy
 from simulation.dtos.api import SimulationState, AIDecisionData
 from simulation.orchestration.utils import prepare_market_data
 from simulation.systems.api import LearningUpdateContext
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -111,8 +112,20 @@ class Phase5_PostSequence(IPhaseStrategy):
 
         for f in state.firms:
             if hasattr(f, 'finance') and hasattr(f.finance, 'finalize_tick'):
+                # Aggregating multi-currency expenses into a single float for metrics
+                if isinstance(f.finance.expenses_this_tick, dict):
+                    f.finance.last_daily_expenses = sum(f.finance.expenses_this_tick.values())
+
                 # Correctly handles multi-currency reset and capitalization
                 f.finance.finalize_tick()
+
+                # Explicitly enforce dictionary reset if finalize_tick didn't (Safety Net)
+                # This ensures we don't accidentally get a float from somewhere else.
+                if not isinstance(f.finance.expenses_this_tick, dict):
+                     f.finance.expenses_this_tick = {DEFAULT_CURRENCY: 0.0}
+                if not isinstance(f.finance.revenue_this_tick, dict):
+                     f.finance.revenue_this_tick = {DEFAULT_CURRENCY: 0.0}
+
             else:
                 logger.warning(
                     f"FIRM_RESET_SKIPPED | Firm {f.id} skipped finance reset.",
