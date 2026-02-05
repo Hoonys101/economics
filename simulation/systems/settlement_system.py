@@ -446,7 +446,7 @@ class SettlementSystem(ISettlementSystem):
         current_cash = 0.0
 
         # Priority: Wallet -> Finance -> EconState -> Assets
-        if hasattr(agent, 'wallet'):
+        if hasattr(agent, 'wallet') and agent.wallet is not None:
             current_cash = agent.wallet.get_balance(currency)
         # Check for Firm's finance component first (Legacy fallback)
         elif hasattr(agent, 'finance') and hasattr(agent.finance, 'balance'):

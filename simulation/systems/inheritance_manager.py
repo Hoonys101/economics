@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, TYPE_CHECKING
 from simulation.core_agents import Household
 from simulation.agents.government import Government
 from simulation.models import Order, Transaction
@@ -7,6 +7,9 @@ from simulation.portfolio import Portfolio
 from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from simulation.dtos.api import SimulationState
 
 class InheritanceManager:
     """
@@ -18,7 +21,7 @@ class InheritanceManager:
         self.config_module = config_module
         self.logger = logging.getLogger("simulation.systems.inheritance_manager")
 
-    def process_death(self, deceased: Household, government: Government, simulation: Any) -> List[Transaction]:
+    def process_death(self, deceased: Household, government: Government, simulation: "SimulationState") -> List[Transaction]:
         """
         Executes the inheritance pipeline using SettlementSystem (Atomic).
 
@@ -164,7 +167,7 @@ class InheritanceManager:
                 transaction_type="tax",
                 time=current_tick
             )
-            results = simulation.transaction_processor.execute(simulation.world_state, [tx])
+            results = simulation.transaction_processor.execute(simulation, [tx])
             if results and results[0].success:
                 transactions.append(tx)
                 cash -= tax_to_pay
@@ -192,7 +195,7 @@ class InheritanceManager:
                     transaction_type="escheatment",
                     time=current_tick
                 )
-                results = simulation.transaction_processor.execute(simulation.world_state, [tx])
+                results = simulation.transaction_processor.execute(simulation, [tx])
                 if results and results[0].success:
                     transactions.append(tx)
 
@@ -210,7 +213,7 @@ class InheritanceManager:
                         metadata={"executed": False}
                      )
 
-                 results = simulation.transaction_processor.execute(simulation.world_state, [tx])
+                 results = simulation.transaction_processor.execute(simulation, [tx])
                  if results and results[0].success:
                      tx.metadata["executed"] = True
                      transactions.append(tx)
@@ -230,7 +233,7 @@ class InheritanceManager:
                     time=current_tick,
                     metadata={"heir_ids": [h.id for h in heirs]}
                 )
-                results = simulation.transaction_processor.execute(simulation.world_state, [tx])
+                results = simulation.transaction_processor.execute(simulation, [tx])
                 if results and results[0].success:
                     transactions.append(tx)
 
@@ -251,7 +254,7 @@ class InheritanceManager:
                         metadata={"executed": False}
                      )
 
-                results = simulation.transaction_processor.execute(simulation.world_state, [tx])
+                results = simulation.transaction_processor.execute(simulation, [tx])
                 if results and results[0].success:
                     tx.metadata["executed"] = True
                     transactions.append(tx)

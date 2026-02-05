@@ -2,6 +2,7 @@ import sqlite3
 import logging
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
 from simulation.db.base_repository import BaseRepository
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.dtos import AgentStateData
@@ -18,6 +19,10 @@ class AgentRepository(BaseRepository):
         단일 에이전트 상태 데이터를 데이터베이스에 저장합니다.
         """
         try:
+            assets_val = data.assets
+            if isinstance(assets_val, dict):
+                assets_val = assets_val.get(DEFAULT_CURRENCY, 0.0)
+
             self.cursor.execute(
                 """
                 INSERT INTO agent_states (run_id, time, agent_id, agent_type, assets, is_active, is_employed, employer_id,
@@ -29,7 +34,7 @@ class AgentRepository(BaseRepository):
                     data.time,
                     data.agent_id,
                     data.agent_type,
-                    data.assets,
+                    assets_val,
                     data.is_active,
                     data.is_employed,
                     data.employer_id,
@@ -57,13 +62,17 @@ class AgentRepository(BaseRepository):
             # Prepare data for batch insertion
             data_to_insert = []
             for state_data in agent_states_data:
+                assets_val = state_data.assets
+                if isinstance(assets_val, dict):
+                    assets_val = assets_val.get(DEFAULT_CURRENCY, 0.0)
+
                 data_to_insert.append(
                     (
                         state_data.run_id,
                         state_data.time,
                         state_data.agent_id,
                         state_data.agent_type,
-                        state_data.assets,
+                        assets_val,
                         state_data.is_active,
                         state_data.is_employed,
                         state_data.employer_id,
