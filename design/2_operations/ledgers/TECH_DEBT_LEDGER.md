@@ -10,7 +10,9 @@
 
 ## 🏭 2. FIRMS & CORPORATE
 
-| (No Active Items) | | | | | |
+| ID | Date | Description | Impact | Refs | Status |
+|---|---|---|---|---|---|
+| TD-032 | 2026-02-05 | Multi-Currency Operational Blindness | Departments ignore FX | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | **ACTIVE** |
 
 ## 🧠 3. DECISION & AI ENGINE (`ARCH_AI_ENGINE.md`)
 
@@ -22,20 +24,19 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| (No Active Items) | | | | | |
+| TD-033 | 2026-02-05 | Foreign Asset Loss on Liquidation | Only primary currency liquified | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | **ACTIVE** |
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-015 | 2026-02-05 | Divergent Metric Calculation | SSoT Deviation | [Review](../../_archive/gemini_output/pr_review_ph6-watchtower-dashboard-15887853336717342464.md) | **ACTIVE** |
-| TD-029 | 2026-02-05 | Residual Macro Leak (-71,328) | Baseline Variance | [Walkthrough](../../../brain/7064e76f-bfd2-423d-9816-95b56f05a65f/walkthrough.md) | **PLANNED** |
+| (No Active Items) | | | | | |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-125 | 2026-02-05 | Watchtower Contract Mismatch | API Desync | [Review](../../_archive/gemini_output/pr_review_ph6-watchtower-scaffold-18088587128119282769.md) | **ACTIVE** |
+| (No Active Items) | | | | | |
 
 ## 🧱 7. INFRASTRUCTURE & TESTING
 
@@ -72,12 +73,17 @@
 | TD-028 | 2026-02-05 | M2 Calculation Synchronization | Fixed via `_rebuild_currency_holders` (SSoT) | [Insight](../../communications/insights/mission_report_stress_test.md) |
 | TD-231/232 | 2026-02-05 | System Integrity Cleanup (SalesTax/Inheritance) | [Audit](../../3_work_artifacts/reports/inbound/refactor_sales-tax-atomicity-inheritance-381587902011087733_audit_economic_WO_SALESTAX.md) | [Insight](../../communications/insights/Bundle_C_System_Integrity.md) |
 | TD-225/223 | 2026-02-05 | Liquidation & DTO Unification | [Spec](../../3_work_artifacts/specs/TD-225_Unified_Liquidation.md) | [Insight](../../communications/insights/Bundle_C_System_Integrity.md) |
+| TD-226 | 2026-02-05 | Gov Decoupling (WelfareManager Service) | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | [Insight](../../communications/insights/Bundle_A_Government_Welfare.md) |
+| TD-Audit | 2026-02-05 | Synchronous Inheritance Processing | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | - |
 | TD-193 | 2026-02-04 | Fragmented Politics Sync | [Spec](../../3_work_artifacts/specs/WO-4.5_Adaptive_Brain.md) | - |
 | TD-238 | 2026-02-05 | Phases.py Decomposition | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-structural-001-15007860028193717728_audit_structural_STRUCTURAL-001.md) | [Insight](../../communications/insights/Bundle_C_System_Integrity.md) |
 
+| TD-015 | 2026-02-05 | Divergent Metric Calculation (M0/M1/M2) | [Review](../../_archive/gemini_output/pr_review_watchtower-backend-6136124806422059806.md) | [Insight](../../communications/insights/PH6_STABILIZATION_REPORT.md) |
+| TD-125 | 2026-02-05 | Watchtower Backend Refactor (DTO Sync) | [Review](../../_archive/gemini_output/pr_review_watchtower-backend-6136124806422059806.md) | [Insight](../../communications/insights/PH6_STABILIZATION_REPORT.md) |
+| TD-029 | 2026-02-05 | Residual Macro Leak Identification | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | [Insight](../../communications/insights/PH6_STABILIZATION_REPORT.md) |
 | TD-240 | 2026-02-05 | Post-Merge Type Error (Altman Z) | [trace_leak error] | [Insight](../../communications/insights/TD-213-B_MultiCurrency_Migration.md) |
-| TD-213-B | 2026-02-05 | Logic-wide Multi-Currency Migration | [Spec](../../3_work_artifacts/drafts/draft_232153__ObjectivenResolve_TD213B.md) | [Insight](../../communications/insights/TD-213-B_MultiCurrency_Migration.md) |
-| TD-226/227/228 | 2026-02-05 | Gov Decoupling & SRP Refactor | [Spec](../../3_work_artifacts/drafts/draft_232211__ObjectivenResolve_TD226_.md) | [Insight](../../communications/insights/Bundle_A_Government_Welfare.md) |
+| TD-213-B | 2026-02-05 | Logic-wide Multi-Currency Migration | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | [Insight](../../communications/insights/TD-213-B_MultiCurrency_Migration.md) |
+| TD-226/227/228 | 2026-02-05 | Gov Decoupling & SRP Refactor | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | [Insight](../../communications/insights/Bundle_A_Government_Welfare.md) |
 | TD-233 | 2026-02-05 | FinanceDept LoD Violation | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-structural-001-15007860028193717728_audit_structural_STRUCTURAL-001.md) | [Insight](../../communications/insights/TD-213-B_MultiCurrency_Migration.md) |
 | TD-191 | 2026-02-03 | Weak Typing in Housing Logic | [Spec](../../3_work_artifacts/specs/spec_td191_tp_refactor.md) | [Insight](../../communications/insights/TD-191_ENCAPSULATION.md) |
 | TD-198 | 2026-02-03 | MortgageApplicationDTO Inconsistency | [Spec](../../3_work_artifacts/specs/spec_h1_housing_v3_saga_blueprint.md) | [Insight](../../communications/insights/TD-198_SAGA.md) |
@@ -86,7 +92,7 @@
 | TD-180 | 2026-02-04 | Test Suite Bloat & Factory Sync | [Spec](../../3_work_artifacts/specs/spec_td180_test_refactor.md) | [Insight](../../communications/insights/TD-180-Test-Refactor.md) |
 | TD-190 | 2026-02-04 | Config Shadowing & God Object | [Spec](../../3_work_artifacts/specs/spec_td190_config_refactor.md) | [Insight](../../communications/insights/TD-190_Config_Refactor.md) |
 | TD-161 | 2026-02-04 | Registry Decoupling & Phase Decomposition | [Spec](../../3_work_artifacts/specs/spec_td161_arch_refactor.md) | [Insight](../../communications/insights/TD-161_Architecture_Refactoring.md) |
-| TD-211 | 2026-02-03 | `trace_leak.py` NameError Fix | [Spec](../../3_work_artifacts/drafts/draft_183800_Author_specification_for_Multi.md) | [Insight](../../communications/insights/PH33_DEBUG.md) |
+| TD-211 | 2026-02-03 | `trace_leak.py` NameError Fix | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | [Insight](../../communications/insights/PH33_DEBUG.md) |
 | TD-160 | 2026-02-04 | Non-Atomic Inheritance | Fixed via deferred asset_transfer & inheritance manager | [Merge_8a7cff1](../../files_in_commit.txt) |
 | TD-192 | 2026-02-04 | Direct Asset Manipulation in Emergency | Fixed via atomic sales_tax settlement in emergency handler | [Merge_8a7cff1](../../files_in_commit.txt) |
 | TD-214 | 2026-02-04 | `Household` God Class Decomposition | [Spec](../../3_work_artifacts/specs/WO-4.0_Household_Mixins.md) | [Insight](../../communications/insights/WO-4.0.md) |

@@ -9,13 +9,14 @@
 ## 1. 현재 개발 단계
 
 - **현재 단계:**
-    - **`Phase 6: The Pulse of the Market (Stress & Visualization)`** 📈 [IN PROGRESS]
-        - **Goal**: Market stress testing and real-time dashboard visualization.
-        - **Active Missions**:
-            - `PH6_BASELINE_STABILIZATION`: Zero-Leak hardening & Persistence (Jules) [IN PROGRESS]
-            - `EXEC_PH6_STRESS_TEST`: 100-Tick Baseline captured (-71k variance) ✅
-            - `WATCHTOWER_BACKEND`: FastAPI/WebSocket Stream [MERGED ✅]
-            - `WATCHTOWER_FRONTEND`: Next.js Command Center [MERGED ✅]
+    - **`Phase 6: The Pulse of the Market (Stress & Visualization)`** 📈 ✅ (2026-02-05)
+        - **Achievement**: 100-Tick Baseline Captured with understood variance (-71k). Engine hardened.
+        - **Status**:
+            - [x] **Monetary Stabilization**: Identified -71k variance as Bank Profit Absorption. ✅
+            - [x] **Engine Hardening**: Resolved multi-currency reset crashes & dictionary resets. ✅
+            - [x] **Watchtower Refactor**: SSoT metrics for M0/M1/M2/Gini implemented. ✅
+            - [x] **Gov Decoupling**: Phasehandlers & WelfareManager service extracted. ✅ (Bundle C)
+            - [x] **Transactional Integrity**: Synchronous TransactionProcessor for Inheritance. ✅
 
 - **완료된 단계(Recent)**:
     - **Phase 5: Central Bank & Monetary Integrity** ✅ (2026-02-05)
