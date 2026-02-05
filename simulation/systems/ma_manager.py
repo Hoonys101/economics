@@ -88,7 +88,7 @@ class MAManager:
                 hostile_targets.append(firm)
 
             # Predator Criteria
-            if firm_balance > avg_assets * 1.5 and firm.finance.current_profit > 0:
+            if firm_balance > avg_assets * 1.5 and firm.finance.current_profit.get(DEFAULT_CURRENCY, 0) > 0:
                 predators.append(firm)
 
         # 2. M&A Matching Loop

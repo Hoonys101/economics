@@ -6,6 +6,7 @@ import logging
 import simulation
 from simulation.systems.api import ICommerceSystem, CommerceContext
 from simulation.models import Transaction
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.dtos.scenario import StressScenarioConfig
@@ -85,12 +86,15 @@ class CommerceSystem(ICommerceSystem):
                     tax_rate = context.get('sales_tax_rate', 0.05)
                     price_with_tax = price * (1 + tax_rate)
 
-                    if household._econ_state.assets < price_with_tax:
+                    assets = household._econ_state.assets
+                    cash = assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(assets, dict) else float(assets)
+
+                    if cash < price_with_tax:
                         reason = "INSOLVENT"
-                        context_data = {"cash": household._econ_state.assets, "price": price, "price_with_tax": price_with_tax, "need": survival_need}
+                        context_data = {"cash": cash, "price": price, "price_with_tax": price_with_tax, "need": survival_need}
                     else:
                         reason = "STOCK_OUT"
-                        context_data = {"inventory": household._econ_state.inventory.copy(), "cash": household._econ_state.assets}
+                        context_data = {"inventory": household._econ_state.inventory.copy(), "cash": cash}
                 else:
                      reason = "UTILITY_CONSTRAINT"
 
@@ -138,7 +142,10 @@ class CommerceSystem(ICommerceSystem):
                         tax_rate = context.get('sales_tax_rate', 0.05)
                         cost = b_amt * food_price * (1 + tax_rate) # TD-231: Include tax
 
-                        if household._econ_state.assets >= cost:
+                        assets = household._econ_state.assets
+                        cash = assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(assets, dict) else float(assets)
+
+                        if cash >= cost:
                             planned_consumptions[household.id]["buy_amount"] = b_amt
                             government = context.get("government")
                             seller_id = government.id if government else 999999

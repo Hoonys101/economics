@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 import traceback
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 from simulation.dtos.watchtower import WatchtowerSnapshotDTO
 
@@ -17,12 +17,13 @@ class PersistenceBridge:
     Ensures that web-streamed data is also archived locally (Double-Track).
     """
     
-    def __init__(self, base_dir: str = "reports/snapshots"):
+    def __init__(self, simulation: Optional[Any] = None, base_dir: str = "reports/snapshots"):
+        self.simulation = simulation
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self._last_saved_tick = -1
 
-    def save_snapshot(self, snapshot: WatchtowerSnapshotDTO, interval: int = 10):
+    def save_snapshot(self, snapshot: WatchtowerSnapshotDTO, interval: int = 1):
         """
         Saves the DTO to a local JSON file at specified tick intervals.
         """

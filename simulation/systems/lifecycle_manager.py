@@ -372,7 +372,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
         for firm in state.firms:
             firm.hr.employees = [
-                emp for emp in firm.hr.employees if emp.is_active and emp.id in state.agents
+                emp for emp in firm.hr.employees if hasattr(emp, 'is_active') and emp.is_active and emp.id in state.agents
             ]
 
         return transactions

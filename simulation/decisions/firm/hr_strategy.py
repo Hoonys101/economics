@@ -3,6 +3,7 @@ import logging
 from simulation.models import Order
 from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
 from simulation.decisions.firm.api import HRPlanDTO
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +121,9 @@ class HRStrategy:
             total_liabilities = debt_info.get("total_principal", 0.0)
 
         if total_liabilities > 0:
-            solvency_ratio = firm.finance.balance / total_liabilities
+            balance = firm.finance.balance
+            cash = balance.get(DEFAULT_CURRENCY, 0.0) if isinstance(balance, dict) else float(balance)
+            solvency_ratio = cash / total_liabilities
             if solvency_ratio < 1.5:
                 return base_offer_wage
 
@@ -129,15 +132,20 @@ class HRStrategy:
         if firm.hr.employees_data:
             wage_bill = sum(e['wage'] for e in firm.hr.employees_data.values())
 
-        if wage_bill > 0 and firm.finance.balance < wage_bill * 2:
-             return base_offer_wage
+        if wage_bill > 0:
+             balance = firm.finance.balance
+             cash = balance.get(DEFAULT_CURRENCY, 0.0) if isinstance(balance, dict) else float(balance)
+             if cash < wage_bill * 2:
+                 return base_offer_wage
 
         # 3. Calculate Increase
         increase_rate = min(0.05, 0.01 * vacancies)
         new_wage = base_offer_wage * (1.0 + increase_rate)
 
         # 4. Absolute Ceiling
-        max_affordable = firm.finance.balance / (current_employees + vacancies + 1)
+        balance = firm.finance.balance
+        cash = balance.get(DEFAULT_CURRENCY, 0.0) if isinstance(balance, dict) else float(balance)
+        max_affordable = cash / (current_employees + vacancies + 1)
         if new_wage > max_affordable:
             new_wage = max(base_offer_wage, max_affordable)
 

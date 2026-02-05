@@ -162,8 +162,8 @@ class FirmStateDTO:
     dividend_rate: float
     is_publicly_traded: bool
     valuation: float
-    revenue_this_turn: float
-    expenses_this_tick: float
+    revenue_this_turn: Dict[str, float]
+    expenses_this_tick: Dict[str, float]
     consecutive_loss_turns: int
     altman_z_score: float
     price_history: Dict[str, float]

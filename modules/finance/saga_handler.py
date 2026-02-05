@@ -25,7 +25,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         self.simulation = simulation
         self.settlement_system: ISettlementSystem = simulation.settlement_system
         # Note: Registry in simulation must implement IPropertyRegistry methods
-        self.housing_service = simulation.housing_service
+        self.housing_service = getattr(simulation, 'housing_service', None)
         self.loan_market = simulation.markets.get("loan")
 
     def execute_step(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:

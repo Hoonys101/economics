@@ -19,7 +19,7 @@ class DashboardService:
         self.simulation = simulation
         self._last_tick_time = datetime.now()
         self._last_tick = 0
-        self.persistence = PersistenceBridge()
+        self.persistence = PersistenceBridge(simulation)
 
     def get_snapshot(self) -> WatchtowerSnapshotDTO:
         state = self.simulation.world_state
