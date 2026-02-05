@@ -1,6 +1,7 @@
 from typing import List, Any, Dict, Optional
 import logging
 from modules.government.api import IWelfareManager
+from modules.government.welfare.api import IWelfareRecipient
 from modules.government.dtos import (
     WelfareResultDTO,
     BailoutResultDTO,
@@ -29,11 +30,6 @@ class WelfareManager(IWelfareManager):
         """ Calculates current survival cost based on food prices. """
         avg_food_price = 0.0
 
-        # Accessing market_data.market_data for legacy dict compatibility if needed
-        # Or using market_data.market_signals if updated.
-        # The logic in service.py used market_data.get("goods_market", {}).
-        # MarketSnapshotDTO has market_data: Dict[str, Any] for legacy.
-
         raw_data = market_data.market_data
         goods_market = raw_data.get("goods_market", {})
 
@@ -53,6 +49,9 @@ class WelfareManager(IWelfareManager):
         payment_requests = []
         total_paid = 0.0
 
+        # Filter for eligible welfare recipients (Safe filtering for mixed lists)
+        welfare_recipients = [a for a in agents if isinstance(a, IWelfareRecipient)]
+
         # 1. Calculate Survival Cost (Dynamic)
         survival_cost = self.get_survival_cost(market_data)
 
@@ -64,28 +63,23 @@ class WelfareManager(IWelfareManager):
         effective_benefit_amount = benefit_amount * welfare_budget_multiplier
 
         if effective_benefit_amount > 0:
-            for agent in agents:
-                if not getattr(agent, "is_active", False):
+            for agent in welfare_recipients:
+                if not agent.is_active:
                     continue
 
-                if hasattr(agent, "needs") and hasattr(agent, "is_employed"): # Identifying households
-                    # Unemployment Benefit
-                    if not agent.is_employed:
-                        payment_requests.append(PaymentRequestDTO(
-                            payer="GOVERNMENT", # Placeholder, will be replaced by actual ID in execution or ignored
-                            payee=agent,
-                            amount=effective_benefit_amount,
-                            currency=DEFAULT_CURRENCY,
-                            memo="welfare_support_unemployment"
-                        ))
-                        total_paid += effective_benefit_amount
+                # Unemployment Benefit
+                if not agent.is_employed:
+                    payment_requests.append(PaymentRequestDTO(
+                        payer="GOVERNMENT", # Placeholder, will be replaced by actual ID in execution or ignored
+                        payee=agent,
+                        amount=effective_benefit_amount,
+                        currency=DEFAULT_CURRENCY,
+                        memo="welfare_support_unemployment"
+                    ))
+                    total_paid += effective_benefit_amount
 
         # 3. Stimulus Check
         current_gdp = market_data.market_data.get("total_production", 0.0)
-
-        # Note: gdp_history is passed in, assumed to include current_gdp or updated by caller.
-        # But for logic we need history. Caller should handle updating history.
-        # We just check the condition.
 
         trigger_drop = getattr(self.config, "STIMULUS_TRIGGER_GDP_DROP", DEFAULT_STIMULUS_TRIGGER_GDP_DROP)
 
@@ -101,7 +95,7 @@ class WelfareManager(IWelfareManager):
              base_stimulus_amount = survival_cost * 5.0
              effective_stimulus_amount = base_stimulus_amount * welfare_budget_multiplier
 
-             active_households = [a for a in agents if hasattr(a, "is_employed") and getattr(a, "is_active", False)]
+             active_households = [a for a in welfare_recipients if a.is_active]
 
              for h in active_households:
                  payment_requests.append(PaymentRequestDTO(

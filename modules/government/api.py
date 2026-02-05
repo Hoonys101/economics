@@ -10,6 +10,7 @@ from modules.government.dtos import (
     TaxCollectionResultDTO,
     IAgent
 )
+from modules.government.welfare.api import IWelfareRecipient
 from simulation.dtos.api import MarketSnapshotDTO
 from modules.finance.api import TaxCollectionResult
 from modules.system.api import CurrencyCode

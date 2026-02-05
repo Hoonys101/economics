@@ -98,3 +98,23 @@ def test_provide_firm_bailout(welfare_manager):
     # Insolvent
     result_fail = welfare_manager.provide_firm_bailout(firm, 5000.0, 100, is_solvent=False)
     assert result_fail is None
+
+def test_run_welfare_check_with_firm(welfare_manager, mock_agent, market_data):
+    # Setup Firm: Should NOT be a welfare recipient
+    firm = MagicMock()
+    firm.id = 501
+    firm.is_active = True
+
+    # Remove 'is_employed' to fail IWelfareRecipient check
+    del firm.is_employed
+
+    agents = [mock_agent, firm]
+    gdp_history = [1000.0] * 10
+
+    # Execution
+    result = welfare_manager.run_welfare_check(agents, market_data, 100, gdp_history)
+
+    # Verification
+    # Only mock_agent should be processed.
+    assert len(result.payment_requests) == 1
+    assert result.payment_requests[0].payee == mock_agent
