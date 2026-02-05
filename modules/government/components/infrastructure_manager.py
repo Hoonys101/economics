@@ -66,6 +66,10 @@ class InfrastructureManager:
 
         amount_per_hh = effective_cost / len(active_households)
 
+        recipient_ids = sorted([h.id for h in active_households])
+        logger.debug(f"INFRA_DEBUG | Active HH: {len(active_households)}, Cost: {effective_cost}, AmountPerHH: {amount_per_hh}")
+        logger.debug(f"INFRA_RECIPIENTS | IDs: {recipient_ids}")
+
         for h in active_households:
             tx = Transaction(
                 buyer_id=self.government.id,

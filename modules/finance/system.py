@@ -273,10 +273,17 @@ class FinanceSystem(IFinanceSystem):
                             transaction_type="bond_purchase",
                             time=current_tick
                        )
+
+                       # WO-220: Tag Bank purchases as expansion (Reserves -> Circulation)
+                       if buyer == self.bank:
+                           if not tx.metadata:
+                               tx.metadata = {}
+                           tx.metadata["is_monetary_expansion"] = True
+
                        generated_transactions.append(tx)
 
                        amount_raised += purchase_amount
-                       logger.info(f"BOND_SYNC_SUCCESS | Raised {purchase_amount:.2f} from {buyer.id}")
+                       logger.info(f"BOND_SYNC_SUCCESS | Raised {purchase_amount:.2f} from {buyer.id} for Gov {issuer.id}")
                   else:
                        logger.error(f"BOND_SYNC_FAIL | Settlement failed for {purchase_amount:.2f} from {buyer.id}")
 

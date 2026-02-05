@@ -227,6 +227,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             # WO-218: Track new agent as currency holder for M2 integrity
             if isinstance(agent, ICurrencyHolder):
                 state.currency_holders.append(agent)
+            else:
+                self.logger.critical(f"LIFECYCLE_ERROR | New Agent {agent.id} is NOT ICurrencyHolder!")
 
             # Ensure agent has settlement system
             if hasattr(agent, 'settlement_system'):
