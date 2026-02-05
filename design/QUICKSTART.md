@@ -119,6 +119,43 @@ python scripts/cmd_ops.py set-jules <key> -t "<title>" --command send-message -i
 - **Pro-Tip**: Jules는 `--file` (또는 `-f`)만 지원하며, `--context`는 무시됩니다.
 - **Dynamic ID**: `send-message` 시 서버의 활성 ID를 UI에서 선택하면 레지스트리의 설정값이 해당 세션으로 발송됩니다.
 
+### 🚨 Jules Delegation Protocol: 맥락 주입 (Context Injection)
+> **"신입사원에게 일을 맡기듯 하지 마라 (Don't Delegate Like a Rookie Manager)."**
+
+Jules에게 미션을 위임할 때, "장부(Ledger)"나 "단일 명세서(Single Spec)"만 던지고 "알아서 해"라고 하는 것은 **반쪽짜리 위임(Lazy Delegation)**입니다. Jules가 업무에 진입하는 시점에서 **충분한 맥락이 주입(Context Injection)**되어야 합니다.
+
+#### ✅ 올바른 위임(Good Delegation)
+1.  **통합 가이드 작성**: 관련 명세서, 감사 보고서, 에러 로그 등을 하나의 **"통합 미션 가이드(Integrated Mission Guide)"**로 먼저 작성합니다.
+    - 위치: `design/3_work_artifacts/drafts/bundle_[a|b|c]_[topic]_guide.md`
+2.  **가이드 전달**: `--file` 인자에 통합 가이드 파일을 지정합니다. 이 파일이 Jules의 **유일한 입문서(Single Entry Point)**가 됩니다.
+3.  **자기 완결성 검증**: 가이드 문서만 읽어도 "뭘 해야 하는지", "어떤 파일을 건드려야 하는지", "성공 기준(Verification)이 뭔지" 알 수 있어야 합니다.
+
+#### 🔥 Anti-Patterns (이렇게 하지 마세요)
+| Anti-Pattern | 왜 나쁜가? |
+| :--- | :--- |
+| **장부만 던지기** | Jules가 장부에서 명세서를 찾고, 명세서에서 코드를 찾는 탐색 비용 발생. 시간 낭비. |
+| **인스트럭션에 모든 맥락 서술** | 텍스트 제한에 금방 도달. 유지보수 불가. |
+| **여러 개의 명세서 병렬 참조** | 어떤 것이 우선인지 불명확. 충돌 해석 부담이 Jules에게 전가됨. |
+
+#### 💡 통합 가이드 템플릿 (Integrated Mission Guide Template)
+```markdown
+# Mission Guide: [Mission Title]
+
+## 1. Objectives
+- List of TD-IDs and their one-liner descriptions.
+
+## 2. Reference Context (MUST READ)
+- Links to PRIMARY spec files and audit reports.
+
+## 3. Implementation Roadmap
+### Phase 1: ...
+### Phase 2: ...
+
+## 4. Verification
+- Exact test commands or validation steps.
+```
+
+
 ---
 
 ---
