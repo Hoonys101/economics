@@ -425,42 +425,50 @@ class EconomicIndicatorTracker:
         TD-015: Calculates M0, M1, M2 money supply aggregates.
         Returns a dictionary with 'm0', 'm1', 'm2'.
         """
-        m2 = 0.0
+        # M0: Monetary Base (Currency in Circulation + Reserves)
+        # In this simulation, M0 is the sum of all Wallets (which represent Cash/Reserves).
+        m0 = 0.0
 
         # 1. Households
         for h in world_state.households:
             if h._bio_state.is_active:
-                m2 += self._calculate_total_wallet_value(h._econ_state.assets)
+                m0 += self._calculate_total_wallet_value(h._econ_state.assets)
 
         # 2. Firms
         for f in world_state.firms:
             if getattr(f, "is_active", False):
-                m2 += self._calculate_total_wallet_value(f.assets)
+                m0 += self._calculate_total_wallet_value(f.assets)
 
         # 3. Bank Reserves (Commercial Bank)
-        bank_reserves = 0.0
         if world_state.bank:
             if isinstance(world_state.bank.assets, dict):
-                 bank_reserves = self._calculate_total_wallet_value(world_state.bank.assets)
+                 m0 += self._calculate_total_wallet_value(world_state.bank.assets)
             else:
-                 bank_reserves = world_state.bank.assets # Fallback for scalar
-            m2 += bank_reserves
+                 m0 += world_state.bank.assets # Fallback for scalar
 
         # 4. Government Assets
         if world_state.government:
              if isinstance(world_state.government.assets, dict):
-                 m2 += self._calculate_total_wallet_value(world_state.government.assets)
+                 m0 += self._calculate_total_wallet_value(world_state.government.assets)
              else:
-                 m2 += world_state.government.assets # Fallback for scalar
+                 m0 += world_state.government.assets # Fallback for scalar
 
-        # M0 & M1 Heuristics (until checking/savings distinction is implemented)
-        # M0: Monetary Base (Currency in Circulation + Reserves)
+        # M2: Broad Money (M0 + Deposits)
+        # M2 adds Bank Deposits which are created via loans and stored in the Bank system.
+        total_deposits = 0.0
+        if world_state.bank and hasattr(world_state.bank, "deposits"):
+            for deposit in world_state.bank.deposits.values():
+                 val = deposit.amount
+                 # Check currency conversion if needed
+                 if hasattr(deposit, "currency") and deposit.currency != DEFAULT_CURRENCY:
+                      val = self.exchange_engine.convert(val, deposit.currency, DEFAULT_CURRENCY)
+                 total_deposits += val
+
+        m2 = m0 + total_deposits
+
         # M1: Narrow Money (M0 + Demand Deposits)
-        # M2: Broad Money (M1 + Time Deposits)
-
-        # For now, we use a deterministic heuristic based on M2:
-        m0 = m2 * 0.2
-        m1 = m2 * 0.8
+        # Since currently all deposits are liquid, M1 is effectively M2.
+        m1 = m2
 
         return {"m0": m0, "m1": m1, "m2": m2}
 
