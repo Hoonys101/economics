@@ -68,6 +68,7 @@
 
 | ID | Resolution Date | Description | Spec Ref | Insight Report |
 |---|---|---|---|---|
+| TD-028 | 2026-02-05 | M2 Calculation Synchronization | Fixed via `_rebuild_currency_holders` (SSoT) | [Insight](../../communications/insights/mission_report_stress_test.md) |
 | TD-231/232 | 2026-02-05 | System Integrity Cleanup (SalesTax/Inheritance) | [Audit](../../3_work_artifacts/reports/inbound/refactor_sales-tax-atomicity-inheritance-381587902011087733_audit_economic_WO_SALESTAX.md) | [Insight](../../communications/insights/Bundle_C_System_Integrity.md) |
 | TD-225/223 | 2026-02-05 | Liquidation & DTO Unification | [Spec](../../3_work_artifacts/specs/TD-225_Unified_Liquidation.md) | [Insight](../../communications/insights/Bundle_C_System_Integrity.md) |
 | TD-193 | 2026-02-04 | Fragmented Politics Sync | [Spec](../../3_work_artifacts/specs/WO-4.5_Adaptive_Brain.md) | - |
