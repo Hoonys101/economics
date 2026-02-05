@@ -414,68 +414,6 @@ class PersonalityStatisticsData:
     
     # 성과 지표
     avg_wealth_growth_rate: float   # 평균 자산 증가율
-@dataclass
-class DashboardGlobalIndicatorsDTO:
-    death_rate: float
-    bankruptcy_rate: float
-    employment_rate: float
-    gdp: float
-    avg_wage: float
-    gini: float
-    # Phase 5 Additions
-    avg_tax_rate: float
-    avg_leisure_hours: float
-    parenting_rate: float
-
-@dataclass
-class GenerationStatDTO:
-    gen: int
-    count: int
-    avg_assets: float
-
-@dataclass
-class SocietyTabDataDTO:
-    generations: List[GenerationStatDTO]
-    mitosis_cost: float
-    unemployment_pie: Dict[str, int] # e.g., {"struggling": 80, "voluntary": 20}
-    # Phase 5 Additions
-    time_allocation: Dict[str, float] # e.g., {"WORK": 100, "PARENTING": 20}
-    avg_leisure_hours: float
-    # Phase 23: Opportunity Index
-    avg_education_level: float
-    brain_waste_count: int
-
-@dataclass
-class GovernmentTabDataDTO:
-    tax_revenue: Dict[str, float] # Cumulative total
-    fiscal_balance: Dict[str, float]
-    # Phase 5 Additions
-    tax_revenue_history: List[Dict[str, Any]] # Last 50 ticks breakdown
-    welfare_spending: float
-    current_avg_tax_rate: float
-    welfare_history: List[Dict[str, float]] # Last 50 ticks spending
-    # Phase 23: Education Spending
-    education_spending: float
-    education_history: List[Dict[str, float]] # Last 50 ticks spending
-
-@dataclass
-class MarketTabDataDTO:
-    commodity_volumes: Dict[str, float]
-    cpi: List[float]
-    maslow_fulfillment: List[float]
-
-@dataclass
-class FinanceTabDataDTO:
-    market_cap: float
-    volume: float
-    turnover: float
-    dividend_yield: float
-
-@dataclass
-class DashboardSnapshotDTO:
-    tick: int
-    global_indicators: DashboardGlobalIndicatorsDTO
-    tabs: Dict[str, Any] # Or specific classes for each tab
 
 
 # ==============================================================================

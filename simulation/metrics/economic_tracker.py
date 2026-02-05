@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import List, Dict, Any, TYPE_CHECKING
 import logging
+import statistics
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -35,6 +36,17 @@ class EconomicIndicatorTracker:
             "money_supply": [],
             "total_labor_income": [],
             "total_sales_volume": [],
+            # TD-015: New Centralized Metrics
+            "gdp": [],
+            "gini": [],
+            "social_cohesion": [],
+            "active_population": [],
+            # Population Distribution (Quintiles) - stored as individual series or flattened
+            "quintile_1_avg_assets": [],
+            "quintile_2_avg_assets": [],
+            "quintile_3_avg_assets": [],
+            "quintile_4_avg_assets": [],
+            "quintile_5_avg_assets": [],
         }
         self.config_module = config_module  # Store config_module
         self.exchange_engine = CurrencyExchangeEngine(config_module) # TD-213: Initialize Exchange Engine
@@ -55,6 +67,9 @@ class EconomicIndicatorTracker:
             "total_food_consumption",
             "total_inventory",
             "avg_survival_need",
+            "gdp", # Added
+            "gini", # Added
+            "social_cohesion", # Added
         ]
         self.logger = logging.getLogger(__name__)
 
@@ -84,6 +99,90 @@ class EconomicIndicatorTracker:
             total += self.exchange_engine.convert(amount, currency, DEFAULT_CURRENCY)
         return total
 
+    def calculate_gini_coefficient(self, values: List[float]) -> float:
+        """
+        TD-015: Calculate Gini coefficient.
+        """
+        if not values or len(values) < 2:
+            return 0.0
+
+        n = len(values)
+        sorted_values = sorted(values)
+
+        if sum(sorted_values) == 0:
+            return 0.0
+
+        cumsum = sum((i + 1) * x for i, x in enumerate(sorted_values))
+        total = sum(sorted_values)
+
+        gini = (2 * cumsum - (n + 1) * total) / (n * total)
+        return max(0.0, min(1.0, gini))
+
+    def calculate_social_cohesion(self, households: List[Household]) -> float:
+        """
+        TD-015: Calculate Social Cohesion based on average Trust Score of active households.
+        """
+        active_households = [h for h in households if h._bio_state.is_active]
+        if not active_households:
+            return 0.5 # Default neutral
+
+        total_trust = sum(h._social_state.trust_score for h in active_households)
+        return total_trust / len(active_households)
+
+    def calculate_population_metrics(self, households: List[Household], markets: Dict[str, Market] = None) -> Dict[str, Any]:
+        """
+        TD-015: Calculate Population Metrics (Distribution, Active Count).
+        Returns a dictionary with 'distribution' (quintiles) and 'active_count'.
+        Now includes Stock Portfolio value in Total Assets.
+        """
+        active_households = [h for h in households if h._bio_state.is_active]
+        active_count = len(active_households)
+
+        if not active_households:
+            return {
+                "active_count": 0,
+                "distribution": {f"q{i}": 0.0 for i in range(1, 6)},
+                "all_assets": []
+            }
+
+        stock_market = markets.get("stock_market") if markets else None
+
+        # Calculate assets for Gini
+        all_assets = []
+        for h in active_households:
+             # 1. Cash (Wallet)
+             cash_val = self._calculate_total_wallet_value(h._econ_state.assets)
+
+             # 2. Portfolio (Stocks)
+             stock_val = 0.0
+             if stock_market and hasattr(stock_market, 'get_stock_price'):
+                 for firm_id, holding in h._econ_state.portfolio.holdings.items():
+                     if holding.quantity > 0:
+                         price = stock_market.get_stock_price(firm_id) or 0.0
+                         stock_val += holding.quantity * price
+
+             all_assets.append(cash_val + stock_val)
+
+        sorted_assets = sorted(all_assets)
+
+        # Quintiles (Average Assets per Quintile)
+        n = len(sorted_assets)
+        quintile_size = max(1, n // 5)
+
+        distribution = {}
+        for i in range(5):
+            start = i * quintile_size
+            end = (i + 1) * quintile_size if i < 4 else n
+            q_slice = sorted_assets[start:end]
+            avg = statistics.mean(q_slice) if q_slice else 0.0
+            distribution[f"q{i+1}"] = avg
+
+        return {
+            "active_count": active_count,
+            "distribution": distribution,
+            "all_assets": all_assets
+        }
+
     def track(
         self,
         time: int,
@@ -109,7 +208,6 @@ class EconomicIndicatorTracker:
         )
 
         # WO-106: Initial Sink Fix
-        # Use get_financial_snapshot to include Capital Stock and Inventory in Total Assets
         total_firm_assets = 0.0
         for f in firms:
              if not getattr(f, "is_active", False):
@@ -119,16 +217,8 @@ class EconomicIndicatorTracker:
 
              if hasattr(f, "get_financial_snapshot"):
                  snap = f.get_financial_snapshot()
-                 # TD-213: Snapshot flaw fix.
-                 # snap["total_assets"] includes USD cash, inventory, capital stock.
-                 # We want: (All Cash converted to USD) + Inventory + Capital Stock
-                 # So we subtract USD cash from snap["total_assets"] and add firm_wallet_value.
-
                  snap_total_assets = snap.get("total_assets", 0.0)
-                 # Reconstruct non-cash assets (Inventory + Capital Stock)
-                 # Assumption: get_financial_snapshot uses f.assets.get(DEFAULT_CURRENCY)
                  usd_cash_in_snapshot = f.assets.get(DEFAULT_CURRENCY, 0.0)
-
                  non_cash_assets = snap_total_assets - usd_cash_in_snapshot
                  total_firm_assets += firm_wallet_value + non_cash_assets
              else:
@@ -149,16 +239,11 @@ class EconomicIndicatorTracker:
             else 0
         )
 
-        # Simplified logic for market data - assumes market objects have this data
-        # Calculate weighted average price for goods and find food market data
+        # Market Data
         total_volume = 0.0
         weighted_price_sum = 0.0
-
-        # Track specific food metrics (assuming 'basic_food' is the primary food or iterating)
         food_price_sum = 0.0
         food_volume_sum = 0.0
-
-        # We can also look for "food" or "basic_food" specifically
         primary_food_key = "basic_food"
 
         for market_id, market in markets.items():
@@ -173,21 +258,14 @@ class EconomicIndicatorTracker:
                     weighted_price_sum += avg_price * volume
                     total_volume += volume
 
-                # Check if this is a food item
                 if "food" in market_id:
                     if volume > 0:
                          food_price_sum += avg_price * volume
                          food_volume_sum += volume
-                    elif avg_price > 0:
-                         # If no volume but has price (e.g. from asks), just track price?
-                         # For weighted avg, we need volume. If 0 volume, we can't weight it.
-                         pass
 
         if food_volume_sum > 0:
             record["food_avg_price"] = food_price_sum / food_volume_sum
         else:
-            # Fallback to checking best asks if no trades
-            # For simplicity, just use 0.0 or try to get from specific market
             f_market = markets.get(primary_food_key)
             if f_market and hasattr(f_market, "get_daily_avg_price"):
                  record["food_avg_price"] = f_market.get_daily_avg_price() or 0.0
@@ -199,16 +277,13 @@ class EconomicIndicatorTracker:
         if total_volume > 0:
             record["avg_goods_price"] = weighted_price_sum / total_volume
         else:
-            # Fallback: 거래가 없을 때도 호가(Current Price)나 기준가(Avg Price)를 반영
             fallback_prices = []
             for market_id, market in markets.items():
                 if market_id in ["labor", "loan_market", "stock_market", "housing"]:
                     continue
-                # 우선순위: 1. current_price (현재 호가/체결가), 2. avg_price (엔진 강제값)
                 price = getattr(market, "current_price", None)
                 if price is None or price <= 0:
                     price = getattr(market, "avg_price", 0.0)
-                
                 if price > 0:
                     fallback_prices.append(price)
 
@@ -217,7 +292,10 @@ class EconomicIndicatorTracker:
             else:
                 record["avg_goods_price"] = 0.0
 
-        # ... other metric calculations ...
+        # Sync to goods_price_index for CPI tracking
+        record["goods_price_index"] = record["avg_goods_price"]
+
+        # Production & Consumption
         total_production = sum(
             f.current_production
             for f in firms
@@ -242,7 +320,7 @@ class EconomicIndicatorTracker:
         )
         record["total_inventory"] = total_inventory
 
-        # Calculate average survival need for active households
+        # Avg Survival Need
         active_households_count = 0
         total_survival_need = 0.0
         for h in households:
@@ -256,7 +334,7 @@ class EconomicIndicatorTracker:
         )
 
         # --- WO-043: Comprehensive Metrics ---
-        # 1. Labor Share = Total Labor Income / Nominal GDP
+        # 1. Labor Share
         total_labor_income = sum(
             h._econ_state.labor_income_this_tick
             for h in households
@@ -264,42 +342,38 @@ class EconomicIndicatorTracker:
         )
         record["total_labor_income"] = total_labor_income
 
-        # Track Sales Volume from firms
+        # Sales Volume
         total_sales_volume = sum(
             getattr(f, "sales_volume_this_tick", 0.0) for f in firms
         )
         record["total_sales_volume"] = total_sales_volume
 
-        # Nominal GDP = Total Production * Avg Goods Price
+        # Nominal GDP
         nominal_gdp = record["total_production"] * record["avg_goods_price"]
+        record["gdp"] = nominal_gdp  # Explicitly store as 'gdp'
 
         if nominal_gdp > 0:
             record["labor_share"] = total_labor_income / nominal_gdp
         else:
             record["labor_share"] = 0.0
 
-        # 2. Velocity of Money = Nominal GDP / Money Supply (M1)
-        # M1 = Household Assets + Firm Assets (excluding Bank/Govt)
+        # 2. Velocity of Money
         money_supply_m1 = total_household_assets + total_firm_assets
-        # record["money_supply"] = money_supply_m1  # WO-043: Removed overwrite. Uses passed M2.
-
         if money_supply_m1 > 0:
             record["velocity_of_money"] = nominal_gdp / money_supply_m1
         else:
             record["velocity_of_money"] = 0.0
 
-        # 3. Inventory Turnover = Sales Volume (Goods) / Total Inventory
+        # 3. Inventory Turnover
         if total_inventory > 0:
             record["inventory_turnover"] = total_volume / total_inventory
         else:
             record["inventory_turnover"] = 0.0
 
         # --- Phase 23: Opportunity Index & Education Metrics ---
-        # 1. Average Education Level
         total_edu = sum(h._econ_state.education_level for h in households if h._bio_state.is_active)
         record["avg_education_level"] = total_edu / total_households if total_households > 0 else 0.0
 
-        # 2. Brain Waste Count (Aptitude >= 0.8 but Education < Level 2)
         brain_waste = [
             h for h in households 
             if h._bio_state.is_active
@@ -308,11 +382,26 @@ class EconomicIndicatorTracker:
         ]
         record["brain_waste_count"] = len(brain_waste)
 
-        # 3. Government Education Spending (from direct state)
-        # Note: This relies on Simulation passing the spent amount or Government state being visible.
-        # However, track() doesn't receive Government instance directly. 
-        # But we can assume it will be added to record via engine integration or by passing govt.
+        # --- TD-015: Centralized Metrics (Gini, Cohesion, Population) ---
+        pop_metrics = self.calculate_population_metrics(households, markets)
 
+        record["active_population"] = pop_metrics["active_count"]
+
+        # Quintiles
+        dist = pop_metrics["distribution"]
+        record["quintile_1_avg_assets"] = dist.get("q1", 0.0)
+        record["quintile_2_avg_assets"] = dist.get("q2", 0.0)
+        record["quintile_3_avg_assets"] = dist.get("q3", 0.0)
+        record["quintile_4_avg_assets"] = dist.get("q4", 0.0)
+        record["quintile_5_avg_assets"] = dist.get("q5", 0.0)
+
+        # Gini
+        gini = self.calculate_gini_coefficient(pop_metrics["all_assets"])
+        record["gini"] = gini
+
+        # Social Cohesion
+        cohesion = self.calculate_social_cohesion(households)
+        record["social_cohesion"] = cohesion
 
         for field in self.all_fieldnames:
             record.setdefault(field, 0.0)
@@ -320,6 +409,7 @@ class EconomicIndicatorTracker:
         # Store the record in metrics
         for key, value in record.items():
             if key != "time":
+                # Ensure we have a list for this key
                 self.metrics.setdefault(key, []).append(value)
 
     def get_latest_indicators(self) -> Dict[str, Any]:
@@ -333,13 +423,6 @@ class EconomicIndicatorTracker:
     def get_m2_money_supply(self, world_state: 'WorldState') -> float:
         """
         Calculates the M2 money supply for economic reporting.
-
-        M2 = Household_Assets + Firm_Assets + Bank_Reserves + Government_Assets
-
-        This calculation excludes the Central Bank's balance which is used for
-        system-level integrity checks.
-
-        TD-213: Aggregates all currency holdings converted to DEFAULT_CURRENCY.
         """
         total = 0.0
 
@@ -366,7 +449,5 @@ class EconomicIndicatorTracker:
                  total += self._calculate_total_wallet_value(world_state.government.assets)
              else:
                  total += world_state.government.assets # Fallback for scalar
-
-        # NOTE: world_state.central_bank.assets is INTENTIONALLY EXCLUDED.
 
         return total

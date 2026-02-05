@@ -1,24 +1,86 @@
 from dataclasses import dataclass, field
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 @dataclass
-class TheWatchtowerSnapshotDTO:
-    """The root DTO for The Watchtower dashboard, aligning with Golden Sample v2."""
+class IntegrityDTO:
+    m2_leak: float
+    fps: float
+
+@dataclass
+class MacroDTO:
+    gdp: float
+    cpi: float
+    unemploy: float
+    gini: float
+
+@dataclass
+class FinanceRatesDTO:
+    base: float
+    call: float
+    loan: float
+    savings: float
+
+@dataclass
+class FinanceSupplyDTO:
+    m0: float
+    m1: float
+    m2: float
+    velocity: float
+
+@dataclass
+class FinanceDTO:
+    rates: FinanceRatesDTO
+    supply: FinanceSupplyDTO
+
+@dataclass
+class PoliticsApprovalDTO:
+    total: float
+    low: float
+    mid: float
+    high: float
+
+@dataclass
+class PoliticsStatusDTO:
+    ruling_party: str
+    cohesion: float
+
+@dataclass
+class PoliticsFiscalDTO:
+    revenue: float
+    welfare: float
+    debt: float
+
+@dataclass
+class PoliticsDTO:
+    approval: PoliticsApprovalDTO
+    status: PoliticsStatusDTO
+    fiscal: PoliticsFiscalDTO
+
+@dataclass
+class PopulationDistributionDTO:
+    q1: float
+    q2: float
+    q3: float
+    q4: float
+    q5: float
+
+@dataclass
+class PopulationMetricsDTO:
+    birth: float
+    death: float
+
+@dataclass
+class PopulationDTO:
+    distribution: PopulationDistributionDTO
+    active_count: int
+    metrics: PopulationMetricsDTO
+
+@dataclass
+class WatchtowerSnapshotDTO:
     tick: int
-    status: str = "RUNNING"  # RUNNING, PAUSED, EMERGENCY
-    integrity: Dict[str, float] = field(default_factory=lambda: {"m2_leak": 0.0, "fps": 0.0})
-    macro: Dict[str, float] = field(default_factory=lambda: {"gdp": 0.0, "cpi": 0.0, "unemploy": 0.0, "gini": 0.0})
-    finance: Dict[str, Any] = field(default_factory=lambda: {
-        "rates": {"base": 0.0, "call": 0.0, "loan": 0.0, "savings": 0.0},
-        "supply": {"m0": 0.0, "m1": 0.0, "m2": 0.0, "velocity": 0.0}
-    })
-    politics: Dict[str, Any] = field(default_factory=lambda: {
-        "approval": {"total": 0.0, "low": 0.0, "mid": 0.0, "high": 0.0},
-        "status": {"ruling_party": "NEUTRAL", "cohesion": 0.5},
-        "fiscal": {"revenue": 0.0, "welfare": 0.0, "debt": 0.0}
-    })
-    population: Dict[str, Any] = field(default_factory=lambda: {
-        "distribution": {"q1": 0.0, "q2": 0.0, "q3": 0.0, "q4": 0.0, "q5": 0.0},
-        "active_count": 0,
-        "metrics": {"birth": 0.0, "death": 0.0}
-    })
+    status: str
+    integrity: IntegrityDTO
+    macro: MacroDTO
+    finance: FinanceDTO
+    politics: PoliticsDTO
+    population: PopulationDTO

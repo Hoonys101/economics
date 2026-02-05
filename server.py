@@ -72,6 +72,7 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             if dashboard_service:
+                # Serves WatchtowerSnapshotDTO (TD-125)
                 snapshot = dashboard_service.get_snapshot()
                 # Use asdict to convert dataclass to dict
                 data = asdict(snapshot)
