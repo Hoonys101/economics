@@ -4,6 +4,7 @@ from simulation.dtos.api import SimulationState
 from simulation.core_agents import Household
 from simulation.firms import Firm
 from simulation.markets.order_book_market import OrderBookMarket
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     pass
@@ -94,7 +95,12 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
             if price <= 0:
                 # Refactor: Use finance.balance
                 assets = firm.finance.balance if hasattr(firm, 'finance') else firm.assets
-                price = assets / firm.total_shares if firm.total_shares > 0 else 10.0
+                # TD-024: Handle multi-currency assets safely
+                if isinstance(assets, dict):
+                    asset_val = assets.get(DEFAULT_CURRENCY, 0.0)
+                else:
+                    asset_val = float(assets)
+                price = asset_val / firm.total_shares if firm.total_shares > 0 else 10.0
             stock_market_data[firm_item_id] = {"avg_price": price}
 
     rent_prices = [u.rent_price for u in state.real_estate_units if u.owner_id is not None]

@@ -184,12 +184,14 @@ class TickOrchestrator:
 
         # Track Economics
         if state.tracker:
+             # TD-024: Ensure money_supply is scalar for tracker compatibility
+             money_supply_scalar = state.get_total_system_money_for_diagnostics(DEFAULT_CURRENCY)
              state.tracker.track(
                  time=state.time,
                  households=state.households,
                  firms=state.firms,
                  markets=state.markets,
-                 money_supply=state.calculate_total_money()
+                 money_supply=money_supply_scalar
              )
 
         # Money Supply Verification (Post-Tick)
