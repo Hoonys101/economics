@@ -305,6 +305,17 @@ class SettlementSystem(ISettlementSystem):
 
         return transactions
 
+    def get_assets_by_currency(self) -> Dict[str, float]:
+        """
+        Implements ICurrencyHolder for M2 verification.
+        Returns total cash held in escrow accounts.
+        """
+        total = 0.0
+        for acc in self.settlement_accounts.values():
+            # Count all cash in the system regardless of status, as it is withdrawn from circulation
+            total += acc.escrow_cash
+        return {DEFAULT_CURRENCY: total}
+
     def verify_and_close(self, account_id: int, tick: int) -> bool:
         """
         TD-160: Verifies zero balance and closes the account.

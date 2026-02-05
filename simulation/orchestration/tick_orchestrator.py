@@ -242,7 +242,14 @@ class TickOrchestrator:
 
         # Rebuild from agents map
         # Explicitly ensure System Agents are included if they are not in agents map (legacy safety)
-        system_agents = [state.central_bank, state.government, state.bank, getattr(state, "escrow_agent", None)]
+        # WO-220: Added settlement_system to track escrowed funds
+        system_agents = [
+            state.central_bank,
+            state.government,
+            state.bank,
+            getattr(state, "escrow_agent", None),
+            state.settlement_system
+        ]
 
         # Use a set of IDs to prevent duplicates if system agents are also in agents dict
         added_ids = set()

@@ -110,12 +110,8 @@ class Phase5_PostSequence(IPhaseStrategy):
                  h.reset_consumption_counters()
 
         for f in state.firms:
-            if hasattr(f, 'finance'):
-                f.finance.last_daily_expenses = f.finance.expenses_this_tick
-                f.finance.last_sales_volume = f.finance.sales_volume_this_tick
-                f.finance.sales_volume_this_tick = 0.0
-                f.finance.expenses_this_tick = 0.0
-                f.finance.revenue_this_tick = 0.0
+            if hasattr(f, 'finance') and hasattr(f.finance, 'finalize_tick'):
+                f.finance.finalize_tick()
 
         if self.world_state.generational_wealth_audit and state.time % 100 == 0:
              self.world_state.generational_wealth_audit.run_audit(state.households, state.time)

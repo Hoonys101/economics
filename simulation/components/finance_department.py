@@ -473,3 +473,24 @@ class FinanceDepartment(IFinanceDepartment):
         if self.firm.wallet.get_balance(currency) >= amount and self.firm.settlement_system:
             if self.firm.settlement_system.transfer(self.firm, government, amount, reason, currency=currency):
                 self.record_expense(amount, currency)
+
+    def finalize_tick(self) -> None:
+        """
+        Resets tick-specific counters and updates history.
+        Called by PostSequence phase.
+        """
+        # 1. Update last_daily_expenses (SUM of all currency expenses)
+        # Note: Ideally this should use exchange rates, but we sum raw values
+        # as a heuristic for solvency metrics when rates aren't available in this context.
+        total_expenses = sum(self.expenses_this_tick.values())
+        self.last_daily_expenses = total_expenses
+
+        # 2. Update last_sales_volume
+        self.last_sales_volume = self.sales_volume_this_tick
+
+        # 3. Reset Counters
+        self.sales_volume_this_tick = 0.0
+
+        # Reset Dicts to initial state (preserve primary currency key)
+        self.expenses_this_tick = {self.primary_currency: 0.0}
+        self.revenue_this_tick = {self.primary_currency: 0.0}

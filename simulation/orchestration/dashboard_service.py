@@ -9,6 +9,7 @@ from simulation.dtos.watchtower import (
     PoliticsStatusDTO, PoliticsFiscalDTO, PopulationDTO,
     PopulationDistributionDTO, PopulationMetricsDTO
 )
+from simulation.orchestration.persistence_bridge import PersistenceBridge
 from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,7 @@ class DashboardService:
         self.simulation = simulation
         self._last_tick_time = datetime.now()
         self._last_tick = 0
+        self.persistence = PersistenceBridge()
 
     def get_snapshot(self) -> WatchtowerSnapshotDTO:
         state = self.simulation.world_state
@@ -128,7 +130,7 @@ class DashboardService:
 
             # TODO: Implement Birth Rate tracking in Repository or Tracker
 
-        return WatchtowerSnapshotDTO(
+        snapshot = WatchtowerSnapshotDTO(
             tick=state.time,
             status="RUNNING", # TODO: Hook into simulation status if available
             integrity=IntegrityDTO(m2_leak=m2_leak, fps=fps),
@@ -152,6 +154,9 @@ class DashboardService:
                                 metrics=PopulationMetricsDTO(birth=birth_rate, death=death_rate)
                             )
                         )
+
+        self.persistence.save_snapshot(snapshot)
+        return snapshot
 
     def _calculate_m2_leak(self, state) -> float:
         m2_current = state.calculate_total_money().get(DEFAULT_CURRENCY, 0.0)
