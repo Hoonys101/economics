@@ -44,7 +44,8 @@ class MonetaryLedger:
             is_contraction = False
 
             # 1. Explicit Expansion
-            if tx.transaction_type in ["credit_creation", "deposit_interest", "bank_profit_remittance", "money_creation"]:
+            # TD-034: Removed internal transfers (interest, profit) from expansion.
+            if tx.transaction_type in ["credit_creation", "money_creation"]:
                 is_expansion = True
 
             # 2. CB Buying (OMO Purchase / Bond Purchase) -> Expansion
@@ -56,7 +57,8 @@ class MonetaryLedger:
                     is_expansion = True
 
             # 3. Explicit Contraction
-            if tx.transaction_type in ["credit_destruction", "loan_interest", "lender_of_last_resort", "money_destruction"]:
+            # TD-034: Removed internal transfers from contraction.
+            if tx.transaction_type in ["credit_destruction", "money_destruction"]:
                 is_contraction = True
 
             # 4. CB Selling (OMO Sale / Bond Repayment) -> Contraction

@@ -1,8 +1,8 @@
 from __future__ import annotations
-from typing import List, TYPE_CHECKING, Optional, Any
+from typing import List, TYPE_CHECKING, Optional, Any, Dict
 import logging
 from modules.common.dtos import Claim
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from simulation.systems.liquidation_handlers import InventoryLiquidationHandler, ILiquidationHandler
 
 if TYPE_CHECKING:
@@ -56,7 +56,11 @@ class LiquidationManager:
         # 1. Firm Write-offs (WO-212 Atomicity)
         # Write off remaining assets (Inventory, Capital Stock) and finalize bankruptcy.
         # Returns the final cash balance for distribution.
-        available_cash = firm.liquidate_assets(state.time)
+        all_assets_dict = firm.liquidate_assets(state.time)
+
+        # TD-033: Handle Multi-Currency
+        available_cash = all_assets_dict.get(DEFAULT_CURRENCY, 0.0)
+        other_assets = {k: v for k, v in all_assets_dict.items() if k != DEFAULT_CURRENCY and v > 0}
 
         all_claims: List[Claim] = []
 
@@ -91,12 +95,16 @@ class LiquidationManager:
         )
 
         # 4. Execute Waterfall
-        self.execute_waterfall(firm, all_claims, available_cash, state)
+        self.execute_waterfall(firm, all_claims, available_cash, state, other_assets)
 
-    def execute_waterfall(self, firm: Firm, claims: List[Claim], available_cash: float, state: SimulationState) -> None:
+    def execute_waterfall(self, firm: Firm, claims: List[Claim], available_cash: float, state: SimulationState, other_assets: Dict[CurrencyCode, float] = None) -> None:
         """
         Distributes cash according to tiers.
+        TD-033: Added other_assets for Tier 5 distribution.
         """
+        if other_assets is None:
+            other_assets = {}
+
         remaining_cash = available_cash
 
         # Sort claims by tier
@@ -137,7 +145,8 @@ class LiquidationManager:
                 logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} partially paid (Factor: {factor:.2f}). Cash exhausted.")
 
         # --- Tier 5: Equity ---
-        if remaining_cash > 0:
+        # TD-033: Check if there is ANY value to distribute (Cash or Foreign Assets)
+        if remaining_cash > 0 or other_assets:
             outstanding_shares = firm.total_shares - firm.treasury_shares
             if outstanding_shares > 0:
                 # Gather shareholders from state
@@ -145,7 +154,9 @@ class LiquidationManager:
                 if hasattr(state, 'government') and state.government:
                     shareholders.append(state.government)
 
-                total_distributed = 0.0
+                total_distributed_cash = 0.0
+                total_distributed_foreign = {}
+
                 for agent in shareholders:
                     shares = 0
                     if hasattr(agent, "shares_owned"):
@@ -153,11 +164,21 @@ class LiquidationManager:
 
                     if shares > 0:
                         share_ratio = shares / outstanding_shares
-                        distribution = remaining_cash * share_ratio
-                        self.settlement_system.transfer(firm, agent, distribution, "Liquidation Dividend (Tier 5)", currency=DEFAULT_CURRENCY)
-                        total_distributed += distribution
 
-                logger.info(f"LIQUIDATION_WATERFALL | Tier 5 (Equity) distributed {total_distributed:.2f} to shareholders.")
+                        # 1. Distribute Primary Currency
+                        if remaining_cash > 0:
+                            distribution = remaining_cash * share_ratio
+                            self.settlement_system.transfer(firm, agent, distribution, "Liquidation Dividend (Tier 5)", currency=DEFAULT_CURRENCY)
+                            total_distributed_cash += distribution
+
+                        # 2. Distribute Foreign Currencies (TD-033)
+                        for cur, amount in other_assets.items():
+                            if amount > 0:
+                                dist_amount = amount * share_ratio
+                                self.settlement_system.transfer(firm, agent, dist_amount, f"Liquidation Dividend (Tier 5 - {cur})", currency=cur)
+                                total_distributed_foreign[cur] = total_distributed_foreign.get(cur, 0.0) + dist_amount
+
+                logger.info(f"LIQUIDATION_WATERFALL | Tier 5 (Equity) distributed {total_distributed_cash:.2f} {DEFAULT_CURRENCY} and foreign assets: {total_distributed_foreign} to shareholders.")
 
     def _pay_claim(self, firm: Firm, claim: Claim, amount: float, partial: bool = False):
         """Helper to execute transfer using AgentRegistry."""

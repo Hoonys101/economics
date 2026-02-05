@@ -47,7 +47,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         self.firm.id = 1
         self.firm.config = self.config
         self.firm.finance = MagicMock()
-        self.firm.finance.balance = 0.0 # Start with 0 cash
+        self.firm.finance.balance = {DEFAULT_CURRENCY: 0.0} # Start with 0 cash
         self.firm.finance.current_profit = 0.0 # Fix 1
 
         # Configure liquidate_assets to return current balance
@@ -88,7 +88,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         - Expected: Employees get pro-rata (5000/5600 ratio). Shareholders get 0.
         """
         self._setup_registry()
-        self.firm.finance.balance = 5000.0
+        self.firm.finance.balance = {DEFAULT_CURRENCY: 5000.0}
 
         # Employee A
         empA = MagicMock(spec=Household)
@@ -154,7 +154,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         - Tier 5 (Equity): Should receive 3000.
         """
         self._setup_registry()
-        self.firm.finance.balance = 10000.0
+        self.firm.finance.balance = {DEFAULT_CURRENCY: 10000.0}
 
         # Employee (Tier 1) - 2000 claim
         # 2000 = Tenure * 2 * 7 * 100 => Tenure * 1400 = 2000 => Tenure = 1.42 yrs
@@ -227,7 +227,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         - Equity (or Escheatment) gets 300.0.
         """
         self._setup_registry()
-        self.firm.finance.balance = 0.0
+        self.firm.finance.balance = {DEFAULT_CURRENCY: 0.0}
         self.firm.inventory = {"apples": 100.0}
         self.firm.last_prices = {"apples": 10.0}
 
@@ -251,7 +251,8 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         # To simulate cash update after transfer, we need side_effect on transfer
         def transfer_side_effect(sender, receiver, amount, memo, currency=None):
             if receiver == self.firm:
-                self.firm.finance.balance += amount
+                cur = currency or DEFAULT_CURRENCY
+                self.firm.finance.balance[cur] = self.firm.finance.balance.get(cur, 0.0) + amount
             return True
 
         self.mock_settlement.transfer.side_effect = transfer_side_effect

@@ -167,12 +167,14 @@ class Firm(BaseAgent, ILearningAgent):
         """
         self.inventory_last_sale_tick[item_id] = current_tick
 
-    def liquidate_assets(self, current_tick: int = -1) -> float:
+    def liquidate_assets(self, current_tick: int = -1) -> Dict[CurrencyCode, float]:
         """
         Liquidate assets.
         CRITICAL FIX (WO-018): Inventory and Capital Stock are written off to zero
         instead of being converted to cash, to prevent money creation from thin air.
         Only existing cash (assets) is returned.
+
+        TD-033: Returns full multi-currency asset dictionary.
         """
         # 1. Write off Inventory
         self.inventory.clear()
@@ -185,6 +187,8 @@ class Firm(BaseAgent, ILearningAgent):
 
         self.is_bankrupt = True
 
+        assets_to_return = self.finance.balance.copy()
+
         # WO-123: Memory Logging - Record Bankruptcy
         if self.memory_v2:
             from modules.memory.V2.dtos import MemoryRecordDTO
@@ -192,11 +196,11 @@ class Firm(BaseAgent, ILearningAgent):
                 tick=current_tick,
                 agent_id=self.id,
                 event_type="BANKRUPTCY",
-                data={"assets_returned": self.finance.balance.get(DEFAULT_CURRENCY, 0.0)}
+                data={"assets_returned": assets_to_return}
             )
             self.memory_v2.add_record(record)
 
-        return self.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+        return assets_to_return
 
     def add_inventory(self, item_id: str, quantity: float, quality: float):
         """Adds items to the firm's inventory and updates the average quality."""
