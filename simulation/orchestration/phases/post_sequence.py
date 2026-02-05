@@ -6,6 +6,7 @@ from simulation.orchestration.api import IPhaseStrategy
 from simulation.dtos.api import SimulationState, AIDecisionData
 from simulation.orchestration.utils import prepare_market_data
 from simulation.systems.api import LearningUpdateContext
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -109,10 +110,17 @@ class Phase5_PostSequence(IPhaseStrategy):
              if hasattr(h, "reset_consumption_counters"):
                  h.reset_consumption_counters()
 
+        # Fetch exchange rates for multi-currency finalization
+        exchange_rates = {DEFAULT_CURRENCY: 1.0}
+        if state.tracker and hasattr(state.tracker, "capture_market_context"):
+            ctx = state.tracker.capture_market_context()
+            if ctx and ctx.exchange_rates:
+                exchange_rates = ctx.exchange_rates
+
         for f in state.firms:
             if hasattr(f, 'finance') and hasattr(f.finance, 'finalize_tick'):
                 # Correctly handles multi-currency reset and capitalization
-                f.finance.finalize_tick()
+                f.finance.finalize_tick(exchange_rates)
             else:
                 logger.warning(
                     f"FIRM_RESET_SKIPPED | Firm {f.id} skipped finance reset.",

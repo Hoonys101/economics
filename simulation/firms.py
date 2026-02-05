@@ -236,8 +236,10 @@ class Firm(BaseAgent, ILearningAgent):
 
         return brand_premium
 
-    def _adjust_marketing_budget(self) -> None:
-        self.sales.adjust_marketing_budget()
+    def _adjust_marketing_budget(self, exchange_rates: Dict[CurrencyCode, float] = None) -> None:
+        if exchange_rates is None:
+            exchange_rates = {DEFAULT_CURRENCY: 1.0}
+        self.sales.adjust_marketing_budget(exchange_rates)
 
     def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
         self.current_production = self.production.produce(current_time, technology_manager)
@@ -496,7 +498,7 @@ class Firm(BaseAgent, ILearningAgent):
         transactions = []
 
         # 1. Wages & Income Tax (HR)
-        tx_payroll = self.hr.process_payroll(current_time, government, market_data)
+        tx_payroll = self.hr.process_payroll(current_time, government, market_data, exchange_rates)
         transactions.extend(tx_payroll)
 
         # 2. Finance Transactions (Holding, Maint, Corp Tax, Dividends, Bailout Repayment)
@@ -511,7 +513,7 @@ class Firm(BaseAgent, ILearningAgent):
         # Calculate total revenue in primary currency
         total_revenue = 0.0
         for cur, amount in self.finance.revenue_this_turn.items():
-            total_revenue += self.finance._convert_to_primary(amount, cur, exchange_rates)
+            total_revenue += self.finance.convert_to_primary(amount, cur, exchange_rates)
 
         if primary_balance > 100.0:
             marketing_spend = max(10.0, total_revenue * self.marketing_budget_rate)
@@ -530,7 +532,7 @@ class Firm(BaseAgent, ILearningAgent):
         self.marketing_budget = marketing_spend
         # Brand Update: Needs to happen (optimistic about spend success)
         self.brand_manager.update(marketing_spend, self.productivity_factor / 10.0)
-        self.sales.adjust_marketing_budget()
+        self.sales.adjust_marketing_budget(exchange_rates)
 
         return transactions
 
