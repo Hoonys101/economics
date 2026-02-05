@@ -400,12 +400,14 @@ class FinanceDepartment(IFinanceDepartment):
             "wallet": wallet_dto,
             "total_assets_est": MoneyDTO(amount=total_assets, currency=DEFAULT_CURRENCY), # Approximate
             "working_capital_est": MoneyDTO(amount=total_assets - current_liabilities, currency=DEFAULT_CURRENCY),
-            "retained_earnings": MoneyDTO(amount=self.retained_earnings, currency=self.primary_currency),
-            "average_profit": MoneyDTO(amount=avg_profit, currency=self.primary_currency),
+            "retained_earnings_dto": MoneyDTO(amount=self.retained_earnings, currency=self.primary_currency),
+            "average_profit_dto": MoneyDTO(amount=avg_profit, currency=self.primary_currency),
             "total_debt": MoneyDTO(amount=current_liabilities, currency=DEFAULT_CURRENCY),
             # Legacy keys (float) if needed by other systems (optional but helpful)
             "total_assets": total_assets,
             "working_capital": total_assets - current_liabilities,
+            "retained_earnings": self.retained_earnings,
+            "average_profit": avg_profit,
         }
 
     def issue_shares(self, quantity: float, price: float) -> float:
