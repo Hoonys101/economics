@@ -148,11 +148,10 @@ class DashboardService:
                 fiscal=PoliticsFiscalDTO(revenue=revenue, welfare=welfare, debt=debt)
             ),
             population=PopulationDTO(
-                distribution=PopulationDistributionDTO(q1=q1, q2=q2, q3=q3, q4=q4, q5=q5),
-                active_count=active_count,
-                metrics=PopulationMetricsDTO(birth=birth_rate, death=death_rate)
-            )
-        )
+                                active_count=active_count,
+                                metrics=PopulationMetricsDTO(birth=birth_rate, death=death_rate)
+                            )
+                        )
 
     def _calculate_m2_leak(self, state) -> float:
         m2_current = state.calculate_total_money().get(DEFAULT_CURRENCY, 0.0)
