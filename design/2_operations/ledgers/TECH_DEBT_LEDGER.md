@@ -6,7 +6,7 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| (No Active Items) | | | | |
+| TD-030 | 2026-02-05 | Agent Lifecycle-M2 Desync | Performance (O(N) rebuild) | [Walkthrough](../../../brain/7064e76f-bfd2-423d-9816-95b56f05a65f/walkthrough.md) | **ACTIVE** |
 
 ## 🏭 2. FIRMS & CORPORATE
 
@@ -29,6 +29,7 @@
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
 | TD-015 | 2026-02-05 | Divergent Metric Calculation | SSoT Deviation | [Review](../../_archive/gemini_output/pr_review_ph6-watchtower-dashboard-15887853336717342464.md) | **ACTIVE** |
+| TD-029 | 2026-02-05 | Residual Macro Leak (-71,328) | Baseline Variance | [Walkthrough](../../../brain/7064e76f-bfd2-423d-9816-95b56f05a65f/walkthrough.md) | **PLANNED** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 

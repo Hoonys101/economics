@@ -1,0 +1,194 @@
+diff --git a/communications/insights/PH6_STABILIZATION_REPORT.md b/communications/insights/PH6_STABILIZATION_REPORT.md
+new file mode 100644
+index 00000000..58d5eb12
+--- /dev/null
++++ b/communications/insights/PH6_STABILIZATION_REPORT.md
+@@ -0,0 +1,59 @@
++# Phase 6 Stabilization Report (PH6_BASELINE_STABILIZATION)
++
++## 1. Executive Summary
++This mission focused on finalizing the Phase 6 baseline by resolving a -71k monetary leak, hardening the engine against multi-currency crashes, and integrating persistence.
++- **Status**: Partial Success. Crash fixed. Persistence added. Leak identified (Architectural) but not fully resolved (requires accounting model change).
++- **Leak**: -71,328.04 (Steady). Identified as **Bank Profit Absorption**.
++
++## 2. Resolved Technical Issues
++
++### A. Engine Hardening (Multi-Currency Reset)
++- **Problem**: `Phase5_PostSequence` attempted to assign a dictionary (`expenses_this_tick`) to a float field (`last_daily_expenses`), causing type errors and logic crashes in multi-currency scenarios.
++- **Fix**: Implemented `FinanceDepartment.finalize_tick()` to encapsulate the reset logic.
++- **Trade-off**: The fix calculates `last_daily_expenses` by **summing** raw values of all currencies (e.g. USD + EUR). This is a heuristic to prevent crashing and provide a rough magnitude for unit cost estimations. It ignores exchange rates as they are not readily available in the `PostSequence` context without heavy dependency injection.
++- **Code**: `simulation/components/finance_department.py`, `simulation/orchestration/phases/post_sequence.py`.
++
++### B. Persistence Integration
++- **Problem**: Dashboard snapshots were not being saved to disk.
++- **Fix**: Integrated `PersistenceBridge` into `DashboardService`. Snapshots are now saved at the end of `get_snapshot()`.
++- **Code**: `simulation/orchestration/dashboard_service.py`.
++
++### C. Settlement System Integrity
++- **Problem**: Funds held in `SettlementSystem` (e.g. from deceased agents) were invisible to the M2 calculation, creating potential leaks.
++- **Fix**: Implemented `get_assets_by_currency` in `SettlementSystem` and added it to `TickOrchestrator`'s `currency_holders`.
++- **Code**: `simulation/systems/settlement_system.py`, `simulation/orchestration/tick_orchestrator.py`.
++
++## 3. Residual Leak Analysis (-71,328.04)
++
++The simulation consistently reports a leak of **-71,328.04** at Tick 1.
++
++### Root Cause: Bank Profit Absorption
++The M2 Money Supply formula used in the simulation is:
++`M2 = (M0 - Bank Reserves) + Deposits`
++
++When agents pay **interest** to the Commercial Bank:
++1.  **Agent Cash** decreases (reducing `M0` and `M2`).
++2.  **Bank Reserves** increase (increasing `M0` but subtracted from `M2`).
++3.  **Bank Equity** increases (Profit).
++4.  **Deposits** do *not* increase (it is not a deposit, it is income).
++
++**Result**: Net reduction in M2.
++
++The `Authorized Delta` (Expected M2) calculation only tracks `Central Bank Issuance` vs `Destruction`. It does **not** account for money removed from circulation via Bank Profit Retention.
++Since the Bank has not yet paid out dividends or expenses equal to this income at Tick 1, the money is effectively "hoarded" in Reserves, causing the M2 drop.
++
++### Central Bank Activity
++The logs show `CentralBank` delta of **-3.8M**. This is likely **Quantitative Easing (QE)** or Open Market Operations where the CB buys Bonds from the Commercial Bank.
++- **Mechanism**: CB buys Bonds -> Bank Reserves increase.
++- **M2 Impact**: `M0` increases (Reserves), but `Reserves` deduction increases. `M2` remains neutral.
++- **Conclusion**: The large CB delta is an asset swap and is **not** the source of the leak.
++
++### Recommendation
++To resolve the leak metric:
++1.  **Accounting Adjustment**: Update `Authorized Delta` to include `Bank Retained Earnings` as a form of "Temporary Destruction" (Absorption).
++2.  **Operational Adjustment**: Force the Bank to distribute all profits (Dividends/Salaries) within the same tick to recycle liquidity.
++3.  **Acceptance**: Accept this as a feature of the M2 definition (Hoarding reduces Money Supply).
++
++## 4. Technical Debt & Next Steps
++- **FinanceDepartment.finalize_tick**: Need to inject `ExchangeService` to properly convert expenses for `last_daily_expenses`.
++- **Bank Accounting**: The current M2 check is too rigid for a fractional reserve system where Bank Equity fluctuates.
+diff --git a/simulation/components/finance_department.py b/simulation/components/finance_department.py
+index 43167613..29d1c331 100644
+--- a/simulation/components/finance_department.py
++++ b/simulation/components/finance_department.py
+@@ -473,3 +473,24 @@ class FinanceDepartment(IFinanceDepartment):
+         if self.firm.wallet.get_balance(currency) >= amount and self.firm.settlement_system:
+             if self.firm.settlement_system.transfer(self.firm, government, amount, reason, currency=currency):
+                 self.record_expense(amount, currency)
++
++    def finalize_tick(self) -> None:
++        """
++        Resets tick-specific counters and updates history.
++        Called by PostSequence phase.
++        """
++        # 1. Update last_daily_expenses (SUM of all currency expenses)
++        # Note: Ideally this should use exchange rates, but we sum raw values
++        # as a heuristic for solvency metrics when rates aren't available in this context.
++        total_expenses = sum(self.expenses_this_tick.values())
++        self.last_daily_expenses = total_expenses
++
++        # 2. Update last_sales_volume
++        self.last_sales_volume = self.sales_volume_this_tick
++
++        # 3. Reset Counters
++        self.sales_volume_this_tick = 0.0
++
++        # Reset Dicts to initial state (preserve primary currency key)
++        self.expenses_this_tick = {self.primary_currency: 0.0}
++        self.revenue_this_tick = {self.primary_currency: 0.0}
+diff --git a/simulation/orchestration/dashboard_service.py b/simulation/orchestration/dashboard_service.py
+index cbdbab77..3afd17b7 100644
+--- a/simulation/orchestration/dashboard_service.py
++++ b/simulation/orchestration/dashboard_service.py
+@@ -9,6 +9,7 @@ from simulation.dtos.watchtower import (
+     PoliticsStatusDTO, PoliticsFiscalDTO, PopulationDTO,
+     PopulationDistributionDTO, PopulationMetricsDTO
+ )
++from simulation.orchestration.persistence_bridge import PersistenceBridge
+ from modules.system.api import DEFAULT_CURRENCY
+ 
+ logger = logging.getLogger(__name__)
+@@ -18,6 +19,7 @@ class DashboardService:
+         self.simulation = simulation
+         self._last_tick_time = datetime.now()
+         self._last_tick = 0
++        self.persistence = PersistenceBridge()
+ 
+     def get_snapshot(self) -> WatchtowerSnapshotDTO:
+         state = self.simulation.world_state
+@@ -128,7 +130,7 @@ class DashboardService:
+ 
+             # TODO: Implement Birth Rate tracking in Repository or Tracker
+ 
+-        return WatchtowerSnapshotDTO(
++        snapshot = WatchtowerSnapshotDTO(
+             tick=state.time,
+             status="RUNNING", # TODO: Hook into simulation status if available
+             integrity=IntegrityDTO(m2_leak=m2_leak, fps=fps),
+@@ -153,6 +155,9 @@ class DashboardService:
+                             )
+                         )
+ 
++        self.persistence.save_snapshot(snapshot)
++        return snapshot
++
+     def _calculate_m2_leak(self, state) -> float:
+         m2_current = state.calculate_total_money().get(DEFAULT_CURRENCY, 0.0)
+         m2_start = state.baseline_money_supply
+diff --git a/simulation/orchestration/phases/post_sequence.py b/simulation/orchestration/phases/post_sequence.py
+index 94dd2a1f..a9a6f46c 100644
+--- a/simulation/orchestration/phases/post_sequence.py
++++ b/simulation/orchestration/phases/post_sequence.py
+@@ -110,12 +110,8 @@ class Phase5_PostSequence(IPhaseStrategy):
+                  h.reset_consumption_counters()
+ 
+         for f in state.firms:
+-            if hasattr(f, 'finance'):
+-                f.finance.last_daily_expenses = f.finance.expenses_this_tick
+-                f.finance.last_sales_volume = f.finance.sales_volume_this_tick
+-                f.finance.sales_volume_this_tick = 0.0
+-                f.finance.expenses_this_tick = 0.0
+-                f.finance.revenue_this_tick = 0.0
++            if hasattr(f, 'finance') and hasattr(f.finance, 'finalize_tick'):
++                f.finance.finalize_tick()
+ 
+         if self.world_state.generational_wealth_audit and state.time % 100 == 0:
+              self.world_state.generational_wealth_audit.run_audit(state.households, state.time)
+diff --git a/simulation/orchestration/tick_orchestrator.py b/simulation/orchestration/tick_orchestrator.py
+index 7c7ff1d3..27b99896 100644
+--- a/simulation/orchestration/tick_orchestrator.py
++++ b/simulation/orchestration/tick_orchestrator.py
+@@ -242,7 +242,14 @@ class TickOrchestrator:
+ 
+         # Rebuild from agents map
+         # Explicitly ensure System Agents are included if they are not in agents map (legacy safety)
+-        system_agents = [state.central_bank, state.government, state.bank, getattr(state, "escrow_agent", None)]
++        # WO-220: Added settlement_system to track escrowed funds
++        system_agents = [
++            state.central_bank,
++            state.government,
++            state.bank,
++            getattr(state, "escrow_agent", None),
++            state.settlement_system
++        ]
+ 
+         # Use a set of IDs to prevent duplicates if system agents are also in agents dict
+         added_ids = set()
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index db455f42..1d3bb0b0 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -305,6 +305,17 @@ class SettlementSystem(ISettlementSystem):
+ 
+         return transactions
+ 
++    def get_assets_by_currency(self) -> Dict[str, float]:
++        """
++        Implements ICurrencyHolder for M2 verification.
++        Returns total cash held in escrow accounts.
++        """
++        total = 0.0
++        for acc in self.settlement_accounts.values():
++            # Count all cash in the system regardless of status, as it is withdrawn from circulation
++            total += acc.escrow_cash
++        return {DEFAULT_CURRENCY: total}
++
+     def verify_and_close(self, account_id: int, tick: int) -> bool:
+         """
+         TD-160: Verifies zero balance and closes the account.

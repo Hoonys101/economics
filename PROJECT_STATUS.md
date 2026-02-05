@@ -12,7 +12,8 @@
     - **`Phase 6: The Pulse of the Market (Stress & Visualization)`** 📈 [IN PROGRESS]
         - **Goal**: Market stress testing and real-time dashboard visualization.
         - **Active Missions**:
-            - `EXEC_PH6_STRESS_TEST`: 100-Tick Integrity Check (Awaiting Final 0.0000 Fix)
+            - `PH6_BASELINE_STABILIZATION`: Zero-Leak hardening & Persistence (Jules) [IN PROGRESS]
+            - `EXEC_PH6_STRESS_TEST`: 100-Tick Baseline captured (-71k variance) ✅
             - `WATCHTOWER_BACKEND`: FastAPI/WebSocket Stream [MERGED ✅]
             - `WATCHTOWER_FRONTEND`: Next.js Command Center [MERGED ✅]
 
