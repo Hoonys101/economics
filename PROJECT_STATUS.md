@@ -12,10 +12,9 @@
     - **`Phase 6: The Pulse of the Market (Stress & Visualization)`** 📈 [IN PROGRESS]
         - **Goal**: Market stress testing and real-time dashboard visualization.
         - **Active Missions**:
-            - `EXEC_PH6_STRESS_TEST`: 100-Tick Integrity Check (Jules)
-            - `WATCHTOWER_BACKEND_DEV`: FastAPI/WebSocket Stream (Jules)
-            - `WATCHTOWER_FRONTEND_DEV`: Next.js Command Center (Jules)
-            - `WATCHTOWER_AUDIT`: Visualization Module Audit (Gemini)
+            - `EXEC_PH6_STRESS_TEST`: 100-Tick Integrity Check (Awaiting Final 0.0000 Fix)
+            - `WATCHTOWER_BACKEND`: FastAPI/WebSocket Stream [MERGED ✅]
+            - `WATCHTOWER_FRONTEND`: Next.js Command Center [MERGED ✅]
 
 - **완료된 단계(Recent)**:
     - **Phase 5: Central Bank & Monetary Integrity** ✅ (2026-02-05)

@@ -1,0 +1,416 @@
+diff --git a/communications/insights/PH6_Watchtower.md b/communications/insights/PH6_Watchtower.md
+new file mode 100644
+index 00000000..c5d61b7d
+--- /dev/null
++++ b/communications/insights/PH6_Watchtower.md
+@@ -0,0 +1,25 @@
++# PH6 Watchtower Implementation Insights
++
++## Technical Debt & Observations
++
++1.  **M2 Leak Calculation Integrity**:
++    - The `TickOrchestrator` performs an M2 integrity check using `baseline_money_supply` (set at Tick 0) and `government.get_monetary_delta()`.
++    - However, `MonetaryLedger.get_monetary_delta()` returns the delta for the *current tick*, not cumulative. Unless `baseline_money_supply` is updated or `get_monetary_delta` behaves differently than analyzed, the orchestration check might be flawed.
++    - In `DashboardService`, `m2_leak` is calculated as: `Current M2 - (Baseline M2 + Cumulative Issued - Cumulative Destroyed)`. This assumes `Baseline M2` is static. This logic should be centralized (e.g., in `IntegritySystem`) to avoid divergence between the Orchestrator check and the Dashboard.
++
++2.  **Metric Source of Truth**:
++    - Macro metrics (Inflation, Gini) are accessed via `Government.sensory_data`, which receives them from `SensorySystem` (injected via `TickOrchestrator`).
++    - `EconomicIndicatorTracker` also calculates metrics but `DashboardService` prioritizes `Government` sensory data for consistency with agent behavior.
++    - This dual-source potential (Tracker vs Gov Sensory) could lead to discrepancies if not synchronized perfectly.
++
++3.  **Performance Tracking**:
++    - FPS is currently calculated in `DashboardService` based on poll intervals. The `Simulation` engine does not natively expose real-time performance metrics (FPS, tick duration). This should be moved to the engine level for accuracy.
++
++4.  **GDP Growth Calculation**:
++    - `DashboardService` calculates GDP growth using `government.gdp_history`. This is a derived metric that could be standardized in `EconomicIndicatorTracker`.
++
++## Implementation Details
++
++- **Server Architecture**: `server.py` uses `FastAPI` with a background `asyncio` task running `sim.run_tick()` in a thread pool (`asyncio.to_thread`). This prevents the heavy simulation loop from blocking the WebSocket heartbeat.
++- **Throttling**: The WebSocket endpoint pushes updates at a maximum of 1Hz to comply with the contract, regardless of the simulation speed.
++- **DTO**: `DashboardSnapshotDTO` strictly follows the `PH6_WATCHTOWER_CONTRACT.md`.
+diff --git a/requirements.txt b/requirements.txt
+index 5aa3c0bb..7dc33f6c 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -13,3 +13,7 @@ matplotlib>=3.7.0
+ # Testing
+ pytest>=7.0.0
+ pytest-mock>=3.10.0
++fastapi>=0.100.0
++uvicorn>=0.23.0
++websockets>=11.0
++httpx>=0.24.0
+diff --git a/server.py b/server.py
+new file mode 100644
+index 00000000..22cf799c
+--- /dev/null
++++ b/server.py
+@@ -0,0 +1,93 @@
++import asyncio
++import logging
++from contextlib import asynccontextmanager
++from dataclasses import asdict
++
++from fastapi import FastAPI, WebSocket, WebSocketDisconnect
++from utils.simulation_builder import create_simulation
++from simulation.orchestration.dashboard_service import DashboardService
++import config
++
++# Configure logging
++logging.basicConfig(level=logging.INFO)
++logger = logging.getLogger("server")
++
++# Global State
++sim = None
++dashboard_service = None
++background_task = None
++is_running = False
++
++async def simulation_loop():
++    global sim, is_running
++    logger.info("Starting simulation loop...")
++    while is_running:
++        if sim:
++            try:
++                # Run tick in thread pool to prevent blocking the event loop
++                await asyncio.to_thread(sim.run_tick)
++
++                # Yield control to event loop
++                await asyncio.sleep(0.1)
++            except Exception as e:
++                logger.error(f"Error in simulation loop: {e}", exc_info=True)
++                await asyncio.sleep(1.0) # Backoff
++        else:
++            await asyncio.sleep(1.0)
++
++@asynccontextmanager
++async def lifespan(app: FastAPI):
++    global sim, dashboard_service, background_task, is_running
++
++    # Startup
++    logger.info("Initializing simulation...")
++    # overrides can be passed here if needed
++    sim = create_simulation()
++    dashboard_service = DashboardService(sim)
++
++    is_running = True
++    background_task = asyncio.create_task(simulation_loop())
++
++    yield
++
++    # Shutdown
++    logger.info("Shutting down simulation...")
++    is_running = False
++    if background_task:
++        # Cancel the task to stop sleep immediately if needed, or wait for it to check flag
++        background_task.cancel()
++        try:
++            await background_task
++        except asyncio.CancelledError:
++            pass
++
++    if sim:
++        sim.finalize_simulation()
++
++app = FastAPI(lifespan=lifespan)
++
++@app.websocket("/ws/live")
++async def websocket_endpoint(websocket: WebSocket):
++    await websocket.accept()
++    try:
++        while True:
++            if dashboard_service:
++                snapshot = dashboard_service.get_snapshot()
++                # Use asdict to convert dataclass to dict
++                data = asdict(snapshot)
++                await websocket.send_json(data)
++
++            # Throttling to Max 1Hz (1 second delay)
++            await asyncio.sleep(1.0)
++    except WebSocketDisconnect:
++        logger.info("Client disconnected")
++    except Exception as e:
++        logger.error(f"WebSocket error: {e}")
++
++@app.get("/")
++def read_root():
++    return {"status": "Watchtower Server Running"}
++
++if __name__ == "__main__":
++    import uvicorn
++    uvicorn.run(app, host="0.0.0.0", port=8000)
+diff --git a/simulation/dtos/watchtower.py b/simulation/dtos/watchtower.py
+index 8d5b6bd7..f96dc582 100644
+--- a/simulation/dtos/watchtower.py
++++ b/simulation/dtos/watchtower.py
+@@ -1,24 +1,38 @@
+ from dataclasses import dataclass, field
+-from typing import Dict, Any
++from typing import Dict, List, Literal
+ 
+ @dataclass
+-class TheWatchtowerSnapshotDTO:
+-    """The root DTO for The Watchtower dashboard, sent via WebSocket every N ticks."""
++class SystemIntegrityDTO:
++    m2_leak: float
++    fps: float
++
++@dataclass
++class MacroEconomyDTO:
++    gdp_growth: float
++    inflation_rate: float
++    unemployment_rate: float
++    gini_coefficient: float
++
++@dataclass
++class MonetaryDTO:
++    base_rate: float
++    interbank_rate: float
++    m2_supply: float
++    exchange_rates: Dict[str, float]
++
++@dataclass
++class PoliticsDTO:
++    party: str # 'RED' | 'BLUE' | 'NEUTRAL'
++    approval_rating: float
++    social_cohesion: float
++    current_events: List[str]
++
++@dataclass
++class DashboardSnapshotDTO:
++    """The root DTO for The Watchtower dashboard, sent via WebSocket."""
+     tick: int
+-    status: str = "RUNNING" # RUNNING, PAUSED, EMERGENCY
+-    integrity: Dict[str, float] = field(default_factory=lambda: {"m2_leak": 0.0, "fps": 0.0})
+-    macro: Dict[str, float] = field(default_factory=lambda: {"gdp": 0.0, "cpi": 0.0, "unemploy": 0.0, "gini": 0.0})
+-    finance: Dict[str, Any] = field(default_factory=lambda: {
+-        "rates": {"base": 0.0, "call": 0.0, "loan": 0.0, "savings": 0.0},
+-        "supply": {"m0": 0.0, "m1": 0.0, "m2": 0.0, "velocity": 0.0}
+-    })
+-    politics: Dict[str, Any] = field(default_factory=lambda: {
+-        "approval": {"total": 0.0, "low": 0.0, "mid": 0.0, "high": 0.0},
+-        "status": {"ruling_party": "NEUTRAL", "cohesion": 0.5},
+-        "fiscal": {"revenue": 0.0, "welfare": 0.0, "debt": 0.0}
+-    })
+-    population: Dict[str, Any] = field(default_factory=lambda: {
+-        "distribution": {"q1": 0.0, "q2": 0.0, "q3": 0.0, "q4": 0.0, "q5": 0.0},
+-        "active_count": 0,
+-        "metrics": {"birth": 0.0, "death": 0.0}
+-    })
++    timestamp: str # ISO-8601
++    system_integrity: SystemIntegrityDTO
++    macro_economy: MacroEconomyDTO
++    monetary: MonetaryDTO
++    politics: PoliticsDTO
+diff --git a/simulation/orchestration/dashboard_service.py b/simulation/orchestration/dashboard_service.py
+new file mode 100644
+index 00000000..69ef7089
+--- /dev/null
++++ b/simulation/orchestration/dashboard_service.py
+@@ -0,0 +1,139 @@
++from typing import Dict, Any, List, Optional
++from datetime import datetime
++import logging
++
++from simulation.engine import Simulation
++from simulation.dtos.watchtower import (
++    DashboardSnapshotDTO, SystemIntegrityDTO, MacroEconomyDTO, MonetaryDTO, PoliticsDTO
++)
++from modules.system.api import DEFAULT_CURRENCY
++
++logger = logging.getLogger(__name__)
++
++class DashboardService:
++    def __init__(self, simulation: Simulation):
++        self.simulation = simulation
++        self._last_tick_time = datetime.now()
++        self._last_tick = 0
++
++    def get_snapshot(self) -> DashboardSnapshotDTO:
++        state = self.simulation.world_state
++        tracker = state.tracker
++
++        # 1. System Integrity
++        m2_leak = self._calculate_m2_leak(state)
++
++        # FPS Calculation
++        current_time = datetime.now()
++        delta_seconds = (current_time - self._last_tick_time).total_seconds()
++        fps = 0.0
++        if delta_seconds > 0:
++            tick_diff = state.time - self._last_tick
++            if tick_diff > 0:
++                fps = tick_diff / delta_seconds
++                # Only update baseline if we actually advanced (simple smoothing)
++                self._last_tick_time = current_time
++                self._last_tick = state.time
++
++        # 2. Macro Economy
++        latest_metrics = {}
++        if tracker:
++            latest_metrics = tracker.get_latest_indicators()
++
++        gdp_growth = 0.0
++        # Calculate from government GDP history if available
++        gov = state.governments[0] if state.governments else None
++
++        if gov and hasattr(gov, 'gdp_history') and len(gov.gdp_history) >= 2:
++            current = gov.gdp_history[-1]
++            prev = gov.gdp_history[-2]
++            if prev > 0:
++                gdp_growth = ((current - prev) / prev) * 100.0
++
++        inflation_rate = 0.0
++        if gov and gov.sensory_data:
++             inflation_rate = gov.sensory_data.inflation_sma * 100.0
++        elif tracker:
++             # Fallback to CPI change if sensory data not available
++             cpi_list = tracker.metrics.get("goods_price_index", [])
++             if len(cpi_list) >= 2 and cpi_list[-2] > 0:
++                 inflation_rate = ((cpi_list[-1] - cpi_list[-2]) / cpi_list[-2]) * 100.0
++
++        unemployment_rate = latest_metrics.get("unemployment_rate", 0.0)
++
++        gini_coefficient = 0.0
++        if gov and gov.sensory_data:
++            gini_coefficient = gov.sensory_data.gini_index
++
++        # 3. Monetary
++        base_rate = 0.0
++        if state.central_bank:
++            base_rate = getattr(state.central_bank, "base_rate", 0.0) * 100.0
++
++        interbank_rate = 0.0
++        # Call Market is usually 'loan_market' in simple setup or managed by CallMarketService
++        loan_market = state.markets.get("loan_market")
++        if loan_market:
++             interbank_rate = getattr(loan_market, "interest_rate", 0.0) * 100.0
++
++        m2_supply = 0.0
++        if tracker:
++            m2_supply = tracker.get_m2_money_supply(state)
++
++        exchange_rates = {}
++        if tracker and hasattr(tracker, 'exchange_engine'):
++            exchange_rates = tracker.exchange_engine.get_all_rates()
++
++        # 4. Politics
++        party = "NEUTRAL"
++        approval_rating = 0.0
++        social_cohesion = 0.5
++
++        if gov:
++            party = gov.ruling_party.name if hasattr(gov.ruling_party, 'name') else str(gov.ruling_party)
++            approval_rating = gov.approval_rating
++            # Social cohesion - placeholder
++            social_cohesion = gov.approval_rating # Proxy for now
++
++        current_events = []
++
++        return DashboardSnapshotDTO(
++            tick=state.time,
++            timestamp=datetime.now().isoformat(),
++            system_integrity=SystemIntegrityDTO(m2_leak=m2_leak, fps=fps),
++            macro_economy=MacroEconomyDTO(
++                gdp_growth=gdp_growth,
++                inflation_rate=inflation_rate,
++                unemployment_rate=unemployment_rate,
++                gini_coefficient=gini_coefficient
++            ),
++            monetary=MonetaryDTO(
++                base_rate=base_rate,
++                interbank_rate=interbank_rate,
++                m2_supply=m2_supply,
++                exchange_rates=exchange_rates
++            ),
++            politics=PoliticsDTO(
++                party=party,
++                approval_rating=approval_rating,
++                social_cohesion=social_cohesion,
++                current_events=current_events
++            )
++        )
++
++    def _calculate_m2_leak(self, state) -> float:
++        m2_current = state.calculate_total_money().get(DEFAULT_CURRENCY, 0.0)
++        m2_start = state.baseline_money_supply
++
++        delta_issued = 0.0
++        delta_destroyed = 0.0
++
++        gov = state.governments[0] if state.governments else None
++
++        if gov and hasattr(gov, "monetary_ledger"):
++            ledger = gov.monetary_ledger
++            delta_issued = ledger.total_money_issued.get(DEFAULT_CURRENCY, 0.0)
++            delta_destroyed = ledger.total_money_destroyed.get(DEFAULT_CURRENCY, 0.0)
++
++        expected_m2 = m2_start + delta_issued - delta_destroyed
++        return m2_current - expected_m2
+diff --git a/tests/test_ws.py b/tests/test_ws.py
+new file mode 100644
+index 00000000..dad04cc5
+--- /dev/null
++++ b/tests/test_ws.py
+@@ -0,0 +1,60 @@
++import pytest
++from fastapi.testclient import TestClient
++from unittest.mock import MagicMock, patch
++from server import app
++
++def test_websocket_endpoint():
++    with patch("server.create_simulation") as mock_create:
++        sim_instance = MagicMock()
++        mock_create.return_value = sim_instance
++
++        # Mock world state and components
++        world_state = MagicMock()
++        sim_instance.world_state = world_state
++        sim_instance.run_tick = MagicMock()
++
++        world_state.time = 1
++        world_state.baseline_money_supply = 1000.0
++        world_state.calculate_total_money.return_value = {"USD": 1000.0}
++
++        # Tracker
++        tracker = MagicMock()
++        world_state.tracker = tracker
++        tracker.get_latest_indicators.return_value = {"unemployment_rate": 5.0}
++        tracker.get_m2_money_supply.return_value = 1000.0
++        tracker.exchange_engine.get_all_rates.return_value = {"USD": 1.0}
++
++        # Government
++        gov = MagicMock()
++        world_state.governments = [gov]
++        gov.gdp_history = [100.0, 105.0]
++        gov.sensory_data.inflation_sma = 0.02
++        gov.sensory_data.gini_index = 0.3
++        gov.ruling_party.name = "BLUE"
++        gov.approval_rating = 0.6
++
++        # Ledger
++        ledger = MagicMock()
++        gov.monetary_ledger = ledger
++        ledger.total_money_issued = {"USD": 0.0}
++        ledger.total_money_destroyed = {"USD": 0.0}
++
++        # Mock other components to avoid attribute errors
++        world_state.central_bank.base_rate = 0.05
++        world_state.markets.get.return_value = MagicMock(interest_rate=0.04)
++
++        with TestClient(app) as client:
++            with client.websocket_connect("/ws/live") as websocket:
++                data = websocket.receive_json()
++
++                assert "tick" in data
++                assert "timestamp" in data
++                assert "system_integrity" in data
++                assert "macro_economy" in data
++                assert "monetary" in data
++                assert "politics" in data
++
++                assert data["tick"] == 1
++                assert data["macro_economy"]["gdp_growth"] == 5.0
++                assert data["system_integrity"]["m2_leak"] == 0.0
++                assert data["politics"]["party"] == "BLUE"

@@ -28,13 +28,13 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| (No Active Items) | | | | | |
+| TD-015 | 2026-02-05 | Divergent Metric Calculation | SSoT Deviation | [Review](../../_archive/gemini_output/pr_review_ph6-watchtower-dashboard-15887853336717342464.md) | **ACTIVE** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| (No Active Items) | | | | | |
+| TD-125 | 2026-02-05 | Watchtower Contract Mismatch | API Desync | [Review](../../_archive/gemini_output/pr_review_ph6-watchtower-scaffold-18088587128119282769.md) | **ACTIVE** |
 
 ## 🧱 7. INFRASTRUCTURE & TESTING
 
@@ -111,6 +111,20 @@
 | PH35-J2 | 2026-02-04 | Central Bank Service Implementation | [Spec](../../3_work_artifacts/specs/spec_phase35_central_bank.md) | [Insight](../../communications/insights/Mission_Phase5_Interfaces.md) |
 | PH35-J3 | 2026-02-04 | Call Market Implementation | ^ | [Insight](../../communications/insights/CallMarket_Impl.md) |
 | TD-230 | 2026-02-04 | M2 Integrity: Newborn Tracking leak | Fixed via LifecycleManager currency_holders update | [Walkthrough](../../../brain/a4ca8651-e1d6-40f9-96b7-5133429de32b/walkthrough.md) |
+
+---
+
+## 🏗️ ACTIVE DEBT DETAILS (최근 식별된 상세 부채)
+
+### 🔴 TD-125: Frontend-Backend Contract Mismatch (High)
+- **현상 (Phenomenon)**: Watchtower UI 스캐폴딩 과정에서 프론트엔드 TypeScript 인터페이스와 백엔드 Python DTO 간의 구조적 불일치 발견.
+- **원인 (Cause)**: 구현 전 API 계약에 대한 동기화된 SSoT(Single Source of Truth) 부재.
+- **해결책 제안 (Proposed Solution)**: 백엔드 DTO를 `PH6-WT-001` 계약에 맞게 수정하거나, 프론트엔드에 Adapter Pattern을 도입하여 데이터 형식을 변환할 것.
+
+### 🟡 TD-015: Divergent Metric Calculation (Medium)
+- **현상 (Phenomenon)**: 동일한 핵심 경제 지표(예: M2 Leak)를 계산하는 로직이 시스템 내 여러 위치(`TickOrchestrator`, `DashboardService`)에 분산되어 존재함.
+- **원인 (Cause)**: 지표 계산을 중앙화된 서비스 대신 각 모듈 범위 내에서 독립적으로 구현함.
+- **해결책 제안 (Proposed Solution)**: 모든 핵심 경제 지표 계산 로직을 `EconomicIndicatorTracker` 등으로 중앙화하고 SSoT 원칙 확립.
 
 ---
 

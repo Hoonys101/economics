@@ -1,38 +1,24 @@
 from dataclasses import dataclass, field
-from typing import Dict, List, Literal
+from typing import Dict, List, Any
 
 @dataclass
-class SystemIntegrityDTO:
-    m2_leak: float
-    fps: float
-
-@dataclass
-class MacroEconomyDTO:
-    gdp_growth: float
-    inflation_rate: float
-    unemployment_rate: float
-    gini_coefficient: float
-
-@dataclass
-class MonetaryDTO:
-    base_rate: float
-    interbank_rate: float
-    m2_supply: float
-    exchange_rates: Dict[str, float]
-
-@dataclass
-class PoliticsDTO:
-    party: str # 'RED' | 'BLUE' | 'NEUTRAL'
-    approval_rating: float
-    social_cohesion: float
-    current_events: List[str]
-
-@dataclass
-class DashboardSnapshotDTO:
-    """The root DTO for The Watchtower dashboard, sent via WebSocket."""
+class TheWatchtowerSnapshotDTO:
+    """The root DTO for The Watchtower dashboard, aligning with Golden Sample v2."""
     tick: int
-    timestamp: str # ISO-8601
-    system_integrity: SystemIntegrityDTO
-    macro_economy: MacroEconomyDTO
-    monetary: MonetaryDTO
-    politics: PoliticsDTO
+    status: str = "RUNNING"  # RUNNING, PAUSED, EMERGENCY
+    integrity: Dict[str, float] = field(default_factory=lambda: {"m2_leak": 0.0, "fps": 0.0})
+    macro: Dict[str, float] = field(default_factory=lambda: {"gdp": 0.0, "cpi": 0.0, "unemploy": 0.0, "gini": 0.0})
+    finance: Dict[str, Any] = field(default_factory=lambda: {
+        "rates": {"base": 0.0, "call": 0.0, "loan": 0.0, "savings": 0.0},
+        "supply": {"m0": 0.0, "m1": 0.0, "m2": 0.0, "velocity": 0.0}
+    })
+    politics: Dict[str, Any] = field(default_factory=lambda: {
+        "approval": {"total": 0.0, "low": 0.0, "mid": 0.0, "high": 0.0},
+        "status": {"ruling_party": "NEUTRAL", "cohesion": 0.5},
+        "fiscal": {"revenue": 0.0, "welfare": 0.0, "debt": 0.0}
+    })
+    population: Dict[str, Any] = field(default_factory=lambda: {
+        "distribution": {"q1": 0.0, "q2": 0.0, "q3": 0.0, "q4": 0.0, "q5": 0.0},
+        "active_count": 0,
+        "metrics": {"birth": 0.0, "death": 0.0}
+    })
