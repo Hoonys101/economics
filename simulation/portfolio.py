@@ -33,6 +33,14 @@ class Portfolio:
                 acquisition_price=price
             )
 
+    def get_stock_quantity(self, firm_id: int) -> float:
+        """
+        Returns the quantity of shares held for a given firm.
+        Replacing direct access to holdings for LoD compliance (TD-233).
+        """
+        share = self.holdings.get(firm_id)
+        return share.quantity if share else 0.0
+
     def remove(self, firm_id: int, quantity: float):
         """
         Removes shares. WAC does not change on sell.
