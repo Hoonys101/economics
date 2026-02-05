@@ -101,7 +101,7 @@ class FinanceDepartment(IFinanceDepartment):
         self.expenses_this_tick[currency] += amount
         self.current_profit[currency] -= amount
 
-    def _convert_to_primary(self, amount: float, currency: CurrencyCode, exchange_rates: Dict[CurrencyCode, float]) -> float:
+    def convert_to_primary(self, amount: float, currency: CurrencyCode, exchange_rates: Dict[CurrencyCode, float]) -> float:
         """Helper to convert any currency to primary currency."""
         if currency == self.primary_currency:
             return amount
@@ -184,7 +184,7 @@ class FinanceDepartment(IFinanceDepartment):
         # Calculate total profit in primary currency for history tracking
         total_profit_primary = 0.0
         for cur, profit in self.current_profit.items():
-            total_profit_primary += self._convert_to_primary(profit, cur, exchange_rates)
+            total_profit_primary += self.convert_to_primary(profit, cur, exchange_rates)
 
         self.profit_history.append(total_profit_primary)
 
@@ -227,7 +227,7 @@ class FinanceDepartment(IFinanceDepartment):
             distributable_profit = max(0, profit * self.firm.dividend_rate)
             if distributable_profit > 0 and total_shares > 0:
                 # Add to total paid (converted)
-                self.dividends_paid_last_tick += self._convert_to_primary(distributable_profit, cur, exchange_rates)
+                self.dividends_paid_last_tick += self.convert_to_primary(distributable_profit, cur, exchange_rates)
 
                 for household in households:
                     # TD-233: Use portfolio property (LoD fix)
@@ -252,7 +252,7 @@ class FinanceDepartment(IFinanceDepartment):
         # TD-213-B: Update last_revenue before reset
         total_revenue_primary = 0.0
         for cur, amount in self.revenue_this_turn.items():
-            total_revenue_primary += self._convert_to_primary(amount, cur, exchange_rates)
+            total_revenue_primary += self.convert_to_primary(amount, cur, exchange_rates)
         self.last_revenue = total_revenue_primary
 
         for cur in list(self.current_profit.keys()): # List copy to avoid runtime error if we modify keys
@@ -288,7 +288,7 @@ class FinanceDepartment(IFinanceDepartment):
         # Calculate Total Assets (Sum of all currencies converted + Capital + Inventory)
         usd_balance = 0.0
         for cur, amount in self.firm.wallet.get_all_balances().items():
-             usd_balance += self._convert_to_primary(amount, cur, exchange_rates)
+             usd_balance += self.convert_to_primary(amount, cur, exchange_rates)
 
         total_assets = usd_balance + self.firm.capital_stock + self.get_inventory_value()
         if total_assets == 0: return 0.0
@@ -356,7 +356,7 @@ class FinanceDepartment(IFinanceDepartment):
         total_assets_val = 0.0
         # Cash
         for cur, amount in self.firm.wallet.get_all_balances().items():
-            total_assets_val += self._convert_to_primary(amount, cur, exchange_rates)
+            total_assets_val += self.convert_to_primary(amount, cur, exchange_rates)
 
         # Inventory & Capital Stock (Assuming priced in primary)
         total_assets_val += self.get_inventory_value() + self.firm.capital_stock
@@ -474,15 +474,15 @@ class FinanceDepartment(IFinanceDepartment):
             if self.firm.settlement_system.transfer(self.firm, government, amount, reason, currency=currency):
                 self.record_expense(amount, currency)
 
-    def finalize_tick(self) -> None:
+    def finalize_tick(self, exchange_rates: Dict[CurrencyCode, float]) -> None:
         """
         Resets tick-specific counters and updates history.
         Called by PostSequence phase.
         """
-        # 1. Update last_daily_expenses (SUM of all currency expenses)
-        # Note: Ideally this should use exchange rates, but we sum raw values
-        # as a heuristic for solvency metrics when rates aren't available in this context.
-        total_expenses = sum(self.expenses_this_tick.values())
+        # 1. Update last_daily_expenses (SUM of all currency expenses converted to primary)
+        total_expenses = 0.0
+        for cur, amount in self.expenses_this_tick.items():
+            total_expenses += self.convert_to_primary(amount, cur, exchange_rates)
         self.last_daily_expenses = total_expenses
 
         # 2. Update last_sales_volume

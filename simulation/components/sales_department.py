@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Any
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -49,12 +49,14 @@ class SalesDepartment:
 
         return order
 
-    def adjust_marketing_budget(self) -> None:
+    def adjust_marketing_budget(self, exchange_rates: Dict[CurrencyCode, float]) -> None:
         """Adjust marketing budget rate based on ROI."""
         delta_spend = self.firm.marketing_budget  # Current tick spend
 
-        # Extract primary currency revenue (approximate ROI for now)
-        current_revenue_usd = self.firm.finance.revenue_this_turn.get(DEFAULT_CURRENCY, 0.0)
+        # Extract total revenue converted to primary currency
+        current_revenue_usd = 0.0
+        for cur, amount in self.firm.finance.revenue_this_turn.items():
+            current_revenue_usd += self.firm.finance.convert_to_primary(amount, cur, exchange_rates)
 
         # Skip first tick or zero previous spend
         # Note: We use last_marketing_spend from PREVIOUS tick to calculate ROI of THAT spend.

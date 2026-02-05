@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
 import logging
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
@@ -35,10 +35,11 @@ class HRDepartment:
 
         return base_wage * actual_skill * halo_modifier
 
-    def process_payroll(self, current_time: int, government: Optional[Any], market_data: Optional[Dict[str, Any]]) -> List[Transaction]:
+    def process_payroll(self, current_time: int, government: Optional[Any], market_data: Optional[Dict[str, Any]], exchange_rates: Dict[CurrencyCode, float]) -> List[Transaction]:
         """
         Pays wages to employees. Handles insolvency firing if assets are insufficient.
         Returns list of Transactions.
+        Refactored for Multi-Currency Operational Awareness (TD-032).
         """
         from simulation.models import Transaction
 
@@ -65,9 +66,15 @@ class HRDepartment:
             base_wage = self.employee_wages.get(employee.id, self.firm.config.labor_market_min_wage)
             wage = self.calculate_wage(employee, base_wage)
 
-            # Affordability Check (Optimistic)
-            # Refactor: Use finance.balance (Dict -> Float)
+            # Affordability Check (Operational Awareness: Total Liquid Assets)
+            # TD-032: Check total liquid assets converted to primary to prevent firing if solvent in other currencies.
+            total_liquid_assets = 0.0
+            for cur, amount in self.firm.finance.balance.items():
+                total_liquid_assets += self.firm.finance.convert_to_primary(amount, cur, exchange_rates)
+
+            # Check if we can pay specifically in the wage currency (assumed DEFAULT_CURRENCY for now)
             current_balance = self.firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+
             if current_balance >= wage:
                 # Calculate Tax
                 income_tax = 0.0
@@ -107,11 +114,39 @@ class HRDepartment:
                 if hasattr(employee, "labor_income_this_tick"):
                     employee.labor_income_this_tick += net_wage
 
+            elif total_liquid_assets >= wage:
+                # TD-032: Solvent but Illiquid in Wage Currency -> Zombie (Unpaid Wage) without Firing
+                self._record_zombie_wage(employee, wage, current_time)
             else:
-                # Insolvency Handling
+                # Insolvent -> Fire (via insolvency handler)
                 self._handle_insolvency_transactions(employee, wage, current_time, generated_transactions)
 
         return generated_transactions
+
+    def _record_zombie_wage(self, employee: Household, wage: float, current_time: int) -> None:
+        """Records an unpaid wage without firing the employee."""
+        # Record unpaid wage for Tier 1 claim in liquidation
+        if employee.id not in self.unpaid_wages:
+            self.unpaid_wages[employee.id] = []
+
+        self.unpaid_wages[employee.id].append((current_time, wage))
+
+        # Prune old unpaid wages (older than 3 months)
+        ticks_per_year = getattr(self.firm.config, "ticks_per_year", 365)
+        # 3 months = 1/4 year
+        cutoff_tick = current_time - (ticks_per_year // 4)
+
+        self.unpaid_wages[employee.id] = [
+            (t, w) for t, w in self.unpaid_wages[employee.id]
+            if t >= cutoff_tick
+        ]
+
+        # Use balance.get for logging deficit
+        current_balance = self.firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+        self.firm.logger.warning(
+            f"ZOMBIE | Firm {self.firm.id} cannot afford wage for Household {employee.id}. Recorded as unpaid wage.",
+            extra={"tick": current_time, "agent_id": self.firm.id, "wage_deficit": wage - current_balance, "total_unpaid": len(self.unpaid_wages[employee.id])}
+        )
 
     def _handle_insolvency_transactions(self, employee: Household, wage: float, current_time: int, tx_list: List[Transaction]):
         """
@@ -147,27 +182,8 @@ class HRDepartment:
             employee.quit()
             self.remove_employee(employee)
         else:
-            # Zombie Employee (Unpaid Wage Tracking)
-            # Record unpaid wage for Tier 1 claim in liquidation
-            if employee.id not in self.unpaid_wages:
-                self.unpaid_wages[employee.id] = []
-
-            self.unpaid_wages[employee.id].append((current_time, wage))
-
-            # Prune old unpaid wages (older than 3 months)
-            ticks_per_year = getattr(self.firm.config, "ticks_per_year", 365)
-            # 3 months = 1/4 year
-            cutoff_tick = current_time - (ticks_per_year // 4)
-
-            self.unpaid_wages[employee.id] = [
-                (t, w) for t, w in self.unpaid_wages[employee.id]
-                if t >= cutoff_tick
-            ]
-
-            self.firm.logger.warning(
-                f"ZOMBIE | Firm {self.firm.id} cannot afford wage for Household {employee.id}. Recorded as unpaid wage.",
-                extra={"tick": current_time, "agent_id": self.firm.id, "wage_deficit": wage - current_balance, "total_unpaid": len(self.unpaid_wages[employee.id])}
-            )
+            # Fallback to Zombie if we can't even afford severance
+            self._record_zombie_wage(employee, wage, current_time)
 
     def hire(self, employee: Household, wage: float, current_tick: int = 0):
         self.employees.append(employee)

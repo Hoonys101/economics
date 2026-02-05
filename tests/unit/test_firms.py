@@ -174,10 +174,12 @@ class TestSalesDepartment:
         firm.finance.last_marketing_spend = 50.0
         firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 200.0}
         firm.finance.last_revenue = 100.0
+        # Mock convert_to_primary behavior on the mock object
+        firm.finance.convert_to_primary.side_effect = lambda amt, cur, rates: amt
 
         sales_dept = SalesDepartment(firm, mock_config)
         initial_rate = firm.marketing_budget_rate
-        sales_dept.adjust_marketing_budget()
+        sales_dept.adjust_marketing_budget({DEFAULT_CURRENCY: 1.0})
 
         assert firm.marketing_budget_rate > initial_rate
 
@@ -186,9 +188,11 @@ class TestSalesDepartment:
         firm.finance.last_marketing_spend = 200.0 # High spend
         firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 110.0} # Low return
         firm.finance.last_revenue = 100.0
+        # Mock convert_to_primary behavior on the mock object
+        firm.finance.convert_to_primary.side_effect = lambda amt, cur, rates: amt
 
         sales_dept = SalesDepartment(firm, mock_config)
         initial_rate = firm.marketing_budget_rate
-        sales_dept.adjust_marketing_budget()
+        sales_dept.adjust_marketing_budget({DEFAULT_CURRENCY: 1.0})
 
         assert firm.marketing_budget_rate < initial_rate
