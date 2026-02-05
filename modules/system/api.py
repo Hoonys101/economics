@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TypedDict, List, Dict, Optional, Any, Protocol, TYPE_CHECKING, TypeAlias, runtime_checkable
 from abc import ABC, abstractmethod
+from modules.finance.dtos import MoneyDTO
 
 # --- Phase 33: Multi-Polar WorldState Foundation ---
 CurrencyCode: TypeAlias = str
@@ -32,9 +33,9 @@ class MarketSignalDTO:
     """
     market_id: str
     item_id: str
-    best_bid: Optional[float]
-    best_ask: Optional[float]
-    last_traded_price: Optional[float]
+    best_bid: Optional[MoneyDTO]
+    best_ask: Optional[MoneyDTO]
+    last_traded_price: Optional[MoneyDTO]
     last_trade_tick: int  # Tick of the last trade
     price_history_7d: List[float]  # Rolling 7-tick price history
     volatility_7d: float  # Standard deviation of price_history_7d

@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple, runtime_checkable, TYPE_CHECKING
+from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple, runtime_checkable, TYPE_CHECKING, Union
 from dataclasses import dataclass
 import abc
 from abc import ABC, abstractmethod
 from uuid import UUID
+from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
 
 if TYPE_CHECKING:
     from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
@@ -15,6 +16,69 @@ if TYPE_CHECKING:
 # Forward reference for type hinting
 class Firm: pass
 class Household: pass # Assuming Household agent also interacts with the bank
+
+class IFinanceDepartment(Protocol):
+    """
+    Interface for a Firm's financial operations, designed for a multi-currency environment.
+    """
+
+    @property
+    @abstractmethod
+    def balance(self) -> Dict[CurrencyCode, float]:
+        """Provides direct access to the raw balances dict."""
+        ...
+
+    @abstractmethod
+    def get_balance(self, currency: CurrencyCode) -> float:
+        """Gets the balance for a specific currency."""
+        ...
+
+    @abstractmethod
+    def deposit(self, amount: float, currency: CurrencyCode):
+        """Deposits a specific amount of a given currency."""
+        ...
+
+    @abstractmethod
+    def withdraw(self, amount: float, currency: CurrencyCode):
+        """Withdraws a specific amount of a given currency. Raises InsufficientFundsError if needed."""
+        ...
+
+    @abstractmethod
+    def get_financial_snapshot(self) -> Dict[str, Union[MoneyDTO, MultiCurrencyWalletDTO, float]]:
+        """Returns a comprehensive, currency-aware snapshot of the firm's financials."""
+        ...
+
+    @abstractmethod
+    def calculate_valuation(self, exchange_rates: Dict[CurrencyCode, float]) -> MoneyDTO:
+        """
+        Calculates the firm's total valuation, converted to its primary currency.
+        Requires current exchange rates.
+        """
+        ...
+
+    @abstractmethod
+    def generate_financial_transactions(
+        self,
+        government: Any,
+        all_households: List[Any],
+        current_time: int,
+        exchange_rates: Dict[CurrencyCode, float]
+    ) -> List[Any]: # Returns List[Transaction]
+        """
+        Generates all standard financial transactions (taxes, dividends, maintenance)
+        in a currency-aware manner.
+        """
+        ...
+
+    @abstractmethod
+    def set_dividend_rate(self, new_rate: float) -> None:
+        """Sets the dividend rate."""
+        ...
+
+    @abstractmethod
+    def pay_ad_hoc_tax(self, amount: float, currency: CurrencyCode, reason: str, government: Any, current_time: int) -> None:
+        """Pays a one-time tax of a specific currency."""
+        ...
 
 @dataclass
 class BondDTO:
@@ -89,8 +153,17 @@ class DebtStatusDTO(TypedDict):
     next_payment_due_tick: Optional[int]
 
 class InsufficientFundsError(Exception):
-    """Raised when a withdrawal is attempted with insufficient funds."""
-    pass
+    """
+    Custom exception to be raised when an operation cannot be completed due to lack of funds.
+    """
+    def __init__(self, message: str, required: Optional[MoneyDTO] = None, available: Optional[MoneyDTO] = None):
+        self.required = required
+        self.available = available
+        if required and available:
+             msg = f"{message} Required: {required['amount']:.2f} {required['currency']}, Available: {available['amount']:.2f} {available['currency']}"
+        else:
+             msg = message
+        super().__init__(msg)
 
 class LoanNotFoundError(Exception):
     """Raised when a specified loan is not found."""

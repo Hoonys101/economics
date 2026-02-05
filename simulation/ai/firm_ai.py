@@ -68,7 +68,10 @@ class FirmAI(BaseAIEngine):
         assets_raw = agent_data.get("assets", 0)
         cash = assets_raw
         if isinstance(assets_raw, dict):
-            cash = assets_raw.get(DEFAULT_CURRENCY, 0.0)
+            if "balances" in assets_raw:
+                cash = assets_raw["balances"].get(DEFAULT_CURRENCY, 0.0)
+            else:
+                cash = assets_raw.get(DEFAULT_CURRENCY, 0.0)
 
         cash_idx = self._discretize(cash, [100, 500, 1000, 5000, 10000])
 
@@ -187,12 +190,18 @@ class FirmAI(BaseAIEngine):
         current_assets_raw = current_state.get("assets", 0.0)
         current_assets = current_assets_raw
         if isinstance(current_assets_raw, dict):
-            current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
+            if "balances" in current_assets_raw:
+                current_assets = current_assets_raw["balances"].get(DEFAULT_CURRENCY, 0.0)
+            else:
+                current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
 
         prev_assets_raw = prev_state.get("assets", 0.0)
         prev_assets = prev_assets_raw
         if isinstance(prev_assets_raw, dict):
-            prev_assets = prev_assets_raw.get(DEFAULT_CURRENCY, 0.0)
+            if "balances" in prev_assets_raw:
+                prev_assets = prev_assets_raw["balances"].get(DEFAULT_CURRENCY, 0.0)
+            else:
+                prev_assets = prev_assets_raw.get(DEFAULT_CURRENCY, 0.0)
 
         delta_assets = current_assets - prev_assets
 
