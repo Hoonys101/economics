@@ -36,24 +36,51 @@ class MonetaryLedger:
         """
         Processes transactions related to monetary policy (Credit Creation/Destruction).
         """
+        from modules.system.constants import ID_CENTRAL_BANK
+
         for tx in transactions:
             cur = getattr(tx, 'currency', DEFAULT_CURRENCY)
+            is_expansion = False
+            is_contraction = False
 
-            if tx.transaction_type == "credit_creation":
+            # 1. Explicit Expansion
+            if tx.transaction_type in ["credit_creation", "deposit_interest", "bank_profit_remittance", "money_creation"]:
+                is_expansion = True
+
+            # 2. CB Buying (OMO Purchase / Bond Purchase) -> Expansion
+            elif tx.transaction_type in ["bond_purchase", "omo_purchase"]:
+                if str(tx.buyer_id) == str(ID_CENTRAL_BANK):
+                    is_expansion = True
+                # WO-220: Commercial Bank buying bonds is expansion (Reserves -> M2)
+                elif tx.metadata and tx.metadata.get("is_monetary_expansion"):
+                    is_expansion = True
+
+            # 3. Explicit Contraction
+            if tx.transaction_type in ["credit_destruction", "loan_interest", "lender_of_last_resort", "money_destruction"]:
+                is_contraction = True
+
+            # 4. CB Selling (OMO Sale / Bond Repayment) -> Contraction
+            elif tx.transaction_type in ["bond_repayment", "omo_sale"]:
+                # Bond Repayment: Seller is Bond Holder (CB). Buyer is Gov. Money goes to CB (Destruction).
+                # OMO Sale: Seller is CB. Buyer is Market. Money goes to CB (Destruction).
+                if str(tx.seller_id) == str(ID_CENTRAL_BANK):
+                    is_contraction = True
+
+            if is_expansion:
                 if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0.0
                 if cur not in self.total_money_issued: self.total_money_issued[cur] = 0.0
 
                 self.credit_delta_this_tick[cur] += tx.price
                 self.total_money_issued[cur] += tx.price
-                logger.debug(f"MONETARY_EXPANSION | Credit created: {tx.price:.2f} {cur}")
+                logger.debug(f"MONETARY_EXPANSION | {tx.transaction_type}: {tx.price:.2f} {cur}")
 
-            elif tx.transaction_type == "credit_destruction":
+            elif is_contraction:
                 if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0.0
                 if cur not in self.total_money_destroyed: self.total_money_destroyed[cur] = 0.0
 
                 self.credit_delta_this_tick[cur] -= tx.price
                 self.total_money_destroyed[cur] += tx.price
-                logger.debug(f"MONETARY_CONTRACTION | Credit destroyed: {tx.price:.2f} {cur}")
+                logger.debug(f"MONETARY_CONTRACTION | {tx.transaction_type}: {tx.price:.2f} {cur}")
 
     def get_monetary_delta(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
         """

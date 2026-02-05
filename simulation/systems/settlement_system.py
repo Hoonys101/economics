@@ -13,6 +13,7 @@ from modules.system.constants import ID_CENTRAL_BANK
 from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO, IHousingTransactionSagaHandler
 from modules.finance.saga_handler import HousingTransactionSagaHandler
 from modules.market.housing_planner_api import MortgageApplicationDTO
+from simulation.models import Transaction
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -288,8 +289,10 @@ class SettlementSystem(ISettlementSystem):
                     memo=memo,
                     tick=tick
                 )
-                tx["transaction_type"] = tx_type
-                tx["metadata"]["executed"] = True
+                tx.transaction_type = tx_type
+                if tx.metadata is None:
+                    tx.metadata = {}
+                tx.metadata["executed"] = True
                 transactions.append(tx)
 
             except Exception as e:
@@ -486,6 +489,7 @@ class SettlementSystem(ISettlementSystem):
         try:
             if current_cash >= amount:
                 agent.withdraw(amount, currency=currency)
+                self.logger.debug(f"DEBUG_WITHDRAW | Agent {agent.id} withdrew {amount:.4f}. Memo: {memo}")
             else:
                 # Seamless (Only for DEFAULT_CURRENCY)
                 if currency != DEFAULT_CURRENCY:
@@ -707,7 +711,9 @@ class SettlementSystem(ISettlementSystem):
                     f"MINT_AND_TRANSFER | Created {amount:.2f} {currency} from {source_authority.id} to {destination.id}. Reason: {reason}",
                     extra={"tick": tick}
                 )
-                return self._create_transaction_record(source_authority.id, destination.id, amount, reason, tick)
+                tx = self._create_transaction_record(source_authority.id, destination.id, amount, reason, tick)
+                tx.transaction_type = "money_creation"
+                return tx
             except Exception as e:
                 self.logger.error(f"MINT_FAIL | {e}")
                 return None
@@ -744,7 +750,9 @@ class SettlementSystem(ISettlementSystem):
                     f"TRANSFER_AND_DESTROY | Destroyed {amount:.2f} {currency} from {source.id} to {sink_authority.id}. Reason: {reason}",
                     extra={"tick": tick}
                 )
-                return self._create_transaction_record(source.id, sink_authority.id, amount, reason, tick)
+                tx = self._create_transaction_record(source.id, sink_authority.id, amount, reason, tick)
+                tx.transaction_type = "money_destruction"
+                return tx
             except Exception as e:
                 self.logger.error(f"BURN_FAIL | {e}")
                 return None
@@ -752,15 +760,15 @@ class SettlementSystem(ISettlementSystem):
             # If not CB, treat as regular transfer (e.g. tax to Gov)
             return self.transfer(source, sink_authority, amount, reason, tick=tick, currency=currency)
 
-    def _create_transaction_record(self, buyer_id: int, seller_id: int, amount: float, memo: str, tick: int) -> ITransaction:
-        return {
-            "buyer_id": buyer_id,
-            "seller_id": seller_id,
-            "item_id": "currency",
-            "quantity": amount,
-            "price": 1.0,
-            "market_id": "settlement",
-            "transaction_type": "transfer",
-            "time": tick,
-            "metadata": {"memo": memo}
-        }
+    def _create_transaction_record(self, buyer_id: int, seller_id: int, amount: float, memo: str, tick: int) -> Transaction:
+        return Transaction(
+            buyer_id=buyer_id,
+            seller_id=seller_id,
+            item_id="currency",
+            quantity=amount,
+            price=1.0,
+            market_id="settlement",
+            transaction_type="transfer",
+            time=tick,
+            metadata={"memo": memo}
+        )
