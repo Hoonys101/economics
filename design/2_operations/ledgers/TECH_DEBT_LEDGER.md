@@ -30,7 +30,7 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| (No Active Items) | | | | | |
+| TD-034 | 2026-02-05 | Bank Profit Absorption Logic | M2 formula/dividend gap | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | **ACTIVE** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 

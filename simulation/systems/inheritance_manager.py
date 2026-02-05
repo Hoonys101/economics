@@ -98,7 +98,7 @@ class InheritanceManager:
                         metadata={"executed": False}
                     )
 
-                    results = simulation.transaction_processor.execute(simulation.world_state, [tx])
+                    results = simulation.transaction_processor.execute(simulation, [tx])
 
                     if results and results[0].success:
                         # Success - proceeds have been transferred and assets moved by Handler
@@ -133,7 +133,7 @@ class InheritanceManager:
                         metadata={"executed": False}
                     )
 
-                    results = simulation.transaction_processor.execute(simulation.world_state, [tx])
+                    results = simulation.transaction_processor.execute(simulation, [tx])
 
                     if results and results[0].success:
                         deceased_units.remove(unit)

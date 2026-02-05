@@ -126,6 +126,8 @@ class TickOrchestrator:
             real_estate_units=state.real_estate_units,
             injectable_sensory_dto=injectable_sensory_dto,
             inactive_agents=state.inactive_agents,
+            stress_scenario_config=state.stress_scenario_config, # Phase 28
+            transaction_processor=getattr(state, "transaction_processor", None), # Added for compatibility
             effects_queue=[], # TD-192: Init empty
             inter_tick_queue=[], # TD-192: Init empty
             transactions=[] # TD-192: Init empty

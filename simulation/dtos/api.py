@@ -248,6 +248,8 @@ class SimulationState:
     inactive_agents: Dict[int, Any] = None # WO-109: Store inactive agents
     taxation_system: Optional[Any] = None # WO-116: Taxation System
     currency_holders: List[Any] = None # Added for M2 tracking (Phase 33/5)
+    stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
+    transaction_processor: Optional[Any] = None # Added for system delegation compatibility
 
     # --- NEW TRANSIENT FIELDS ---
     # From Phase 1 (Decisions)
