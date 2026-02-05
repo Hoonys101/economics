@@ -9,12 +9,16 @@
 ## 1. 현재 개발 단계
 
 - **현재 단계:**
-    - **`Phase 6: Interbank Markets & Macro-Prudential Regs`** 🏗️
-        - **Goal**: Implement interbank lending, reserve requirements, and systemic risk monitoring.
-        - **Current Focus**: **Architectural Hardening (TD-226~229, 213-B, 231~234)**. Governance decoupling and multi-currency migration are pre-requisites for systemic safety in Phase 6.
+    - **`Phase 6: The Pulse of the Market (Stress & Visualization)`** 📈
+        - **Goal**: Market stress testing and real-time dashboard visualization.
+        - **Strategic Directives**:
+            - **100-Tick Stress Test**: Verify long-term 0.0000 leak and Inflation/Liquidity stability.
+            - **Interbank Activation**: Form Call Rate via bank AI and monitor interbank lending.
+            - **Dashboard Integration**: Connect `EconomicIndicatorTracker` to visual outputs (M2, Rates).
 
 - **완료된 단계(Recent)**:
-    - **Phase 5: Central Bank & Call Market Integration** ✅ (2026-02-04)
+    - **Phase 5: Central Bank & Monetary Integrity** ✅ (2026-02-05)
+        - **Achievement**: 0.0000 Systemic Leak achieved. `v1.0.0-monetary-integrity` tagged.
         - **Goal**: Implement Central Bank service, monetary policy tools, and Call Market matching.
         - **Status**:
             - [x] **Monetary Integrity**: Zero-leakage (0.0000) confirmed with newborn tracking fix. ✅
