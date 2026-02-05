@@ -131,6 +131,15 @@ class FirmSystem:
         # Inject SettlementSystem into new firm
         new_firm.settlement_system = settlement_system
 
+        # CRITICAL VALIDATION (Tech Debt Fix: Null Seller ID)
+        if new_firm.id is None:
+            logger.critical(f"STARTUP_FATAL | New firm has NULL ID during creation! Aborting.")
+            return None
+
+        if not hasattr(founder_household, 'id') or founder_household.id is None:
+            logger.critical(f"STARTUP_FATAL | Founder household has NULL ID! Aborting.")
+            return None
+
         success = settlement_system.transfer(
             founder_household,
             new_firm,

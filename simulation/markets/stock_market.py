@@ -244,6 +244,23 @@ class StockMarket(Market):
                 # 거래 가격: 두 호가의 평균
                 trade_price = (best_buy_dto.price_limit + best_sell_dto.price_limit) / 2
                 trade_quantity = min(best_buy_managed.remaining_quantity, best_sell_managed.remaining_quantity)
+
+                # Validation (Tech Debt Fix)
+                if best_buy_dto.agent_id is None or best_sell_dto.agent_id is None:
+                    self.logger.critical(
+                        f"STOCK_MATCH_FATAL | NULL ID in matched order! "
+                        f"BuyerID: {best_buy_dto.agent_id}, SellerID: {best_sell_dto.agent_id}. Skipping match.",
+                        extra={"tick": tick, "firm_id": firm_id}
+                    )
+                    # Skip this match and possibly pop the problematic order?
+                    # For safety, we just break or continue.
+                    # If we don't pop, we infinite loop.
+                    # We should pop the invalid one.
+                    if best_buy_dto.agent_id is None:
+                        buy_orders.pop(0)
+                    if best_sell_dto.agent_id is None:
+                        sell_orders.pop(0)
+                    continue
                 
                 # 거래 생성
                 transaction = Transaction(

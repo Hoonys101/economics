@@ -663,6 +663,19 @@ class SettlementSystem(ISettlementSystem):
              self.logger.error(f"SETTLEMENT_FAIL | Debit or Credit agent is None. Memo: {memo}")
              return None
 
+        # VALIDATION (Tech Debt Fix: Null IDs)
+        debit_id = getattr(debit_agent, 'id', None)
+        credit_id = getattr(credit_agent, 'id', None)
+
+        if debit_id is None or credit_id is None:
+             self.logger.critical(
+                 f"SETTLEMENT_FATAL | Transfer attempted with NULL agent IDs! "
+                 f"Debit ID: {debit_id}, Credit ID: {credit_id}. Memo: {memo}. "
+                 f"Aborting to prevent DB Integrity Error.",
+                 extra={"tick": tick, "tags": ["settlement", "integrity_error"]}
+             )
+             return None
+
         # EXECUTE
         success = self._execute_withdrawal(debit_agent, amount, memo, tick, currency=currency)
         if not success:
@@ -771,7 +784,15 @@ class SettlementSystem(ISettlementSystem):
             # If not CB, treat as regular transfer (e.g. tax to Gov)
             return self.transfer(source, sink_authority, amount, reason, tick=tick, currency=currency)
 
-    def _create_transaction_record(self, buyer_id: int, seller_id: int, amount: float, memo: str, tick: int) -> Transaction:
+    def _create_transaction_record(self, buyer_id: int, seller_id: int, amount: float, memo: str, tick: int) -> Optional[Transaction]:
+        if buyer_id is None or seller_id is None:
+             self.logger.critical(
+                 f"SETTLEMENT_INTEGRITY_FAIL | Attempted to create transaction with NULL ID. "
+                 f"Buyer: {buyer_id}, Seller: {seller_id}, Memo: {memo}. Skipping record creation.",
+                 extra={"tick": tick, "tags": ["integrity_error"]}
+             )
+             return None
+
         return Transaction(
             buyer_id=buyer_id,
             seller_id=seller_id,

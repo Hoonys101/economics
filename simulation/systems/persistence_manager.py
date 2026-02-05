@@ -84,6 +84,15 @@ class PersistenceManager:
 
         # 2. Buffer transactions
         for tx in transactions:
+            # Validation (Tech Debt Fix)
+            if tx.buyer_id is None or tx.seller_id is None:
+                logger.error(
+                    f"PERSISTENCE_SKIP | Skipping transaction with NULL ID. "
+                    f"Buyer: {tx.buyer_id}, Seller: {tx.seller_id}, Item: {tx.item_id}",
+                    extra={"tick": time, "tags": ["persistence", "skip"]}
+                )
+                continue
+
             tx_dto = TransactionData(
                 run_id=self.run_id,
                 time=time,
