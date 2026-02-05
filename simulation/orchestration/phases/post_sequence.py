@@ -111,7 +111,13 @@ class Phase5_PostSequence(IPhaseStrategy):
 
         for f in state.firms:
             if hasattr(f, 'finance') and hasattr(f.finance, 'finalize_tick'):
+                # Correctly handles multi-currency reset and capitalization
                 f.finance.finalize_tick()
+            else:
+                logger.warning(
+                    f"FIRM_RESET_SKIPPED | Firm {f.id} skipped finance reset.",
+                    extra={"firm_id": f.id, "has_finance": hasattr(f, 'finance')}
+                )
 
         if self.world_state.generational_wealth_audit and state.time % 100 == 0:
              self.world_state.generational_wealth_audit.run_audit(state.households, state.time)
