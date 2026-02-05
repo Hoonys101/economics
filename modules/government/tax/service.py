@@ -1,8 +1,13 @@
-from typing import Any, Dict, Optional
-from modules.government.tax.api import ITaxService
+from typing import Any, Dict, Optional, List
+from modules.government.api import ITaxService
 from modules.government.taxation.system import TaxationSystem
 from modules.government.components.fiscal_policy_manager import FiscalPolicyManager
-from modules.government.dtos import FiscalPolicyDTO
+from modules.government.dtos import (
+    FiscalPolicyDTO,
+    TaxCollectionResultDTO,
+    PaymentRequestDTO,
+    IAgent
+)
 from modules.finance.api import TaxCollectionResult
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 from simulation.dtos.api import MarketSnapshotDTO
@@ -65,6 +70,45 @@ class TaxService(ITaxService):
 
         tax_amount = (net_worth - wealth_threshold) * wealth_tax_rate_tick
         return max(0.0, min(tax_amount, net_worth))
+
+    def collect_wealth_tax(self, agents: List[IAgent]) -> TaxCollectionResultDTO:
+        """
+        Calculates wealth tax for all eligible agents and returns a DTO
+        containing payment requests for the government to execute.
+        """
+        requests = []
+        total_projected = 0.0
+
+        for agent in agents:
+             if not getattr(agent, "is_active", False):
+                 continue
+
+             # Identifying households - check capabilities/attributes
+             if hasattr(agent, "needs") and hasattr(agent, "is_employed"):
+                net_worth = 0.0
+                assets = getattr(agent, "assets", 0.0)
+                if isinstance(assets, dict):
+                     net_worth = assets.get(DEFAULT_CURRENCY, 0.0)
+                else:
+                     net_worth = float(assets)
+
+                tax_amount = self.calculate_wealth_tax(net_worth)
+
+                if tax_amount > 0:
+                    requests.append(PaymentRequestDTO(
+                        payer=agent,
+                        payee="GOVERNMENT",
+                        amount=tax_amount,
+                        currency=DEFAULT_CURRENCY,
+                        memo="wealth_tax"
+                    ))
+                    total_projected += tax_amount
+
+        return TaxCollectionResultDTO(
+            payment_requests=requests,
+            total_collected=total_projected,
+            tax_type="wealth_tax"
+        )
 
     def record_revenue(self, result: TaxCollectionResult) -> None:
         """

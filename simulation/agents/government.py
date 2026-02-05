@@ -14,8 +14,13 @@ from simulation.models import Transaction
 from simulation.systems.ministry_of_education import MinistryOfEducation
 from simulation.portfolio import Portfolio
 from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset
-from modules.government.dtos import FiscalPolicyDTO
-from modules.government.welfare.service import WelfareService
+from modules.government.dtos import (
+    FiscalPolicyDTO,
+    PaymentRequestDTO,
+    WelfareResultDTO,
+    BailoutResultDTO
+)
+from modules.government.welfare.manager import WelfareManager
 from modules.government.tax.service import TaxService
 from modules.government.tax.api import ITaxService
 from modules.government.components.infrastructure_manager import InfrastructureManager
@@ -55,7 +60,7 @@ class Government(ICurrencyHolder):
         
         # Facade Services
         self.tax_service: ITaxService = TaxService(config_module)
-        self.welfare_service = WelfareService(self)
+        self.welfare_manager = WelfareManager(config_module)
 
         self.ministry_of_education = MinistryOfEducation(config_module)
         self.infrastructure_manager = InfrastructureManager(self)
@@ -222,7 +227,7 @@ class Government(ICurrencyHolder):
         이전 틱의 데이터를 History에 저장합니다.
         """
         self.tax_service.reset_tick_flow()
-        self.welfare_service.reset_tick_flow()
+        self.welfare_manager.reset_tick_flow()
         self.monetary_ledger.reset_tick_flow()
 
         self.expenditure_this_tick = {DEFAULT_CURRENCY: 0.0}
@@ -436,12 +441,37 @@ class Government(ICurrencyHolder):
         )
 
     def provide_household_support(self, household: Any, amount: float, current_tick: int) -> List[Transaction]:
-        """Delegates to WelfareService."""
+        """
+        Manually executes household support (legacy support).
+        """
         # Scapegoat Lockout Check: Keynesian Fiscal (Stimulus)
         if self.policy_lockout_manager.is_locked(PolicyActionTag.KEYNESIAN_FISCAL, current_tick):
             return []
 
-        return self.welfare_service.provide_household_support(household, amount, current_tick)
+        effective_amount = amount * self.welfare_budget_multiplier
+        if effective_amount <= 0:
+            return []
+
+        # Funding Logic (Simplified from old WelfareService)
+        current_balance = self.wallet.get_balance(DEFAULT_CURRENCY)
+        if current_balance < effective_amount:
+             if self.finance_system:
+                  self.finance_system.issue_treasury_bonds(effective_amount - current_balance, current_tick)
+
+        success = self.settlement_system.transfer(self, household, effective_amount, "welfare_support")
+
+        if success:
+             return [Transaction(
+                 buyer_id=self.id,
+                 seller_id=household.id,
+                 item_id="welfare_support",
+                 quantity=1.0,
+                 price=effective_amount,
+                 market_id="system",
+                 transaction_type="welfare",
+                 time=current_tick
+             )]
+        return []
 
     def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:
         """Provides a bailout loan to a firm if it's eligible. Returns (LoanDTO, Transactions)."""
@@ -450,8 +480,14 @@ class Government(ICurrencyHolder):
             logger.info("BAILOUT_BLOCKED | Keynesian Fiscal Policy is locked.")
             return None, []
 
-        if self.finance_system.evaluate_solvency(firm, current_tick):
+        is_solvent = self.finance_system.evaluate_solvency(firm, current_tick)
+
+        # Use WelfareManager for eligibility/terms logic
+        result = self.welfare_manager.provide_firm_bailout(firm, amount, current_tick, is_solvent)
+
+        if result:
             logger.info(f"BAILOUT_APPROVED | Firm {firm.id} is eligible for a bailout.")
+
             # FinanceSystem now returns (loan, transactions)
             loan, txs = self.finance_system.grant_bailout_loan(firm, amount, current_tick)
             if loan:
@@ -464,55 +500,67 @@ class Government(ICurrencyHolder):
             return None, []
 
     def get_survival_cost(self, market_data: Dict[str, Any]) -> float:
-        """ Calculates current survival cost based on food prices. Delegates to WelfareService. """
-        return self.welfare_service.get_survival_cost(market_data)
+        """ Calculates current survival cost based on food prices. Delegates to WelfareManager. """
+        snapshot = MarketSnapshotDTO(tick=0, market_signals={}, market_data=market_data)
+        return self.welfare_manager.get_survival_cost(snapshot)
 
     def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int) -> List[Transaction]:
         """
-        Runs welfare checks and wealth tax collection.
-        Delegates welfare logic to WelfareService.
+        Legacy entry point. Orchestrates Tax and Welfare via execute_social_policy.
+        Returns empty list as transactions are executed atomically.
         """
-        transactions = []
+        self.execute_social_policy(agents, market_data, current_tick)
+        return []
 
-        # 1. Wealth Tax Logic
-        total_wealth_tax = 0.0
+    def execute_social_policy(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int) -> None:
+        """
+        Orchestrates Tax Collection and Welfare Distribution.
+        """
+        # Convert market_data for services
+        snapshot = MarketSnapshotDTO(
+            tick=current_tick,
+            market_signals={},
+            market_data=market_data
+        )
 
-        for agent in agents:
-            if not getattr(agent, "is_active", False):
-                continue
+        # 1. Wealth Tax Logic (TaxService)
+        tax_result = self.tax_service.collect_wealth_tax(agents)
 
-            if hasattr(agent, "needs") and hasattr(agent, "is_employed"): # Identifying households
-                # Safely get net worth (float)
-                net_worth = 0.0
-                if isinstance(agent.assets, dict):
-                     net_worth = agent.assets.get(DEFAULT_CURRENCY, 0.0)
-                else:
-                     net_worth = float(agent.assets)
+        for req in tax_result.payment_requests:
+            if self.settlement_system:
+                # Execute atomic transfer
+                success = self.settlement_system.transfer(req.payer, self, req.amount, req.memo, currency=req.currency)
 
-                # Calculate tax liability using TaxService
-                tax_amount = self.tax_service.calculate_wealth_tax(net_worth)
+                if success:
+                     # Record revenue via TaxService
+                     self.record_revenue({
+                         "success": True,
+                         "amount_collected": req.amount,
+                         "tax_type": tax_result.tax_type,
+                         "currency": req.currency,
+                         "payer_id": req.payer.id if hasattr(req.payer, 'id') else req.payer,
+                         "payee_id": self.id
+                     })
 
-                if tax_amount > 0 and self.settlement_system:
-                    # Execute atomic transfer directly via SettlementSystem
-                    success = self.settlement_system.transfer(agent, self, tax_amount, "wealth_tax")
+        # 2. Welfare Check (WelfareManager)
+        # Update GDP History
+        current_gdp = market_data.get("total_production", 0.0)
+        self.gdp_history.append(current_gdp)
+        if len(self.gdp_history) > self.gdp_history_window:
+            self.gdp_history.pop(0)
 
-                    if success:
-                         total_wealth_tax += tax_amount
-                         # Record revenue via TaxService
-                         self.record_revenue({
-                             "success": True,
-                             "amount_collected": tax_amount,
-                             "tax_type": "wealth_tax",
-                             "payer_id": agent.id,
-                             "payee_id": self.id,
-                             "currency": DEFAULT_CURRENCY
-                         })
+        welfare_result = self.welfare_manager.run_welfare_check(agents, snapshot, current_tick, self.gdp_history, self.welfare_budget_multiplier)
 
-        # 2. Welfare Check (Delegated to WelfareService)
-        welfare_txs = self.welfare_service.run_welfare_check(agents, market_data, current_tick)
-        transactions.extend(welfare_txs)
+        # Funding Logic (Stimulus/Benefits)
+        if welfare_result.total_paid > 0:
+            current_balance = self.wallet.get_balance(DEFAULT_CURRENCY)
+            if current_balance < welfare_result.total_paid:
+                if self.finance_system:
+                    self.finance_system.issue_treasury_bonds(welfare_result.total_paid - current_balance, current_tick)
 
-        return transactions
+        for req in welfare_result.payment_requests:
+            if self.settlement_system:
+                 self.settlement_system.transfer(self, req.payee, req.amount, req.memo, currency=req.currency)
 
     def invest_infrastructure(self, current_tick: int, households: List[Any] = None) -> List[Transaction]:
         """
@@ -525,7 +573,7 @@ class Government(ICurrencyHolder):
         Called at the end of every tick to finalize statistics and push to history buffers.
         """
         # Retrieve welfare spending from service
-        welfare_spending = self.welfare_service.get_spending_this_tick()
+        welfare_spending = self.welfare_manager.get_spending_this_tick()
 
         # Update expenditure_this_tick (aggregate)
         if DEFAULT_CURRENCY not in self.expenditure_this_tick:
