@@ -12,6 +12,7 @@
 
 | TD-213-B | 2026-02-04 | Logic-wide Multi-Currency Migration | Firms, Metrics, and AI still hardcoded to `DEFAULT_CURRENCY` | [Spec](../../3_work_artifacts/drafts/draft_232153__ObjectivenResolve_TD213B.md) | **SPECCED** |
 | TD-233 | 2026-02-05 | FinanceDepartment Law of Demeter Violation | Directly accesses `Household._econ_state` in profit dist | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-structural-001-15007860028193717728_audit_structural_STRUCTURAL-001.md) | **HIGH** |
+| TD-240 | 2026-02-05 | Post-Merge Type Error (Altman Z) | `calculate_altman_z_score` divides dict by float after TD-213-B merge | [trace_leak error] | **CRITICAL** |
 
 ## 🧠 3. DECISION & AI ENGINE (`ARCH_AI_ENGINE.md`)
 
