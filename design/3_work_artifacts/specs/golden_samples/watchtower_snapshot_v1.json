@@ -1,0 +1,33 @@
+{
+  "tick": 1250,
+  "timestamp": "2026-02-05T10:00:00",
+  "system_integrity": {
+    "m2_leak": 0.0000,
+    "fps": 55.2
+  },
+  "macro_economy": {
+    "gdp_growth": 2.1,
+    "inflation_rate": 1.5,
+    "unemployment_rate": 4.2,
+    "gini_coefficient": 0.35
+  },
+  "monetary": {
+    "base_rate": 3.50,
+    "interbank_rate": 3.55,
+    "m2_supply": 504857.58,
+    "exchange_rates": {
+      "USD": 1.0,
+      "KRW": 1400.0,
+      "EUR": 0.92
+    }
+  },
+  "politics": {
+    "party": "BLUE",
+    "approval_rating": 0.55,
+    "social_cohesion": 0.72,
+    "current_events": [
+      "Advisor Fired",
+      "Bond Issued"
+    ]
+  }
+}

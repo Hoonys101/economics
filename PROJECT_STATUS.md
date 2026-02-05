@@ -9,12 +9,13 @@
 ## 1. 현재 개발 단계
 
 - **현재 단계:**
-    - **`Phase 6: The Pulse of the Market (Stress & Visualization)`** 📈
+    - **`Phase 6: The Pulse of the Market (Stress & Visualization)`** 📈 [IN PROGRESS]
         - **Goal**: Market stress testing and real-time dashboard visualization.
-        - **Strategic Directives**:
-            - **100-Tick Stress Test**: Verify long-term 0.0000 leak and Inflation/Liquidity stability.
-            - **Interbank Activation**: Form Call Rate via bank AI and monitor interbank lending.
-            - **Dashboard Integration**: Connect `EconomicIndicatorTracker` to visual outputs (M2, Rates).
+        - **Active Missions**:
+            - `EXEC_PH6_STRESS_TEST`: 100-Tick Integrity Check (Jules)
+            - `WATCHTOWER_BACKEND_DEV`: FastAPI/WebSocket Stream (Jules)
+            - `WATCHTOWER_FRONTEND_DEV`: Next.js Command Center (Jules)
+            - `WATCHTOWER_AUDIT`: Visualization Module Audit (Gemini)
 
 - **완료된 단계(Recent)**:
     - **Phase 5: Central Bank & Monetary Integrity** ✅ (2026-02-05)
