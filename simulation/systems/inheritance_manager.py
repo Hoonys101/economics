@@ -39,10 +39,15 @@ class InheritanceManager:
 
         # 1. Valuation & Asset Gathering
         # ------------------------------------------------------------------
-        cash_raw = deceased._econ_state.assets
-        cash = cash_raw
-        if isinstance(cash_raw, dict):
-            cash = cash_raw.get(DEFAULT_CURRENCY, 0.0)
+        # WAL Refactor (TD-024): Use Wallet interface
+        if hasattr(deceased, 'wallet'):
+            cash = deceased.wallet.get_balance(DEFAULT_CURRENCY)
+        else:
+            # Fallback (Should not happen for Households)
+            cash_raw = deceased._econ_state.assets
+            cash = cash_raw
+            if isinstance(cash_raw, dict):
+                cash = cash_raw.get(DEFAULT_CURRENCY, 0.0)
         cash = round(cash, 2)
 
         self.logger.info(
@@ -224,7 +229,7 @@ class InheritanceManager:
             if cash > 0:
                 tx = Transaction(
                     buyer_id=deceased.id,
-                    seller_id=None, # System distribution
+                    seller_id=-1, # System distribution (Fix: -1 instead of None for DB constraint)
                     item_id="estate_distribution",
                     quantity=1.0,
                     price=cash, # Informational

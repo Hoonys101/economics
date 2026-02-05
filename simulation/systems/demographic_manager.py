@@ -105,10 +105,12 @@ class DemographicManager:
             parent_assets = 0.0
             if hasattr(parent, 'wallet'):
                 parent_assets = parent.wallet.get_balance(DEFAULT_CURRENCY)
-            elif hasattr(parent, 'assets') and isinstance(parent.assets, dict):
-                parent_assets = parent.assets.get(DEFAULT_CURRENCY, 0.0)
-            elif hasattr(parent, 'assets'):
-                parent_assets = float(parent.assets)
+            else:
+                 # Fallback for non-wallet agents (should typically be Household which has wallet)
+                if hasattr(parent, 'assets') and isinstance(parent.assets, dict):
+                    parent_assets = parent.assets.get(DEFAULT_CURRENCY, 0.0)
+                elif hasattr(parent, 'assets'):
+                    parent_assets = float(parent.assets)
 
             initial_gift = max(0.0, min(parent_assets * 0.1, parent_assets))
 
@@ -276,87 +278,3 @@ class DemographicManager:
         mult = multipliers.get(education_level, 1.0)
         return base_wage * mult
 
-    def handle_inheritance(self, deceased_agent: Household, simulation: Any):
-        """
-        [DEPRECATED] This method is deprecated and should not be used.
-        Use InheritanceManager via TransactionProcessor instead.
-        Distribute assets to children with Zero-Sum integrity.
-        """
-        self.logger.warning(
-            f"DEPRECATED_METHOD_CALL | DemographicManager.handle_inheritance called for {deceased_agent.id}. "
-            "This logic is superseded by InheritanceManager and TransactionProcessor."
-        )
-
-        # Ensure SettlementSystem is available
-        if not getattr(simulation, "settlement_system", None):
-            raise RuntimeError("SettlementSystem not found. Cannot execute inheritance.")
-
-        total_assets = 0.0
-        if hasattr(deceased_agent, 'wallet'):
-            total_assets = deceased_agent.wallet.get_balance(DEFAULT_CURRENCY)
-        elif hasattr(deceased_agent, 'assets') and isinstance(deceased_agent.assets, dict):
-            total_assets = deceased_agent.assets.get(DEFAULT_CURRENCY, 0.0)
-        elif hasattr(deceased_agent, 'assets'):
-            total_assets = float(deceased_agent.assets)
-
-        if total_assets <= 0:
-            return
-
-        # Calculate Tax
-        tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.0)
-        tax_amount = total_assets * tax_rate
-        net_estate = total_assets - tax_amount
-
-        # Transfer Tax
-        if tax_amount > 0:
-            simulation.settlement_system.transfer(
-                deceased_agent,
-                simulation.government,
-                tax_amount,
-                "inheritance_tax",
-                tick=simulation.time
-            )
-
-        # Find living heirs
-        heirs = [simulation.agents[cid] for cid in deceased_agent.children_ids if cid in simulation.agents and simulation.agents[cid].is_active]
-
-        if heirs:
-            # FIX: Use integer arithmetic (cents) to prevent floating point rounding errors and leaks
-            net_estate_cents = int(round(net_estate * 100))
-            num_heirs = len(heirs)
-            share_cents = net_estate_cents // num_heirs
-            remainder_cents = net_estate_cents % num_heirs
-
-            # Distribute shares
-            for i, heir in enumerate(heirs):
-                amount_cents = share_cents
-                # Add remainder to the last heir to ensure sum equals net_estate
-                if i == num_heirs - 1:
-                    amount_cents += remainder_cents
-
-                amount_to_send = amount_cents / 100.0
-
-                if amount_to_send > 0:
-                    simulation.settlement_system.transfer(
-                        deceased_agent,
-                        heir,
-                        amount_to_send,
-                        "inheritance_distribution",
-                        tick=simulation.time
-                    )
-
-                    self.logger.info(
-                        f"INHERITANCE | Heir {heir.id} received {amount_to_send:.2f} from {deceased_agent.id}.",
-                        extra={"heir_id": heir.id, "deceased_id": deceased_agent.id, "amount": amount_to_send}
-                    )
-        else:
-            # No heirs: Escheatment to State
-            simulation.settlement_system.transfer(
-                deceased_agent,
-                simulation.government,
-                net_estate,
-                "escheatment",
-                tick=simulation.time
-            )
-
-        # No explicit `_sub_assets`: The transfers will naturally drain the `deceased_agent`'s balance to near zero (or exactly zero).

@@ -59,8 +59,8 @@ class EconomicIndicatorData:
     avg_goods_price: Optional[float] = None
     total_production: Optional[float] = None
     total_consumption: Optional[float] = None
-    total_household_assets: Optional[Dict[CurrencyCode, float]] = None # Changed for Phase 33
-    total_firm_assets: Optional[Dict[CurrencyCode, float]] = None # Changed for Phase 33
+    total_household_assets: Optional[float] = None # Reverted for DB Compatibility
+    total_firm_assets: Optional[float] = None # Reverted for DB Compatibility
     total_food_consumption: Optional[float] = None
     total_inventory: Optional[float] = None
     avg_survival_need: Optional[float] = None

@@ -119,11 +119,12 @@ class PersistenceManager:
         hh_assets = tracker_indicators.get("total_household_assets", 0.0)
         firm_assets = tracker_indicators.get("total_firm_assets", 0.0)
 
-        # Wrap as dict if they are floats (backward compatibility check)
-        if isinstance(hh_assets, (int, float)):
-            hh_assets = {DEFAULT_CURRENCY: float(hh_assets)}
-        if isinstance(firm_assets, (int, float)):
-            firm_assets = {DEFAULT_CURRENCY: float(firm_assets)}
+        # Flatten to float for DB compatibility (Phase 33 Partial Revert)
+        # The DB expects float, but tracker might return dict if not converted.
+        if isinstance(hh_assets, dict):
+            hh_assets = hh_assets.get(DEFAULT_CURRENCY, 0.0)
+        if isinstance(firm_assets, dict):
+            firm_assets = firm_assets.get(DEFAULT_CURRENCY, 0.0)
 
         indicator_dto = EconomicIndicatorData(
             run_id=self.run_id,

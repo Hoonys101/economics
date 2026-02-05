@@ -44,20 +44,6 @@ class GoodsTransactionHandler(ITransactionHandler):
         # Ensure total_cost is clean (though sum of rounded values should be okay, float sum can drift)
         total_cost = round(total_cost, 2)
 
-        # Solvency Check (Legacy compatibility)
-        if hasattr(buyer, 'check_solvency'):
-            current_assets = buyer.assets
-            # TD-024: Handle multi-currency assets safely
-            if isinstance(current_assets, dict):
-                 # Assume transaction currency or fallback to DEFAULT
-                 tx_currency = getattr(tx, 'currency', DEFAULT_CURRENCY)
-                 check_val = current_assets.get(tx_currency, 0.0)
-            else:
-                 check_val = float(current_assets)
-
-            if check_val < total_cost:
-                buyer.check_solvency(context.government)
-
         # 2. Execute Settlement (Atomic)
         # SettlementSystem.settle_atomic(debit_agent, credits_list, tick)
         settlement_success = context.settlement_system.settle_atomic(buyer, credits, context.time)
