@@ -22,12 +22,18 @@ class Phase_FirmProductionAndSalaries(IPhaseStrategy):
     def execute(self, state: SimulationState) -> SimulationState:
         market_data_prev = state.market_data
 
-        # TD-213: Fetch exchange rates for multi-currency transactions
-        exchange_rates = None
+        # TD-213: Fetch market context for multi-currency transactions
+        market_context = None
         if state.tracker and hasattr(state.tracker, "capture_market_context"):
-            ctx = state.tracker.capture_market_context()
-            if ctx:
-                exchange_rates = ctx.exchange_rates
+            market_context = state.tracker.capture_market_context()
+
+        # Fallback if no tracker
+        if not market_context:
+             from modules.system.api import DEFAULT_CURRENCY
+             market_context = {
+                 "exchange_rates": {DEFAULT_CURRENCY: 1.0},
+                 "benchmark_rates": {}
+             }
 
         for firm in state.firms:
              if firm.is_active:
@@ -36,7 +42,7 @@ class Phase_FirmProductionAndSalaries(IPhaseStrategy):
                      market_data=market_data_prev,
                      all_households=state.households,
                      current_time=state.time,
-                     exchange_rates=exchange_rates
+                     market_context=market_context
                  )
                  if firm_txs:
                      state.transactions.extend(firm_txs)

@@ -110,17 +110,21 @@ class Phase5_PostSequence(IPhaseStrategy):
              if hasattr(h, "reset_consumption_counters"):
                  h.reset_consumption_counters()
 
-        # Fetch exchange rates for multi-currency finalization
-        exchange_rates = {DEFAULT_CURRENCY: 1.0}
+        # Fetch market context for multi-currency finalization
+        market_context = None
         if state.tracker and hasattr(state.tracker, "capture_market_context"):
-            ctx = state.tracker.capture_market_context()
-            if ctx and ctx.exchange_rates:
-                exchange_rates = ctx.exchange_rates
+            market_context = state.tracker.capture_market_context()
+
+        if not market_context:
+            market_context = {
+                "exchange_rates": {DEFAULT_CURRENCY: 1.0},
+                "benchmark_rates": {}
+            }
 
         for f in state.firms:
             if hasattr(f, 'finance') and hasattr(f.finance, 'finalize_tick'):
                 # Correctly handles multi-currency reset and capitalization
-                f.finance.finalize_tick(exchange_rates)
+                f.finance.finalize_tick(market_context)
             else:
                 logger.warning(
                     f"FIRM_RESET_SKIPPED | Firm {f.id} skipped finance reset.",

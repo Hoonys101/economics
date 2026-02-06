@@ -18,6 +18,14 @@ class ICurrencyHolder(Protocol):
         """Returns a dictionary of all assets held, keyed by currency code."""
         ...
 
+class MarketContextDTO(TypedDict):
+    """
+    A Data Transfer Object to hold market-wide contextual data for a given tick.
+    This replaces the need for passing multiple individual parameters (parameter drilling).
+    """
+    exchange_rates: Dict[CurrencyCode, float]
+    benchmark_rates: Dict[str, float]  # e.g., {'cpi': 1.02, 'central_bank_rate': 0.05}
+
 if TYPE_CHECKING:
     from simulation.agents import Agent
     from simulation.dtos.api import SimulationState

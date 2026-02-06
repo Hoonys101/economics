@@ -97,6 +97,14 @@ def config_manager(mock_config, tmp_path):
     from modules.common.config.impl import ConfigManagerImpl
     return ConfigManagerImpl(config_dir=tmp_path, legacy_config=mock_config)
 
+@pytest.fixture
+def default_market_context():
+    """Provides a default MarketContextDTO fixture."""
+    from modules.system.api import DEFAULT_CURRENCY
+    return {
+        "exchange_rates": {DEFAULT_CURRENCY: 1.0, "EUR": 1.1},
+        "benchmark_rates": {"cpi": 1.0, "central_bank_rate": 0.05}
+    }
 
 # ============================================================================
 # 🌟 Golden Fixture Support (Auto-Generated Mocks from Real Data)

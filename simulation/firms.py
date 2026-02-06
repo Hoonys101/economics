@@ -15,7 +15,7 @@ from simulation.dtos import DecisionContext, FiscalContext, DecisionInputDTO
 from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
-from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode
+from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
 
 # SoC Refactor
 from simulation.components.hr_department import HRDepartment
@@ -236,10 +236,10 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
 
         return brand_premium
 
-    def _adjust_marketing_budget(self, exchange_rates: Dict[CurrencyCode, float] = None) -> None:
-        if exchange_rates is None:
-            exchange_rates = {DEFAULT_CURRENCY: 1.0}
-        self.sales.adjust_marketing_budget(exchange_rates)
+    def _adjust_marketing_budget(self, market_context: MarketContextDTO = None) -> None:
+        if market_context is None:
+            market_context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}, "benchmark_rates": {}}
+        self.sales.adjust_marketing_budget(market_context)
 
     def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
         self.current_production = self.production.produce(current_time, technology_manager)
@@ -487,52 +487,30 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
             details=f"Item={self.specialization}, D={demand:.1f}, S={supply:.1f}, Ratio={excess_demand_ratio:.2f}"
         )
 
-    def generate_transactions(self, government: Optional[Any], market_data: Dict[str, Any], all_households: List[Household], current_time: int, exchange_rates: Dict[CurrencyCode, float] = None) -> List[Transaction]:
+    def generate_transactions(self, government: Optional[Any], market_data: Dict[str, Any], all_households: List[Household], current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
         """
         Generates all financial transactions for the tick (Wages, Taxes, Dividends, etc.).
         Phase 3 Architecture.
         """
-        if exchange_rates is None:
-            exchange_rates = {DEFAULT_CURRENCY: 1.0}
-
         transactions = []
 
         # 1. Wages & Income Tax (HR)
-        tx_payroll = self.hr.process_payroll(current_time, government, market_data, exchange_rates)
+        tx_payroll = self.hr.process_payroll(current_time, government, market_data, market_context)
         transactions.extend(tx_payroll)
 
         # 2. Finance Transactions (Holding, Maint, Corp Tax, Dividends, Bailout Repayment)
-        tx_finance = self.finance.generate_financial_transactions(government, all_households, current_time, exchange_rates)
+        tx_finance = self.finance.generate_financial_transactions(government, all_households, current_time, market_context)
         transactions.extend(tx_finance)
 
-        # 3. Marketing (Direct Calculation here as per old update_needs)
-        # Using primary currency for marketing budget logic
-        primary_cur = self.finance.primary_currency
-        primary_balance = self.finance.get_balance(primary_cur)
+        # 3. Marketing (Delegated to Sales Department)
+        tx_marketing = self.sales.generate_marketing_transaction(government, current_time, market_context)
+        if tx_marketing:
+            transactions.append(tx_marketing)
 
-        # Calculate total revenue in primary currency
-        total_revenue = 0.0
-        for cur, amount in self.finance.revenue_this_turn.items():
-            total_revenue += self.finance.convert_to_primary(amount, cur, exchange_rates)
-
-        if primary_balance > 100.0:
-            marketing_spend = max(10.0, total_revenue * self.marketing_budget_rate)
-        else:
-            marketing_spend = 0.0
-
-        if primary_balance < marketing_spend:
-             marketing_spend = 0.0
-
-        if marketing_spend > 0:
-            tx_marketing = self.finance.generate_marketing_transaction(government, current_time, marketing_spend)
-            if tx_marketing:
-                transactions.append(tx_marketing)
-
-        # State Update: Set budget for next decisions
-        self.marketing_budget = marketing_spend
         # Brand Update: Needs to happen (optimistic about spend success)
-        self.brand_manager.update(marketing_spend, self.productivity_factor / 10.0)
-        self.sales.adjust_marketing_budget(exchange_rates)
+        # marketing_budget is updated inside generate_marketing_transaction
+        self.brand_manager.update(self.marketing_budget, self.productivity_factor / 10.0)
+        self.sales.adjust_marketing_budget(market_context)
 
         return transactions
 
@@ -593,9 +571,9 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         """Delegates to FinanceDepartment."""
         return self.finance.get_market_cap(stock_price)
 
-    def calculate_valuation(self, exchange_rates: Dict[CurrencyCode, float] = None) -> float:
+    def calculate_valuation(self, market_context: MarketContextDTO = None) -> float:
         """Delegates to FinanceDepartment. Returns float (primary currency) for backward compatibility."""
-        return self.finance.calculate_valuation(exchange_rates)['amount']
+        return self.finance.calculate_valuation(market_context)['amount']
 
     def get_financial_snapshot(self) -> Dict[str, Any]:
         """Delegates to FinanceDepartment."""

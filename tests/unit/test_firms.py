@@ -169,7 +169,7 @@ class TestSalesDepartment:
         assert order.agent_id == firm.id
         assert order.item_id == "test"
 
-    def test_adjust_marketing_budget_increase(self, firm, mock_config):
+    def test_adjust_marketing_budget_increase(self, firm, mock_config, default_market_context):
         # High ROI should increase the budget rate
         firm.finance.last_marketing_spend = 50.0
         firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 200.0}
@@ -179,11 +179,11 @@ class TestSalesDepartment:
 
         sales_dept = SalesDepartment(firm, mock_config)
         initial_rate = firm.marketing_budget_rate
-        sales_dept.adjust_marketing_budget({DEFAULT_CURRENCY: 1.0})
+        sales_dept.adjust_marketing_budget(default_market_context)
 
         assert firm.marketing_budget_rate > initial_rate
 
-    def test_adjust_marketing_budget_decrease(self, firm, mock_config):
+    def test_adjust_marketing_budget_decrease(self, firm, mock_config, default_market_context):
         # Low ROI should decrease the budget rate
         firm.finance.last_marketing_spend = 200.0 # High spend
         firm.finance.revenue_this_turn = {DEFAULT_CURRENCY: 110.0} # Low return
@@ -193,6 +193,6 @@ class TestSalesDepartment:
 
         sales_dept = SalesDepartment(firm, mock_config)
         initial_rate = firm.marketing_budget_rate
-        sales_dept.adjust_marketing_budget({DEFAULT_CURRENCY: 1.0})
+        sales_dept.adjust_marketing_budget(default_market_context)
 
         assert firm.marketing_budget_rate < initial_rate
