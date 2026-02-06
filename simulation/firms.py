@@ -26,6 +26,7 @@ from simulation.utils.shadow_logger import log_shadow
 from modules.finance.api import InsufficientFundsError, IFinancialEntity
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
 from simulation.systems.api import ILearningAgent, LearningUpdateContext
+from simulation.systems.tech.api import FirmTechInfoDTO
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -314,6 +315,15 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         """AI 학습을 위한 이전 상태 데이터를 반환합니다."""
         return getattr(self, "pre_state_snapshot", self.get_agent_data())
 
+    def get_tech_info(self) -> FirmTechInfoDTO:
+        """
+        WO-136: Returns minimal technical info for technology diffusion.
+        """
+        return {
+            "id": self.id,
+            "sector": self.sector,
+            "current_rd_investment": self.research_history.get("total_spent", 0.0)
+        }
 
     @override
     def make_decision(
