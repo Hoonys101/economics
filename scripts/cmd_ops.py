@@ -108,7 +108,7 @@ def main():
     p_gemini = subparsers.add_parser("set-gemini", help="Set a Gemini mission")
     p_gemini.add_argument("key", help="Mission Key")
     p_gemini.add_argument("--title", "-t", required=True, help="Mission Title")
-    p_gemini.add_argument("--worker", required=True, choices=["audit", "spec", "git-review", "context", "verify", "git", "reporter"], help="Worker type")
+    p_gemini.add_argument("--worker", required=True, choices=["audit", "spec", "git-review", "context", "verify", "git", "reporter", "roadmap"], help="Worker type")
     p_gemini.add_argument("--instruction", "-i", required=True, help="Instruction")
     p_gemini.add_argument("--context", nargs="+", help="Context files")
     p_gemini.add_argument("--output", help="Output file")

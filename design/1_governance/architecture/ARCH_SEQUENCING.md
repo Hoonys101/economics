@@ -1,60 +1,87 @@
-# Architecture Detail: Phased Orchestration (The Sacred Sequence)
+# Architecture Detail: Phased Orchestration (The Implemented Sequence)
 
-## 1. 개요
-본 시뮬레이션의 모든 상태 변경은 **신성한 시퀀스(The Sacred Sequence)**라 불리는 8단계 프로세스를 엄격히 준수합니다. 이는 상태 변경의 예측 가능성을 보장하고, 제로섬(Zero-Sum) 오류와 타이밍 버그를 방지하기 위한 핵심 메커니즘입니다.
+## 1. 개요 (Overview)
+본 시뮬레이션의 모든 상태 변경은 **구현된 시퀀스(The Implemented Sequence)**라 불리는 다단계 프로세스를 엄격히 준수합니다. 이는 `tick_orchestrator.py`에 정의된 실제 실행 순서로, 기존 설계('The Sacred Sequence')에서 진화한 형태입니다. 핵심적인 변화는 각 페이즈(Phase) 실행 직후 상태를 즉시 동기화하는 **"실행-동기화(Execute-Sync)"** 루프를 도입하여, 상태 변경의 원자성과 예측 가능성을 새로운 방식으로 보장합니다.
 
-## 2. 시퀀스 다이어그램
+## 2. 시퀀스 다이어그램 (Sequence Diagram)
 ```mermaid
 graph TD
-    subgraph TickOrchestrator [The Conductor]
-        P0[Phase 0: Pre-Sequence] -->|Events & Stabilization| P_PROD
-        P_PROD[Phase: Production] -->|Real Economy Output| P1
-        P1[Phase 1: Decision] -->|AI Logic| P2
-        P2[Phase 2: Matching] -->|Order Book| P3
-        P3[Phase 3: Transaction] -->|Settlement & Clearing| P4
-        P4[Phase 4: Lifecycle] -->|Birth, Death, Bankruptcy| P5
-        P5[Phase 5: Post-Sequence] -->|Learning & Stats| End
+    subgraph TickOrchestrator [The Conductor: Execute-Sync Loop]
+        direction LR
+        
+        Start[Tick Start] --> P0[Pre-Sequence]
+        P0 --> P_PROD[Production]
+        P_PROD --> P1[Decision]
+        P1 --> P4_BANKRUPTCY[Lifecycle: Bankruptcy]
+        P4_BANKRUPTCY --> P4_HOUSING[Lifecycle: Housing Saga]
+        P4_HOUSING --> P4_LIQUIDATION[Lifecycle: Systemic Liquidation]
+        P4_LIQUIDATION --> P2[Matching]
+        P2 --> P3_SUB_DEBT[Tx-Decomposition: Bank & Debt]
+        P3_SUB_DEBT --> P3_SUB_PROD[Tx-Decomposition: Firm Prod & Salaries]
+        P3_SUB_PROD --> P3_SUB_GOV[Tx-Decomposition: Gov Programs]
+        P3_SUB_GOV --> P3_SUB_TAX[Tx-Decomposition: Taxation Intents]
+        P3_SUB_TAX --> P3_SUB_MONETARY[Tx-Decomposition: Monetary Processing]
+        P3_SUB_MONETARY --> P3_FINAL[Transaction: Final Settlement]
+        P3_FINAL --> P_CONSUMPTION[Lifecycle: Consumption]
+        P_CONSUMPTION --> P5[Post-Sequence]
+        P5 --> End[Tick End]
+        
+        %% Styling
+        style Start fill:#f9f,stroke:#333,stroke-width:2px
+        style P4_BANKRUPTCY fill:#ff9,stroke:#333,stroke-width:4px
+        style P2 fill:#ccf,stroke:#333,stroke-width:2px
+        style End fill:#f9f,stroke:#333,stroke-width:2px
     end
-
-    style P_PROD fill:#f9f,stroke:#333,stroke-width:4px
 ```
 
-## 3. 상세 단계 설명
+## 3. 상세 단계 설명 (Detailed Phase Descriptions)
+
+**핵심 변경점**: 각 페이즈는 `SimulationState` DTO를 수정하며, 페이즈 종료 직후 `_drain_and_sync_state` 메서드가 호출되어 변경 사항(`effects_queue`, `transactions` 등)을 즉시 `WorldState`에 반영합니다. 페이즈는 더 이상 순수 함수(Pure Function)가 아니며, 실행 즉시 전역 상태에 영향을 미칩니다.
 
 ### Phase 0: 전처리 (Preprocessing)
-- **Actor**: `TickOrchestrator`
+- **Actor**: `Phase0_PreSequence`
 - **Action**: 시스템 안정화, 예정된 이벤트 실행, 초기 상태 스냅샷 저장.
-- **Context**: 시뮬레이션 환경의 초기 상태를 확정하는 단계입니다.
 
 ### Phase 0.5: 생산 (Production)
 - **Actor**: `Phase_Production`
-- **Action**: 인적 자본 지수(HCI) 계산, 신기술 도입 결정, 실물 재합 생산.
-- **Rationale**: 에이전트가 의사결정을 내리기 전에 시장에 공급될 재화의 물리적 양이 먼저 결정되어야 합니다.
+- **Action**: 실물 재화 생산량을 결정합니다. 이는 에이전트들이 의사결정을 내리기 전에 시장의 총 공급량을 확정하기 위함입니다.
 
 ### Phase 1: 결정 (Decisions)
-- **Actor**: `Agent` (Household, Firm, Govt, Bank)
-- **Action**: 현재 상태(`MarketSnapshotDTO`)를 기반으로 행동을 결정하고 `Order` 혹은 `Intent` 객체를 반환.
-- **Rule**: **이 단계에서는 절대로 상태를 직접 수정하지 않습니다.** (Purity Gate 원칙 준수)
+- **Actor**: `Phase1_Decision`
+- **Action**: 모든 에이전트(가계, 기업 등)가 현재 시장 상태를 기반으로 행동(`Order`, `Intent`)을 결정합니다.
+
+### Phase 4 (Reordered): 라이프사이클 Part 1 (Lifecycle)
+- **Actor**: `Phase_Bankruptcy`, `Phase_HousingSaga`, `Phase_SystemicLiquidation`
+- **Action**: 파산, 주택담보대출 연체 처리 등 에이전트의 생존과 관련된 구조적 변경을 **시장 매칭 전에** 처리합니다.
+- **Rationale (Critical)**: 이는 경제적 현실을 반영한 중대한 변경입니다. 파산한 에이전트는 시장에 참여할 수 없으므로, 그들의 주문(Order)은 매칭 단계 이전에 시스템에서 제거되어야 합니다. 이로 인해 기존의 "인지-계약-집행" 순서는 "인지-**정리(선제적)**-계약-집행"으로 변경되었습니다.
 
 ### Phase 2: 매칭 (Matching)
-- **Actor**: `Market` (Commodity, Labor, Stock)
-- **Action**: 생성된 `Order`들을 매칭하여 `Transaction` 객체를 생성.
-- **Context**: 수요와 공급이 만나 가격이 결정되고 교환 계약이 체결되는 단계입니다.
+- **Actor**: `Phase2_Matching`
+- **Action**: 살아남은 에이전트들의 `Order`들을 매칭하여 `Transaction` 객체를 생성합니다.
 
-### Phase 3: 처리 (Transactions)
-- **Actor**: `TransactionManager` -> `SettlementSystem`
-- **Action**: 모든 `Transaction`을 실행하여 자산 이동 및 세금을 정산.
-- **Rule**: 모든 가치 이동은 반드시 이 단계에서 **원자적(Atomic)**으로 처리됩니다.
+### Phase 3 (Decomposed): 거래 처리 (Transaction Processing)
+- **Actors**: `Phase_BankAndDebt`, `Phase_FirmProductionAndSalaries`, `Phase_GovernmentPrograms`, `Phase_TaxationIntents`, `Phase_MonetaryProcessing`, `Phase3_Transaction`
+- **Action**: 단일 책임 원칙(SRP)에 따라, 기존의 거대한 거래(Transaction) 페이즈가 여러 개의 세분화된 단계로 분해되었습니다. 부채 처리, 임금 지급, 정부 지출, 세금 의향 생성, 통화 정책 반영 등이 순차적으로 실행된 후, 마지막 `Phase3_Transaction`에서 모든 거래가 최종 정산됩니다. 이 구조는 화폐 공급량 검증(`MONEY_SUPPLY_CHECK`)의 정확성을 보장하는 데 필수적입니다.
 
-### Phase 4: 라이프사이클 (Lifecycle)
-- **Actor**: `AgentLifecycleManager`
-- **Action**: 에이전트의 탄생, 파산, 사망, 상속 처리.
-- **Rationale**: 모든 경제적 정산이 끝난 후 시스템의 구조적 변경을 수행합니다.
+### Phase (Late Lifecycle): 소비 (Consumption)
+- **Actor**: `Phase_Consumption`
+- **Action**: 모든 소득과 이전이 확정된 후, 최종적인 재화 소비 활동을 처리합니다.
 
 ### Phase 5: 후처리 (Post-Sequence)
-- **Actor**: `SystemEffectsManager`, `LearningUpdate`
-- **Action**: 학습 보상(Reward) 계산, 지표 집계, 버퍼 플러시.
-- **Context**: 시뮬레이션 결과를 기록하고 AI 모델을 갱신합니다.
+- **Actor**: `Phase5_PostSequence`
+- **Action**: 학습 보상 계산, 통계 지표 집계, 다음 틱을 위한 데이터 정리 및 버퍼 플러시를 수행합니다.
 
-## 4. 아키텍처적 의의
-이 시퀀스는 단순히 실행 순서를 정하는 것이 아니라 **"인지(Phase 1) - 계약(Phase 2) - 집행(Phase 3) - 정리(Phase 4)"**라는 경제적 인과관계를 코드로 구현한 것입니다. 각 단계는 이전 단계의 결과물을 DTO 형태로만 전달받아 독립성을 유지합니다.
+## 4. 아키텍처적 의의 (Architectural Significance)
+
+### 4.1. God Object와 "실행-동기화" 루프 (God Object & The "Execute-Sync" Loop)
+이전의 "DTO 폭포수" 모델은 폐기되었습니다. 현재 아키텍처는 `WorldState`라는 중앙 집중적 "God Object"와, 각 페이즈가 수정하는 가변적인 `SimulationState` "God DTO"에 의존합니다.
+
+가장 중요한 아키텍처적 제약은 **`_drain_and_sync_state`** 메서드입니다. 이 메서드는 **모든 페이즈 실행 직후 호출**되어, 페이즈가 생성한 임시 데이터(ex: `effects_queue`, `transactions`)를 `WorldState`에 즉시 병합하고 DTO의 큐를 비웁니다. 이 "실행-동기화" 루프는 페이즈 간 상태 공유의 새로운 '기본 진실(Ground Truth)'이며, 더 이상 상태가 틱의 마지막에만 업데이트된다고 가정할 수 없습니다.
+
+### 4.2. 경제적 인과관계의 재정의 (Redefined Economic Causality)
+'신성한 시퀀스'의 "인지 → 계약 → 집행 → 정리" 원칙은 다음과 같이 재정의되었습니다.
+**"인지 → 선제적 정리(파산) → 계약(매칭) → 분해된 집행(세부 거래) → 최종 정리(소비 및 후처리)"**
+특히, **파산 처리(`Phase_Bankruptcy`)가 시장 매칭(`Phase2_Matching`)보다 먼저** 오는 것은 시스템의 경제적 논리에 근본적인 변화를 의미하며, 모든 테스트와 분석은 이 새로운 인과관계를 따라야 합니다.
+
+### 4.3. "순결성 게이트" 원칙의 폐기 (Deprecation of the "Purity Gate")
+"Phase 1에서는 상태를 직접 수정하지 않는다"는 기존 원칙은 더 이상 유효하지 않습니다. 모든 페이즈는 `SimulationState` DTO를 통해 `WorldState`에 즉시 영향을 미치는 부수 효과(Side-effect)를 가집니다. 각 페이즈는 독립적이고 순수한 함수가 아니라, 하나의 거대한 트랜잭션 내의 상호 의존적인 단계들로 이해되어야 합니다.

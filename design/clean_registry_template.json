@@ -3,5 +3,22 @@
     "session": "Clean Room Era",
     "updated": "2026-01-30",
     "author": "Antigravity"
+  },
+  "SYNC_ROADMAP_TODO": {
+    "title": "Sync Roadmap & TO-DO Backlog",
+    "worker": "roadmap",
+    "script": "scripts/launcher.py gemini",
+    "instruction": "Scan all architectural and debt documents to update design/TODO.md. Cluster tasks by economic impact.",
+    "context": [
+      "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
+      "design/2_operations/manuals/future_roadmap.md",
+      "design/1_governance/architecture/ARCH_SEQUENCING.md",
+      "design/1_governance/architecture/ARCH_AGENTS.md",
+      "design/1_governance/architecture/ARCH_AI_ENGINE.md",
+      "design/1_governance/architecture/ARCH_OBSERVABILITY_THOUGHTSTREAM.md"
+    ],
+    "output": "design/TODO.md",
+    "persistent": true,
+    "model": "gemini-2.5-pro"
   }
 }

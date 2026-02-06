@@ -78,12 +78,14 @@ def main():
                 # Execute
                 result = run_gemini([selected_key], registry)
                 
-                # Auto-Cleanup: Always remove from list if executed, assuming success or at least consumption
-                # If run_gemini returns False/Error, maybe we should ask? 
-                # For now, let's assume consumption = delete to keep workflow flowing.
-                cleanup_key(selected_key)
+                # Auto-Cleanup: Remove from list if NOT persistent
+                is_persistent = task.get("persistent", False)
+                if not is_persistent:
+                    cleanup_key(selected_key)
+                else:
+                    print(f"📌 Mission '{selected_key}' is persistent. Keeping in registry.")
                 
-                input("\n✅ Task Completed & Removed. Press Enter to continue...")
+                input("\n✅ Task Completed. Press Enter to continue...")
             else:
                 print("❌ Invalid selection.")
                 input("Press Enter...")

@@ -132,6 +132,13 @@
 | TD-030 | 2026-02-06 | M2 Integrity: Registry Refactor | Fixed via StrictCurrencyRegistry & Lifecycle Suture | [Insight](../../communications/insights/Pulse_Integrity_Report.md) |
 | TD-251 | 2026-02-06 | Stock Market IPO/SEO NULL Seller ID | Fixed in branch `fix-null-seller-id...` | [Review](../../_archive/gemini_output/pr_review_fix-null-seller-id-integrity-error-11984105662396074718.md) |
 | TD-252 | 2026-02-06 | Massive M2 Leak (571k at Tick 100) | Resolved by formula correction & Registry fix | [Insight](../../communications/insights/Pulse_Integrity_Report.md) |
+| TD-035 | 2026-02-06 | Residual M2 Drift from Bond Transactions | Tracked in [walkthrough.md](file:///C:/Users/Gram Pro/.gemini/antigravity/brain/becf7013-8d5e-43c8-8052-cd658d3936ea/walkthrough.md) | [Insight](../../communications/insights/Pulse_Integrity_Report.md) |
+| TD-036 | 2026-02-06 | Sequencing Documentation Rot | ARCH_SEQUENCING vs tick_orchestrator.py | [Insight](../../communications/insights/Pulse_Integrity_Report.md) |
+| TD-037 | 2026-02-06 | Firm Agent Stateful Component Drift | Violates stateless ARCH_AGENTS | [Insight](../../communications/insights/Pulse_Integrity_Report.md) |
+| TD-038 | 2026-02-06 | ThoughtStream Instrumentation Blindspots | Labor, Pricing, Failed Matching | [Insight](../../communications/insights/Pulse_Integrity_Report.md) |
+| TD-253 | 2026-02-06 | Settlement God Class Refactor (Track A) | Decoupled SagaOrchestrator & Kernel Hardening | [Review](../../_archive/gemini_output/pr_review_settlement-kernel-hardening-saga-decoupling-1046151433748562353.md) |
+| TD-255 | 2026-02-06 | DTO Purity: Housing Saga Context | Snapshotting agent state at saga initiation | [Review](../../_archive/gemini_output/pr_review_housing-saga-dto-purity-7981336162459409252.md) |
+| TD-256 | 2026-02-06 | Housing Service Inventory Abstraction | Decoupled SagaHandler via IInventoryHandler Protocol | [Review](../../_archive/gemini_output/pr_review_housing-saga-dto-purity-7981336162459409252.md) |
 
 ---
 
@@ -149,7 +156,6 @@
 
 ---
 
----
 
 
 > **Note**: For details on active items, see relevant insights.

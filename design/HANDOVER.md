@@ -1,40 +1,45 @@
-# Architectural Handover Report (2026-02-02)
+# Handover Document: Architectural Hardening & Economic Integrity
 
-## 1. Accomplishments: Core Architecture Hardening & Feature Evolution
+## Executive Summary
+This session focused on significant architectural refactoring to enhance stability and economic accuracy. Key achievements include the decoupling of the settlement kernel, the implementation of a robust M2 integrity layer, and the introduction of multi-currency awareness in agent logic. These changes successfully resolved critical issues like M2 leaks, database integrity crashes, and irrational agent behavior. However, residual technical debt remains in legacy agent interfaces and the full scope of multi-currency operations.
 
-This session focused on liquidating critical technical debt, resulting in a more robust and modular architecture.
+## 1. Accomplishments & Architectural Changes
 
-- **God Class Decomposition (TD-162, TD-065, TD-073)**:
-  - **`Household` & `Firm`**: Successfully decomposed into clean Facade patterns delegating to specialized managers (`InventoryManager`, `LifecycleManager`, `FinancialManager`).
-  - **Backward Compatibility**: Restored mission-critical legacy properties (`skills`, `portfolio`, `age`, etc.) to ensure the existing simulation logic remains functional during the transition.
+### 1.1. Settlement Kernel & Saga Orchestration (TD-253)
+- **Decoupled SettlementSystem**: Removed saga management responsibilities, transforming `SettlementSystem` into a pure, low-level transaction processor.
+- **Introduced `SagaOrchestrator`**: Created a dedicated service to manage long-running business processes (e.g., housing transactions), centralizing saga logic.
+- **Unified Asset Access**: Implemented `FinancialEntityAdapter` to provide a consistent `IFinancialEntity` interface, eliminating fragile `hasattr` checks on diverse agent types.
 
-- **Structural M2 Integrity (TD-177, TD-192)**:
-  - **Post-Phase Synchronization**: Implemented `_drain_and_sync_state` in `TickOrchestrator` to guarantee state persistence after every phase.
-  - **Mandatory Government Audit**: Moved M2 auditing to a post-phase hook in the orchestrator, ensuring that 100% of transactions (including late-bound credit creation) are captured for M2 delta tracking. **Result: 0.0000 Leak Confirmed.**
+### 1.2. M2 Integrity & Lifecycle Management ("Operation Pulse")
+- **Corrected M2 Formula**: Addressed a fundamental M2 leak by correcting the calculation to `M2 = (M0 - Bank Reserves) + Deposits`, preventing the double-counting of bank reserves.
+- **Eliminated "Ghost Agents"**: Implemented a `StrictCurrencyRegistry` and updated `LifecycleManager` to immediately unregister dead agents, preventing "zombie money" from inflating the M2 supply.
+- **Refined `MonetaryLedger`**: Clarified the sources of money creation by distinguishing true credit expansion (loan origination) from simple transfers (interest payments, profit remittance), resolving reporting gaps between the ledger and trackers.
 
-- **Atomic Transaction & Settlement System (TD-160, TD-187)**:
-  - **Atomic Inheritance**: Implemented the `LegacySettlementAccount` escrow protocol. Agent estates are now resolved atomically, preventing data drift and value loss during death events.
-  - **Liquidation Waterfall**: Implemented a legal-standard priority protocol. Firm liquidations now prioritize employee severance (last 3 years) and wages over other corporate liabilities.
+### 1.3. Data Integrity & Multi-Currency Stability
+- **Fixed `NULL seller_id` Crash**: Hardened `SettlementSystem`, `FirmSystem`, and `StockMarket` with validation to prevent the creation of transactions with null IDs, resolving a critical `IntegrityError` at Tick 50.
+- **Multi-Currency Operational Awareness (TD-032)**: Injected `exchange_rates` into firm-level departments (HR, Sales, Finance), enabling them to make rational decisions based on their complete, multi-currency financial picture.
+- **Preserved Foreign Assets on Liquidation (TD-033)**: Corrected the liquidation process to ensure assets held in foreign currencies are properly accounted for and distributed to shareholders, preventing deflationary leaks.
 
 ## 2. Economic Insights
 
-- **M2 Synchronization Order**: Traced a persistent 8,000 unit leak to a race condition where housing loans were issued *after* the government had finished its tick-based auditing. The fix was moving auditing to a structural hook at the orchestrator level.
-- **Settlement Atomicity**: Demonstrated that direct asset transfers between agents are prone to failure. The "Bypass & Receipt" pattern in `SettlementSystem` provides a scalable way to handle complex, multi-party transfers like inheritance.
+- **M2 Definition is Critical**: The primary M2 leak was caused by an ambiguous definition of money supply. Double-counting bank reserves and including "zombie money" from dead agents led to significant artificial inflation. Strict, event-driven registry management is essential for stability.
+- **Lack of Currency Context Creates Irrationality**: Firms operating across multiple currencies without access to real-time exchange rates make severe misjudgments, such as firing staff despite being solvent or misallocating marketing budgets.
+- **Transfers vs. Creation**: Transfers between private agents and systemic entities (e.g., interest payments to a bank) do not change the total money supply (M2). The `MonetaryLedger` must only track true credit expansion/destruction (loan origination/repayment) to accurately report changes in M2.
+- **Data Integrity is Paramount**: Seemingly minor issues, like a firm failing to initialize with an ID, can cascade through the system and cause catastrophic database failures. Defensive validation at all layers is non-negotiable.
 
-## 3. Pending Tasks & Critical Technical Debt
+## 3. Pending Tasks & Technical Debt
 
-- **CRITICAL: Mortgage System Restoration**:
-  - The housing market and mortgage credit creation pipeline require a structural refactor to align with the new DTO-based architecture.
-- **TD-160 Completion (Gov Portfolio)**:
-  - While assets are strictly tracked, the actual `Portfolio` update for the `Government` during Escheatment (unclaimed inheritance) is currently mocked/skipped.
-- **TD-187 Refinement (Agent Registry)**:
-  - The `LiquidationManager` still relies on some string-based ID lookups for system agents (e.g., `"government"`). Transitioning to an object-based `AgentRegistry` would improve type safety.
+- **Immediate Priority**:
+  - **Residual M2 Drift**: A small M2 drift (~1.6%) persists, suspected to be from `bond_repayment` transactions not being correctly logged by the `MonetaryLedger`. This needs immediate investigation. (TD-257)
+
+- **High-Priority Refactoring**:
+  - **God Object Dependencies**: `SagaOrchestrator` and handlers still depend on the `ISimulationState` God Object. They should be refactored to inject only the specific services they require.
+  - **Native `IFinancialEntity`**: Agents should natively implement the `IFinancialEntity` interface to eliminate the overhead of the `FinancialEntityAdapter`.
+  - **`MarketContext` Object**: A context object should replace passing `exchange_rates` as a parameter to firm methods to reduce signature bloat and improve context propagation.
+
+- **Testing Gaps**:
+  - The project lacks comprehensive integration tests for multi-currency scenarios and the full `SagaOrchestrator` lifecycle.
 
 ## 4. Verification Status
 
-- **`trace_leak.py`**: ✅ **PASS (Leak: 0.0000)**. Integrity confirmed after merging the new synchronization hooks.
-- **Integration & System Tests**: ✅ **PASS (100%)**. Resolved 128+ failures caused by mock fragility and refactoring drift. All Category C/E tests in the systems module are green.
-- **Code Coverage**: Robust coverage confirmed for `SettlementSystem`, `InheritanceManager`, and `LiquidationManager`.
-
----
-*End of Session Report. Simulation is Stable, Integrity is Verified.*
+- **`main.py` & `trace_leak.py`**: The critical failures reported in the insight documents have been addressed. Internal verification confirmed the resolution of the major M2 leak (previously ~177k drift) and the `NULL seller_id` crash at Tick 50. The system is now significantly more stable through a 100-tick run, with only the minor residual M2 drift remaining.
