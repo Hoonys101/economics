@@ -5,12 +5,13 @@ from modules.finance.api import InsufficientFundsError
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
+from modules.simulation.api import IInventoryHandler
 
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
 
 
-class BaseAgent(ICurrencyHolder, ABC):
+class BaseAgent(ICurrencyHolder, IInventoryHandler, ABC):
     def __init__(
         self,
         id: int,
@@ -36,11 +37,23 @@ class BaseAgent(ICurrencyHolder, ABC):
         self.decision_engine = decision_engine
         self.value_orientation = value_orientation
         self.name = name if name is not None else f"{self.__class__.__name__}_{id}"
-        self.inventory: Dict[str, float] = {}
+        self._inventory: Dict[str, float] = {}
         self.is_active: bool = True
         self.logger = logger if logger is not None else logging.getLogger(self.name)
         self._pre_state_data: Dict[str, Any] = {}  # 이전 상태 저장을 위한 속성
         self.pre_state_snapshot: Dict[str, Any] = {} # Mypy fix: Snapshot for learning
+
+    @property
+    def inventory(self) -> Dict[str, float]:
+        """
+        [DEPRECATED] Backward compatibility accessor for _inventory.
+        External systems should transition to using IInventoryHandler methods.
+        """
+        return self._inventory
+
+    @inventory.setter
+    def inventory(self, value: Dict[str, float]) -> None:
+        self._inventory = value
         try:
             self.generation: int = 0
         except AttributeError:
@@ -89,6 +102,42 @@ class BaseAgent(ICurrencyHolder, ABC):
         if amount > 0:
             # Wallet raises InsufficientFundsError automatically
             self._wallet.subtract(amount, currency, memo="Withdraw")
+
+    # --- IInventoryHandler Implementation ---
+
+    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool:
+        """
+        Adds item to inventory safely.
+        """
+        if quantity < 0:
+            self.logger.warning(f"INVENTORY_FAIL | Attempt to add negative quantity {quantity} of {item_id}")
+            return False
+
+        current = self._inventory.get(item_id, 0.0)
+        self._inventory[item_id] = current + quantity
+        return True
+
+    def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool:
+        """
+        Removes item from inventory safely. Returns False if insufficient.
+        """
+        if quantity < 0:
+            self.logger.warning(f"INVENTORY_FAIL | Attempt to remove negative quantity {quantity} of {item_id}")
+            return False
+
+        current = self._inventory.get(item_id, 0.0)
+        if current < quantity:
+            self.logger.warning(f"INVENTORY_FAIL | Insufficient {item_id}. Have {current}, Need {quantity}")
+            return False
+
+        self._inventory[item_id] = current - quantity
+        if self._inventory[item_id] <= 1e-9: # Cleanup logic
+             del self._inventory[item_id]
+
+        return True
+
+    def get_quantity(self, item_id: str) -> float:
+        return self._inventory.get(item_id, 0.0)
 
     def get_agent_data(self) -> Dict[str, Any]:
         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""

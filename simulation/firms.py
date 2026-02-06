@@ -71,7 +71,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         self.settlement_system: Optional["ISettlementSystem"] = None
         self.config = config_dto
         if initial_inventory is not None:
-            self.inventory.update(initial_inventory)
+            self._inventory.update(initial_inventory)
         self.specialization = specialization
         self.inventory_quality: Dict[str, float] = {}  # Phase 15: Weighted Average Quality
         self.input_inventory: Dict[str, float] = {} # WO-030: Raw Materials
@@ -178,7 +178,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         TD-033: Returns full multi-currency asset dictionary.
         """
         # 1. Write off Inventory
-        self.inventory.clear()
+        self._inventory.clear()
         
         # 2. Write off Capital Stock
         self.capital_stock = 0.0
@@ -205,7 +205,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
 
     def add_inventory(self, item_id: str, quantity: float, quality: float):
         """Adds items to the firm's inventory and updates the average quality."""
-        current_inventory = self.inventory.get(item_id, 0)
+        current_inventory = self._inventory.get(item_id, 0)
         current_quality = self.inventory_quality.get(item_id, 1.0)
 
         total_qty = current_inventory + quantity
@@ -213,7 +213,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
             new_avg_quality = ((current_inventory * current_quality) + (quantity * quality)) / total_qty
             self.inventory_quality[item_id] = new_avg_quality
 
-        self.inventory[item_id] = total_qty
+        self._inventory[item_id] = total_qty
 
     def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
         return self.sales.post_ask(item_id, price, quantity, market, current_tick)
@@ -262,7 +262,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
             decision_engine=cloned_decision_engine,
             value_orientation=self.value_orientation,
             config_dto=self.config,
-            initial_inventory=copy.deepcopy(self.inventory),
+            initial_inventory=copy.deepcopy(self._inventory),
             loan_market=self.decision_engine.loan_market,  # loan_market은 공유
             logger=self.logger,
             personality=self.personality # Propagate personality
@@ -283,7 +283,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         return {
             "assets": MultiCurrencyWalletDTO(balances=self.finance.balance), # Direct Access wrapped in DTO
             "needs": self.needs.copy(),
-            "inventory": self.inventory.copy(),
+            "inventory": self._inventory.copy(),
             "input_inventory": self.input_inventory.copy(), # WO-030
             # SoC Refactor
             "employees": [emp.id for emp in self.hr.employees],  # Only pass employee IDs

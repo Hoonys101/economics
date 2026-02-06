@@ -15,7 +15,7 @@ from modules.market.loan_api import (
     calculate_monthly_income,
     calculate_total_monthly_debt_payments
 )
-from modules.simulation.api import ISimulationState
+from modules.simulation.api import ISimulationState, HouseholdSnapshotDTO
 from simulation.finance.api import ISettlementSystem, IFinancialEntity
 from simulation.models import Transaction
 from modules.finance.kernel.api import IMonetaryLedger
@@ -106,6 +106,15 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
 
         return saga
 
+    def _get_buyer_id(self, saga: HousingTransactionSagaStateDTO) -> Optional[int]:
+        """Helper to extract buyer ID from snapshot or dict."""
+        ctx = saga.get('buyer_context')
+        if isinstance(ctx, HouseholdSnapshotDTO):
+            return int(ctx.household_id)
+        elif isinstance(ctx, dict):
+            return ctx.get('id')
+        return saga.get('buyer_id')
+
     def _handle_initiated(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
         # 1. Lock Property
         success = False
@@ -119,72 +128,16 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
              # Can't rollback lock if we didn't get it, but compensate handles cleanup
              return self.compensate_step(saga)
 
-        # Retrieve IDs safely (handling potential migration state where context might be missing)
-        # Note: DTO type requires context, but runtime dict might still have keys if not migrated
-        buyer_id = saga.get('buyer_context', {}).get('id')
-        if buyer_id is None:
-             buyer_id = saga.get('buyer_id') # Legacy fallback
+        # 2. Application Staging (Data already prepared by HousingSystem via Snapshot)
+        app_dto = saga.get('loan_application')
 
-        seller_id = saga.get('seller_context', {}).get('id')
-        if seller_id is None:
-             seller_id = saga.get('seller_id')
+        # Backward compatibility / Safety check: If not present, try to reconstruct (Should not happen with new HousingSystem)
+        if not app_dto:
+             # Legacy Fallback Logic (removed for purity compliance, assume error)
+             saga['error_message'] = "Missing loan application in saga state"
+             return self.compensate_step(saga)
 
-        # 2. Resolve Seller
-        if seller_id == -1 or seller_id is None:
-             units = getattr(self.simulation, 'real_estate_units', [])
-             unit = next((u for u in units if hasattr(u, 'id') and u.id == saga['property_id']), None)
-             if unit:
-                 seller_id = unit.owner_id
-             else:
-                 saga['error_message'] = "Property not found"
-                 return self.compensate_step(saga)
-
-        # 3. Resolve Buyer and Populate Contexts
-        buyer = self.simulation.agents.get(buyer_id)
-        # seller = self.simulation.agents.get(seller_id) # Not strictly needed for logic here
-
-        ticks_per_year = getattr(self.simulation.config_module, 'TICKS_PER_YEAR', 360)
-
-        # Buyer Context
-        monthly_income = 0.0
-        if buyer and hasattr(buyer, 'current_wage'):
-             monthly_income = calculate_monthly_income(buyer.current_wage, ticks_per_year)
-
-        existing_monthly_payments = calculate_total_monthly_debt_payments(
-            self.simulation.bank,
-            buyer_id,
-            ticks_per_year
-        )
-
-        saga['buyer_context'] = {
-            "id": buyer_id,
-            "monthly_income": monthly_income,
-            "existing_monthly_debt": existing_monthly_payments
-        }
-
-        # Seller Context
-        saga['seller_context'] = {
-            "id": seller_id,
-            "monthly_income": 0.0,
-            "existing_monthly_debt": 0.0
-        }
-
-        # 4. Prepare Application
-        principal = saga['offer_price'] - saga['down_payment_amount']
-
-        app_dto: MortgageApplicationDTO = {
-            "applicant_id": buyer_id,
-            "requested_principal": principal,
-            "purpose": "MORTGAGE",
-            "property_id": saga['property_id'],
-            "property_value": saga['offer_price'],
-            "applicant_monthly_income": monthly_income,
-            "existing_monthly_debt_payments": existing_monthly_payments,
-            "loan_term": 360
-        }
-        saga['loan_application'] = app_dto # type: ignore
-
-        # 5. Stage Mortgage
+        # 3. Stage Mortgage
         staged_loan_id = self.loan_market.stage_mortgage_application(app_dto)
         if not staged_loan_id:
              saga['error_message'] = "Loan staging rejected"
@@ -255,10 +208,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
 
         bank = self.simulation.bank
 
-        # Safely retrieve IDs (fallback for in-flight sagas)
-        buyer_id = saga.get('buyer_context', {}).get('id')
-        if buyer_id is None:
-             buyer_id = saga.get('buyer_id')
+        buyer_id = self._get_buyer_id(saga)
 
         seller_id = saga.get('seller_context', {}).get('id')
         if seller_id is None:
@@ -326,9 +276,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
 
     def _handle_transfer_title(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
         # Finalize Ownership
-        buyer_id = saga.get('buyer_context', {}).get('id')
-        if buyer_id is None:
-             buyer_id = saga.get('buyer_id')
+        buyer_id = self._get_buyer_id(saga)
 
         if hasattr(self.housing_service, 'transfer_asset'):
             success = self.housing_service.transfer_asset(saga['property_id'], buyer_id)
@@ -361,9 +309,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
 
         bank = self.simulation.bank
 
-        buyer_id = saga.get('buyer_context', {}).get('id')
-        if buyer_id is None:
-             buyer_id = saga.get('buyer_id')
+        buyer_id = self._get_buyer_id(saga)
 
         seller_id = saga.get('seller_context', {}).get('id')
         if seller_id is None:
@@ -419,9 +365,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
     def _log_transaction(self, saga: HousingTransactionSagaStateDTO):
         loan_id = saga['mortgage_approval']['loan_id'] if saga.get('mortgage_approval') else None
 
-        buyer_id = saga.get('buyer_context', {}).get('id')
-        if buyer_id is None:
-             buyer_id = saga.get('buyer_id')
+        buyer_id = self._get_buyer_id(saga)
 
         seller_id = saga.get('seller_context', {}).get('id')
         if seller_id is None:

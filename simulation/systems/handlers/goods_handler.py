@@ -5,6 +5,7 @@ from simulation.models import Transaction
 from simulation.core_agents import Household
 from simulation.firms import Firm
 from modules.system.api import DEFAULT_CURRENCY
+from modules.simulation.api import IInventoryHandler
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +98,9 @@ class GoodsTransactionHandler(ITransactionHandler):
         else:
             # Physical Goods: Update Inventory
             # Seller Inventory
-            if hasattr(seller, "inventory"):
+            if isinstance(seller, IInventoryHandler):
+                seller.remove_item(tx.item_id, tx.quantity)
+            elif hasattr(seller, "inventory"):
                  seller.inventory[tx.item_id] = max(0, seller.inventory.get(tx.item_id, 0) - tx.quantity)
 
             # Buyer Inventory
@@ -105,6 +108,19 @@ class GoodsTransactionHandler(ITransactionHandler):
 
             if is_raw_material and isinstance(buyer, Firm):
                 buyer.input_inventory[tx.item_id] = buyer.input_inventory.get(tx.item_id, 0.0) + tx.quantity
+            elif isinstance(buyer, IInventoryHandler):
+                # Quality Update
+                if hasattr(buyer, "inventory_quality"):
+                     current_qty = buyer.get_quantity(tx.item_id)
+                     existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
+                     tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
+                     total_new_qty = current_qty + tx.quantity
+
+                     if total_new_qty > 0:
+                         new_avg_quality = ((current_qty * existing_quality) + (tx.quantity * tx_quality)) / total_new_qty
+                         buyer.inventory_quality[tx.item_id] = new_avg_quality
+
+                buyer.add_item(tx.item_id, tx.quantity)
             elif hasattr(buyer, "inventory"):
                 current_qty = buyer.inventory.get(tx.item_id, 0)
                 existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)

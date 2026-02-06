@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Protocol, TypedDict, Any, List, Dict, TYPE_CHECKING, runtime_checkable
+from typing import Protocol, TypedDict, Any, List, Dict, Optional, TYPE_CHECKING, runtime_checkable
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -38,7 +38,30 @@ class SystemStateDTO:
     fiscal_policy_last_activation_tick: int
     central_bank_base_rate: float
 
+@dataclass(frozen=True)
+class HouseholdSnapshotDTO:
+    """
+    Read-only snapshot of a household's financial state for saga processing.
+    Ensures isolation from live agent state during long-running transactions.
+    """
+    household_id: str
+    cash: float
+    income: float
+    credit_score: float
+    existing_debt: float
+    assets_value: float
+
 # --- Protocols ---
+
+@runtime_checkable
+class IInventoryHandler(Protocol):
+    """
+    Protocol for strict transactional inventory management.
+    Abstracts direct dictionary access to enforce business rules and logging.
+    """
+    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool: ...
+    def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool: ...
+    def get_quantity(self, item_id: str) -> float: ...
 
 class IAgent(Protocol):
     id: int
