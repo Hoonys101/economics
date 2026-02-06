@@ -39,7 +39,7 @@
 | TD-255 | 2026-02-06 | Housing Saga DTO Purity Breach | Raw Agent Mutation Leaks | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-god-class-check-2584000745385775058_audit_structural_001.md) | **MEDIUM** |
 | TD-256 | 2026-02-06 | Lack of Inventory Abstraction (Direct Mutation) | Goods Transfer Atomicity Risks | [Economic Audit](../../3_work_artifacts/reports/inbound/economic-jules-001-12984982393375704591_audit_economic_JULES_001.md) | **MEDIUM** |
 | TD-258 | 2026-02-06 | Manual Transaction Injection in Saga | Bypass of Transaction Pipeline | [Review](../../_archive/gemini_output/pr_review_pulse-integrity-fix-5507545585466336807.md) | **LOW** |
-| (No Active Items) | | | | | |
+| TD-261 | 2026-02-06 | `agent_states` Index Performance Risk | O(N*M) Subquery Degradation in Birth Tracking | [Insight](../../communications/insights/mission_watchtower_hardening.md) | **MEDIUM** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
