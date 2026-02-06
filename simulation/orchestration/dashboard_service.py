@@ -11,6 +11,7 @@ from simulation.dtos.watchtower import (
 )
 from simulation.orchestration.persistence_bridge import PersistenceBridge
 from modules.system.api import DEFAULT_CURRENCY
+from modules.simulation.api import IEconomicIndicatorTracker, IAgentRepository
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,12 @@ class DashboardService:
         gov = state.governments[0] if state.governments else None
 
         # --- 1. System Integrity ---
+        # Use smoothed M2 leak if available (Watchtower Hardening)
         m2_leak = self._calculate_m2_leak(state)
+        if isinstance(tracker, IEconomicIndicatorTracker):
+             smoothed = tracker.get_smoothed_values()
+             if smoothed.get("m2_leak_sma") is not None:
+                 m2_leak = smoothed.get("m2_leak_sma")
 
         # FPS Calculation
         current_time = datetime.now()
@@ -42,12 +48,15 @@ class DashboardService:
 
         # --- 2. Macro Economy ---
         latest = tracker.get_latest_indicators() if tracker else {}
+        smoothed = {}
+        if isinstance(tracker, IEconomicIndicatorTracker):
+            smoothed = tracker.get_smoothed_values()
 
-        # GDP (Nominal)
-        gdp = latest.get("gdp", 0.0)
+        # GDP (Nominal) - Smoothed
+        gdp = smoothed.get("gdp_sma", latest.get("gdp", 0.0))
 
-        # CPI (Goods Price Index)
-        cpi = latest.get("goods_price_index", 1.0)
+        # CPI (Goods Price Index) - Smoothed
+        cpi = smoothed.get("cpi_sma", latest.get("goods_price_index", 1.0))
 
         # Unemployment
         unemploy = latest.get("unemployment_rate", 0.0)
@@ -121,15 +130,22 @@ class DashboardService:
         birth_rate = 0.0
         death_rate = 0.0
 
+        # Accessing repo.agents which should implement IAgentRepository
         repo = getattr(state, "repository", None)
-        if repo and active_count > 0:
+        agent_repo = None
+        if repo and hasattr(repo, "agents"):
+             agent_repo = repo.agents
+
+        if agent_repo and isinstance(agent_repo, IAgentRepository) and active_count > 0:
             start_tick = max(0, state.time - 5)
             # Fetch attrition stats for death rate
-            attrition = repo.agents.get_attrition_counts(start_tick, state.time, run_id=state.run_id)
+            attrition = agent_repo.get_attrition_counts(start_tick, state.time, run_id=state.run_id)
             death_count = attrition.get("death_count", 0)
             death_rate = (death_count / active_count) * 100.0
 
-            # TODO: Implement Birth Rate tracking in Repository or Tracker
+            # Birth Rate Tracking (Watchtower Hardening)
+            birth_count = agent_repo.get_birth_counts(start_tick, state.time, run_id=state.run_id)
+            birth_rate = (birth_count / active_count) * 100.0
 
         snapshot = WatchtowerSnapshotDTO(
             tick=state.time,

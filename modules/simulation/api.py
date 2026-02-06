@@ -60,6 +60,24 @@ class IGovernment(Protocol):
     revenue_this_tick: float
     total_debt: float
 
+@runtime_checkable
+class IEconomicIndicatorTracker(Protocol):
+    """Protocol for the EconomicIndicatorTracker to enable smoothed metrics access."""
+    def get_smoothed_values(self) -> Dict[str, float]:
+        ...
+
+    def get_latest_indicators(self) -> Dict[str, Any]:
+        ...
+
+@runtime_checkable
+class IAgentRepository(Protocol):
+    """Protocol for the AgentRepository to enable demographic queries."""
+    def get_birth_counts(self, start_tick: int, end_tick: int, run_id: Any = None) -> int:
+        ...
+
+    def get_attrition_counts(self, start_tick: int, end_tick: int, run_id: Any = None) -> Dict[str, int]:
+        ...
+
 class IConfig(Protocol):
     STARVATION_THRESHOLD: float
 
