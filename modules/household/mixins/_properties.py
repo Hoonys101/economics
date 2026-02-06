@@ -32,8 +32,21 @@ class HouseholdPropertiesMixin:
         self._assets = value
 
     @property
+    def _inventory(self) -> Dict[str, float]:
+        """
+        [Refactor] Internal inventory access via EconStateDTO.
+        Overrides BaseAgent._inventory to link with DTO.
+        """
+        return self._econ_state.inventory
+
+    @_inventory.setter
+    def _inventory(self, value: Dict[str, float]) -> None:
+        self._econ_state.inventory = value
+
+    @property
     @override
     def inventory(self) -> Dict[str, float]:
+        """[DEPRECATED] Use IInventoryHandler methods or self._inventory."""
         return self._econ_state.inventory
 
     @inventory.setter

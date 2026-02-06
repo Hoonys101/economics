@@ -4,13 +4,12 @@ from typing import TYPE_CHECKING, Any, List, Optional, Dict
 from uuid import uuid4, UUID
 from simulation.models import Order
 from modules.housing.dtos import (
-    HousingPurchaseDecisionDTO,
+    HousingPurchaseDecisionDTO
+)
+from modules.finance.sagas.housing_api import (
     HousingTransactionSagaStateDTO
 )
-from modules.market.housing_purchase_api import (
-    HousingPurchaseSagaDTO,
-    HousingPurchaseSagaDataDTO
-)
+from modules.simulation.api import HouseholdSnapshotDTO
 from modules.finance.api import MortgageApplicationDTO
 from modules.system.api import DEFAULT_CURRENCY
 
@@ -182,20 +181,39 @@ class HousingSystem:
         principal = offer_price - down_payment
         prop_id = decision['target_property_id']
 
-        # Gather data for Mortgage Application
+        # Gather data for Mortgage Application & Snapshot
         household = simulation.agents.get(buyer_id)
         annual_income = 0.0
+        cash_balance = 0.0
+        credit_score = 0.0
 
         if household:
              # Logic to estimate income
              if hasattr(household, 'current_wage'):
                   ticks_per_year = getattr(self.config, 'TICKS_PER_YEAR', 100)
-                  # Assuming current_wage is per tick? Or monthly?
-                  # Household model usually has current_wage.
                   annual_income = household.current_wage * ticks_per_year
+
+             if isinstance(household.assets, dict):
+                 cash_balance = household.assets.get(DEFAULT_CURRENCY, 0.0)
+             else:
+                 cash_balance = float(household.assets)
+
+             # Placeholder for credit score if available
+             if hasattr(household, 'credit_score'):
+                 credit_score = getattr(household, 'credit_score')
 
         # [TD-206] Use helper for precise debt payments
         existing_debt_payments = self._calculate_total_monthly_debt_payments(buyer_id, simulation.bank)
+
+        # Create Purity Snapshot
+        buyer_snapshot = HouseholdSnapshotDTO(
+            household_id=str(buyer_id),
+            cash=cash_balance,
+            income=annual_income,
+            credit_score=credit_score,
+            existing_debt=existing_debt_payments,
+            assets_value=cash_balance # Simplified
+        )
 
         # Resolve seller
         seller_id = -1
@@ -225,24 +243,25 @@ class HousingSystem:
             loan_term=loan_term
         )
 
-        saga_data = HousingPurchaseSagaDataDTO(
-            household_id=buyer_id,
-            property_id=prop_id,
-            offer_price=offer_price,
-            down_payment=down_payment,
-            mortgage_application=mortgage_app,
-            approved_loan_id=None,
-            seller_id=seller_id
-        )
-
-        saga = HousingPurchaseSagaDTO(
-            saga_id=saga_id,
-            saga_type="HOUSING_PURCHASE",
-            status="STARTED",
-            current_step=0,
-            data=saga_data,
-            start_tick=simulation.time
-        )
+        # Construct Saga State DTO (Flattened for SagaHandler)
+        saga: HousingTransactionSagaStateDTO = {
+            "saga_id": saga_id, # type: ignore
+            "status": "INITIATED",
+            "buyer_context": buyer_snapshot,
+            "seller_context": {
+                "id": seller_id,
+                "monthly_income": 0.0,
+                "existing_monthly_debt": 0.0
+            },
+            "property_id": prop_id,
+            "offer_price": offer_price,
+            "down_payment_amount": down_payment,
+            "loan_application": mortgage_app,
+            "mortgage_approval": None,
+            "staged_loan_id": None,
+            "error_message": None,
+            "last_processed_tick": 0
+        }
 
         # TD-253: Saga Orchestration Update
         if hasattr(simulation, 'saga_orchestrator') and simulation.saga_orchestrator:

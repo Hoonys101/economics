@@ -1,8 +1,10 @@
 from typing import TypedDict, Literal, Optional, Protocol, List, Dict
 from uuid import UUID
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from modules.market.housing_planner_api import MortgageApplicationDTO
+from modules.simulation.api import HouseholdSnapshotDTO
 
 # --- DTOs for Saga State & Payloads ---
 
@@ -38,7 +40,7 @@ class HousingTransactionSagaStateDTO(TypedDict):
         "COMPLETED",
         "FAILED_ROLLED_BACK"
     ]
-    buyer_context: HousingSagaAgentContext
+    buyer_context: HouseholdSnapshotDTO
     seller_context: HousingSagaAgentContext
     property_id: int
     offer_price: float
