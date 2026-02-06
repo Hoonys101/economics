@@ -7,20 +7,21 @@
 ## 🎯 Cluster 1: Systemic Integrity & Economic Stability (Urgent)
 *Issues that directly threaten the validity of the economic simulation.*
 
--   [ ] **[TD-257] Fix M2 Money Supply Drift:**
-    -   **Description**: Investigate and resolve the residual 1.6% drift in the M2 money supply, which indicates a core accounting leak.
-    -   **Source**: `TECH_DEBT_LEDGER.md`, `[AUTO-AUDIT FINDINGS]`
-    -   **Impact**: Critical. A stable money supply is non-negotiable for a valid economic simulation.
+-   [x] **[TD-257] Fix M2 Money Supply Drift:**
+    -   **Description**: Investigate and resolve the residual 1.6% drift in the M2 money supply. (Resolved: 0.0000% leakage achieved).
+    -   **Source**: `TECH_DEBT_LEDGER.md`
+    -   **Status**: DONE ✅
 
 -   [ ] **[TD-256] Implement Inventory Abstraction:**
-    -   **Description**: Refactor inventory management to use a strict protocol (`IInventoryHandler`) instead of direct object mutation. This is especially critical for `Phase_HousingSaga` to ensure atomic goods transfers.
-    -   **Source**: `TECH_DEBT_LEDGER.md`, `[AUTO-AUDIT FINDINGS]`
-    -   **Impact**: High. Prevents race conditions and data corruption during transactions.
+    -   **Description**: Refactor inventory management to use a strict protocol (`IInventoryHandler`).
+    -   **Source**: `TECH_DEBT_LEDGER.md`
+    -   **Impact**: High.
 
--   [ ] **[TD-254] Eliminate Settlement Abstraction Leaks:**
-    -   **Description**: Remove all uses of `hasattr` in the settlement logic and replace them with formal interface checks or pattern matching. This enforces the Open/Closed Principle.
-    -   **Source**: `TECH_DEBT_LEDGER.md`, `[AUTO-AUDIT FINDINGS]`
-    -   **Impact**: High. Reduces system fragility and makes settlement logic easier to maintain and extend.
+-   [x] **[TD-254] Eliminate Settlement Abstraction Leaks:**
+    -   **Description**: Remove `hasattr` (Resolved in Phase 6).
+    -   **Status**: DONE ✅
+
+-   [ ] **[TD-258] Remove Manual Transaction Injections:**
 
 -   [ ] **[TD-258] Remove Manual Transaction Injections:**
     -   **Description**: Audit and refactor all instances where transactions are injected directly into the `WorldState`, bypassing the standard `Transaction` pipeline (e.g., in `Saga` handlers). All state changes must go through the formal, trackable pipeline.
