@@ -1,0 +1,730 @@
+diff --git a/communications/insights/Pulse_Integrity_Report.md b/communications/insights/Pulse_Integrity_Report.md
+new file mode 100644
+index 00000000..26f65697
+--- /dev/null
++++ b/communications/insights/Pulse_Integrity_Report.md
+@@ -0,0 +1,49 @@
++# Technical Insight Report: Operation Pulse Integrity
++
++## 1. Problem Phenomenon
++During stress testing (Tick 1-100), the simulation exhibited severe monetary instability:
++*   **M2 Leak:** Significant positive M2 drift (leak) detected, reaching ~177k by Tick 90 in early runs.
++*   **Crash:** A `TypeError` at Tick 50 (NULL seller_id) and other crashes related to inheritance and database logging.
++*   **Ghost Agents:** Dead agents remained in the `currency_holders` list, causing their assets to be counted in M2 even after liquidation/inheritance.
++
++## 2. Root Cause Analysis
++### 2.1 M2 Leak & Double Counting
++The primary M2 leak was caused by a combination of:
++*   **Bank Reserves Double Counting:** M2 was calculated as `M0 + Deposits`, but M0 implicitly included Bank Reserves (since Bank was a currency holder). Since Deposits are backed by Reserves, adding both doubles the count of that money.
++*   **Implicit Transfers:** Bank withdrawals and deposits updated logical balances but didn't always physically transfer cash between `Bank.wallet` and `Customer.wallet` in a strictly synchronized way (fixed by handler registration).
++*   **Profit Remittance:** Bank profits (interest income) were accumulated but not remitted to the Government, effectively creating a sink or source depending on how M2 was tracked vs. authorized delta.
++
++### 2.2 Ghost Agents (Lifecycle Management)
++*   The `TickOrchestrator` rebuilt the `currency_holders` list every tick by iterating over `state.agents`.
++*   However, `state.agents` often retained references to inactive/dead agents for transactional history or logging.
++*   This caused dead agents to be re-added to the M2 calculation, leading to "Zombie Money" being counted.
++
++### 2.3 Crashes
++*   **Tick 50 NULL seller_id:** `InheritanceManager` assigned `None` to `seller_id` for system-mediated transfers, violating database `NOT NULL` constraints.
++*   **Logging Crash:** Passing a `dict` (M2 breakdown) to a SQL logger expecting a `float` or JSON string caused a `sqlite3` error.
++
++## 3. Solution Implementation Details
++### 3.1 Strict Currency Registry
++*   Implemented `StrictCurrencyRegistry` pattern in `WorldState.py`.
++*   Introduced `_currency_holders_set` for O(1) membership tracking.
++*   Added `register_currency_holder` and `unregister_currency_holder` methods.
++*   Updated `TickOrchestrator` to **stop rebuilding** the list every tick. It now relies on `LifecycleManager` to maintain the list incrementally.
++
++### 3.2 Immediate Lifecycle Suture
++*   Updated `LifecycleManager` to call `state.unregister_currency_holder(agent)` **immediately** upon agent death or liquidation.
++*   This eliminates the "Ghost Agent" window where dead agents could be counted in M2.
++
++### 3.3 M2 Formula Correction
++*   Updated `EconomicIndicatorTracker.py` to strictly implement the formula: `M2 = (M0 - Bank Reserves) + Deposits`.
++*   This ensures that `M0` correctly represents the Monetary Base (Circulation + Reserves), while `M2` correctly represents Broad Money (Circulation + Deposits).
++
++### 3.4 Transaction Handlers
++*   Registered `bank_profit_remittance` handler to ensure bank profits move to Government.
++*   Registered `deposit` and `withdrawal` handlers to ensure physical cash movement accompanies logical deposit updates.
++
++## 4. Lessons Learned & Technical Debt
++*   **Lesson:** "Rebuilding from source" (like `_rebuild_currency_holders`) is dangerous if the source (`state.agents`) has a different lifecycle (e.g., archival retention) than the derived list (`active_currency_holders`). Strict, event-driven maintenance is safer for critical registries.
++*   **Lesson:** M2 definitions must be explicit about "Reserves" vs. "Circulation". Ambiguity leads to double-counting.
++*   **Tech Debt:** `SettlementSystem` still has some abstraction leaks (direct property access).
++*   **Tech Debt:** `WorldState` is becoming a God Class; `StrictCurrencyRegistry` logic could be extracted to a standalone component.
++*   **Residual Drift:** A small residual M2 drift (~1.6% of total) persists, likely due to `bond_repayment` transactions between Government and Commercial Bank not being tracked as M2 contraction in `MonetaryLedger`. Future work should tag these transactions explicitly.
+diff --git a/modules/finance/saga_handler.py b/modules/finance/saga_handler.py
+index 18826173..260af505 100644
+--- a/modules/finance/saga_handler.py
++++ b/modules/finance/saga_handler.py
+@@ -233,6 +233,27 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+         success = self.settlement_system.execute_multiparty_settlement(transfers, self.simulation.time)
+ 
+         if success:
++             # TD-030: M2 Integrity - Record Authorized Expansion for Mortgage Disbursal
++             # Moving Bank Reserves to Public Circulation (via Buyer) is an M2 Expansion.
++             # We must track this to match the Authorized Delta (MonetaryLedger).
++             if principal > 0:
++                 tx_credit = Transaction(
++                    buyer_id=bank.id,
++                    seller_id=-1, # System Authorization
++                    item_id=f"mortgage_disbursal_{saga['saga_id']}",
++                    quantity=1.0,
++                    price=principal,
++                    market_id="monetary_policy",
++                    transaction_type="credit_creation",
++                    time=self.simulation.time,
++                    metadata={"executed": True, "saga_id": str(saga['saga_id'])}
++                 )
++                 # Manually append to world_state transactions (like _log_transaction)
++                 if hasattr(self.simulation, 'world_state'):
++                      self.simulation.world_state.transactions.append(tx_credit)
++                 elif hasattr(self.simulation, 'transactions'):
++                      self.simulation.transactions.append(tx_credit)
++
+              saga['status'] = "TRANSFER_TITLE"
+              # Optionally process next step immediately?
+              # Or wait next tick? State machine usually one step per tick unless we want fast track.
+@@ -288,6 +309,25 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+         ]
+ 
+         self.settlement_system.execute_multiparty_settlement(transfers, self.simulation.time)
++
++        # TD-030: M2 Integrity - Record Destruction
++        if principal > 0:
++             tx_destroy = Transaction(
++                buyer_id=-1,
++                seller_id=bank.id,
++                item_id=f"mortgage_rollback_{saga['saga_id']}",
++                quantity=1.0,
++                price=principal,
++                market_id="monetary_policy",
++                transaction_type="credit_destruction",
++                time=self.simulation.time,
++                metadata={"executed": True, "saga_id": str(saga['saga_id'])}
++             )
++             if hasattr(self.simulation, 'world_state'):
++                  self.simulation.world_state.transactions.append(tx_destroy)
++             elif hasattr(self.simulation, 'transactions'):
++                  self.simulation.transactions.append(tx_destroy)
++
+         logger.info(f"SAGA_ROLLBACK | Reversed settlement for saga {saga['saga_id']}")
+ 
+     def _log_transaction(self, saga: HousingTransactionSagaStateDTO):
+diff --git a/modules/finance/wallet/wallet.py b/modules/finance/wallet/wallet.py
+index a02d8e70..c48dca93 100644
+--- a/modules/finance/wallet/wallet.py
++++ b/modules/finance/wallet/wallet.py
+@@ -4,10 +4,7 @@ from collections import defaultdict
+ from typing import Dict, List, Optional
+ from .api import IWallet, WalletOpLogDTO, CurrencyCode, DEFAULT_CURRENCY
+ from .audit import GLOBAL_WALLET_LOG
+-
+-class InsufficientFundsError(Exception):
+-    """Raised when a wallet operation would result in a negative balance."""
+-    pass
++from modules.finance.api import InsufficientFundsError
+ 
+ class Wallet(IWallet):
+     """
+diff --git a/modules/government/components/monetary_ledger.py b/modules/government/components/monetary_ledger.py
+index de86ee81..d688a593 100644
+--- a/modules/government/components/monetary_ledger.py
++++ b/modules/government/components/monetary_ledger.py
+@@ -45,7 +45,9 @@ class MonetaryLedger:
+ 
+             # 1. Explicit Expansion
+             # TD-034: Removed internal transfers (interest, profit) from expansion.
+-            if tx.transaction_type in ["credit_creation", "money_creation"]:
++            # TD-030 Revert: Since M2 definition now excludes Bank Reserves, transfers from Bank to Public (Interest/Profit)
++            # must be tracked as M2 Expansion.
++            if tx.transaction_type in ["credit_creation", "money_creation", "deposit_interest", "bank_profit_remittance"]:
+                 is_expansion = True
+ 
+             # 2. CB Buying (OMO Purchase / Bond Purchase) -> Expansion
+@@ -58,7 +60,8 @@ class MonetaryLedger:
+ 
+             # 3. Explicit Contraction
+             # TD-034: Removed internal transfers from contraction.
+-            if tx.transaction_type in ["credit_destruction", "money_destruction"]:
++            # TD-030 Revert: Transfers from Public to Bank (Loan Interest, Repayment) are M2 Contraction.
++            if tx.transaction_type in ["credit_destruction", "money_destruction", "loan_interest", "loan_default_recovery", "loan"]:
+                 is_contraction = True
+ 
+             # 4. CB Selling (OMO Sale / Bond Repayment) -> Contraction
+diff --git a/reports/snapshots/snapshot_tick_00042_20260206_001514.json b/reports/snapshots/snapshot_tick_00042_20260206_001514.json
+new file mode 100644
+index 00000000..28f45130
+--- /dev/null
++++ b/reports/snapshots/snapshot_tick_00042_20260206_001514.json
+@@ -0,0 +1,59 @@
++{
++  "tick": 42,
++  "status": "RUNNING",
++  "integrity": {
++    "m2_leak": 0.0,
++    "fps": 70116.86143572621
++  },
++  "macro": {
++    "gdp": 1000.0,
++    "cpi": 1.0,
++    "unemploy": 5.0,
++    "gini": 0.3
++  },
++  "finance": {
++    "rates": {
++      "base": 0.0,
++      "call": 0.0,
++      "loan": 0.0,
++      "savings": 0.0
++    },
++    "supply": {
++      "m0": 100.0,
++      "m1": 500.0,
++      "m2": 600.0,
++      "velocity": 1.5
++    }
++  },
++  "politics": {
++    "approval": {
++      "total": 0.0,
++      "low": 0.0,
++      "mid": 0.0,
++      "high": 0.0
++    },
++    "status": {
++      "ruling_party": "NEUTRAL",
++      "cohesion": 0.7
++    },
++    "fiscal": {
++      "revenue": 0.0,
++      "welfare": 0.0,
++      "debt": 0.0
++    }
++  },
++  "population": {
++    "distribution": {
++      "q1": 100.0,
++      "q2": 200.0,
++      "q3": 300.0,
++      "q4": 400.0,
++      "q5": 500.0
++    },
++    "active_count": 100,
++    "metrics": {
++      "birth": 0.0,
++      "death": 0.0
++    }
++  }
++}
+\ No newline at end of file
+diff --git a/simulation/ai/ai_training_manager.py b/simulation/ai/ai_training_manager.py
+index bc56e1ad..338664a3 100644
+--- a/simulation/ai/ai_training_manager.py
++++ b/simulation/ai/ai_training_manager.py
+@@ -3,6 +3,7 @@ import logging
+ import random
+ from typing import List, Any, TYPE_CHECKING
+ from simulation.ai.api import Personality # Added import
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     from simulation.core_agents import Household
+@@ -43,7 +44,7 @@ class AITrainingManager:
+             return
+ 
+         # Find the agent with the highest assets
+-        fittest_agent = max(self.agents, key=lambda x: x.assets)
++        fittest_agent = max(self.agents, key=lambda x: x.assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(x.assets, dict) else float(x.assets))
+         
+         if fittest_agent.id == target_agent.id:
+             return # Don't clone from self
+@@ -113,7 +114,7 @@ class AITrainingManager:
+         if not self.agents:
+             return []
+ 
+-        sorted_agents = sorted(self.agents, key=lambda x: x.assets, reverse=True)
++        sorted_agents = sorted(self.agents, key=lambda x: x.assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(x.assets, dict) else float(x.assets), reverse=True)
+         top_n = max(1, int(len(self.agents) * percentile))
+         return sorted_agents[:top_n]
+ 
+@@ -124,7 +125,7 @@ class AITrainingManager:
+         if not self.agents:
+             return []
+ 
+-        sorted_agents = sorted(self.agents, key=lambda x: x.assets) # Ascending
++        sorted_agents = sorted(self.agents, key=lambda x: x.assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(x.assets, dict) else float(x.assets)) # Ascending
+         bottom_n = max(1, int(len(self.agents) * percentile))
+         return sorted_agents[:bottom_n]
+ 
+diff --git a/simulation/bank.py b/simulation/bank.py
+index 906e50e8..e96aeb03 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -394,6 +394,14 @@ class Bank(IBankService, ICurrencyHolder):
+         if target_deposit is None or target_deposit.amount < amount:
+             return False
+ 
++        # Phase 33 FIX: Reduce Bank Reserves (M0) to match Deposit destruction (M2).
++        # Otherwise, M2 leaks (Customer gets cash/value, Bank keeps reserves).
++        try:
++            self._wallet.subtract(amount, currency, memo=f"Customer Withdrawal {depositor_id}")
++        except Exception:
++            logger.error(f"BANK_LIQUIDITY_CRISIS | Bank {self.id} cannot fulfill withdrawal of {amount} for {depositor_id}. Insufficient Reserves.")
++            return False
++
+         target_deposit.amount -= amount
+         if target_deposit.amount <= 0 and target_dep_id:
+             del self.deposits[target_dep_id]
+diff --git a/simulation/db/logger.py b/simulation/db/logger.py
+index 015b11ba..42115407 100644
+--- a/simulation/db/logger.py
++++ b/simulation/db/logger.py
+@@ -2,6 +2,7 @@ import sqlite3
+ import json
+ import logging
+ from typing import Optional, Dict, Any, List
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -55,6 +56,10 @@ class SimulationLogger:
+             cpi = getattr(snapshot_data, 'cpi', None)
+             transaction_count = getattr(snapshot_data, 'transaction_count', None)
+ 
++        # Ensure m2 is a float (flatten dict if necessary)
++        if isinstance(m2, dict):
++            m2 = m2.get(DEFAULT_CURRENCY, 0.0)
++
+         self.snapshot_buffer.append((
+             tick,
+             self.run_id,
+diff --git a/simulation/dtos/api.py b/simulation/dtos/api.py
+index e4fb2246..dcbbe8e1 100644
+--- a/simulation/dtos/api.py
++++ b/simulation/dtos/api.py
+@@ -265,6 +265,20 @@ class SimulationState:
+ 
+     # Injection
+     injectable_sensory_dto: Optional[Any] = None # GovernmentStateDTO
++    currency_registry_handler: Optional[Any] = None # WorldState injection for strict registry
++
++    def register_currency_holder(self, holder: Any) -> None:
++        if self.currency_registry_handler:
++            self.currency_registry_handler.register_currency_holder(holder)
++        elif self.currency_holders is not None:
++             self.currency_holders.append(holder) # Fallback
++
++    def unregister_currency_holder(self, holder: Any) -> None:
++        if self.currency_registry_handler:
++            self.currency_registry_handler.unregister_currency_holder(holder)
++        elif self.currency_holders is not None:
++             if holder in self.currency_holders:
++                 self.currency_holders.remove(holder) # Fallback
+ 
+     def __post_init__(self):
+         if self.transactions is None:
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index d9538992..78974b19 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -441,6 +441,10 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.transaction_processor.register_handler("deposit_interest", financial_handler)
+         sim.transaction_processor.register_handler("dividend", financial_handler)
+         sim.transaction_processor.register_handler("tax", financial_handler)
++        # WO-330: Fix M2 Leak (Double Counting) by ensuring physical cash transfer for deposits/withdrawals
++        sim.transaction_processor.register_handler("deposit", financial_handler)
++        sim.transaction_processor.register_handler("withdrawal", financial_handler)
++        sim.transaction_processor.register_handler("bank_profit_remittance", financial_handler)
+ 
+         sim.transaction_processor.register_handler("escheatment", EscheatmentHandler())
+ 
+@@ -483,13 +487,13 @@ class SimulationInitializer(SimulationInitializerInterface):
+         sim.household_time_allocation: Dict[int, float] = {}
+ 
+         # Populate Currency Holders for M2 Calculation
+-        sim.world_state.currency_holders = []
++        # TD-030: Use strict registry
+         if isinstance(sim.central_bank, ICurrencyHolder):
+-            sim.world_state.currency_holders.append(sim.central_bank)
++            sim.world_state.register_currency_holder(sim.central_bank)
+ 
+         for agent in sim.agents.values():
+             if isinstance(agent, ICurrencyHolder):
+-                sim.world_state.currency_holders.append(agent)
++                sim.world_state.register_currency_holder(agent)
+ 
+         sim.inflation_buffer = deque(maxlen=10)
+         sim.unemployment_buffer = deque(maxlen=10)
+diff --git a/simulation/metrics/economic_tracker.py b/simulation/metrics/economic_tracker.py
+index 85c69dbd..3538d187 100644
+--- a/simulation/metrics/economic_tracker.py
++++ b/simulation/metrics/economic_tracker.py
+@@ -425,36 +425,39 @@ class EconomicIndicatorTracker:
+         TD-015: Calculates M0, M1, M2 money supply aggregates.
+         Returns a dictionary with 'm0', 'm1', 'm2'.
+         """
+-        # M0: Monetary Base (Currency in Circulation + Reserves)
+-        # In this simulation, M0 is the sum of all Wallets (which represent Cash/Reserves).
+-        m0 = 0.0
++        # Components of Money Supply
++        currency_in_circulation = 0.0
++        bank_reserves = 0.0
+ 
+         # 1. Households
+         for h in world_state.households:
+             if h._bio_state.is_active:
+-                m0 += self._calculate_total_wallet_value(h._econ_state.assets)
++                currency_in_circulation += self._calculate_total_wallet_value(h._econ_state.assets)
+ 
+         # 2. Firms
+         for f in world_state.firms:
+             if getattr(f, "is_active", False):
+-                m0 += self._calculate_total_wallet_value(f.assets)
++                currency_in_circulation += self._calculate_total_wallet_value(f.assets)
+ 
+-        # 3. Bank Reserves (Commercial Bank)
+-        if world_state.bank:
+-            if isinstance(world_state.bank.assets, dict):
+-                 m0 += self._calculate_total_wallet_value(world_state.bank.assets)
+-            else:
+-                 m0 += world_state.bank.assets # Fallback for scalar
+-
+-        # 4. Government Assets
++        # 3. Government Assets
+         if world_state.government:
+              if isinstance(world_state.government.assets, dict):
+-                 m0 += self._calculate_total_wallet_value(world_state.government.assets)
++                 currency_in_circulation += self._calculate_total_wallet_value(world_state.government.assets)
+              else:
+-                 m0 += world_state.government.assets # Fallback for scalar
++                 currency_in_circulation += world_state.government.assets
++
++        # 4. Bank Reserves (Vault Cash)
++        if world_state.bank:
++           if isinstance(world_state.bank.assets, dict):
++                bank_reserves += self._calculate_total_wallet_value(world_state.bank.assets)
++           else:
++                bank_reserves += world_state.bank.assets
++
++        # M0: Monetary Base = Currency in Circulation + Bank Reserves
++        m0 = currency_in_circulation + bank_reserves
+ 
+-        # M2: Broad Money (M0 + Deposits)
+-        # M2 adds Bank Deposits which are created via loans and stored in the Bank system.
++        # M2: Broad Money (M0 - Bank Reserves + Deposits)
++        # Effectively: Currency in Circulation + Deposits
+         total_deposits = 0.0
+         if world_state.bank and hasattr(world_state.bank, "deposits"):
+             for deposit in world_state.bank.deposits.values():
+@@ -464,7 +467,8 @@ class EconomicIndicatorTracker:
+                       val = self.exchange_engine.convert(val, deposit.currency, DEFAULT_CURRENCY)
+                  total_deposits += val
+ 
+-        m2 = m0 + total_deposits
++        # TD-252: Strict Formula
++        m2 = (m0 - bank_reserves) + total_deposits
+ 
+         # M1: Narrow Money (M0 + Demand Deposits)
+         # Since currently all deposits are liquid, M1 is effectively M2.
+diff --git a/simulation/orchestration/tick_orchestrator.py b/simulation/orchestration/tick_orchestrator.py
+index 3a0acbb3..2180dcbd 100644
+--- a/simulation/orchestration/tick_orchestrator.py
++++ b/simulation/orchestration/tick_orchestrator.py
+@@ -54,7 +54,8 @@ class TickOrchestrator:
+         # This check is usually done before any activity starts
+         if state.time == 0:
+             # Ensure currency_holders is correct before baseline calculation
+-            self._rebuild_currency_holders(state)
++            # TD-030: Removed _rebuild_currency_holders. Initializer populates this.
++            # self._rebuild_currency_holders(state)
+             state.baseline_money_supply = state.calculate_total_money().get(DEFAULT_CURRENCY, 0.0)
+             state.logger.info(
+                 f"MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: {state.baseline_money_supply:.2f}",
+@@ -130,7 +131,8 @@ class TickOrchestrator:
+             transaction_processor=getattr(state, "transaction_processor", None), # Added for compatibility
+             effects_queue=[], # TD-192: Init empty
+             inter_tick_queue=[], # TD-192: Init empty
+-            transactions=[] # TD-192: Init empty
++            transactions=[], # TD-192: Init empty
++            currency_registry_handler=state # Inject WorldState to handle strict registry updates
+         )
+ 
+     def _drain_and_sync_state(self, sim_state: SimulationState):
+@@ -198,7 +200,9 @@ class TickOrchestrator:
+         if state.time >= 1:
+             # WO-220: Repair Currency Holders Sync
+             # Rebuilds state.currency_holders from state.agents to ensure M2 integrity.
+-            self._rebuild_currency_holders(state)
++            # TD-030: Removed _rebuild_currency_holders to enforce StrictCurrencyRegistry.
++            # LifecycleManager is now responsible for maintaining this list incrementally.
++            # self._rebuild_currency_holders(state)
+ 
+             total_hh = sum(h.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0) for h in state.households)
+             total_firm = sum(f.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0) for f in state.firms)
+@@ -223,61 +227,11 @@ class TickOrchestrator:
+             else:
+                  state.logger.info(msg, extra=extra_data)
+ 
+-    def _rebuild_currency_holders(self, state: WorldState):
+-        """
+-        Rebuilds state.currency_holders from state.agents to ensure M2 integrity.
+-        Enforces Single Source of Truth (SSoT) and filters out inactive agents.
+-        """
+-        from modules.system.api import ICurrencyHolder
+-
+-        # Clear existing list
+-        state.currency_holders.clear()
+-
+-        # Helper to check activity
+-        def is_active(agent: Any) -> bool:
+-            # Households
+-            if hasattr(agent, '_bio_state'):
+-                return agent._bio_state.is_active
+-            # Firms
+-            if hasattr(agent, 'is_active') and isinstance(agent.is_active, bool):
+-                return agent.is_active
+-            # System Agents (Gov, CB, Bank) are always active
+-            return True
+-
+-        # Rebuild from agents map
+-        # Explicitly ensure System Agents are included if they are not in agents map (legacy safety)
+-        # WO-220: Added settlement_system to track escrowed funds
+-        system_agents = [
+-            state.central_bank,
+-            state.government,
+-            state.bank,
+-            getattr(state, "escrow_agent", None),
+-            state.settlement_system
+-        ]
+-
+-        # Use a set of IDs to prevent duplicates if system agents are also in agents dict
+-        added_ids = set()
+-
+-        # 1. Add System Agents first
+-        for agent in system_agents:
+-            # Duck typing check for ICurrencyHolder to avoid import issues
+-            if agent and hasattr(agent, 'get_assets_by_currency'):
+-                state.currency_holders.append(agent)
+-                if hasattr(agent, 'id'):
+-                    added_ids.add(agent.id)
+-
+-        # 2. Add Economic Agents from Registry
+-        for agent_id, agent in state.agents.items():
+-            if agent_id in added_ids:
+-                continue
+-
+-            # Duck typing check
+-            if hasattr(agent, 'get_assets_by_currency') and is_active(agent):
+-                state.currency_holders.append(agent)
+-                added_ids.add(agent_id)
+-            elif not is_active(agent):
+-                # Optional: Log if needed, but this is expected for dead agents
+-                pass
++            # Update baseline for next tick to accumulate authorized changes
++            # This ensures 'Expected' follows the authorized expansion path
++            if hasattr(state.government, "get_monetary_delta"):
++                authorized_delta = state.government.get_monetary_delta(DEFAULT_CURRENCY)
++                state.baseline_money_supply += authorized_delta
+ 
+     def prepare_market_data(self) -> Dict[str, Any]:
+         """
+diff --git a/simulation/systems/handlers/financial_handler.py b/simulation/systems/handlers/financial_handler.py
+index 7a6aa249..1b7f7d06 100644
+--- a/simulation/systems/handlers/financial_handler.py
++++ b/simulation/systems/handlers/financial_handler.py
+@@ -21,7 +21,7 @@ class FinancialTransactionHandler(ITransactionHandler):
+ 
+         success = False
+ 
+-        if tx_type in ["interest_payment", "loan_interest", "deposit_interest"]:
++        if tx_type in ["interest_payment", "loan_interest", "deposit_interest", "deposit", "withdrawal", "bank_profit_remittance"]:
+              success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
+ 
+              if success and isinstance(buyer, Firm):
+diff --git a/simulation/systems/inheritance_manager.py b/simulation/systems/inheritance_manager.py
+index f5109e27..d8f4669c 100644
+--- a/simulation/systems/inheritance_manager.py
++++ b/simulation/systems/inheritance_manager.py
+@@ -224,7 +224,7 @@ class InheritanceManager:
+             if cash > 0:
+                 tx = Transaction(
+                     buyer_id=deceased.id,
+-                    seller_id=None, # System distribution
++                    seller_id=-1, # System distribution (Fixed NOT NULL constraint)
+                     item_id="estate_distribution",
+                     quantity=1.0,
+                     price=cash, # Informational
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index 1a5a4b08..215c8a39 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -226,7 +226,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+ 
+             # WO-218: Track new agent as currency holder for M2 integrity
+             if isinstance(agent, ICurrencyHolder):
+-                state.currency_holders.append(agent)
++                state.register_currency_holder(agent)
+             else:
+                 self.logger.critical(f"LIFECYCLE_ERROR | New Agent {agent.id} is NOT ICurrencyHolder!")
+ 
+@@ -311,6 +311,10 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+                     if state.stock_market:
+                         state.stock_market.update_shareholder(household.id, firm.id, 0)
+ 
++            # TD-030: Unregister from currency registry immediately
++            if isinstance(firm, ICurrencyHolder):
++                state.unregister_currency_holder(firm)
++
+         # --- Household Liquidation (Inheritance) ---
+         inactive_households = [h for h in state.households if not h._bio_state.is_active]
+         for household in inactive_households:
+@@ -355,6 +359,10 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+                 for firm_id in list(state.stock_market.shareholders.keys()):
+                      state.stock_market.update_shareholder(household.id, firm_id, 0)
+ 
++            # TD-030: Unregister from currency registry immediately
++            if isinstance(household, ICurrencyHolder):
++                state.unregister_currency_holder(household)
++
+         # Cleanup Global Lists
+         state.households[:] = [h for h in state.households if h._bio_state.is_active]
+         state.firms[:] = [f for f in state.firms if f.is_active]
+diff --git a/simulation/systems/persistence_manager.py b/simulation/systems/persistence_manager.py
+index 4db3fcd6..4b370112 100644
+--- a/simulation/systems/persistence_manager.py
++++ b/simulation/systems/persistence_manager.py
+@@ -119,11 +119,19 @@ class PersistenceManager:
+         hh_assets = tracker_indicators.get("total_household_assets", 0.0)
+         firm_assets = tracker_indicators.get("total_firm_assets", 0.0)
+ 
+-        # Wrap as dict if they are floats (backward compatibility check)
+-        if isinstance(hh_assets, (int, float)):
+-            hh_assets = {DEFAULT_CURRENCY: float(hh_assets)}
+-        if isinstance(firm_assets, (int, float)):
+-            firm_assets = {DEFAULT_CURRENCY: float(firm_assets)}
++        # Flatten for DB Persistence (SQLite requires float)
++        # TD-030: Strict currency registry means we strictly track DEFAULT_CURRENCY for indicators
++        hh_assets_val = 0.0
++        if isinstance(hh_assets, dict):
++            hh_assets_val = hh_assets.get(DEFAULT_CURRENCY, 0.0)
++        else:
++            hh_assets_val = float(hh_assets)
++
++        firm_assets_val = 0.0
++        if isinstance(firm_assets, dict):
++            firm_assets_val = firm_assets.get(DEFAULT_CURRENCY, 0.0)
++        else:
++            firm_assets_val = float(firm_assets)
+ 
+         indicator_dto = EconomicIndicatorData(
+             run_id=self.run_id,
+@@ -135,8 +143,8 @@ class PersistenceManager:
+             avg_goods_price=tracker_indicators.get("avg_goods_price"),
+             total_production=tracker_indicators.get("total_production", 0.0),
+             total_consumption=tracker_indicators.get("total_consumption", 0.0),
+-            total_household_assets=hh_assets,
+-            total_firm_assets=firm_assets,
++            total_household_assets=hh_assets_val,
++            total_firm_assets=firm_assets_val,
+             avg_survival_need=tracker_indicators.get("avg_survival_need", 0.0),
+             total_labor_income=total_labor_income,
+             total_capital_income=total_capital_income,
+diff --git a/simulation/world_state.py b/simulation/world_state.py
+index 6862be7c..e845e18e 100644
+--- a/simulation/world_state.py
++++ b/simulation/world_state.py
+@@ -112,6 +112,7 @@ class WorldState:
+         self.stress_scenario_config: Optional[StressScenarioConfig] = None
+         self.public_manager: Optional[IAssetRecoverySystem] = None
+         self.currency_holders: List[ICurrencyHolder] = [] # Added for Phase 33
++        self._currency_holders_set: set = set()
+ 
+         # Attributes with default values
+         self.batch_save_interval: int = self.config_manager.get("simulation.batch_save_interval", 50)
+@@ -220,6 +221,18 @@ class WorldState:
+             return self.central_bank.id if self.central_bank else None
+         return None
+ 
++    def register_currency_holder(self, holder: ICurrencyHolder) -> None:
++        """Registers an agent as a currency holder for M2 tracking."""
++        if holder not in self._currency_holders_set:
++            self.currency_holders.append(holder)
++            self._currency_holders_set.add(holder)
++
++    def unregister_currency_holder(self, holder: ICurrencyHolder) -> None:
++        """Unregisters an agent from M2 tracking (e.g. upon death)."""
++        if holder in self._currency_holders_set:
++            self.currency_holders.remove(holder)
++            self._currency_holders_set.remove(holder)
++
+     def get_all_agents(self) -> List[Any]:
+         """시뮬레이션에 참여하는 모든 활성 에이전트(가계, 기업, 은행 등)를 반환합니다."""
+         all_agents = []
+diff --git a/tests/unit/test_bank.py b/tests/unit/test_bank.py
+index 42ed04df..7f3046eb 100644
+--- a/tests/unit/test_bank.py
++++ b/tests/unit/test_bank.py
+@@ -49,7 +49,7 @@ def bank_instance(config_manager, mock_credit_scoring_service):
+ class TestBank:
+     def test_initialization(self, bank_instance: Bank):
+         assert bank_instance.id == 1
+-        assert bank_instance.assets == 10000.0
++        assert bank_instance.assets["USD"] == 10000.0
+         assert bank_instance.loans == {}
+         assert bank_instance.next_loan_id == 0
+ 
+@@ -161,8 +161,8 @@ class TestBank:
+ 
+         assert success is True
+         assert bank_instance.deposits[deposit_id].amount == 300.0
+-        # Check assets (not changed by this method directly)
+-        assert bank_instance.assets == 10000.0
++        # Check assets (reduced by withdrawal amount due to physical settlement)
++        assert bank_instance.assets["USD"] == 9800.0
+ 
+     def test_withdraw_for_customer_insufficient(self, bank_instance):
+         depositor_id = 202
+@@ -173,18 +173,18 @@ class TestBank:
+         assert success is False
+ 
+     def test_financial_entity_deposit(self, bank_instance):
+-        initial = bank_instance.assets
++        initial = bank_instance.assets["USD"]
+         bank_instance.deposit(500.0)
+-        assert bank_instance.assets == initial + 500.0
++        assert bank_instance.assets["USD"] == initial + 500.0
+ 
+     def test_financial_entity_withdraw(self, bank_instance):
+-        initial = bank_instance.assets
++        initial = bank_instance.assets["USD"]
+         bank_instance.withdraw(500.0)
+-        assert bank_instance.assets == initial - 500.0
++        assert bank_instance.assets["USD"] == initial - 500.0
+ 
+     def test_financial_entity_withdraw_insufficient(self, bank_instance):
+         with pytest.raises(InsufficientFundsError):
+-            bank_instance.withdraw(bank_instance.assets + 1000.0)
++            bank_instance.withdraw(bank_instance.assets["USD"] + 1000.0)
+ 
+     def test_run_tick_returns_transactions(self, bank_instance):
+         # Setup: Loan and Deposit
+@@ -200,7 +200,8 @@ class TestBank:
+         # Mock Agents
+         mock_borrower = MagicMock()
+         mock_borrower.id = borrower_id
+-        mock_borrower.assets = 100.0 # Enough to pay interest
++        mock_borrower.assets = {"USD": 100.0} # Enough to pay interest
++        mock_borrower.wallet.get_balance.return_value = 100.0
+         mock_borrower.is_active = True
+ 
+         mock_depositor = MagicMock()
+@@ -221,7 +222,7 @@ class TestBank:
+         assert "deposit_interest" in tx_types
+ 
+         # Check assets NOT modified
+-        assert bank_instance.assets == 10000.0
++        assert bank_instance.assets["USD"] == 10000.0
+ 
+     def test_void_loan_failure_raises_exception(self, bank_instance):
+         # Setup: Create a loan manually (bypassing normal grant_loan to simulate broken link)

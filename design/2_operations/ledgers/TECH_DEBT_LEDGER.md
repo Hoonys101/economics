@@ -6,8 +6,8 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-030 | 2026-02-05 | Agent Lifecycle-M2 Desync | Performance (O(N) rebuild) | [Walkthrough](../../../brain/7064e76f-bfd2-423d-9816-95b56f05a65f/walkthrough.md) | **ACTIVE** |
-| TD-252 | 2026-02-06 | Massive M2 Leak (571k at Tick 100) | Economic Integrity Failure | [Audit Summary](../../3_work_artifacts/reports/inbound/economic-jules-001-12984982393375704591_executive_summary_tick_00100_20260205_183844.md) | **CRITICAL** |
+| (No Active Items) | | | | | |
+| (No Active Items) | | | | | |
 
 ## 🏭 2. FIRMS & CORPORATE
 
@@ -26,7 +26,7 @@
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
 | (No Active Items) | | | | | |
-| TD-251 | 2026-02-05 | Stock Market IPO/SEO NULL Seller ID | Simulation Crash at Tick 50 | [Crash Log](../../../last_crash.log) | **CRITICAL** |
+| TD-257 | 2026-02-06 | Residual M2 Drift (1.6%) | Govt-Bank Bond Repayment tracking | [Review](../../_archive/gemini_output/pr_review_pulse-integrity-fix-5507545585466336807.md) | **ACTIVE** |
 
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
@@ -38,6 +38,8 @@
 | TD-254 | 2026-02-06 | Settlement Abstraction Leak (hasattr) | Violation of Open/Closed Principle | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-god-class-check-2584000745385775058_audit_structural_001.md) | **HIGH** |
 | TD-255 | 2026-02-06 | Housing Saga DTO Purity Breach | Raw Agent Mutation Leaks | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-god-class-check-2584000745385775058_audit_structural_001.md) | **MEDIUM** |
 | TD-256 | 2026-02-06 | Lack of Inventory Abstraction (Direct Mutation) | Goods Transfer Atomicity Risks | [Economic Audit](../../3_work_artifacts/reports/inbound/economic-jules-001-12984982393375704591_audit_economic_JULES_001.md) | **MEDIUM** |
+| TD-258 | 2026-02-06 | Manual Transaction Injection in Saga | Bypass of Transaction Pipeline | [Review](../../_archive/gemini_output/pr_review_pulse-integrity-fix-5507545585466336807.md) | **LOW** |
+| TD-259 | 2026-02-06 | Asset Type Redundancy in AI Training | Duplicate logic for dict/float assets | [Review](../../_archive/gemini_output/pr_review_pulse-integrity-fix-5507545585466336807.md) | **LOW** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
@@ -126,7 +128,10 @@
 | TD-205 | 2026-10-04 | Transaction Engine SRP Refactor | [Spec](../../3_work_artifacts/specs/spec_td205_transaction_decomposition.md) | [Insight](../../communications/insights/TD-205_Transaction_Engine.md) |
 | PH35-J2 | 2026-02-04 | Central Bank Service Implementation | [Spec](../../3_work_artifacts/specs/spec_phase35_central_bank.md) | [Insight](../../communications/insights/Mission_Phase5_Interfaces.md) |
 | PH35-J3 | 2026-02-04 | Call Market Implementation | ^ | [Insight](../../communications/insights/CallMarket_Impl.md) |
-| TD-230 | 2026-02-04 | M2 Integrity: Newborn Tracking leak | Fixed via LifecycleManager currency_holders update | [Walkthrough](../../../brain/a4ca8651-e1d6-40f9-96b7-5133429de32b/walkthrough.md) |
+| TD-230 | 2026-02-05 | M2 Integrity: Newborn Tracking leak | Fixed via LifecycleManager currency_holders update | [Walkthrough](../../../brain/a4ca8651-e1d6-40f9-96b7-5133429de32b/walkthrough.md) |
+| TD-030 | 2026-02-06 | M2 Integrity: Registry Refactor | Fixed via StrictCurrencyRegistry & Lifecycle Suture | [Insight](../../communications/insights/Pulse_Integrity_Report.md) |
+| TD-251 | 2026-02-06 | Stock Market IPO/SEO NULL Seller ID | Fixed in branch `fix-null-seller-id...` | [Review](../../_archive/gemini_output/pr_review_fix-null-seller-id-integrity-error-11984105662396074718.md) |
+| TD-252 | 2026-02-06 | Massive M2 Leak (571k at Tick 100) | Resolved by formula correction & Registry fix | [Insight](../../communications/insights/Pulse_Integrity_Report.md) |
 
 ---
 
@@ -142,10 +147,7 @@
 - **원인 (Cause)**: 지표 계산을 중앙화된 서비스 대신 각 모듈 범위 내에서 독립적으로 구현함.
 - **해결책 제안 (Proposed Solution)**: 모든 핵심 경제 지표 계산 로직을 `EconomicIndicatorTracker` 등으로 중앙화하고 SSoT 원칙 확립.
 
-### 🟠 TD-251: Stock Market IPO/SEO NULL Seller ID (Critical)
-- **현상 (Phenomenon)**: 100-Tick 스트레스 테스트 중 Tick 50(Firm 127 IPO 시점)에서 `sqlite3.IntegrityError: NOT NULL constraint failed: transactions.seller_id` 발생하며 시스템 중단.
-- **원인 (Cause)**: IPO 또는 증자(SEO) 과정에서 생성되는 `Transaction` 객체의 `seller_id`가 `None`으로 입력됨. 초기 자본금 전송이나 주식 매칭 로직에서 ID 할당 누락 의심.
-- **해결책 제안 (Proposed Solution)**: `StockMarket.match_orders` 및 `FirmSystem.spawn_firm` 내의 `SettlementSystem.transfer` 호출 시 `seller_id` 유효성 검증 로직 추가. `TransactionData` DTO 생성 시 `None` 체크 강화.
+---
 
 ---
 

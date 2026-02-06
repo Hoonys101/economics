@@ -149,9 +149,16 @@ def run_git_review(args, registry):
     diff_file.parent.mkdir(parents=True, exist_ok=True)
     
     print(f"📝 Generating 3-dot diff: main...FETCH_HEAD -> {diff_file.name}")
+    # Use pathspecs to exclude noisy non-code files
+    exclude_patterns = [":!*.txt", ":!*.csv", ":!*.log", ":!*.db"]
+    # NOTE: We keep .md if it's documentation, but often they are artifact logs. 
+    # Let's be more selective: exclude only specific huge files or just common binary/log types.
+    # The user specifically asked for .txt and .csv.
+    cmd = ["git", "diff", "main...FETCH_HEAD", "--", "."] + exclude_patterns
+    
     with open(diff_file, "w", encoding="utf-8") as f:
         # Use three-dot diff for PR standard (Merge Base to Tip)
-        subprocess.run(["git", "diff", "main...FETCH_HEAD"], cwd=BASE_DIR, stdout=f, shell=True)
+        subprocess.run(cmd, cwd=BASE_DIR, stdout=f, shell=True)
 
     # 3. Gemini Review
     review_output = BASE_DIR / "design" / "_archive" / "gemini_output" / f"pr_review_{short_name}.md"
