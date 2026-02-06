@@ -15,6 +15,11 @@ class MortgageApprovalDTO(TypedDict):
     approved_principal: float
     monthly_payment: float
 
+class HousingSagaAgentContext(TypedDict):
+    id: int
+    monthly_income: float
+    existing_monthly_debt: float
+
 class HousingTransactionSagaStateDTO(TypedDict):
     """
     State object for the multi-tick housing purchase Saga.
@@ -33,8 +38,8 @@ class HousingTransactionSagaStateDTO(TypedDict):
         "COMPLETED",
         "FAILED_ROLLED_BACK"
     ]
-    buyer_id: int
-    seller_id: int
+    buyer_context: HousingSagaAgentContext
+    seller_context: HousingSagaAgentContext
     property_id: int
     offer_price: float
     down_payment_amount: float

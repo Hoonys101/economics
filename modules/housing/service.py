@@ -3,6 +3,7 @@ from uuid import UUID
 import logging
 
 from modules.housing.api import IHousingService
+from modules.inventory.api import IInventoryHandler
 from modules.finance.api import LienDTO
 from modules.common.interfaces import IPropertyOwner, IResident
 
@@ -37,19 +38,44 @@ class HousingService(IHousingService):
              return True
         return False
 
-    def add_lien(self, property_id: int, loan_id: str, lienholder_id: int, principal: float) -> Optional[str]:
+    def lock_asset(self, asset_id: Any, lock_owner_id: Any) -> bool:
+        return self.set_under_contract(int(asset_id), lock_owner_id)
+
+    def release_asset(self, asset_id: Any, lock_owner_id: Any) -> bool:
+        return self.release_contract(int(asset_id), lock_owner_id)
+
+    def transfer_asset(self, asset_id: Any, new_owner_id: Any) -> bool:
+        return self.transfer_ownership(int(asset_id), int(new_owner_id))
+
+    def add_lien(self, property_id: int, loan_id: Any, lienholder_id: Optional[int] = None, principal: Optional[float] = None) -> Optional[str]:
+        # Support for IInventoryHandler signature: add_lien(asset_id, lien_details)
+        if isinstance(loan_id, dict) and lienholder_id is None:
+             details = loan_id
+             # Extract from details dict (assuming structure from LienDTO or similar)
+             loan_id_val = details.get('loan_id')
+             lienholder_id_val = details.get('lienholder_id')
+             principal_val = details.get('principal_remaining')
+        else:
+             loan_id_val = loan_id
+             lienholder_id_val = lienholder_id
+             principal_val = principal
+
+        # Ensure loan_id is treated as string for consistency
+        loan_id_str = str(loan_id_val)
+
         unit = next((u for u in self.real_estate_units if u.id == property_id), None)
         if not unit:
              return None
 
-        if any(l['loan_id'] == loan_id for l in unit.liens):
-             return f"lien_{loan_id}"
+        # Compare as strings to prevent int/str mismatch issues
+        if any(str(l['loan_id']) == loan_id_str for l in unit.liens):
+             return f"lien_{loan_id_str}"
 
-        lien_id = f"lien_{loan_id}"
+        lien_id = f"lien_{loan_id_str}"
         new_lien: LienDTO = {
-            "loan_id": loan_id,
-            "lienholder_id": lienholder_id,
-            "principal_remaining": principal,
+            "loan_id": loan_id_str,
+            "lienholder_id": int(lienholder_id_val) if lienholder_id_val is not None else -1,
+            "principal_remaining": float(principal_val) if principal_val is not None else 0.0,
             "lien_type": "MORTGAGE"
         }
         unit.liens.append(new_lien)
