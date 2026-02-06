@@ -307,14 +307,14 @@ class Household(
         """
         Deposits a given amount of DEFAULT_CURRENCY into the wallet.
         """
-        self._econ_state.wallet.deposit(amount, currency=DEFAULT_CURRENCY)
+        self._econ_state.wallet.add(amount, currency=DEFAULT_CURRENCY, memo="Deposit")
 
     @override
     def withdraw(self, amount: float) -> None:
         """
         Withdraws a given amount of DEFAULT_CURRENCY from the wallet.
         """
-        self._econ_state.wallet.withdraw(amount, currency=DEFAULT_CURRENCY)
+        self._econ_state.wallet.subtract(amount, currency=DEFAULT_CURRENCY, memo="Withdraw")
 
     @override
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:

@@ -186,4 +186,10 @@ def trace():
     print(f"\nAll Active Agent IDs: {all_agent_ids}")
 
 if __name__ == "__main__":
-    trace()
+    try:
+        trace()
+    except Exception as e:
+        import traceback
+        print("\n--- CRASH DIAGNOSTIC ---")
+        traceback.print_exc()
+        sys.exit(1)

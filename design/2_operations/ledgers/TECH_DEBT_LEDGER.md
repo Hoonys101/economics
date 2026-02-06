@@ -26,7 +26,7 @@
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
 | (No Active Items) | | | | | |
-| TD-257 | 2026-02-06 | Residual M2 Drift (1.6%) | Govt-Bank Bond Repayment tracking | [Review](../../_archive/gemini_output/pr_review_pulse-integrity-fix-5507545585466336807.md) | **ACTIVE** |
+| (No Active Items) | | | | | |
 
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
@@ -39,7 +39,7 @@
 | TD-255 | 2026-02-06 | Housing Saga DTO Purity Breach | Raw Agent Mutation Leaks | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-god-class-check-2584000745385775058_audit_structural_001.md) | **MEDIUM** |
 | TD-256 | 2026-02-06 | Lack of Inventory Abstraction (Direct Mutation) | Goods Transfer Atomicity Risks | [Economic Audit](../../3_work_artifacts/reports/inbound/economic-jules-001-12984982393375704591_audit_economic_JULES_001.md) | **MEDIUM** |
 | TD-258 | 2026-02-06 | Manual Transaction Injection in Saga | Bypass of Transaction Pipeline | [Review](../../_archive/gemini_output/pr_review_pulse-integrity-fix-5507545585466336807.md) | **LOW** |
-| TD-259 | 2026-02-06 | Asset Type Redundancy in AI Training | Duplicate logic for dict/float assets | [Review](../../_archive/gemini_output/pr_review_pulse-integrity-fix-5507545585466336807.md) | **LOW** |
+| (No Active Items) | | | | | |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
@@ -139,6 +139,9 @@
 | TD-253 | 2026-02-06 | Settlement God Class Refactor (Track A) | Decoupled SagaOrchestrator & Kernel Hardening | [Review](../../_archive/gemini_output/pr_review_settlement-kernel-hardening-saga-decoupling-1046151433748562353.md) |
 | TD-255 | 2026-02-06 | DTO Purity: Housing Saga Context | Snapshotting agent state at saga initiation | [Review](../../_archive/gemini_output/pr_review_housing-saga-dto-purity-7981336162459409252.md) |
 | TD-256 | 2026-02-06 | Housing Service Inventory Abstraction | Decoupled SagaHandler via IInventoryHandler Protocol | [Review](../../_archive/gemini_output/pr_review_housing-saga-dto-purity-7981336162459409252.md) |
+| TD-257/035 | 2026-02-06 | Absolute M2 Drift (0.0000% Leak) | Fixed via Bond Repayment tracking & Atomic Settlement | [Walkthrough](../../../brain/797943ac-fe9b-486b-b1b6-b7fbcc37a5f7/walkthrough.md) |
+| TD-259 | 2026-02-06 | Asset Type Hardening (Dict/Float) | Hardened Vectorized Planner & Tracker for polymorphic assets | [Walkthrough](../../../brain/797943ac-fe9b-486b-b1b6-b7fbcc37a5f7/walkthrough.md) |
+| TD-260 | 2026-02-06 | Household Wallet Delegation Breach | Fixed incorrect native interface calls (deposit/withdraw) | [Walkthrough](../../../brain/797943ac-fe9b-486b-b1b6-b7fbcc37a5f7/walkthrough.md) |
 
 ---
 

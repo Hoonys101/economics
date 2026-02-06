@@ -217,12 +217,18 @@ class EconomicIndicatorTracker:
              if not getattr(f, "is_active", False):
                  continue
 
-             firm_wallet_value = self._calculate_total_wallet_value(f.assets)
+             if isinstance(f.assets, dict):
+                 firm_wallet_value = self._calculate_total_wallet_value(f.assets)
+             else:
+                 firm_wallet_value = f.assets
 
              if hasattr(f, "get_financial_snapshot"):
                  snap = f.get_financial_snapshot()
                  snap_total_assets = snap.get("total_assets", 0.0)
-                 usd_cash_in_snapshot = f.assets.get(DEFAULT_CURRENCY, 0.0)
+                 
+                 # Handling both float and dict for cash in snapshot comparison
+                 usd_cash_in_snapshot = f.assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(f.assets, dict) else f.assets
+                 
                  non_cash_assets = snap_total_assets - usd_cash_in_snapshot
                  total_firm_assets += firm_wallet_value + non_cash_assets
              else:
@@ -441,13 +447,17 @@ class EconomicIndicatorTracker:
         # 2. Firms
         for f in world_state.firms:
             if getattr(f, "is_active", False):
-                currency_in_circulation += self._calculate_total_wallet_value(f.assets)
+                if isinstance(f.assets, dict):
+                    currency_in_circulation += self._calculate_total_wallet_value(f.assets)
+                else:
+                    currency_in_circulation += f.assets
 
         # 3. Government Assets
         if world_state.government:
              if isinstance(world_state.government.assets, dict):
                  currency_in_circulation += self._calculate_total_wallet_value(world_state.government.assets)
              else:
+                 # Government.assets is now a float (primary currency)
                  currency_in_circulation += world_state.government.assets
 
         # 4. Bank Reserves (Vault Cash)
@@ -455,6 +465,7 @@ class EconomicIndicatorTracker:
            if isinstance(world_state.bank.assets, dict):
                 bank_reserves += self._calculate_total_wallet_value(world_state.bank.assets)
            else:
+                # Bank.assets is now a float (primary currency)
                 bank_reserves += world_state.bank.assets
 
         # M0: Monetary Base = Currency in Circulation + Bank Reserves
