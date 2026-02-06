@@ -152,6 +152,8 @@ cython_debug/
 # Custom for this project
 simulation_data.db
 simulation_data.db-journal
+simulation_data.db-shm
+simulation_data.db-wal
 test_simulation.db
 test_simulation.db-journal
 logs/
