@@ -41,8 +41,9 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder):
         return self._id
 
     @property
-    def assets(self) -> Dict[CurrencyCode, float]:
-        return self.system_treasury
+    def assets(self) -> float:
+        """Current assets in DEFAULT_CURRENCY (Read-Only)."""
+        return self.system_treasury.get(DEFAULT_CURRENCY, 0.0)
 
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
         """Implementation of ICurrencyHolder."""

@@ -409,6 +409,8 @@ class Household(
             initial_orders=initial_orders
         )
 
+        return refined_orders, chosen_tactic_tuple
+
     # --- IInventoryHandler Overrides ---
 
     @override
@@ -448,5 +450,3 @@ class Household(
     @override
     def get_quantity(self, item_id: str) -> float:
         return self._econ_state.inventory.get(item_id, 0.0)
-
-    return refined_orders, chosen_tactic_tuple

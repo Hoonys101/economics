@@ -312,6 +312,18 @@ class SettlementSystem(ISettlementSystem):
         current_cash = 0.0
         if currency == DEFAULT_CURRENCY:
             current_cash = agent.assets
+            # DEBUG: Check type of current_cash
+            if isinstance(current_cash, dict):
+                self.logger.error(
+                    f"SETTLEMENT_TYPE_ERROR | agent.assets returned dict instead of float! "
+                    f"Agent: {agent.__class__.__name__} {agent.id}. "
+                    f"Value: {current_cash}"
+                )
+                # Fail-safe: try to extract value if it matches currency?
+                # But strictly this is an interface violation.
+                # Assuming single currency dict {'USD': 100.0}
+                current_cash = current_cash.get(DEFAULT_CURRENCY, 0.0)
+
         elif isinstance(agent, ICurrencyHolder):
             current_cash = agent.get_assets_by_currency().get(currency, 0.0)
         else:

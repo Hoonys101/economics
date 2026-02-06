@@ -27,11 +27,12 @@ class DatabaseManager:
             self._conn = sqlite3.connect(
                 DATABASE_NAME,
                 check_same_thread=False,
-                timeout=10.0,
+                timeout=30.0,
                 detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
             )
-            # Enable WAL mode for better concurrency
+            # Enable WAL mode for better concurrency and synchronous=NORMAL for performance
             self._conn.execute("PRAGMA journal_mode=WAL")
+            self._conn.execute("PRAGMA synchronous=NORMAL")
 
             create_tables(self._conn)
         return self._conn

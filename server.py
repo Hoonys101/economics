@@ -20,6 +20,7 @@ sim = None
 dashboard_service = None
 background_task = None
 is_running = False
+is_ready = False
 
 def handle_signal(sig, frame):
     """
@@ -49,7 +50,7 @@ async def simulation_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global sim, dashboard_service, background_task, is_running
+    global sim, dashboard_service, background_task, is_running, is_ready
 
     # Startup
     logger.info("Initializing simulation...")
@@ -60,6 +61,10 @@ async def lifespan(app: FastAPI):
 
         is_running = True
         background_task = asyncio.create_task(simulation_loop())
+
+        # Mark server as ready to accept traffic
+        is_ready = True
+        logger.info("Simulation initialized and running. Server is ready.")
     except Exception as e:
         logger.critical(f"Failed to initialize simulation: {e}", exc_info=True)
         # We should probably re-raise so the server doesn't start in a broken state
@@ -69,6 +74,7 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down simulation...")
+    is_ready = False
     is_running = False
     if background_task:
         # Cancel the task to stop sleep immediately if needed, or wait for it to check flag
@@ -91,7 +97,8 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
-            if dashboard_service:
+            # Check readiness flag before accessing service/DB
+            if is_ready and dashboard_service:
                 # Serves WatchtowerSnapshotDTO (TD-125)
                 snapshot = dashboard_service.get_snapshot()
                 # Use asdict to convert dataclass to dict
