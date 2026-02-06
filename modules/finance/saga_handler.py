@@ -9,6 +9,7 @@ from modules.finance.sagas.housing_api import (
     IPropertyRegistry,
     ILoanMarket
 )
+from modules.inventory.api import IInventoryHandler
 from modules.market.housing_planner_api import MortgageApplicationDTO
 from modules.market.loan_api import (
     calculate_monthly_income,
@@ -24,8 +25,8 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
     def __init__(self, simulation: ISimulationState):
         self.simulation = simulation
         self.settlement_system: ISettlementSystem = simulation.settlement_system
-        # Note: Registry in simulation must implement IPropertyRegistry methods
-        self.housing_service = getattr(simulation, 'housing_service', None)
+        # Note: Registry in simulation must implement IInventoryHandler methods
+        self.housing_service: Optional[IInventoryHandler] = getattr(simulation, 'housing_service', None)
         self.loan_market = simulation.markets.get("loan")
 
     def execute_step(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
@@ -89,7 +90,9 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
                     self.loan_market.void_staged_application(saga['staged_loan_id'])
 
             # 4. Release Property Lock
-            if hasattr(self.housing_service, 'release_contract'):
+            if hasattr(self.housing_service, 'release_asset'):
+                self.housing_service.release_asset(saga['property_id'], saga['saga_id'])
+            elif hasattr(self.housing_service, 'release_contract'): # Fallback
                 self.housing_service.release_contract(saga['property_id'], saga['saga_id'])
 
             saga['status'] = "FAILED_ROLLED_BACK"
@@ -102,42 +105,72 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
 
     def _handle_initiated(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
         # 1. Lock Property
-        if hasattr(self.housing_service, 'set_under_contract'):
+        success = False
+        if hasattr(self.housing_service, 'lock_asset'):
+             success = self.housing_service.lock_asset(saga['property_id'], saga['saga_id'])
+        elif hasattr(self.housing_service, 'set_under_contract'): # Fallback
              success = self.housing_service.set_under_contract(saga['property_id'], saga['saga_id'])
-             if not success:
-                 saga['error_message'] = "Property already under contract"
-                 # Can't rollback lock if we didn't get it, but compensate handles cleanup
-                 return self.compensate_step(saga)
+
+        if not success:
+             saga['error_message'] = "Property already under contract"
+             # Can't rollback lock if we didn't get it, but compensate handles cleanup
+             return self.compensate_step(saga)
+
+        # Retrieve IDs safely (handling potential migration state where context might be missing)
+        # Note: DTO type requires context, but runtime dict might still have keys if not migrated
+        buyer_id = saga.get('buyer_context', {}).get('id')
+        if buyer_id is None:
+             buyer_id = saga.get('buyer_id') # Legacy fallback
+
+        seller_id = saga.get('seller_context', {}).get('id')
+        if seller_id is None:
+             seller_id = saga.get('seller_id')
 
         # 2. Resolve Seller
-        if saga['seller_id'] == -1:
+        if seller_id == -1 or seller_id is None:
              units = getattr(self.simulation, 'real_estate_units', [])
              unit = next((u for u in units if hasattr(u, 'id') and u.id == saga['property_id']), None)
              if unit:
-                 saga['seller_id'] = unit.owner_id
+                 seller_id = unit.owner_id
              else:
                  saga['error_message'] = "Property not found"
                  return self.compensate_step(saga)
 
-        # 3. Prepare Application
-        principal = saga['offer_price'] - saga['down_payment_amount']
-        buyer = self.simulation.agents.get(saga['buyer_id'])
+        # 3. Resolve Buyer and Populate Contexts
+        buyer = self.simulation.agents.get(buyer_id)
+        # seller = self.simulation.agents.get(seller_id) # Not strictly needed for logic here
 
-        # Calculate Monthly Income
         ticks_per_year = getattr(self.simulation.config_module, 'TICKS_PER_YEAR', 360)
+
+        # Buyer Context
         monthly_income = 0.0
         if buyer and hasattr(buyer, 'current_wage'):
              monthly_income = calculate_monthly_income(buyer.current_wage, ticks_per_year)
 
-        # Calculate Existing Monthly Debt Payments
         existing_monthly_payments = calculate_total_monthly_debt_payments(
             self.simulation.bank,
-            saga['buyer_id'],
+            buyer_id,
             ticks_per_year
         )
 
+        saga['buyer_context'] = {
+            "id": buyer_id,
+            "monthly_income": monthly_income,
+            "existing_monthly_debt": existing_monthly_payments
+        }
+
+        # Seller Context
+        saga['seller_context'] = {
+            "id": seller_id,
+            "monthly_income": 0.0,
+            "existing_monthly_debt": 0.0
+        }
+
+        # 4. Prepare Application
+        principal = saga['offer_price'] - saga['down_payment_amount']
+
         app_dto: MortgageApplicationDTO = {
-            "applicant_id": saga['buyer_id'],
+            "applicant_id": buyer_id,
             "requested_principal": principal,
             "purpose": "MORTGAGE",
             "property_id": saga['property_id'],
@@ -148,7 +181,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         }
         saga['loan_application'] = app_dto # type: ignore
 
-        # 4. Stage Mortgage
+        # 5. Stage Mortgage
         staged_loan_id = self.loan_market.stage_mortgage_application(app_dto)
         if not staged_loan_id:
              saga['error_message'] = "Loan staging rejected"
@@ -191,7 +224,12 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         # LoanInfo might not have it, but we know it's the Bank.
         bank_id = self.simulation.bank.id if self.simulation.bank else -1
 
-        lien_id = self.housing_service.add_lien(saga['property_id'], loan_id, bank_id, principal)
+        lien_details = {
+            "loan_id": loan_id,
+            "lienholder_id": bank_id,
+            "principal_remaining": principal
+        }
+        lien_id = self.housing_service.add_lien(saga['property_id'], lien_details)
         if not lien_id:
              saga['error_message'] = "Failed to create lien"
              return self.compensate_step(saga)
@@ -213,9 +251,19 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         # Buyer -> Seller (Offer Price)
 
         bank = self.simulation.bank
-        buyer = self.simulation.agents.get(saga['buyer_id'])
-        seller = self.simulation.agents.get(saga['seller_id'])
-        if saga['seller_id'] == -1 and hasattr(self.simulation, 'government'):
+
+        # Safely retrieve IDs (fallback for in-flight sagas)
+        buyer_id = saga.get('buyer_context', {}).get('id')
+        if buyer_id is None:
+             buyer_id = saga.get('buyer_id')
+
+        seller_id = saga.get('seller_context', {}).get('id')
+        if seller_id is None:
+             seller_id = saga.get('seller_id')
+
+        buyer = self.simulation.agents.get(buyer_id)
+        seller = self.simulation.agents.get(seller_id)
+        if seller_id == -1 and hasattr(self.simulation, 'government'):
              seller = self.simulation.government
 
         if not buyer or not seller:
@@ -267,7 +315,14 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
 
     def _handle_transfer_title(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
         # Finalize Ownership
-        success = self.housing_service.transfer_ownership(saga['property_id'], saga['buyer_id'])
+        buyer_id = saga.get('buyer_context', {}).get('id')
+        if buyer_id is None:
+             buyer_id = saga.get('buyer_id')
+
+        if hasattr(self.housing_service, 'transfer_asset'):
+            success = self.housing_service.transfer_asset(saga['property_id'], buyer_id)
+        else:
+            success = self.housing_service.transfer_ownership(saga['property_id'], buyer_id)
 
         if success:
              self._log_transaction(saga)
@@ -276,7 +331,10 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
              # Draft: "Call PropertyRegistry.transfer_ownership... Transition to COMPLETED."
              # Usually ownership transfer overrides contract lock or lock is ignored for new owner.
              # But good hygiene: release lock.
-             self.housing_service.release_contract(saga['property_id'], saga['saga_id'])
+             if hasattr(self.housing_service, 'release_asset'):
+                 self.housing_service.release_asset(saga['property_id'], saga['saga_id'])
+             else:
+                 self.housing_service.release_contract(saga['property_id'], saga['saga_id'])
 
              saga['status'] = "COMPLETED"
         else:
@@ -291,9 +349,18 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         # Buyer -> Bank (Principal)
 
         bank = self.simulation.bank
-        buyer = self.simulation.agents.get(saga['buyer_id'])
-        seller = self.simulation.agents.get(saga['seller_id'])
-        if saga['seller_id'] == -1 and hasattr(self.simulation, 'government'):
+
+        buyer_id = saga.get('buyer_context', {}).get('id')
+        if buyer_id is None:
+             buyer_id = saga.get('buyer_id')
+
+        seller_id = saga.get('seller_context', {}).get('id')
+        if seller_id is None:
+             seller_id = saga.get('seller_id')
+
+        buyer = self.simulation.agents.get(buyer_id)
+        seller = self.simulation.agents.get(seller_id)
+        if seller_id == -1 and hasattr(self.simulation, 'government'):
              seller = self.simulation.government
 
         if not buyer or not seller:
@@ -333,9 +400,17 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
     def _log_transaction(self, saga: HousingTransactionSagaStateDTO):
         loan_id = saga['mortgage_approval']['loan_id'] if saga.get('mortgage_approval') else None
 
+        buyer_id = saga.get('buyer_context', {}).get('id')
+        if buyer_id is None:
+             buyer_id = saga.get('buyer_id')
+
+        seller_id = saga.get('seller_context', {}).get('id')
+        if seller_id is None:
+             seller_id = saga.get('seller_id')
+
         tx_record = Transaction(
-            buyer_id=saga['buyer_id'],
-            seller_id=saga['seller_id'],
+            buyer_id=buyer_id,
+            seller_id=seller_id,
             item_id=f"unit_{saga['property_id']}",
             quantity=1.0,
             price=saga['offer_price'],

@@ -4,6 +4,7 @@ import random
 from typing import List, Any, TYPE_CHECKING
 from simulation.ai.api import Personality # Added import
 from modules.system.api import DEFAULT_CURRENCY
+from modules.finance.util.api import get_asset_balance
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
@@ -44,7 +45,7 @@ class AITrainingManager:
             return
 
         # Find the agent with the highest assets
-        fittest_agent = max(self.agents, key=lambda x: x.assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(x.assets, dict) else float(x.assets))
+        fittest_agent = max(self.agents, key=lambda x: get_asset_balance(x))
         
         if fittest_agent.id == target_agent.id:
             return # Don't clone from self
@@ -114,7 +115,7 @@ class AITrainingManager:
         if not self.agents:
             return []
 
-        sorted_agents = sorted(self.agents, key=lambda x: x.assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(x.assets, dict) else float(x.assets), reverse=True)
+        sorted_agents = sorted(self.agents, key=lambda x: get_asset_balance(x), reverse=True)
         top_n = max(1, int(len(self.agents) * percentile))
         return sorted_agents[:top_n]
 
@@ -125,7 +126,7 @@ class AITrainingManager:
         if not self.agents:
             return []
 
-        sorted_agents = sorted(self.agents, key=lambda x: x.assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(x.assets, dict) else float(x.assets)) # Ascending
+        sorted_agents = sorted(self.agents, key=lambda x: get_asset_balance(x)) # Ascending
         bottom_n = max(1, int(len(self.agents) * percentile))
         return sorted_agents[:bottom_n]
 
