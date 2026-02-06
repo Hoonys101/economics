@@ -64,6 +64,7 @@ This is the definitive entry point for all contributors. **Read this first.**
 1. **The Spec-Architecture Rule**: **명세서(SPEC) 작성 시점**에서 해당 기능이 근원 아키텍처나 세부 설계에 영향을 준다면, 반드시 **아키텍처 문서들을 먼저 업데이트**하여 구조적 정합성을 유지해야 합니다. (의도 선행, 실행 후행)
 2. **The "Read First" Rule**: 어떤 부분을 **수정(Modify), 보완(Supplement), 생성(Create)**하고자 한다면, 반드시 **해당 부분과 관련된 문서**를 먼저 확인해야 합니다. 맥락 없는 코드는 부채(Debt)입니다.
 3. **The "Don't Reinvent the Wheel" Rule**: 새로운 기능을 구현하기 전, 반드시 기존 코드베이스에서 유사한 로직이나 "이미 구현되다 만 흔적"이 있는지 검색하십시오. **바퀴를 다시 발명하지 마십시오.** (Archaeology First)
+4. **The Manual Evolution Rule**: **Gemini의 결과물(리뷰 보고서, 상세 설계 등)**을 검토한 후, Gemini용 매뉴얼(`git_reviewer.md`, `spec_writer.md` 등)의 보완이나 정책 업데이트가 필요하다고 판단되면 이를 **즉시 수행**하여 프로젝트의 지능적 정합성을 유지해야 합니다. (Continuous Improvement)
 
 ---
 

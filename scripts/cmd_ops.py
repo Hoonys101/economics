@@ -45,14 +45,24 @@ def op_set_gemini(args):
 
 MANDATORY_REPORTING_PROMPT = "\n\n🚨 [MANDATORY] 작업 완료 전, 발견된 기술 부채와 인사이트를 'communications/insights/[MissionKey].md' 파일에 반드시 기록하십시오. (No Report = No Merge)"
 
+ARCHITECTURAL_GUARDRAILS = """
+🛡️ [ARCHITECTURAL GUARDRAILS]
+1. Zero-Sum Integrity: No magic money creation/leaks. All transfers must be balanced.
+2. Protocol Purity: Use `@runtime_checkable` Protocols and `isinstance()`. Avoid `hasattr()`.
+3. DTO Purity: Use typed DTOs/Dataclasses for cross-boundary data. Avoid raw dicts.
+4. Logic Separation: Keep business logic in Systems/Services, data in State/Repository.
+"""
+
 def op_set_jules(args):
     data = load_registry()
     
     instruction = args.instruction
     if args.command == "create":
-        # Auto-append reporting protocol for new coding sessions
+        # Auto-append reporting protocol and guardrails for new coding sessions
         if MANDATORY_REPORTING_PROMPT not in instruction:
             instruction += MANDATORY_REPORTING_PROMPT
+        if ARCHITECTURAL_GUARDRAILS not in instruction:
+            instruction += ARCHITECTURAL_GUARDRAILS
 
     entry = {
         "title": args.title,

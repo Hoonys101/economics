@@ -1,0 +1,402 @@
+diff --git a/communications/insights/WO-136_Clean_Sweep.md b/communications/insights/WO-136_Clean_Sweep.md
+new file mode 100644
+index 00000000..e4d0098d
+--- /dev/null
++++ b/communications/insights/WO-136_Clean_Sweep.md
+@@ -0,0 +1,40 @@
++# Technical Insight Report: WO-136 Clean Sweep Generalization
++
++## 1. Problem Phenomenon
++The original implementation of the `TechnologyManager` relied on Python loop-based logic for technology diffusion. While functional for small agent counts (N < 500), this approach scales linearly O(N*M) where N is the number of firms and M is the number of technologies.
++
++Symptoms included:
++- Potential performance degradation in large-scale scenarios (e.g., 2000+ agents).
++- `_process_diffusion` method iterating through every firm and performing multiple dictionary lookups (`adoption_registry`).
++- Lack of vectorized operations preventing the use of efficient numerical libraries like Numpy.
++
++## 2. Root Cause Analysis
++The bottleneck was identified in the `TechnologyManager._process_diffusion` method:
++1. **Data Structure**: `adoption_registry` was a `Dict[int, Set[str]]`. Checking adoption required a hash lookup for every firm-tech pair every tick.
++2. **Algorithm**: List comprehensions were used to build masks (`already_adopted_mask`), resulting in explicit Python loops.
++3. **Architecture**: Lack of separation between high-frequency numerical operations (diffusion) and object-oriented agent state.
++
++## 3. Solution Implementation Details
++The solution involved a complete refactor of the `TechnologyManager` to a vectorized architecture:
++
++1.  **Adoption Matrix (`numpy.ndarray`)**:
++    - Replaced the dictionary-based registry with a boolean matrix `self.adoption_matrix` of shape `(max_firm_id + 1, num_techs)`.
++    - This allows O(1) adoption checks via direct indexing `matrix[firm_ids, tech_idx]`.
++
++2.  **Vectorized Logic**:
++    - `_process_diffusion` now converts firm lists to Numpy arrays once.
++    - All filtering (Sector match, Adoption check, Probability roll) is done using vectorized boolean masking.
++    - `np.random.rand` generates all random numbers in a single call.
++
++3.  **Dynamic Resizing**:
++    - Implemented `_ensure_capacity(max_firm_id)` to automatically resize the matrix as new firms are created (e.g., via cloning or IPOs), ensuring robustness.
++
++4.  **R&D Bridge**:
++    - Implemented `Firm.get_tech_info()` to expose `current_rd_investment` via a pure DTO (`FirmTechInfoDTO`), decoupling the simulation engine from the full `Firm` object during the tech phase.
++
++## 4. Lessons Learned & Technical Debt
++-   **Insight**: Numpy vectorization is critical for "System 1" (fast, unconscious) simulation processes like diffusion, allowing Python to act as an orchestrator rather than a calculation engine.
++-   **Technical Debt Identified**:
++    -   **Firm ID Continuity**: The matrix approach assumes Firm IDs are relatively dense. If IDs become extremely sparse (e.g., random 64-bit integers), the matrix size would be prohibitive. A mapping layer (`id_to_index`) might be needed in the future if ID generation strategy changes.
++    -   **Memory Usage**: While currently negligible (10k agents * 10 techs = 100k bits), extremely large simulations might require sparse matrices (`scipy.sparse`).
++    -   **Strict Typing**: The bridge between `Firm` (OO) and `TechnologyManager` (Vector) relies on DTOs. Ensuring these DTOs remain lightweight is key to performance.
+diff --git a/scripts/bench_tech.py b/scripts/bench_tech.py
+new file mode 100644
+index 00000000..a4af8fc4
+--- /dev/null
++++ b/scripts/bench_tech.py
+@@ -0,0 +1,95 @@
++import time
++import logging
++import numpy as np
++import random
++from dataclasses import dataclass
++from typing import Dict, Any, List
++
++# Mock Classes and DTOs
++@dataclass
++class MockConfig:
++    TECH_FERTILIZER_MULTIPLIER: float = 3.0
++    TECH_UNLOCK_COST_THRESHOLD: float = 5000.0
++    TECH_DIFFUSION_RATE: float = 0.05
++    TECH_UNLOCK_PROB_CAP: float = 0.1
++
++class MockLogger:
++    def info(self, msg, extra=None):
++        pass
++    def warning(self, msg, extra=None):
++        pass
++
++# Import TechnologyManager (assuming it's in the python path)
++import sys
++import os
++sys.path.append(os.getcwd())
++
++from simulation.systems.technology_manager import TechnologyManager
++from simulation.systems.tech.api import FirmTechInfoDTO
++
++def run_benchmark():
++    print("--- Starting TechnologyManager Benchmark ---")
++
++    # Setup
++    config = MockConfig()
++    logger = MockLogger()
++    tech_manager = TechnologyManager(config, logger)
++
++    # Create 2500 mock firms
++    num_firms = 2500
++    firms: List[FirmTechInfoDTO] = []
++
++    sectors = ["FOOD", "MANUFACTURING", "SERVICES"]
++
++    for i in range(num_firms):
++        firms.append({
++            "id": i + 1, # ID starts from 1
++            "sector": random.choice(sectors),
++            "current_rd_investment": random.uniform(0, 1000)
++        })
++
++    # Unlock the tech manually to enable diffusion testing
++    # The default tech is "TECH_AGRI_CHEM_01"
++    if "TECH_AGRI_CHEM_01" in tech_manager.tech_tree:
++        tech_manager._unlock_tech(tech_manager.tech_tree["TECH_AGRI_CHEM_01"], 0)
++    else:
++        print("Error: Default tech not found!")
++        return
++
++    human_capital_index = 1.5
++
++    # Run Loop
++    num_ticks = 100
++    start_time = time.time()
++
++    initial_adoptions = sum([1 for f in firms if tech_manager.has_adopted(f["id"], "TECH_AGRI_CHEM_01")])
++
++    for tick in range(num_ticks):
++        tech_manager.update(tick, firms, human_capital_index)
++
++    end_time = time.time()
++    total_time = end_time - start_time
++    avg_time = total_time / num_ticks
++
++    final_adoptions = sum([1 for f in firms if tech_manager.has_adopted(f["id"], "TECH_AGRI_CHEM_01")])
++
++    print(f"Total Time: {total_time:.4f}s")
++    print(f"Average Time per Tick: {avg_time*1000:.4f}ms")
++    print(f"Initial Adoptions: {initial_adoptions}")
++    print(f"Final Adoptions: {final_adoptions}")
++
++    # Functional Assertion
++    if final_adoptions <= initial_adoptions:
++        print("FAILURE: No diffusion occurred!")
++        sys.exit(1)
++
++    # Performance Assertion
++    target_ms = 10.0
++    if avg_time * 1000 > target_ms:
++        print(f"FAILURE: Performance target missed! ({avg_time*1000:.4f}ms > {target_ms}ms)")
++        sys.exit(1)
++    else:
++        print("SUCCESS: Performance target met!")
++
++if __name__ == "__main__":
++    run_benchmark()
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 7147ba22..a9e21b82 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -26,6 +26,7 @@ from simulation.utils.shadow_logger import log_shadow
+ from modules.finance.api import InsufficientFundsError, IFinancialEntity
+ from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
+ from simulation.systems.api import ILearningAgent, LearningUpdateContext
++from simulation.systems.tech.api import FirmTechInfoDTO
+ 
+ if TYPE_CHECKING:
+     from simulation.finance.api import ISettlementSystem
+@@ -314,6 +315,15 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+         """AI 학습을 위한 이전 상태 데이터를 반환합니다."""
+         return getattr(self, "pre_state_snapshot", self.get_agent_data())
+ 
++    def get_tech_info(self) -> FirmTechInfoDTO:
++        """
++        WO-136: Returns minimal technical info for technology diffusion.
++        """
++        return {
++            "id": self.id,
++            "sector": self.sector,
++            "current_rd_investment": self.research_history.get("total_spent", 0.0)
++        }
+ 
+     @override
+     def make_decision(
+diff --git a/simulation/orchestration/phases/production.py b/simulation/orchestration/phases/production.py
+index c32bd5e9..857d84be 100644
+--- a/simulation/orchestration/phases/production.py
++++ b/simulation/orchestration/phases/production.py
+@@ -34,12 +34,7 @@ class Phase_Production(IPhaseStrategy):
+         # 2. Update Technology System
+         if self.world_state.technology_manager:
+             active_firms_dto = [
+-                FirmTechInfoDTO(
+-                    id=f.id,
+-                    sector=f.sector,
+-                    current_rd_investment=f.research_history.get("total_spent", 0.0) if hasattr(f, "research_history") else 0.0
+-                )
+-                for f in state.firms if f.is_active
++                f.get_tech_info() for f in state.firms if f.is_active
+             ]
+             self.world_state.technology_manager.update(state.time, active_firms_dto, human_capital_index)
+ 
+diff --git a/simulation/systems/technology_manager.py b/simulation/systems/technology_manager.py
+index 91f01a6f..d79ee597 100644
+--- a/simulation/systems/technology_manager.py
++++ b/simulation/systems/technology_manager.py
+@@ -22,6 +22,9 @@ class TechNode:
+     diffusion_rate: float  # Probability of adoption per tick for non-visionaries
+     is_unlocked: bool = False
+ 
++    # Internal index for vectorization
++    _idx: int = -1
++
+ class TechnologyManager:
+     """
+     Phase 23: Technology Manager
+@@ -37,8 +40,14 @@ class TechnologyManager:
+         self.tech_tree: Dict[str, TechNode] = {}
+         self.active_techs: List[str] = [] # List of unlocked tech IDs
+         
+-        # Adoption Registry: {FirmID: {TechID}}
+-        self.adoption_registry: Dict[int, Set[str]] = {}
++        # Vectorized Adoption Registry (WO-136)
++        # Rows: Firm ID (mapped directly if small, or via map if sparse/large)
++        # We assume Firm IDs are effectively < 50000.
++        # adoption_matrix[firm_id, tech_idx] = True/False
++        self.adoption_matrix = np.zeros((1000, 0), dtype=bool)
++
++        self.tech_id_to_idx: Dict[str, int] = {}
++        self.idx_to_tech_id: List[str] = []
+         
+         self.human_capital_index: float = 1.0 # WO-054
+ 
+@@ -62,7 +71,36 @@ class TechnologyManager:
+             cost_threshold=cost_threshold,
+             diffusion_rate=diff_rate
+         )
+-        self.tech_tree[fertilizer.id] = fertilizer
++        self._register_tech(fertilizer)
++
++    def _register_tech(self, tech: TechNode):
++        """Register a tech node and assign it an index."""
++        if tech.id in self.tech_tree:
++            return
++
++        tech._idx = len(self.idx_to_tech_id)
++        self.tech_id_to_idx[tech.id] = tech._idx
++        self.idx_to_tech_id.append(tech.id)
++        self.tech_tree[tech.id] = tech
++
++        # Resize adoption matrix to include new tech column
++        current_rows = self.adoption_matrix.shape[0]
++        # Create new column of zeros
++        new_col = np.zeros((current_rows, 1), dtype=bool)
++        self.adoption_matrix = np.hstack((self.adoption_matrix, new_col))
++
++    def _ensure_capacity(self, max_firm_id: int):
++        """Resize adoption matrix rows if necessary."""
++        current_rows = self.adoption_matrix.shape[0]
++        if max_firm_id >= current_rows:
++            # Expand to at least double or max_id + buffer
++            new_rows = max(max_firm_id + 1, current_rows * 2)
++            rows_to_add = new_rows - current_rows
++            cols = self.adoption_matrix.shape[1]
++
++            # Append zeros
++            padding = np.zeros((rows_to_add, cols), dtype=bool)
++            self.adoption_matrix = np.vstack((self.adoption_matrix, padding))
+ 
+     def update(self, current_tick: int, firms: List[FirmTechInfoDTO], human_capital_index: float) -> None:
+         """
+@@ -128,35 +166,28 @@ class TechnologyManager:
+         WO-054: Tech Diffusion Feedback Loop
+         current_rate = base_rate * (1 + min(1.5, 0.5 * (avg_edu_level - 1.0)))
+         """
+-        # avg_edu_level is self.human_capital_index
+-        # Formula: 1.0 + min(1.5, 0.5 * (HCI - 1.0))
+-        # Example: HCI=4.0 -> 0.5 * 3.0 = 1.5 -> Boost = 1.5 -> Rate = Base * 2.5
+-        # Example: HCI=1.0 -> 0.0 -> Boost = 0.0 -> Rate = Base * 1.0
+-
+         boost = min(1.5, 0.5 * max(0.0, self.human_capital_index - 1.0))
+         return base_rate * (1.0 + boost)
+ 
+     def _process_diffusion(self, firms: List[FirmTechInfoDTO], current_tick: int):
+         """
+         Simulate the spread of technology to non-adopters.
+-        WO-136: Vectorized implementation for 2,000+ agents.
++        WO-136: Vectorized implementation for 2,000+ agents using Numpy Matrix.
+         """
+         if not firms:
+             return
+ 
+-        # Pre-process firms into arrays for vectorized operations
+-        # Note: In a real persistent vector engine, these would be maintained as state.
+-        # Here we convert on the fly, which is still faster for large N than looping python objects.
+-        firm_ids = np.array([f["id"] for f in firms])
+-        sectors = np.array([f["sector"] for f in firms])
++        firm_ids = np.array([f["id"] for f in firms], dtype=int)
++
++        # Ensure matrix capacity
++        max_firm_id = np.max(firm_ids)
++        self._ensure_capacity(max_firm_id)
+ 
+-        # We need a way to check adoption efficiently.
+-        # Construct a boolean mask of who has adopted what.
+-        # But adoption_registry is Dict[int, Set[str]].
+-        # For each tech, we can build a mask of "already_adopted".
++        sectors = np.array([f["sector"] for f in firms])
+ 
+         for tech_id in self.active_techs:
+             tech = self.tech_tree[tech_id]
++            tech_idx = tech._idx
+             
+             # WO-054: Calculate effective rate
+             effective_rate = self._get_effective_diffusion_rate(tech.diffusion_rate)
+@@ -170,12 +201,9 @@ class TechnologyManager:
+             if not np.any(sector_mask):
+                 continue
+ 
+-            # 2. Adoption Mask (True if already adopted)
+-            # This part involves dictionary lookups, can be optimized if adoption_registry was a matrix.
+-            # For now, we use a list comprehension which is fast enough for <10k agents.
+-            already_adopted_mask = np.array([
+-                self.has_adopted(fid, tech_id) for fid in firm_ids
+-            ], dtype=bool)
++            # 2. Adoption Mask (Fast Vectorized Lookup)
++            # adoption_matrix[firm_ids, tech_idx] returns array of booleans corresponding to firms
++            already_adopted_mask = self.adoption_matrix[firm_ids, tech_idx]
+ 
+             # 3. Candidates: In Sector AND Not Adopted
+             candidate_mask = sector_mask & (~already_adopted_mask)
+@@ -185,48 +213,57 @@ class TechnologyManager:
+                 continue
+ 
+             # 4. Roll Dice (Vectorized)
+-            # Create random numbers for all candidates
+             random_rolls = np.random.rand(len(candidate_indices))
+ 
+             # 5. Determine Adopters
+             adopter_indices = candidate_indices[random_rolls < effective_rate]
+ 
++            if len(adopter_indices) == 0:
++                continue
++
+             # 6. Apply Adoption
+-            for idx in adopter_indices:
+-                firm_id = int(firm_ids[idx]) # Convert numpy int to python int
+-                self._adopt(firm_id, tech)
+-                self.logger.info(
++            adopter_firm_ids = firm_ids[adopter_indices]
++
++            # Batch update adoption matrix
++            self.adoption_matrix[adopter_firm_ids, tech_idx] = True
++
++            # Logging (this loop is now the only O(NewAdopters) part)
++            for firm_id in adopter_firm_ids:
++                 self.logger.info(
+                     f"TECH_DIFFUSION | Firm {firm_id} adopted {tech.name}. Rate: {effective_rate:.4f} (Base: {tech.diffusion_rate})",
+-                    extra={"tick": current_tick, "agent_id": firm_id, "tech_id": tech.id}
++                    extra={"tick": current_tick, "agent_id": int(firm_id), "tech_id": tech.id}
+                 )
+ 
+     def _adopt(self, firm_id: int, tech: TechNode):
+-        """Register adoption."""
+-        if firm_id not in self.adoption_registry:
+-            self.adoption_registry[firm_id] = set()
+-        self.adoption_registry[firm_id].add(tech.id)
++        """Register adoption (Legacy/Manual)."""
++        self._ensure_capacity(firm_id)
++        self.adoption_matrix[firm_id, tech._idx] = True
+ 
+     def has_adopted(self, firm_id: int, tech_id: str) -> bool:
+-        if firm_id not in self.adoption_registry:
++        tech_idx = self.tech_id_to_idx.get(tech_id)
++        if tech_idx is None:
++            return False
++
++        if firm_id >= self.adoption_matrix.shape[0]:
+             return False
+-        return tech_id in self.adoption_registry[firm_id]
++
++        return bool(self.adoption_matrix[firm_id, tech_idx])
+ 
+     def get_productivity_multiplier(self, firm_id: int) -> float:
+         """
+         Calculate total TFP multiplier for a firm based on adopted techs.
+         """
+-        if firm_id not in self.adoption_registry:
++        if firm_id >= self.adoption_matrix.shape[0]:
+             return 1.0
+         
+-        total_mult = 1.0
+-        adopted_techs = self.adoption_registry[firm_id]
++        # Get all adopted techs for this firm
++        # row: self.adoption_matrix[firm_id] -> boolean array
++        adopted_indices = np.where(self.adoption_matrix[firm_id])[0]
+         
+-        for tech_id in adopted_techs:
+-            tech = self.tech_tree.get(tech_id)
+-            if tech:
+-                # Multiplicative or Additive?
+-                # Spec says "Multiplies productivity_factor by 3.0".
+-                # If multiple techs? Usually multiplicative for TFP.
+-                total_mult *= tech.multiplier
++        total_mult = 1.0
++        for tech_idx in adopted_indices:
++            tech_id = self.idx_to_tech_id[tech_idx]
++            tech = self.tech_tree[tech_id]
++            total_mult *= tech.multiplier
+         
+         return total_mult

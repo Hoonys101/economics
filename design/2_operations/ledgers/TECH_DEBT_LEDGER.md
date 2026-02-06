@@ -40,6 +40,7 @@
 | TD-256 | 2026-02-06 | Lack of Inventory Abstraction (Direct Mutation) | Goods Transfer Atomicity Risks | [Economic Audit](../../3_work_artifacts/reports/inbound/economic-jules-001-12984982393375704591_audit_economic_JULES_001.md) | **MEDIUM** |
 | TD-258 | 2026-02-06 | Manual Transaction Injection in Saga | Bypass of Transaction Pipeline | [Review](../../_archive/gemini_output/pr_review_pulse-integrity-fix-5507545585466336807.md) | **LOW** |
 | TD-261 | 2026-02-06 | `agent_states` Index Performance Risk | O(N*M) Subquery Degradation in Birth Tracking | [Insight](../../communications/insights/mission_watchtower_hardening.md) | **MEDIUM** |
+| TD-263 | 2026-02-06 | Watchtower Dashboard WebSocket Connection Failure | UI/Observability Offline | [Walkthrough](../../../brain/15daf4c8-7131-425b-9644-30bee37285ab/walkthrough.md) | **MEDIUM** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
@@ -54,11 +55,8 @@
 | (No Active Items) | | | | | |
 
 
-## 📜 8. OPERATIONS & DOCUMENTATION
-
-| ID | Date | Description | Impact | Refs | Status |
-|---|---|---|---|---|---|
-| (No Active Items) | | | | | |
+| TD-265 | 2026-02-06 | Configuration Access Unstandardized | Brittle `getattr` calling / Type safety | [Report](../../../reports/temp/report_20260206_135149_Architectural.md) | **MEDIUM** |
+| TD-266 | 2026-02-06 | Sparse Firm ID Risk in TechnologyManager | Memory bloat if IDs are non-sequential | [Report](../../../reports/temp/report_20260206_135149_Architectural.md) | **LOW** |
 | (No Active Items) | | | | | |
 | (No Active Items) | | | | | |
 | (No Active Items) | | | | | |
@@ -90,6 +88,8 @@
 | TD-035 | 2026-02-06 | Hardcoded Political AI Heuristics | [Spec](../../config/economy_params.yaml) | [Insight](../../communications/insights/structural_debt_clearance.md) |
 | TD-254 | 2026-02-06 | Settlement Abstraction Leak (hasattr) | - | [Insight](../../communications/insights/structural_debt_clearance.md) |
 | TD-188 | 2026-02-06 | Config Path Doc Drift | - | [Insight](../../communications/insights/structural_debt_clearance.md) |
+| PH6-A | 2026-02-06 | Watchtower Hardening (SMA & Birth Rate) | [Spec](../../3_work_artifacts/specs/PH6_WATCHTOWER_REFINED.md) | [Insight](../../communications/insights/mission_watchtower_hardening.md) |
+| WO-136 | 2026-02-06 | Vectorized Tech Diffusion (Numpy matrix) | [Spec](../../3_work_artifacts/specs/WO-136_CLEAN_SWEEP_REFINED.md) | [Insight](../../communications/insights/mission_clean_sweep_generalization.md) |
 
 | TD-250 | 2026-02-06 | Sales Tax & Inheritance Atomicity | [Audit](../../3_work_artifacts/reports/inbound/economic-jules-001-12984982393375704591_audit_economic_JULES_001.md) | [Insight](../../communications/insights/mission_report_economic_integrity.md) |
 | TD-015 | 2026-02-05 | Divergent Metric Calculation (M0/M1/M2) | [Review](../../_archive/gemini_output/pr_review_watchtower-backend-6136124806422059806.md) | [Insight](../../communications/insights/PH6_STABILIZATION_REPORT.md) |

@@ -16,6 +16,10 @@
 - **Zero-Sum**: 화폐나 자원이 시스템 내에서 이유 없이 생성(Magic Creation)되거나 소멸(Leak)되는지 확인하십시오. 특히 `assets +=` 연산 시 반대편의 `assets -=`가 있는지 확인하십시오.
 - **Spec 준수**: 커밋 의도와 실제 구현이 일치하는지, 누락된 요구사항(Covenants, 예외처리 등)이 있는지 확인하십시오.
 
+### 3. 설정 및 의존성 순수성 (Configuration & Dependency Purity)
+- **Protocol Enforcement**: `hasattr` 기반의 duck typing 대신 ` @runtime_checkable` 프로토콜과 `isinstance`를 사용하여 아키텍처 경계를 엄격히 준수했는지 확인하십시오. (TD-254 후속 예방)
+- **Config Access Pattern**: 설정값 접근 시 `getattr`이나 ad-hoc dictionary lookup을 지양하고, 타입이 명확한 DTO나 Wrapper 클래스를 사용하도록 권장하십시오. (매직 넘버 하드코딩 방지)
+
 ### 4. 지식 및 매뉴얼화 (Knowledge & Manualization)
 - **Insight Reporting Check**: 이번 구현 과정에서 발견된 기술 부채나 인사이트가 `communications/insights/[Mission_Key].md` 파일에 기록되었는지 확인하십시오.
 - **Insight Evaluation**: Jules(수행자)가 작성한 인사이트의 기술적 깊이와 정확성을 평가하십시오. 단순히 "작성됨"을 확인하는 것을 넘어, 내용의 타당성을 검토해야 합니다.

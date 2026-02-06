@@ -39,6 +39,7 @@
 4. **C&C (Container & Component) 분리**: 비즈니스 로직(Container)과 단순 실행부(Component)를 명확히 구분합니다.
 5. **Contract Adherence (Strict)**: 제공된 Context에 `dtos.py`나 Interface 파일이 있다면, 반드시 해당 정의를 따르고 없는 필드를 창조(Hallucination)하지 마십시오.
 6. **Golden Data & Mock Implementation**: 모듈 설계 시 현실적인 입력/출력 샘플(Golden Data)을 정의하고, 이를 사용하는 Mock 구현체나 데이터 생성기를 제공하여 하위 컴포넌트의 테스트 환경을 보호해야 합니다.
+7. **Config DTO Purity**: 설정값(Configuration)은 반드시 타입이 명확한 DTO나 Wrapper 클래스를 통해 접근하도록 설계하십시오. Ad-hoc dictionary lookup이나 `getattr` 기반의 불투명한 접근은 금지됩니다. (Config Access Pattern 최적화)
 
 ---
 
