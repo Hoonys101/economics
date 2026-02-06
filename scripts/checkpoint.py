@@ -86,8 +86,12 @@ def main():
     cmd = ["python", str(WORKER_SCRIPT), "context", handover_instruction, "--output", handover_path, "--context", "task.md", "CHANGELOG.md", "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"]
     subprocess.run(cmd, text=True)
 
-    # 4. Protocol Validation
-    print("\n⚖️ Step 4: Running protocol validation for all changes...")
+    # 4. Project Watchtower Audit (New Modular Check)
+    print("\n🦅 Step 4: Running Project Watchtower Audit (Modular SoC Check)...")
+    subprocess.run(["python", "scripts/audit_watchtower.py"], check=False) # check=False to allow failure for reporting
+
+    # 5. Protocol Validation (Legacy/Hard Gates)
+    print("\n⚖️ Step 5: Running protocol validation for all changes...")
 
     # Purity Gate Enforcement
     print("   🛡️ Running Purity Gate...")

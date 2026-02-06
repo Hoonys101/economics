@@ -6,14 +6,13 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| (No Active Items) | | | | | |
-| (No Active Items) | | | | | |
+| TD-268 | 2026-02-06 | `BaseAgent` Constructor Overloading | Brittle dependency propagation | [Review](../../_archive/gemini_output/pr_review_fix-base-agent-memory-init-3901883710155225022.md) | **MEDIUM** |
 
 ## 🏭 2. FIRMS & CORPORATE
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| (No Active Items) | | | | | |
+| TD-270 | 2026-02-06 | Firm-Department Tight Coupling | SoC Violation (Circular Ref) | [Audit Report](../../../reports/audits/audit_agents.md) | **MEDIUM** |
 
 ## 🧠 3. DECISION & AI ENGINE (`ARCH_AI_ENGINE.md`)
 
@@ -25,21 +24,15 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| (No Active Items) | | | | | |
-| (No Active Items) | | | | | |
+| TD-271 | 2026-02-06 | OrderBook IMarket Contract Violation | Polymorphism Breach | [Audit Report](../../../reports/audits/audit_markets.md) | **HIGH** |
 
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| (No Active Items) | | | | | |
-| TD-258 | 2026-02-06 | Manual Transaction Injection in Saga | Bypass of Transaction Pipeline | [Review](../../_archive/gemini_output/pr_review_pulse-integrity-fix-5507545585466336807.md) | **LOW** |
-| TD-261 | 2026-02-06 | `agent_states` Index Performance Risk | O(N*M) Subquery Degradation in Birth Tracking | [Insight](../../communications/insights/mission_watchtower_hardening.md) | **MEDIUM** |
-| TD-264 | 2026-02-06 | DTO Duplication (Housing/Finance) | Overlapping `HousingTransactionSagaStateDTO` definitions | [Insight](../../communications/insights/TD-255_TD-256_purity_reforms.md) | **LOW** |
-| TD-265 | 2026-02-06 | Registry Redundancy | `Registry` module duplicates `GoodsTransactionHandler` | [Insight](../../communications/insights/TD-255_TD-256_purity_reforms.md) | **MEDIUM** |
-| TD-266 | 2026-02-07 | Legacy Inventory Violations | 70+ remaining instances of direct `.inventory` access | [Audit Report](../../scripts/audit_inventory_access.py) | **HIGH** |
-| TD-267 | 2026-02-07 | Protocol Quality Gap | `IInventoryHandler` does not manage `quality` | [Insight](../../communications/insights/TD-255_TD-256_purity_reforms.md) | **LOW** |
+| TD-272 | 2026-02-06 | Persistence Manager Purity Breach | Direct Property Access | [Audit Report](../../../reports/audits/audit_systems.md) | **HIGH** |
+| TD-273 | 2026-02-06 | liquid_assets Protocol Bypass | Direct Manipulation | [Audit Report](../../../reports/audits/audit_agents.md) | **MEDIUM** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
@@ -89,9 +82,11 @@
 | TD-188 | 2026-02-06 | Config Path Doc Drift | - | [Insight](../../communications/insights/structural_debt_clearance.md) |
 | PH6-A | 2026-02-06 | Watchtower Hardening (SMA & Birth Rate) | [Spec](../../3_work_artifacts/specs/PH6_WATCHTOWER_REFINED.md) | [Insight](../../communications/insights/mission_watchtower_hardening.md) |
 | WO-136 | 2026-02-06 | Vectorized Tech Diffusion (Numpy matrix) | [Spec](../../3_work_artifacts/specs/WO-136_CLEAN_SWEEP_REFINED.md) | [Insight](../../communications/insights/mission_clean_sweep_generalization.md) |
-| TD-255 | 2026-02-06 | Housing Saga DTO Purity | [Spec](../../3_work_artifacts/specs/spec_combined_purity_reforms.md) | [Insight](../../communications/insights/TD-255_TD-256_purity_reforms.md) |
-| TD-256 | 2026-02-06 | Inventory Abstraction (IInventoryHandler) | [Spec](../../3_work_artifacts/specs/spec_combined_purity_reforms.md) | [Insight](../../communications/insights/TD-255_TD-256_purity_reforms.md) |
+| TD-255 | 2026-02-06 | Housing Saga DTO Purity | [Spec](../../3_work_artifacts/specs/spec_combined_purity_reforms.md) | [Insight](../../communications/insights/PH7-A-PURITY.md) |
+| TD-256 | 2026-02-06 | Inventory Abstraction (IInventoryHandler) | [Spec](../../3_work_artifacts/specs/spec_combined_purity_reforms.md) | [Insight](../../communications/insights/PH7-A-PURITY.md) |
 | TD-263 | 2026-02-06 | Watchtower Observability Recovery | [Guide](../../3_work_artifacts/drafts/bundle_c_watchtower_fix_guide.md) | [Insight](../../communications/insights/watchtower_fix.md) |
+| PH7-A | 2026-02-06 | Global Inventory Purity Reform | [Spec](../../3_work_artifacts/specs/spec_combined_purity_reforms.md) | [Insight](../../communications/insights/PH7-A-PURITY.md) |
+| TD-FIX-ATTR | 2026-02-06 | BaseAgent memory_v2 init fix | - | [Insight](../../communications/insights/agent_memory_init_fix.md) |
 
 | TD-250 | 2026-02-06 | Sales Tax & Inheritance Atomicity | [Audit](../../3_work_artifacts/reports/inbound/economic-jules-001-12984982393375704591_audit_economic_JULES_001.md) | [Insight](../../communications/insights/mission_report_economic_integrity.md) |
 | TD-015 | 2026-02-05 | Divergent Metric Calculation (M0/M1/M2) | [Review](../../_archive/gemini_output/pr_review_watchtower-backend-6136124806422059806.md) | [Insight](../../communications/insights/PH6_STABILIZATION_REPORT.md) |

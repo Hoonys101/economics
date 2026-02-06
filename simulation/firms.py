@@ -213,7 +213,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         """
         Adds item to firm inventory using standard quality-aware logic.
         """
-        self.add_inventory(item_id, quantity, quality)
+        self._add_inventory_internal(item_id, quantity, quality)
         return True
 
     @override
@@ -239,15 +239,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
     def get_quality(self, item_id: str) -> float:
         return self.inventory_quality.get(item_id, 1.0)
 
-    @override
-    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0) -> bool:
-        """
-        Adds item to firm inventory using standard quality-aware logic.
-        """
-        self.add_inventory(item_id, quantity, quality)
-        return True
-
-    def add_inventory(self, item_id: str, quantity: float, quality: float):
+    def _add_inventory_internal(self, item_id: str, quantity: float, quality: float):
         """Adds items to the firm's inventory and updates the average quality."""
         current_inventory = self._inventory.get(item_id, 0)
         current_quality = self.inventory_quality.get(item_id, 1.0)

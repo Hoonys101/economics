@@ -24,3 +24,7 @@
 - **executive_summary_tick_00100_20260205_183844.md** (from `audit-economic-JULES-001-12984982393375704591`) -> `economic-jules-001-12984982393375704591_executive_summary_tick_00100_20260205_183844.md`
 - **audit_parity_WO-6-AUDIT.md** (from `audit-parity-WO-6-AUDIT-10828950733294323302`) -> `parity-wo-6-audit-10828950733294323302_audit_parity_WO-6-AUDIT.md`
 - **audit_structural_001.md** (from `audit-structural-god-class-check-2584000745385775058`) -> `structural-god-class-check-2584000745385775058_audit_structural_001.md`
+
+## Harvested on 2026-02-07 07:58:44
+- **audit_parity_verification.md** (from `audit-parity-verification-9333247906312188129`) -> `parity-verification-9333247906312188129_audit_parity_verification.md`
+- **audit_structural_20241024.md** (from `audit-structural-20241024-3897336574840583858`) -> `structural-20241024-3897336574840583858_audit_structural_20241024.md`

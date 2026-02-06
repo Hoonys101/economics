@@ -256,13 +256,14 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
 
         # Initialize inventory for all possible goods
         for good_name in config.GOODS:
-            firm.inventory[good_name] = config.INITIAL_FIRM_INVENTORY_MEAN * (
+            qty = config.INITIAL_FIRM_INVENTORY_MEAN * (
                 1
                 + random.uniform(
                     -config.INITIAL_FIRM_INVENTORY_RANGE,
                     config.INITIAL_FIRM_INVENTORY_RANGE,
                 )
             )
+            firm.add_item(good_name, qty)
         firms.append(firm)
 
     firm_founders = {}

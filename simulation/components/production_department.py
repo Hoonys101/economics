@@ -106,7 +106,7 @@ class ProductionDepartment:
                     actual_produced = produced_quantity
 
                 if actual_produced > 0:
-                    self.firm.add_inventory(self.firm.specialization, actual_produced, actual_quality)
+                    self.firm.add_item(self.firm.specialization, actual_produced, quality=actual_quality)
 
             # ThoughtStream: Instrument halted production
             if actual_produced == 0.0 and simulation.logger:
