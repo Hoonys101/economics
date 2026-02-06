@@ -110,6 +110,15 @@ class FirmStateDTO:
         )
 
         # --- Production State ---
+        # Robust inventory retrieval
+        inventory = {}
+        if hasattr(firm, 'get_all_items'):
+             inventory = firm.get_all_items()
+        elif hasattr(firm, '_inventory'):
+             inventory = firm._inventory.copy()
+        else:
+             inventory = getattr(firm, 'inventory', {}).copy()
+
         production_dto = ProductionStateDTO(
             current_production=getattr(firm, 'current_production', 0.0),
             productivity_factor=getattr(firm, 'productivity_factor', 1.0),
@@ -118,7 +127,7 @@ class FirmStateDTO:
             base_quality=getattr(firm, 'base_quality', 1.0),
             automation_level=getattr(firm, 'automation_level', 0.0),
             specialization=getattr(firm, 'specialization', "GENERIC"),
-            inventory=getattr(firm, 'inventory', {}).copy(),
+            inventory=inventory,
             input_inventory=getattr(firm, 'input_inventory', {}).copy(),
             inventory_quality=getattr(firm, 'inventory_quality', {}).copy()
         )

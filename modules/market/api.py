@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, TypedDict, Protocol, TYPE_CHECKING
+from typing import Optional, Dict, Any, TypedDict, Protocol, TYPE_CHECKING, List
 import uuid
 from modules.finance.dtos import MoneyDTO
 
@@ -73,3 +73,28 @@ class ISpecializedTransactionHandler(Protocol):
 class IHousingTransactionHandler(ISpecializedTransactionHandler, Protocol):
     """Explicit protocol for the housing transaction handler."""
     ...
+
+class IMarket(Protocol):
+    """
+    Standard interface for all market types.
+    TD-271: Enforces strictly typed Order DTOs for public access.
+    """
+    id: str
+
+    @property
+    def buy_orders(self) -> Dict[str, List[OrderDTO]]:
+        """Returns active buy orders as immutable/copy DTOs."""
+        ...
+
+    @property
+    def sell_orders(self) -> Dict[str, List[OrderDTO]]:
+        """Returns active sell orders as immutable/copy DTOs."""
+        ...
+
+    def place_order(self, order_dto: OrderDTO, current_time: int) -> None:
+        """Submits a new order to the market."""
+        ...
+
+    def clear_orders(self) -> None:
+        """Clears all orders for the current tick."""
+        ...

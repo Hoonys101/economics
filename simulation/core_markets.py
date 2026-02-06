@@ -14,15 +14,15 @@ class Market(ABC):
 
     Attributes:
         id (str): 시장의 고유 식별자입니다.
-        buy_orders (Dict[str, List[Order]]): 현재 시장에 제출된 매수 주문 리스트입니다.
-        sell_orders (Dict[str, List[Order]]): 현재 시장에 제출된 매도 주문 리스트입니다.
         matched_transactions (List[Transaction]): 시장에서 매칭되어 완료된 거래 기록 리스트입니다.
+
+    Note:
+        `buy_orders` and `sell_orders` attributes are implementation-specific (e.g., properties in OrderBookMarket)
+        and are no longer enforced by the base class to allow for protocol compliance (TD-271).
     """
 
     def __init__(self, market_id: str, logger: Optional[logging.Logger] = None):
         self.id = market_id
-        self.buy_orders: Dict[str, List[Order]] = {}
-        self.sell_orders: Dict[str, List[Order]] = {}
         self.matched_transactions: List[Transaction] = []
         self.logger = logger if logger is not None else logging.getLogger(f"Market_{market_id}")
 
