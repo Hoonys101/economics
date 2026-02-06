@@ -394,6 +394,14 @@ class Bank(IBankService, ICurrencyHolder):
         if target_deposit is None or target_deposit.amount < amount:
             return False
 
+        # Phase 33 FIX: Reduce Bank Reserves (M0) to match Deposit destruction (M2).
+        # Otherwise, M2 leaks (Customer gets cash/value, Bank keeps reserves).
+        try:
+            self._wallet.subtract(amount, currency, memo=f"Customer Withdrawal {depositor_id}")
+        except Exception:
+            logger.error(f"BANK_LIQUIDITY_CRISIS | Bank {self.id} cannot fulfill withdrawal of {amount} for {depositor_id}. Insufficient Reserves.")
+            return False
+
         target_deposit.amount -= amount
         if target_deposit.amount <= 0 and target_dep_id:
             del self.deposits[target_dep_id]

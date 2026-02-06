@@ -49,7 +49,7 @@ def bank_instance(config_manager, mock_credit_scoring_service):
 class TestBank:
     def test_initialization(self, bank_instance: Bank):
         assert bank_instance.id == 1
-        assert bank_instance.assets == 10000.0
+        assert bank_instance.assets["USD"] == 10000.0
         assert bank_instance.loans == {}
         assert bank_instance.next_loan_id == 0
 
@@ -161,8 +161,8 @@ class TestBank:
 
         assert success is True
         assert bank_instance.deposits[deposit_id].amount == 300.0
-        # Check assets (not changed by this method directly)
-        assert bank_instance.assets == 10000.0
+        # Check assets (reduced by withdrawal amount due to physical settlement)
+        assert bank_instance.assets["USD"] == 9800.0
 
     def test_withdraw_for_customer_insufficient(self, bank_instance):
         depositor_id = 202
@@ -173,18 +173,18 @@ class TestBank:
         assert success is False
 
     def test_financial_entity_deposit(self, bank_instance):
-        initial = bank_instance.assets
+        initial = bank_instance.assets["USD"]
         bank_instance.deposit(500.0)
-        assert bank_instance.assets == initial + 500.0
+        assert bank_instance.assets["USD"] == initial + 500.0
 
     def test_financial_entity_withdraw(self, bank_instance):
-        initial = bank_instance.assets
+        initial = bank_instance.assets["USD"]
         bank_instance.withdraw(500.0)
-        assert bank_instance.assets == initial - 500.0
+        assert bank_instance.assets["USD"] == initial - 500.0
 
     def test_financial_entity_withdraw_insufficient(self, bank_instance):
         with pytest.raises(InsufficientFundsError):
-            bank_instance.withdraw(bank_instance.assets + 1000.0)
+            bank_instance.withdraw(bank_instance.assets["USD"] + 1000.0)
 
     def test_run_tick_returns_transactions(self, bank_instance):
         # Setup: Loan and Deposit
@@ -200,7 +200,8 @@ class TestBank:
         # Mock Agents
         mock_borrower = MagicMock()
         mock_borrower.id = borrower_id
-        mock_borrower.assets = 100.0 # Enough to pay interest
+        mock_borrower.assets = {"USD": 100.0} # Enough to pay interest
+        mock_borrower.wallet.get_balance.return_value = 100.0
         mock_borrower.is_active = True
 
         mock_depositor = MagicMock()
@@ -221,7 +222,7 @@ class TestBank:
         assert "deposit_interest" in tx_types
 
         # Check assets NOT modified
-        assert bank_instance.assets == 10000.0
+        assert bank_instance.assets["USD"] == 10000.0
 
     def test_void_loan_failure_raises_exception(self, bank_instance):
         # Setup: Create a loan manually (bypassing normal grant_loan to simulate broken link)

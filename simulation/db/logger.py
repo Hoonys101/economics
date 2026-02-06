@@ -2,6 +2,7 @@ import sqlite3
 import json
 import logging
 from typing import Optional, Dict, Any, List
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,10 @@ class SimulationLogger:
             m2 = getattr(snapshot_data, 'm2', None)
             cpi = getattr(snapshot_data, 'cpi', None)
             transaction_count = getattr(snapshot_data, 'transaction_count', None)
+
+        # Ensure m2 is a float (flatten dict if necessary)
+        if isinstance(m2, dict):
+            m2 = m2.get(DEFAULT_CURRENCY, 0.0)
 
         self.snapshot_buffer.append((
             tick,
