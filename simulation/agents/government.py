@@ -13,7 +13,7 @@ from simulation.utils.shadow_logger import log_shadow
 from simulation.models import Transaction
 from simulation.systems.ministry_of_education import MinistryOfEducation
 from simulation.portfolio import Portfolio
-from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset
+from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset, IFinancialEntity
 from modules.government.dtos import (
     FiscalPolicyDTO,
     PaymentRequestDTO,
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Government(ICurrencyHolder):
+class Government(ICurrencyHolder, IFinancialEntity):
     """
     정부 에이전트. 세금을 징수하고 보조금을 지급하거나 인프라에 투자합니다.
     """
@@ -160,10 +160,12 @@ class Government(ICurrencyHolder):
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "government"]},
         )
 
+    # --- IFinancialEntity Implementation ---
+
     @property
-    def assets(self) -> Dict[CurrencyCode, float]:
-        """Returns the government's liquid assets."""
-        return self.wallet.get_all_balances()
+    def assets(self) -> float:
+        """Returns the government's liquid assets in DEFAULT_CURRENCY."""
+        return self.wallet.get_balance(DEFAULT_CURRENCY)
 
     @property
     def total_collected_tax(self) -> Dict[CurrencyCode, float]:
@@ -645,15 +647,23 @@ class Government(ICurrencyHolder):
         return debt / self.sensory_data.current_gdp
 
     def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        """Deposits a given amount into the government's assets."""
-        if amount > 0:
-            self.wallet.add(amount, currency)
+        """
+        Deposits a given amount into the government's assets.
+        Conforms to IFinancialEntity (defaults to DEFAULT_CURRENCY).
+        """
+        if amount <= 0:
+            raise ValueError("Deposit amount must be positive.")
+        self.wallet.add(amount, currency)
 
     def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        """Withdraws a given amount from the government's assets."""
-        if amount > 0:
-            # Wallet checks sufficiency
-            self.wallet.subtract(amount, currency)
+        """
+        Withdraws a given amount from the government's assets.
+        Conforms to IFinancialEntity (defaults to DEFAULT_CURRENCY).
+        """
+        if amount <= 0:
+            raise ValueError("Withdrawal amount must be positive.")
+        # Wallet checks sufficiency
+        self.wallet.subtract(amount, currency)
 
     # WO-054: Public Education System
     def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int) -> List[Transaction]:

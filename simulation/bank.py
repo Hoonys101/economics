@@ -30,6 +30,8 @@ logger = logging.getLogger(__name__)
 TICKS_PER_YEAR = config.TICKS_PER_YEAR
 INITIAL_BASE_ANNUAL_RATE = config.INITIAL_BASE_ANNUAL_RATE
 
+from modules.finance.api import IFinancialEntity
+
 @dataclass
 class Loan:
     borrower_id: int
@@ -57,7 +59,7 @@ class Deposit:
     def tick_interest_rate(self) -> float:
         return self.annual_interest_rate / TICKS_PER_YEAR
 
-class Bank(IBankService, ICurrencyHolder):
+class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
     """
     Phase 3: Central & Commercial Bank Hybrid System.
     WO-109: Refactored for Sacred Sequence (Transactions).
@@ -108,9 +110,11 @@ class Bank(IBankService, ICurrencyHolder):
         return self._wallet
 
     @property
-    def assets(self) -> Dict[CurrencyCode, float]:
-        """Returns the bank's liquid assets (reserves)."""
-        return self._wallet.get_all_balances()
+    def assets(self) -> float:
+        """
+        Returns the bank's liquid reserves in DEFAULT_CURRENCY, conforming to IFinancialEntity.
+        """
+        return self._wallet.get_balance(DEFAULT_CURRENCY)
 
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
         """Implementation of ICurrencyHolder."""
@@ -408,12 +412,22 @@ class Bank(IBankService, ICurrencyHolder):
         return True
 
     def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        if amount > 0:
-            self._wallet.add(amount, currency, memo="Deposit")
+        """
+        Deposits a given amount of DEFAULT_CURRENCY, conforming to IFinancialEntity.
+        Optional currency argument preserved for internal flexibility.
+        """
+        if amount <= 0:
+            raise ValueError("Deposit amount must be positive.")
+        self._wallet.add(amount, currency, memo="Deposit")
 
     def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        if amount > 0:
-            self._wallet.subtract(amount, currency, memo="Withdraw")
+        """
+        Withdraws a given amount of DEFAULT_CURRENCY, conforming to IFinancialEntity.
+        Optional currency argument preserved for internal flexibility.
+        """
+        if amount <= 0:
+            raise ValueError("Withdrawal amount must be positive.")
+        self._wallet.subtract(amount, currency, memo="Withdraw")
 
     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
         """Legacy method used by TickScheduler etc. until refactored."""

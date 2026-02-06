@@ -7,9 +7,8 @@ from modules.finance.api import (
     IFinancialEntity, InsufficientFundsError,
     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO
 )
-from modules.finance.kernel.adapters import FinancialEntityAdapter
 from simulation.dtos.settlement_dtos import LegacySettlementAccount
-from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.market.housing_planner_api import MortgageApplicationDTO
 from simulation.models import Transaction
@@ -55,11 +54,11 @@ class SettlementSystem(ISettlementSystem):
             self.logger.warning(f"Agent {agent_id} does not implement IPortfolioHandler. Portfolio not captured.")
 
         # 2. Atomic Transfer: Cash
-        adapter = FinancialEntityAdapter(agent)
-        cash_balance = adapter.get_balance(DEFAULT_CURRENCY)
+        # Native IFinancialEntity usage
+        cash_balance = agent.assets
 
         if cash_balance > 0:
-            adapter.withdraw(cash_balance, currency=DEFAULT_CURRENCY)
+            agent.withdraw(cash_balance)
 
         # 3. Determine Heir / Escheatment
         heir_id = None
@@ -277,9 +276,8 @@ class SettlementSystem(ISettlementSystem):
 
         # WO-178: Escheatment Logic
         if government_agent:
-            # Use adapter to get balance safely
-            adapter = FinancialEntityAdapter(agent)
-            current_assets_val = adapter.get_balance(DEFAULT_CURRENCY)
+            # Native IFinancialEntity usage
+            current_assets_val = agent.assets
 
             if current_assets_val > 0:
                 self.transfer(
@@ -315,9 +313,18 @@ class SettlementSystem(ISettlementSystem):
                  self.logger.error(f"SETTLEMENT_FAIL | Central Bank withdrawal failed. {e}")
                  return False
 
-        # 2. Standard Agent Checks via Adapter
-        adapter = FinancialEntityAdapter(agent)
-        current_cash = adapter.get_balance(currency)
+        # 2. Standard Agent Checks (Native Interface)
+        current_cash = 0.0
+        if currency == DEFAULT_CURRENCY:
+            current_cash = agent.assets
+        elif isinstance(agent, ICurrencyHolder):
+            current_cash = agent.get_assets_by_currency().get(currency, 0.0)
+        else:
+            # Attempt Duck Typing for legacy/mock support if ICurrencyHolder not explicitly inherited
+            if hasattr(agent, 'get_assets_by_currency'):
+                 current_cash = agent.get_assets_by_currency().get(currency, 0.0)
+            elif hasattr(agent, 'assets') and isinstance(agent.assets, dict):
+                 current_cash = agent.assets.get(currency, 0.0)
 
         if current_cash < amount:
             # Seamless Check (Only for DEFAULT_CURRENCY for now, assume Bank uses DEFAULT_CURRENCY)
@@ -346,8 +353,13 @@ class SettlementSystem(ISettlementSystem):
         # 3. Execution
         try:
             if current_cash >= amount:
-                # Use adapter to withdraw safely
-                adapter.withdraw(amount, currency=currency)
+                # Use native withdraw
+                if currency == DEFAULT_CURRENCY:
+                    agent.withdraw(amount)
+                else:
+                    # Fallback for multi-currency calls (assuming agent implementation supports it)
+                    agent.withdraw(amount, currency=currency)
+
                 self.logger.debug(f"DEBUG_WITHDRAW | Agent {agent.id} withdrew {amount:.4f}. Memo: {memo}")
             else:
                 # Seamless (Only for DEFAULT_CURRENCY)
@@ -357,13 +369,13 @@ class SettlementSystem(ISettlementSystem):
 
                 needed_from_bank = amount - current_cash
                 if current_cash > 0:
-                    adapter.withdraw(current_cash, currency=currency)
+                    agent.withdraw(current_cash)
 
                 success = self.bank.withdraw_for_customer(int(agent.id), needed_from_bank)
                 if not success:
                     # Rollback cash
                     if current_cash > 0:
-                         adapter.deposit(current_cash, currency=currency)
+                         agent.deposit(current_cash)
                     raise InsufficientFundsError(f"Bank withdrawal failed for {agent.id} despite check.")
 
                 self.logger.info(
@@ -530,14 +542,20 @@ class SettlementSystem(ISettlementSystem):
             return None
 
         try:
-            credit_agent.deposit(amount, currency=currency)
+            if currency == DEFAULT_CURRENCY:
+                credit_agent.deposit(amount)
+            else:
+                credit_agent.deposit(amount, currency=currency)
         except Exception as e:
             # ROLLBACK: Credit failed, must reverse debit
             self.logger.error(
                 f"SETTLEMENT_ROLLBACK | Deposit failed for {credit_agent.id}. Rolling back withdrawal of {amount:.2f} from {debit_agent.id}. Error: {e}"
             )
             try:
-                debit_agent.deposit(amount, currency=currency)
+                if currency == DEFAULT_CURRENCY:
+                    debit_agent.deposit(amount)
+                else:
+                    debit_agent.deposit(amount, currency=currency)
                 self.logger.info(f"SETTLEMENT_ROLLBACK_SUCCESS | Rolled back {amount:.2f} to {debit_agent.id}.")
             except Exception as rollback_error:
                 self.logger.critical(
@@ -578,7 +596,11 @@ class SettlementSystem(ISettlementSystem):
         if is_central_bank:
             # Minting logic: Just credit destination. Source (CB) is assumed to have infinite capacity.
             try:
-                destination.deposit(amount, currency=currency)
+                if currency == DEFAULT_CURRENCY:
+                    destination.deposit(amount)
+                else:
+                    destination.deposit(amount, currency=currency)
+
                 self.logger.info(
                     f"MINT_AND_TRANSFER | Created {amount:.2f} {currency} from {source_authority.id} to {destination.id}. Reason: {reason}",
                     extra={"tick": tick}

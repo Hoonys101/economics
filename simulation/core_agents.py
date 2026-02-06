@@ -22,6 +22,7 @@ from simulation.portfolio import Portfolio
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.systems.api import LifecycleContext, MarketInteractionContext, LearningUpdateContext, ILearningAgent
+from modules.finance.api import IFinancialEntity
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.finance.wallet.wallet import Wallet
 import simulation
@@ -63,7 +64,8 @@ class Household(
     HouseholdReproductionMixin,
     HouseholdStateAccessMixin,
     BaseAgent,
-    ILearningAgent
+    ILearningAgent,
+    IFinancialEntity
 ):
     """
     Household Agent (Facade).
@@ -289,6 +291,30 @@ class Household(
             f"HOUSEHOLD_INIT | Household {self.id} initialized (Decomposed).",
             extra={"tags": ["household_init"]}
         )
+
+    # --- IFinancialEntity Implementation ---
+
+    @property
+    @override
+    def assets(self) -> float:
+        """
+        Returns the balance in DEFAULT_CURRENCY, conforming to IFinancialEntity.
+        """
+        return self._econ_state.wallet.get_balance(DEFAULT_CURRENCY)
+
+    @override
+    def deposit(self, amount: float) -> None:
+        """
+        Deposits a given amount of DEFAULT_CURRENCY into the wallet.
+        """
+        self._econ_state.wallet.deposit(amount, currency=DEFAULT_CURRENCY)
+
+    @override
+    def withdraw(self, amount: float) -> None:
+        """
+        Withdraws a given amount of DEFAULT_CURRENCY from the wallet.
+        """
+        self._econ_state.wallet.withdraw(amount, currency=DEFAULT_CURRENCY)
 
     @override
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:

@@ -243,24 +243,24 @@ class ICreditScoringService(Protocol):
         ...
 
 class IFinancialEntity(Protocol):
-    """Protocol for any entity that can hold and transfer funds."""
+    """
+    Protocol for any entity that possesses assets and participates in financial transactions.
+    Native implementation operates exclusively on DEFAULT_CURRENCY.
+    """
+    id: int
 
     @property
-    def id(self) -> int: ...
-
-    @property
-    def wallet(self) -> IWallet: ...
-
-    @property
-    def assets(self) -> Dict[CurrencyCode, float]: ...
-
-    def deposit(self, amount: float, currency: CurrencyCode = "USD") -> None:
-        """Deposits a given amount into the entity's account for a specific currency."""
+    def assets(self) -> float:
+        """Current assets in DEFAULT_CURRENCY (Read-Only)."""
         ...
 
-    def withdraw(self, amount: float, currency: CurrencyCode = "USD") -> None:
+    def deposit(self, amount: float) -> None:
+        """Deposits a given amount of DEFAULT_CURRENCY into the entity's account."""
+        ...
+
+    def withdraw(self, amount: float) -> None:
         """
-        Withdraws a given amount from the entity's account for a specific currency.
+        Withdraws a given amount of DEFAULT_CURRENCY from the entity's account.
 
         Raises:
             InsufficientFundsError: If the withdrawal amount exceeds available funds.

@@ -23,7 +23,7 @@ from simulation.components.finance_department import FinanceDepartment
 from simulation.components.production_department import ProductionDepartment
 from simulation.components.sales_department import SalesDepartment
 from simulation.utils.shadow_logger import log_shadow
-from modules.finance.api import InsufficientFundsError
+from modules.finance.api import InsufficientFundsError, IFinancialEntity
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
 from simulation.systems.api import ILearningAgent, LearningUpdateContext
 
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(BaseAgent, ILearningAgent):
+class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
     """기업 주체. 생산과 고용의 주체."""
 
     def __init__(
@@ -552,18 +552,36 @@ class Firm(BaseAgent, ILearningAgent):
         """
         return 0.0
 
-    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        """Deposits a given amount into the firm's cash reserves."""
-        if amount > 0:
-            self._internal_add_assets(amount, currency=currency)
+    # --- IFinancialEntity Implementation ---
 
-    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        """Withdraws a given amount from the firm's cash reserves."""
-        if amount > 0:
-            current_bal = self.finance.balance.get(currency, 0.0)
-            if current_bal < amount:
-                raise InsufficientFundsError(f"Firm {self.id} has insufficient funds for withdrawal of {amount:.2f} {currency}. Available: {current_bal:.2f}")
-            self._internal_sub_assets(amount, currency=currency)
+    @property
+    @override
+    def assets(self) -> float:
+        """
+        Returns the balance in DEFAULT_CURRENCY, conforming to IFinancialEntity.
+        Delegates to the FinanceDepartment.
+        """
+        return self.finance.get_balance(DEFAULT_CURRENCY)
+
+    @override
+    def deposit(self, amount: float) -> None:
+        """
+        Deposits a given amount of DEFAULT_CURRENCY, conforming to IFinancialEntity.
+        Delegates to the FinanceDepartment.
+        """
+        if amount < 0:
+            raise ValueError("Deposit amount cannot be negative.")
+        self.finance.deposit(amount, currency=DEFAULT_CURRENCY)
+
+    @override
+    def withdraw(self, amount: float) -> None:
+        """
+        Withdraws a given amount of DEFAULT_CURRENCY, conforming to IFinancialEntity.
+        Delegates to the FinanceDepartment, which handles InsufficientFundsError.
+        """
+        if amount < 0:
+            raise ValueError("Withdrawal amount cannot be negative.")
+        self.finance.withdraw(amount, currency=DEFAULT_CURRENCY)
 
     # --- Delegated Methods (Facade Pattern) ---
 
