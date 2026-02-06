@@ -224,7 +224,7 @@ class InheritanceManager:
             if cash > 0:
                 tx = Transaction(
                     buyer_id=deceased.id,
-                    seller_id=None, # System distribution
+                    seller_id=-1, # System distribution (Fixed NOT NULL constraint)
                     item_id="estate_distribution",
                     quantity=1.0,
                     price=cash, # Informational

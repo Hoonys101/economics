@@ -112,6 +112,7 @@ class WorldState:
         self.stress_scenario_config: Optional[StressScenarioConfig] = None
         self.public_manager: Optional[IAssetRecoverySystem] = None
         self.currency_holders: List[ICurrencyHolder] = [] # Added for Phase 33
+        self._currency_holders_set: set = set()
 
         # Attributes with default values
         self.batch_save_interval: int = self.config_manager.get("simulation.batch_save_interval", 50)
@@ -219,6 +220,18 @@ class WorldState:
         elif role == "CENTRAL_BANK":
             return self.central_bank.id if self.central_bank else None
         return None
+
+    def register_currency_holder(self, holder: ICurrencyHolder) -> None:
+        """Registers an agent as a currency holder for M2 tracking."""
+        if holder not in self._currency_holders_set:
+            self.currency_holders.append(holder)
+            self._currency_holders_set.add(holder)
+
+    def unregister_currency_holder(self, holder: ICurrencyHolder) -> None:
+        """Unregisters an agent from M2 tracking (e.g. upon death)."""
+        if holder in self._currency_holders_set:
+            self.currency_holders.remove(holder)
+            self._currency_holders_set.remove(holder)
 
     def get_all_agents(self) -> List[Any]:
         """시뮬레이션에 참여하는 모든 활성 에이전트(가계, 기업, 은행 등)를 반환합니다."""

@@ -233,6 +233,27 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         success = self.settlement_system.execute_multiparty_settlement(transfers, self.simulation.time)
 
         if success:
+             # TD-030: M2 Integrity - Record Authorized Expansion for Mortgage Disbursal
+             # Moving Bank Reserves to Public Circulation (via Buyer) is an M2 Expansion.
+             # We must track this to match the Authorized Delta (MonetaryLedger).
+             if principal > 0:
+                 tx_credit = Transaction(
+                    buyer_id=bank.id,
+                    seller_id=-1, # System Authorization
+                    item_id=f"mortgage_disbursal_{saga['saga_id']}",
+                    quantity=1.0,
+                    price=principal,
+                    market_id="monetary_policy",
+                    transaction_type="credit_creation",
+                    time=self.simulation.time,
+                    metadata={"executed": True, "saga_id": str(saga['saga_id'])}
+                 )
+                 # Manually append to world_state transactions (like _log_transaction)
+                 if hasattr(self.simulation, 'world_state'):
+                      self.simulation.world_state.transactions.append(tx_credit)
+                 elif hasattr(self.simulation, 'transactions'):
+                      self.simulation.transactions.append(tx_credit)
+
              saga['status'] = "TRANSFER_TITLE"
              # Optionally process next step immediately?
              # Or wait next tick? State machine usually one step per tick unless we want fast track.
@@ -288,6 +309,25 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         ]
 
         self.settlement_system.execute_multiparty_settlement(transfers, self.simulation.time)
+
+        # TD-030: M2 Integrity - Record Destruction
+        if principal > 0:
+             tx_destroy = Transaction(
+                buyer_id=-1,
+                seller_id=bank.id,
+                item_id=f"mortgage_rollback_{saga['saga_id']}",
+                quantity=1.0,
+                price=principal,
+                market_id="monetary_policy",
+                transaction_type="credit_destruction",
+                time=self.simulation.time,
+                metadata={"executed": True, "saga_id": str(saga['saga_id'])}
+             )
+             if hasattr(self.simulation, 'world_state'):
+                  self.simulation.world_state.transactions.append(tx_destroy)
+             elif hasattr(self.simulation, 'transactions'):
+                  self.simulation.transactions.append(tx_destroy)
+
         logger.info(f"SAGA_ROLLBACK | Reversed settlement for saga {saga['saga_id']}")
 
     def _log_transaction(self, saga: HousingTransactionSagaStateDTO):

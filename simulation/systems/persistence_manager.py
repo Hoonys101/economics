@@ -119,11 +119,19 @@ class PersistenceManager:
         hh_assets = tracker_indicators.get("total_household_assets", 0.0)
         firm_assets = tracker_indicators.get("total_firm_assets", 0.0)
 
-        # Wrap as dict if they are floats (backward compatibility check)
-        if isinstance(hh_assets, (int, float)):
-            hh_assets = {DEFAULT_CURRENCY: float(hh_assets)}
-        if isinstance(firm_assets, (int, float)):
-            firm_assets = {DEFAULT_CURRENCY: float(firm_assets)}
+        # Flatten for DB Persistence (SQLite requires float)
+        # TD-030: Strict currency registry means we strictly track DEFAULT_CURRENCY for indicators
+        hh_assets_val = 0.0
+        if isinstance(hh_assets, dict):
+            hh_assets_val = hh_assets.get(DEFAULT_CURRENCY, 0.0)
+        else:
+            hh_assets_val = float(hh_assets)
+
+        firm_assets_val = 0.0
+        if isinstance(firm_assets, dict):
+            firm_assets_val = firm_assets.get(DEFAULT_CURRENCY, 0.0)
+        else:
+            firm_assets_val = float(firm_assets)
 
         indicator_dto = EconomicIndicatorData(
             run_id=self.run_id,
@@ -135,8 +143,8 @@ class PersistenceManager:
             avg_goods_price=tracker_indicators.get("avg_goods_price"),
             total_production=tracker_indicators.get("total_production", 0.0),
             total_consumption=tracker_indicators.get("total_consumption", 0.0),
-            total_household_assets=hh_assets,
-            total_firm_assets=firm_assets,
+            total_household_assets=hh_assets_val,
+            total_firm_assets=firm_assets_val,
             avg_survival_need=tracker_indicators.get("avg_survival_need", 0.0),
             total_labor_income=total_labor_income,
             total_capital_income=total_capital_income,

@@ -441,6 +441,10 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.transaction_processor.register_handler("deposit_interest", financial_handler)
         sim.transaction_processor.register_handler("dividend", financial_handler)
         sim.transaction_processor.register_handler("tax", financial_handler)
+        # WO-330: Fix M2 Leak (Double Counting) by ensuring physical cash transfer for deposits/withdrawals
+        sim.transaction_processor.register_handler("deposit", financial_handler)
+        sim.transaction_processor.register_handler("withdrawal", financial_handler)
+        sim.transaction_processor.register_handler("bank_profit_remittance", financial_handler)
 
         sim.transaction_processor.register_handler("escheatment", EscheatmentHandler())
 
@@ -483,13 +487,13 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.household_time_allocation: Dict[int, float] = {}
 
         # Populate Currency Holders for M2 Calculation
-        sim.world_state.currency_holders = []
+        # TD-030: Use strict registry
         if isinstance(sim.central_bank, ICurrencyHolder):
-            sim.world_state.currency_holders.append(sim.central_bank)
+            sim.world_state.register_currency_holder(sim.central_bank)
 
         for agent in sim.agents.values():
             if isinstance(agent, ICurrencyHolder):
-                sim.world_state.currency_holders.append(agent)
+                sim.world_state.register_currency_holder(agent)
 
         sim.inflation_buffer = deque(maxlen=10)
         sim.unemployment_buffer = deque(maxlen=10)

@@ -425,36 +425,39 @@ class EconomicIndicatorTracker:
         TD-015: Calculates M0, M1, M2 money supply aggregates.
         Returns a dictionary with 'm0', 'm1', 'm2'.
         """
-        # M0: Monetary Base (Currency in Circulation + Reserves)
-        # In this simulation, M0 is the sum of all Wallets (which represent Cash/Reserves).
-        m0 = 0.0
+        # Components of Money Supply
+        currency_in_circulation = 0.0
+        bank_reserves = 0.0
 
         # 1. Households
         for h in world_state.households:
             if h._bio_state.is_active:
-                m0 += self._calculate_total_wallet_value(h._econ_state.assets)
+                currency_in_circulation += self._calculate_total_wallet_value(h._econ_state.assets)
 
         # 2. Firms
         for f in world_state.firms:
             if getattr(f, "is_active", False):
-                m0 += self._calculate_total_wallet_value(f.assets)
+                currency_in_circulation += self._calculate_total_wallet_value(f.assets)
 
-        # 3. Bank Reserves (Commercial Bank)
-        if world_state.bank:
-            if isinstance(world_state.bank.assets, dict):
-                 m0 += self._calculate_total_wallet_value(world_state.bank.assets)
-            else:
-                 m0 += world_state.bank.assets # Fallback for scalar
-
-        # 4. Government Assets
+        # 3. Government Assets
         if world_state.government:
              if isinstance(world_state.government.assets, dict):
-                 m0 += self._calculate_total_wallet_value(world_state.government.assets)
+                 currency_in_circulation += self._calculate_total_wallet_value(world_state.government.assets)
              else:
-                 m0 += world_state.government.assets # Fallback for scalar
+                 currency_in_circulation += world_state.government.assets
 
-        # M2: Broad Money (M0 + Deposits)
-        # M2 adds Bank Deposits which are created via loans and stored in the Bank system.
+        # 4. Bank Reserves (Vault Cash)
+        if world_state.bank:
+           if isinstance(world_state.bank.assets, dict):
+                bank_reserves += self._calculate_total_wallet_value(world_state.bank.assets)
+           else:
+                bank_reserves += world_state.bank.assets
+
+        # M0: Monetary Base = Currency in Circulation + Bank Reserves
+        m0 = currency_in_circulation + bank_reserves
+
+        # M2: Broad Money (M0 - Bank Reserves + Deposits)
+        # Effectively: Currency in Circulation + Deposits
         total_deposits = 0.0
         if world_state.bank and hasattr(world_state.bank, "deposits"):
             for deposit in world_state.bank.deposits.values():
@@ -464,7 +467,8 @@ class EconomicIndicatorTracker:
                       val = self.exchange_engine.convert(val, deposit.currency, DEFAULT_CURRENCY)
                  total_deposits += val
 
-        m2 = m0 + total_deposits
+        # TD-252: Strict Formula
+        m2 = (m0 - bank_reserves) + total_deposits
 
         # M1: Narrow Money (M0 + Demand Deposits)
         # Since currently all deposits are liquid, M1 is effectively M2.

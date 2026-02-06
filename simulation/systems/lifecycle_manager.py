@@ -226,7 +226,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
             # WO-218: Track new agent as currency holder for M2 integrity
             if isinstance(agent, ICurrencyHolder):
-                state.currency_holders.append(agent)
+                state.register_currency_holder(agent)
             else:
                 self.logger.critical(f"LIFECYCLE_ERROR | New Agent {agent.id} is NOT ICurrencyHolder!")
 
@@ -311,6 +311,10 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                     if state.stock_market:
                         state.stock_market.update_shareholder(household.id, firm.id, 0)
 
+            # TD-030: Unregister from currency registry immediately
+            if isinstance(firm, ICurrencyHolder):
+                state.unregister_currency_holder(firm)
+
         # --- Household Liquidation (Inheritance) ---
         inactive_households = [h for h in state.households if not h._bio_state.is_active]
         for household in inactive_households:
@@ -354,6 +358,10 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             if state.stock_market:
                 for firm_id in list(state.stock_market.shareholders.keys()):
                      state.stock_market.update_shareholder(household.id, firm_id, 0)
+
+            # TD-030: Unregister from currency registry immediately
+            if isinstance(household, ICurrencyHolder):
+                state.unregister_currency_holder(household)
 
         # Cleanup Global Lists
         state.households[:] = [h for h in state.households if h._bio_state.is_active]

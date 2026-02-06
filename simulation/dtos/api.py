@@ -265,6 +265,20 @@ class SimulationState:
 
     # Injection
     injectable_sensory_dto: Optional[Any] = None # GovernmentStateDTO
+    currency_registry_handler: Optional[Any] = None # WorldState injection for strict registry
+
+    def register_currency_holder(self, holder: Any) -> None:
+        if self.currency_registry_handler:
+            self.currency_registry_handler.register_currency_holder(holder)
+        elif self.currency_holders is not None:
+             self.currency_holders.append(holder) # Fallback
+
+    def unregister_currency_holder(self, holder: Any) -> None:
+        if self.currency_registry_handler:
+            self.currency_registry_handler.unregister_currency_holder(holder)
+        elif self.currency_holders is not None:
+             if holder in self.currency_holders:
+                 self.currency_holders.remove(holder) # Fallback
 
     def __post_init__(self):
         if self.transactions is None:

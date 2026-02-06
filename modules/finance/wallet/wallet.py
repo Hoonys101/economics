@@ -4,10 +4,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional
 from .api import IWallet, WalletOpLogDTO, CurrencyCode, DEFAULT_CURRENCY
 from .audit import GLOBAL_WALLET_LOG
-
-class InsufficientFundsError(Exception):
-    """Raised when a wallet operation would result in a negative balance."""
-    pass
+from modules.finance.api import InsufficientFundsError
 
 class Wallet(IWallet):
     """

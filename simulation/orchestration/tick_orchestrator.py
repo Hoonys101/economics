@@ -54,7 +54,8 @@ class TickOrchestrator:
         # This check is usually done before any activity starts
         if state.time == 0:
             # Ensure currency_holders is correct before baseline calculation
-            self._rebuild_currency_holders(state)
+            # TD-030: Removed _rebuild_currency_holders. Initializer populates this.
+            # self._rebuild_currency_holders(state)
             state.baseline_money_supply = state.calculate_total_money().get(DEFAULT_CURRENCY, 0.0)
             state.logger.info(
                 f"MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: {state.baseline_money_supply:.2f}",
@@ -130,7 +131,8 @@ class TickOrchestrator:
             transaction_processor=getattr(state, "transaction_processor", None), # Added for compatibility
             effects_queue=[], # TD-192: Init empty
             inter_tick_queue=[], # TD-192: Init empty
-            transactions=[] # TD-192: Init empty
+            transactions=[], # TD-192: Init empty
+            currency_registry_handler=state # Inject WorldState to handle strict registry updates
         )
 
     def _drain_and_sync_state(self, sim_state: SimulationState):
@@ -198,7 +200,9 @@ class TickOrchestrator:
         if state.time >= 1:
             # WO-220: Repair Currency Holders Sync
             # Rebuilds state.currency_holders from state.agents to ensure M2 integrity.
-            self._rebuild_currency_holders(state)
+            # TD-030: Removed _rebuild_currency_holders to enforce StrictCurrencyRegistry.
+            # LifecycleManager is now responsible for maintaining this list incrementally.
+            # self._rebuild_currency_holders(state)
 
             total_hh = sum(h.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0) for h in state.households)
             total_firm = sum(f.get_assets_by_currency().get(DEFAULT_CURRENCY, 0.0) for f in state.firms)
@@ -223,61 +227,11 @@ class TickOrchestrator:
             else:
                  state.logger.info(msg, extra=extra_data)
 
-    def _rebuild_currency_holders(self, state: WorldState):
-        """
-        Rebuilds state.currency_holders from state.agents to ensure M2 integrity.
-        Enforces Single Source of Truth (SSoT) and filters out inactive agents.
-        """
-        from modules.system.api import ICurrencyHolder
-
-        # Clear existing list
-        state.currency_holders.clear()
-
-        # Helper to check activity
-        def is_active(agent: Any) -> bool:
-            # Households
-            if hasattr(agent, '_bio_state'):
-                return agent._bio_state.is_active
-            # Firms
-            if hasattr(agent, 'is_active') and isinstance(agent.is_active, bool):
-                return agent.is_active
-            # System Agents (Gov, CB, Bank) are always active
-            return True
-
-        # Rebuild from agents map
-        # Explicitly ensure System Agents are included if they are not in agents map (legacy safety)
-        # WO-220: Added settlement_system to track escrowed funds
-        system_agents = [
-            state.central_bank,
-            state.government,
-            state.bank,
-            getattr(state, "escrow_agent", None),
-            state.settlement_system
-        ]
-
-        # Use a set of IDs to prevent duplicates if system agents are also in agents dict
-        added_ids = set()
-
-        # 1. Add System Agents first
-        for agent in system_agents:
-            # Duck typing check for ICurrencyHolder to avoid import issues
-            if agent and hasattr(agent, 'get_assets_by_currency'):
-                state.currency_holders.append(agent)
-                if hasattr(agent, 'id'):
-                    added_ids.add(agent.id)
-
-        # 2. Add Economic Agents from Registry
-        for agent_id, agent in state.agents.items():
-            if agent_id in added_ids:
-                continue
-
-            # Duck typing check
-            if hasattr(agent, 'get_assets_by_currency') and is_active(agent):
-                state.currency_holders.append(agent)
-                added_ids.add(agent_id)
-            elif not is_active(agent):
-                # Optional: Log if needed, but this is expected for dead agents
-                pass
+            # Update baseline for next tick to accumulate authorized changes
+            # This ensures 'Expected' follows the authorized expansion path
+            if hasattr(state.government, "get_monetary_delta"):
+                authorized_delta = state.government.get_monetary_delta(DEFAULT_CURRENCY)
+                state.baseline_money_supply += authorized_delta
 
     def prepare_market_data(self) -> Dict[str, Any]:
         """
