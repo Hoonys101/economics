@@ -77,9 +77,6 @@ class MonetaryTransactionHandler(ITransactionHandler):
             success = context.settlement_system.transfer(
                 buyer, seller, trade_value, tx_type
             )
-            if success and context.central_bank and seller.id == context.central_bank.id:
-                if hasattr(context.government, "total_money_destroyed"):
-                    context.government.total_money_destroyed += trade_value
 
         return success is not None
 

@@ -386,6 +386,11 @@ class FinanceSystem(IFinanceSystem):
                       bond_holder = self.central_bank
 
             # Generate Transaction: Government -> Holder
+            repayment_details = {
+                "principal": bond.face_value,
+                "interest": interest_amount,
+                "bond_id": bond.id
+            }
             tx = Transaction(
                 buyer_id=self.government.id,
                 seller_id=bond_holder.id,
@@ -394,7 +399,8 @@ class FinanceSystem(IFinanceSystem):
                 price=total_repayment,
                 market_id="financial",
                 transaction_type="bond_repayment",
-                time=current_tick
+                time=current_tick,
+                metadata={"repayment_details": repayment_details}
             )
             transactions.append(tx)
 

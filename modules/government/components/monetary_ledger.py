@@ -69,7 +69,25 @@ class MonetaryLedger:
                 # Bond Repayment: Seller is Bond Holder (CB). Buyer is Gov. Money goes to CB (Destruction).
                 # OMO Sale: Seller is CB. Buyer is Market. Money goes to CB (Destruction).
                 if str(tx.seller_id) == str(ID_CENTRAL_BANK):
-                    is_contraction = True
+                    repayment_details = tx.metadata.get("repayment_details") if hasattr(tx, 'metadata') and tx.metadata else None
+
+                    if repayment_details:
+                        # **Correct Accounting**: Only the principal is destroyed.
+                        principal_to_destroy = repayment_details.get("principal", 0.0)
+                        if principal_to_destroy > 0:
+                            is_contraction = True
+                            contraction_amount = principal_to_destroy
+                        # The 'interest' portion is a pure transfer and does not count as destruction.
+                        # It's income for the Central Bank, but doesn't change M2.
+                    else:
+                        # **Legacy Fallback**: If details are missing, revert to old behavior but log a warning.
+                        # This ensures backward compatibility during transition but flags areas needing updates.
+                        logger.warning(
+                            f"Transaction {tx.id} of type '{tx.transaction_type}' is missing 'repayment_details' in metadata. "
+                            f"Treating full amount as contraction based on legacy logic."
+                        )
+                        is_contraction = True
+                        contraction_amount = tx.price * tx.quantity
 
             if is_expansion:
                 if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0.0
@@ -80,12 +98,15 @@ class MonetaryLedger:
                 logger.debug(f"MONETARY_EXPANSION | {tx.transaction_type}: {tx.price:.2f} {cur}")
 
             elif is_contraction:
+                amount = contraction_amount if 'contraction_amount' in locals() and contraction_amount is not None else tx.price * tx.quantity
+
                 if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0.0
                 if cur not in self.total_money_destroyed: self.total_money_destroyed[cur] = 0.0
 
-                self.credit_delta_this_tick[cur] -= tx.price
-                self.total_money_destroyed[cur] += tx.price
-                logger.debug(f"MONETARY_CONTRACTION | {tx.transaction_type}: {tx.price:.2f} {cur}")
+                self.credit_delta_this_tick[cur] -= amount
+                self.total_money_destroyed[cur] += amount
+                logger.debug(f"MONETARY_CONTRACTION | {tx.transaction_type}: {amount:.2f} {cur}")
+                contraction_amount = None # Reset for next loop iteration
 
     def get_monetary_delta(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
         """

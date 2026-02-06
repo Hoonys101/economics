@@ -127,20 +127,20 @@ def trace():
                 infra_spending += tx_val
 
     if cb_bond_buys > 0:
-        print(f"Detected Untracked CB Bond Purchases: {cb_bond_buys:,.2f}")
-        authorized_delta += cb_bond_buys
+        print(f"Detected Untracked CB Bond Purchases (Should be in Ledger): {cb_bond_buys:,.2f}")
+        # authorized_delta += cb_bond_buys # Ledger tracks this now
 
     if comm_bank_bond_buys > 0:
-        print(f"Detected Commercial Bank Bond Purchases (M2 Creation): {comm_bank_bond_buys:,.2f}")
-        authorized_delta += comm_bank_bond_buys
+        print(f"Detected Commercial Bank Bond Purchases (M2 Creation) (Should be in Ledger): {comm_bank_bond_buys:,.2f}")
+        # authorized_delta += comm_bank_bond_buys # Ledger tracks this now
 
     if deposit_interest > 0:
-        print(f"Detected Deposit Interest (M2 Creation): {deposit_interest:,.2f}")
-        authorized_delta += deposit_interest
+        print(f"Detected Deposit Interest (M2 Creation) (Should be in Ledger): {deposit_interest:,.2f}")
+        # authorized_delta += deposit_interest # Ledger tracks this now
 
     if loan_interest > 0:
-        print(f"Detected Loan Interest (M2 Destruction): {loan_interest:,.2f}")
-        authorized_delta -= loan_interest
+        print(f"Detected Loan Interest (M2 Destruction) (Should be in Ledger): {loan_interest:,.2f}")
+        # authorized_delta -= loan_interest # Ledger tracks this now
 
     if infra_spending > 0:
         print(f"Detected Infrastructure Spending: {infra_spending:,.2f}")

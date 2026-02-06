@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Protocol, List, Any, Optional, Dict
+from typing import Protocol, List, Any, Optional, Dict, TypedDict
 from modules.government.dtos import (
     FiscalPolicyDTO,
     MonetaryPolicyDTO,
@@ -14,6 +14,22 @@ from modules.government.welfare.api import IWelfareRecipient
 from simulation.dtos.api import MarketSnapshotDTO
 from modules.finance.api import TaxCollectionResult
 from modules.system.api import CurrencyCode
+
+class BondRepaymentDetailsDTO(TypedDict):
+    """
+    A structured object carrying the details of a bond repayment.
+    This DTO is expected to be present in the 'metadata' field of a 'bond_repayment' Transaction.
+
+    Attributes:
+        principal: The portion of the payment that constitutes principal repayment.
+                   This amount is subject to monetary destruction if paid to the Central Bank.
+        interest: The portion of the payment that constitutes an interest payment.
+                  This is treated as a standard transfer and is not destroyed.
+        bond_id: A unique identifier for the bond being serviced.
+    """
+    principal: float
+    interest: float
+    bond_id: str
 
 class IFiscalPolicyManager(Protocol):
     """Interface for managing the government's fiscal policy."""
