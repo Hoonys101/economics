@@ -40,6 +40,7 @@ class BaseAgent(ICurrencyHolder, IInventoryHandler, ABC):
         self._inventory: Dict[str, float] = {}
         self.is_active: bool = True
         self.logger = logger if logger is not None else logging.getLogger(self.name)
+        self.memory_v2 = memory_interface
         self._pre_state_data: Dict[str, Any] = {}  # 이전 상태 저장을 위한 속성
         self.pre_state_snapshot: Dict[str, Any] = {} # Mypy fix: Snapshot for learning
 

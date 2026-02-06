@@ -15,6 +15,7 @@ from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngin
 import config
 from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
+from modules.system.api import DEFAULT_CURRENCY
 
 # 프로젝트 루트 디렉토리를 sys.path에 추가
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -140,7 +141,7 @@ def test_firm_inheritance_and_init():
 
     assert isinstance(firm, BaseAgent)
     assert firm.id == 101
-    assert firm.finance.balance == initial_capital
+    assert firm.finance.balance[DEFAULT_CURRENCY] == initial_capital
     assert firm.needs == {"liquidity_need": initial_liquidity_need}
     assert firm.decision_engine == decision_engine
     assert firm.name == "Firm_101"

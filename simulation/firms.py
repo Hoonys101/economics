@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from simulation.markets.stock_market import StockMarket
     from simulation.agents.government import Government
     from simulation.dtos.scenario import StressScenarioConfig
+    from modules.memory.api import MemoryV2Interface
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         sector: str = "FOOD",
         # Phase 16-B: Personality
         personality: Optional[Personality] = None,
+        memory_interface: Optional["MemoryV2Interface"] = None,
     ) -> None:
         super().__init__(
             id,
@@ -67,6 +69,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
             value_orientation,
             name=f"Firm_{id}",
             logger=logger,
+            memory_interface=memory_interface,
         )
         self.settlement_system: Optional["ISettlementSystem"] = None
         self.config = config_dto
