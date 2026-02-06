@@ -54,8 +54,8 @@ export const useWatchtowerStore = create<WatchtowerState>((set) => ({
         }
       };
 
-      ws.onclose = () => {
-        console.log('Disconnected from Watchtower');
+      ws.onclose = (event) => {
+        console.log(`Disconnected from Watchtower. Code: ${event.code}, Reason: ${event.reason}`);
         set({ isConnected: false });
         ws = null;
 

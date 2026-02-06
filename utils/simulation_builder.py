@@ -1,7 +1,13 @@
 import random
 import logging
+import sys
 from typing import Dict, Any
 from pathlib import Path
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 
 import config
 from modules.common.config.impl import ConfigManagerImpl
@@ -30,6 +36,18 @@ logger = logging.getLogger(__name__)
 def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
     """Create simulation instance with optional config overrides."""
     logger.info("Initializing simulation.", extra={"tags": ["setup"]})
+
+    # Acquire lock to prevent multiple simulation instances
+    lock_file = None
+    if fcntl:
+        lock_file = open("simulation.lock", "w")
+        try:
+            fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except IOError:
+            logger.error("Another simulation instance is already running (locked by simulation.lock).")
+            raise RuntimeError("Simulation is already running.")
+    else:
+        logger.warning("File locking is not supported on this platform. Concurrency check skipped.")
 
     if overrides:
         for key, value in overrides.items():
@@ -316,5 +334,9 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         initial_balances=initial_balances, # WO-124: Pass Genesis distribution map
     )
     sim = initializer.build_simulation()
+
+    # Attach lock file to simulation object to maintain lock during lifecycle
+    if lock_file:
+        sim._lock_file = lock_file
 
     return sim

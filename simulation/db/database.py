@@ -24,7 +24,15 @@ class DatabaseManager:
         데이터베이스 연결을 반환합니다. 연결이 없으면 새로 생성하고 테이블을 초기화합니다.
         """
         if self._conn is None:
-            self._conn = sqlite3.connect(DATABASE_NAME, check_same_thread=False)
+            self._conn = sqlite3.connect(
+                DATABASE_NAME,
+                check_same_thread=False,
+                timeout=10.0,
+                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
+            )
+            # Enable WAL mode for better concurrency
+            self._conn.execute("PRAGMA journal_mode=WAL")
+
             create_tables(self._conn)
         return self._conn
 

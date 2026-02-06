@@ -1,5 +1,8 @@
 import asyncio
 import logging
+import signal
+import sys
+import os
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 
@@ -17,6 +20,15 @@ sim = None
 dashboard_service = None
 background_task = None
 is_running = False
+
+def handle_signal(sig, frame):
+    """
+    Handle termination signals to ensure the loop stops.
+    Uvicorn will handle the main shutdown, but this ensures our loop flag is cleared.
+    """
+    global is_running
+    logger.info(f"Received signal {sig}. Initiating shutdown...")
+    is_running = False
 
 async def simulation_loop():
     global sim, is_running
@@ -41,12 +53,17 @@ async def lifespan(app: FastAPI):
 
     # Startup
     logger.info("Initializing simulation...")
-    # overrides can be passed here if needed
-    sim = create_simulation()
-    dashboard_service = DashboardService(sim)
+    try:
+        # overrides can be passed here if needed
+        sim = create_simulation()
+        dashboard_service = DashboardService(sim)
 
-    is_running = True
-    background_task = asyncio.create_task(simulation_loop())
+        is_running = True
+        background_task = asyncio.create_task(simulation_loop())
+    except Exception as e:
+        logger.critical(f"Failed to initialize simulation: {e}", exc_info=True)
+        # We should probably re-raise so the server doesn't start in a broken state
+        raise e
 
     yield
 
@@ -62,7 +79,10 @@ async def lifespan(app: FastAPI):
             pass
 
     if sim:
-        sim.finalize_simulation()
+        try:
+            sim.finalize_simulation()
+        except Exception as e:
+            logger.error(f"Error during simulation finalization: {e}", exc_info=True)
 
 app = FastAPI(lifespan=lifespan)
 
@@ -91,4 +111,9 @@ def read_root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Register signal handlers to set the flag
+    signal.signal(signal.SIGINT, handle_signal)
+    signal.signal(signal.SIGTERM, handle_signal)
+
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
