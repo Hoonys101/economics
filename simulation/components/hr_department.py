@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
 import logging
-from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
@@ -35,7 +35,7 @@ class HRDepartment:
 
         return base_wage * actual_skill * halo_modifier
 
-    def process_payroll(self, current_time: int, government: Optional[Any], market_data: Optional[Dict[str, Any]], exchange_rates: Dict[CurrencyCode, float]) -> List[Transaction]:
+    def process_payroll(self, current_time: int, government: Optional[Any], market_data: Optional[Dict[str, Any]], market_context: MarketContextDTO) -> List[Transaction]:
         """
         Pays wages to employees. Handles insolvency firing if assets are insufficient.
         Returns list of Transactions.
@@ -44,6 +44,7 @@ class HRDepartment:
         from simulation.models import Transaction
 
         generated_transactions: List[Transaction] = []
+        exchange_rates = market_context['exchange_rates']
 
         # Calculate survival cost for tax logic
         survival_cost = 10.0 # Default fallback

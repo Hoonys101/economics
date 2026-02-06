@@ -5,7 +5,7 @@ from collections import deque
 from simulation.models import Transaction, Order
 from modules.finance.api import IFinancialEntity, InsufficientFundsError, IFinanceDepartment
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
-from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
+from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, MarketContextDTO
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -177,9 +177,10 @@ class FinanceDepartment(IFinanceDepartment):
             )
         return None
 
-    def process_profit_distribution(self, households: List[Household], government: IFinancialEntity, current_time: int, exchange_rates: Dict[CurrencyCode, float]) -> List[Transaction]:
+    def process_profit_distribution(self, households: List[Household], government: IFinancialEntity, current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
         """Public Shareholders Dividend & Bailout Repayment (Multi-Currency)."""
         transactions = []
+        exchange_rates = market_context['exchange_rates']
 
         # Calculate total profit in primary currency for history tracking
         total_profit_primary = 0.0
@@ -264,14 +265,14 @@ class FinanceDepartment(IFinanceDepartment):
 
         return transactions
 
-    def generate_financial_transactions(self, government: IFinancialEntity, households: List[Household], current_time: int, exchange_rates: Dict[CurrencyCode, float]) -> List[Transaction]:
+    def generate_financial_transactions(self, government: IFinancialEntity, households: List[Household], current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
         """Consolidates all financial outflow generation logic."""
         transactions = []
         tx_holding = self.generate_holding_cost_transaction(government, current_time)
         if tx_holding: transactions.append(tx_holding)
         tx_maint = self.generate_maintenance_transaction(government, current_time)
         if tx_maint: transactions.append(tx_maint)
-        txs_public = self.process_profit_distribution(households, government, current_time, exchange_rates)
+        txs_public = self.process_profit_distribution(households, government, current_time, market_context)
         transactions.extend(txs_public)
         return transactions
 
@@ -280,10 +281,12 @@ class FinanceDepartment(IFinanceDepartment):
             self.firm.total_debt = 0.0
         self.firm.total_debt += amount
 
-    def calculate_altman_z_score(self, exchange_rates: Optional[Dict[CurrencyCode, float]] = None) -> float:
+    def calculate_altman_z_score(self, market_context: Optional[MarketContextDTO] = None) -> float:
         # TD-240: Multi-currency support
-        if exchange_rates is None:
+        if market_context is None:
             exchange_rates = {DEFAULT_CURRENCY: 1.0}
+        else:
+            exchange_rates = market_context['exchange_rates']
 
         # Calculate Total Assets (Sum of all currencies converted + Capital + Inventory)
         usd_balance = 0.0
@@ -346,12 +349,14 @@ class FinanceDepartment(IFinanceDepartment):
             orders.append(order)
         return orders
 
-    def calculate_valuation(self, exchange_rates: Dict[CurrencyCode, float] = None) -> MoneyDTO:
+    def calculate_valuation(self, market_context: MarketContextDTO = None) -> MoneyDTO:
         """
         Calculates the firm's total valuation, converted to its primary currency.
         """
-        if exchange_rates is None:
+        if market_context is None:
             exchange_rates = {DEFAULT_CURRENCY: 1.0}
+        else:
+            exchange_rates = market_context['exchange_rates']
 
         total_assets_val = 0.0
         # Cash
@@ -474,11 +479,13 @@ class FinanceDepartment(IFinanceDepartment):
             if self.firm.settlement_system.transfer(self.firm, government, amount, reason, currency=currency):
                 self.record_expense(amount, currency)
 
-    def finalize_tick(self, exchange_rates: Dict[CurrencyCode, float]) -> None:
+    def finalize_tick(self, market_context: MarketContextDTO) -> None:
         """
         Resets tick-specific counters and updates history.
         Called by PostSequence phase.
         """
+        exchange_rates = market_context['exchange_rates']
+
         # 1. Update last_daily_expenses (SUM of all currency expenses converted to primary)
         total_expenses = 0.0
         for cur, amount in self.expenses_this_tick.items():

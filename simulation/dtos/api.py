@@ -121,14 +121,6 @@ class MarketHistoryDTO(TypedDict, total=False):
     worst_bid: float
 
 @dataclass
-class MarketContextDTO:
-    """
-    Provides global market context including exchange rates and other
-    universal indicators to ensure O(1) access for AI agents.
-    """
-    exchange_rates: Dict[CurrencyCode, float]
-
-@dataclass
 class OrderDTO:
     agent_id: int
     item_id: str
@@ -143,7 +135,8 @@ from modules.system.api import (
     HousingMarketSnapshotDTO,
     LoanMarketSnapshotDTO,
     LaborMarketSnapshotDTO,
-    HousingMarketUnitDTO
+    HousingMarketUnitDTO,
+    MarketContextDTO # Refactored to TypedDict in modules.system.api
 )
 # Phase 1: EconomicIndicatorsDTO from modules.simulation.api
 from modules.simulation.api import EconomicIndicatorsDTO

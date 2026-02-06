@@ -5,6 +5,7 @@ import abc
 from abc import ABC, abstractmethod
 from uuid import UUID
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
+from modules.system.api import MarketContextDTO
 
 if TYPE_CHECKING:
     from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
@@ -49,10 +50,10 @@ class IFinanceDepartment(Protocol):
         ...
 
     @abstractmethod
-    def calculate_valuation(self, exchange_rates: Dict[CurrencyCode, float]) -> MoneyDTO:
+    def calculate_valuation(self, market_context: MarketContextDTO) -> MoneyDTO:
         """
         Calculates the firm's total valuation, converted to its primary currency.
-        Requires current exchange rates.
+        Requires current market context.
         """
         ...
 
@@ -62,7 +63,7 @@ class IFinanceDepartment(Protocol):
         government: Any,
         all_households: List[Any],
         current_time: int,
-        exchange_rates: Dict[CurrencyCode, float]
+        market_context: MarketContextDTO
     ) -> List[Any]: # Returns List[Transaction]
         """
         Generates all standard financial transactions (taxes, dividends, maintenance)

@@ -79,7 +79,11 @@ class EconomicIndicatorTracker:
         Tick-Snapshot Injection to ensure O(1) access for AI agents.
         """
         exchange_rates = self.exchange_engine.get_all_rates()
-        return MarketContextDTO(exchange_rates=exchange_rates)
+        # Initial empty benchmark rates as placeholders
+        return {
+            "exchange_rates": exchange_rates,
+            "benchmark_rates": {}
+        }
 
     def _calculate_total_wallet_value(self, wallet_dict: Dict[CurrencyCode, float]) -> float:
         """

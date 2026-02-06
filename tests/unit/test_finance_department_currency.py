@@ -65,7 +65,10 @@ def test_deposit_withdraw(firm_mock, config_mock):
 
 def test_valuation(firm_mock, config_mock):
     finance = FinanceDepartment(firm_mock, config_mock)
-    exchange_rates = {DEFAULT_CURRENCY: 1.0, "EUR": 1.1} # 1 EUR = 1.1 USD
+    market_context = {
+        "exchange_rates": {DEFAULT_CURRENCY: 1.0, "EUR": 1.1},
+        "benchmark_rates": {}
+    }
 
     # 1000 USD + 500 EUR * 1.1 = 1000 + 550 = 1550 USD cash
     # Inventory 0
@@ -74,7 +77,7 @@ def test_valuation(firm_mock, config_mock):
     # Profit 0
     # Valuation = 1650
 
-    val = finance.calculate_valuation(exchange_rates)
+    val = finance.calculate_valuation(market_context)
     assert val['currency'] == DEFAULT_CURRENCY
     assert val['amount'] == pytest.approx(1650.0)
 
@@ -88,9 +91,12 @@ def test_generate_transactions_dividends(firm_mock, config_mock):
     # TD-233 Fix: Mock get_stock_quantity instead of to_legacy_dict
     h1.portfolio.get_stock_quantity.side_effect = lambda fid: 50.0 if fid == 1 else 0.0
 
-    exchange_rates = {DEFAULT_CURRENCY: 1.0, "EUR": 1.1}
+    market_context = {
+        "exchange_rates": {DEFAULT_CURRENCY: 1.0, "EUR": 1.1},
+        "benchmark_rates": {}
+    }
 
-    transactions = finance.process_profit_distribution([h1], Mock(), 1, exchange_rates)
+    transactions = finance.process_profit_distribution([h1], Mock(), 1, market_context)
 
     # Expect dividend in USD: 100 * 0.1 = 10 total. H1 gets 5.
     # Expect dividend in EUR: 50 * 0.1 = 5 total. H1 gets 2.5.
@@ -105,7 +111,10 @@ def test_generate_transactions_dividends(firm_mock, config_mock):
 def test_altman_z_score_multi_currency(firm_mock, config_mock):
     # TD-240 Verification
     finance = FinanceDepartment(firm_mock, config_mock)
-    exchange_rates = {DEFAULT_CURRENCY: 1.0, "EUR": 1.2}
+    market_context = {
+        "exchange_rates": {DEFAULT_CURRENCY: 1.0, "EUR": 1.2},
+        "benchmark_rates": {}
+    }
 
     # USD Balance: 1000.0
     # EUR Balance: 500.0 -> 600.0 USD
@@ -120,7 +129,7 @@ def test_altman_z_score_multi_currency(firm_mock, config_mock):
 
     # x1 = 1600/1700 = 0.941176
 
-    score = finance.calculate_altman_z_score(exchange_rates)
+    score = finance.calculate_altman_z_score(market_context)
 
     expected_x1 = 1600.0 / 1700.0
     expected_score = 1.2 * expected_x1

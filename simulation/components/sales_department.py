@@ -1,11 +1,12 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Dict, Any
-from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+from typing import TYPE_CHECKING, Dict, Any, Optional, List
+from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
     from simulation.dtos.config_dtos import FirmConfigDTO
     from simulation.markets.order_book_market import OrderBookMarket
+    from simulation.models import Transaction
 
 from simulation.models import Order
 
@@ -15,6 +16,34 @@ class SalesDepartment:
     def __init__(self, firm: Firm, config: FirmConfigDTO):
         self.firm = firm
         self.config = config
+
+    def generate_marketing_transaction(self, government: Optional[Any], current_time: int, market_context: MarketContextDTO) -> Optional[Transaction]:
+        """Calculates marketing budget and generates a transaction if applicable."""
+        primary_cur = self.firm.finance.primary_currency
+        primary_balance = self.firm.finance.get_balance(primary_cur)
+        exchange_rates = market_context['exchange_rates']
+
+        total_revenue = 0.0
+        for cur, amount in self.firm.finance.revenue_this_turn.items():
+            total_revenue += self.firm.finance.convert_to_primary(amount, cur, exchange_rates)
+
+        if primary_balance > 100.0:
+            marketing_spend = max(10.0, total_revenue * self.firm.marketing_budget_rate)
+        else:
+            marketing_spend = 0.0
+
+        if primary_balance < marketing_spend:
+             marketing_spend = 0.0
+
+        # Update internal state (Firm still holds this for now, or we could move it here completely)
+        self.firm.marketing_budget = marketing_spend
+
+        if marketing_spend > 0:
+            # Delegate actual transaction creation to FinanceDepartment to maintain single-source-of-truth for financial ops
+            tx_marketing = self.firm.finance.generate_marketing_transaction(government, current_time, marketing_spend)
+            return tx_marketing
+
+        return None
 
     def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
         """
@@ -49,9 +78,10 @@ class SalesDepartment:
 
         return order
 
-    def adjust_marketing_budget(self, exchange_rates: Dict[CurrencyCode, float]) -> None:
+    def adjust_marketing_budget(self, market_context: MarketContextDTO) -> None:
         """Adjust marketing budget rate based on ROI."""
         delta_spend = self.firm.marketing_budget  # Current tick spend
+        exchange_rates = market_context['exchange_rates']
 
         # Extract total revenue converted to primary currency
         current_revenue_usd = 0.0
