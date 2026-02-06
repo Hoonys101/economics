@@ -94,7 +94,7 @@ class ServiceFirm(Firm):
 
         # 3. Void Logic (Unsold Inventory from previous tick is WASTE)
         item_id = self.specialization
-        unsold_inventory = self.inventory.get(item_id, 0.0)
+        unsold_inventory = self._inventory.get(item_id, 0.0)
         self.waste_this_tick = unsold_inventory
 
         if unsold_inventory > 0:
@@ -105,7 +105,7 @@ class ServiceFirm(Firm):
 
         # 4. Refill Logic (Set Inventory to New Capacity)
         # Service inventory doesn't accumulate; it resets.
-        self.inventory[item_id] = capacity
+        self._inventory[item_id] = capacity
         self.capacity_this_tick = capacity
         self.current_production = capacity # For compatibility
 

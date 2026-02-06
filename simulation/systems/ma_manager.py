@@ -196,8 +196,8 @@ class MAManager:
                 predator.production.set_automation_level(new_level)
 
         # Inventory
-        for item, qty in prey.inventory.items():
-            predator.inventory[item] = predator.inventory.get(item, 0.0) + qty
+        for item, qty in prey._inventory.items():
+            predator.add_item(item, qty)
             
         # Employees
         retained_count = 0
@@ -231,7 +231,7 @@ class MAManager:
         # Simple estimation: default price if no market data, or look up market
         default_price = 10.0
         if self.simulation.markets:
-             for item, qty in firm.inventory.items():
+             for item, qty in firm._inventory.items():
                  price = default_price
                  if item in self.simulation.markets:
                      m = self.simulation.markets[item]

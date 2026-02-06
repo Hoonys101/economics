@@ -62,7 +62,7 @@ class PersistenceManager:
                 agent_dto.employer_id = agent.employer_id
                 agent_dto.needs_survival = agent.needs.get("survival", 0)
                 agent_dto.needs_labor = agent.needs.get("labor_need", 0)
-                agent_dto.inventory_food = agent.inventory.get("food", 0)
+                agent_dto.inventory_food = agent.get_quantity("food")
 
                 # Time Allocation Tracking
                 time_leisure = simulation.household_time_allocation.get(agent.id, 0.0)
@@ -74,7 +74,7 @@ class PersistenceManager:
 
             elif isinstance(agent, Firm):
                 agent_dto.agent_type = "firm"
-                agent_dto.inventory_food = agent.inventory.get("food", 0)
+                agent_dto.inventory_food = agent.get_quantity("food")
                 agent_dto.current_production = agent.current_production
                 agent_dto.num_employees = len(agent.hr.employees)
             else:

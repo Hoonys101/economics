@@ -450,3 +450,7 @@ class Household(
     @override
     def get_quantity(self, item_id: str) -> float:
         return self._econ_state.inventory.get(item_id, 0.0)
+
+    @override
+    def get_quality(self, item_id: str) -> float:
+        return self._econ_state.inventory_quality.get(item_id, 1.0)

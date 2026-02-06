@@ -51,21 +51,21 @@ class EconomyManager:
         }
         total_utility = 0.0
         self._household.logger.debug(
-            f"CONSUME_START | Household {self._household.id} attempting to consume: Item={item_id}, Qty={quantity:.1f}, Inventory={self._household.inventory.get(item_id, 0):.1f}",
+            f"CONSUME_START | Household {self._household.id} attempting to consume: Item={item_id}, Qty={quantity:.1f}, Inventory={self._household.get_quantity(item_id):.1f}",
             extra=log_extra,
         )
         good_info = self._household.goods_info_map.get(item_id, {})
         is_service = good_info.get("is_service", False)
 
-        if is_service or self._household.inventory.get(item_id, 0) >= quantity:
+        if is_service or self._household.get_quantity(item_id) >= quantity:
             if not is_service:
-                self._household.modify_inventory(item_id, -quantity)
+                self._household.remove_item(item_id, quantity)
 
             # Durable goods logic
             is_durable = good_info.get("is_durable", False)
             if is_durable and not is_service:
                 base_lifespan = good_info.get("base_lifespan", 50)
-                quality = self._household.inventory_quality.get(item_id, 1.0)
+                quality = self._household.get_quality(item_id)
                 num_assets = int(round(quantity))
                 for _ in range(num_assets):
                     asset = {
@@ -133,7 +133,7 @@ class EconomyManager:
             The total monetary value of the household's inventory.
         """
         total_value = 0.0
-        for item_id, quantity in self._household.inventory.items():
+        for item_id, quantity in self._household._econ_state.inventory.items():
             price = self._household.perceived_avg_prices.get(item_id, 0)
             total_value += quantity * price
         return total_value

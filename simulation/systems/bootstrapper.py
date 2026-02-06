@@ -86,10 +86,11 @@ class Bootstrapper:
                             injected_count += 1
 
                 # After existing logic, add:
-                current_inv = firm.inventory.get(firm.specialization, 0.0)
+                current_inv = firm.get_quantity(firm.specialization)
                 if current_inv < Bootstrapper.INITIAL_INVENTORY:
-                    firm.inventory[firm.specialization] = Bootstrapper.INITIAL_INVENTORY
-                    logger.info(f'BOOTSTRAPPER | Injected {Bootstrapper.INITIAL_INVENTORY} units to Firm {firm.id}')
+                    needed = Bootstrapper.INITIAL_INVENTORY - current_inv
+                    firm.add_item(firm.specialization, needed)
+                    logger.info(f'BOOTSTRAPPER | Injected {needed} units to Firm {firm.id}')
 
 
             # 2. Capital Injection (Demand Side)

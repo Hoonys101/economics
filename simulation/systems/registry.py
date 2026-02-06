@@ -109,48 +109,19 @@ class Registry(IRegistry):
             # Try Protocol-based Seller Removal
             if isinstance(seller, IInventoryHandler):
                 seller.remove_item(tx.item_id, tx.quantity)
-            elif hasattr(seller, "inventory"):
-                 seller.inventory[tx.item_id] = max(0, seller.inventory.get(tx.item_id, 0) - tx.quantity)
+            else:
+                 self.logger.warning(f"REGISTRY_WARN | Seller {seller.id} does not implement IInventoryHandler")
 
             # Buyer Inventory
             is_raw_material = tx.item_id in getattr(config, "RAW_MATERIAL_SECTORS", [])
+            tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
 
             if is_raw_material and isinstance(buyer, Firm):
                 buyer.input_inventory[tx.item_id] = buyer.input_inventory.get(tx.item_id, 0.0) + tx.quantity
             elif isinstance(buyer, IInventoryHandler):
-                 if hasattr(buyer, "inventory_quality"):
-                     current_qty = buyer.get_quantity(tx.item_id)
-                     existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
-                     tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
-                     total_new_qty = current_qty + tx.quantity
-
-                     if total_new_qty > 0:
-                         new_avg_quality = ((current_qty * existing_quality) + (tx.quantity * tx_quality)) / total_new_qty
-                         buyer.inventory_quality[tx.item_id] = new_avg_quality
-                 buyer.add_item(tx.item_id, tx.quantity)
-
-            elif isinstance(buyer, Household):
-                current_qty = buyer.inventory.get(tx.item_id, 0)
-                existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
-                tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
-                total_new_qty = current_qty + tx.quantity
-
-                if total_new_qty > 0:
-                    new_avg_quality = ((current_qty * existing_quality) + (tx.quantity * tx_quality)) / total_new_qty
-                    buyer.inventory_quality[tx.item_id] = new_avg_quality
-
-                buyer.inventory[tx.item_id] = total_new_qty
-            elif hasattr(buyer, "inventory"):
-                current_qty = buyer.inventory.get(tx.item_id, 0)
-                existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
-                tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
-                total_new_qty = current_qty + tx.quantity
-
-                if total_new_qty > 0:
-                    new_avg_quality = ((current_qty * existing_quality) + (tx.quantity * tx_quality)) / total_new_qty
-                    buyer.inventory_quality[tx.item_id] = new_avg_quality
-
-                buyer.inventory[tx.item_id] = total_new_qty
+                 buyer.add_item(tx.item_id, tx.quantity, quality=tx_quality)
+            else:
+                 self.logger.warning(f"REGISTRY_WARN | Buyer {buyer.id} does not implement IInventoryHandler")
 
         # 2. Household Consumption Counters (Used for Utility/Stats)
         if isinstance(buyer, Household):
@@ -202,5 +173,5 @@ class Registry(IRegistry):
         """Updates inventory for emergency buys."""
         if isinstance(buyer, IInventoryHandler):
             buyer.add_item(tx.item_id, tx.quantity, quality=1.0)
-        elif hasattr(buyer, "inventory"):
-            buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity
+        else:
+            self.logger.warning(f"REGISTRY_WARN | Buyer {buyer.id} does not implement IInventoryHandler")

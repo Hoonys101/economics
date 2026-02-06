@@ -25,7 +25,7 @@ class ConsumptionBehavior:
         log_extra = {"tick": current_time, "agent_id": self.owner.id, "tags": ["consumption"]}
 
         # 1. Evaluate items in inventory
-        for item_id, inventory_quantity in list(self.owner.inventory.items()):
+        for item_id, inventory_quantity in list(self.owner._econ_state.inventory.items()):
             if inventory_quantity <= 0:
                 continue
 

@@ -335,7 +335,7 @@ class EconomicIndicatorTracker:
         record["total_food_consumption"] = total_food_consumption
 
         total_inventory = sum(
-            sum(f.inventory.values()) for f in firms if getattr(f, "is_active", False)
+            sum(f._inventory.values()) for f in firms if getattr(f, "is_active", False)
         )
         record["total_inventory"] = total_inventory
 

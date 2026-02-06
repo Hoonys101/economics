@@ -235,6 +235,10 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
     def get_quantity(self, item_id: str) -> float:
         return self._inventory.get(item_id, 0.0)
 
+    @override
+    def get_quality(self, item_id: str) -> float:
+        return self.inventory_quality.get(item_id, 1.0)
+
     def add_inventory(self, item_id: str, quantity: float, quality: float):
         """Adds items to the firm's inventory and updates the average quality."""
         current_inventory = self._inventory.get(item_id, 0)

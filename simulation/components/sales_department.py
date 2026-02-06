@@ -54,7 +54,7 @@ class SalesDepartment:
         brand_snapshot = {
             "brand_awareness": self.firm.brand_manager.brand_awareness,
             "perceived_quality": self.firm.brand_manager.perceived_quality,
-            "quality": self.firm.inventory_quality.get(item_id, 1.0), # Phase 15: Physical Quality
+            "quality": self.firm.get_quality(item_id), # Phase 15: Physical Quality
         }
 
         # 2. 주문 생성 (brand_info 자동 주입)

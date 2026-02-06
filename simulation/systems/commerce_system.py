@@ -76,7 +76,7 @@ class CommerceSystem(ICommerceSystem):
                 reason = "UNKNOWN"
                 context_data = {}
 
-                food_inventory = household._econ_state.inventory.get("basic_food", 0.0)
+                food_inventory = household.get_quantity("basic_food")
                 if food_inventory <= 0:
                     # Stock Out. Could we afford it?
                     default_price = getattr(self.config, 'DEFAULT_FALLBACK_PRICE', 5.0)

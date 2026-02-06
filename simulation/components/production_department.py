@@ -139,7 +139,7 @@ class ProductionDepartment:
                  # 4. Check Overstock
                  if reason == "UNKNOWN":
                      target = self.firm.production_target
-                     current_inv = self.firm.inventory.get(self.firm.specialization, 0.0)
+                     current_inv = self.firm.get_quantity(self.firm.specialization)
                      if current_inv > target * 2.0:
                           reason = "OVERSTOCK"
                           context = {"inventory": current_inv, "target": target}

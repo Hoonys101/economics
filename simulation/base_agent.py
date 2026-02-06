@@ -46,17 +46,6 @@ class BaseAgent(ICurrencyHolder, IInventoryHandler, ABC):
         self.pre_state_snapshot: Dict[str, Any] = {} # Mypy fix: Snapshot for learning
 
     @property
-    def inventory(self) -> Dict[str, float]:
-        """
-        [DEPRECATED] Read-only backward compatibility accessor for _inventory.
-        External systems should transition to using IInventoryHandler methods.
-        """
-        return self._inventory.copy()
-
-    # Setter removed to enforce IInventoryHandler protocol usage (TD-256)
-    # def inventory(self, value): ...
-
-    @property
     def wallet(self) -> IWallet:
         return self._wallet
 
@@ -100,6 +89,8 @@ class BaseAgent(ICurrencyHolder, IInventoryHandler, ABC):
     def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0) -> bool:
         """
         Adds item to inventory safely.
+        NOTE: This default implementation does NOT track quality.
+        Subclasses (Firm, Household) MUST override this to implement quality tracking (weighted average).
         """
         if quantity < 0:
             self.logger.warning(f"INVENTORY_FAIL | Attempt to add negative quantity {quantity} of {item_id}")
@@ -130,6 +121,12 @@ class BaseAgent(ICurrencyHolder, IInventoryHandler, ABC):
 
     def get_quantity(self, item_id: str) -> float:
         return self._inventory.get(item_id, 0.0)
+
+    def get_quality(self, item_id: str) -> float:
+        """
+        Default implementation returns 1.0. Subclasses tracking quality should override.
+        """
+        return 1.0
 
     def get_agent_data(self) -> Dict[str, Any]:
         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""

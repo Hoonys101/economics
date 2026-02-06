@@ -111,7 +111,7 @@ class PsychologyComponent:
         Calculates social status based on assets and luxury inventory.
         """
         luxury_goods_value = 0.0
-        for item_id, quantity in self.owner.inventory.items():
+        for item_id, quantity in self.owner._econ_state.inventory.items():
             good_info = self.owner.goods_info_map.get(item_id)
             if good_info and good_info.get("is_luxury", False):
                 luxury_goods_value += quantity

@@ -2,6 +2,7 @@ from typing import Any, List, Tuple
 import logging
 from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction
+from modules.simulation.api import IInventoryHandler
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +31,11 @@ class EmergencyTransactionHandler(ITransactionHandler):
 
         # 2. Apply Side-Effects
         if success:
-             # Registry logic: buyer.inventory[tx.item_id] += tx.quantity
-             if hasattr(buyer, "inventory"):
-                 buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity
+             # Registry logic: buyer.add_item(...)
+             if isinstance(buyer, IInventoryHandler):
+                 buyer.add_item(tx.item_id, tx.quantity, quality=1.0)
+             else:
+                 logger.warning(f"EMERGENCY_HANDLER_WARN | Buyer {buyer.id} does not implement IInventoryHandler")
 
              # Record Revenue (Tax)
              if context.government:

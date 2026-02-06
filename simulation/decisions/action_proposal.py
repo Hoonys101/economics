@@ -199,13 +199,13 @@ class ActionProposalEngine:
                 # 상품 시장에 상품 판매 주문
                 good_to_trade = agent.specialization
 
-                if agent.inventory.get(good_to_trade, 0) > 0:
+                if agent.get_quantity(good_to_trade) > 0:
                     price = self.config_module.GOODS_MARKET_SELL_PRICE * random.uniform(
                         0.9, 1.1
                     )
                     # 재고의 일부를 판매 수량으로 결정
                     quantity = random.uniform(
-                        0.1, agent.inventory.get(good_to_trade, 0)
+                        0.1, agent.get_quantity(good_to_trade)
                     )
                     orders.append(
                         Order(
