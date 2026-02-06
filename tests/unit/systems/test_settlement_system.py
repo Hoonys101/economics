@@ -402,8 +402,15 @@ def test_escheatment_portfolio_transfer(settlement_system):
     deceased = MockAgent(100, 0.0, heir_id=None) # No heir
     deceased.portfolio.assets.append(PortfolioAsset(asset_type="bond", asset_id="GOV_TEST", quantity=5))
 
-    gov = MockAgent("GOVERNMENT", 0.0)
-    # MockAgent doesn't have agent_type="government", but id="GOVERNMENT" matches heuristic in settlement_system.py
+    # Mock Government with required IGovernment fields
+    class MockGovernment(MockAgent):
+        def __init__(self, agent_id, assets=0.0):
+            super().__init__(agent_id, assets)
+            self.expenditure_this_tick = 0.0
+            self.revenue_this_tick = 0.0
+            self.total_debt = 0.0
+
+    gov = MockGovernment("GOVERNMENT", 0.0)
 
     # 1. Create
     account = settlement_system.create_settlement(deceased, 1)

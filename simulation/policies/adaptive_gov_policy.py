@@ -65,21 +65,44 @@ class AdaptiveGovPolicy(IGovernmentPolicy):
          # Action Interpretation
          # action.action_type, action.params
 
+         # TD-035: Generalized bounds from config
+         welfare_min, welfare_max = 0.1, 2.0
+         tax_min, tax_max = 0.05, 0.6
+
+         # Try to resolve bounds from config
+         try:
+             # Check for object-style access (most likely based on codebase patterns)
+             if hasattr(self.config, 'adaptive_policy'):
+                 ap = self.config.adaptive_policy
+                 if isinstance(ap, dict):
+                     welfare_min, welfare_max = ap.get('welfare_bounds', [0.1, 2.0])
+                     tax_min, tax_max = ap.get('tax_bounds', [0.05, 0.6])
+                 else:
+                     welfare_min, welfare_max = getattr(ap, 'welfare_bounds', [0.1, 2.0])
+                     tax_min, tax_max = getattr(ap, 'tax_bounds', [0.05, 0.6])
+             # Check for dict-style access
+             elif isinstance(self.config, dict) and 'adaptive_policy' in self.config:
+                 ap = self.config['adaptive_policy']
+                 welfare_min, welfare_max = ap.get('welfare_bounds', [0.1, 2.0])
+                 tax_min, tax_max = ap.get('tax_bounds', [0.05, 0.6])
+         except Exception as e:
+             logger.warning(f"Failed to load adaptive policy bounds from config: {e}. Using defaults.")
+
          if action.action_type == "ADJUST_WELFARE":
              delta = action.params.get("multiplier_delta", 0.0)
              government.welfare_budget_multiplier += delta
              # Clamp
-             government.welfare_budget_multiplier = max(0.1, min(2.0, government.welfare_budget_multiplier))
+             government.welfare_budget_multiplier = max(welfare_min, min(welfare_max, government.welfare_budget_multiplier))
 
          elif action.action_type == "ADJUST_CORP_TAX":
              delta = action.params.get("rate_delta", 0.0)
              government.corporate_tax_rate += delta
-             government.corporate_tax_rate = max(0.05, min(0.6, government.corporate_tax_rate))
+             government.corporate_tax_rate = max(tax_min, min(tax_max, government.corporate_tax_rate))
 
          elif action.action_type == "ADJUST_INCOME_TAX":
              delta = action.params.get("rate_delta", 0.0)
              government.income_tax_rate += delta
-             government.income_tax_rate = max(0.05, min(0.6, government.income_tax_rate))
+             government.income_tax_rate = max(tax_min, min(tax_max, government.income_tax_rate))
 
          elif action.action_type == "FIRE_ADVISOR":
              # For now, default to firing the Keynesian advisor as they advocate for spending/intervention

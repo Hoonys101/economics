@@ -19,7 +19,7 @@
 
 | ID | Date | Description | Impact | Status |
 |---|---|---|---|---|
-| TD-035 | 2026-02-06 | Hardcoded Political AI Heuristics | Model Inflexibility / Magic Numbers | [Parity Audit](../../3_work_artifacts/reports/inbound/parity-wo-6-audit-10828950733294323302_audit_parity_WO-6-AUDIT.md) | **ACTIVE** |
+| (No Active Items) | | | | | |
 
 ## 💹 4. MARKETS & ECONOMICS
 
@@ -35,7 +35,7 @@
 |---|---|---|---|---|---|
 | (No Active Items) | | | | | |
 | TD-253 | 2026-02-06 | SettlementSystem God Class (785 lines) | High Coupling / Maintenance Risk | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-god-class-check-2584000745385775058_audit_structural_001.md) | **HIGH** |
-| TD-254 | 2026-02-06 | Settlement Abstraction Leak (hasattr) | Violation of Open/Closed Principle | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-god-class-check-2584000745385775058_audit_structural_001.md) | **HIGH** |
+| (No Active Items) | | | | | |
 | TD-255 | 2026-02-06 | Housing Saga DTO Purity Breach | Raw Agent Mutation Leaks | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-god-class-check-2584000745385775058_audit_structural_001.md) | **MEDIUM** |
 | TD-256 | 2026-02-06 | Lack of Inventory Abstraction (Direct Mutation) | Goods Transfer Atomicity Risks | [Economic Audit](../../3_work_artifacts/reports/inbound/economic-jules-001-12984982393375704591_audit_economic_JULES_001.md) | **MEDIUM** |
 | TD-258 | 2026-02-06 | Manual Transaction Injection in Saga | Bypass of Transaction Pipeline | [Review](../../_archive/gemini_output/pr_review_pulse-integrity-fix-5507545585466336807.md) | **LOW** |
@@ -59,7 +59,7 @@
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
 | (No Active Items) | | | | | |
-| TD-188 | 2026-02-04 | Config Path Doc Drift | `PROJECT_STATUS.md` stale | **ACTIVE** |
+| (No Active Items) | | | | | |
 | (No Active Items) | | | | | |
 | (No Active Items) | | | | | |
 | (No Active Items) | | | | | |
@@ -86,6 +86,10 @@
 | TD-Audit | 2026-02-05 | Synchronous Inheritance Processing | [Handover](../../../reports/temp/report_20260205_190938_Architectural.md) | - |
 | TD-193 | 2026-02-04 | Fragmented Politics Sync | [Spec](../../3_work_artifacts/specs/WO-4.5_Adaptive_Brain.md) | - |
 | TD-238 | 2026-02-05 | Phases.py Decomposition | [Structural Audit](../../3_work_artifacts/reports/inbound/structural-structural-001-15007860028193717728_audit_structural_STRUCTURAL-001.md) | [Insight](../../communications/insights/Bundle_C_System_Integrity.md) |
+
+| TD-035 | 2026-02-06 | Hardcoded Political AI Heuristics | [Spec](../../config/economy_params.yaml) | [Insight](../../communications/insights/structural_debt_clearance.md) |
+| TD-254 | 2026-02-06 | Settlement Abstraction Leak (hasattr) | - | [Insight](../../communications/insights/structural_debt_clearance.md) |
+| TD-188 | 2026-02-06 | Config Path Doc Drift | - | [Insight](../../communications/insights/structural_debt_clearance.md) |
 
 | TD-250 | 2026-02-06 | Sales Tax & Inheritance Atomicity | [Audit](../../3_work_artifacts/reports/inbound/economic-jules-001-12984982393375704591_audit_economic_JULES_001.md) | [Insight](../../communications/insights/mission_report_economic_integrity.md) |
 | TD-015 | 2026-02-05 | Divergent Metric Calculation (M0/M1/M2) | [Review](../../_archive/gemini_output/pr_review_watchtower-backend-6136124806422059806.md) | [Insight](../../communications/insights/PH6_STABILIZATION_REPORT.md) |

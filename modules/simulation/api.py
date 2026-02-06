@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Protocol, TypedDict, Any, List, Dict, TYPE_CHECKING
+from typing import Protocol, TypedDict, Any, List, Dict, TYPE_CHECKING, runtime_checkable
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -50,9 +50,11 @@ class IFirm(IAgent, Protocol):
 class IHousehold(IAgent, Protocol):
     inventory: Dict[str, float]
 
+@runtime_checkable
 class ICentralBank(Protocol):
     base_rate: float
 
+@runtime_checkable
 class IGovernment(Protocol):
     expenditure_this_tick: float
     revenue_this_tick: float

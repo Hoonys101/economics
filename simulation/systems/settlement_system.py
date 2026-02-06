@@ -12,6 +12,7 @@ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.market.housing_planner_api import MortgageApplicationDTO
 from simulation.models import Transaction
+from modules.simulation.api import IGovernment, ICentralBank
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -121,16 +122,14 @@ class SettlementSystem(ISettlementSystem):
             for recipient, _, _, _ in distribution_plan:
                 # Check for Government (Escheatment)
                 if account.is_escheatment:
-                    # Heuristic: Check for Government class or ID
-                    if (hasattr(recipient, 'agent_type') and recipient.agent_type == 'government') or \
-                       (hasattr(recipient, 'id') and str(recipient.id).upper() == "GOVERNMENT") or \
-                       (recipient.__class__.__name__ == "Government"):
+                    # Heuristic: Check for Government protocol
+                    if isinstance(recipient, IGovernment):
                         recipient_candidate = recipient
                         break
 
                 # Check for Heir
                 else:
-                    if hasattr(recipient, 'id') and recipient.id == account.heir_id:
+                    if recipient.id == account.heir_id:
                         recipient_candidate = recipient
                         break
 
@@ -171,7 +170,7 @@ class SettlementSystem(ISettlementSystem):
 
                 # Create Receipt
                 tx = self._create_transaction_record(
-                    buyer_id=recipient.id if hasattr(recipient, 'id') else 0, # Recipient
+                    buyer_id=recipient.id, # Recipient
                     seller_id=account.deceased_agent_id, # Deceased
                     amount=amount,
                     memo=memo,
@@ -265,7 +264,7 @@ class SettlementSystem(ISettlementSystem):
 
         self.total_liquidation_losses += loss_amount
 
-        agent_id = agent.id if hasattr(agent, 'id') else "UNKNOWN"
+        agent_id = agent.id
         self.logger.info(
             f"LIQUIDATION: Agent {agent_id} liquidated. "
             f"Inventory: {inventory_value:.2f}, Capital: {capital_value:.2f}, Recovered: {recovered_cash:.2f}. "
@@ -299,11 +298,7 @@ class SettlementSystem(ISettlementSystem):
             self.logger.error(f"SETTLEMENT_FAIL | Debit agent is None. Memo: {memo}")
             return False
 
-        is_central_bank = False
-        if hasattr(agent, "id") and agent.id == ID_CENTRAL_BANK:
-             is_central_bank = True
-        elif hasattr(agent, "__class__") and agent.__class__.__name__ == "CentralBank":
-             is_central_bank = True
+        is_central_bank = isinstance(agent, ICentralBank) or (agent.id == ID_CENTRAL_BANK)
 
         if is_central_bank:
              try:
@@ -320,18 +315,15 @@ class SettlementSystem(ISettlementSystem):
         elif isinstance(agent, ICurrencyHolder):
             current_cash = agent.get_assets_by_currency().get(currency, 0.0)
         else:
-            # Attempt Duck Typing for legacy/mock support if ICurrencyHolder not explicitly inherited
-            if hasattr(agent, 'get_assets_by_currency'):
-                 current_cash = agent.get_assets_by_currency().get(currency, 0.0)
-            elif hasattr(agent, 'assets') and isinstance(agent.assets, dict):
-                 current_cash = agent.assets.get(currency, 0.0)
+            # Fallback for strict mode
+            pass
 
         if current_cash < amount:
             # Seamless Check (Only for DEFAULT_CURRENCY for now, assume Bank uses DEFAULT_CURRENCY)
             if self.bank and currency == DEFAULT_CURRENCY:
                 needed_from_bank = amount - current_cash
                 # Bank balance check using str(agent.id)
-                agent_id_str = str(agent.id) if hasattr(agent, 'id') else "0"
+                agent_id_str = str(agent.id)
                 bank_balance = self.bank.get_balance(agent_id_str)
 
                 if (current_cash + bank_balance) < amount:
@@ -413,8 +405,8 @@ class SettlementSystem(ISettlementSystem):
             if tx:
                 completed_transfers.append((debit, credit, amount))
             else:
-                d_id = debit.id if hasattr(debit,'id') else '?'
-                c_id = credit.id if hasattr(credit,'id') else '?'
+                d_id = debit.id
+                c_id = credit.id
                 self.logger.warning(
                     f"MULTIPARTY_FAIL | Transfer {i} failed ({d_id} -> {c_id}). Rolling back {len(completed_transfers)} previous transfers."
                 )
@@ -424,8 +416,8 @@ class SettlementSystem(ISettlementSystem):
                     # Reverse: r_credit pays back r_debit
                     rb_tx = self.transfer(r_credit, r_debit, r_amount, f"rollback_multiparty_{i}", tick=tick)
                     if not rb_tx:
-                         rc_id = r_credit.id if hasattr(r_credit,'id') else '?'
-                         rd_id = r_debit.id if hasattr(r_debit,'id') else '?'
+                         rc_id = r_credit.id
+                         rd_id = r_debit.id
                          self.logger.critical(
                              f"MULTIPARTY_FATAL | Rollback failed for {r_amount} from {rc_id} to {rd_id}."
                          )
@@ -514,8 +506,8 @@ class SettlementSystem(ISettlementSystem):
             self.logger.warning(f"Transfer of non-positive amount ({amount}) attempted. Memo: {memo}")
             # Consider this a success logic-wise (no-op) but log it.
             return self._create_transaction_record(
-                debit_agent.id if hasattr(debit_agent, 'id') else 0,
-                credit_agent.id if hasattr(credit_agent, 'id') else 0,
+                debit_agent.id,
+                credit_agent.id,
                 amount, memo, tick
             )
 
@@ -587,11 +579,7 @@ class SettlementSystem(ISettlementSystem):
         if amount <= 0:
             return None
 
-        is_central_bank = False
-        if hasattr(source_authority, "__class__") and source_authority.__class__.__name__ == "CentralBank":
-            is_central_bank = True
-        elif hasattr(source_authority, "id") and source_authority.id == ID_CENTRAL_BANK:
-            is_central_bank = True
+        is_central_bank = isinstance(source_authority, ICentralBank) or (source_authority.id == ID_CENTRAL_BANK)
 
         if is_central_bank:
             # Minting logic: Just credit destination. Source (CB) is assumed to have infinite capacity.
@@ -630,11 +618,7 @@ class SettlementSystem(ISettlementSystem):
         if amount <= 0:
             return None
 
-        is_central_bank = False
-        if hasattr(sink_authority, "__class__") and sink_authority.__class__.__name__ == "CentralBank":
-            is_central_bank = True
-        elif hasattr(sink_authority, "id") and sink_authority.id == ID_CENTRAL_BANK:
-            is_central_bank = True
+        is_central_bank = isinstance(sink_authority, ICentralBank) or (sink_authority.id == ID_CENTRAL_BANK)
 
         if is_central_bank:
             # Burning logic: Just debit source. Sink (CB) absorbs it (removed from circulation).

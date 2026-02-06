@@ -85,3 +85,8 @@
 ## 5. Technical Debt Management
 
 Technical debt is now managed via the [Technical Debt Ledger](./design/2_operations/ledgers/TECH_DEBT_LEDGER.md). Phase 4 established critical new debts (TD-226~229) focused on government module decoupling.
+
+**Recent Clearance (Track 3)**:
+- **TD-254**: Hardened `SettlementSystem` against abstraction leaks (removed `hasattr`).
+- **TD-035**: Generalized Political AI parameters to `economy_params.yaml`.
+- **TD-188**: Audited and synced configuration documentation.
