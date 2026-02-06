@@ -186,19 +186,8 @@ class TickOrchestrator:
         # Persistence has already happened in Phase 5.
         state.transactions.clear()
 
-        # Track Economics
-        if state.tracker:
-             # TD-024: Ensure money_supply is scalar for tracker compatibility
-             money_supply_scalar = state.get_total_system_money_for_diagnostics(DEFAULT_CURRENCY)
-             state.tracker.track(
-                 time=state.time,
-                 households=state.households,
-                 firms=state.firms,
-                 markets=state.markets,
-                 money_supply=money_supply_scalar
-             )
-
-        # Money Supply Verification (Post-Tick)
+        # Money Supply Verification (Post-Tick) & M2 Leak Calculation
+        m2_leak_delta = 0.0
         if state.time >= 1:
             # WO-220: Repair Currency Holders Sync
             # Rebuilds state.currency_holders from state.agents to ensure M2 integrity.
@@ -219,12 +208,12 @@ class TickOrchestrator:
             if hasattr(state.government, "get_monetary_delta"):
                 expected_money += state.government.get_monetary_delta(DEFAULT_CURRENCY)
 
-            delta = current_money - expected_money
+            m2_leak_delta = current_money - expected_money
 
-            msg = f"MONEY_SUPPLY_CHECK | Current: {current_money:.2f}, Expected: {expected_money:.2f}, Delta: {delta:.4f}"
-            extra_data = {"tick": state.time, "current": current_money, "expected": expected_money, "delta": delta, "tags": ["money_supply"]}
+            msg = f"MONEY_SUPPLY_CHECK | Current: {current_money:.2f}, Expected: {expected_money:.2f}, Delta: {m2_leak_delta:.4f}"
+            extra_data = {"tick": state.time, "current": current_money, "expected": expected_money, "delta": m2_leak_delta, "tags": ["money_supply"]}
 
-            if abs(delta) > 1.0:
+            if abs(m2_leak_delta) > 1.0:
                  state.logger.warning(msg, extra=extra_data)
             else:
                  state.logger.info(msg, extra=extra_data)
@@ -234,6 +223,19 @@ class TickOrchestrator:
             if hasattr(state.government, "get_monetary_delta"):
                 authorized_delta = state.government.get_monetary_delta(DEFAULT_CURRENCY)
                 state.baseline_money_supply += authorized_delta
+
+        # Track Economics
+        if state.tracker:
+             # TD-024: Ensure money_supply is scalar for tracker compatibility
+             money_supply_scalar = state.get_total_system_money_for_diagnostics(DEFAULT_CURRENCY)
+             state.tracker.track(
+                 time=state.time,
+                 households=state.households,
+                 firms=state.firms,
+                 markets=state.markets,
+                 money_supply=money_supply_scalar,
+                 m2_leak=m2_leak_delta
+             )
 
     def prepare_market_data(self) -> Dict[str, Any]:
         """

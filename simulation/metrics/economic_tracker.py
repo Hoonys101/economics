@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Dict, Any, TYPE_CHECKING
 import logging
 import statistics
+from collections import deque
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -48,6 +49,13 @@ class EconomicIndicatorTracker:
             "quintile_4_avg_assets": [],
             "quintile_5_avg_assets": [],
         }
+
+        # Watchtower Hardening: SMA History (Window=50)
+        self.history_window = 50
+        self.gdp_history = deque(maxlen=self.history_window)
+        self.cpi_history = deque(maxlen=self.history_window)
+        self.m2_leak_history = deque(maxlen=self.history_window)
+
         self.config_module = config_module  # Store config_module
         self.exchange_engine = CurrencyExchangeEngine(config_module) # TD-213: Initialize Exchange Engine
 
@@ -194,6 +202,7 @@ class EconomicIndicatorTracker:
         firms: List[Firm],
         markets: Dict[str, Market],
         money_supply: float = 0.0,
+        m2_leak: float = 0.0,
     ) -> None:
         """현재 시뮬레이션 틱의 경제 지표를 계산하고 기록합니다."""
         self.logger.debug(
@@ -421,6 +430,22 @@ class EconomicIndicatorTracker:
             if key != "time":
                 # Ensure we have a list for this key
                 self.metrics.setdefault(key, []).append(value)
+
+        # Update SMA Histories
+        self.gdp_history.append(record.get("gdp", 0.0))
+        self.cpi_history.append(record.get("goods_price_index", 0.0))
+        self.m2_leak_history.append(m2_leak)
+
+    def get_smoothed_values(self) -> Dict[str, float]:
+        """
+        Returns the Simple Moving Average (SMA) of key indicators.
+        Window size is defined by self.history_window (default 50).
+        """
+        return {
+            "gdp_sma": statistics.mean(self.gdp_history) if self.gdp_history else 0.0,
+            "cpi_sma": statistics.mean(self.cpi_history) if self.cpi_history else 0.0,
+            "m2_leak_sma": statistics.mean(self.m2_leak_history) if self.m2_leak_history else 0.0
+        }
 
     def get_latest_indicators(self) -> Dict[str, Any]:
         """가장 최근에 기록된 경제 지표들을 딕셔너리 형태로 반환합니다."""

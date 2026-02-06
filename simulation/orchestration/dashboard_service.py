@@ -27,7 +27,12 @@ class DashboardService:
         gov = state.governments[0] if state.governments else None
 
         # --- 1. System Integrity ---
+        # Use smoothed M2 leak if available (Watchtower Hardening)
         m2_leak = self._calculate_m2_leak(state)
+        if tracker and hasattr(tracker, "get_smoothed_values"):
+             smoothed = tracker.get_smoothed_values()
+             if smoothed.get("m2_leak_sma") is not None:
+                 m2_leak = smoothed.get("m2_leak_sma")
 
         # FPS Calculation
         current_time = datetime.now()
@@ -42,12 +47,13 @@ class DashboardService:
 
         # --- 2. Macro Economy ---
         latest = tracker.get_latest_indicators() if tracker else {}
+        smoothed = tracker.get_smoothed_values() if tracker and hasattr(tracker, "get_smoothed_values") else {}
 
-        # GDP (Nominal)
-        gdp = latest.get("gdp", 0.0)
+        # GDP (Nominal) - Smoothed
+        gdp = smoothed.get("gdp_sma", latest.get("gdp", 0.0))
 
-        # CPI (Goods Price Index)
-        cpi = latest.get("goods_price_index", 1.0)
+        # CPI (Goods Price Index) - Smoothed
+        cpi = smoothed.get("cpi_sma", latest.get("goods_price_index", 1.0))
 
         # Unemployment
         unemploy = latest.get("unemployment_rate", 0.0)
@@ -129,7 +135,10 @@ class DashboardService:
             death_count = attrition.get("death_count", 0)
             death_rate = (death_count / active_count) * 100.0
 
-            # TODO: Implement Birth Rate tracking in Repository or Tracker
+            # Birth Rate Tracking (Watchtower Hardening)
+            if hasattr(repo.agents, "get_birth_counts"):
+                 birth_count = repo.agents.get_birth_counts(start_tick, state.time, run_id=state.run_id)
+                 birth_rate = (birth_count / active_count) * 100.0
 
         snapshot = WatchtowerSnapshotDTO(
             tick=state.time,

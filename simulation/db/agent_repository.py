@@ -205,6 +205,41 @@ class AgentRepository(BaseRepository):
 
         return result
 
+    def get_birth_counts(self, start_tick: int, end_tick: int, run_id: Optional[int] = None) -> int:
+        """
+        Calculates the number of NEW households that appeared between start_tick and end_tick.
+        Specifically, counts agents present at end_tick who were NOT present at start_tick.
+        """
+        query_suffix = ""
+        if run_id:
+            query_suffix = " AND run_id = ?"
+
+        query = f"""
+            SELECT COUNT(DISTINCT agent_id)
+            FROM agent_states
+            WHERE time = ? AND agent_type = 'household' {query_suffix}
+            AND agent_id NOT IN (
+                SELECT agent_id FROM agent_states
+                WHERE time = ? AND agent_type = 'household' {query_suffix}
+            )
+        """
+
+        # Params: [end_tick, (run_id), start_tick, (run_id)]
+        params = [end_tick]
+        if run_id:
+            params.append(run_id)
+        params.append(start_tick)
+        if run_id:
+            params.append(run_id)
+
+        try:
+            self.cursor.execute(query, params)
+            result = self.cursor.fetchone()
+            return result[0] if result else 0
+        except sqlite3.Error as e:
+            logger.error(f"Error getting birth counts: {e}")
+            return 0
+
     def clear_data(self):
         """
         agent_states 테이블의 데이터를 삭제합니다.
