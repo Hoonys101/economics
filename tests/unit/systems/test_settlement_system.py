@@ -95,10 +95,10 @@ def test_transfer_success(settlement_system):
     tx = settlement_system.transfer(sender, receiver, 20.0, "Test Transfer", tick=10)
 
     assert tx is not None
-    assert tx["quantity"] == 20.0
+    assert tx.quantity == 20.0
     assert sender.assets == 80.0
     assert receiver.assets == 70.0
-    assert tx["time"] == 10
+    assert tx.time == 10
 
 def test_transfer_insufficient_funds(settlement_system):
     sender = MockAgent(1, 10.0)
@@ -209,7 +209,7 @@ def test_atomic_settlement_success(settlement_system):
     receipts = settlement_system.execute_settlement(deceased_id, plan, tick=2)
 
     assert len(receipts) == 2
-    assert receipts[0]["quantity"] == 250.0
+    assert receipts[0].quantity == 250.0
     assert heir1.assets == 350.0
     assert heir2.assets == 300.0
     assert account.escrow_cash == 0.0
@@ -251,79 +251,6 @@ def test_atomic_settlement_overdraft_protection(settlement_system):
     assert heir.assets == 0.0
     assert account.escrow_cash == 100.0
 
-def test_process_sagas_liveness_check(settlement_system):
-    saga_id = "test-saga-uuid"
-    buyer_id = 1
-    seller_id = 2
-
-    saga = {
-        "saga_id": saga_id,
-        "buyer_id": buyer_id,
-        "seller_id": seller_id,
-        "status": "STARTED",
-        "logs": []
-    }
-
-    settlement_system.submit_saga(saga)
-
-    mock_state = MagicMock()
-    mock_state.agents = {}
-
-    mock_buyer = MagicMock()
-    mock_buyer.is_active = False
-    mock_seller = MagicMock()
-    mock_seller.is_active = True
-
-    mock_state.agents[buyer_id] = mock_buyer
-    mock_state.agents[seller_id] = mock_seller
-
-    with patch("simulation.systems.settlement_system.HousingTransactionSagaHandler") as MockHandler:
-        mock_handler_instance = MockHandler.return_value
-        mock_handler_instance.execute_step.return_value = saga
-
-        settlement_system.process_sagas(mock_state)
-
-        assert saga_id not in settlement_system.active_sagas
-        assert saga["status"] == "CANCELLED"
-        mock_handler_instance.execute_step.assert_not_called()
-
-def test_process_sagas_active_participants(settlement_system):
-    saga_id = "test-saga-uuid-2"
-    buyer_id = 3
-    seller_id = 4
-
-    saga = {
-        "saga_id": saga_id,
-        "buyer_id": buyer_id,
-        "seller_id": seller_id,
-        "status": "STARTED",
-        "logs": []
-    }
-
-    settlement_system.submit_saga(saga)
-
-    mock_state = MagicMock()
-    mock_state.agents = {}
-
-    mock_buyer = MagicMock()
-    mock_buyer.is_active = True
-    mock_seller = MagicMock()
-    mock_seller.is_active = True
-
-    mock_state.agents[buyer_id] = mock_buyer
-    mock_state.agents[seller_id] = mock_seller
-
-    with patch("simulation.systems.settlement_system.HousingTransactionSagaHandler") as MockHandler:
-        mock_handler_instance = MockHandler.return_value
-        updated_saga = saga.copy()
-        updated_saga["status"] = "PENDING_OFFER"
-        mock_handler_instance.execute_step.return_value = updated_saga
-
-        settlement_system.process_sagas(mock_state)
-
-        assert saga_id in settlement_system.active_sagas
-        assert settlement_system.active_sagas[saga_id]["status"] == "PENDING_OFFER"
-        mock_handler_instance.execute_step.assert_called_once_with(saga)
 
 # --- NEW TESTS BELOW ---
 
@@ -490,48 +417,3 @@ def test_escheatment_portfolio_transfer(settlement_system):
     assert gov.portfolio.assets[0].asset_id == "GOV_TEST"
     assert len(account.escrow_portfolio.assets) == 0
 
-def test_find_and_compensate_by_agent_success(settlement_system):
-    saga_id = "saga-compensation-test"
-    agent_id = 999
-    other_id = 888
-
-    saga = {
-        "saga_id": saga_id,
-        "buyer_id": agent_id,
-        "seller_id": other_id,
-        "status": "PENDING_OFFER",
-        "logs": []
-    }
-
-    settlement_system.submit_saga(saga)
-
-    # Mock Handler
-    mock_handler = MagicMock()
-    # Compensate returns updated saga
-    compensated_saga = saga.copy()
-    compensated_saga["status"] = "FAILED_ROLLED_BACK"
-    mock_handler.compensate_step.return_value = compensated_saga
-
-    settlement_system.find_and_compensate_by_agent(agent_id, handler=mock_handler)
-
-    # Should be removed if status becomes FAILED_ROLLED_BACK
-    assert saga_id not in settlement_system.active_sagas
-    mock_handler.compensate_step.assert_called_once()
-
-def test_find_and_compensate_by_agent_no_handler(settlement_system):
-    saga_id = "saga-no-handler"
-    agent_id = 777
-
-    saga = {
-        "saga_id": saga_id,
-        "buyer_id": agent_id,
-        "seller_id": 666,
-        "status": "STARTED"
-    }
-    settlement_system.submit_saga(saga)
-
-    # Call without handler
-    settlement_system.find_and_compensate_by_agent(agent_id, handler=None)
-
-    # Saga should remain untouched (logged error)
-    assert saga_id in settlement_system.active_sagas

@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from simulation.dtos.scenario import StressScenarioConfig
 from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode # Added for Phase 33
 from modules.system.constants import ID_CENTRAL_BANK
+from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
 
 
 class WorldState:
@@ -105,6 +106,8 @@ class WorldState:
         self.event_system: Optional[EventSystem] = None
         self.sensory_system: Optional[SensorySystem] = None
         self.settlement_system: Optional[SettlementSystem] = None
+        self.saga_orchestrator: Optional[ISagaOrchestrator] = None
+        self.monetary_ledger: Optional[IMonetaryLedger] = None
         self.taxation_system: Optional[Any] = None # WO-116
         self.commerce_system: Optional[CommerceSystem] = None
         self.labor_market_analyzer: Optional[LaborMarketAnalyzer] = None

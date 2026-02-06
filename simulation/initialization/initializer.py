@@ -80,6 +80,10 @@ from modules.government.taxation.system import TaxationSystem
 from modules.analysis.crisis_monitor import CrisisMonitor
 from modules.system.execution.public_manager import PublicManager
 
+# TD-253: Finance Kernel
+from modules.finance.kernel.ledger import MonetaryLedger
+from modules.finance.sagas.orchestrator import SagaOrchestrator
+
 
 class SimulationInitializer(SimulationInitializerInterface):
     """Simulation 인스턴스 생성 및 모든 구성 요소의 초기화를 전담합니다."""
@@ -120,6 +124,16 @@ class SimulationInitializer(SimulationInitializerInterface):
         # 2. Populate the shell with all its components
         sim.settlement_system = SettlementSystem(logger=self.logger)
         sim.world_state.taxation_system = TaxationSystem(config_module=self.config)
+
+        # TD-253: Saga & Ledger
+        # MonetaryLedger needs transaction_log (sim.world_state.transactions) and time_provider (sim)
+        # Note: We pass sim.world_state.transactions which is a list reference.
+        sim.monetary_ledger = MonetaryLedger(sim.world_state.transactions, sim)
+        sim.saga_orchestrator = SagaOrchestrator(monetary_ledger=sim.monetary_ledger)
+
+        # Inject into WorldState explicitly
+        sim.world_state.monetary_ledger = sim.monetary_ledger
+        sim.world_state.saga_orchestrator = sim.saga_orchestrator
 
         sim.tracker = EconomicIndicatorTracker(config_module=self.config)
 

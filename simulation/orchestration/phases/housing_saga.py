@@ -25,9 +25,11 @@ class Phase_HousingSaga(IPhaseStrategy):
         """
         Checks for agent liveness and cancels sagas if participants are no longer active.
         """
-        if state.settlement_system and hasattr(state.settlement_system, 'process_sagas'):
-            # The core logic is delegated to the settlement system.
-            # This call now handles all saga state transitions.
+        # TD-253: Logic moved to SagaOrchestrator
+        if state.saga_orchestrator:
+            state.saga_orchestrator.process_sagas(state)
+        elif state.settlement_system and hasattr(state.settlement_system, 'process_sagas'):
+            # Fallback for compatibility during refactor
             state.settlement_system.process_sagas(state)
 
         return state

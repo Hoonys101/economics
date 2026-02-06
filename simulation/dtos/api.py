@@ -251,6 +251,10 @@ class SimulationState:
     stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
     transaction_processor: Optional[Any] = None # Added for system delegation compatibility
 
+    # Phase 4.1: Saga Orchestration & Monetary Ledger (TD-253)
+    saga_orchestrator: Optional[Any] = None
+    monetary_ledger: Optional[Any] = None
+
     # --- NEW TRANSIENT FIELDS ---
     # From Phase 1 (Decisions)
     firm_pre_states: Dict[int, Any] = None

@@ -244,12 +244,14 @@ class HousingSystem:
             start_tick=simulation.time
         )
 
-        if simulation.settlement_system:
-             # Assuming we updated SettlementSystem to have submit_saga
-             if hasattr(simulation.settlement_system, 'submit_saga'):
-                 simulation.settlement_system.submit_saga(saga)
-             else:
-                 logger.error("SettlementSystem does not support submit_saga")
+        # TD-253: Saga Orchestration Update
+        if hasattr(simulation, 'saga_orchestrator') and simulation.saga_orchestrator:
+            simulation.saga_orchestrator.submit_saga(saga)
+        elif simulation.settlement_system and hasattr(simulation.settlement_system, 'submit_saga'):
+             # Fallback for legacy
+             simulation.settlement_system.submit_saga(saga)
+        else:
+             logger.error("No Saga Orchestrator available to submit housing saga.")
 
     def apply_homeless_penalty(self, simulation: "Simulation"):
         """

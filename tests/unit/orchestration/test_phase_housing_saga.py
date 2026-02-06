@@ -9,6 +9,22 @@ def test_phase_housing_saga_execution():
     phase = Phase_HousingSaga(mock_world_state)
 
     mock_state = MagicMock(spec=SimulationState)
+    mock_saga_orchestrator = MagicMock()
+    mock_state.saga_orchestrator = mock_saga_orchestrator
+
+    # Execute
+    phase.execute(mock_state)
+
+    # Verify
+    mock_saga_orchestrator.process_sagas.assert_called_once_with(mock_state)
+
+def test_phase_housing_saga_execution_fallback():
+    # Setup
+    mock_world_state = MagicMock()
+    phase = Phase_HousingSaga(mock_world_state)
+
+    mock_state = MagicMock(spec=SimulationState)
+    mock_state.saga_orchestrator = None
     mock_settlement_system = MagicMock()
     mock_state.settlement_system = mock_settlement_system
 

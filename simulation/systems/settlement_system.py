@@ -7,11 +7,10 @@ from modules.finance.api import (
     IFinancialEntity, InsufficientFundsError,
     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO
 )
+from modules.finance.kernel.adapters import FinancialEntityAdapter
 from simulation.dtos.settlement_dtos import LegacySettlementAccount
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.system.constants import ID_CENTRAL_BANK
-from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO, IHousingTransactionSagaHandler
-from modules.finance.saga_handler import HousingTransactionSagaHandler
 from modules.market.housing_planner_api import MortgageApplicationDTO
 from simulation.models import Transaction
 
@@ -34,109 +33,6 @@ class SettlementSystem(ISettlementSystem):
         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
         self.total_liquidation_losses: float = 0.0
         self.settlement_accounts: Dict[int, LegacySettlementAccount] = {} # TD-160
-        self.active_sagas: Dict[UUID, HousingTransactionSagaStateDTO] = {}
-
-    def submit_saga(self, saga: Any) -> bool:
-        """
-        Submits a new saga to be processed.
-        """
-        if not saga or 'saga_id' not in saga:
-            return False
-        # Cast to new DTO type hint
-        self.active_sagas[saga['saga_id']] = saga
-        self.logger.info(
-            f"SAGA_SUBMITTED | Saga {saga['saga_id']} submitted.",
-            extra={"saga_id": saga['saga_id']}
-        )
-        return True
-
-    def process_sagas(self, simulation_state: Any) -> None:
-        """
-        Processes active sagas. Implements the Housing Transaction Saga state machine.
-        Called by TickOrchestrator.
-        """
-        if not self.active_sagas:
-            return
-
-        handler = HousingTransactionSagaHandler(simulation_state)
-
-        # Iterate over copy to allow modification/deletion
-        for saga_id, saga in list(self.active_sagas.items()):
-            try:
-                # 1. Agent Liveness Check (Pre-Settlement Logic)
-                # Ensure agents are accessible via simulation_state.agents
-                buyer = simulation_state.agents.get(saga['buyer_id'])
-                seller = simulation_state.agents.get(saga['seller_id'])
-
-                is_buyer_inactive = not buyer or not getattr(buyer, 'is_active', False)
-                is_seller_inactive = not seller or not getattr(seller, 'is_active', False)
-
-                if is_buyer_inactive or is_seller_inactive:
-                    # Transition to CANCELLED manually as it's a system-level override
-                    saga['status'] = "CANCELLED"
-                    if 'logs' in saga and isinstance(saga['logs'], list):
-                        saga['logs'].append("Cancelled due to inactive participant.")
-
-                    self.logger.warning(
-                         f"SAGA_CANCELLED | Saga {saga_id} cancelled due to inactive participant. "
-                         f"Buyer Active: {not is_buyer_inactive}, Seller Active: {not is_seller_inactive}",
-                         extra={"saga_id": saga_id}
-                    )
-
-                    # Safe approach: attempt compensation if status implies locked funds.
-                    if saga['status'] not in ["STARTED", "PENDING_OFFER"]:
-                         try:
-                             handler.compensate_step(saga)
-                         except Exception as comp_err:
-                             self.logger.error(f"SAGA_COMPENSATE_FAIL | {comp_err}")
-
-                    del self.active_sagas[saga_id]
-                    continue
-
-                # Delegate to Handler
-                updated_saga = handler.execute_step(saga)
-                self.active_sagas[saga_id] = updated_saga
-
-                # Cleanup Terminal States
-                status = updated_saga['status']
-                if status in ["COMPLETED", "FAILED_ROLLED_BACK"]:
-                    if status == "COMPLETED":
-                        self.logger.info(f"SAGA_ARCHIVED | Saga {saga_id} completed successfully.")
-                    else:
-                        self.logger.info(f"SAGA_ARCHIVED | Saga {saga_id} ended with {status}.")
-
-                    del self.active_sagas[saga_id]
-
-            except Exception as e:
-                self.logger.error(f"SAGA_PROCESS_ERROR | Saga {saga_id} failed. {e}")
-                # Try to compensate
-                try:
-                    handler.compensate_step(saga)
-                except Exception:
-                    pass
-                del self.active_sagas[saga_id]
-
-    def find_and_compensate_by_agent(self, agent_id: int, handler: Optional[IHousingTransactionSagaHandler] = None) -> None:
-        """
-        Finds all sagas involving a specific agent and triggers their compensation.
-        Note: handler must be provided if calling outside process_sagas (where handler is local).
-        """
-        if not self.active_sagas:
-            return
-
-        if not handler:
-             self.logger.error("SAGA_COMPENSATE_FAIL | No handler provided for find_and_compensate_by_agent")
-             return
-
-        for saga_id, saga in list(self.active_sagas.items()):
-            if saga['buyer_id'] == agent_id or saga['seller_id'] == agent_id:
-                self.logger.warning(f"SAGA_AGENT_DEATH | Triggering compensation for Saga {saga_id} due to agent {agent_id} death.")
-                try:
-                    updated_saga = handler.compensate_step(saga)
-                    if updated_saga['status'] == "FAILED_ROLLED_BACK":
-                        del self.active_sagas[saga_id]
-                except Exception as e:
-                    self.logger.critical(f"SAGA_AGENT_DEATH_FAIL | Failed to compensate saga {saga_id}. {e}")
 
     def create_settlement(
         self,
@@ -159,18 +55,11 @@ class SettlementSystem(ISettlementSystem):
             self.logger.warning(f"Agent {agent_id} does not implement IPortfolioHandler. Portfolio not captured.")
 
         # 2. Atomic Transfer: Cash
-        cash_balance = 0.0
-        if hasattr(agent, 'wallet'):
-            cash_balance = agent.wallet.get_balance(DEFAULT_CURRENCY)
-        else:
-            # Fallback
-            cash_balance_raw = agent.assets
-            cash_balance = cash_balance_raw
-            if isinstance(cash_balance_raw, dict):
-                cash_balance = cash_balance_raw.get(DEFAULT_CURRENCY, 0.0)
+        adapter = FinancialEntityAdapter(agent)
+        cash_balance = adapter.get_balance(DEFAULT_CURRENCY)
 
         if cash_balance > 0:
-            agent.withdraw(cash_balance, currency=DEFAULT_CURRENCY)
+            adapter.withdraw(cash_balance, currency=DEFAULT_CURRENCY)
 
         # 3. Determine Heir / Escheatment
         heir_id = None
@@ -388,25 +277,9 @@ class SettlementSystem(ISettlementSystem):
 
         # WO-178: Escheatment Logic
         if government_agent:
-            current_assets_val = 0.0
-            try:
-                if hasattr(agent, 'wallet'):
-                    current_assets_val = agent.wallet.get_balance(DEFAULT_CURRENCY)
-                # TD-073: Check finance.balance first for Firms
-                elif hasattr(agent, 'finance') and hasattr(agent.finance, 'balance'):
-                    current_assets = agent.finance.balance
-                    if isinstance(current_assets, dict):
-                        current_assets_val = current_assets.get(DEFAULT_CURRENCY, 0.0)
-                    else:
-                        current_assets_val = current_assets
-                else:
-                    current_assets = float(agent.assets) if hasattr(agent, 'assets') else 0.0
-                    if isinstance(current_assets, dict):
-                        current_assets_val = current_assets.get(DEFAULT_CURRENCY, 0.0)
-                    else:
-                        current_assets_val = current_assets
-            except (TypeError, ValueError):
-                current_assets_val = 0.0
+            # Use adapter to get balance safely
+            adapter = FinancialEntityAdapter(agent)
+            current_assets_val = adapter.get_balance(DEFAULT_CURRENCY)
 
             if current_assets_val > 0:
                 self.transfer(
@@ -442,44 +315,18 @@ class SettlementSystem(ISettlementSystem):
                  self.logger.error(f"SETTLEMENT_FAIL | Central Bank withdrawal failed. {e}")
                  return False
 
-        # 2. Standard Agent Checks (Compatible with TD-073 Firm Refactor)
-        current_cash = 0.0
-
-        # Priority: Wallet -> Finance -> EconState -> Assets
-        if hasattr(agent, 'wallet') and agent.wallet is not None:
-            current_cash = agent.wallet.get_balance(currency)
-        # Check for Firm's finance component first (Legacy fallback)
-        elif hasattr(agent, 'finance') and hasattr(agent.finance, 'balance'):
-             current_cash_raw = agent.finance.balance
-             if isinstance(current_cash_raw, dict):
-                 current_cash = current_cash_raw.get(currency, 0.0)
-             else:
-                 current_cash = current_cash_raw
-        # Check for Household's EconComponent state (Legacy fallback)
-        elif hasattr(agent, '_econ_state') and hasattr(agent._econ_state, 'assets'):
-             current_cash_raw = agent._econ_state.assets
-             if isinstance(current_cash_raw, dict):
-                 current_cash = current_cash_raw.get(currency, 0.0)
-             else:
-                 current_cash = current_cash_raw
-        else:
-             if not hasattr(agent, 'assets'):
-                  self.logger.warning(f"SettlementSystem warning: Agent {agent.id} has no assets property.")
-                  pass
-             try:
-                 assets_raw = agent.assets if hasattr(agent, 'assets') else 0.0
-                 if isinstance(assets_raw, dict):
-                     current_cash = assets_raw.get(currency, 0.0)
-                 else:
-                     current_cash = float(assets_raw)
-             except (TypeError, ValueError):
-                  current_cash = 0.0
+        # 2. Standard Agent Checks via Adapter
+        adapter = FinancialEntityAdapter(agent)
+        current_cash = adapter.get_balance(currency)
 
         if current_cash < amount:
             # Seamless Check (Only for DEFAULT_CURRENCY for now, assume Bank uses DEFAULT_CURRENCY)
             if self.bank and currency == DEFAULT_CURRENCY:
                 needed_from_bank = amount - current_cash
-                bank_balance = self.bank.get_balance(str(agent.id))
+                # Bank balance check using str(agent.id)
+                agent_id_str = str(agent.id) if hasattr(agent, 'id') else "0"
+                bank_balance = self.bank.get_balance(agent_id_str)
+
                 if (current_cash + bank_balance) < amount:
                     self.logger.error(
                         f"SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for {agent.id}. "
@@ -499,7 +346,8 @@ class SettlementSystem(ISettlementSystem):
         # 3. Execution
         try:
             if current_cash >= amount:
-                agent.withdraw(amount, currency=currency)
+                # Use adapter to withdraw safely
+                adapter.withdraw(amount, currency=currency)
                 self.logger.debug(f"DEBUG_WITHDRAW | Agent {agent.id} withdrew {amount:.4f}. Memo: {memo}")
             else:
                 # Seamless (Only for DEFAULT_CURRENCY)
@@ -509,13 +357,13 @@ class SettlementSystem(ISettlementSystem):
 
                 needed_from_bank = amount - current_cash
                 if current_cash > 0:
-                    agent.withdraw(current_cash, currency=currency)
+                    adapter.withdraw(current_cash, currency=currency)
 
                 success = self.bank.withdraw_for_customer(int(agent.id), needed_from_bank)
                 if not success:
                     # Rollback cash
                     if current_cash > 0:
-                         agent.deposit(current_cash, currency=currency)
+                         adapter.deposit(current_cash, currency=currency)
                     raise InsufficientFundsError(f"Bank withdrawal failed for {agent.id} despite check.")
 
                 self.logger.info(
