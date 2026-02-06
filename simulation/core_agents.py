@@ -409,4 +409,44 @@ class Household(
             initial_orders=initial_orders
         )
 
-        return refined_orders, chosen_tactic_tuple
+    # --- IInventoryHandler Overrides ---
+
+    @override
+    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0) -> bool:
+        """
+        Adds item to economic state inventory.
+        """
+        if quantity < 0:
+            return False
+        current = self._econ_state.inventory.get(item_id, 0.0)
+        self._econ_state.inventory[item_id] = current + quantity
+        
+        # Track quality in Household too
+        existing_quality = self._econ_state.inventory_quality.get(item_id, 1.0)
+        total_qty = current + quantity
+        if total_qty > 0:
+            new_avg_quality = ((current * existing_quality) + (quantity * quality)) / total_qty
+            self._econ_state.inventory_quality[item_id] = new_avg_quality
+            
+        return True
+
+    @override
+    def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool:
+        """
+        Removes item from economic state inventory.
+        """
+        if quantity < 0:
+            return False
+        current = self._econ_state.inventory.get(item_id, 0.0)
+        if current < quantity:
+            return False
+        self._econ_state.inventory[item_id] = current - quantity
+        if self._econ_state.inventory[item_id] <= 1e-9:
+            del self._econ_state.inventory[item_id]
+        return True
+
+    @override
+    def get_quantity(self, item_id: str) -> float:
+        return self._econ_state.inventory.get(item_id, 0.0)
+
+    return refined_orders, chosen_tactic_tuple

@@ -105,12 +105,10 @@ class Registry(IRegistry):
             if isinstance(buyer, Household):
                 buyer.consume(tx.item_id, tx.quantity, current_time)
         else:
-            # Physical Goods: Update Inventory
-            # Seller Inventory
+            # Physical Goods: Update Inventory via Protocol
+            # Try Protocol-based Seller Removal
             if isinstance(seller, IInventoryHandler):
                 seller.remove_item(tx.item_id, tx.quantity)
-            elif isinstance(seller, Household):
-                seller.inventory[tx.item_id] = max(0, seller.inventory.get(tx.item_id, 0) - tx.quantity)
             elif hasattr(seller, "inventory"):
                  seller.inventory[tx.item_id] = max(0, seller.inventory.get(tx.item_id, 0) - tx.quantity)
 
@@ -202,7 +200,7 @@ class Registry(IRegistry):
 
     def _handle_emergency_buy(self, tx: Transaction, buyer: Any):
         """Updates inventory for emergency buys."""
-        if isinstance(buyer, Household):
-            buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity
+        if isinstance(buyer, IInventoryHandler):
+            buyer.add_item(tx.item_id, tx.quantity, quality=1.0)
         elif hasattr(buyer, "inventory"):
             buyer.inventory[tx.item_id] = buyer.inventory.get(tx.item_id, 0.0) + tx.quantity

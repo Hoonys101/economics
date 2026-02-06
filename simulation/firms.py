@@ -203,6 +203,35 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
 
         return assets_to_return
 
+    # --- IInventoryHandler Overrides ---
+
+    @override
+    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0) -> bool:
+        """
+        Adds item to firm inventory using standard quality-aware logic.
+        """
+        self.add_inventory(item_id, quantity, quality)
+        return True
+
+    @override
+    def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool:
+        """
+        Removes item from firm inventory.
+        """
+        if quantity < 0:
+            return False
+        current = self._inventory.get(item_id, 0.0)
+        if current < quantity:
+            return False
+        self._inventory[item_id] = current - quantity
+        if self._inventory[item_id] <= 1e-9:
+             del self._inventory[item_id]
+        return True
+
+    @override
+    def get_quantity(self, item_id: str) -> float:
+        return self._inventory.get(item_id, 0.0)
+
     def add_inventory(self, item_id: str, quantity: float, quality: float):
         """Adds items to the firm's inventory and updates the average quality."""
         current_inventory = self._inventory.get(item_id, 0)

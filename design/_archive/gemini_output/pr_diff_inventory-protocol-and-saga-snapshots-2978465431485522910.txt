@@ -1,0 +1,701 @@
+diff --git a/communications/insights/TD-255_TD-256_purity_reforms.md b/communications/insights/TD-255_TD-256_purity_reforms.md
+new file mode 100644
+index 00000000..6b1a0e1b
+--- /dev/null
++++ b/communications/insights/TD-255_TD-256_purity_reforms.md
+@@ -0,0 +1,31 @@
++# Technical Insight Report: Purity Reforms (TD-255 & TD-256)
++
++## 1. Problem Phenomenon
++*   **Direct State Access**: The codebase was rife with direct access to `agent.inventory`, treating it as a raw dictionary. This bypassed business rules (e.g., quality tracking) and made it impossible to enforce transactional integrity or logging.
++*   **Saga Impurity**: `HousingTransactionSagaHandler` was accessing live agent objects (`simulation.agents.get(id)`) during saga execution steps (e.g., `_handle_initiated`), violating the principle of isolation for long-running transactions.
++*   **DTO Mismatch**: A critical disconnect was identified between `HousingSystem` (producing `HousingPurchaseSagaDTO`) and `SagaHandler` (consuming `HousingTransactionSagaStateDTO`). The system relied on implicit compatibility or legacy fields (`buyer_id`) rather than strict typing.
++
++## 2. Root Cause Analysis
++*   **Legacy Architecture**: `BaseAgent` exposed `self.inventory` as a public dictionary, and early systems (`Registry`, `GoodsHandler`) were built to manipulate it directly.
++*   **Module Drift**: The housing domain (`modules.housing`) and finance domain (`modules.finance`) evolved separate DTO definitions for similar concepts, leading to the mismatch in Saga structures.
++*   **Lazy Loading Pattern**: The Saga Handler was designed to "resolve" agents at runtime rather than carrying a snapshot, likely to ensure data freshness, but this compromised the "Frozen State" requirement for robust sagas.
++
++## 3. Solution Implementation Details
++*   **Protocol Enforced Inventory**:
++    *   Defined `IInventoryHandler` in `modules/simulation/api.py`.
++    *   Refactored `Firm` and `Household` (via `BaseAgent`) to implement this protocol.
++    *   Renamed `self.inventory` to `self._inventory` to discourage direct access.
++    *   **Mitigation:** Added a backward-compatible `inventory` property to `BaseAgent` that aliases `_inventory`. This prevents immediate crashes in legacy systems (like `ma_manager`, `bootstrapper`) that still rely on direct attribute access, while marking the property as deprecated.
++    *   Updated `GoodsTransactionHandler` and `Registry` to use `add_item`/`remove_item` methods.
++*   **Snapshot Integration**:
++    *   Defined `HouseholdSnapshotDTO` in `modules/simulation/api.py`.
++    *   Updated `HousingSystem` to capture this snapshot at the moment of saga submission.
++    *   Updated `HousingTransactionSagaHandler` to operate strictly on this snapshot (via `buyer_context`), removing all live agent lookups for financial data in the initiation phase.
++*   **DTO Alignment**:
++    *   Forced `HousingSystem` to construct the strict `HousingTransactionSagaStateDTO` (Finance version) instead of the loose `HousingPurchaseSagaDTO` to ensure compatibility with the Orchestrator and Handler.
++
++## 4. Lessons Learned & Technical Debt Identified
++*   **DTO Duplication**: `modules/housing/dtos.py` and `modules/finance/sagas/housing_api.py` contain overlapping definitions (`HousingTransactionSagaStateDTO`). This should be consolidated into a shared domain module.
++*   **Registry Redundancy**: `simulation/systems/registry.py` contains logic (`_handle_goods_registry`) that duplicates `GoodsTransactionHandler`. The `Registry` class appears to be a legacy artifact that should be deprecated or merged.
++*   **Inventory Access Violations**: The audit script (`scripts/audit_inventory_access.py`) revealed 60+ remaining violations in systems like `ma_manager.py`, `bootstrapper.py`, `persistence_manager.py`, and `liquidation_handlers.py`. These systems still access `.inventory` directly and need to be refactored to use `IInventoryHandler` or `Firm` specific methods.
++*   **Quality Handling**: `IInventoryHandler` currently only supports `(item_id, quantity)`. Logic for `quality` updates is currently handled manually in `GoodsTransactionHandler` and `Registry` by checking for `inventory_quality` attributes. This should be incorporated into an extended protocol or the agent's internal logic.
+diff --git a/modules/finance/saga_handler.py b/modules/finance/saga_handler.py
+index 8353e74c..9fa0413f 100644
+--- a/modules/finance/saga_handler.py
++++ b/modules/finance/saga_handler.py
+@@ -15,7 +15,7 @@ from modules.market.loan_api import (
+     calculate_monthly_income,
+     calculate_total_monthly_debt_payments
+ )
+-from modules.simulation.api import ISimulationState
++from modules.simulation.api import ISimulationState, HouseholdSnapshotDTO
+ from simulation.finance.api import ISettlementSystem, IFinancialEntity
+ from simulation.models import Transaction
+ from modules.finance.kernel.api import IMonetaryLedger
+@@ -106,6 +106,15 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+ 
+         return saga
+ 
++    def _get_buyer_id(self, saga: HousingTransactionSagaStateDTO) -> Optional[int]:
++        """Helper to extract buyer ID from snapshot or dict."""
++        ctx = saga.get('buyer_context')
++        if isinstance(ctx, HouseholdSnapshotDTO):
++            return int(ctx.household_id)
++        elif isinstance(ctx, dict):
++            return ctx.get('id')
++        return saga.get('buyer_id')
++
+     def _handle_initiated(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
+         # 1. Lock Property
+         success = False
+@@ -119,72 +128,16 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+              # Can't rollback lock if we didn't get it, but compensate handles cleanup
+              return self.compensate_step(saga)
+ 
+-        # Retrieve IDs safely (handling potential migration state where context might be missing)
+-        # Note: DTO type requires context, but runtime dict might still have keys if not migrated
+-        buyer_id = saga.get('buyer_context', {}).get('id')
+-        if buyer_id is None:
+-             buyer_id = saga.get('buyer_id') # Legacy fallback
+-
+-        seller_id = saga.get('seller_context', {}).get('id')
+-        if seller_id is None:
+-             seller_id = saga.get('seller_id')
+-
+-        # 2. Resolve Seller
+-        if seller_id == -1 or seller_id is None:
+-             units = getattr(self.simulation, 'real_estate_units', [])
+-             unit = next((u for u in units if hasattr(u, 'id') and u.id == saga['property_id']), None)
+-             if unit:
+-                 seller_id = unit.owner_id
+-             else:
+-                 saga['error_message'] = "Property not found"
+-                 return self.compensate_step(saga)
+-
+-        # 3. Resolve Buyer and Populate Contexts
+-        buyer = self.simulation.agents.get(buyer_id)
+-        # seller = self.simulation.agents.get(seller_id) # Not strictly needed for logic here
+-
+-        ticks_per_year = getattr(self.simulation.config_module, 'TICKS_PER_YEAR', 360)
++        # 2. Application Staging (Data already prepared by HousingSystem via Snapshot)
++        app_dto = saga.get('loan_application')
+ 
+-        # Buyer Context
+-        monthly_income = 0.0
+-        if buyer and hasattr(buyer, 'current_wage'):
+-             monthly_income = calculate_monthly_income(buyer.current_wage, ticks_per_year)
+-
+-        existing_monthly_payments = calculate_total_monthly_debt_payments(
+-            self.simulation.bank,
+-            buyer_id,
+-            ticks_per_year
+-        )
+-
+-        saga['buyer_context'] = {
+-            "id": buyer_id,
+-            "monthly_income": monthly_income,
+-            "existing_monthly_debt": existing_monthly_payments
+-        }
+-
+-        # Seller Context
+-        saga['seller_context'] = {
+-            "id": seller_id,
+-            "monthly_income": 0.0,
+-            "existing_monthly_debt": 0.0
+-        }
+-
+-        # 4. Prepare Application
+-        principal = saga['offer_price'] - saga['down_payment_amount']
+-
+-        app_dto: MortgageApplicationDTO = {
+-            "applicant_id": buyer_id,
+-            "requested_principal": principal,
+-            "purpose": "MORTGAGE",
+-            "property_id": saga['property_id'],
+-            "property_value": saga['offer_price'],
+-            "applicant_monthly_income": monthly_income,
+-            "existing_monthly_debt_payments": existing_monthly_payments,
+-            "loan_term": 360
+-        }
+-        saga['loan_application'] = app_dto # type: ignore
++        # Backward compatibility / Safety check: If not present, try to reconstruct (Should not happen with new HousingSystem)
++        if not app_dto:
++             # Legacy Fallback Logic (removed for purity compliance, assume error)
++             saga['error_message'] = "Missing loan application in saga state"
++             return self.compensate_step(saga)
+ 
+-        # 5. Stage Mortgage
++        # 3. Stage Mortgage
+         staged_loan_id = self.loan_market.stage_mortgage_application(app_dto)
+         if not staged_loan_id:
+              saga['error_message'] = "Loan staging rejected"
+@@ -255,10 +208,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+ 
+         bank = self.simulation.bank
+ 
+-        # Safely retrieve IDs (fallback for in-flight sagas)
+-        buyer_id = saga.get('buyer_context', {}).get('id')
+-        if buyer_id is None:
+-             buyer_id = saga.get('buyer_id')
++        buyer_id = self._get_buyer_id(saga)
+ 
+         seller_id = saga.get('seller_context', {}).get('id')
+         if seller_id is None:
+@@ -326,9 +276,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+ 
+     def _handle_transfer_title(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
+         # Finalize Ownership
+-        buyer_id = saga.get('buyer_context', {}).get('id')
+-        if buyer_id is None:
+-             buyer_id = saga.get('buyer_id')
++        buyer_id = self._get_buyer_id(saga)
+ 
+         if hasattr(self.housing_service, 'transfer_asset'):
+             success = self.housing_service.transfer_asset(saga['property_id'], buyer_id)
+@@ -361,9 +309,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+ 
+         bank = self.simulation.bank
+ 
+-        buyer_id = saga.get('buyer_context', {}).get('id')
+-        if buyer_id is None:
+-             buyer_id = saga.get('buyer_id')
++        buyer_id = self._get_buyer_id(saga)
+ 
+         seller_id = saga.get('seller_context', {}).get('id')
+         if seller_id is None:
+@@ -419,9 +365,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+     def _log_transaction(self, saga: HousingTransactionSagaStateDTO):
+         loan_id = saga['mortgage_approval']['loan_id'] if saga.get('mortgage_approval') else None
+ 
+-        buyer_id = saga.get('buyer_context', {}).get('id')
+-        if buyer_id is None:
+-             buyer_id = saga.get('buyer_id')
++        buyer_id = self._get_buyer_id(saga)
+ 
+         seller_id = saga.get('seller_context', {}).get('id')
+         if seller_id is None:
+diff --git a/modules/finance/sagas/housing_api.py b/modules/finance/sagas/housing_api.py
+index 9c4e58b8..77387dad 100644
+--- a/modules/finance/sagas/housing_api.py
++++ b/modules/finance/sagas/housing_api.py
+@@ -1,8 +1,10 @@
+ from typing import TypedDict, Literal, Optional, Protocol, List, Dict
+ from uuid import UUID
+ from dataclasses import dataclass
++from typing import TYPE_CHECKING
+ 
+ from modules.market.housing_planner_api import MortgageApplicationDTO
++from modules.simulation.api import HouseholdSnapshotDTO
+ 
+ # --- DTOs for Saga State & Payloads ---
+ 
+@@ -38,7 +40,7 @@ class HousingTransactionSagaStateDTO(TypedDict):
+         "COMPLETED",
+         "FAILED_ROLLED_BACK"
+     ]
+-    buyer_context: HousingSagaAgentContext
++    buyer_context: HouseholdSnapshotDTO
+     seller_context: HousingSagaAgentContext
+     property_id: int
+     offer_price: float
+diff --git a/modules/household/mixins/_properties.py b/modules/household/mixins/_properties.py
+index 90181fe2..0f95cae8 100644
+--- a/modules/household/mixins/_properties.py
++++ b/modules/household/mixins/_properties.py
+@@ -31,9 +31,22 @@ class HouseholdPropertiesMixin:
+         self._econ_state.assets = value
+         self._assets = value
+ 
++    @property
++    def _inventory(self) -> Dict[str, float]:
++        """
++        [Refactor] Internal inventory access via EconStateDTO.
++        Overrides BaseAgent._inventory to link with DTO.
++        """
++        return self._econ_state.inventory
++
++    @_inventory.setter
++    def _inventory(self, value: Dict[str, float]) -> None:
++        self._econ_state.inventory = value
++
+     @property
+     @override
+     def inventory(self) -> Dict[str, float]:
++        """[DEPRECATED] Use IInventoryHandler methods or self._inventory."""
+         return self._econ_state.inventory
+ 
+     @inventory.setter
+diff --git a/modules/simulation/api.py b/modules/simulation/api.py
+index b334aeeb..4cb0d314 100644
+--- a/modules/simulation/api.py
++++ b/modules/simulation/api.py
+@@ -1,6 +1,6 @@
+ from __future__ import annotations
+ from dataclasses import dataclass
+-from typing import Protocol, TypedDict, Any, List, Dict, TYPE_CHECKING, runtime_checkable
++from typing import Protocol, TypedDict, Any, List, Dict, Optional, TYPE_CHECKING, runtime_checkable
+ 
+ if TYPE_CHECKING:
+     from simulation.finance.api import ISettlementSystem
+@@ -38,8 +38,31 @@ class SystemStateDTO:
+     fiscal_policy_last_activation_tick: int
+     central_bank_base_rate: float
+ 
++@dataclass(frozen=True)
++class HouseholdSnapshotDTO:
++    """
++    Read-only snapshot of a household's financial state for saga processing.
++    Ensures isolation from live agent state during long-running transactions.
++    """
++    household_id: str
++    cash: float
++    income: float
++    credit_score: float
++    existing_debt: float
++    assets_value: float
++
+ # --- Protocols ---
+ 
++@runtime_checkable
++class IInventoryHandler(Protocol):
++    """
++    Protocol for strict transactional inventory management.
++    Abstracts direct dictionary access to enforce business rules and logging.
++    """
++    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool: ...
++    def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool: ...
++    def get_quantity(self, item_id: str) -> float: ...
++
+ class IAgent(Protocol):
+     id: int
+     is_active: bool
+diff --git a/scripts/audit_inventory_access.py b/scripts/audit_inventory_access.py
+new file mode 100644
+index 00000000..f543c37f
+--- /dev/null
++++ b/scripts/audit_inventory_access.py
+@@ -0,0 +1,68 @@
++import os
++import re
++
++ROOT_DIRS = ["modules", "simulation"]
++EXCLUDE_DIRS = ["__pycache__"]
++SAFE_PATTERNS = [
++    r"self\._inventory",
++    r"_econ_state\.inventory",
++    r"def inventory\(self\)", # Property definition
++    r"@inventory\.setter",
++    r"self\.inventory: Dict", # Type hint
++    r"self\.inventory =", # Initialization (if any left)
++    r"class .*InventoryHandler", # Interface
++    r"IInventoryHandler",
++    r"_inventory", # If usage is explicitly _inventory, checking for .inventory matches ._inventory too so I need to be careful
++]
++
++def audit():
++    print("Auditing for legacy .inventory access...")
++    violations = []
++
++    for root_dir in ROOT_DIRS:
++        for root, dirs, files in os.walk(root_dir):
++            dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
++            for file in files:
++                if not file.endswith(".py"): continue
++
++                filepath = os.path.join(root, file)
++                try:
++                    with open(filepath, "r", encoding="utf-8") as f:
++                        lines = f.readlines()
++                except Exception as e:
++                    print(f"Could not read {filepath}: {e}")
++                    continue
++
++                for i, line in enumerate(lines):
++                    # Check for .inventory access
++                    # We look for ".inventory" literal
++                    if ".inventory" in line:
++                        # Exclude ._inventory
++                        if "._inventory" in line:
++                            continue
++
++                        # Exclude checks
++                        is_safe = False
++                        for pattern in SAFE_PATTERNS:
++                            if re.search(pattern, line):
++                                is_safe = True
++                                break
++
++                        if not is_safe:
++                            # Contextual check: Imports often contain .inventory (e.g. from modules.inventory.api)
++                            if "import " in line:
++                                continue
++
++                            violations.append(f"{filepath}:{i+1}: {line.strip()}")
++
++    if violations:
++        print(f"Found {len(violations)} potential violations:")
++        for v in violations:
++            print(v)
++        # We don't exit 1 because we want to see the output and maybe fix them or document them
++        # exit(1)
++    else:
++        print("No violations found!")
++
++if __name__ == "__main__":
++    audit()
+diff --git a/simulation/base_agent.py b/simulation/base_agent.py
+index f5a32a6e..9c65f11a 100644
+--- a/simulation/base_agent.py
++++ b/simulation/base_agent.py
+@@ -5,12 +5,13 @@ from modules.finance.api import InsufficientFundsError
+ from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
+ from modules.finance.wallet.wallet import Wallet
+ from modules.finance.wallet.api import IWallet
++from modules.simulation.api import IInventoryHandler
+ 
+ if TYPE_CHECKING:
+     from modules.memory.api import MemoryV2Interface
+ 
+ 
+-class BaseAgent(ICurrencyHolder, ABC):
++class BaseAgent(ICurrencyHolder, IInventoryHandler, ABC):
+     def __init__(
+         self,
+         id: int,
+@@ -36,11 +37,23 @@ class BaseAgent(ICurrencyHolder, ABC):
+         self.decision_engine = decision_engine
+         self.value_orientation = value_orientation
+         self.name = name if name is not None else f"{self.__class__.__name__}_{id}"
+-        self.inventory: Dict[str, float] = {}
++        self._inventory: Dict[str, float] = {}
+         self.is_active: bool = True
+         self.logger = logger if logger is not None else logging.getLogger(self.name)
+         self._pre_state_data: Dict[str, Any] = {}  # 이전 상태 저장을 위한 속성
+         self.pre_state_snapshot: Dict[str, Any] = {} # Mypy fix: Snapshot for learning
++
++    @property
++    def inventory(self) -> Dict[str, float]:
++        """
++        [DEPRECATED] Backward compatibility accessor for _inventory.
++        External systems should transition to using IInventoryHandler methods.
++        """
++        return self._inventory
++
++    @inventory.setter
++    def inventory(self, value: Dict[str, float]) -> None:
++        self._inventory = value
+         try:
+             self.generation: int = 0
+         except AttributeError:
+@@ -90,6 +103,42 @@ class BaseAgent(ICurrencyHolder, ABC):
+             # Wallet raises InsufficientFundsError automatically
+             self._wallet.subtract(amount, currency, memo="Withdraw")
+ 
++    # --- IInventoryHandler Implementation ---
++
++    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool:
++        """
++        Adds item to inventory safely.
++        """
++        if quantity < 0:
++            self.logger.warning(f"INVENTORY_FAIL | Attempt to add negative quantity {quantity} of {item_id}")
++            return False
++
++        current = self._inventory.get(item_id, 0.0)
++        self._inventory[item_id] = current + quantity
++        return True
++
++    def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool:
++        """
++        Removes item from inventory safely. Returns False if insufficient.
++        """
++        if quantity < 0:
++            self.logger.warning(f"INVENTORY_FAIL | Attempt to remove negative quantity {quantity} of {item_id}")
++            return False
++
++        current = self._inventory.get(item_id, 0.0)
++        if current < quantity:
++            self.logger.warning(f"INVENTORY_FAIL | Insufficient {item_id}. Have {current}, Need {quantity}")
++            return False
++
++        self._inventory[item_id] = current - quantity
++        if self._inventory[item_id] <= 1e-9: # Cleanup logic
++             del self._inventory[item_id]
++
++        return True
++
++    def get_quantity(self, item_id: str) -> float:
++        return self._inventory.get(item_id, 0.0)
++
+     def get_agent_data(self) -> Dict[str, Any]:
+         """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""
+         # 이 메서드는 하위 클래스에서 구체적인 내용을 구현해야 합니다.
+diff --git a/simulation/firms.py b/simulation/firms.py
+index a9e21b82..fd57e026 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -71,7 +71,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+         self.settlement_system: Optional["ISettlementSystem"] = None
+         self.config = config_dto
+         if initial_inventory is not None:
+-            self.inventory.update(initial_inventory)
++            self._inventory.update(initial_inventory)
+         self.specialization = specialization
+         self.inventory_quality: Dict[str, float] = {}  # Phase 15: Weighted Average Quality
+         self.input_inventory: Dict[str, float] = {} # WO-030: Raw Materials
+@@ -178,7 +178,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+         TD-033: Returns full multi-currency asset dictionary.
+         """
+         # 1. Write off Inventory
+-        self.inventory.clear()
++        self._inventory.clear()
+         
+         # 2. Write off Capital Stock
+         self.capital_stock = 0.0
+@@ -205,7 +205,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+ 
+     def add_inventory(self, item_id: str, quantity: float, quality: float):
+         """Adds items to the firm's inventory and updates the average quality."""
+-        current_inventory = self.inventory.get(item_id, 0)
++        current_inventory = self._inventory.get(item_id, 0)
+         current_quality = self.inventory_quality.get(item_id, 1.0)
+ 
+         total_qty = current_inventory + quantity
+@@ -213,7 +213,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+             new_avg_quality = ((current_inventory * current_quality) + (quantity * quality)) / total_qty
+             self.inventory_quality[item_id] = new_avg_quality
+ 
+-        self.inventory[item_id] = total_qty
++        self._inventory[item_id] = total_qty
+ 
+     def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
+         return self.sales.post_ask(item_id, price, quantity, market, current_tick)
+@@ -262,7 +262,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+             decision_engine=cloned_decision_engine,
+             value_orientation=self.value_orientation,
+             config_dto=self.config,
+-            initial_inventory=copy.deepcopy(self.inventory),
++            initial_inventory=copy.deepcopy(self._inventory),
+             loan_market=self.decision_engine.loan_market,  # loan_market은 공유
+             logger=self.logger,
+             personality=self.personality # Propagate personality
+@@ -283,7 +283,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+         return {
+             "assets": MultiCurrencyWalletDTO(balances=self.finance.balance), # Direct Access wrapped in DTO
+             "needs": self.needs.copy(),
+-            "inventory": self.inventory.copy(),
++            "inventory": self._inventory.copy(),
+             "input_inventory": self.input_inventory.copy(), # WO-030
+             # SoC Refactor
+             "employees": [emp.id for emp in self.hr.employees],  # Only pass employee IDs
+diff --git a/simulation/systems/handlers/goods_handler.py b/simulation/systems/handlers/goods_handler.py
+index f153172e..62f81f0d 100644
+--- a/simulation/systems/handlers/goods_handler.py
++++ b/simulation/systems/handlers/goods_handler.py
+@@ -5,6 +5,7 @@ from simulation.models import Transaction
+ from simulation.core_agents import Household
+ from simulation.firms import Firm
+ from modules.system.api import DEFAULT_CURRENCY
++from modules.simulation.api import IInventoryHandler
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -97,7 +98,9 @@ class GoodsTransactionHandler(ITransactionHandler):
+         else:
+             # Physical Goods: Update Inventory
+             # Seller Inventory
+-            if hasattr(seller, "inventory"):
++            if isinstance(seller, IInventoryHandler):
++                seller.remove_item(tx.item_id, tx.quantity)
++            elif hasattr(seller, "inventory"):
+                  seller.inventory[tx.item_id] = max(0, seller.inventory.get(tx.item_id, 0) - tx.quantity)
+ 
+             # Buyer Inventory
+@@ -105,6 +108,19 @@ class GoodsTransactionHandler(ITransactionHandler):
+ 
+             if is_raw_material and isinstance(buyer, Firm):
+                 buyer.input_inventory[tx.item_id] = buyer.input_inventory.get(tx.item_id, 0.0) + tx.quantity
++            elif isinstance(buyer, IInventoryHandler):
++                # Quality Update
++                if hasattr(buyer, "inventory_quality"):
++                     current_qty = buyer.get_quantity(tx.item_id)
++                     existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
++                     tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
++                     total_new_qty = current_qty + tx.quantity
++
++                     if total_new_qty > 0:
++                         new_avg_quality = ((current_qty * existing_quality) + (tx.quantity * tx_quality)) / total_new_qty
++                         buyer.inventory_quality[tx.item_id] = new_avg_quality
++
++                buyer.add_item(tx.item_id, tx.quantity)
+             elif hasattr(buyer, "inventory"):
+                 current_qty = buyer.inventory.get(tx.item_id, 0)
+                 existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
+diff --git a/simulation/systems/housing_system.py b/simulation/systems/housing_system.py
+index e78b1eb0..57e66a55 100644
+--- a/simulation/systems/housing_system.py
++++ b/simulation/systems/housing_system.py
+@@ -4,13 +4,12 @@ from typing import TYPE_CHECKING, Any, List, Optional, Dict
+ from uuid import uuid4, UUID
+ from simulation.models import Order
+ from modules.housing.dtos import (
+-    HousingPurchaseDecisionDTO,
+-    HousingTransactionSagaStateDTO
++    HousingPurchaseDecisionDTO
+ )
+-from modules.market.housing_purchase_api import (
+-    HousingPurchaseSagaDTO,
+-    HousingPurchaseSagaDataDTO
++from modules.finance.sagas.housing_api import (
++    HousingTransactionSagaStateDTO
+ )
++from modules.simulation.api import HouseholdSnapshotDTO
+ from modules.finance.api import MortgageApplicationDTO
+ from modules.system.api import DEFAULT_CURRENCY
+ 
+@@ -182,21 +181,40 @@ class HousingSystem:
+         principal = offer_price - down_payment
+         prop_id = decision['target_property_id']
+ 
+-        # Gather data for Mortgage Application
++        # Gather data for Mortgage Application & Snapshot
+         household = simulation.agents.get(buyer_id)
+         annual_income = 0.0
++        cash_balance = 0.0
++        credit_score = 0.0
+ 
+         if household:
+              # Logic to estimate income
+              if hasattr(household, 'current_wage'):
+                   ticks_per_year = getattr(self.config, 'TICKS_PER_YEAR', 100)
+-                  # Assuming current_wage is per tick? Or monthly?
+-                  # Household model usually has current_wage.
+                   annual_income = household.current_wage * ticks_per_year
+ 
++             if isinstance(household.assets, dict):
++                 cash_balance = household.assets.get(DEFAULT_CURRENCY, 0.0)
++             else:
++                 cash_balance = float(household.assets)
++
++             # Placeholder for credit score if available
++             if hasattr(household, 'credit_score'):
++                 credit_score = getattr(household, 'credit_score')
++
+         # [TD-206] Use helper for precise debt payments
+         existing_debt_payments = self._calculate_total_monthly_debt_payments(buyer_id, simulation.bank)
+ 
++        # Create Purity Snapshot
++        buyer_snapshot = HouseholdSnapshotDTO(
++            household_id=str(buyer_id),
++            cash=cash_balance,
++            income=annual_income,
++            credit_score=credit_score,
++            existing_debt=existing_debt_payments,
++            assets_value=cash_balance # Simplified
++        )
++
+         # Resolve seller
+         seller_id = -1
+         # Need to access registry to find owner
+@@ -225,24 +243,25 @@ class HousingSystem:
+             loan_term=loan_term
+         )
+ 
+-        saga_data = HousingPurchaseSagaDataDTO(
+-            household_id=buyer_id,
+-            property_id=prop_id,
+-            offer_price=offer_price,
+-            down_payment=down_payment,
+-            mortgage_application=mortgage_app,
+-            approved_loan_id=None,
+-            seller_id=seller_id
+-        )
+-
+-        saga = HousingPurchaseSagaDTO(
+-            saga_id=saga_id,
+-            saga_type="HOUSING_PURCHASE",
+-            status="STARTED",
+-            current_step=0,
+-            data=saga_data,
+-            start_tick=simulation.time
+-        )
++        # Construct Saga State DTO (Flattened for SagaHandler)
++        saga: HousingTransactionSagaStateDTO = {
++            "saga_id": saga_id, # type: ignore
++            "status": "INITIATED",
++            "buyer_context": buyer_snapshot,
++            "seller_context": {
++                "id": seller_id,
++                "monthly_income": 0.0,
++                "existing_monthly_debt": 0.0
++            },
++            "property_id": prop_id,
++            "offer_price": offer_price,
++            "down_payment_amount": down_payment,
++            "loan_application": mortgage_app,
++            "mortgage_approval": None,
++            "staged_loan_id": None,
++            "error_message": None,
++            "last_processed_tick": 0
++        }
+ 
+         # TD-253: Saga Orchestration Update
+         if hasattr(simulation, 'saga_orchestrator') and simulation.saga_orchestrator:
+diff --git a/simulation/systems/registry.py b/simulation/systems/registry.py
+index b4a6560e..bea853f1 100644
+--- a/simulation/systems/registry.py
++++ b/simulation/systems/registry.py
+@@ -7,6 +7,7 @@ from simulation.models import Transaction
+ from simulation.core_agents import Household, Skill
+ from simulation.firms import Firm
+ from simulation.dtos.api import SimulationState
++from modules.simulation.api import IInventoryHandler
+ from modules.housing.api import IHousingService
+ from modules.system.constants import (
+     TX_LABOR, TX_RESEARCH_LABOR, TX_GOODS, TX_STOCK,
+@@ -106,7 +107,9 @@ class Registry(IRegistry):
+         else:
+             # Physical Goods: Update Inventory
+             # Seller Inventory
+-            if isinstance(seller, Household):
++            if isinstance(seller, IInventoryHandler):
++                seller.remove_item(tx.item_id, tx.quantity)
++            elif isinstance(seller, Household):
+                 seller.inventory[tx.item_id] = max(0, seller.inventory.get(tx.item_id, 0) - tx.quantity)
+             elif hasattr(seller, "inventory"):
+                  seller.inventory[tx.item_id] = max(0, seller.inventory.get(tx.item_id, 0) - tx.quantity)
+@@ -116,6 +119,18 @@ class Registry(IRegistry):
+ 
+             if is_raw_material and isinstance(buyer, Firm):
+                 buyer.input_inventory[tx.item_id] = buyer.input_inventory.get(tx.item_id, 0.0) + tx.quantity
++            elif isinstance(buyer, IInventoryHandler):
++                 if hasattr(buyer, "inventory_quality"):
++                     current_qty = buyer.get_quantity(tx.item_id)
++                     existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)
++                     tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
++                     total_new_qty = current_qty + tx.quantity
++
++                     if total_new_qty > 0:
++                         new_avg_quality = ((current_qty * existing_quality) + (tx.quantity * tx_quality)) / total_new_qty
++                         buyer.inventory_quality[tx.item_id] = new_avg_quality
++                 buyer.add_item(tx.item_id, tx.quantity)
++
+             elif isinstance(buyer, Household):
+                 current_qty = buyer.inventory.get(tx.item_id, 0)
+                 existing_quality = buyer.inventory_quality.get(tx.item_id, 1.0)

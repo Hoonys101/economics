@@ -12,10 +12,12 @@
     -   **Source**: `TECH_DEBT_LEDGER.md`
     -   **Status**: DONE ✅
 
--   [ ] **[TD-256] Implement Inventory Abstraction:**
+- [x] **[TD-256] Implement Inventory Abstraction:**
     -   **Description**: Refactor inventory management to use a strict protocol (`IInventoryHandler`).
-    -   **Source**: `TECH_DEBT_LEDGER.md`
-    -   **Impact**: High.
+    -   **Status**: DONE ✅
+- [ ] **[TD-266] Legacy Inventory Cleanup:**
+    -   **Description**: Refactor 70+ instances of direct `.inventory` access (tracked via `scripts/audit_inventory_access.py`).
+    -   **Source**: `TD-255_TD-256_purity_reforms.md`
 
 -   [x] **[TD-254] Eliminate Settlement Abstraction Leaks:**
     -   **Description**: Remove `hasattr` (Resolved in Phase 6).

@@ -46,23 +46,13 @@ class BaseAgent(ICurrencyHolder, IInventoryHandler, ABC):
     @property
     def inventory(self) -> Dict[str, float]:
         """
-        [DEPRECATED] Backward compatibility accessor for _inventory.
+        [DEPRECATED] Read-only backward compatibility accessor for _inventory.
         External systems should transition to using IInventoryHandler methods.
         """
-        return self._inventory
+        return self._inventory.copy()
 
-    @inventory.setter
-    def inventory(self, value: Dict[str, float]) -> None:
-        self._inventory = value
-        try:
-            self.generation: int = 0
-        except AttributeError:
-            # If generation is a property (e.g. in Household), it cannot be set here.
-            pass
-        
-        # [Cleanup] Standardized Memory Structure
-        self.memory: Dict[str, Any] = {}
-        self.memory_v2 = memory_interface
+    # Setter removed to enforce IInventoryHandler protocol usage (TD-256)
+    # def inventory(self, value): ...
 
     @property
     def wallet(self) -> IWallet:
@@ -105,7 +95,7 @@ class BaseAgent(ICurrencyHolder, IInventoryHandler, ABC):
 
     # --- IInventoryHandler Implementation ---
 
-    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool:
+    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0) -> bool:
         """
         Adds item to inventory safely.
         """
