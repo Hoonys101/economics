@@ -122,6 +122,14 @@ class BaseAgent(ICurrencyHolder, IInventoryHandler, ABC):
     def get_quantity(self, item_id: str) -> float:
         return self._inventory.get(item_id, 0.0)
 
+    def get_all_items(self) -> Dict[str, float]:
+        """Returns a copy of the inventory."""
+        return self._inventory.copy()
+
+    def clear_inventory(self) -> None:
+        """Clears the inventory."""
+        self._inventory.clear()
+
     def get_quality(self, item_id: str) -> float:
         """
         Default implementation returns 1.0. Subclasses tracking quality should override.

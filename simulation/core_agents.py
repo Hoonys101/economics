@@ -275,6 +275,9 @@ class Household(
 
         # Ensure BaseAgent uses the same wallet as EconStateDTO
         self._wallet = self._econ_state.wallet
+        # EXPLICITLY ALIAS INVENTORY: Ensure BaseAgent._inventory points to EconStateDTO.inventory
+        # This prevents "Split Brain" if BaseAgent methods are inadvertently used or if inheritance overrides are missed.
+        self._inventory = self._econ_state.inventory
 
         # WO-123: Memory Logging - Record Birth
         if self.memory_v2:
@@ -454,3 +457,14 @@ class Household(
     @override
     def get_quality(self, item_id: str) -> float:
         return self._econ_state.inventory_quality.get(item_id, 1.0)
+
+    @override
+    def get_all_items(self) -> Dict[str, float]:
+        """Returns a copy of the inventory."""
+        return self._econ_state.inventory.copy()
+
+    @override
+    def clear_inventory(self) -> None:
+        """Clears the inventory."""
+        self._econ_state.inventory.clear()
+        self._econ_state.inventory_quality.clear()

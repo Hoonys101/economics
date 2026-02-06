@@ -53,7 +53,7 @@ class InventoryLiquidationHandler(ILiquidationHandler):
         inventory_transfer = {}
         # Iterate over a copy to allow modification if needed (though we only read keys/values here)
         # firm.inventory is a dict
-        for item_id, qty in firm._inventory.items():
+        for item_id, qty in firm.get_all_items().items():
             if qty <= 0:
                 continue
 
@@ -90,6 +90,6 @@ class InventoryLiquidationHandler(ILiquidationHandler):
                 self.public_manager.receive_liquidated_assets(inventory_transfer)
 
                 # Clear Firm Inventory
-                firm._inventory.clear()
+                firm.clear_inventory()
             else:
                 logger.error(f"LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay {total_value:.2f} to Firm {firm.id}.")

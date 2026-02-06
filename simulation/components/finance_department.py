@@ -338,7 +338,7 @@ class FinanceDepartment(IFinanceDepartment):
 
     def trigger_emergency_liquidation(self) -> List[Order]:
         orders = []
-        for good, qty in self.firm._inventory.items():
+        for good, qty in self.firm.get_all_items().items():
             if qty <= 0: continue
             price = self.firm.last_prices.get(good, 10.0)
             order = Order(
@@ -375,7 +375,7 @@ class FinanceDepartment(IFinanceDepartment):
 
     def get_inventory_value(self) -> float:
         total_val = 0.0
-        for good, qty in self.firm._inventory.items():
+        for good, qty in self.firm.get_all_items().items():
              price = self.firm.last_prices.get(good, 10.0)
              total_val += qty * price
         return total_val
