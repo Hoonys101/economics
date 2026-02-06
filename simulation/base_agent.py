@@ -24,6 +24,7 @@ class BaseAgent(ICurrencyHolder, IInventoryHandler, ABC):
         memory_interface: Optional["MemoryV2Interface"] = None,
     ):
         self.id = id
+        self.memory_v2 = memory_interface
 
         initial_balance_dict = {}
         if isinstance(initial_assets, dict):

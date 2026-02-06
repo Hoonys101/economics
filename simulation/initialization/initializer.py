@@ -8,6 +8,11 @@ import json
 import os
 from collections import deque
 
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
 if TYPE_CHECKING:
     from simulation.engine import Simulation
 
@@ -113,6 +118,21 @@ class SimulationInitializer(SimulationInitializerInterface):
         Simulation 인스턴스를 생성하고 모든 구성 요소를 조립합니다.
         (기존 Simulation.__init__ 로직을 이 곳으로 이동)
         """
+        # 0. Acquire Application-Level Lock
+        # Using fcntl to ensure only one simulation runs concurrently.
+        # This prevents DB lock contention during heavy init operations.
+        lock_file = None
+        if fcntl:
+            lock_file = open("simulation.lock", "w")
+            try:
+                fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                self.logger.info("Acquired exclusive lock on simulation.lock")
+            except IOError:
+                self.logger.error("Another simulation instance is already running (locked by simulation.lock).")
+                raise RuntimeError("Simulation is already running.")
+        else:
+            self.logger.warning("File locking (fcntl) is not supported on this platform. Concurrency safety is not guaranteed.")
+
         # 1. Create the empty Simulation shell
         sim = Simulation(
             config_manager=self.config_manager,
@@ -120,6 +140,9 @@ class SimulationInitializer(SimulationInitializerInterface):
             logger=self.logger,
             repository=self.repository
         )
+
+        # Attach lock file to simulation to keep it open (and locked) until shutdown
+        sim._lock_file = lock_file
 
         # 2. Populate the shell with all its components
         sim.settlement_system = SettlementSystem(logger=self.logger)

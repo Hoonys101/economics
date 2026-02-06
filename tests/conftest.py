@@ -1,7 +1,19 @@
 import pytest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, patch
 from simulation.agents.government import Government
 from modules.finance.system import FinanceSystem
+
+@pytest.fixture(autouse=True)
+def mock_fcntl():
+    """Mocks fcntl to prevent file locking during tests."""
+    # We patch the fcntl module used in initializer.py
+    # If the system doesn't have fcntl, it might be None, so we patch carefully.
+    with patch('simulation.initialization.initializer.fcntl', create=True) as mock_fcntl:
+        if mock_fcntl:
+            mock_fcntl.flock = Mock()
+            mock_fcntl.LOCK_EX = 2
+            mock_fcntl.LOCK_NB = 4
+        yield mock_fcntl
 
 @pytest.fixture
 def mock_config():

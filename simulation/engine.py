@@ -75,6 +75,14 @@ class Simulation:
         self.simulation_logger.close()
         self.world_state.logger.info("Simulation finalized and Repository connection closed.")
 
+        # Release application-level lock if exists
+        if hasattr(self, "_lock_file") and self._lock_file:
+            try:
+                self._lock_file.close() # Closing the file releases the lock
+                self.world_state.logger.info("Released simulation.lock")
+            except Exception as e:
+                self.world_state.logger.error(f"Failed to release simulation.lock: {e}")
+
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None) -> None:
         self.tick_orchestrator.run_tick(injectable_sensory_dto)
         
