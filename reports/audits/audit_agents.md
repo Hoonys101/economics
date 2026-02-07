@@ -25,17 +25,20 @@ Provide a 3-bullet summary of the most critical structural drift found.
 Run this audit on the provided context files and output the result.'...
 📖 Attached context: simulation\base_agent.py
 📖 Attached context: simulation\firms.py
-⚠️ Context file not found or is not a file: simulation\households.py
+📖 Attached context: simulation\core_agents.py
 📖 Attached context: design\1_governance\architecture\ARCH_AGENTS.md
 🚀 [GeminiWorker] Running task with manual: reporter.md
 
-✅ Report Saved: C:\coding\economics\reports\temp\report_20260206_230640_Domain_Auditor.md
+✅ Report Saved: C:\coding\economics\reports\temp\report_20260207_193027_Domain_Auditor.md
 ============================================================
 ### 🚥 Domain Grade: WARNING
+
 ### ❌ Violations
+
 | File | Line | Violation | Severity |
 | :--- | :--- | :--- | :--- |
-| `simulation/firms.py` | 98-103 | **Stateful Component Initialization**: `Department` classes are initialized with a reference to the parent `Firm` instance (e.g., `self.hr = HRDepartment(self)`). This creates tight coupling and breaks state isolation, as documented in `ARCH_AGENTS.md`. | High |
-| `simulation/firms.py` | 210 | **Protocol Bypass**: `liquidate_assets` directly manipul
+| `simulation/firms.py` | 288-294 | **Protocol Purity**: `_add_inventory_internal` directly modifies `self._inventory`, bypassing the protocol's intended accessors. | Medium |
+| `simulation/firms.py` | 258-266 | **Protocol Purity**: Overridden `remove_item` method directly modifies `self._inventory` instead of using base class logic or a safe internal helper. | Medium |
+| `simulati
 ...
 ============================================================

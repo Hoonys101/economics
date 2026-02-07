@@ -31,7 +31,7 @@ from .dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
 
 # --- Core Data DTOs ---
 
-@dataclass
+@dataclass(frozen=True)
 class GoodsDTO:
     """
     Represents a specific quantity of a good in an agent's inventory.
@@ -39,7 +39,7 @@ class GoodsDTO:
     name: str
     quantity: float
 
-@dataclass
+@dataclass(frozen=True)
 class GoodsInfoDTO:
     """
     Represents static information about a good type (Catalog).
@@ -56,7 +56,7 @@ class GoodsInfoDTO:
     satiety: float
     decay_rate: float
 
-@dataclass
+@dataclass(frozen=True)
 class MarketHistoryDTO:
     """
     Represents historical market data.
@@ -70,7 +70,7 @@ class MarketHistoryDTO:
     worst_ask: float
     worst_bid: float
 
-@dataclass
+@dataclass(frozen=True)
 class OrderDTO:
     """
     Represents an order in the market.
@@ -80,7 +80,7 @@ class OrderDTO:
     quantity: float
     price: float
 
-@dataclass
+@dataclass(frozen=True)
 class MarketSnapshotDTO:
     """
     A pure-data snapshot of the state of all markets at a point in time.
@@ -90,7 +90,7 @@ class MarketSnapshotDTO:
     asks: Dict[str, List[OrderDTO]]
     best_asks: Dict[str, float]
 
-@dataclass
+@dataclass(frozen=True)
 class GovernmentPolicyDTO:
     """
     A pure-data snapshot of current government policies affecting agent decisions.
@@ -102,7 +102,7 @@ class GovernmentPolicyDTO:
 
 # --- State DTOs ---
 
-@dataclass
+@dataclass(frozen=True)
 class HouseholdStateDTO:
     """
     A read-only DTO containing the complete state of a Household agent.
@@ -135,7 +135,7 @@ class HouseholdStateDTO:
     perceived_fair_price: Dict[str, float] = field(default_factory=dict)
     sentiment_index: float = 0.5
 
-@dataclass
+@dataclass(frozen=True)
 class FirmStateDTO:
     """
     A read-only DTO containing the complete state of a Firm agent.
@@ -187,7 +187,7 @@ class FirmStateDTO:
 
 # --- Context DTO ---
 
-@dataclass
+@dataclass(frozen=True)
 class DecisionContext:
     """
     A pure data container for decision-making.

@@ -1,0 +1,5 @@
+  origin/HEAD -> origin/main
+  origin/TD-275-shareholder-registry-4778126289619716275
+  origin/main
+  origin/refactor/bank-decomposition-td274-4679290490066895833
+  origin/refactor/hr-finance-decouple-8448769851670572291

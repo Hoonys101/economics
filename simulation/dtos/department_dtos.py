@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Any
 from modules.system.api import CurrencyCode # Added for Phase 33
 
-@dataclass
+@dataclass(frozen=True)
 class FinanceStateDTO:
     balance: Dict[CurrencyCode, float] # Changed for Phase 33
     revenue_this_turn: Dict[CurrencyCode, float] # Changed for Phase 33
@@ -16,7 +16,7 @@ class FinanceStateDTO:
     dividend_rate: float
     is_publicly_traded: bool
 
-@dataclass
+@dataclass(frozen=True)
 class ProductionStateDTO:
     current_production: float
     productivity_factor: float
@@ -29,7 +29,7 @@ class ProductionStateDTO:
     input_inventory: Dict[str, float]
     inventory_quality: Dict[str, float]
 
-@dataclass
+@dataclass(frozen=True)
 class SalesStateDTO:
     inventory_last_sale_tick: Dict[str, int]
     price_history: Dict[str, float]
@@ -37,7 +37,7 @@ class SalesStateDTO:
     perceived_quality: float
     marketing_budget: float
 
-@dataclass
+@dataclass(frozen=True)
 class HRStateDTO:
     employees: List[int]
     employees_data: Dict[int, Dict[str, Any]]

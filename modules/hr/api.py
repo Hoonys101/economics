@@ -14,7 +14,7 @@ class IHRService(ABC):
         """Calculates all employee-related claims (wages, severance) for a firm in liquidation."""
         ...
 
-class IEmployeeDataProvider(IFinancialEntity, Protocol):
+class IEmployeeDataProvider(IFinancialEntity):
     """
     Protocol for accessing employee data and managing employment lifecycle.
     Decouples HR/Finance departments from the concrete Household agent.

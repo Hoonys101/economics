@@ -23,25 +23,25 @@ Provide a 3-bullet summary of the most critical structural drift found.
 
 [TASK]
 Run this audit on the provided context files and output the result.'...
-📖 Attached context: simulation\finance\api.py
-⚠️ Context file not found or is not a file: simulation\monetary\central_bank.py
-⚠️ Context file not found or is not a file: simulation\finance\settlement_system.py
-⚠️ Context file not found or is not a file: design\1_governance\architecture\ARCH_FINANCE.md
+📖 Attached context: simulation\api.py
+📖 Attached context: simulation\agents\central_bank.py
+📖 Attached context: simulation\systems\settlement_system.py
+📖 Attached context: design\1_governance\architecture\ARCH_TRANSACTIONS.md
 🚀 [GeminiWorker] Running task with manual: reporter.md
 
-✅ Report Saved: C:\coding\economics\reports\temp\report_20260206_230711_Domain_Auditor.md
+✅ Report Saved: C:\coding\economics\reports\temp\report_20260207_193143_Domain_Auditor.md
 ============================================================
-# ⚖️ Domain Auditor: Finance & Monetary Integrity
+# ⚖️ Financial Integrity Audit Report
 
-### 🚥 Domain Grade: PASS
-The provided API design strictly adheres to the principles of financial integrity by centralizing all monetary state changes and clearly defining operations for money creation, destruction, and transfer.
+### 🚥 Domain Grade: WARNING
 
 ### ❌ Violations
 | File | Line | Violation | Severity |
 | :--- | :--- | :--- | :--- |
-| N/A | N/A | No violations found in the provided API definition. | N/A |
+| `simulation\systems\settlement_system.py` | 76-79 | Monetary SSoT | Minor |
 
 ### 💡 Abstracted Feedback (For Management)
-*   **Centraliz
+*   The system correctly enforces atomic transactions with robust rollback logic, preventing value loss during failed multi-party or standard transfers.
+*   Non-zero-sum operations (money creation/destruction) are properly i
 ...
 ============================================================

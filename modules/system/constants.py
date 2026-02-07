@@ -18,3 +18,4 @@ TX_SUBSIDY = "subsidy"
 # Roles / IDs
 ID_GOVERNMENT = "government"
 ID_CENTRAL_BANK = 0  # Fixed ID for Central Bank (TD-220, TD-209)
+ID_SYSTEM = 888888  # Fixed ID for System-level distributions (e.g. Inheritance)

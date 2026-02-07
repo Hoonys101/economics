@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 from .department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 
-@dataclass
+@dataclass(frozen=True)
 class FirmStateDTO:
     """
     A read-only DTO containing the state of a Firm agent.

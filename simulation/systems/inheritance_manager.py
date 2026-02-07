@@ -5,6 +5,7 @@ from simulation.agents.government import Government
 from simulation.models import Order, Transaction
 from simulation.portfolio import Portfolio
 from modules.system.api import DEFAULT_CURRENCY
+from modules.system.constants import ID_SYSTEM
 
 logger = logging.getLogger(__name__)
 
@@ -224,7 +225,7 @@ class InheritanceManager:
             if cash > 0:
                 tx = Transaction(
                     buyer_id=deceased.id,
-                    seller_id=-1, # System distribution (Fixed NOT NULL constraint)
+                    seller_id=ID_SYSTEM, # System distribution (Fixed COLLISION with PublicManager -1)
                     item_id="estate_distribution",
                     quantity=1.0,
                     price=cash, # Informational

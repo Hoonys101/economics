@@ -1,0 +1,334 @@
+diff --git a/communications/insights/TD-268_BaseAgent_Refactor.md b/communications/insights/TD-268_BaseAgent_Refactor.md
+new file mode 100644
+index 00000000..483d0f2a
+--- /dev/null
++++ b/communications/insights/TD-268_BaseAgent_Refactor.md
+@@ -0,0 +1,28 @@
++# Insight Report: BaseAgent Refactoring and Protocol Enforcement
++
++## 1. Problem Phenomenon
++The `BaseAgent` class, which serves as the foundation for all agents (`Household`, `Firm`, `Government`, etc.), had an inconsistent implementation of the `IFinancialEntity` protocol.
++- `BaseAgent.assets` returned a `Dict[CurrencyCode, float]`, violating `IFinancialEntity.assets` which expects a `float` (representing the primary currency balance).
++- Subclasses like `Household` and `Firm` overrode this property to comply, but `BaseAgent` itself remained non-compliant, creating a risk of runtime errors if `BaseAgent` logic was used directly or if a new subclass failed to override it.
++- The `BaseAgent` constructor accepted a large number of arguments (8+), making it brittle and hard to extend.
++
++## 2. Root Cause Analysis
++- **Protocol Violation**: The `IFinancialEntity` protocol was defined to operate on `DEFAULT_CURRENCY` (returning float), but `BaseAgent` was designed as a multi-currency holder (`ICurrencyHolder`) and exposed its internal wallet dictionary directly via `.assets`.
++- **Parameter Explosion**: As agents evolved, more dependencies (decision engine, logger, memory interface) were added to `BaseAgent.__init__`, leading to signature bloat.
++
++## 3. Solution Implementation Details
++- **DTO Introduction**: Introduced `BaseAgentInitDTO` in `simulation/dtos/agent_dtos.py` to encapsulate all initialization parameters. This simplifies the `__init__` signature and provides a single place to manage type hints for constructor args.
++- **Protocol Enforcement**:
++    - Updated `BaseAgent.assets` to return `self._wallet.get_balance(DEFAULT_CURRENCY)` (float), strictly adhering to `IFinancialEntity`.
++    - Maintained `get_assets_by_currency()` for `ICurrencyHolder` compliance.
++    - Updated `deposit` and `withdraw` to default to `DEFAULT_CURRENCY`.
++- **Refactoring**:
++    - Refactored `BaseAgent.__init__` to accept `init_config: BaseAgentInitDTO`.
++    - Updated `Household` and `Firm` constructors to instantiate `BaseAgentInitDTO` and pass it to `super().__init__`.
++- **Testing**: Updated `tests/unit/test_base_agent.py` and `tests/unit/test_firms.py` to reflect these changes and verify protocol compliance.
++
++## 4. Lessons Learned & Technical Debt
++- **Protocol Clarity**: Interfaces should be strictly adhered to by base classes if they claim implementation. Mixing "default implementation" that violates the interface with "subclass override" is dangerous.
++- **DTO Pattern**: Using DTOs for complex constructors (Parameter Object Pattern) significantly improves readability and extensibility.
++- **Test Fragility**: The test suite (`conftest.py`) had fragile dependencies on `simulation.initialization` which caused issues when environment or imports changed slightly. We fixed this by ensuring necessary packages (`numpy`, `pyyaml`) were installed and imports were robust.
++- **Mocking Risks**: Tests using `Mock(spec=Class)` can hide missing attributes if the class initializes them dynamically in `__init__` (like `_econ_state` in `Household`). Tests should verify initialization logic or use more robust fixtures.
+diff --git a/simulation/base_agent.py b/simulation/base_agent.py
+index b0cc17fd..a2c35507 100644
+--- a/simulation/base_agent.py
++++ b/simulation/base_agent.py
+@@ -1,47 +1,40 @@
+ from abc import ABC, abstractmethod
+ from typing import Dict, Any, Optional, TYPE_CHECKING
+ import logging
+-from modules.finance.api import InsufficientFundsError
++from modules.finance.api import InsufficientFundsError, IFinancialEntity
+ from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
+ from modules.finance.wallet.wallet import Wallet
+ from modules.finance.wallet.api import IWallet
+ from modules.simulation.api import IInventoryHandler
++from simulation.dtos.agent_dtos import BaseAgentInitDTO
+ 
+ if TYPE_CHECKING:
+     from modules.memory.api import MemoryV2Interface
+ 
+ 
+-class BaseAgent(ICurrencyHolder, IInventoryHandler, ABC):
++class BaseAgent(ICurrencyHolder, IInventoryHandler, IFinancialEntity, ABC):
+     def __init__(
+         self,
+-        id: int,
+-        initial_assets: float,
+-        initial_needs: Dict[str, float],
+-        decision_engine: Any,
+-        value_orientation: str,
+-        name: Optional[str] = None,
+-        logger: Optional[logging.Logger] = None,
+-        memory_interface: Optional["MemoryV2Interface"] = None,
++        init_config: BaseAgentInitDTO
+     ):
+-        self.id = id
+-        self.memory_v2 = memory_interface
++        self.id = init_config.id
++        self.memory_v2 = init_config.memory_interface
+ 
+         initial_balance_dict = {}
+-        if isinstance(initial_assets, dict):
+-            initial_balance_dict = initial_assets.copy()
++        if isinstance(init_config.initial_assets, dict):
++            initial_balance_dict = init_config.initial_assets.copy()
+         else:
+-            initial_balance_dict[DEFAULT_CURRENCY] = float(initial_assets)
++            initial_balance_dict[DEFAULT_CURRENCY] = float(init_config.initial_assets)
+ 
+         self._wallet = Wallet(self.id, initial_balance_dict)
+ 
+-        self.needs = initial_needs
+-        self.decision_engine = decision_engine
+-        self.value_orientation = value_orientation
+-        self.name = name if name is not None else f"{self.__class__.__name__}_{id}"
++        self.needs = init_config.initial_needs
++        self.decision_engine = init_config.decision_engine
++        self.value_orientation = init_config.value_orientation
++        self.name = init_config.name if init_config.name is not None else f"{self.__class__.__name__}_{self.id}"
+         self._inventory: Dict[str, float] = {}
+         self.is_active: bool = True
+-        self.logger = logger if logger is not None else logging.getLogger(self.name)
+-        self.memory_v2 = memory_interface
++        self.logger = init_config.logger if init_config.logger is not None else logging.getLogger(self.name)
+         self._pre_state_data: Dict[str, Any] = {}  # 이전 상태 저장을 위한 속성
+         self.pre_state_snapshot: Dict[str, Any] = {} # Mypy fix: Snapshot for learning
+ 
+@@ -50,9 +43,9 @@ class BaseAgent(ICurrencyHolder, IInventoryHandler, ABC):
+         return self._wallet
+ 
+     @property
+-    def assets(self) -> Dict[CurrencyCode, float]:
+-        """Current assets keyed by currency (Read-Only)."""
+-        return self._wallet.get_all_balances()
++    def assets(self) -> float:
++        """Current assets in DEFAULT_CURRENCY (Read-Only). Implementation of IFinancialEntity."""
++        return self._wallet.get_balance(DEFAULT_CURRENCY)
+ 
+     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
+         """Implementation of ICurrencyHolder."""
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index e987ea15..d6516932 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -18,6 +18,7 @@ from simulation.dtos import DecisionContext, FiscalContext, MacroFinancialContex
+ 
+ from simulation.dtos.config_dtos import HouseholdConfigDTO
+ from simulation.portfolio import Portfolio
++from simulation.dtos.agent_dtos import BaseAgentInitDTO
+ 
+ from simulation.ai.household_ai import HouseholdAI
+ from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+@@ -262,17 +263,21 @@ class Household(
+         decision_engine.loan_market = loan_market
+         decision_engine.logger = self.logger
+ 
+-        super().__init__(
+-            id,
+-            initial_assets,
+-            initial_needs,
+-            decision_engine,
+-            value_orientation,
++        memory_interface = kwargs.get("memory_interface")
++
++        base_agent_config = BaseAgentInitDTO(
++            id=id,
++            initial_assets=initial_assets,
++            initial_needs=initial_needs,
++            decision_engine=decision_engine,
++            value_orientation=value_orientation,
+             name=f"Household_{id}",
+             logger=logger,
+-            **kwargs,
++            memory_interface=memory_interface
+         )
+ 
++        super().__init__(base_agent_config)
++
+         # Ensure BaseAgent uses the same wallet as EconStateDTO
+         self._wallet = self._econ_state.wallet
+         # EXPLICITLY ALIAS INVENTORY: Ensure BaseAgent._inventory points to EconStateDTO.inventory
+diff --git a/simulation/dtos/agent_dtos.py b/simulation/dtos/agent_dtos.py
+new file mode 100644
+index 00000000..df518ddf
+--- /dev/null
++++ b/simulation/dtos/agent_dtos.py
+@@ -0,0 +1,21 @@
++from dataclasses import dataclass
++from typing import Dict, Any, Optional, Union, TYPE_CHECKING
++import logging
++
++if TYPE_CHECKING:
++    from modules.memory.api import MemoryV2Interface
++
++@dataclass
++class BaseAgentInitDTO:
++    """
++    Data Transfer Object for BaseAgent initialization.
++    Encapsulates all constructor arguments to simplify signature and enforce typing.
++    """
++    id: int
++    initial_assets: Union[float, Dict[str, float]]
++    initial_needs: Dict[str, float]
++    decision_engine: Any
++    value_orientation: str
++    name: Optional[str] = None
++    logger: Optional[logging.Logger] = None
++    memory_interface: Optional["MemoryV2Interface"] = None
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 11b3658b..347f5de4 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -16,6 +16,7 @@ from simulation.dtos.config_dtos import FirmConfigDTO
+ from simulation.dtos.firm_state_dto import FirmStateDTO
+ from simulation.ai.enums import Personality
+ from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
++from simulation.dtos.agent_dtos import BaseAgentInitDTO
+ 
+ # SoC Refactor
+ from simulation.components.hr_department import HRDepartment
+@@ -62,16 +63,20 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+         personality: Optional[Personality] = None,
+         memory_interface: Optional["MemoryV2Interface"] = None,
+     ) -> None:
+-        super().__init__(
+-            id,
+-            initial_capital,
+-            {"liquidity_need": initial_liquidity_need},
+-            decision_engine,
+-            value_orientation,
++
++        base_agent_config = BaseAgentInitDTO(
++            id=id,
++            initial_assets=initial_capital,
++            initial_needs={"liquidity_need": initial_liquidity_need},
++            decision_engine=decision_engine,
++            value_orientation=value_orientation,
+             name=f"Firm_{id}",
+             logger=logger,
+-            memory_interface=memory_interface,
++            memory_interface=memory_interface
+         )
++
++        super().__init__(base_agent_config)
++
+         self.settlement_system: Optional["ISettlementSystem"] = None
+         self.config = config_dto
+         if initial_inventory is not None:
+@@ -137,7 +142,16 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+         # Phase 16-B: Rewards Tracking (Delta storage)
+         self.prev_market_share: float = 0.0
+         # Refactor: Use finance.balance
+-        self.prev_assets: float = self.finance.balance
++        self.prev_assets: float = self.finance.balance.get(DEFAULT_CURRENCY, 0.0) # Corrected to use float if balance is dict?
++        # Actually finance.balance returns Dict[CurrencyCode, float].
++        # BaseAgent.assets now returns float.
++        # Firm.prev_assets was initialized with self.finance.balance which is a dict in original code.
++        # But wait, original code was: `self.prev_assets: float = self.finance.balance`
++        # `FinanceDepartment.balance` is `@property def balance(self) -> Dict[CurrencyCode, float]:`
++        # So `prev_assets` type hint says `float` but assignment was `Dict`.
++        # I should probably fix this to be float if it's meant to track total value or just primary currency.
++        # For now I will use get(DEFAULT_CURRENCY, 0.0) to match type hint.
++
+         self.prev_avg_quality: float = 1.0
+ 
+         # Phase 21: Automation
+diff --git a/tests/unit/test_base_agent.py b/tests/unit/test_base_agent.py
+index 66aae4bf..f24739b7 100644
+--- a/tests/unit/test_base_agent.py
++++ b/tests/unit/test_base_agent.py
+@@ -15,6 +15,7 @@ from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngin
+ import config
+ from simulation.utils.config_factory import create_config_dto
+ from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
++from simulation.dtos.agent_dtos import BaseAgentInitDTO
+ from modules.system.api import DEFAULT_CURRENCY
+ 
+ # 프로젝트 루트 디렉토리를 sys.path에 추가
+@@ -50,28 +51,35 @@ class MockFirmDecisionEngine(AIDrivenFirmDecisionEngine):
+ 
+ # Test BaseAgent abstract methods
+ def test_base_agent_abstract_methods():
++    # Create valid DTO
++    init_dto = BaseAgentInitDTO(
++        id=1,
++        initial_assets=100.0,
++        initial_needs={},
++        decision_engine=None,
++        value_orientation="N/A",
++        logger=Mock()
++    )
++
+     with pytest.raises(TypeError):
+-        BaseAgent(id=1, initial_assets=100.0, initial_needs={}, decision_engine=None)
++        # Should raise because it's abstract
++        BaseAgent(init_config=init_dto)
+ 
+     class ConcreteAgent(BaseAgent):
+         def update_needs(self, current_tick: int):
+             pass
+ 
+-        def make_decision(self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int) -> tuple[list[Any], Any]:
++        def make_decision(self, input_dto: Any) -> tuple[list[Any], Any]:
+             return [], None
+ 
+         def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "BaseAgent":
+             pass
+ 
+-    agent = ConcreteAgent(
+-        id=1,
+-        initial_assets=100.0,
+-        initial_needs={},
+-        decision_engine=None,
+-        value_orientation=Mock(),
+-        logger=Mock(),
+-    )
++    agent = ConcreteAgent(init_config=init_dto)
+     assert isinstance(agent, BaseAgent)
++    # Check strict IFinancialEntity compliance
++    assert isinstance(agent.assets, float)
++    assert agent.assets == 100.0
+ 
+ 
+ # Test Household inheritance and initialization
+@@ -97,11 +105,14 @@ def test_household_clone():
+         initial_assets=initial_assets,
+         initial_needs=initial_needs,
+         decision_engine=decision_engine,
+-        value_orientation=Mock(),
++        value_orientation=Mock(), # Mock object for value_orientation might be issue if it needs to be str key for mapping
+         logger=mock_logger,
+         personality=Personality.MISER,
+         config_dto=hh_config,
+     )
++    # NOTE: Household.__init__ expects value_orientation to be str for config mapping lookup.
++    # But previous test passed Mock(). Let's see if mapping.get(Mock()) works.
++    # It probably returns default.
+ 
+     clone = household.clone(2, 50.0, 1)
+ 
+@@ -142,6 +153,7 @@ def test_firm_inheritance_and_init():
+     assert isinstance(firm, BaseAgent)
+     assert firm.id == 101
+     assert firm.finance.balance[DEFAULT_CURRENCY] == initial_capital
++    assert firm.assets == initial_capital # Check protocol compliance
+     assert firm.needs == {"liquidity_need": initial_liquidity_need}
+     assert firm.decision_engine == decision_engine
+     assert firm.name == "Firm_101"
+diff --git a/tests/unit/test_firms.py b/tests/unit/test_firms.py
+index e45b6971..bee5c2da 100644
+--- a/tests/unit/test_firms.py
++++ b/tests/unit/test_firms.py
+@@ -128,7 +128,7 @@ class TestProductionDepartment:
+         quality_sensitivity = mock_config.goods["test"]["quality_sensitivity"]
+         expected_quality = firm.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
+ 
+-        firm.add_inventory.assert_called_once_with("test", produced_quantity, expected_quality)
++        firm.add_item.assert_called_once_with("test", produced_quantity, quality=expected_quality)
+ 
+ class TestSalesDepartment:
+     @pytest.fixture

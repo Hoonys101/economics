@@ -1,0 +1,341 @@
+diff --git a/communications/insights/hr_finance_decouple_insight.md b/communications/insights/hr_finance_decouple_insight.md
+new file mode 100644
+index 00000000..41153547
+--- /dev/null
++++ b/communications/insights/hr_finance_decouple_insight.md
+@@ -0,0 +1,46 @@
++# HR and Finance Department Decoupling Insight Report
++
++## 1. Problem Phenomenon
++The `HRDepartment` and `FinanceDepartment` were tightly coupled to the concrete `Household` agent class.
++- `HRDepartment` stored `List[Household]` directly.
++- `HRDepartment` methods (`hire`, `calculate_wage`, `process_payroll`, `fire_employee`) accepted `Household` objects and accessed attributes using `getattr` or direct attribute access, assuming specific implementation details (e.g., `_econ_state`).
++- `FinanceDepartment.pay_severance` explicitly required a `Household` object.
++
++This tight coupling meant that:
++- Changes to `Household` structure could break HR and Finance logic.
++- It was impossible to mock employees for testing without instantiating full `Household` agents (which are heavy, stateful objects).
++- Circular dependencies were introduced (e.g., `HRDepartment` imports `Household` which imports `HRDepartment` transitively via `Firm`).
++
++## 2. Root Cause Analysis
++The root cause was the lack of an abstraction layer between the organizational components (`Firm`'s departments) and the agents they interact with (`Household`).
++- **HR Domain:** Needs to know about skills, education, employment status, and wage history. It does not need to know about household consumption, political views, or biological state.
++- **Finance Domain:** Needs to transfer money. It only requires a financial entity interface (`IFinancialEntity`).
++
++## 3. Solution Implementation Details
++We introduced the `IEmployeeDataProvider` protocol to decouple these components.
++
++### 3.1. `IEmployeeDataProvider` Protocol
++Defined in `modules/hr/api.py`, this protocol inherits from `IFinancialEntity` and specifies the exact interface required by HR operations:
++- **Identity:** `id`, `employer_id`, `is_employed`.
++- **Skills & Education:** `labor_skill`, `education_level`.
++- **Compensation:** `labor_income_this_tick` (setter/getter).
++- **Lifecycle:** `employment_start_tick`, `quit()`.
++
++### 3.2. Household Enhancement
++Updated `HouseholdPropertiesMixin` in `modules/household/mixins/_properties.py` to expose necessary fields (`labor_skill`, `education_level`, `labor_income_this_tick`, `employment_start_tick`) as properties, delegating to the internal `_econ_state` DTO.
++Updated `Household` in `simulation/core_agents.py` to explicitly implement `IEmployeeDataProvider`.
++
++### 3.3. HRDepartment Refactoring
++Refactored `simulation/components/hr_department.py`:
++- Replaced `List[Household]` with `List[IEmployeeDataProvider]`.
++- Updated all method signatures to usage `IEmployeeDataProvider`.
++- Replaced brittle `getattr` calls with typed property access guaranteed by the protocol.
++
++### 3.4. FinanceDepartment Refactoring
++Refactored `simulation/components/finance_department.py`:
++- Updated `pay_severance` to accept `IFinancialEntity` instead of `Household`. This makes the method generic for any entity that can receive funds.
++
++## 4. Lessons Learned & Technical Debt
++- **Lesson:** Interface Segregation Principle (ISP) is crucial for large agent-based models. Agents like `Household` become "God Classes" if not accessed via narrow protocols.
++- **Technical Debt:** `Household` still carries a lot of mixins and complexity. While we decoupled consumers, the provider (`Household`) is still monolithic. Future work could split `Household` into smaller composed entities, but for now, the facade pattern with protocols works well.
++- **Insight:** Using `@property` in Mixins to expose internal DTO state is a powerful way to implement protocols without exposing the internal DTO structure (Purity Guard).
+diff --git a/modules/household/mixins/_properties.py b/modules/household/mixins/_properties.py
+index 0f95cae8..d4151ae5 100644
+--- a/modules/household/mixins/_properties.py
++++ b/modules/household/mixins/_properties.py
+@@ -184,3 +184,41 @@ class HouseholdPropertiesMixin:
+     def personality(self) -> Personality:
+         """Exposes personality from social_state."""
+         return self._social_state.personality
++
++    # --- IEmployeeDataProvider Support Properties ---
++
++    @property
++    def labor_skill(self) -> float:
++        """Exposes labor_skill from econ_state."""
++        return self._econ_state.labor_skill
++
++    @labor_skill.setter
++    def labor_skill(self, value: float) -> None:
++        self._econ_state.labor_skill = value
++
++    @property
++    def education_level(self) -> int:
++        """Exposes education_level from econ_state."""
++        return self._econ_state.education_level
++
++    @education_level.setter
++    def education_level(self, value: int) -> None:
++        self._econ_state.education_level = value
++
++    @property
++    def labor_income_this_tick(self) -> float:
++        """Exposes labor_income_this_tick from econ_state."""
++        return self._econ_state.labor_income_this_tick
++
++    @labor_income_this_tick.setter
++    def labor_income_this_tick(self, value: float) -> None:
++        self._econ_state.labor_income_this_tick = value
++
++    @property
++    def employment_start_tick(self) -> int:
++        """Exposes employment_start_tick from econ_state."""
++        return self._econ_state.employment_start_tick
++
++    @employment_start_tick.setter
++    def employment_start_tick(self, value: int) -> None:
++        self._econ_state.employment_start_tick = value
+diff --git a/modules/hr/api.py b/modules/hr/api.py
+index 3fb22b4e..33335092 100644
+--- a/modules/hr/api.py
++++ b/modules/hr/api.py
+@@ -1,6 +1,8 @@
+ from __future__ import annotations
+ from abc import ABC, abstractmethod
+-from typing import List, TYPE_CHECKING
++from typing import List, Optional, TYPE_CHECKING, Protocol
++
++from modules.finance.api import IFinancialEntity
+ 
+ if TYPE_CHECKING:
+     from modules.common.dtos import Claim
+@@ -11,3 +13,50 @@ class IHRService(ABC):
+     def calculate_liquidation_employee_claims(self, firm: Firm, current_tick: int) -> List[Claim]:
+         """Calculates all employee-related claims (wages, severance) for a firm in liquidation."""
+         ...
++
++class IEmployeeDataProvider(IFinancialEntity, Protocol):
++    """
++    Protocol for accessing employee data and managing employment lifecycle.
++    Decouples HR/Finance departments from the concrete Household agent.
++    Inherits IFinancialEntity to support wage/severance payments.
++    """
++    id: int
++    employer_id: Optional[int]
++    is_employed: bool
++
++    @property
++    def labor_skill(self) -> float:
++        """The employee's current labor skill multiplier."""
++        ...
++
++    @property
++    def education_level(self) -> int:
++        """The employee's education level (0-N)."""
++        ...
++
++    @property
++    def labor_income_this_tick(self) -> float:
++        """Cumulative labor income earned in the current tick."""
++        ...
++
++    @labor_income_this_tick.setter
++    def labor_income_this_tick(self, value: float) -> None:
++        """Updates the cumulative labor income."""
++        ...
++
++    @property
++    def employment_start_tick(self) -> int:
++        """The tick when the current employment started."""
++        ...
++
++    @employment_start_tick.setter
++    def employment_start_tick(self, value: int) -> None:
++        """Sets the employment start tick."""
++        ...
++
++    def quit(self) -> None:
++        """
++        Executes the resignation process for the employee.
++        Sets is_employed to False and clears employer_id.
++        """
++        ...
+diff --git a/simulation/components/finance_department.py b/simulation/components/finance_department.py
+index 6158953b..8f8bee71 100644
+--- a/simulation/components/finance_department.py
++++ b/simulation/components/finance_department.py
+@@ -10,7 +10,7 @@ from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, MarketContextDTO
+ if TYPE_CHECKING:
+     from simulation.firms import Firm
+     from simulation.dtos.config_dtos import FirmConfigDTO
+-    from simulation.core_agents import Household
++    # Household import removed as it is replaced by IFinancialEntity
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -473,7 +473,7 @@ class FinanceDepartment(IFinanceDepartment):
+     def set_dividend_rate(self, new_rate: float) -> None:
+         self.firm.dividend_rate = new_rate
+ 
+-    def pay_severance(self, employee: Household, amount: float) -> bool:
++    def pay_severance(self, employee: IFinancialEntity, amount: float) -> bool:
+         if self.firm.wallet.get_balance(self.primary_currency) >= amount and self.firm.settlement_system:
+             if self.firm.settlement_system.transfer(self.firm, employee, amount, "Severance", currency=self.primary_currency):
+                 self.record_expense(amount, self.primary_currency)
+diff --git a/simulation/components/hr_department.py b/simulation/components/hr_department.py
+index 9bf42556..4576dc43 100644
+--- a/simulation/components/hr_department.py
++++ b/simulation/components/hr_department.py
+@@ -2,9 +2,9 @@ from __future__ import annotations
+ from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
+ import logging
+ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
++from modules.hr.api import IEmployeeDataProvider
+ 
+ if TYPE_CHECKING:
+-    from simulation.core_agents import Household
+     from simulation.firms import Firm
+     from simulation.models import Transaction
+ 
+@@ -17,20 +17,20 @@ class HRDepartment:
+     """
+     def __init__(self, firm: Firm):
+         self.firm = firm
+-        self.employees: List[Household] = []
++        self.employees: List[IEmployeeDataProvider] = []
+         self.employee_wages: Dict[int, float] = {}  # AgentID -> Wage
+         self.unpaid_wages: Dict[int, List[Tuple[int, float]]] = {} # AgentID -> List[(tick, amount)]
+         self.hires_last_tick: int = 0
+ 
+-    def calculate_wage(self, employee: Household, base_wage: float) -> float:
++    def calculate_wage(self, employee: IEmployeeDataProvider, base_wage: float) -> float:
+         """
+         Calculates wage based on skill and halo effect.
+         """
+         # WO-023-B: Skill-based Wage Bonus
+-        actual_skill = getattr(employee, 'labor_skill', 1.0)
++        actual_skill = employee.labor_skill
+ 
+         # WO-Sociologist: Halo Effect (Credential Premium)
+-        education_level = getattr(employee, 'education_level', 0)
++        education_level = employee.education_level
+         halo_modifier = 1.0 + (education_level * self.firm.config.halo_effect)
+ 
+         return base_wage * actual_skill * halo_modifier
+@@ -53,11 +53,7 @@ class HRDepartment:
+ 
+         # Iterate over copy to allow modification
+         for employee in list(self.employees):
+-            # Defensive checks
+-            if not hasattr(employee, 'employer_id') or not hasattr(employee, 'is_employed'):
+-                self.employees.remove(employee)
+-                continue
+-
++            # Protocol ensures properties exist, but checking employer_id matches firm is logic
+             if employee.employer_id != self.firm.id or not employee.is_employed:
+                 self.employees.remove(employee)
+                 if employee.id in self.employee_wages:
+@@ -112,8 +108,7 @@ class HRDepartment:
+                     generated_transactions.append(tx_tax)
+ 
+                 # Track Labor Income (Side Effect)
+-                if hasattr(employee, "labor_income_this_tick"):
+-                    employee.labor_income_this_tick += net_wage
++                employee.labor_income_this_tick += net_wage
+ 
+             elif total_liquid_assets >= wage:
+                 # TD-032: Solvent but Illiquid in Wage Currency -> Zombie (Unpaid Wage) without Firing
+@@ -124,7 +119,7 @@ class HRDepartment:
+ 
+         return generated_transactions
+ 
+-    def _record_zombie_wage(self, employee: Household, wage: float, current_time: int) -> None:
++    def _record_zombie_wage(self, employee: IEmployeeDataProvider, wage: float, current_time: int) -> None:
+         """Records an unpaid wage without firing the employee."""
+         # Record unpaid wage for Tier 1 claim in liquidation
+         if employee.id not in self.unpaid_wages:
+@@ -149,7 +144,7 @@ class HRDepartment:
+             extra={"tick": current_time, "agent_id": self.firm.id, "wage_deficit": wage - current_balance, "total_unpaid": len(self.unpaid_wages[employee.id])}
+         )
+ 
+-    def _handle_insolvency_transactions(self, employee: Household, wage: float, current_time: int, tx_list: List[Transaction]):
++    def _handle_insolvency_transactions(self, employee: IEmployeeDataProvider, wage: float, current_time: int, tx_list: List[Transaction]):
+         """
+         Handles case where firm cannot afford wage.
+         Attempts severance pay; if fails, zombie state (unpaid retention).
+@@ -186,16 +181,15 @@ class HRDepartment:
+             # Fallback to Zombie if we can't even afford severance
+             self._record_zombie_wage(employee, wage, current_time)
+ 
+-    def hire(self, employee: Household, wage: float, current_tick: int = 0):
++    def hire(self, employee: IEmployeeDataProvider, wage: float, current_tick: int = 0):
+         self.employees.append(employee)
+         self.employee_wages[employee.id] = wage
+         self.hires_last_tick += 1
+ 
+         # Set employment start tick for tenure calculation (Tier 1 Severance)
+-        if hasattr(employee, '_econ_state'):
+-            employee._econ_state.employment_start_tick = current_tick
++        employee.employment_start_tick = current_tick
+ 
+-    def remove_employee(self, employee: Household):
++    def remove_employee(self, employee: IEmployeeDataProvider):
+         if employee in self.employees:
+             self.employees.remove(employee)
+         if employee.id in self.employee_wages:
+@@ -218,7 +212,7 @@ class HRDepartment:
+         return False
+ 
+     def get_total_labor_skill(self) -> float:
+-        return sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees)
++        return sum(emp.labor_skill for emp in self.employees)
+ 
+     def get_avg_skill(self) -> float:
+         if not self.employees:
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index e987ea15..47d5fde4 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -51,6 +51,9 @@ from modules.household.mixins._lifecycle import HouseholdLifecycleMixin
+ from modules.household.mixins._reproduction import HouseholdReproductionMixin
+ from modules.household.mixins._state_access import HouseholdStateAccessMixin
+ 
++# Protocols
++from modules.hr.api import IEmployeeDataProvider
++
+ if TYPE_CHECKING:
+     from simulation.loan_market import LoanMarket
+     from simulation.dtos.scenario import StressScenarioConfig
+@@ -65,7 +68,8 @@ class Household(
+     HouseholdStateAccessMixin,
+     BaseAgent,
+     ILearningAgent,
+-    IFinancialEntity
++    IFinancialEntity,
++    IEmployeeDataProvider
+ ):
+     """
+     Household Agent (Facade).
+diff --git a/test_imports.py b/test_imports.py
+new file mode 100644
+index 00000000..2fd6c22d
+--- /dev/null
++++ b/test_imports.py
+@@ -0,0 +1,16 @@
++
++try:
++    from simulation.components.finance_department import FinanceDepartment
++    print("FinanceDepartment imported successfully.")
++except ImportError as e:
++    print(f"ImportError: {e}")
++except Exception as e:
++    print(f"Error: {e}")
++
++try:
++    from simulation.components.hr_department import HRDepartment
++    print("HRDepartment imported successfully.")
++except ImportError as e:
++    print(f"ImportError: {e}")
++except Exception as e:
++    print(f"Error: {e}")

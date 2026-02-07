@@ -272,7 +272,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 extra={"agent_id": firm.id, "tags": ["liquidation"]}
             )
 
-            inv_value = self._calculate_inventory_value(firm.inventory, state.markets)
+            inv_value = self._calculate_inventory_value(firm.get_all_items(), state.markets)
             capital_value = firm.capital_stock
 
             # TD-187: Liquidation Waterfall Protocol (Prioritized Claims)
@@ -355,9 +355,15 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             household._econ_state.portfolio.to_legacy_dict().clear()
             if hasattr(household, "portfolio"):
                  household._econ_state.portfolio.holdings.clear()
-            if state.stock_market:
-                for firm_id in list(state.stock_market.shareholders.keys()):
-                     state.stock_market.update_shareholder(household.id, firm_id, 0)
+            # Clear shareholdings from registry (TD-275)
+            if state.shareholder_registry:
+                for firm in state.firms:
+                     state.shareholder_registry.register_shares(firm.id, household.id, 0.0)
+            elif state.stock_market:
+                # Fallback for older StockMarket logic if any
+                if hasattr(state.stock_market, "shareholders"):
+                    for firm_id in list(state.stock_market.shareholders.keys()):
+                        state.stock_market.update_shareholder(household.id, firm_id, 0)
 
             # TD-030: Unregister from currency registry immediately
             if isinstance(household, ICurrencyHolder):

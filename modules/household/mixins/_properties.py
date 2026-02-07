@@ -176,6 +176,15 @@ class HouseholdPropertiesMixin:
         return self._econ_state.talent
 
     @property
+    def generation(self) -> int:
+        """Exposes generation from bio_state."""
+        return self._bio_state.generation
+
+    @generation.setter
+    def generation(self, value: int) -> None:
+        self._bio_state.generation = value
+
+    @property
     def demographics(self) -> BioStateDTO:
         """[Legacy] Exposes bio_state as demographics."""
         return self._bio_state

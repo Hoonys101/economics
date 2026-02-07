@@ -69,7 +69,6 @@ class Household(
     HouseholdStateAccessMixin,
     BaseAgent,
     ILearningAgent,
-    IFinancialEntity,
     IEmployeeDataProvider
 ):
     """

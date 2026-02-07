@@ -51,28 +51,23 @@ class AnalyticsSystem:
 
             if isinstance(agent, Household):
                 agent_dto.agent_type = "household"
-                # Use snapshot DTO for safe access if possible, or direct access if allowed by purity rules.
-                # Since we are inside AnalyticsSystem, we can access agent properties but prefer DTOs.
-                # However, AgentStateData is flat.
-
-                # We can access properties directly as they are "public" or use get_quantity
-                agent_dto.is_employed = agent.is_employed
-                agent_dto.employer_id = agent.employer_id
+                # Phase 9.1 Refactor: Use snapshot DTO for safe observation
+                snapshot = agent.create_snapshot_dto()
+                
+                agent_dto.is_employed = snapshot.econ.is_employed
+                agent_dto.employer_id = snapshot.econ.employer_id
 
                 # Needs
-                # agent.needs is a dict
-                agent_dto.needs_survival = agent.needs.get("survival", 0)
-                agent_dto.needs_labor = agent.needs.get("labor_need", 0)
+                agent_dto.needs_survival = snapshot.bio.needs.get("survival", 0)
+                agent_dto.needs_labor = snapshot.bio.needs.get("labor_need", 0)
 
-                # Inventory
+                # Inventory (Using public protocol)
                 agent_dto.inventory_food = agent.get_quantity("food")
 
-                # Time Allocation (stored in WorldState or Agent?)
-                # PersistenceManager used: simulation.household_time_allocation.get(agent.id, 0.0)
+                # Time Allocation
                 time_leisure = world_state.household_time_allocation.get(agent.id, 0.0)
 
-                # Config access via world_state or agent?
-                # Agent has .config
+                # Config access via snapshot/agent
                 shopping_hours = getattr(agent.config, "SHOPPING_HOURS", 2.0)
                 hours_per_tick = getattr(agent.config, "HOURS_PER_TICK", 24.0)
 
@@ -81,20 +76,11 @@ class AnalyticsSystem:
 
             elif isinstance(agent, Firm):
                 agent_dto.agent_type = "firm"
-                agent_dto.inventory_food = agent.get_quantity("food")
-                agent_dto.current_production = agent.current_production
-                # Direct access to HR department (allowed for persistence aggregation?)
-                # Better to use get_state_dto()?
-                # PersistenceManager used: len(agent.hr.employees)
-                # FirmStateDTO has hr.employees (list of IDs).
-
-                # Let's try to use DTOs where possible to respect TD-272 spirit
-                # But creating DTO for every agent might be heavy?
-                # PersistenceManager logic was direct.
-                # The spec says: "Utilize agent.get_state_dto() (Firm) and agent.create_snapshot_dto() (Household) to gather data safely."
-
-                # Ok, I will use DTOs.
+                # Phase 9.1 Refactor: Use state DTO for safe observation
                 state_dto = agent.get_state_dto()
+                
+                agent_dto.inventory_food = agent.get_quantity("food")
+                agent_dto.current_production = state_dto.production.current_production
                 agent_dto.num_employees = len(state_dto.hr.employees)
 
             else:

@@ -131,6 +131,7 @@ class TickOrchestrator:
             transaction_processor=getattr(state, "transaction_processor", None), # Added for compatibility
             saga_orchestrator=state.saga_orchestrator, # TD-253
             monetary_ledger=state.monetary_ledger,     # TD-253
+            shareholder_registry=state.shareholder_registry, # TD-275
             effects_queue=[], # TD-192: Init empty
             inter_tick_queue=[], # TD-192: Init empty
             transactions=[], # TD-192: Init empty

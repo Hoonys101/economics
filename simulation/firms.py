@@ -77,10 +77,11 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
 
         super().__init__(base_agent_config)
 
-        self.settlement_system: Optional["ISettlementSystem"] = None
         self.config = config_dto
         if initial_inventory is not None:
-            self._inventory.update(initial_inventory)
+            # Phase 9.1 Refactor: Use protocol-compliant addition
+            for item_id, qty in initial_inventory.items():
+                self.add_item(item_id, qty)
         self.specialization = specialization
         self.inventory_quality: Dict[str, float] = {}  # Phase 15: Weighted Average Quality
         self.input_inventory: Dict[str, float] = {} # WO-030: Raw Materials
@@ -195,8 +196,9 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
 
         TD-033: Returns full multi-currency asset dictionary.
         """
-        # 1. Write off Inventory
-        self._inventory.clear()
+        # 1. Write off Inventory (Phase 9.1 Refactor: Protocol Compliant)
+        for item_id in list(self._inventory.keys()):
+            self.remove_item(item_id, self.get_quantity(item_id))
         
         # 2. Write off Capital Stock
         self.capital_stock = 0.0

@@ -93,7 +93,12 @@ class TransactionProcessor(SystemInterface):
                 continue
 
             # 1. Special Routing: Public Manager (Seller)
-            if (tx.seller_id == "PUBLIC_MANAGER" or tx.seller_id == -1) and self._public_manager_handler:
+            # Hijack if seller is explicitly PUBLIC_MANAGER or system placeholder, 
+            # BUT only if it's not a specialized systemic distribution (Inheritance/Escheatment)
+            is_pm_seller = (tx.seller_id == "PUBLIC_MANAGER" or tx.seller_id == 999999 or tx.seller_id == -1)
+            is_systemic = tx.transaction_type in ["inheritance_distribution", "escheatment"]
+            
+            if is_pm_seller and not is_systemic and self._public_manager_handler:
                 buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
                 if buyer:
                     success = self._public_manager_handler.handle(tx, buyer, None, context)
