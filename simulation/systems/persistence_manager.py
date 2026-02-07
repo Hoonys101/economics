@@ -1,18 +1,15 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, List, Dict, Any
+from typing import TYPE_CHECKING, List, Dict, Any, Optional
 from simulation.dtos import (
     AgentStateData,
     TransactionData,
     EconomicIndicatorData,
     MarketHistoryData,
 )
-from simulation.core_agents import Household
-from simulation.firms import Firm
 from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
-    from simulation.engine import Simulation
     from simulation.models import Transaction
 
 logger = logging.getLogger(__name__)
@@ -22,6 +19,7 @@ class PersistenceManager:
     Phase 22.5: Persistence Manager System
     Handles DB state buffering, calculation of aggregate indicators for persistence, 
     and batch flushing to simulation repository.
+    TD-272: Refactored to be a pure sink (no logic).
     """
 
     def __init__(self, run_id: int, config_module: Any, repository: Any):
@@ -35,130 +33,28 @@ class PersistenceManager:
         self.economic_indicator_buffer: List[EconomicIndicatorData] = []
         self.market_history_buffer: List[MarketHistoryData] = []
 
-    def buffer_tick_state(self, simulation: "Simulation", transactions: List["Transaction"]):
+    def buffer_data(
+        self,
+        agent_states: List[AgentStateData],
+        transactions: List[TransactionData],
+        indicators: Optional[EconomicIndicatorData],
+        market_history: List[MarketHistoryData] = None
+    ) -> None:
         """
-        Gathers and buffers agent states, transactions, and aggregate indicators for the current tick.
+        TD-272: Pure data buffering.
+        Receives pre-assembled DTOs and appends them to internal buffers.
         """
-        time = simulation.time
+        if agent_states:
+            self.agent_state_buffer.extend(agent_states)
         
-        # 1. Buffer agent states
-        for agent in simulation.agents.values():
-            if not getattr(agent, "is_active", False):
-                continue
-
-            agent_dto = AgentStateData(
-                run_id=self.run_id,
-                time=time,
-                agent_id=agent.id,
-                agent_type="",
-                assets=agent.assets,
-                is_active=agent.is_active,
-                generation=getattr(agent, "generation", 0),
-            )
-
-            if isinstance(agent, Household):
-                agent_dto.agent_type = "household"
-                agent_dto.is_employed = agent.is_employed
-                agent_dto.employer_id = agent.employer_id
-                agent_dto.needs_survival = agent.needs.get("survival", 0)
-                agent_dto.needs_labor = agent.needs.get("labor_need", 0)
-                agent_dto.inventory_food = agent.get_quantity("food")
-
-                # Time Allocation Tracking
-                time_leisure = simulation.household_time_allocation.get(agent.id, 0.0)
-                shopping_hours = getattr(self.config, "SHOPPING_HOURS", 2.0)
-                hours_per_tick = getattr(self.config, "HOURS_PER_TICK", 24.0)
-
-                agent_dto.time_leisure = time_leisure
-                agent_dto.time_worked = max(0.0, hours_per_tick - time_leisure - shopping_hours)
-
-            elif isinstance(agent, Firm):
-                agent_dto.agent_type = "firm"
-                agent_dto.inventory_food = agent.get_quantity("food")
-                agent_dto.current_production = agent.current_production
-                agent_dto.num_employees = len(agent.hr.employees)
-            else:
-                continue
-
-            self.agent_state_buffer.append(agent_dto)
-
-        # 2. Buffer transactions
-        for tx in transactions:
-            # Validation (Tech Debt Fix)
-            if tx.buyer_id is None or tx.seller_id is None:
-                logger.error(
-                    f"PERSISTENCE_SKIP | Skipping transaction with NULL ID. "
-                    f"Buyer: {tx.buyer_id}, Seller: {tx.seller_id}, Item: {tx.item_id}",
-                    extra={"tick": time, "tags": ["persistence", "skip"]}
-                )
-                continue
-
-            tx_dto = TransactionData(
-                run_id=self.run_id,
-                time=time,
-                buyer_id=tx.buyer_id,
-                seller_id=tx.seller_id,
-                item_id=tx.item_id,
-                quantity=tx.quantity,
-                price=tx.price,
-                currency=getattr(tx, 'currency', DEFAULT_CURRENCY),
-                market_id=tx.market_id,
-                transaction_type=tx.transaction_type,
-            )
-            self.transaction_buffer.append(tx_dto)
-
-        # 3. Buffer aggregate indicators
-        tracker_indicators = simulation.tracker.get_latest_indicators()
+        if transactions:
+            self.transaction_buffer.extend(transactions)
         
-        # Income Aggregation (Phase 14-1)
-        total_labor_income = sum(getattr(h, "labor_income_this_tick", 0.0) for h in simulation.households)
-        total_capital_income = sum(getattr(h, "capital_income_this_tick", 0.0) for h in simulation.households)
+        if indicators:
+            self.economic_indicator_buffer.append(indicators)
 
-        # Calculate Wealth Distribution (Snapshot)
-        total_assets = 0.0
-        for h in simulation.households:
-            if hasattr(h, 'wallet'):
-                total_assets += h.wallet.get_balance(DEFAULT_CURRENCY)
-            elif hasattr(h, 'assets') and isinstance(h.assets, dict):
-                total_assets += h.assets.get(DEFAULT_CURRENCY, 0.0)
-            elif hasattr(h, 'assets'):
-                total_assets += float(h.assets)
-        
-        # Prepare asset dicts for DTO
-        hh_assets = tracker_indicators.get("total_household_assets", 0.0)
-        firm_assets = tracker_indicators.get("total_firm_assets", 0.0)
-
-        # Flatten for DB Persistence (SQLite requires float)
-        # TD-030: Strict currency registry means we strictly track DEFAULT_CURRENCY for indicators
-        hh_assets_val = 0.0
-        if isinstance(hh_assets, dict):
-            hh_assets_val = hh_assets.get(DEFAULT_CURRENCY, 0.0)
-        else:
-            hh_assets_val = float(hh_assets)
-
-        firm_assets_val = 0.0
-        if isinstance(firm_assets, dict):
-            firm_assets_val = firm_assets.get(DEFAULT_CURRENCY, 0.0)
-        else:
-            firm_assets_val = float(firm_assets)
-
-        indicator_dto = EconomicIndicatorData(
-            run_id=self.run_id,
-            time=time,
-            unemployment_rate=tracker_indicators.get("unemployment_rate"),
-            avg_wage=tracker_indicators.get("avg_wage"),
-            food_avg_price=tracker_indicators.get("food_avg_price"),
-            food_trade_volume=tracker_indicators.get("food_trade_volume"),
-            avg_goods_price=tracker_indicators.get("avg_goods_price"),
-            total_production=tracker_indicators.get("total_production", 0.0),
-            total_consumption=tracker_indicators.get("total_consumption", 0.0),
-            total_household_assets=hh_assets_val,
-            total_firm_assets=firm_assets_val,
-            avg_survival_need=tracker_indicators.get("avg_survival_need", 0.0),
-            total_labor_income=total_labor_income,
-            total_capital_income=total_capital_income,
-        )
-        self.economic_indicator_buffer.append(indicator_dto)
+        if market_history:
+            self.market_history_buffer.extend(market_history)
 
     def flush_buffers(self, current_tick: int):
         """

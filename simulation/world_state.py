@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from simulation.systems.inheritance_manager import InheritanceManager
     from simulation.systems.housing_system import HousingSystem
     from simulation.systems.persistence_manager import PersistenceManager
+    from simulation.systems.analytics_system import AnalyticsSystem
     from simulation.systems.firm_management import FirmSystem
     from simulation.systems.technology_manager import TechnologyManager
     from simulation.systems.bootstrapper import Bootstrapper
@@ -86,6 +87,7 @@ class WorldState:
         self.inheritance_manager: Optional[InheritanceManager] = None
         self.housing_system: Optional[HousingSystem] = None
         self.persistence_manager: Optional[PersistenceManager] = None
+        self.analytics_system: Optional[AnalyticsSystem] = None
         self.firm_system: Optional[FirmSystem] = None
         self.technology_manager: Optional[TechnologyManager] = None
         self.generational_wealth_audit: Optional[GenerationalWealthAudit] = None

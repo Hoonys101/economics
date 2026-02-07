@@ -41,6 +41,7 @@ from simulation.systems.immigration_manager import ImmigrationManager
 from simulation.systems.inheritance_manager import InheritanceManager
 from simulation.systems.housing_system import HousingSystem
 from simulation.systems.persistence_manager import PersistenceManager
+from simulation.systems.analytics_system import AnalyticsSystem
 from simulation.systems.firm_management import FirmSystem
 from simulation.systems.technology_manager import TechnologyManager
 from simulation.systems.bootstrapper import Bootstrapper
@@ -420,6 +421,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             config_module=self.config,
             repository=self.repository
         )
+        sim.analytics_system = AnalyticsSystem()
         sim.firm_system = FirmSystem(config_module=self.config, strategy=sim.strategy)
         sim.technology_manager = TechnologyManager(config_module=self.config, logger=self.logger, strategy=sim.strategy)
 

@@ -99,9 +99,17 @@ class Phase5_PostSequence(IPhaseStrategy):
         if state.government:
              state.government.finalize_tick(state.time)
 
-        if self.world_state.persistence_manager:
-             # TD-160: Use world_state.transactions to ensure all drained transactions are captured
-             self.world_state.persistence_manager.buffer_tick_state(self.world_state, self.world_state.transactions)
+        if self.world_state.persistence_manager and self.world_state.analytics_system:
+             # TD-272: Aggregation via AnalyticsSystem
+             agent_states, transactions, indicators, market_history = self.world_state.analytics_system.aggregate_tick_data(self.world_state)
+
+             self.world_state.persistence_manager.buffer_data(
+                 agent_states,
+                 transactions,
+                 indicators,
+                 market_history
+             )
+
              if state.time % self.world_state.batch_save_interval == 0:
                  self.world_state.persistence_manager.flush_buffers(state.time)
 

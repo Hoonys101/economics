@@ -38,6 +38,19 @@ class MarketOrder:
     def order_type(self) -> str:
         return self.side
 
+    def to_dto(self, market_id: str) -> Order:
+        """Converts internal MarketOrder to public immutable Order DTO."""
+        return Order(
+            agent_id=self.agent_id,
+            side=self.side,
+            item_id=self.item_id,
+            quantity=self.quantity,
+            price_limit=self.price,
+            market_id=market_id,
+            target_agent_id=self.target_agent_id,
+            brand_info=self.brand_info
+        )
+
 
 class OrderBookMarket(Market):
     """호가창(Order Book) 기반의 시장을 시뮬레이션하는 클래스.
@@ -56,8 +69,10 @@ class OrderBookMarket(Market):
         super().__init__(market_id=market_id, logger=logger) # Call parent constructor to set self.id and logger
         self.id = market_id
         self.config_module = config_module
-        self.buy_orders: Dict[str, List[MarketOrder]] = {}
-        self.sell_orders: Dict[str, List[MarketOrder]] = {}
+        # TD-271: Internal state encapsulated
+        self._buy_orders: Dict[str, List[MarketOrder]] = {}
+        self._sell_orders: Dict[str, List[MarketOrder]] = {}
+
         self.daily_avg_price: Dict[str, float] = {}
         self.daily_total_volume: Dict[str, float] = {}
         self.last_traded_prices: Dict[str, float] = {}
@@ -78,6 +93,24 @@ class OrderBookMarket(Market):
             f"OrderBookMarket {self.id} initialized.",
             extra={"tick": 0, "market_id": self.id, "tags": ["init", "market"]},
         )
+
+    # --- TD-271: Public Interface Implementation ---
+
+    @property
+    def buy_orders(self) -> Dict[str, List[Order]]:
+        """Returns active buy orders as immutable Order DTOs."""
+        return {
+            item_id: [order.to_dto(self.id) for order in orders]
+            for item_id, orders in self._buy_orders.items()
+        }
+
+    @property
+    def sell_orders(self) -> Dict[str, List[Order]]:
+        """Returns active sell orders as immutable Order DTOs."""
+        return {
+            item_id: [order.to_dto(self.id) for order in orders]
+            for item_id, orders in self._sell_orders.items()
+        }
 
     def _update_price_history(self, item_id: str, price: float):
         """Update the sliding window of price history."""
@@ -130,15 +163,15 @@ class OrderBookMarket(Market):
         self.last_tick_demand = self.get_total_demand()
 
         # Cache best prices for signal persistence
-        for item_id in set(list(self.buy_orders.keys()) + list(self.sell_orders.keys())):
+        for item_id in set(list(self._buy_orders.keys()) + list(self._sell_orders.keys())):
             bid = self.get_best_bid(item_id)
             if bid is not None: self.cached_best_bid[item_id] = bid
             
             ask = self.get_best_ask(item_id)
             if ask is not None: self.cached_best_ask[item_id] = ask
 
-        self.buy_orders.clear()
-        self.sell_orders.clear()
+        self._buy_orders.clear()
+        self._sell_orders.clear()
         self.daily_avg_price.clear()
         self.daily_total_volume.clear()
         self.logger.debug(
@@ -198,7 +231,7 @@ class OrderBookMarket(Market):
         all_transactions: List[Transaction] = []
 
         # Get all unique item_ids from both buy and sell orders
-        all_item_ids = set(self.buy_orders.keys()) | set(self.sell_orders.keys())
+        all_item_ids = set(self._buy_orders.keys()) | set(self._sell_orders.keys())
 
         if not all_item_ids:
             self.logger.info(
@@ -230,9 +263,9 @@ class OrderBookMarket(Market):
     def _add_order(self, order: MarketOrder, log_extra: Dict[str, Any]):
         # Determine which order book to use based on side
         if order.side == "BUY":
-            target_order_book = self.buy_orders
+            target_order_book = self._buy_orders
         elif order.side == "SELL":
-            target_order_book = self.sell_orders
+            target_order_book = self._sell_orders
         else:
             self.logger.warning(
                 f"Unknown side for _add_order: {order.side}",
@@ -262,8 +295,8 @@ class OrderBookMarket(Market):
             "item_id": item_id,
         }
 
-        buy_orders_list = self.buy_orders.get(item_id, [])
-        sell_orders_list = self.sell_orders.get(item_id, [])
+        buy_orders_list = self._buy_orders.get(item_id, [])
+        sell_orders_list = self._sell_orders.get(item_id, [])
 
         if not buy_orders_list or not sell_orders_list:
             return transactions
@@ -412,21 +445,21 @@ class OrderBookMarket(Market):
         new_sell_list = [o for o in remaining_sells if o.quantity > 0.001]
         new_sell_list.sort(key=lambda o: o.price)
         
-        self.buy_orders[item_id] = new_buy_list
-        self.sell_orders[item_id] = new_sell_list
+        self._buy_orders[item_id] = new_buy_list
+        self._sell_orders[item_id] = new_sell_list
 
         return transactions
 
     def get_best_ask(self, item_id: str) -> float | None:
         """주어진 아이템의 최저 판매 가격(best ask)을 반환합니다."""
-        if item_id in self.sell_orders and self.sell_orders[item_id]:
-            return self.sell_orders[item_id][0].price
+        if item_id in self._sell_orders and self._sell_orders[item_id]:
+            return self._sell_orders[item_id][0].price
         return self.cached_best_ask.get(item_id)
 
     def get_best_bid(self, item_id: str) -> float | None:
         """주어진 아이템의 최고 구매 가격(best bid)을 반환합니다."""
-        if item_id in self.buy_orders and self.buy_orders[item_id]:
-            return self.buy_orders[item_id][0].price
+        if item_id in self._buy_orders and self._buy_orders[item_id]:
+            return self._buy_orders[item_id][0].price
         return self.cached_best_bid.get(item_id)
 
     def get_last_traded_price(self, item_id: str) -> float | None:
@@ -448,8 +481,8 @@ class OrderBookMarket(Market):
     def get_market_depth(self, item_id: str) -> Dict[str, int]:
         """주어진 아이템의 매수/매도 주문 건수를 반환합니다."""
         return {
-            "buy_orders": len(self.buy_orders.get(item_id, [])),
-            "sell_orders": len(self.sell_orders.get(item_id, [])),
+            "buy_orders": len(self._buy_orders.get(item_id, [])),
+            "sell_orders": len(self._sell_orders.get(item_id, [])),
         }
 
     def get_order_book_status(self, item_id: str) -> Dict[str, Any]:
@@ -457,32 +490,32 @@ class OrderBookMarket(Market):
         return {
             "buy_orders": [
                 {"agent_id": o.agent_id, "quantity": o.quantity, "price": o.price}
-                for o in self.buy_orders.get(item_id, [])
+                for o in self._buy_orders.get(item_id, [])
             ],
             "sell_orders": [
                 {"agent_id": o.agent_id, "quantity": o.quantity, "price": o.price}
-                for o in self.sell_orders.get(item_id, [])
+                for o in self._sell_orders.get(item_id, [])
             ],
         }
 
     def get_all_bids(self, item_id: str) -> List[MarketOrder]:
         """주어진 아이템의 모든 매수 주문을 반환합니다."""
-        return self.buy_orders.get(item_id, [])
+        return self._buy_orders.get(item_id, [])
 
     def get_all_asks(self, item_id: str) -> List[MarketOrder]:
         """주어진 아이템의 모든 매도 주문을 반환합니다."""
-        return self.sell_orders.get(item_id, [])
+        return self._sell_orders.get(item_id, [])
 
     def get_total_demand(self) -> float:
         """시장의 모든 매수 주문 총량을 반환합니다."""
         return sum(
-            order.quantity for orders in self.buy_orders.values() for order in orders
+            order.quantity for orders in self._buy_orders.values() for order in orders
         )
 
     def get_total_supply(self) -> float:
         """시장의 모든 매도 주문 총량을 반환합니다."""
         return sum(
-            order.quantity for orders in self.sell_orders.values() for order in orders
+            order.quantity for orders in self._sell_orders.values() for order in orders
         )
 
     def get_daily_avg_price(self) -> float:
