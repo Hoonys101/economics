@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List, Union, TYPE_CHECKING
 
 from simulation.ai.enums import Personality
-from simulation.models import Share
+from simulation.models import Share, Order as OrderDTO
 
 if TYPE_CHECKING:
     from simulation.dtos.scenario import StressScenarioConfig
@@ -69,16 +69,6 @@ class MarketHistoryDTO:
     avg_bid: float
     worst_ask: float
     worst_bid: float
-
-@dataclass(frozen=True)
-class OrderDTO:
-    """
-    Represents an order in the market.
-    """
-    agent_id: int
-    item_id: str
-    quantity: float
-    price: float
 
 @dataclass(frozen=True)
 class MarketSnapshotDTO:

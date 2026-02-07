@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, TypedDict, Protocol, TYPE_CHECKING, List
 import uuid
 from modules.finance.dtos import MoneyDTO
+from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
@@ -28,6 +29,7 @@ class OrderDTO:
 
     # TD-213: Multi-Currency Support
     monetary_amount: Optional[MoneyDTO] = None
+    currency: CurrencyCode = DEFAULT_CURRENCY
 
     # Auto-generated ID
     id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)

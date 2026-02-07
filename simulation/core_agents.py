@@ -283,9 +283,6 @@ class Household(
 
         # Ensure BaseAgent uses the same wallet as EconStateDTO
         self._wallet = self._econ_state.wallet
-        # EXPLICITLY ALIAS INVENTORY: Ensure BaseAgent._inventory points to EconStateDTO.inventory
-        # This prevents "Split Brain" if BaseAgent methods are inadvertently used or if inheritance overrides are missed.
-        self._inventory = self._econ_state.inventory
 
         # WO-123: Memory Logging - Record Birth
         if self.memory_v2:
@@ -355,7 +352,7 @@ class Household(
         self._social_state = self.social_component.calculate_social_status(
             self._social_state,
             self._econ_state.assets,
-            self._econ_state.inventory,
+            self.get_all_items(),
             self.config
         )
 
