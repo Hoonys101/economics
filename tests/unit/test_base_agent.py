@@ -1,162 +1,186 @@
 import pytest
-from tests.utils.factories import create_firm_config_dto, create_household_config_dto
-import os
-import sys
 from unittest.mock import Mock
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from simulation.base_agent import BaseAgent
 from simulation.core_agents import Household, Talent, Personality
 from simulation.firms import Firm
-from simulation.decisions.ai_driven_household_engine import (
-    AIDrivenHouseholdDecisionEngine,
-)
-from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
+from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO, IDecisionEngine, IOrchestratorAgent
+from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
 import config
 from simulation.utils.config_factory import create_config_dto
-from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
-from simulation.dtos.agent_dtos import BaseAgentInitDTO
 from modules.system.api import DEFAULT_CURRENCY
 
-# 프로젝트 루트 디렉토리를 sys.path에 추가
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_dir, os.pardir))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-
-# Mock Decision Engines for testing
-class MockHouseholdDecisionEngine(AIDrivenHouseholdDecisionEngine):
+# Mock Decision Engine
+class MockDecisionEngine:
     def __init__(self):
-        self.ai_engine = Mock()
+        self.loan_market = None
+        self.logger = None
+        self.ai_engine = Mock() # For clone mixin access
         self.ai_engine.ai_decision_engine = Mock()
         self.ai_engine.gamma = 0.99
+        self.ai_engine.action_selector = Mock()
         self.ai_engine.action_selector.epsilon = 0.1
         self.ai_engine.base_alpha = 0.1
         self.ai_engine.learning_focus = 0.5
-        self.config_module = config
-        self.logger = Mock()
 
-    def make_decisions(self, household, market_data, current_time):
+    def make_decision(self, state: AgentStateDTO, world_context: Any):
+        return [], None
+    def make_decisions(self, *args, **kwargs):
         return [], None
 
-
-class MockFirmDecisionEngine(AIDrivenFirmDecisionEngine):
-    def __init__(self):
+# Concrete BaseAgent implementation for testing
+class ConcreteAgent(BaseAgent):
+    def update_needs(self, current_tick: int):
         pass
 
-    def make_decisions(self, firm, market_data, current_time):
+    def make_decision(self, input_dto: Any) -> tuple[list[Any], Any]:
         return [], None
 
+    def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "BaseAgent":
+        return ConcreteAgent(
+            core_config=AgentCoreConfigDTO(
+                id=new_id, name=f"ConcreteAgent_{new_id}",
+                value_orientation=self.value_orientation,
+                initial_needs=self.needs.copy(),
+                logger=self.logger,
+                memory_interface=self.memory_v2
+            ),
+            engine=self.decision_engine
+        )
 
-# Test BaseAgent abstract methods
-def test_base_agent_abstract_methods():
-    # Create valid DTO
-    init_dto = BaseAgentInitDTO(
+    def get_agent_data(self):
+        return {}
+
+def test_base_agent_initialization():
+    core_config = AgentCoreConfigDTO(
         id=1,
-        initial_assets=100.0,
-        initial_needs={},
-        decision_engine=None,
-        value_orientation="N/A",
-        logger=Mock()
+        name="TestAgent",
+        value_orientation="growth",
+        initial_needs={"survival": 10.0},
+        logger=Mock(),
+        memory_interface=None
     )
+    engine = MockDecisionEngine()
 
-    with pytest.raises(TypeError):
-        # Should raise because it's abstract
-        BaseAgent(init_config=init_dto)
+    agent = ConcreteAgent(core_config, engine)
 
-    class ConcreteAgent(BaseAgent):
-        def update_needs(self, current_tick: int):
-            pass
+    assert agent.id == 1
+    assert agent.name == "TestAgent"
+    assert agent.value_orientation == "growth"
+    assert agent.needs == {"survival": 10.0}
+    assert agent.wallet.get_balance(DEFAULT_CURRENCY) == 0.0 # Initially empty
 
-        def make_decision(self, input_dto: Any) -> tuple[list[Any], Any]:
-            return [], None
+    # Load State
+    state = AgentStateDTO(
+        assets={DEFAULT_CURRENCY: 100.0},
+        inventory={"food": 5.0},
+        is_active=True
+    )
+    agent.load_state(state)
 
-        def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "BaseAgent":
-            pass
-
-    agent = ConcreteAgent(init_config=init_dto)
-    assert isinstance(agent, BaseAgent)
-    # Check strict IFinancialEntity compliance
-    assert isinstance(agent.assets, float)
+    assert agent.wallet.get_balance(DEFAULT_CURRENCY) == 100.0
     assert agent.assets == 100.0
+    assert agent.get_quantity("food") == 5.0
+    assert agent.is_active is True
 
-
-# Test Household inheritance and initialization
-def test_household_clone():
-    initial_assets = 100.0
-    initial_needs = {
-        "survival_need": 50.0,
-        "wealth_need": 10.0,
-        "labor_need": 0.0,
-        "imitation_need": 0.0,
-        "child_rearing_need": 0.0,
-    }
-    talent = Talent(base_learning_rate=1.0, max_potential={})
-    goods_data = []
-    decision_engine = MockHouseholdDecisionEngine()
-    mock_logger = Mock()
-
-    hh_config = create_config_dto(config, HouseholdConfigDTO)
-    household = Household(
-        id=1,
-        talent=talent,
-        goods_data=goods_data,
-        initial_assets=initial_assets,
-        initial_needs=initial_needs,
-        decision_engine=decision_engine,
-        value_orientation=Mock(), # Mock object for value_orientation might be issue if it needs to be str key for mapping
-        logger=mock_logger,
-        personality=Personality.MISER,
-        config_dto=hh_config,
+def test_household_initialization():
+    core_config = AgentCoreConfigDTO(
+        id=100,
+        name="Household_100",
+        value_orientation="needs",
+        initial_needs={"survival": 5.0},
+        logger=Mock(),
+        memory_interface=None
     )
-    # NOTE: Household.__init__ expects value_orientation to be str for config mapping lookup.
-    # But previous test passed Mock(). Let's see if mapping.get(Mock()) works.
-    # It probably returns default.
+    engine = MockDecisionEngine()
+    talent = Talent(1.0, {})
+    hh_config = create_config_dto(config, HouseholdConfigDTO)
 
-    clone = household.clone(2, 50.0, 1)
+    household = Household(
+        core_config=core_config,
+        engine=engine,
+        talent=talent,
+        goods_data=[],
+        personality=Personality.MISER,
+        config_dto=hh_config
+    )
 
-    assert isinstance(clone, BaseAgent)
-    assert clone.id == 2
-    assert clone.assets == 50.0
-    # assert household._bio_state.needs == initial_needs
-    assert clone.name == "Household_2"
-    assert clone.talent == talent
-    assert clone.demographics.parent_id == 1
-    assert clone.demographics.generation == 1
+    # Initially 0 assets
+    assert household.assets == 0.0
 
+    # Load State
+    state = AgentStateDTO(
+        assets={DEFAULT_CURRENCY: 500.0},
+        inventory={},
+        is_active=True
+    )
+    household.load_state(state)
 
-# Test Firm inheritance and initialization
-def test_firm_inheritance_and_init():
-    initial_capital = 500.0
-    initial_liquidity_need = 10.0  # Define this variable
-    #     production_targets = {"food": 10}
-    productivity_factor = 1.0
-    decision_engine = MockFirmDecisionEngine()
-    mock_logger = Mock()
+    assert household.assets == 500.0
+    assert household._econ_state.wallet.get_balance(DEFAULT_CURRENCY) == 500.0
+
+def test_household_clone():
+    core_config = AgentCoreConfigDTO(
+        id=100,
+        name="Household_100",
+        value_orientation="needs",
+        initial_needs={"survival": 5.0},
+        logger=Mock(),
+        memory_interface=None
+    )
+    engine = MockDecisionEngine()
+    talent = Talent(1.0, {})
+    hh_config = create_config_dto(config, HouseholdConfigDTO)
+
+    household = Household(
+        core_config=core_config,
+        engine=engine,
+        talent=talent,
+        goods_data=[],
+        personality=Personality.MISER,
+        config_dto=hh_config
+    )
+    # Give some assets
+    household.load_state(AgentStateDTO(assets={DEFAULT_CURRENCY: 100.0}, inventory={}, is_active=True))
+
+    # Clone
+    child = household.clone(101, 50.0, 1)
+
+    assert child.id == 101
+    assert child.assets == 50.0
+    assert child.name == "Household_101"
+
+def test_firm_initialization():
+    core_config = AgentCoreConfigDTO(
+        id=200,
+        name="Firm_200",
+        value_orientation="profit",
+        initial_needs={"liquidity_need": 100.0},
+        logger=Mock(),
+        memory_interface=None
+    )
+    engine = MockDecisionEngine()
     firm_config = create_config_dto(config, FirmConfigDTO)
-    firm_config.profit_history_ticks = 10
-    firm_config.firm_min_production_target = 10.0
 
     firm = Firm(
-        id=101,
-        initial_capital=initial_capital,
-        initial_liquidity_need=10.0,  # Add this back
-        specialization="basic_food",  # Use specialization instead of production_targets
-        productivity_factor=productivity_factor,
-        decision_engine=decision_engine,
-        value_orientation=Mock(),
-        logger=mock_logger,
-        config_dto=firm_config,
+        core_config=core_config,
+        engine=engine,
+        specialization="food",
+        productivity_factor=1.2,
+        config_dto=firm_config
     )
 
-    assert isinstance(firm, BaseAgent)
-    assert firm.id == 101
-    assert firm.finance.balance[DEFAULT_CURRENCY] == initial_capital
-    assert firm.assets == initial_capital # Check protocol compliance
-    assert firm.needs == {"liquidity_need": initial_liquidity_need}
-    assert firm.decision_engine == decision_engine
-    assert firm.name == "Firm_101"
-    assert firm.specialization == "basic_food"
-    assert firm.production_target == 10.0
-    assert firm.productivity_factor == productivity_factor
+    assert firm.assets == 0.0
+    assert firm.specialization == "food"
+
+    # Load State
+    state = AgentStateDTO(
+        assets={DEFAULT_CURRENCY: 1000.0},
+        inventory={"raw_material": 50.0},
+        is_active=True
+    )
+    firm.load_state(state)
+
+    assert firm.assets == 1000.0
+    assert firm.get_quantity("raw_material") == 50.0

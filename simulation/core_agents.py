@@ -18,7 +18,7 @@ from simulation.dtos import DecisionContext, FiscalContext, MacroFinancialContex
 
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.portfolio import Portfolio
-from simulation.dtos.agent_dtos import BaseAgentInitDTO
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine
 
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
@@ -79,18 +79,14 @@ class Household(
 
     def __init__(
         self,
-        id: int,
+        core_config: AgentCoreConfigDTO,
+        engine: IDecisionEngine,
         talent: Talent,
         goods_data: List[Dict[str, Any]],
-        initial_assets: float,
-        initial_needs: Dict[str, float],
-        decision_engine: BaseDecisionEngine,
-        value_orientation: str,
         personality: Personality,
         config_dto: HouseholdConfigDTO,
         loan_market: Optional[LoanMarket] = None,
         risk_aversion: float = 1.0,
-        logger: Optional[Logger] = None,
         # Demographics
         initial_age: Optional[float] = None,
         gender: Optional[str] = None,
@@ -101,18 +97,8 @@ class Household(
     ) -> None:
         self.config = config_dto
 
-        # --- Value Orientation (3 Pillars) ---
-        mapping = self.config.value_orientation_mapping
-        prefs = mapping.get(
-            value_orientation,
-            {"preference_asset": 1.0, "preference_social": 1.0, "preference_growth": 1.0}
-        )
-        self.preference_asset = prefs["preference_asset"]
-        self.preference_social = prefs["preference_social"]
-        self.preference_growth = prefs["preference_growth"]
-
-        # Initialize Logger early
-        self.logger = logger if logger else logging.getLogger(f"Household_{id}")
+        # Initialize Logger early (BaseAgent does this too, but we need it for components if used)
+        self.logger = core_config.logger
 
         # --- Initialize Components (Stateless) ---
         self.bio_component = BioComponent()
@@ -122,20 +108,21 @@ class Household(
         self.decision_unit = DecisionUnit()
         self.political_component = PoliticalComponent()
 
-        # --- Initialize Internal State DTOs ---
+        # --- Initialize Internal State DTOs (BEFORE super().__init__) ---
 
-        # Bio State
+        # 1. Bio State (Needed for BaseAgent.needs setter)
         self._bio_state = BioStateDTO(
-            id=id,
+            id=core_config.id,
             age=initial_age if initial_age is not None else random.uniform(*self.config.initial_household_age_range),
             gender=gender if gender is not None else random.choice(["M", "F"]),
             generation=generation if generation is not None else 0,
             is_active=True,
-            needs=initial_needs.copy(),
+            needs=core_config.initial_needs.copy(),
             parent_id=parent_id
         )
 
-        # Econ State
+        # 2. Econ State (Needed for BaseAgent.wallet/inventory setters)
+
         price_memory_len = int(self.config.price_memory_length)
         wage_memory_len = int(self.config.wage_memory_length)
         ticks_per_year = int(self.config.ticks_per_year)
@@ -156,14 +143,15 @@ class Household(
         raw_aptitude = random.gauss(*self.config.initial_aptitude_distribution)
         aptitude = max(0.0, min(1.0, raw_aptitude))
 
-        initial_assets_dict = {DEFAULT_CURRENCY: float(initial_assets)}
+        # TEMP Objects for EconState (will be replaced by BaseAgent setters)
+        temp_wallet = Wallet(core_config.id, {})
 
         self._econ_state = EconStateDTO(
-            wallet=Wallet(id, initial_assets_dict),
+            wallet=temp_wallet,
             inventory={},
             inventory_quality={},
             durable_assets=[],
-            portfolio=Portfolio(id),
+            portfolio=Portfolio(core_config.id),
             is_employed=False,
             employer_id=None,
             current_wage=0.0,
@@ -196,8 +184,23 @@ class Household(
             adaptation_rate=adaptation_rate,
             labor_income_this_tick=0.0,
             capital_income_this_tick=0.0,
-            initial_assets_record=initial_assets_record if initial_assets_record is not None else initial_assets
+            initial_assets_record=initial_assets_record if initial_assets_record is not None else 0.0
         )
+
+        super().__init__(core_config, engine)
+
+        # Sync EconState wallet with BaseAgent wallet (since BaseAgent creates a new one)
+        self._econ_state.wallet = self._wallet
+
+        # --- Value Orientation (3 Pillars) ---
+        mapping = self.config.value_orientation_mapping
+        prefs = mapping.get(
+            self.value_orientation,
+            {"preference_asset": 1.0, "preference_social": 1.0, "preference_growth": 1.0}
+        )
+        self.preference_asset = prefs["preference_asset"]
+        self.preference_social = prefs["preference_social"]
+        self.preference_growth = prefs["preference_growth"]
 
         # Social State
         # Conformity
@@ -207,8 +210,12 @@ class Household(
 
         # Quality Preference
         mean_assets = self.config.initial_household_assets_mean
-        is_wealthy = initial_assets > mean_assets * 1.5
-        is_poor = initial_assets < mean_assets * 0.5
+        # Note: initial_assets logic for personality was based on birth wealth.
+        # However, initial_assets_record preserves the "intended" wealth.
+        effective_initial_assets = initial_assets_record if initial_assets_record is not None else 0.0
+
+        is_wealthy = effective_initial_assets > mean_assets * 1.5
+        is_poor = effective_initial_assets < mean_assets * 0.5
 
         if personality == Personality.STATUS_SEEKER or is_wealthy:
             min_pref = self.config.quality_pref_snob_min
@@ -263,29 +270,8 @@ class Household(
         self.distress_tick_counter: int = 0
 
         # Setup Decision Engine
-        decision_engine.loan_market = loan_market
-        decision_engine.logger = self.logger
-
-        memory_interface = kwargs.get("memory_interface")
-
-        base_agent_config = BaseAgentInitDTO(
-            id=id,
-            initial_assets=initial_assets,
-            initial_needs=initial_needs,
-            decision_engine=decision_engine,
-            value_orientation=value_orientation,
-            name=f"Household_{id}",
-            logger=logger,
-            memory_interface=memory_interface
-        )
-
-        super().__init__(base_agent_config)
-
-        # Ensure BaseAgent uses the same wallet as EconStateDTO
-        self._wallet = self._econ_state.wallet
-        # EXPLICITLY ALIAS INVENTORY: Ensure BaseAgent._inventory points to EconStateDTO.inventory
-        # This prevents "Split Brain" if BaseAgent methods are inadvertently used or if inheritance overrides are missed.
-        self._inventory = self._econ_state.inventory
+        self.decision_engine.loan_market = loan_market
+        self.decision_engine.logger = self.logger
 
         # WO-123: Memory Logging - Record Birth
         if self.memory_v2:
@@ -294,7 +280,7 @@ class Household(
                 tick=0,
                 agent_id=self.id,
                 event_type="BIRTH",
-                data={"initial_assets": initial_assets}
+                data={"initial_assets": initial_assets_record if initial_assets_record is not None else 0.0}
             )
             self.memory_v2.add_record(record)
 

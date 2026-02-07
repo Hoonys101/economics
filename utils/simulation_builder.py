@@ -11,6 +11,8 @@ from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
 from simulation.core_agents import Household, Talent
 from simulation.firms import Firm
 from simulation.ai.firm_ai import FirmAI
+from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO
+from modules.system.api import DEFAULT_CURRENCY
 from simulation.engine import Simulation
 from simulation.ai_model import AIEngineRegistry
 from simulation.ai.state_builder import StateBuilder
@@ -171,20 +173,33 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         # Spec: "0.1 (Gambler) to 10.0 (Super Conservative)"
         risk_aversion = random.uniform(0.1, 10.0)
 
-        household = Household(
+        core_config = AgentCoreConfigDTO(
             id=agent_id,
+            name=f"Household_{agent_id}",
+            value_orientation=value_orientation,
+            initial_needs=initial_needs,
+            logger=logger,
+            memory_interface=None
+        )
+
+        household = Household(
+            core_config=core_config,
+            engine=household_decision_engine,
             talent=Talent(max(0.5, random.gauss(1.0, 0.2)), {}), # WO-023-B: The Lottery of Birth
             goods_data=goods_data,
-            initial_assets=0.0,  # WO-124: Start empty (Genesis Protocol)
-            initial_assets_record=initial_assets, # Record "birthright" for history
-            initial_needs=initial_needs,
-            decision_engine=household_decision_engine,
-            value_orientation=value_orientation,
             personality=personality,
             config_dto=hh_config_dto,
             risk_aversion=risk_aversion,
-            logger=logger,
+            initial_assets_record=initial_assets, # Record "birthright" for history
         )
+
+        # Hydrate State
+        initial_state = AgentStateDTO(
+            assets={DEFAULT_CURRENCY: 0.0}, # Start empty
+            inventory={},
+            is_active=True
+        )
+        household.load_state(initial_state)
         household._econ_state.inventory["basic_food"] = (
             config.INITIAL_HOUSEHOLD_FOOD_INVENTORY
         )  # Provide initial food (now basic_food)
@@ -241,18 +256,31 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
                 ai_engine=firm_ai_instance, config_module=config_manager
              )
 
+        firm_core_config = AgentCoreConfigDTO(
+            id=firm_id,
+            name=f"Firm_{firm_id}",
+            value_orientation=firm_value_orientation,
+            initial_needs={"liquidity_need": initial_liquidity_need},
+            logger=logger,
+            memory_interface=None
+        )
+
         # Create the Firm instance with specialization instead of production_targets
         firm = Firm(
-            id=firm_id,
-            initial_capital=0.0,  # WO-124: Start empty (Genesis Protocol)
-            initial_liquidity_need=initial_liquidity_need,
+            core_config=firm_core_config,
+            engine=firm_decision_engine,
             specialization=specialization,
             productivity_factor=config.FIRM_PRODUCTIVITY_FACTOR,
-            decision_engine=firm_decision_engine,
-            value_orientation=firm_value_orientation,
             config_dto=firm_config_dto,
-            logger=logger,
         )
+
+        # Hydrate State (Empty for now, populated via add_item below and Genesis)
+        initial_firm_state = AgentStateDTO(
+            assets={DEFAULT_CURRENCY: 0.0},
+            inventory={},
+            is_active=True
+        )
+        firm.load_state(initial_firm_state)
 
         # Initialize inventory for all possible goods
         for good_name in config.GOODS:
