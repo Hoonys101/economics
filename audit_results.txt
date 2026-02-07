@@ -1,0 +1,35 @@
+=== GOD CLASS AUDIT (> 800 lines) ===
+No God Classes found.
+
+=== NEAR MISSES (600-800 lines) ===
+simulation/firms.py :: Firm (730 lines)
+simulation/systems/settlement_system.py :: SettlementSystem (653 lines)
+simulation/agents/government.py :: Government (665 lines)
+
+=== ABSTRACTION LEAK AUDIT (Engines) ===
+simulation/decisions.py :: Argument 'agent' might be a raw agent (name match) in function 'make_decisions'
+simulation/decisions/action_proposal.py :: Argument 'agent' might be a raw agent (name match) in function 'propose_actions'
+simulation/decisions/action_proposal.py :: Argument 'agent' might be a raw agent (name match) in function '_propose_household_actions'
+simulation/decisions/action_proposal.py :: Argument 'agent' might be a raw agent (name match) in function '_propose_firm_actions'
+simulation/decisions/action_proposal.py :: Argument 'household' might be a raw agent (name match) in function 'propose_forced_labor_action'
+simulation/decisions/household/stock_trader.py :: Argument 'household' might be a raw agent (name match) in function 'place_buy_orders'
+simulation/decisions/household/stock_trader.py :: Argument 'household' might be a raw agent (name match) in function 'place_sell_orders'
+simulation/decisions/household/consumption_manager.py :: Argument 'household' might be a raw agent (name match) in function 'check_survival_override'
+simulation/decisions/household/asset_manager.py :: Argument 'household' might be a raw agent (name match) in function '_get_assets_value'
+simulation/decisions/household/asset_manager.py :: Argument 'household' might be a raw agent (name match) in function 'get_savings_roi'
+simulation/decisions/household/asset_manager.py :: Argument 'household' might be a raw agent (name match) in function 'get_debt_penalty'
+simulation/components/engines/hr_engine.py :: Argument 'government' might be a raw agent (name match) in function 'process_payroll'
+simulation/components/engines/hr_engine.py :: Argument 'agent' might be a raw agent (name match) in function 'fire_employee'
+simulation/components/engines/finance_engine.py :: Argument 'government' might be a raw agent (name match) in function 'generate_financial_transactions'
+simulation/components/engines/finance_engine.py :: Argument 'government' might be a raw agent (name match) in function '_process_profit_distribution'
+simulation/components/engines/finance_engine.py :: Argument 'agent' might be a raw agent (name match) in function 'invest_in_automation'
+simulation/components/engines/finance_engine.py :: Argument 'government' might be a raw agent (name match) in function 'invest_in_automation'
+simulation/components/engines/finance_engine.py :: Argument 'agent' might be a raw agent (name match) in function 'invest_in_rd'
+simulation/components/engines/finance_engine.py :: Argument 'government' might be a raw agent (name match) in function 'invest_in_rd'
+simulation/components/engines/finance_engine.py :: Argument 'agent' might be a raw agent (name match) in function 'invest_in_capex'
+simulation/components/engines/finance_engine.py :: Argument 'government' might be a raw agent (name match) in function 'invest_in_capex'
+simulation/components/engines/finance_engine.py :: Argument 'agent' might be a raw agent (name match) in function 'pay_ad_hoc_tax'
+simulation/components/engines/finance_engine.py :: Argument 'government' might be a raw agent (name match) in function 'pay_ad_hoc_tax'
+simulation/components/engines/sales_engine.py :: Argument 'government' might be a raw agent (name match) in function 'generate_marketing_transaction'
+simulation/orchestration/phases/decision.py :: Argument 'household' has leaky type 'Household' in function '_process_household_order'
+simulation/orchestration/phases/decision.py :: Argument 'household' might be a raw agent (name match) in function '_process_household_order'
