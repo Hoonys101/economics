@@ -16,6 +16,7 @@ from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
 from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
+from simulation.dtos.agent_dtos import BaseAgentInitDTO
 
 # SoC Refactor
 from simulation.components.hr_department import HRDepartment
@@ -62,16 +63,20 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         personality: Optional[Personality] = None,
         memory_interface: Optional["MemoryV2Interface"] = None,
     ) -> None:
-        super().__init__(
-            id,
-            initial_capital,
-            {"liquidity_need": initial_liquidity_need},
-            decision_engine,
-            value_orientation,
+
+        base_agent_config = BaseAgentInitDTO(
+            id=id,
+            initial_assets=initial_capital,
+            initial_needs={"liquidity_need": initial_liquidity_need},
+            decision_engine=decision_engine,
+            value_orientation=value_orientation,
             name=f"Firm_{id}",
             logger=logger,
-            memory_interface=memory_interface,
+            memory_interface=memory_interface
         )
+
+        super().__init__(base_agent_config)
+
         self.settlement_system: Optional["ISettlementSystem"] = None
         self.config = config_dto
         if initial_inventory is not None:
@@ -137,7 +142,16 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         # Phase 16-B: Rewards Tracking (Delta storage)
         self.prev_market_share: float = 0.0
         # Refactor: Use finance.balance
-        self.prev_assets: float = self.finance.balance
+        self.prev_assets: float = self.finance.balance.get(DEFAULT_CURRENCY, 0.0) # Corrected to use float if balance is dict?
+        # Actually finance.balance returns Dict[CurrencyCode, float].
+        # BaseAgent.assets now returns float.
+        # Firm.prev_assets was initialized with self.finance.balance which is a dict in original code.
+        # But wait, original code was: `self.prev_assets: float = self.finance.balance`
+        # `FinanceDepartment.balance` is `@property def balance(self) -> Dict[CurrencyCode, float]:`
+        # So `prev_assets` type hint says `float` but assignment was `Dict`.
+        # I should probably fix this to be float if it's meant to track total value or just primary currency.
+        # For now I will use get(DEFAULT_CURRENCY, 0.0) to match type hint.
+
         self.prev_avg_quality: float = 1.0
 
         # Phase 21: Automation

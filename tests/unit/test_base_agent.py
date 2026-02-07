@@ -15,6 +15,7 @@ from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngin
 import config
 from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
+from simulation.dtos.agent_dtos import BaseAgentInitDTO
 from modules.system.api import DEFAULT_CURRENCY
 
 # 프로젝트 루트 디렉토리를 sys.path에 추가
@@ -50,28 +51,35 @@ class MockFirmDecisionEngine(AIDrivenFirmDecisionEngine):
 
 # Test BaseAgent abstract methods
 def test_base_agent_abstract_methods():
+    # Create valid DTO
+    init_dto = BaseAgentInitDTO(
+        id=1,
+        initial_assets=100.0,
+        initial_needs={},
+        decision_engine=None,
+        value_orientation="N/A",
+        logger=Mock()
+    )
+
     with pytest.raises(TypeError):
-        BaseAgent(id=1, initial_assets=100.0, initial_needs={}, decision_engine=None)
+        # Should raise because it's abstract
+        BaseAgent(init_config=init_dto)
 
     class ConcreteAgent(BaseAgent):
         def update_needs(self, current_tick: int):
             pass
 
-        def make_decision(self, markets: Dict[str, Any], goods_data: list[Dict[str, Any]], market_data: Dict[str, Any], current_time: int) -> tuple[list[Any], Any]:
+        def make_decision(self, input_dto: Any) -> tuple[list[Any], Any]:
             return [], None
 
         def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "BaseAgent":
             pass
 
-    agent = ConcreteAgent(
-        id=1,
-        initial_assets=100.0,
-        initial_needs={},
-        decision_engine=None,
-        value_orientation=Mock(),
-        logger=Mock(),
-    )
+    agent = ConcreteAgent(init_config=init_dto)
     assert isinstance(agent, BaseAgent)
+    # Check strict IFinancialEntity compliance
+    assert isinstance(agent.assets, float)
+    assert agent.assets == 100.0
 
 
 # Test Household inheritance and initialization
@@ -97,11 +105,14 @@ def test_household_clone():
         initial_assets=initial_assets,
         initial_needs=initial_needs,
         decision_engine=decision_engine,
-        value_orientation=Mock(),
+        value_orientation=Mock(), # Mock object for value_orientation might be issue if it needs to be str key for mapping
         logger=mock_logger,
         personality=Personality.MISER,
         config_dto=hh_config,
     )
+    # NOTE: Household.__init__ expects value_orientation to be str for config mapping lookup.
+    # But previous test passed Mock(). Let's see if mapping.get(Mock()) works.
+    # It probably returns default.
 
     clone = household.clone(2, 50.0, 1)
 
@@ -142,6 +153,7 @@ def test_firm_inheritance_and_init():
     assert isinstance(firm, BaseAgent)
     assert firm.id == 101
     assert firm.finance.balance[DEFAULT_CURRENCY] == initial_capital
+    assert firm.assets == initial_capital # Check protocol compliance
     assert firm.needs == {"liquidity_need": initial_liquidity_need}
     assert firm.decision_engine == decision_engine
     assert firm.name == "Firm_101"

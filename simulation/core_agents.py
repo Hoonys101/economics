@@ -18,6 +18,7 @@ from simulation.dtos import DecisionContext, FiscalContext, MacroFinancialContex
 
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.portfolio import Portfolio
+from simulation.dtos.agent_dtos import BaseAgentInitDTO
 
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
@@ -262,16 +263,20 @@ class Household(
         decision_engine.loan_market = loan_market
         decision_engine.logger = self.logger
 
-        super().__init__(
-            id,
-            initial_assets,
-            initial_needs,
-            decision_engine,
-            value_orientation,
+        memory_interface = kwargs.get("memory_interface")
+
+        base_agent_config = BaseAgentInitDTO(
+            id=id,
+            initial_assets=initial_assets,
+            initial_needs=initial_needs,
+            decision_engine=decision_engine,
+            value_orientation=value_orientation,
             name=f"Household_{id}",
             logger=logger,
-            **kwargs,
+            memory_interface=memory_interface
         )
+
+        super().__init__(base_agent_config)
 
         # Ensure BaseAgent uses the same wallet as EconStateDTO
         self._wallet = self._econ_state.wallet

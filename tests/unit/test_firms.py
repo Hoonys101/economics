@@ -128,7 +128,7 @@ class TestProductionDepartment:
         quality_sensitivity = mock_config.goods["test"]["quality_sensitivity"]
         expected_quality = firm.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
 
-        firm.add_inventory.assert_called_once_with("test", produced_quantity, expected_quality)
+        firm.add_item.assert_called_once_with("test", produced_quantity, quality=expected_quality)
 
 class TestSalesDepartment:
     @pytest.fixture

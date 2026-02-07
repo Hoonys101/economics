@@ -1,47 +1,40 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, TYPE_CHECKING
 import logging
-from modules.finance.api import InsufficientFundsError
+from modules.finance.api import InsufficientFundsError, IFinancialEntity
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
 from modules.simulation.api import IInventoryHandler
+from simulation.dtos.agent_dtos import BaseAgentInitDTO
 
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
 
 
-class BaseAgent(ICurrencyHolder, IInventoryHandler, ABC):
+class BaseAgent(ICurrencyHolder, IInventoryHandler, IFinancialEntity, ABC):
     def __init__(
         self,
-        id: int,
-        initial_assets: float,
-        initial_needs: Dict[str, float],
-        decision_engine: Any,
-        value_orientation: str,
-        name: Optional[str] = None,
-        logger: Optional[logging.Logger] = None,
-        memory_interface: Optional["MemoryV2Interface"] = None,
+        init_config: BaseAgentInitDTO
     ):
-        self.id = id
-        self.memory_v2 = memory_interface
+        self.id = init_config.id
+        self.memory_v2 = init_config.memory_interface
 
         initial_balance_dict = {}
-        if isinstance(initial_assets, dict):
-            initial_balance_dict = initial_assets.copy()
+        if isinstance(init_config.initial_assets, dict):
+            initial_balance_dict = init_config.initial_assets.copy()
         else:
-            initial_balance_dict[DEFAULT_CURRENCY] = float(initial_assets)
+            initial_balance_dict[DEFAULT_CURRENCY] = float(init_config.initial_assets)
 
         self._wallet = Wallet(self.id, initial_balance_dict)
 
-        self.needs = initial_needs
-        self.decision_engine = decision_engine
-        self.value_orientation = value_orientation
-        self.name = name if name is not None else f"{self.__class__.__name__}_{id}"
+        self.needs = init_config.initial_needs
+        self.decision_engine = init_config.decision_engine
+        self.value_orientation = init_config.value_orientation
+        self.name = init_config.name if init_config.name is not None else f"{self.__class__.__name__}_{self.id}"
         self._inventory: Dict[str, float] = {}
         self.is_active: bool = True
-        self.logger = logger if logger is not None else logging.getLogger(self.name)
-        self.memory_v2 = memory_interface
+        self.logger = init_config.logger if init_config.logger is not None else logging.getLogger(self.name)
         self._pre_state_data: Dict[str, Any] = {}  # 이전 상태 저장을 위한 속성
         self.pre_state_snapshot: Dict[str, Any] = {} # Mypy fix: Snapshot for learning
 
@@ -50,9 +43,9 @@ class BaseAgent(ICurrencyHolder, IInventoryHandler, ABC):
         return self._wallet
 
     @property
-    def assets(self) -> Dict[CurrencyCode, float]:
-        """Current assets keyed by currency (Read-Only)."""
-        return self._wallet.get_all_balances()
+    def assets(self) -> float:
+        """Current assets in DEFAULT_CURRENCY (Read-Only). Implementation of IFinancialEntity."""
+        return self._wallet.get_balance(DEFAULT_CURRENCY)
 
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
         """Implementation of ICurrencyHolder."""
