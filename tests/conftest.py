@@ -8,6 +8,7 @@ def mock_fcntl():
     """Mocks fcntl to prevent file locking during tests."""
     # We patch the fcntl module used in initializer.py
     # If the system doesn't have fcntl, it might be None, so we patch carefully.
+    import simulation.initialization.initializer
     with patch('simulation.initialization.initializer.fcntl', create=True) as mock_fcntl:
         if mock_fcntl:
             mock_fcntl.flock = Mock()

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 from .department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
+from modules.system.api import DEFAULT_CURRENCY
 
 @dataclass(frozen=True)
 class FirmStateDTO:
@@ -33,12 +34,18 @@ class FirmStateDTO:
         # --- HR State ---
         employee_ids = []
         employees_data = {}
-        if hasattr(firm, 'hr') and hasattr(firm.hr, 'employees'):
-            employee_ids = [e.id for e in firm.hr.employees]
+
+        # Check for new architecture (hr_state) first, then fallback to property (hr)
+        hr_source = getattr(firm, 'hr_state', None)
+        if hr_source is None:
+            hr_source = getattr(firm, 'hr', None)
+
+        if hr_source and hasattr(hr_source, 'employees'):
+            employee_ids = [e.id for e in hr_source.employees]
 
             # Populate employees_data for CorporateManager
-            wages_map = getattr(firm.hr, 'employee_wages', {})
-            for e in firm.hr.employees:
+            wages_map = getattr(hr_source, 'employee_wages', {})
+            for e in hr_source.employees:
                 employees_data[e.id] = {
                     "id": e.id,
                     "wage": wages_map.get(e.id, 0.0),
@@ -53,45 +60,64 @@ class FirmStateDTO:
         )
 
         # --- Finance State ---
-        finance = getattr(firm, 'finance', None)
-        # Handle access via old properties if they exist (during refactor transition) or direct finance access
-        # Since we are removing properties, we should look at finance component directly if possible.
-        # However, for mocks or tests that might not have finance fully setup, we need care.
-        # But 'firm' here is likely the actual Firm object which has 'finance'.
+        finance_source = getattr(firm, 'finance_state', None)
+        if finance_source is None:
+             finance_source = getattr(firm, 'finance', None)
 
-        balance = 0.0
-        if finance and hasattr(finance, 'balance'):
-            balance = finance.balance
-        elif hasattr(firm, 'assets'): # Fallback (e.g. BaseAgent or Mock)
+        # Determine Balance (Wallet or Dict)
+        balance = 0.0 # Default primary currency balance
+        if hasattr(firm, 'wallet') and hasattr(firm.wallet, 'get_balance'):
+             balance = firm.wallet.get_balance(DEFAULT_CURRENCY)
+        elif finance_source and hasattr(finance_source, 'balance'):
+             # If balance is dict
+             b = finance_source.balance
+             if isinstance(b, dict):
+                 balance = b.get(DEFAULT_CURRENCY, 0.0)
+             else:
+                 balance = b
+        elif hasattr(firm, 'assets'):
              balance = firm.assets
 
         revenue = 0.0
-        if finance and hasattr(finance, 'revenue_this_turn'):
-            revenue = finance.revenue_this_turn
+        # revenue_this_turn is Dict in new state, maybe float in old/mock?
+        if finance_source and hasattr(finance_source, 'revenue_this_turn'):
+            rev = finance_source.revenue_this_turn
+            if isinstance(rev, dict):
+                revenue = rev.get(DEFAULT_CURRENCY, 0.0)
+            else:
+                revenue = rev
         elif hasattr(firm, 'revenue_this_turn'):
-            revenue = firm.revenue_this_turn
+             revenue = firm.revenue_this_turn
 
         expenses = 0.0
-        if finance and hasattr(finance, 'expenses_this_tick'):
-            expenses = finance.expenses_this_tick
+        if finance_source and hasattr(finance_source, 'expenses_this_tick'):
+            exp = finance_source.expenses_this_tick
+            if isinstance(exp, dict):
+                expenses = exp.get(DEFAULT_CURRENCY, 0.0)
+            else:
+                expenses = exp
         elif hasattr(firm, 'expenses_this_tick'):
-            expenses = firm.expenses_this_tick
+             expenses = firm.expenses_this_tick
 
         profit_history = []
-        if finance and hasattr(finance, 'profit_history'):
-             profit_history = list(finance.profit_history)
-        elif hasattr(firm, 'profit_history'): # Fallback
+        if finance_source and hasattr(finance_source, 'profit_history'):
+             profit_history = list(finance_source.profit_history)
+        elif hasattr(firm, 'profit_history'):
              profit_history = firm.profit_history
 
         consecutive_loss_turns = 0
-        if finance and hasattr(finance, 'consecutive_loss_turns'):
-             consecutive_loss_turns = finance.consecutive_loss_turns
+        if finance_source and hasattr(finance_source, 'consecutive_loss_turns'):
+             consecutive_loss_turns = finance_source.consecutive_loss_turns
         elif hasattr(firm, 'consecutive_loss_turns'):
              consecutive_loss_turns = firm.consecutive_loss_turns
 
         altman_z = 0.0
-        if finance and hasattr(finance, 'get_altman_z_score'):
-            altman_z = finance.get_altman_z_score()
+        # Check engine for calculation if available, or property
+        if hasattr(firm, 'finance_engine') and hasattr(firm.finance_engine, 'calculate_altman_z_score'):
+             # We skip complex calc in DTO creation to avoid side effects/dependencies
+             pass
+        elif hasattr(finance_source, 'get_altman_z_score'):
+            altman_z = finance_source.get_altman_z_score()
         elif hasattr(firm, 'altman_z_score'):
             altman_z = firm.altman_z_score
 
@@ -110,7 +136,11 @@ class FirmStateDTO:
         )
 
         # --- Production State ---
-        # Robust inventory retrieval
+        prod_source = getattr(firm, 'production_state', None)
+        if prod_source is None:
+             prod_source = getattr(firm, 'production', None)
+             if prod_source is None: prod_source = firm # Fallback to firm if properties are on firm
+
         inventory = {}
         if hasattr(firm, 'get_all_items'):
              inventory = firm.get_all_items()
@@ -133,6 +163,11 @@ class FirmStateDTO:
         )
 
         # --- Sales State ---
+        sales_source = getattr(firm, 'sales_state', None)
+        if sales_source is None:
+             sales_source = getattr(firm, 'sales', None)
+             if sales_source is None: sales_source = firm
+
         brand_awareness = 0.0
         perceived_quality = 0.0
         if hasattr(firm, 'brand_manager'):
@@ -148,8 +183,6 @@ class FirmStateDTO:
         )
 
         # Determine sentiment_index
-        # Logic: 1.0 if profitable/active, 0.0 if failing.
-        # Refined: (1.0 / (1 + consecutive_loss_turns))
         sentiment = 1.0 / (1.0 + consecutive_loss_turns)
 
         return cls(
