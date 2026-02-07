@@ -51,6 +51,9 @@ from modules.household.mixins._lifecycle import HouseholdLifecycleMixin
 from modules.household.mixins._reproduction import HouseholdReproductionMixin
 from modules.household.mixins._state_access import HouseholdStateAccessMixin
 
+# Protocols
+from modules.hr.api import IEmployeeDataProvider
+
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
     from simulation.dtos.scenario import StressScenarioConfig
@@ -65,7 +68,8 @@ class Household(
     HouseholdStateAccessMixin,
     BaseAgent,
     ILearningAgent,
-    IFinancialEntity
+    IFinancialEntity,
+    IEmployeeDataProvider
 ):
     """
     Household Agent (Facade).

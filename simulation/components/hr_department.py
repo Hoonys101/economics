@@ -2,9 +2,9 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
 import logging
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
+from modules.hr.api import IEmployeeDataProvider
 
 if TYPE_CHECKING:
-    from simulation.core_agents import Household
     from simulation.firms import Firm
     from simulation.models import Transaction
 
@@ -17,20 +17,20 @@ class HRDepartment:
     """
     def __init__(self, firm: Firm):
         self.firm = firm
-        self.employees: List[Household] = []
+        self.employees: List[IEmployeeDataProvider] = []
         self.employee_wages: Dict[int, float] = {}  # AgentID -> Wage
         self.unpaid_wages: Dict[int, List[Tuple[int, float]]] = {} # AgentID -> List[(tick, amount)]
         self.hires_last_tick: int = 0
 
-    def calculate_wage(self, employee: Household, base_wage: float) -> float:
+    def calculate_wage(self, employee: IEmployeeDataProvider, base_wage: float) -> float:
         """
         Calculates wage based on skill and halo effect.
         """
         # WO-023-B: Skill-based Wage Bonus
-        actual_skill = getattr(employee, 'labor_skill', 1.0)
+        actual_skill = employee.labor_skill
 
         # WO-Sociologist: Halo Effect (Credential Premium)
-        education_level = getattr(employee, 'education_level', 0)
+        education_level = employee.education_level
         halo_modifier = 1.0 + (education_level * self.firm.config.halo_effect)
 
         return base_wage * actual_skill * halo_modifier
@@ -53,11 +53,7 @@ class HRDepartment:
 
         # Iterate over copy to allow modification
         for employee in list(self.employees):
-            # Defensive checks
-            if not hasattr(employee, 'employer_id') or not hasattr(employee, 'is_employed'):
-                self.employees.remove(employee)
-                continue
-
+            # Protocol ensures properties exist, but checking employer_id matches firm is logic
             if employee.employer_id != self.firm.id or not employee.is_employed:
                 self.employees.remove(employee)
                 if employee.id in self.employee_wages:
@@ -112,8 +108,7 @@ class HRDepartment:
                     generated_transactions.append(tx_tax)
 
                 # Track Labor Income (Side Effect)
-                if hasattr(employee, "labor_income_this_tick"):
-                    employee.labor_income_this_tick += net_wage
+                employee.labor_income_this_tick += net_wage
 
             elif total_liquid_assets >= wage:
                 # TD-032: Solvent but Illiquid in Wage Currency -> Zombie (Unpaid Wage) without Firing
@@ -124,7 +119,7 @@ class HRDepartment:
 
         return generated_transactions
 
-    def _record_zombie_wage(self, employee: Household, wage: float, current_time: int) -> None:
+    def _record_zombie_wage(self, employee: IEmployeeDataProvider, wage: float, current_time: int) -> None:
         """Records an unpaid wage without firing the employee."""
         # Record unpaid wage for Tier 1 claim in liquidation
         if employee.id not in self.unpaid_wages:
@@ -149,7 +144,7 @@ class HRDepartment:
             extra={"tick": current_time, "agent_id": self.firm.id, "wage_deficit": wage - current_balance, "total_unpaid": len(self.unpaid_wages[employee.id])}
         )
 
-    def _handle_insolvency_transactions(self, employee: Household, wage: float, current_time: int, tx_list: List[Transaction]):
+    def _handle_insolvency_transactions(self, employee: IEmployeeDataProvider, wage: float, current_time: int, tx_list: List[Transaction]):
         """
         Handles case where firm cannot afford wage.
         Attempts severance pay; if fails, zombie state (unpaid retention).
@@ -186,16 +181,15 @@ class HRDepartment:
             # Fallback to Zombie if we can't even afford severance
             self._record_zombie_wage(employee, wage, current_time)
 
-    def hire(self, employee: Household, wage: float, current_tick: int = 0):
+    def hire(self, employee: IEmployeeDataProvider, wage: float, current_tick: int = 0):
         self.employees.append(employee)
         self.employee_wages[employee.id] = wage
         self.hires_last_tick += 1
 
         # Set employment start tick for tenure calculation (Tier 1 Severance)
-        if hasattr(employee, '_econ_state'):
-            employee._econ_state.employment_start_tick = current_tick
+        employee.employment_start_tick = current_tick
 
-    def remove_employee(self, employee: Household):
+    def remove_employee(self, employee: IEmployeeDataProvider):
         if employee in self.employees:
             self.employees.remove(employee)
         if employee.id in self.employee_wages:
@@ -218,7 +212,7 @@ class HRDepartment:
         return False
 
     def get_total_labor_skill(self) -> float:
-        return sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees)
+        return sum(emp.labor_skill for emp in self.employees)
 
     def get_avg_skill(self) -> float:
         if not self.employees:

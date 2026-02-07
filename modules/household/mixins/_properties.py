@@ -184,3 +184,41 @@ class HouseholdPropertiesMixin:
     def personality(self) -> Personality:
         """Exposes personality from social_state."""
         return self._social_state.personality
+
+    # --- IEmployeeDataProvider Support Properties ---
+
+    @property
+    def labor_skill(self) -> float:
+        """Exposes labor_skill from econ_state."""
+        return self._econ_state.labor_skill
+
+    @labor_skill.setter
+    def labor_skill(self, value: float) -> None:
+        self._econ_state.labor_skill = value
+
+    @property
+    def education_level(self) -> int:
+        """Exposes education_level from econ_state."""
+        return self._econ_state.education_level
+
+    @education_level.setter
+    def education_level(self, value: int) -> None:
+        self._econ_state.education_level = value
+
+    @property
+    def labor_income_this_tick(self) -> float:
+        """Exposes labor_income_this_tick from econ_state."""
+        return self._econ_state.labor_income_this_tick
+
+    @labor_income_this_tick.setter
+    def labor_income_this_tick(self, value: float) -> None:
+        self._econ_state.labor_income_this_tick = value
+
+    @property
+    def employment_start_tick(self) -> int:
+        """Exposes employment_start_tick from econ_state."""
+        return self._econ_state.employment_start_tick
+
+    @employment_start_tick.setter
+    def employment_start_tick(self, value: int) -> None:
+        self._econ_state.employment_start_tick = value

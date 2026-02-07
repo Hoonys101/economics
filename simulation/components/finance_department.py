@@ -10,7 +10,7 @@ from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, MarketContextDTO
 if TYPE_CHECKING:
     from simulation.firms import Firm
     from simulation.dtos.config_dtos import FirmConfigDTO
-    from simulation.core_agents import Household
+    # Household import removed as it is replaced by IFinancialEntity
 
 logger = logging.getLogger(__name__)
 
@@ -473,7 +473,7 @@ class FinanceDepartment(IFinanceDepartment):
     def set_dividend_rate(self, new_rate: float) -> None:
         self.firm.dividend_rate = new_rate
 
-    def pay_severance(self, employee: Household, amount: float) -> bool:
+    def pay_severance(self, employee: IFinancialEntity, amount: float) -> bool:
         if self.firm.wallet.get_balance(self.primary_currency) >= amount and self.firm.settlement_system:
             if self.firm.settlement_system.transfer(self.firm, employee, amount, "Severance", currency=self.primary_currency):
                 self.record_expense(amount, self.primary_currency)
