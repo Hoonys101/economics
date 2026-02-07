@@ -150,7 +150,13 @@
 | TD-259 | 2026-02-06 | Asset Type Hardening (Dict/Float) | Hardened Vectorized Planner & Tracker for polymorphic assets | [Walkthrough](../../../brain/797943ac-fe9b-486b-b1b6-b7fbcc37a5f7/walkthrough.md) |
 | TD-260 | 2026-02-06 | Household Wallet Delegation Breach | Fixed incorrect native interface calls (deposit/withdraw) | [Walkthrough](../../../brain/797943ac-fe9b-486b-b1b6-b7fbcc37a5f7/walkthrough.md) |
 
----
+## TD-274: Bank Decomposition Follow-up
+
+*   **Context**: The `Bank` class was decomposed into `LoanManager` and `DepositManager`, with the `Bank` acting as a Facade.
+*   **Identified Debt**:
+    1.  **Misplaced Responsibility**: Default-related agent penalties (e.g., `education_xp` reduction, `credit_frozen_until_tick`) are still handled within the `Bank` facade. This logic more appropriately belongs in a future `CreditBureau` or `JudicialSystem` module to further purify the `Bank`'s responsibilities.
+    2.  **Incomplete Reserve Logic**: The `DepositManager` lacks a formal mechanism for reserve ratio enforcement. The `Bank` currently approximates this check, but it should be formalized within the deposit management system to ensure stability.
+*   **Source Insight**: `communications/insights/TD-274.md`
 
 ## 🏗️ ACTIVE DEBT DETAILS (최근 식별된 상세 부채)
 

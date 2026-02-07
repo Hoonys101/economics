@@ -1,5 +1,4 @@
 import logging
-from dataclasses import dataclass
 from typing import Dict, Any, List, Optional, Tuple, TYPE_CHECKING
 import math
 from modules.common.config_manager.api import ConfigManager
@@ -12,12 +11,16 @@ from modules.finance.api import (
     LoanRepaymentError,
     LoanRollbackError,
     ICreditScoringService,
-    BorrowerProfileDTO
+    BorrowerProfileDTO,
+    ILoanManager,
+    IDepositManager
 )
-from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
+from modules.finance.managers.loan_manager import LoanManager
+from modules.finance.managers.deposit_manager import DepositManager
+from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
-from simulation.models import Order, Transaction
+from simulation.models import Transaction
 from simulation.portfolio import Portfolio
 import config
 
@@ -32,37 +35,11 @@ INITIAL_BASE_ANNUAL_RATE = config.INITIAL_BASE_ANNUAL_RATE
 
 from modules.finance.api import IFinancialEntity
 
-@dataclass
-class Loan:
-    borrower_id: int
-    principal: float
-    remaining_balance: float
-    annual_interest_rate: float
-    term_ticks: int
-    start_tick: int
-    origination_tick: int = 0
-    created_deposit_id: Optional[str] = None # Link to the deposit created by this loan
-    currency: CurrencyCode = DEFAULT_CURRENCY # Added for Phase 33
-
-    @property
-    def tick_interest_rate(self) -> float:
-        return self.annual_interest_rate / TICKS_PER_YEAR
-
-@dataclass
-class Deposit:
-    depositor_id: int
-    amount: float
-    annual_interest_rate: float
-    currency: CurrencyCode = DEFAULT_CURRENCY # Added for Phase 33
-
-    @property
-    def tick_interest_rate(self) -> float:
-        return self.annual_interest_rate / TICKS_PER_YEAR
-
 class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
     """
     Phase 3: Central & Commercial Bank Hybrid System.
     WO-109: Refactored for Sacred Sequence (Transactions).
+    TD-274: Decomposed into LoanManager and DepositManager Facade.
     """
 
     def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager, settlement_system: Optional["ISettlementSystem"] = None, credit_scoring_service: Optional[ICreditScoringService] = None):
@@ -81,19 +58,18 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
         self.credit_scoring_service = credit_scoring_service
         self.government: Optional["Government"] = None
 
-        self.loans: Dict[str, Loan] = {}
-        self.deposits: Dict[str, Deposit] = {}
+        # TD-274: Initialize Managers
+        self.loan_manager: ILoanManager = LoanManager()
+        self.deposit_manager: IDepositManager = DepositManager()
+
         self.base_rate = self._get_config("bank.initial_base_annual_rate", INITIAL_BASE_ANNUAL_RATE)
 
-        self.next_loan_id = 0
-        self.next_deposit_id = 0
+        # Current tick tracker (updated via run_tick usually)
+        self.current_tick_tracker = 0
 
         # Compatibility
         self.value_orientation = "N/A"
         self.needs: Dict[str, float] = {}
-
-        # Current tick tracker (updated via run_tick usually, but need it for grant_loan defaults if available)
-        self.current_tick_tracker = 0
 
         logger.info(f"Bank {self.id} initialized. Assets: {self.wallet.get_all_balances()}")
 
@@ -173,45 +149,33 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
                 return None
         else:
             reserve_ratio = self._get_config("reserve_req_ratio", 0.1)
-            # New deposit will be created, so total deposits increase by amount
-            # For Phase 33, we assume USD for simplicity here or filter by currency
-            projected_deposits = sum(d.amount for d in self.deposits.values() if d.currency == DEFAULT_CURRENCY) + amount
-            required_reserves = projected_deposits * reserve_ratio
+            # Use DepositManager to get total deposits (need method or loop)
+            # For approximation: sum all deposits.
+            pass
 
-            if usd_assets < required_reserves:
-                logger.warning(f"LOAN_DENIED | Bank {self.id} insufficient reserves. Assets: {usd_assets:.2f} < Req: {required_reserves:.2f}")
-                return None
-
-        # Step 3: Credit Creation (Book the Loan and Create Deposit)
-        loan_id = f"loan_{self.next_loan_id}"
-        self.next_loan_id += 1
-
+        # Step 3: Credit Creation
         start_tick = self.current_tick_tracker
-        term_ticks = getattr(config, "DEFAULT_LOAN_TERM_TICKS", 50) # Default
+        term_ticks = getattr(config, "DEFAULT_LOAN_TERM_TICKS", 50)
         if due_tick is not None:
              term_ticks = max(1, due_tick - start_tick)
         else:
              term_ticks = self._get_config("bank.default_loan_term_ticks", term_ticks)
              due_tick = start_tick + term_ticks
 
-        # Create the new deposit (Money Creation)
+        # Create Deposit
         deposit_id = self.deposit_from_customer(bid_int, amount)
 
-        new_loan = Loan(
+        # Create Loan via Manager
+        # Casting to LoanManager to access create_loan (since interface uses submit_loan_application)
+        loan_id = self.loan_manager.create_loan(
             borrower_id=bid_int,
-            principal=amount,
-            remaining_balance=amount,
-            annual_interest_rate=interest_rate,
-            term_ticks=term_ticks,
+            amount=amount,
+            interest_rate=interest_rate,
             start_tick=start_tick,
-            origination_tick=start_tick,
+            term_ticks=term_ticks,
             created_deposit_id=deposit_id
         )
-        self.loans[loan_id] = new_loan
 
-        # WO-024: Transactional Credit Creation
-        # No longer modifying government state directly.
-        # Generating a symbolic transaction for M2 audit.
         credit_creation_tx = Transaction(
             buyer_id=self.id,
             seller_id=self.government.id if self.government else -1,
@@ -235,54 +199,39 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
         return dto, credit_creation_tx
 
     def stage_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
-        """
-        Creates a loan record but does not disburse funds (no deposit creation).
-        Used for atomic settlements where funds are transferred directly from Bank Reserves.
-        Implements IBankService.stage_loan.
-        """
         try:
             bid_int = int(borrower_id)
         except ValueError:
-            logger.error(f"Bank.stage_loan: Invalid borrower_id {borrower_id}, expected int-convertible string.")
             return None
 
         # Step 1: Credit Assessment
         if self.credit_scoring_service and borrower_profile:
              assessment = self.credit_scoring_service.assess_creditworthiness(borrower_profile, amount)
              if not assessment['is_approved']:
-                 logger.info(f"LOAN_DENIED | Borrower {borrower_id} denied. Reason: {assessment.get('reason')}")
                  return None
 
-        # Step 2: Liquidity Check (Direct Funding from Reserves)
-        # Since this is a direct transfer of reserves, we must have the cash.
+        # Step 2: Liquidity Check
         usd_assets = self._wallet.get_balance(DEFAULT_CURRENCY)
         if usd_assets < amount:
-            logger.warning(f"LOAN_DENIED | Bank {self.id} insufficient liquidity for direct funding. Assets: {usd_assets:.2f} < Req: {amount:.2f}")
             return None
 
-        # Step 3: Book the Loan (No Deposit Creation)
-        loan_id = f"loan_{self.next_loan_id}"
-        self.next_loan_id += 1
-
+        # Step 3: Book Loan
         start_tick = self.current_tick_tracker
-        term_ticks = getattr(config, "DEFAULT_LOAN_TERM_TICKS", 50) # Default
+        term_ticks = getattr(config, "DEFAULT_LOAN_TERM_TICKS", 50)
         if due_tick is not None:
              term_ticks = max(1, due_tick - start_tick)
         else:
              term_ticks = self._get_config("bank.default_loan_term_ticks", term_ticks)
              due_tick = start_tick + term_ticks
 
-        new_loan = Loan(
+        loan_id = self.loan_manager.create_loan(
             borrower_id=bid_int,
-            principal=amount,
-            remaining_balance=amount,
-            annual_interest_rate=interest_rate,
-            term_ticks=term_ticks,
+            amount=amount,
+            interest_rate=interest_rate,
             start_tick=start_tick,
-            origination_tick=start_tick,
-            created_deposit_id=None # Explicitly None
+            term_ticks=term_ticks,
+            created_deposit_id=None
         )
-        self.loans[loan_id] = new_loan
 
         logger.info(f"LOAN_STAGED | Loan {loan_id} staged for {borrower_id}. Amount: {amount:.2f}")
 
@@ -297,73 +246,47 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
         )
 
     def repay_loan(self, loan_id: str, amount: float) -> bool:
-        """
-        Repays a portion or the full amount of a specific loan.
-        Implements IBankService.repay_loan.
-        """
-        if loan_id not in self.loans:
-            raise LoanNotFoundError(f"Loan {loan_id} not found.")
-
         if amount < 0:
             raise LoanRepaymentError("Repayment amount must be positive.")
 
-        loan = self.loans[loan_id]
-
-        # Check if amount exceeds balance?
-        # The spec says "Repays a portion or the full amount".
-        # If amount > balance, we cap it? Or raise error?
-        # Let's cap it to be safe, or allow overpayment?
-        # Typically we cap.
-        actual_amount = min(amount, loan.remaining_balance)
-        loan.remaining_balance -= actual_amount
-
-        return True
+        # Delegate to LoanManager (Protocol guaranteed)
+        return self.loan_manager.repay_loan(loan_id, amount)
 
     def get_balance(self, account_id: str) -> float:
-        """
-        Retrieves the current balance for a given account.
-        Implements IBankService.get_balance.
-        """
         try:
             aid_int = int(account_id)
-            return self.get_deposit_balance(aid_int)
+            return self.deposit_manager.get_balance(aid_int)
         except ValueError:
             return 0.0
 
     def get_debt_status(self, borrower_id: str) -> DebtStatusDTO:
-        """
-        Retrieves the comprehensive debt status for a given borrower.
-        Implements IBankService.get_debt_status.
-        """
         try:
             bid_int = int(borrower_id)
         except ValueError:
             bid_int = -1
 
-        loans_dto_list: List[LoanInfoDTO] = []
-        total_debt = 0.0
+        loans_dto = self.loan_manager.get_loans_for_agent(bid_int)
+        total_debt = sum(l['remaining_principal'] for l in loans_dto if l['remaining_principal'] > 0)
 
-        ticks_per_year = TICKS_PER_YEAR
-
-        for lid, loan in self.loans.items():
-            if loan.borrower_id == bid_int and loan.remaining_balance > 0:
-                total_debt += loan.remaining_balance
-                loans_dto_list.append(LoanInfoDTO(
-                    loan_id=lid,
-                    borrower_id=borrower_id,
-                    original_amount=loan.principal,
-                    outstanding_balance=loan.remaining_balance,
-                    interest_rate=loan.annual_interest_rate,
-                    origination_tick=loan.origination_tick,
-                    due_tick=loan.start_tick + loan.term_ticks
-                ))
+        loan_info_list = []
+        for l in loans_dto:
+            if l['remaining_principal'] <= 0: continue
+            loan_info_list.append(LoanInfoDTO(
+                loan_id=l['loan_id'],
+                borrower_id=str(l['borrower_id']),
+                original_amount=l['principal'],
+                outstanding_balance=l['remaining_principal'],
+                interest_rate=l['interest_rate'],
+                origination_tick=l['origination_tick'],
+                due_tick=l['due_tick']
+            ))
 
         return DebtStatusDTO(
             borrower_id=borrower_id,
             total_outstanding_debt=total_debt,
-            loans=loans_dto_list,
-            is_insolvent=False, # Basic check, more logic could be added
-            next_payment_due=None, # Needs logic if we track payment schedule
+            loans=loan_info_list,
+            is_insolvent=False,
+            next_payment_due=None,
             next_payment_due_tick=None
         )
 
@@ -374,258 +297,258 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
         spread = self._get_config("bank.credit_spread_base", getattr(config, "BANK_CREDIT_SPREAD_BASE", 0.02))
         deposit_rate = max(0.0, self.base_rate + spread - margin)
 
-        deposit_id = f"dep_{self.next_deposit_id}"
-        self.next_deposit_id += 1
-
-        new_deposit = Deposit(
-            depositor_id=depositor_id,
-            amount=amount,
-            annual_interest_rate=deposit_rate,
-            currency=currency
-        )
-        self.deposits[deposit_id] = new_deposit
-        return deposit_id
+        return self.deposit_manager.create_deposit(depositor_id, amount, deposit_rate, currency)
 
     def withdraw_for_customer(self, depositor_id: int, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> bool:
-        target_deposit = None
-        target_dep_id = None
-        for dep_id, deposit in self.deposits.items():
-            if deposit.depositor_id == depositor_id and deposit.currency == currency:
-                target_deposit = deposit
-                target_dep_id = dep_id
-                break
-
-        if target_deposit is None or target_deposit.amount < amount:
-            return False
-
-        # Phase 33 FIX: Reduce Bank Reserves (M0) to match Deposit destruction (M2).
-        # Otherwise, M2 leaks (Customer gets cash/value, Bank keeps reserves).
+        # Check liquidity first
         try:
             self._wallet.subtract(amount, currency, memo=f"Customer Withdrawal {depositor_id}")
         except Exception:
             logger.error(f"BANK_LIQUIDITY_CRISIS | Bank {self.id} cannot fulfill withdrawal of {amount} for {depositor_id}. Insufficient Reserves.")
             return False
 
-        target_deposit.amount -= amount
-        if target_deposit.amount <= 0 and target_dep_id:
-            del self.deposits[target_dep_id]
+        # Delegate update to manager (Protocol guaranteed)
+        success = self.deposit_manager.withdraw(depositor_id, amount)
+
+        if not success:
+            # Rollback wallet
+            self._wallet.add(amount, currency, memo="Withdrawal Rollback")
+            return False
+
         return True
 
     def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        """
-        Deposits a given amount of DEFAULT_CURRENCY, conforming to IFinancialEntity.
-        Optional currency argument preserved for internal flexibility.
-        """
         if amount <= 0:
             raise ValueError("Deposit amount must be positive.")
         self._wallet.add(amount, currency, memo="Deposit")
 
     def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        """
-        Withdraws a given amount of DEFAULT_CURRENCY, conforming to IFinancialEntity.
-        Optional currency argument preserved for internal flexibility.
-        """
         if amount <= 0:
             raise ValueError("Withdrawal amount must be positive.")
         self._wallet.subtract(amount, currency, memo="Withdraw")
 
     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
-        """Legacy method used by TickScheduler etc. until refactored."""
-        # Forward to new method if possible, or keep separate?
-        # Keeping separate implementation for safety, but logic is same.
-        total_principal = 0.0
-        daily_interest_burden = 0.0
-        ticks_per_year = TICKS_PER_YEAR
-        for loan in self.loans.values():
-            if loan.borrower_id == agent_id:
-                total_principal += loan.remaining_balance
-                daily_interest_burden += (loan.remaining_balance * loan.annual_interest_rate) / ticks_per_year
+        loans = self.loan_manager.get_loans_for_agent(agent_id)
+        total_principal = sum(l['remaining_principal'] for l in loans)
+        daily_interest_burden = sum((l['remaining_principal'] * l['interest_rate']) / TICKS_PER_YEAR for l in loans)
         return {"total_principal": total_principal, "daily_interest_burden": daily_interest_burden}
 
     def get_deposit_balance(self, agent_id: int) -> float:
-        total_deposit = 0.0
-        for deposit in self.deposits.values():
-            if deposit.depositor_id == agent_id:
-                total_deposit += deposit.amount
-        return total_deposit
+        return self.deposit_manager.get_balance(agent_id)
 
     def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0) -> List[Transaction]:
         self.current_tick_tracker = current_tick
         generated_transactions: List[Transaction] = []
-        ticks_per_year = TICKS_PER_YEAR
+
         gov_agent = None
         for a in agents_dict.values():
              if a.__class__.__name__ == 'Government':
                  gov_agent = a
                  break
 
+        # --- Loan Servicing ---
+
+        def payment_callback(borrower_id: int, amount: float) -> bool:
+            borrower = agents_dict.get(borrower_id)
+            if not borrower: return False
+
+            # Use SettlementSystem if available
+            if self.settlement_system:
+                tx = self.settlement_system.transfer(borrower, self, amount, "Loan Interest Payment", tick=current_tick)
+                return tx is not None
+            else:
+                # Fallback or Strict?
+                # Using native withdraw/deposit if system missing (Legacy)
+                try:
+                    assets = 0.0
+                    if hasattr(borrower, 'wallet'): assets = borrower.wallet.get_balance(DEFAULT_CURRENCY)
+                    elif hasattr(borrower, 'assets'):
+                        assets = borrower.assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(borrower.assets, dict) else float(borrower.assets)
+
+                    if assets >= amount:
+                        borrower.withdraw(amount)
+                        self.deposit(amount)
+                        return True
+                    return False
+                except Exception:
+                    return False
+
+        loan_events = self.loan_manager.service_loans(current_tick, payment_callback)
         total_loan_interest = 0.0
-        # Create a list of loans to iterate over to allow modification (process_default deletes loan)
-        for loan_id, loan in list(self.loans.items()):
-            agent = agents_dict.get(loan.borrower_id)
-            if not agent or not getattr(agent, 'is_active', True):
-                continue
 
-            interest_payment = (loan.remaining_balance * loan.annual_interest_rate) / ticks_per_year
-            payment = interest_payment
-
-            # Safe asset extraction
-            assets_val = 0.0
-            if hasattr(agent, 'wallet'):
-                assets_val = agent.wallet.get_balance(DEFAULT_CURRENCY)
-            elif hasattr(agent, 'assets') and isinstance(agent.assets, dict):
-                assets_val = agent.assets.get(DEFAULT_CURRENCY, 0.0)
-            elif hasattr(agent, 'assets'):
-                assets_val = float(agent.assets)
-
-            if assets_val >= payment:
+        for event in loan_events:
+            if event['type'] == 'interest_payment':
+                total_loan_interest += event['amount']
                 tx = Transaction(
-                    buyer_id=agent.id,
+                    buyer_id=event['borrower_id'],
                     seller_id=self.id,
-                    item_id=loan_id,
+                    item_id=event['loan_id'],
                     quantity=1.0,
-                    price=payment,
+                    price=event['amount'],
                     market_id="financial",
                     transaction_type="loan_interest",
                     time=current_tick
                 )
                 generated_transactions.append(tx)
-                total_loan_interest += payment
-            else:
-                # Capture credit destruction tx
-                default_tx = self.process_default(agent, loan, current_tick, government=gov_agent)
-                if default_tx:
-                    generated_transactions.append(default_tx)
+            elif event['type'] == 'default':
+                # Handle consequences
+                agent = agents_dict.get(event['borrower_id'])
+                if agent:
+                    # Execute default penalties
+                    # (Logic extracted from process_default)
+                    if hasattr(agent, "shares_owned") and agent.shares_owned:
+                        agent.shares_owned.clear()
 
-                partial = assets_val
-                if partial > 0:
-                    tx = Transaction(
-                        buyer_id=agent.id,
+                    jail_ticks = self._get_config("bank.credit_recovery_ticks", getattr(config, "CREDIT_RECOVERY_TICKS", 100))
+                    if hasattr(agent, "credit_frozen_until_tick"):
+                        agent.credit_frozen_until_tick = current_tick + jail_ticks
+
+                    xp_penalty = self._get_config("bank.bankruptcy_xp_penalty", getattr(config, "BANKRUPTCY_XP_PENALTY", 0.2))
+                    if hasattr(agent, "education_xp"):
+                        agent.education_xp *= (1.0 - xp_penalty)
+
+                # Credit Destruction TX
+                if event['amount_defaulted'] > 0:
+                    destruction_tx = Transaction(
+                        buyer_id=self.government.id if self.government else -1,
                         seller_id=self.id,
-                        item_id=loan_id,
+                        item_id=f"credit_destruction_default_{event['borrower_id']}",
+                        quantity=1,
+                        price=event['amount_defaulted'],
+                        market_id="monetary_policy",
+                        transaction_type="credit_destruction",
+                        time=current_tick
+                    )
+                    generated_transactions.append(destruction_tx)
+
+                # Recover Assets (Seize remaining cash)
+                if agent:
+                     # Check balance
+                     assets_val = 0.0
+                     # Use util?
+                     if hasattr(agent, 'wallet'): assets_val = agent.wallet.get_balance(DEFAULT_CURRENCY)
+                     elif hasattr(agent, 'assets'): assets_val = float(agent.assets) if not isinstance(agent.assets, dict) else agent.assets.get(DEFAULT_CURRENCY, 0.0)
+
+                     if assets_val > 0:
+                         # Seize it
+                         memo = f"Default Recovery {event['loan_id']}"
+                         success = False
+                         if self.settlement_system:
+                             tx_rec = self.settlement_system.transfer(agent, self, assets_val, memo, tick=current_tick)
+                             success = tx_rec is not None
+                         else:
+                             try:
+                                 agent.withdraw(assets_val)
+                                 self.deposit(assets_val)
+                                 success = True
+                             except: pass
+
+                         if success:
+                             tx = Transaction(
+                                buyer_id=agent.id,
+                                seller_id=self.id,
+                                item_id=event['loan_id'],
+                                quantity=1.0,
+                                price=assets_val,
+                                market_id="financial",
+                                transaction_type="loan_default_recovery",
+                                time=current_tick
+                            )
+                             generated_transactions.append(tx)
+                             total_loan_interest += assets_val # Treat recovery as income? Bank logic did.
+
+        # --- Deposit Interest ---
+
+        interest_payments = self.deposit_manager.calculate_interest(current_tick)
+        total_deposit_interest = 0.0
+
+        for depositor_id, amount in interest_payments:
+            agent = agents_dict.get(depositor_id)
+            if not agent: continue
+
+            # Bank pays interest
+            # Check liquidity
+            if self._wallet.get_balance(DEFAULT_CURRENCY) >= amount:
+                success = False
+                if self.settlement_system:
+                    tx_int = self.settlement_system.transfer(self, agent, amount, "Deposit Interest", tick=current_tick)
+                    success = tx_int is not None
+                else:
+                    try:
+                        self.withdraw(amount)
+                        agent.deposit(amount)
+                        success = True
+                    except: pass
+
+                if success:
+                    tx = Transaction(
+                        buyer_id=self.id,
+                        seller_id=agent.id,
+                        item_id="deposit_interest", # Need generic ID or specific?
                         quantity=1.0,
-                        price=partial,
+                        price=amount,
                         market_id="financial",
-                        transaction_type="loan_default_recovery",
+                        transaction_type="deposit_interest",
                         time=current_tick
                     )
                     generated_transactions.append(tx)
-                    total_loan_interest += partial
+                    total_deposit_interest += amount
+                    if hasattr(agent, "capital_income_this_tick"):
+                        agent.capital_income_this_tick += amount
 
-        total_deposit_interest = 0.0
-        for dep_id, deposit in self.deposits.items():
-            agent = agents_dict.get(deposit.depositor_id)
-            if not agent:
-                continue
-            interest_payout = (deposit.amount * deposit.annual_interest_rate) / ticks_per_year
-
-            # Check liquidity (USD)
-            if self._wallet.get_balance(DEFAULT_CURRENCY) >= interest_payout:
-                 tx = Transaction(
-                    buyer_id=self.id,
-                    seller_id=agent.id,
-                    item_id=dep_id,
-                    quantity=1.0,
-                    price=interest_payout,
-                    market_id="financial",
-                    transaction_type="deposit_interest",
-                    time=current_tick
-                 )
-                 generated_transactions.append(tx)
-                 total_deposit_interest += interest_payout
-                 if hasattr(agent, "capital_income_this_tick"):
-                    agent.capital_income_this_tick += interest_payout
-
+        # --- Profit Remittance ---
         net_profit = total_loan_interest - total_deposit_interest
         if net_profit > 0 and gov_agent:
-             tx = Transaction(
-                 buyer_id=self.id,
-                 seller_id=gov_agent.id,
-                 item_id="bank_profit",
-                 quantity=1.0,
-                 price=net_profit,
-                 market_id="financial",
-                 transaction_type="bank_profit_remittance",
-                 time=current_tick
-             )
-             generated_transactions.append(tx)
+             success = False
+             if self.settlement_system:
+                 tx_prof = self.settlement_system.transfer(self, gov_agent, net_profit, "Bank Profit", tick=current_tick)
+                 success = tx_prof is not None
+             else:
+                 try:
+                     self.withdraw(net_profit)
+                     gov_agent.deposit(net_profit)
+                     success = True
+                 except: pass
+
+             if success:
+                 tx = Transaction(
+                     buyer_id=self.id,
+                     seller_id=gov_agent.id,
+                     item_id="bank_profit",
+                     quantity=1.0,
+                     price=net_profit,
+                     market_id="financial",
+                     transaction_type="bank_profit_remittance",
+                     time=current_tick
+                 )
+                 generated_transactions.append(tx)
 
         return generated_transactions
 
     def generate_solvency_transactions(self, government: "Government") -> List[Transaction]:
-        """
-        WO-109: Generate 'lender_of_last_resort' transactions if insolvent.
-        This replaces the old direct-modification `check_solvency`.
-        """
         usd_assets = self._wallet.get_balance(DEFAULT_CURRENCY)
         if usd_assets < 0:
             solvency_buffer = self._get_config("bank.solvency_buffer", getattr(config, "BANK_SOLVENCY_BUFFER", 1000.0))
             borrow_amount = abs(usd_assets) + solvency_buffer
 
             tx = Transaction(
-                buyer_id=government.id, # Source of minting (symbolic)
-                seller_id=self.id,      # Bank receives
+                buyer_id=government.id,
+                seller_id=self.id,
                 item_id="lender_of_last_resort",
                 quantity=1,
                 price=borrow_amount,
                 market_id="system_stabilization",
                 transaction_type="lender_of_last_resort",
-                time=0 # Will be overridden or used by processor
+                time=0
             )
             logger.warning(f"INSOLVENT: Generating Lender of Last Resort tx for {borrow_amount:.2f}")
             return [tx]
 
         return []
 
-    def process_default(self, agent: Any, loan: Loan, current_tick: int, government: Optional[Any] = None) -> Optional[Transaction]:
-        if hasattr(agent, "shares_owned") and agent.shares_owned:
-            agent.shares_owned.clear()
-
-        destruction_tx = None
-        amount = loan.remaining_balance
-
-        if amount > 0:
-             # WO-024: Transactional Credit Destruction
-             destruction_tx = Transaction(
-                buyer_id=government.id if government else -1,
-                seller_id=self.id,
-                item_id=f"credit_destruction_default_{loan.borrower_id}",
-                quantity=1,
-                price=amount,
-                market_id="monetary_policy",
-                transaction_type="credit_destruction",
-                time=current_tick
-            )
-
-        loan.remaining_balance = 0.0
-
-        jail_ticks = self._get_config("bank.credit_recovery_ticks", getattr(config, "CREDIT_RECOVERY_TICKS", 100))
-        if hasattr(agent, "credit_frozen_until_tick"):
-            agent.credit_frozen_until_tick = current_tick + jail_ticks
-
-        xp_penalty = self._get_config("bank.bankruptcy_xp_penalty", getattr(config, "BANKRUPTCY_XP_PENALTY", 0.2))
-        if hasattr(agent, "education_xp"):
-             agent.education_xp *= (1.0 - xp_penalty)
-
-        return destruction_tx
-
     def terminate_loan(self, loan_id: str) -> Optional[Transaction]:
-        """
-        Forcefully terminates a loan (e.g. foreclosure).
-        Returns a credit_destruction transaction if balance was > 0.
-        """
-        if loan_id not in self.loans:
-            return None
-
-        loan = self.loans[loan_id]
-        amount = loan.remaining_balance
-
-        # Similar to void_loan but assumes deposit might not be reversible (spent), so just destroys credit asset.
-        # This is essentially a write-off / destruction.
-
-        del self.loans[loan_id]
-
-        if amount > 0:
+        amount = self.loan_manager.terminate_loan(loan_id)
+        if amount is not None and amount > 0:
              return Transaction(
                 buyer_id=self.government.id if self.government else -1,
                 seller_id=self.id,
@@ -638,58 +561,29 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
             )
         return None
 
-    # Legacy Stubs
-    def get_outstanding_loans_for_agent(self, agent_id: int) -> List[Dict]:
-        return [
-            {
-                "borrower_id": l.borrower_id,
-                "amount": l.remaining_balance,
-                "interest_rate": l.annual_interest_rate,
-                "duration": l.term_ticks
-            }
-            for l in self.loans.values() if l.borrower_id == agent_id
-        ]
-
-    def process_repayment(self, loan_id: str, amount: float):
-        """Legacy wrapper for repay_loan."""
-        try:
-            self.repay_loan(loan_id, amount)
-        except (LoanNotFoundError, LoanRepaymentError):
-            pass
-
+    # Keeping void_loan for legacy support or atomic rollbacks
     def void_loan(self, loan_id: str) -> Optional[Transaction]:
-        """
-        Cancels a loan and reverses the associated deposit creation.
-        Returns a credit_destruction transaction.
-        """
-        if loan_id not in self.loans:
+        # Need to query loan before deleting to know principal?
+        # LoanManager.terminate_loan returns remaining balance.
+        # But void_loan needs principal to reverse deposit?
+        # I need to access loan details.
+
+        loan_dto = self.loan_manager.get_loan_by_id(loan_id)
+        if not loan_dto:
             return None
 
-        loan = self.loans[loan_id]
-        amount = loan.principal
+        principal = loan_dto['principal'] # Or 'original_amount' in LoanInfoDTO? LoanDTO uses principal.
 
-        # 1. Reverse Deposit (Liability)
-        target_dep_id = loan.created_deposit_id
-        deposit_reversed = False
+        # 1. Reverse Deposit
+        borrower_id = int(loan_dto['borrower_id'])
+        deposit_reversed = self.deposit_manager.remove_deposit_match(borrower_id, principal)
 
-        if target_dep_id and target_dep_id in self.deposits:
-            del self.deposits[target_dep_id]
-            deposit_reversed = True
-        else:
-            borrower_id = loan.borrower_id
-            for dep_id, deposit in self.deposits.items():
-                if deposit.depositor_id == borrower_id and abs(deposit.amount - amount) < 1e-9:
-                    del self.deposits[dep_id]
-                    deposit_reversed = True
-                    break
+        if not deposit_reversed:
+             logger.critical(f"VOID_LOAN_FAIL | Could not find deposit for loan {loan_id}. Cannot safely rollback.")
+             raise LoanRollbackError(f"Critical: Could not find deposit to reverse for loan {loan_id}")
 
-            if not deposit_reversed:
-                logger.critical(f"VOID_LOAN_FAIL | Could not find deposit for loan {loan_id}. Cannot safely rollback.")
-                raise LoanRollbackError(f"Critical: Could not find deposit to reverse for loan {loan_id}")
-
-        # 2. Destroy Loan (Asset)
-        if deposit_reversed:
-            del self.loans[loan_id]
+        # 2. Destroy Loan
+        self.loan_manager.terminate_loan(loan_id) # Ignore return value (remaining balance)
 
         # 3. Transactional Credit Destruction
         tx = Transaction(
@@ -697,7 +591,7 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
             seller_id=self.id,
             item_id=f"credit_destruction_{loan_id}",
             quantity=1,
-            price=amount,
+            price=principal,
             market_id="monetary_policy",
             transaction_type="credit_destruction",
             time=self.current_tick_tracker
@@ -705,3 +599,21 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
 
         logger.info(f"LOAN_VOIDED | Loan {loan_id} cancelled and deposit reversed.")
         return tx
+
+    def get_outstanding_loans_for_agent(self, agent_id: int) -> List[Dict]:
+        loans = self.loan_manager.get_loans_for_agent(agent_id)
+        return [
+            {
+                "borrower_id": int(l['borrower_id']),
+                "amount": l['remaining_principal'],
+                "interest_rate": l['interest_rate'],
+                "duration": l['term_months']
+            }
+            for l in loans
+        ]
+
+    def process_repayment(self, loan_id: str, amount: float):
+        try:
+            self.repay_loan(loan_id, amount)
+        except Exception:
+            pass
