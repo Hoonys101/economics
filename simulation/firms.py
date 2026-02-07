@@ -16,7 +16,8 @@ from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
 from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
-from simulation.dtos.agent_dtos import BaseAgentInitDTO
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO
+from dataclasses import replace
 
 # Orchestrator-Engine Refactor
 from simulation.components.state.firm_state_models import HRState, FinanceState, ProductionState, SalesState
@@ -51,35 +52,17 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
 
     def __init__(
         self,
-        id: int,
-        initial_capital: float,
-        initial_liquidity_need: float,
+        core_config: AgentCoreConfigDTO,
+        engine: IDecisionEngine,
         specialization: str,
         productivity_factor: float,
-        decision_engine: BaseDecisionEngine,
-        value_orientation: str,
         config_dto: FirmConfigDTO,
         initial_inventory: Optional[Dict[str, float]] = None,
         loan_market: Optional[LoanMarket] = None,
-        logger: Optional[logging.Logger] = None,
         sector: str = "FOOD",
         personality: Optional[Personality] = None,
-        memory_interface: Optional["MemoryV2Interface"] = None,
     ) -> None:
-
-        base_agent_config = BaseAgentInitDTO(
-            id=id,
-            initial_assets=initial_capital,
-            initial_needs={"liquidity_need": initial_liquidity_need},
-            decision_engine=decision_engine,
-            value_orientation=value_orientation,
-            name=f"Firm_{id}",
-            logger=logger,
-            memory_interface=memory_interface
-        )
-
-        super().__init__(base_agent_config)
-
+        super().__init__(core_config, engine)
         self.config = config_dto
 
         # State Initialization
@@ -115,7 +98,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
                 self.add_item(item_id, qty)
 
         # Brand Manager (Kept as component for now, or could be moved to SalesState/Engine)
-        self.brand_manager = BrandManager(self.id, self.config, logger)
+        self.brand_manager = BrandManager(self.id, self.config, self.logger)
         
         # Loan Market
         self.decision_engine.loan_market = loan_market
@@ -391,20 +374,27 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
     def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "Firm":
         cloned_decision_engine = copy.deepcopy(self.decision_engine)
 
+        new_core_config = replace(self.get_core_config(), id=new_id, name=f"Firm_{new_id}")
+
         new_firm = Firm(
-            id=new_id,
-            initial_capital=initial_assets_from_parent,
-            initial_liquidity_need=self.config.initial_firm_liquidity_need,
+            core_config=new_core_config,
+            engine=cloned_decision_engine,
             specialization=self.specialization,
             productivity_factor=self.productivity_factor,
-            decision_engine=cloned_decision_engine,
-            value_orientation=self.value_orientation,
             config_dto=self.config,
             initial_inventory=self.get_all_items(),
             loan_market=self.decision_engine.loan_market,
-            logger=self.logger,
             personality=self.personality
         )
+
+        # Hydrate State
+        initial_state = AgentStateDTO(
+            assets={DEFAULT_CURRENCY: initial_assets_from_parent},
+            inventory=copy.deepcopy(self._inventory),
+            is_active=True
+        )
+        new_firm.load_state(initial_state)
+
         new_firm.logger.info(
             f"Firm {self.id} was cloned to new Firm {new_id}",
             extra={
@@ -732,6 +722,9 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
             @property
             def employees(self):
                 return self.firm.hr_state.employees
+            @employees.setter
+            def employees(self, value):
+                self.firm.hr_state.employees = value
             def get_total_labor_skill(self):
                 return self.firm.hr_engine.get_total_labor_skill(self.firm.hr_state)
             def get_avg_skill(self):
@@ -772,4 +765,26 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
                 return {'amount': self.firm.calculate_valuation(ctx), 'currency': DEFAULT_CURRENCY}
             def get_financial_snapshot(self):
                 return self.firm.get_financial_snapshot()
+
+            def check_bankruptcy(self):
+                return self.firm.finance_engine.check_bankruptcy(self.firm.finance_state, self.firm.config)
+
+            def check_cash_crunch(self):
+                return False
+
+            def get_inventory_value(self):
+                return 0.0
+
+            def trigger_emergency_liquidation(self):
+                return []
+
+            def record_revenue(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY):
+                self.firm.finance_state.revenue_this_turn[currency] += amount
+
+            def record_expense(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY):
+                self.firm.finance_state.expenses_this_tick[currency] += amount
+
+            def __getattr__(self, name):
+                return getattr(self.firm.finance_state, name)
+
         return FinanceProxy(self)

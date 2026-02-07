@@ -3,6 +3,8 @@ from typing import Optional, TYPE_CHECKING, override
 
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO
+from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
@@ -57,30 +59,40 @@ class HouseholdReproductionMixin:
         new_decision_engine = self._create_new_decision_engine(new_id)
 
         # 4. Instantiate New Household
-        # Combine args
-        cloned_household = Household(
+        core_config = AgentCoreConfigDTO(
             id=new_id,
-            talent=self._econ_state.talent, # Copied reference
-            goods_data=[g for g in self.goods_info_map.values()],
-            initial_assets=initial_assets_from_parent,
-            initial_needs=self._bio_state.needs.copy(), # Inherit current needs or reset? Usually reset.
-            # BioComponent.create_offspring_demographics didn't return initial needs.
-            # We'll use copy of parent needs as per original logic.
-
-            decision_engine=new_decision_engine,
+            name=f"Household_{new_id}",
             value_orientation=self.value_orientation,
-            personality=self._social_state.personality, # Inherit personality
+            initial_needs=self._bio_state.needs.copy(),
+            logger=None,
+            memory_interface=None
+        )
+
+        cloned_household = Household(
+            core_config=core_config,
+            engine=new_decision_engine,
+            talent=self._econ_state.talent,
+            goods_data=[g for g in self.goods_info_map.values()],
+            personality=self._social_state.personality,
             config_dto=self.config,
             loan_market=self.decision_engine.loan_market,
             risk_aversion=self.risk_aversion,
-            logger=None,
 
             # Demographics from Bio
             initial_age=offspring_demo["initial_age"],
             gender=offspring_demo["gender"],
             parent_id=offspring_demo["parent_id"],
-            generation=offspring_demo["generation"]
+            generation=offspring_demo["generation"],
+            initial_assets_record=initial_assets_from_parent
         )
+
+        # Hydrate State
+        initial_state = AgentStateDTO(
+            assets={DEFAULT_CURRENCY: initial_assets_from_parent},
+            inventory={},
+            is_active=True
+        )
+        cloned_household.load_state(initial_state)
 
         # 5. Apply Econ Inheritance
         cloned_household._econ_state.skills = econ_inheritance["skills"]

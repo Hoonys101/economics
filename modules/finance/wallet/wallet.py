@@ -30,6 +30,14 @@ class Wallet(IWallet):
     def get_all_balances(self) -> Dict[CurrencyCode, float]:
         return copy.copy(self._balances)
 
+    def load_balances(self, balances: Dict[CurrencyCode, float]) -> None:
+        """
+        Replaces current balances with the provided dictionary.
+        Used for state hydration/loading.
+        """
+        self._balances.clear()
+        self._balances.update(balances)
+
     def add(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "", tick: int = -1) -> None:
         if amount < 0:
             raise ValueError("Cannot add a negative amount. Use subtract.")

@@ -7,6 +7,7 @@ from simulation.core_agents import Household
 from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from modules.system.api import DEFAULT_CURRENCY
+from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO
 
 if TYPE_CHECKING:
     from simulation.dtos.strategy import ScenarioStrategy
@@ -181,21 +182,34 @@ class DemographicManager:
 
                 hh_config_dto = create_config_dto(self.config_module, HouseholdConfigDTO)
 
+                core_config = AgentCoreConfigDTO(
+                    id=child_id,
+                    name=f"Household_{child_id}",
+                    value_orientation=value_orientation,
+                    initial_needs=initial_needs_for_newborn.copy(),
+                    logger=simulation.logger,
+                    memory_interface=None
+                )
+
                 # WO-124: Instantiate with 0 assets. Gift is transferred via SettlementSystem.
                 child = Household(
-                    id=child_id,
+                    core_config=core_config,
+                    engine=new_decision_engine,
                     talent=child_talent,
                     goods_data=simulation.goods_data,
-                    initial_assets=0.0,
-                    initial_needs=initial_needs_for_newborn.copy(),
-                    decision_engine=new_decision_engine,
-                    value_orientation=value_orientation,
                     personality=child_personality,
                     config_dto=hh_config_dto,
                     loan_market=simulation.markets.get("loan_market"),
                     risk_aversion=parent.risk_aversion, # Inherit risk aversion
-                    logger=simulation.logger
                 )
+
+                # Hydrate State
+                initial_state = AgentStateDTO(
+                    assets={DEFAULT_CURRENCY: 0.0},
+                    inventory={},
+                    is_active=True
+                )
+                child.load_state(initial_state)
 
                 # Initialize Phase 19 Attributes
                 child.initialize_demographics(

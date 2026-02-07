@@ -2,14 +2,40 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, TypedDict, Any, List, Dict, Optional, TYPE_CHECKING, runtime_checkable
 
+import logging
+
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
     from simulation.systems.api import IRegistry
     from modules.finance.api import IBankService
     from simulation.interfaces.market_interface import IMarket
     from modules.housing.api import IHousingService
+    from modules.memory.api import MemoryV2Interface
+    from modules.system.api import CurrencyCode
 
 # --- DTOs ---
+
+@dataclass
+class AgentCoreConfigDTO:
+    """Defines the immutable, core properties of an agent."""
+    id: int
+    value_orientation: str
+    initial_needs: Dict[str, float]
+    name: str
+    logger: logging.Logger
+    memory_interface: Optional["MemoryV2Interface"]
+
+@dataclass
+class AgentStateDTO:
+    """A snapshot of an agent's mutable state."""
+    assets: Dict[CurrencyCode, float]
+    inventory: Dict[str, float]
+    is_active: bool
+
+@dataclass
+class DecisionDTO:
+    """(Placeholder) Represents a decision made by an engine."""
+    actions: list[Any]
 
 class ShockConfigDTO(TypedDict):
     """Configuration for the economic shock."""
@@ -66,9 +92,22 @@ class IInventoryHandler(Protocol):
     def get_all_items(self) -> Dict[str, float]: ...
     def clear_inventory(self) -> None: ...
 
+class IDecisionEngine(Protocol):
+    """Interface for the 'brain' of an agent."""
+    def make_decision(self, state: AgentStateDTO, world_context: Any) -> DecisionDTO | Any: ...
+
 class IAgent(Protocol):
     id: int
     is_active: bool
+
+@runtime_checkable
+class IOrchestratorAgent(IAgent, Protocol):
+    """Public interface for an agent 'Orchestrator' supporting 2-stage initialization."""
+    def get_core_config(self) -> AgentCoreConfigDTO: ...
+    def get_current_state(self) -> AgentStateDTO: ...
+    def load_state(self, state: AgentStateDTO) -> None: ...
+    def update_needs(self, current_tick: int) -> None: ...
+    def make_decision(self, input_dto: Any) -> Any: ...
 
 class IFirm(IAgent, Protocol):
     productivity_factor: float

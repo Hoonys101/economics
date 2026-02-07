@@ -5,39 +5,51 @@ from modules.finance.api import InsufficientFundsError, IFinancialEntity, ICredi
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
-from modules.simulation.api import IInventoryHandler
-from simulation.dtos.agent_dtos import BaseAgentInitDTO
+from modules.simulation.api import IInventoryHandler, IOrchestratorAgent, AgentCoreConfigDTO, AgentStateDTO, IDecisionEngine
 
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
 
 
-class BaseAgent(ICurrencyHolder, IInventoryHandler, IFinancialEntity, ICreditFrozen, ABC):
+class BaseAgent(ICurrencyHolder, IInventoryHandler, IFinancialEntity, ICreditFrozen, IOrchestratorAgent, ABC):
     def __init__(
         self,
-        init_config: BaseAgentInitDTO
+        core_config: AgentCoreConfigDTO,
+        engine: IDecisionEngine
     ):
-        self.id = init_config.id
-        self.memory_v2 = init_config.memory_interface
+        self._core_config = core_config
+        self.decision_engine = engine
+
+        self.id = core_config.id
+        self.memory_v2 = core_config.memory_interface
         self._credit_frozen_until_tick: int = 0
+        self.name = core_config.name
+        self.logger = core_config.logger if core_config.logger is not None else logging.getLogger(self.name)
+        self.value_orientation = core_config.value_orientation
+        self.needs = core_config.initial_needs.copy()
 
-        initial_balance_dict = {}
-        if isinstance(init_config.initial_assets, dict):
-            initial_balance_dict = init_config.initial_assets.copy()
-        else:
-            initial_balance_dict[DEFAULT_CURRENCY] = float(init_config.initial_assets)
-
-        self._wallet = Wallet(self.id, initial_balance_dict)
-
-        self.needs = init_config.initial_needs
-        self.decision_engine = init_config.decision_engine
-        self.value_orientation = init_config.value_orientation
-        self.name = init_config.name if init_config.name is not None else f"{self.__class__.__name__}_{self.id}"
+        self._wallet = Wallet(self.id, {})
         self._inventory: Dict[str, float] = {}
         self.is_active: bool = True
-        self.logger = init_config.logger if init_config.logger is not None else logging.getLogger(self.name)
-        self._pre_state_data: Dict[str, Any] = {}  # 이전 상태 저장을 위한 속성
-        self.pre_state_snapshot: Dict[str, Any] = {} # Mypy fix: Snapshot for learning
+        self._pre_state_data: Dict[str, Any] = {}
+        self.pre_state_snapshot: Dict[str, Any] = {}
+
+    def load_state(self, state: AgentStateDTO) -> None:
+        """Hydrates the agent with dynamic state."""
+        self._wallet.load_balances(state.assets)
+        self._inventory.clear()
+        self._inventory.update(state.inventory)
+        self.is_active = state.is_active
+
+    def get_core_config(self) -> AgentCoreConfigDTO:
+        return self._core_config
+
+    def get_current_state(self) -> AgentStateDTO:
+        return AgentStateDTO(
+            assets=self._wallet.get_all_balances(),
+            inventory=self._inventory.copy(),
+            is_active=self.is_active
+        )
 
     @property
     def wallet(self) -> IWallet:
