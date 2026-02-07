@@ -122,7 +122,7 @@ def main():
     p_gemini.add_argument("--instruction", "-i", required=True, help="Instruction")
     p_gemini.add_argument("--context", nargs="+", help="Context files")
     p_gemini.add_argument("--output", help="Output file")
-    p_gemini.add_argument("--model", default="gemini-2.5-pro", help="Model Override (default: gemini-2.5-pro)")
+    p_gemini.add_argument("--model", default="pro", help="Model Override (default: pro)")
     
     # Set Jules
     p_jules = subparsers.add_parser("set-jules", help="Set a Jules mission")

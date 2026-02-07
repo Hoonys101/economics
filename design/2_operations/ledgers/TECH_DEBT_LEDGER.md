@@ -13,6 +13,8 @@
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
 | TD-270 | 2026-02-06 | Firm-Department Tight Coupling | SoC Violation (Circular Ref) | [Audit Report](../../../reports/audits/audit_agents.md) | **MEDIUM** |
+| TD-275 | 2026-02-07 | Dividend Logic Abstraction Leak | O(N*M) - Exposes Raw Agents | [Audit](../../3_work_artifacts/reports/inbound/structural-20241024-3897336574840583858_audit_structural_20241024.md) | **HIGH** |
+| TD-276 | 2026-02-07 | HR/Finance Raw Agent Coupling | Abstraction Leak (List[Household]) | [Audit](../../3_work_artifacts/reports/inbound/structural-20241024-3897336574840583858_audit_structural_20241024.md) | **CRITICAL** |
 
 ## 🧠 3. DECISION & AI ENGINE (`ARCH_AI_ENGINE.md`)
 
@@ -24,15 +26,16 @@
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-271 | 2026-02-06 | OrderBook IMarket Contract Violation | Polymorphism Breach | [Audit Report](../../../reports/audits/audit_markets.md) | **HIGH** |
+| (No Active Items) | | | | | |
 
 
 ## 💸 5. SYSTEMS & TRANSACTIONS (`ARCH_TRANSACTIONS.md`)
 
 | ID | Date | Description | Impact | Refs | Status |
 |---|---|---|---|---|---|
-| TD-272 | 2026-02-06 | Persistence Manager Purity Breach | Direct Property Access | [Audit Report](../../../reports/audits/audit_systems.md) | **HIGH** |
+| (No Active Items) | | | | | |
 | TD-273 | 2026-02-06 | liquid_assets Protocol Bypass | Direct Manipulation | [Audit Report](../../../reports/audits/audit_agents.md) | **MEDIUM** |
+| TD-274 | 2026-02-07 | `Bank` Class Saturation | Responsibilities Mix (>700 LOC) | [Audit](../../3_work_artifacts/reports/inbound/structural-20241024-3897336574840583858_audit_structural_20241024.md) | **MEDIUM** |
 
 ## 📦 6. DATA & DTO CONTRACTS
 
@@ -49,6 +52,7 @@
 
 | TD-265 | 2026-02-06 | Configuration Access Unstandardized | Brittle `getattr` calling / Type safety | [Report](../../../reports/temp/report_20260206_135149_Architectural.md) | **MEDIUM** |
 | TD-266 | 2026-02-06 | Sparse Firm ID Risk in TechnologyManager | Memory bloat if IDs are non-sequential | [Report](../../../reports/temp/report_20260206_135149_Architectural.md) | **LOW** |
+| TD-277 | 2026-02-07 | `TickOrchestrator` Responsibility Mix | Mixed logic & orchestration phases | [Audit](../../3_work_artifacts/reports/inbound/structural-20241024-3897336574840583858_audit_structural_20241024.md) | **LOW** |
 | (No Active Items) | | | | | |
 | (No Active Items) | | | | | |
 | (No Active Items) | | | | | |
@@ -69,6 +73,8 @@
 
 | ID | Resolution Date | Description | Spec Ref | Insight Report |
 |---|---|---|---|---|
+| TD-271 | 2026-02-07 | OrderBook IMarket Contract Violation | [Spec](../../3_work_artifacts/specs/PH7_HARDENING_SPEC_spec.md) | [Insight](../../_archive/gemini_output/pr_review_arch-hardening-ph7-11201669796122016862.md) |
+| TD-272 | 2026-02-07 | Persistence Manager Purity Breach | [Spec](../../3_work_artifacts/specs/PH7_HARDENING_SPEC_spec.md) | [Insight](../../_archive/gemini_output/pr_review_arch-hardening-ph7-11201669796122016862.md) |
 | TD-028 | 2026-02-05 | M2 Calculation Synchronization | Fixed via `_rebuild_currency_holders` (SSoT) | [Insight](../../communications/insights/mission_report_stress_test.md) |
 | TD-231/232 | 2026-02-05 | System Integrity Cleanup (SalesTax/Inheritance) | [Audit](../../3_work_artifacts/reports/inbound/refactor_sales-tax-atomicity-inheritance-381587902011087733_audit_economic_WO_SALESTAX.md) | [Insight](../../communications/insights/Bundle_C_System_Integrity.md) |
 | TD-225/223 | 2026-02-05 | Liquidation & DTO Unification | [Spec](../../3_work_artifacts/specs/TD-225_Unified_Liquidation.md) | [Insight](../../communications/insights/Bundle_C_System_Integrity.md) |
@@ -148,18 +154,19 @@
 
 ## 🏗️ ACTIVE DEBT DETAILS (최근 식별된 상세 부채)
 
-### 🔴 TD-125: Frontend-Backend Contract Mismatch (High)
-- **현상 (Phenomenon)**: Watchtower UI 스캐폴딩 과정에서 프론트엔드 TypeScript 인터페이스와 백엔드 Python DTO 간의 구조적 불일치 발견.
-- **원인 (Cause)**: 구현 전 API 계약에 대한 동기화된 SSoT(Single Source of Truth) 부재.
-- **해결책 제안 (Proposed Solution)**: 백엔드 DTO를 `PH6-WT-001` 계약에 맞게 수정하거나, 프론트엔드에 Adapter Pattern을 도입하여 데이터 형식을 변환할 것.
+### 🔴 TD-276: HR/Finance Raw Agent Coupling (Critical)
+- **현상 (Phenomenon)**: `HRDepartment` 및 `FinanceDepartment`가 `Household` 객체 원본 리스트를 직접 소유하거나 순회함.
+- **원인 (Cause)**: 에이전트 간 직접 참조를 허용하는 구조적 느슨함.
+- **해결책 제안 (Proposed Solution)**: `List[int]` (ID)만 유지하고, 필요 시 `AgentRegistry`나 DTO를 통해 데이터에 접근하는 방식으로 전환.
 
-### 🟡 TD-015: Divergent Metric Calculation (Medium)
-- **현상 (Phenomenon)**: 동일한 핵심 경제 지표(예: M2 Leak)를 계산하는 로직이 시스템 내 여러 위치(`TickOrchestrator`, `DashboardService`)에 분산되어 존재함.
-- **원인 (Cause)**: 지표 계산을 중앙화된 서비스 대신 각 모듈 범위 내에서 독립적으로 구현함.
-- **해결책 제안 (Proposed Solution)**: 모든 핵심 경제 지표 계산 로직을 `EconomicIndicatorTracker` 등으로 중앙화하고 SSoT 원칙 확립.
+### 🔴 TD-275: Dividend Logic Abstraction Leak (High)
+- **현상 (Phenomenon)**: 배당금 지급 시 모든 Household를 O(N*M)으로 순회하며 주주를 찾음.
+- **원인 (Cause)**: 주주 명부(Shareholder Registry) 부재로 인한 비효율적 검색 로직.
+- **해결책 제안 (Proposed Solution)**: `ShareholderRegistry` 서비스를 도입하여 O(1) 또는 O(K) 검색이 가능하도록 개선.
 
----
-
-
+### 🟡 TD-274: Bank Class Saturation (Medium)
+- **현상 (Phenomenon)**: `Bank` 클래스가 700라인을 초과하며 입금, 대출, 청산 등 과도한 책임을 가짐.
+- **원인 (Cause)**: 금융 서비스 로직의 미분별 수집.
+- **해결책 제안 (Proposed Solution)**: `LoanManager`, `DepositManager` 등으로 기능을 분리하여 단일 책임 원칙 준수.
 
 > **Note**: For details on active items, see relevant insights.
