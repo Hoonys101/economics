@@ -26,7 +26,8 @@ def mock_config(golden_config):
 
 @pytest.fixture
 def stock_market(mock_config):
-    return StockMarket(config_module=mock_config)
+    registry = MagicMock()
+    return StockMarket(config_module=mock_config, shareholder_registry=registry)
 
 @pytest.fixture
 def sample_buy_order_dto():

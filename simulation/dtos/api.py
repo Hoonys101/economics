@@ -6,6 +6,9 @@ from simulation.models import Order
 from simulation.dtos.decision_dtos import DecisionOutputDTO
 from modules.finance.api import IFinancialEntity
 
+# Alias for standardization
+OrderDTO = Order
+
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
@@ -119,14 +122,6 @@ class MarketHistoryDTO(TypedDict, total=False):
     avg_bid: float
     worst_ask: float
     worst_bid: float
-
-@dataclass
-class OrderDTO:
-    agent_id: int
-    item_id: str
-    quantity: float
-    price: float
-    currency: CurrencyCode # Added for Phase 33
 
 # Phase 1: MarketSnapshotDTO moved to modules.system.api
 from modules.system.api import (

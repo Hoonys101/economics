@@ -261,6 +261,14 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         self.finance_state.has_bailout_loan = value
 
     @property
+    def total_debt(self) -> float:
+        return self.finance_state.total_debt
+
+    @total_debt.setter
+    def total_debt(self, value: float):
+        self.finance_state.total_debt = value
+
+    @property
     def inventory_last_sale_tick(self) -> Dict[str, int]:
         return self.sales_state.inventory_last_sale_tick
 
@@ -282,7 +290,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
     def liquidate_assets(self, current_tick: int = -1) -> Dict[CurrencyCode, float]:
         """Liquidate assets using Protocol Purity."""
         # 1. Write off Inventory
-        for item_id in list(self._inventory.keys()):
+        for item_id in list(self.get_all_items().keys()):
             self.remove_item(item_id, self.get_quantity(item_id))
         
         # 2. Write off Capital Stock
@@ -392,7 +400,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
             decision_engine=cloned_decision_engine,
             value_orientation=self.value_orientation,
             config_dto=self.config,
-            initial_inventory=copy.deepcopy(self._inventory),
+            initial_inventory=self.get_all_items(),
             loan_market=self.decision_engine.loan_market,
             logger=self.logger,
             personality=self.personality
@@ -413,7 +421,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         return {
             "assets": MultiCurrencyWalletDTO(balances=self.wallet.get_all_balances()),
             "needs": self.needs.copy(),
-            "inventory": self._inventory.copy(),
+            "inventory": self.get_all_items(),
             "input_inventory": self.input_inventory.copy(),
             "employees": [emp.id for emp in self.hr_state.employees],
             "is_active": self.is_active,
@@ -615,7 +623,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         # 2. Finance
         # Calculate inventory value for holding cost
         inventory_value = 0.0
-        for item, qty in self._inventory.items():
+        for item, qty in self.get_all_items().items():
             price = self.last_prices.get(item, 10.0)
             inventory_value += qty * price
 
@@ -679,13 +687,13 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         return (self.total_shares - self.treasury_shares) * stock_price
 
     def calculate_valuation(self, market_context: MarketContextDTO = None) -> float:
-        inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self._inventory)
+        inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self.get_all_items())
         return self.finance_engine.calculate_valuation(
             self.finance_state, self.wallet, self.config, inventory_value, market_context
         )
 
     def get_financial_snapshot(self) -> Dict[str, Any]:
-        inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self._inventory)
+        inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self.get_all_items())
         total_assets = self.wallet.get_balance(DEFAULT_CURRENCY) + inventory_value + self.capital_stock
         return {
              "wallet": MultiCurrencyWalletDTO(balances=self.wallet.get_all_balances()),
@@ -757,11 +765,11 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
             def profit_history(self):
                  return self.firm.finance_state.profit_history
             def get_book_value_per_share(self):
-                return {'amount': self.firm.get_book_value_per_share()}
+                return {'amount': self.firm.get_book_value_per_share(), 'currency': DEFAULT_CURRENCY}
             def get_market_cap(self, p):
                 return self.firm.get_market_cap(p)
             def calculate_valuation(self, ctx):
-                return {'amount': self.firm.calculate_valuation(ctx)}
+                return {'amount': self.firm.calculate_valuation(ctx), 'currency': DEFAULT_CURRENCY}
             def get_financial_snapshot(self):
                 return self.firm.get_financial_snapshot()
         return FinanceProxy(self)
