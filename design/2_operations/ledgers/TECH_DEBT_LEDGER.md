@@ -165,14 +165,7 @@
 - **원인 (Cause)**: 에이전트 간 직접 참조를 허용하는 구조적 느슨함.
 - **해결책 제안 (Proposed Solution)**: `List[int]` (ID)만 유지하고, 필요 시 `AgentRegistry`나 DTO를 통해 데이터에 접근하는 방식으로 전환.
 
-### 🔴 TD-275: Dividend Logic Abstraction Leak (High)
-- **현상 (Phenomenon)**: 배당금 지급 시 모든 Household를 O(N*M)으로 순회하며 주주를 찾음.
-- **원인 (Cause)**: 주주 명부(Shareholder Registry) 부재로 인한 비효율적 검색 로직.
-- **해결책 제안 (Proposed Solution)**: `ShareholderRegistry` 서비스를 도입하여 O(1) 또는 O(K) 검색이 가능하도록 개선.
-
-### 🟡 TD-274: Bank Class Saturation (Medium)
-- **현상 (Phenomenon)**: `Bank` 클래스가 700라인을 초과하며 입금, 대출, 청산 등 과도한 책임을 가짐.
-- **원인 (Cause)**: 금융 서비스 로직의 미분별 수집.
-- **해결책 제안 (Proposed Solution)**: `LoanManager`, `DepositManager` 등으로 기능을 분리하여 단일 책임 원칙 준수.
+| TD-274| 2026-02-07 | Bank Class Saturation | Decomposed into LoanManager/DepositManager | [Merge_a5bb2da6](../../files_in_commit.txt) |
+| TD-275| 2026-02-07 | Dividend Logic Abstraction Leak | Centralized via ShareholderRegistry service | [Merge_55e69bf8](../../files_in_commit.txt) |
 
 > **Note**: For details on active items, see relevant insights.

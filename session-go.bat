@@ -8,7 +8,7 @@ echo 🏁 SESSION CONCLUSION AUTOMATION
 echo ==========================================
 
 echo 🌾 [Step 1] Harvesting Insights and Generating Handover...
-python scripts/session_manager.py
+python _internal/scripts/session_manager.py
 
 echo.
 echo 📋 [Step 2] Updates suggested for:

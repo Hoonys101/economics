@@ -7,6 +7,6 @@ set PYTHONIOENCODING=utf-8
 :: This tool runs independently of the json registry.
 :: Usage: merge-go.bat <branch_name>
 
-python scripts/launcher.py merge %*
+python _internal/scripts/launcher.py merge %*
 
 endlocal

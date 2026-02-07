@@ -7,6 +7,6 @@ set PYTHONIOENCODING=utf-8
 :: This tool runs independently of the json registry.
 :: Usage: git-go.bat <branch_name> [instruction]
 
-python scripts/launcher.py git-review %*
+python _internal/scripts/launcher.py git-review %*
 
 endlocal

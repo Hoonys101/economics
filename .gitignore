@@ -176,3 +176,16 @@ test_error.txt
 
 *.pyc
 design/command_registry.json
+_internal/
+audit-go.bat
+session-go.bat
+reset-go.bat
+cleanup-go.bat
+cleanup-session.bat
+agent-go.bat
+flash_git.bat
+gemini-go.bat
+jules-go.bat
+git-go.bat
+merge-go.bat
+harvest-go.bat

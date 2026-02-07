@@ -11,7 +11,7 @@ if "%BRANCH%"=="" (
 
 :: Sync check
 echo 🔍 [Git-Review-Flash] Checking branch: %BRANCH%
-python scripts/git_sync_checker.py %BRANCH%
+python _internal/scripts/git_sync_checker.py %BRANCH%
 
 :: Fetch
 echo 📡 [Step 2] Fetching latest changes from origin/%BRANCH%...
@@ -30,7 +30,7 @@ echo 🧠 [Step 4] Running AI Code Review (Model: FLASH)...
 set REVIEW_FILE=design\_archive\gemini_output\pr_review_%BRANCH%.md
 
 :: Execute review and capture both stdout and stderr to the review file
-python scripts/gemini_worker.py git-review "Analyze this PR." -c "%DIFF_FILE%" --model flash > "%REVIEW_FILE%" 2>&1
+python _internal/scripts/gemini_worker.py git-review "Analyze this PR." -c "%DIFF_FILE%" --model flash > "%REVIEW_FILE%" 2>&1
 
 echo ✅ Review complete. Report: %REVIEW_FILE%
 

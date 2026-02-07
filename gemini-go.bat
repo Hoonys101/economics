@@ -5,10 +5,10 @@ set PYTHONIOENCODING=utf-8
 
 :: If arguments are provided, use classic launcher
 if "%~1" neq "" (
-    python scripts/launcher.py gemini %*
+    python _internal/scripts/launcher.py gemini %*
 ) else (
     :: No arguments -> Interactive Mode
-    python scripts/run_gemini_interactive.py
+    python _internal/scripts/run_gemini_interactive.py
 )
 
 endlocal
