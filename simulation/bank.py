@@ -13,8 +13,12 @@ from modules.finance.api import (
     ICreditScoringService,
     BorrowerProfileDTO,
     ILoanManager,
-    IDepositManager
+    IDepositManager,
+    IShareholderRegistry,
+    IPortfolioHandler,
+    ICreditFrozen
 )
+from modules.simulation.api import IEducated
 from modules.finance.managers.loan_manager import LoanManager
 from modules.finance.managers.deposit_manager import DepositManager
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder
@@ -42,7 +46,10 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
     TD-274: Decomposed into LoanManager and DepositManager Facade.
     """
 
-    def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager, settlement_system: Optional["ISettlementSystem"] = None, credit_scoring_service: Optional[ICreditScoringService] = None):
+    def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager,
+                 shareholder_registry: Optional[IShareholderRegistry] = None,
+                 settlement_system: Optional["ISettlementSystem"] = None,
+                 credit_scoring_service: Optional[ICreditScoringService] = None):
         self._id = id
 
         initial_balance_dict = {}
@@ -56,6 +63,7 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
         self.config_manager = config_manager
         self.settlement_system = settlement_system
         self.credit_scoring_service = credit_scoring_service
+        self.shareholder_registry = shareholder_registry
         self.government: Optional["Government"] = None
 
         # TD-274: Initialize Managers
@@ -134,69 +142,39 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
             logger.error(f"Bank.grant_loan: Invalid borrower_id {borrower_id}, expected int-convertible string.")
             return None
 
-        # Step 1: Credit Assessment
-        if self.credit_scoring_service and borrower_profile:
-             assessment = self.credit_scoring_service.assess_creditworthiness(borrower_profile, amount)
-             if not assessment['is_approved']:
-                 logger.info(f"LOAN_DENIED | Borrower {borrower_id} denied. Reason: {assessment.get('reason')}")
-                 return None
-
-        # Step 2: Solvency Check (Reserve Requirement)
-        gold_standard_mode = self._get_config("gold_standard_mode", False)
-        usd_assets = self._wallet.get_balance(DEFAULT_CURRENCY)
-        if gold_standard_mode:
-            if usd_assets < amount:
-                return None
-        else:
-            reserve_ratio = self._get_config("reserve_req_ratio", 0.1)
-            # Use DepositManager to get total deposits (need method or loop)
-            # For approximation: sum all deposits.
-            pass
-
-        # Step 3: Credit Creation
-        start_tick = self.current_tick_tracker
-        term_ticks = getattr(config, "DEFAULT_LOAN_TERM_TICKS", 50)
-        if due_tick is not None:
-             term_ticks = max(1, due_tick - start_tick)
-        else:
-             term_ticks = self._get_config("bank.default_loan_term_ticks", term_ticks)
-             due_tick = start_tick + term_ticks
-
-        # Create Deposit
-        deposit_id = self.deposit_from_customer(bid_int, amount)
-
-        # Create Loan via Manager
-        # Casting to LoanManager to access create_loan (since interface uses submit_loan_application)
-        loan_id = self.loan_manager.create_loan(
+        # Delegate to LoanManager
+        result = self.loan_manager.assess_and_create_loan(
             borrower_id=bid_int,
             amount=amount,
             interest_rate=interest_rate,
-            start_tick=start_tick,
-            term_ticks=term_ticks,
-            created_deposit_id=deposit_id
+            due_tick=due_tick,
+            borrower_profile=borrower_profile,
+            credit_scoring_service=self.credit_scoring_service,
+            lender_wallet=self.wallet,
+            deposit_manager=self.deposit_manager,
+            current_tick=self.current_tick_tracker,
+            is_gold_standard=self._get_config("gold_standard_mode", False),
+            reserve_req_ratio=self._get_config("reserve_req_ratio", 0.1),
+            default_term_ticks=getattr(config, "DEFAULT_LOAN_TERM_TICKS", 50)
         )
+
+        if not result:
+            return None
+
+        loan_dto, deposit_id = result
 
         credit_creation_tx = Transaction(
             buyer_id=self.id,
             seller_id=self.government.id if self.government else -1,
-            item_id=f"credit_creation_{loan_id}",
+            item_id=f"credit_creation_{loan_dto['loan_id']}",
             quantity=1,
             price=amount,
             market_id="monetary_policy",
             transaction_type="credit_creation",
-            time=start_tick
+            time=self.current_tick_tracker
         )
 
-        dto = LoanInfoDTO(
-            loan_id=loan_id,
-            borrower_id=borrower_id,
-            original_amount=amount,
-            outstanding_balance=amount,
-            interest_rate=interest_rate,
-            origination_tick=start_tick,
-            due_tick=due_tick
-        )
-        return dto, credit_creation_tx
+        return loan_dto, credit_creation_tx
 
     def stage_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
         try:
@@ -391,71 +369,14 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
                 )
                 generated_transactions.append(tx)
             elif event['type'] == 'default':
-                # Handle consequences
-                agent = agents_dict.get(event['borrower_id'])
-                if agent:
-                    # Execute default penalties
-                    # (Logic extracted from process_default)
-                    if hasattr(agent, "shares_owned") and agent.shares_owned:
-                        agent.shares_owned.clear()
+                # Handle consequences via private helper
+                default_txs = self._handle_default(event, agents_dict, current_tick)
+                generated_transactions.extend(default_txs)
 
-                    jail_ticks = self._get_config("bank.credit_recovery_ticks", getattr(config, "CREDIT_RECOVERY_TICKS", 100))
-                    if hasattr(agent, "credit_frozen_until_tick"):
-                        agent.credit_frozen_until_tick = current_tick + jail_ticks
-
-                    xp_penalty = self._get_config("bank.bankruptcy_xp_penalty", getattr(config, "BANKRUPTCY_XP_PENALTY", 0.2))
-                    if hasattr(agent, "education_xp"):
-                        agent.education_xp *= (1.0 - xp_penalty)
-
-                # Credit Destruction TX
-                if event['amount_defaulted'] > 0:
-                    destruction_tx = Transaction(
-                        buyer_id=self.government.id if self.government else -1,
-                        seller_id=self.id,
-                        item_id=f"credit_destruction_default_{event['borrower_id']}",
-                        quantity=1,
-                        price=event['amount_defaulted'],
-                        market_id="monetary_policy",
-                        transaction_type="credit_destruction",
-                        time=current_tick
-                    )
-                    generated_transactions.append(destruction_tx)
-
-                # Recover Assets (Seize remaining cash)
-                if agent:
-                     # Check balance
-                     assets_val = 0.0
-                     # Use util?
-                     if hasattr(agent, 'wallet'): assets_val = agent.wallet.get_balance(DEFAULT_CURRENCY)
-                     elif hasattr(agent, 'assets'): assets_val = float(agent.assets) if not isinstance(agent.assets, dict) else agent.assets.get(DEFAULT_CURRENCY, 0.0)
-
-                     if assets_val > 0:
-                         # Seize it
-                         memo = f"Default Recovery {event['loan_id']}"
-                         success = False
-                         if self.settlement_system:
-                             tx_rec = self.settlement_system.transfer(agent, self, assets_val, memo, tick=current_tick)
-                             success = tx_rec is not None
-                         else:
-                             try:
-                                 agent.withdraw(assets_val)
-                                 self.deposit(assets_val)
-                                 success = True
-                             except: pass
-
-                         if success:
-                             tx = Transaction(
-                                buyer_id=agent.id,
-                                seller_id=self.id,
-                                item_id=event['loan_id'],
-                                quantity=1.0,
-                                price=assets_val,
-                                market_id="financial",
-                                transaction_type="loan_default_recovery",
-                                time=current_tick
-                            )
-                             generated_transactions.append(tx)
-                             total_loan_interest += assets_val # Treat recovery as income? Bank logic did.
+                # Check for any recovery income
+                for tx in default_txs:
+                    if tx.transaction_type == "loan_default_recovery":
+                        total_loan_interest += tx.price
 
         # --- Deposit Interest ---
 
@@ -524,6 +445,89 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
                  generated_transactions.append(tx)
 
         return generated_transactions
+
+    def _handle_default(self, event: Dict[str, Any], agents_dict: Dict[int, Any], current_tick: int) -> List[Transaction]:
+        transactions = []
+        borrower_id = event['borrower_id']
+        agent = agents_dict.get(borrower_id)
+
+        # 1. Credit Destruction
+        if event['amount_defaulted'] > 0:
+            transactions.append(Transaction(
+                buyer_id=self.government.id if self.government else -1,
+                seller_id=self.id,
+                item_id=f"credit_destruction_default_{borrower_id}",
+                quantity=1,
+                price=event['amount_defaulted'],
+                market_id="monetary_policy",
+                transaction_type="credit_destruction",
+                time=current_tick
+            ))
+
+        if not agent:
+            return transactions
+
+        # 2. Penalties (Protocol Purity)
+
+        # Share Seizure
+        if isinstance(agent, IPortfolioHandler):
+            portfolio = agent.get_portfolio()
+            for asset in portfolio.assets:
+                if asset.asset_type == 'stock':
+                    try:
+                        firm_id = int(asset.asset_id)
+                        # Remove from registry
+                        if self.shareholder_registry:
+                            self.shareholder_registry.register_shares(firm_id, borrower_id, 0)
+                    except ValueError:
+                        pass
+            agent.clear_portfolio()
+
+        # Credit Freeze (Jail)
+        if isinstance(agent, ICreditFrozen):
+            jail_ticks = self._get_config("bank.credit_recovery_ticks", getattr(config, "CREDIT_RECOVERY_TICKS", 100))
+            agent.credit_frozen_until_tick = current_tick + jail_ticks
+
+        # XP Penalty
+        if isinstance(agent, IEducated):
+            xp_penalty = self._get_config("bank.bankruptcy_xp_penalty", getattr(config, "BANKRUPTCY_XP_PENALTY", 0.2))
+            agent.education_xp *= (1.0 - xp_penalty)
+
+        # 3. Asset Recovery (Seize Cash)
+        assets_val = 0.0
+        # Use IFinancialEntity if possible
+        if isinstance(agent, IFinancialEntity):
+             assets_val = agent.assets
+        # Fallback for legacy (should not happen if all are IFinancialEntity)
+        elif hasattr(agent, 'wallet'):
+             assets_val = agent.wallet.get_balance(DEFAULT_CURRENCY)
+
+        if assets_val > 0:
+             memo = f"Default Recovery {event['loan_id']}"
+             success = False
+             if self.settlement_system:
+                 tx_rec = self.settlement_system.transfer(agent, self, assets_val, memo, tick=current_tick)
+                 success = tx_rec is not None
+             else:
+                 try:
+                     agent.withdraw(assets_val)
+                     self.deposit(assets_val)
+                     success = True
+                 except: pass
+
+             if success:
+                 transactions.append(Transaction(
+                    buyer_id=agent.id,
+                    seller_id=self.id,
+                    item_id=event['loan_id'],
+                    quantity=1.0,
+                    price=assets_val,
+                    market_id="financial",
+                    transaction_type="loan_default_recovery",
+                    time=current_tick
+                ))
+
+        return transactions
 
     def generate_solvency_transactions(self, government: "Government") -> List[Transaction]:
         usd_assets = self._wallet.get_balance(DEFAULT_CURRENCY)

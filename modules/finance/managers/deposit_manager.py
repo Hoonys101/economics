@@ -45,6 +45,10 @@ class DepositManager(IDepositManager):
                 total += deposit.amount
         return total
 
+    def get_total_deposits(self) -> float:
+        """Returns total value of all deposits in DEFAULT_CURRENCY."""
+        return sum(d.amount for d in self._deposits.values() if d.currency == DEFAULT_CURRENCY)
+
     def get_deposit_dto(self, agent_id: int) -> Optional[DepositDTO]:
         deposits = [d for d in self._deposits.values() if d.depositor_id == agent_id]
         if not deposits:
@@ -79,33 +83,29 @@ class DepositManager(IDepositManager):
         Reduces deposit balance for a withdrawal.
         Returns True if successful, False if insufficient funds.
         """
-        # Find deposits for agent
-        target_deposit = None
-        target_dep_id = None
-
-        # Simple strategy: Find first deposit with enough funds or partial?
-        # Bank implementation: "if target_deposit is None or target_deposit.amount < amount: return False"
-        # It implies it only checks ONE deposit (the last one iterated or random).
-        # Better to iterate and find one that fits, or take from multiple.
-        # But for exact parity with Bank logic:
-
-        for dep_id, deposit in self._deposits.items():
-            if deposit.depositor_id == agent_id and deposit.currency == DEFAULT_CURRENCY:
-                target_deposit = deposit
-                target_dep_id = dep_id
-                # Bank code used `break` after finding matches.
-                # "if deposit.depositor_id == depositor_id ... target_deposit = deposit ... break"
-                # So it takes the FIRST one found.
-                break
-
-        if target_deposit is None or target_deposit.amount < amount:
+        current_bal = self.get_balance(agent_id)
+        if current_bal < amount:
             return False
 
-        target_deposit.amount -= amount
-        if target_deposit.amount <= 0:
-            # If empty, remove it
-            if target_dep_id in self._deposits:
-                del self._deposits[target_dep_id]
+        remaining_to_withdraw = amount
+        deposits_to_remove = []
+
+        # Iterate safely
+        for dep_id, deposit in self._deposits.items():
+            if deposit.depositor_id == agent_id and deposit.currency == DEFAULT_CURRENCY:
+                if remaining_to_withdraw <= 0:
+                    break
+
+                take = min(deposit.amount, remaining_to_withdraw)
+                deposit.amount -= take
+                remaining_to_withdraw -= take
+
+                if deposit.amount <= 1e-9:
+                    deposits_to_remove.append(dep_id)
+
+        for dep_id in deposits_to_remove:
+            if dep_id in self._deposits:
+                del self._deposits[dep_id]
 
         return True
 

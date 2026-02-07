@@ -77,6 +77,21 @@ class IHousehold(IAgent, Protocol):
     inventory: Dict[str, float]
 
 @runtime_checkable
+class IEducated(Protocol):
+    """
+    Protocol for agents that possess education experience/level.
+    """
+    @property
+    def education_xp(self) -> float:
+        """The agent's education experience points."""
+        ...
+
+    @education_xp.setter
+    def education_xp(self, value: float) -> None:
+        """Sets the agent's education experience points."""
+        ...
+
+@runtime_checkable
 class ICentralBank(Protocol):
     base_rate: float
 

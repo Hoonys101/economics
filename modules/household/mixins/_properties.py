@@ -215,6 +215,15 @@ class HouseholdPropertiesMixin:
         self._econ_state.education_level = value
 
     @property
+    def education_xp(self) -> float:
+        """Exposes education_xp from econ_state."""
+        return self._econ_state.education_xp
+
+    @education_xp.setter
+    def education_xp(self, value: float) -> None:
+        self._econ_state.education_xp = value
+
+    @property
     def labor_income_this_tick(self) -> float:
         """Exposes labor_income_this_tick from econ_state."""
         return self._econ_state.labor_income_this_tick

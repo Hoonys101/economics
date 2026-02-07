@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, TYPE_CHECKING
+from typing import Dict, Any, Optional, TYPE_CHECKING, override
 import logging
-from modules.finance.api import InsufficientFundsError, IFinancialEntity
+from modules.finance.api import InsufficientFundsError, IFinancialEntity, ICreditFrozen
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
@@ -12,13 +12,14 @@ if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
 
 
-class BaseAgent(ICurrencyHolder, IInventoryHandler, IFinancialEntity, ABC):
+class BaseAgent(ICurrencyHolder, IInventoryHandler, IFinancialEntity, ICreditFrozen, ABC):
     def __init__(
         self,
         init_config: BaseAgentInitDTO
     ):
         self.id = init_config.id
         self.memory_v2 = init_config.memory_interface
+        self._credit_frozen_until_tick: int = 0
 
         initial_balance_dict = {}
         if isinstance(init_config.initial_assets, dict):
@@ -76,6 +77,16 @@ class BaseAgent(ICurrencyHolder, IInventoryHandler, IFinancialEntity, ABC):
         if amount > 0:
             # Wallet raises InsufficientFundsError automatically
             self._wallet.subtract(amount, currency, memo="Withdraw")
+
+    # --- ICreditFrozen Implementation ---
+
+    @property
+    def credit_frozen_until_tick(self) -> int:
+        return self._credit_frozen_until_tick
+
+    @credit_frozen_until_tick.setter
+    def credit_frozen_until_tick(self, value: int) -> None:
+        self._credit_frozen_until_tick = value
 
     # --- IInventoryHandler Implementation ---
 

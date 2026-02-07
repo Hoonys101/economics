@@ -24,6 +24,7 @@ from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.systems.api import LifecycleContext, MarketInteractionContext, LearningUpdateContext, ILearningAgent
 from modules.finance.api import IFinancialEntity
+from modules.simulation.api import IEducated
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.finance.wallet.wallet import Wallet
 import simulation
@@ -69,7 +70,8 @@ class Household(
     HouseholdStateAccessMixin,
     BaseAgent,
     ILearningAgent,
-    IEmployeeDataProvider
+    IEmployeeDataProvider,
+    IEducated
 ):
     """
     Household Agent (Facade).

@@ -243,6 +243,7 @@ class ICreditScoringService(Protocol):
         """
         ...
 
+@runtime_checkable
 class IFinancialEntity(Protocol):
     """
     Protocol for any entity that possesses assets and participates in financial transactions.
@@ -525,6 +526,21 @@ class IHeirProvider(Protocol):
         """Returns the designated heir, or None if there is no heir."""
         ...
 
+@runtime_checkable
+class ICreditFrozen(Protocol):
+    """
+    Protocol for agents that can have their credit frozen (e.g., due to bankruptcy).
+    """
+    @property
+    def credit_frozen_until_tick(self) -> int:
+        """The simulation tick until which the agent's credit is frozen."""
+        ...
+
+    @credit_frozen_until_tick.setter
+    def credit_frozen_until_tick(self, value: int) -> None:
+        """Sets the tick until which the agent's credit is frozen."""
+        ...
+
 class ITaxService(ABC):
     @abstractmethod
     def calculate_liquidation_tax_claims(self, firm: Firm) -> List[Claim]:
@@ -578,3 +594,4 @@ class IDepositManager(Protocol):
         """
         ...
     def withdraw(self, agent_id: int, amount: float) -> bool: ...
+    def get_total_deposits(self) -> float: ...
