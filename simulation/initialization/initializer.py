@@ -89,6 +89,7 @@ from modules.system.execution.public_manager import PublicManager
 # TD-253: Finance Kernel
 from modules.finance.kernel.ledger import MonetaryLedger
 from modules.finance.sagas.orchestrator import SagaOrchestrator
+from modules.finance.shareholder_registry import ShareholderRegistry
 
 
 class SimulationInitializer(SimulationInitializerInterface):
@@ -158,6 +159,10 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Inject into WorldState explicitly
         sim.world_state.monetary_ledger = sim.monetary_ledger
         sim.world_state.saga_orchestrator = sim.saga_orchestrator
+
+        # TD-275: Shareholder Registry
+        sim.shareholder_registry = ShareholderRegistry()
+        sim.world_state.shareholder_registry = sim.shareholder_registry
 
         sim.tracker = EconomicIndicatorTracker(config_module=self.config)
 
@@ -344,7 +349,11 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.markets["loan_market"].agents_ref = sim.agents
 
         if getattr(self.config, "STOCK_MARKET_ENABLED", False):
-            sim.stock_market = StockMarket(config_module=self.config, logger=self.logger)
+            sim.stock_market = StockMarket(
+                config_module=self.config,
+                shareholder_registry=sim.shareholder_registry,
+                logger=self.logger
+            )
             sim.stock_tracker = StockMarketTracker(config_module=self.config)
             sim.markets["stock_market"] = sim.stock_market
             for firm in sim.firms:

@@ -11,7 +11,8 @@ def trace_tick():
     
     def report(name):
         money = state.calculate_total_money()
-        print(f"[{name}] Total: {money:,.2f}")
+        total_usd = money.get("USD", 0.0) if isinstance(money, dict) else money
+        print(f"[{name}] Total: {total_usd:,.2f}")
         return money
 
     print("--- TICK TRACE START ---")
@@ -37,13 +38,18 @@ def trace_tick():
     report("Post-Bank-Tick")
     
     # Firm Financials
+    market_context = sim.tick_scheduler.get_market_context(state.tracker) if hasattr(sim.tick_scheduler, "get_market_context") else None
+    if not market_context:
+         market_context = {"exchange_rates": {"USD": 1.0}, "benchmark_rates": {}}
+
     for firm in state.firms:
          if firm.is_active:
              system_transactions.extend(firm.generate_transactions(
                  government=state.government,
                  market_data=market_data_prev,
-                 all_households=state.households,
-                 current_time=state.time
+                 shareholder_registry=state.shareholder_registry,
+                 current_time=state.time,
+                 market_context=market_context
              ))
     report("Post-Firm-Gen")
     

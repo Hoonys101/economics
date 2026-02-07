@@ -243,6 +243,7 @@ class SimulationState:
     currency_holders: List[Any] = None # Added for M2 tracking (Phase 33/5)
     stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
     transaction_processor: Optional[Any] = None # Added for system delegation compatibility
+    shareholder_registry: Optional[Any] = None # TD-275 Shareholder Registry
 
     # Phase 4.1: Saga Orchestration & Monetary Ledger (TD-253)
     saga_orchestrator: Optional[Any] = None

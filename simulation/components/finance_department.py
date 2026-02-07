@@ -3,7 +3,7 @@ from typing import List, Dict, Any, Optional, TYPE_CHECKING, Union
 import logging
 from collections import deque
 from simulation.models import Transaction, Order
-from modules.finance.api import IFinancialEntity, InsufficientFundsError, IFinanceDepartment
+from modules.finance.api import IFinancialEntity, InsufficientFundsError, IFinanceDepartment, IShareholderRegistry
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, MarketContextDTO
 
@@ -177,7 +177,7 @@ class FinanceDepartment(IFinanceDepartment):
             )
         return None
 
-    def process_profit_distribution(self, households: List[Household], government: IFinancialEntity, current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
+    def process_profit_distribution(self, shareholder_registry: IShareholderRegistry, government: IFinancialEntity, current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
         """Public Shareholders Dividend & Bailout Repayment (Multi-Currency)."""
         transactions = []
         exchange_rates = market_context['exchange_rates']
@@ -223,22 +223,28 @@ class FinanceDepartment(IFinanceDepartment):
         self.dividends_paid_last_tick = 0.0
 
         total_shares = self.firm.total_shares
+        shareholders = shareholder_registry.get_shareholders_of_firm(self.firm.id)
 
         for cur, profit in self.current_profit.items():
             distributable_profit = max(0, profit * self.firm.dividend_rate)
-            if distributable_profit > 0 and total_shares > 0:
+            if distributable_profit > 0 and total_shares > 0 and shareholders:
                 # Add to total paid (converted)
                 self.dividends_paid_last_tick += self.convert_to_primary(distributable_profit, cur, exchange_rates)
 
-                for household in households:
-                    # TD-233: Use portfolio property (LoD fix)
-                    shares = household.portfolio.get_stock_quantity(self.firm.id)
+                for shareholder in shareholders:
+                    shares = shareholder['quantity']
+                    agent_id = shareholder['agent_id']
+
+                    # Skip self-owned treasury shares for dividend payment
+                    if agent_id == self.firm.id:
+                        continue
+
                     if shares > 0:
                         dividend_amount = distributable_profit * (shares / total_shares)
                         transactions.append(
                             Transaction(
                                 buyer_id=self.firm.id,
-                                seller_id=household.id,
+                                seller_id=agent_id,
                                 item_id="dividend",
                                 quantity=1.0,
                                 price=dividend_amount,
@@ -265,14 +271,14 @@ class FinanceDepartment(IFinanceDepartment):
 
         return transactions
 
-    def generate_financial_transactions(self, government: IFinancialEntity, households: List[Household], current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
+    def generate_financial_transactions(self, government: IFinancialEntity, shareholder_registry: IShareholderRegistry, current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
         """Consolidates all financial outflow generation logic."""
         transactions = []
         tx_holding = self.generate_holding_cost_transaction(government, current_time)
         if tx_holding: transactions.append(tx_holding)
         tx_maint = self.generate_maintenance_transaction(government, current_time)
         if tx_maint: transactions.append(tx_maint)
-        txs_public = self.process_profit_distribution(households, government, current_time, market_context)
+        txs_public = self.process_profit_distribution(shareholder_registry, government, current_time, market_context)
         transactions.extend(txs_public)
         return transactions
 

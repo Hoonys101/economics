@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
     from simulation.models import Transaction
     from modules.household.dtos import LifecycleDTO
-    from modules.finance.api import IFinancialEntity
+    from modules.finance.api import IFinancialEntity, IShareholderRegistry
     from simulation.systems.settlement_system import SettlementSystem
     from modules.government.taxation.system import TaxationSystem
     from logging import Logger
@@ -296,6 +296,7 @@ class TransactionContext:
     central_bank: Optional[Any] # CentralBank
     public_manager: Optional[Any] # PublicManager
     transaction_queue: List['Transaction'] # For appending side-effect transactions (e.g. credit creation)
+    shareholder_registry: Optional['IShareholderRegistry'] = None # TD-275
 
 class ITransactionHandler(ABC):
     """

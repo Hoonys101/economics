@@ -44,6 +44,7 @@ if TYPE_CHECKING:
 from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode # Added for Phase 33
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
+from modules.finance.api import IShareholderRegistry
 
 
 class WorldState:
@@ -110,6 +111,7 @@ class WorldState:
         self.settlement_system: Optional[SettlementSystem] = None
         self.saga_orchestrator: Optional[ISagaOrchestrator] = None
         self.monetary_ledger: Optional[IMonetaryLedger] = None
+        self.shareholder_registry: Optional[IShareholderRegistry] = None # TD-275
         self.taxation_system: Optional[Any] = None # WO-116
         self.commerce_system: Optional[CommerceSystem] = None
         self.labor_market_analyzer: Optional[LaborMarketAnalyzer] = None

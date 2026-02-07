@@ -13,6 +13,7 @@ from dataclasses import dataclass, replace
 from simulation.models import Transaction, Order
 from simulation.core_markets import Market
 from modules.market.api import OrderDTO
+from modules.finance.api import IShareholderRegistry
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -38,11 +39,13 @@ class StockMarket(Market):
     def __init__(
         self,
         config_module: Any,
+        shareholder_registry: IShareholderRegistry,
         logger: Optional[logging.Logger] = None,
     ):
         self.id = "stock_market"
         self.config_module = config_module
         self.logger = logger or logging.getLogger(__name__)
+        self.shareholder_registry = shareholder_registry
         
         # 기업별 주문서 (firm_id -> List[ManagedOrder])
         self.buy_orders: Dict[int, List[ManagedOrder]] = defaultdict(list)
@@ -54,22 +57,13 @@ class StockMarket(Market):
         self.daily_volumes: Dict[int, float] = {}    # 일일 거래량
         self.daily_high: Dict[int, float] = {}       # 일일 최고가
         self.daily_low: Dict[int, float] = {}        # 일일 최저가
-        
-        # 주주 명부 (firm_id -> agent_id -> quantity)
-        # Conservation of Mass 검증 및 배당 지급 등을 위한 중앙 레지스트리
-        self.shareholders: Dict[int, Dict[int, float]] = defaultdict(lambda: defaultdict(float))
 
     def update_shareholder(self, agent_id: int, firm_id: int, quantity: float) -> None:
         """
         주주 명부를 갱신합니다. (보유량 설정)
-        주로 초기화, Mitosis, Liquidation 등 특수 상황에서 호출됩니다.
-        일반 거래는 match_orders 후 처리 과정에서 동기화되어야 합니다.
+        Delegates to ShareholderRegistry (TD-275).
         """
-        if quantity <= 0:
-            if agent_id in self.shareholders[firm_id]:
-                del self.shareholders[firm_id][agent_id]
-        else:
-            self.shareholders[firm_id][agent_id] = quantity
+        self.shareholder_registry.register_shares(firm_id, agent_id, quantity)
 
     def update_reference_prices(self, firms: Dict[int, "Firm"]) -> None:
         """

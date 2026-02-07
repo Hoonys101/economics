@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from simulation.agents.government import Government
     from simulation.dtos.scenario import StressScenarioConfig
     from modules.memory.api import MemoryV2Interface
+    from modules.finance.api import IShareholderRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -533,7 +534,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
             details=f"Item={self.specialization}, D={demand:.1f}, S={supply:.1f}, Ratio={excess_demand_ratio:.2f}"
         )
 
-    def generate_transactions(self, government: Optional[Any], market_data: Dict[str, Any], all_households: List[Household], current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
+    def generate_transactions(self, government: Optional[Any], market_data: Dict[str, Any], shareholder_registry: IShareholderRegistry, current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
         """
         Generates all financial transactions for the tick (Wages, Taxes, Dividends, etc.).
         Phase 3 Architecture.
@@ -545,7 +546,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         transactions.extend(tx_payroll)
 
         # 2. Finance Transactions (Holding, Maint, Corp Tax, Dividends, Bailout Repayment)
-        tx_finance = self.finance.generate_financial_transactions(government, all_households, current_time, market_context)
+        tx_finance = self.finance.generate_financial_transactions(government, shareholder_registry, current_time, market_context)
         transactions.extend(tx_finance)
 
         # 3. Marketing (Delegated to Sales Department)

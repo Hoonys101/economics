@@ -79,7 +79,8 @@ class TransactionProcessor(SystemInterface):
             bank=bank,
             central_bank=central_bank,
             public_manager=public_manager,
-            transaction_queue=[] # Initialize empty queue for side-effects
+            transaction_queue=[], # Initialize empty queue for side-effects
+            shareholder_registry=state.shareholder_registry
         )
 
         default_handler = self._handlers.get("default")

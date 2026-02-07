@@ -40,7 +40,7 @@ class Phase_FirmProductionAndSalaries(IPhaseStrategy):
                  firm_txs = firm.generate_transactions(
                      government=state.government,
                      market_data=market_data_prev,
-                     all_households=state.households,
+                     shareholder_registry=state.shareholder_registry,
                      current_time=state.time,
                      market_context=market_context
                  )
