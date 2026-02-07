@@ -4,6 +4,7 @@ import logging
 from simulation.models import Transaction, Order
 from simulation.components.state.firm_state_models import FinanceState
 from modules.finance.api import IFinancialEntity, InsufficientFundsError, IShareholderRegistry
+from modules.finance.wallet.api import IWallet
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, MarketContextDTO
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
 
@@ -22,7 +23,7 @@ class FinanceEngine:
         self,
         state: FinanceState,
         firm_id: int,
-        wallet: IFinancialEntity,
+        wallet: IWallet,
         config: FirmConfigDTO,
         government: Any,
         shareholder_registry: IShareholderRegistry,
@@ -55,7 +56,7 @@ class FinanceEngine:
 
         # 2. Maintenance Fee
         fee = config.firm_maintenance_fee
-        current_balance = wallet.get_balance(DEFAULT_CURRENCY) if hasattr(wallet, 'get_balance') else wallet.assets
+        current_balance = wallet.get_balance(DEFAULT_CURRENCY)
         payment = min(current_balance, fee)
 
         if payment > 0:
@@ -199,7 +200,7 @@ class FinanceEngine:
         else:
             state.consecutive_loss_turns = 0
 
-        threshold = getattr(config, "bankruptcy_consecutive_loss_threshold", 20)
+        threshold = config.bankruptcy_consecutive_loss_threshold
         if state.consecutive_loss_turns >= threshold:
             state.is_bankrupt = True
 
@@ -211,7 +212,15 @@ class FinanceEngine:
         inventory_value: float,
         market_context: Optional[MarketContextDTO]
     ) -> float:
-        """Calculates firm valuation."""
+        """
+        Calculates firm valuation.
+        Note: Keeps IFinancialEntity for wallet here as we rely on 'assets' for simple valuation,
+        or we should switch to IWallet for consistency if we use get_balance.
+        Original code used wallet.get_balance if available.
+        Let's try to stick to IWallet if possible, but Firm.calculate_valuation passes 'self'.
+        If we want strict typing, Firm should pass self.wallet and we change type here.
+        Let's change to IWallet for consistency with other methods.
+        """
         exchange_rates = market_context['exchange_rates'] if market_context else {DEFAULT_CURRENCY: 1.0}
 
         def convert(amt, cur):
@@ -222,9 +231,11 @@ class FinanceEngine:
         total_assets_val = 0.0
         # Cash
         if hasattr(wallet, 'get_all_balances'):
+             # IWallet path
              for cur, amount in wallet.get_all_balances().items():
                  total_assets_val += convert(amount, cur)
         else:
+             # Fallback IFinancialEntity path (assets property)
              total_assets_val = wallet.assets
 
         total_assets_val += inventory_value + state.capital_stock # Assume capital stock in primary val
@@ -238,7 +249,8 @@ class FinanceEngine:
     def invest_in_automation(
         self,
         state: FinanceState,
-        wallet: IFinancialEntity,
+        agent: IFinancialEntity,
+        wallet: IWallet,
         amount: float,
         government: Any,
         settlement_system: Any
@@ -246,20 +258,22 @@ class FinanceEngine:
         """
         Executes investment in automation.
         """
-        # Balance check
-        current_balance = wallet.get_balance(DEFAULT_CURRENCY) if hasattr(wallet, 'get_balance') else wallet.assets
+        # Balance check via Wallet
+        current_balance = wallet.get_balance(DEFAULT_CURRENCY)
         if current_balance < amount:
             return False
 
         if not settlement_system or not government:
             return False
 
-        return settlement_system.transfer(wallet, government, amount, "Automation", currency=DEFAULT_CURRENCY)
+        # Transfer via Agent (IFinancialEntity)
+        return settlement_system.transfer(agent, government, amount, "Automation", currency=DEFAULT_CURRENCY)
 
     def invest_in_rd(
         self,
         state: FinanceState,
-        wallet: IFinancialEntity,
+        agent: IFinancialEntity,
+        wallet: IWallet,
         amount: float,
         government: Any,
         settlement_system: Any
@@ -267,14 +281,14 @@ class FinanceEngine:
         """
         Executes investment in R&D. Records expense.
         """
-        current_balance = wallet.get_balance(DEFAULT_CURRENCY) if hasattr(wallet, 'get_balance') else wallet.assets
+        current_balance = wallet.get_balance(DEFAULT_CURRENCY)
         if current_balance < amount:
             return False
 
         if not settlement_system or not government:
             return False
 
-        if settlement_system.transfer(wallet, government, amount, "R&D", currency=DEFAULT_CURRENCY):
+        if settlement_system.transfer(agent, government, amount, "R&D", currency=DEFAULT_CURRENCY):
             self._record_expense(state, amount, DEFAULT_CURRENCY)
             return True
         return False
@@ -282,7 +296,8 @@ class FinanceEngine:
     def invest_in_capex(
         self,
         state: FinanceState,
-        wallet: IFinancialEntity,
+        agent: IFinancialEntity,
+        wallet: IWallet,
         amount: float,
         government: Any,
         settlement_system: Any
@@ -290,19 +305,20 @@ class FinanceEngine:
         """
         Executes investment in CAPEX.
         """
-        current_balance = wallet.get_balance(DEFAULT_CURRENCY) if hasattr(wallet, 'get_balance') else wallet.assets
+        current_balance = wallet.get_balance(DEFAULT_CURRENCY)
         if current_balance < amount:
             return False
 
         if not settlement_system or not government:
             return False
 
-        return settlement_system.transfer(wallet, government, amount, "CAPEX", currency=DEFAULT_CURRENCY)
+        return settlement_system.transfer(agent, government, amount, "CAPEX", currency=DEFAULT_CURRENCY)
 
     def pay_ad_hoc_tax(
         self,
         state: FinanceState,
-        wallet: IFinancialEntity,
+        agent: IFinancialEntity,
+        wallet: IWallet,
         amount: float,
         currency: CurrencyCode,
         reason: str,
@@ -313,11 +329,11 @@ class FinanceEngine:
         """
         Pays an ad-hoc tax.
         """
-        current_balance = wallet.get_balance(currency) if hasattr(wallet, 'get_balance') else wallet.assets
+        current_balance = wallet.get_balance(currency)
         if current_balance < amount:
             return False
 
-        if settlement_system.transfer(wallet, government, amount, reason, currency=currency):
+        if settlement_system.transfer(agent, government, amount, reason, currency=currency):
             self._record_expense(state, amount, currency)
             return True
         return False

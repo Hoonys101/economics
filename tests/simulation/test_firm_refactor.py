@@ -110,6 +110,7 @@ def test_command_bus_internal_orders(firm):
     assert firm.production_state.production_target == 50.0
 
     # INVEST_AUTOMATION
+    # finance_engine.invest_in_automation now takes (state, agent, wallet, amount, gov, settlement)
     firm.finance_engine.invest_in_automation = MagicMock(return_value=True)
     firm.production_engine.invest_in_automation = MagicMock(return_value=0.05)
 
@@ -121,6 +122,11 @@ def test_command_bus_internal_orders(firm):
     firm._execute_internal_order(order_auto, None, 0)
 
     firm.finance_engine.invest_in_automation.assert_called_once()
+    # Check arguments: state, firm (self), wallet, amount, gov, settlement
+    args = firm.finance_engine.invest_in_automation.call_args[0]
+    assert args[1] == firm
+    assert args[2] == firm.wallet
+
     firm.production_engine.invest_in_automation.assert_called_once()
 
 def test_generate_transactions_delegation(firm):
@@ -140,6 +146,12 @@ def test_generate_transactions_delegation(firm):
 
     firm.hr_engine.process_payroll.assert_called_once()
     firm.finance_engine.generate_financial_transactions.assert_called_once()
+
+    # Check arguments
+    f_args = firm.finance_engine.generate_financial_transactions.call_args[0]
+    # (state, id, wallet, config, gov, registry, time, context, inv_val)
+    assert f_args[2] == firm.wallet
+
     firm.sales_engine.generate_marketing_transaction.assert_called_once()
 
 def test_produce_delegation(firm):

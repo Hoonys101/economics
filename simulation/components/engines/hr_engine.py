@@ -5,7 +5,7 @@ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
 from modules.hr.api import IEmployeeDataProvider
 from simulation.models import Transaction
 from simulation.components.state.firm_state_models import HRState
-from modules.finance.api import IFinancialEntity
+from modules.finance.wallet.api import IWallet
 
 if TYPE_CHECKING:
     from simulation.dtos.config_dtos import FirmConfigDTO
@@ -35,7 +35,7 @@ class HREngine:
         self,
         hr_state: HRState,
         firm_id: int,
-        wallet: IFinancialEntity,
+        wallet: IWallet,
         config: FirmConfigDTO,
         current_time: int,
         government: Optional[Any],
@@ -69,20 +69,7 @@ class HREngine:
             total_liquid_assets = 0.0
 
             # Use wallet balances directly
-            # Assuming wallet supports iteration or we get all balances
-            # If wallet is IFinancialEntity, it might only expose DEFAULT_CURRENCY assets property or need casting
-            # But the caller (Firm) should pass a wallet interface that allows checking all balances.
-            # BaseAgent.wallet has get_all_balances().
-            # Let's assume `wallet` passed here is the Firm (implementing IFinancialEntity) or the Wallet object itself.
-            # Ideally Firm passes `self.wallet`.
-
-            if hasattr(wallet, 'get_all_balances'):
-                balances = wallet.get_all_balances()
-            elif hasattr(wallet, 'balance'): # FinanceDepartment/Engine compat
-                 balances = wallet.balance
-            else:
-                 # Fallback to single currency asset
-                 balances = {DEFAULT_CURRENCY: wallet.assets}
+            balances = wallet.get_all_balances()
 
             # Helper for conversion (if not provided, implement simple logic)
             def convert(amt, cur):
@@ -208,7 +195,7 @@ class HREngine:
         if employee.id in hr_state.employee_wages:
             del hr_state.employee_wages[employee.id]
 
-    def fire_employee(self, hr_state: HRState, firm_id: int, wallet: Any, settlement_system: Any, employee_id: int, severance_pay: float) -> bool:
+    def fire_employee(self, hr_state: HRState, firm_id: int, agent: Any, wallet: IWallet, settlement_system: Any, employee_id: int, severance_pay: float) -> bool:
         """
         Fires an employee with severance pay.
         Returns True if successful.
@@ -216,14 +203,10 @@ class HREngine:
         employee = next((e for e in hr_state.employees if e.id == employee_id), None)
         if employee:
             # Check funds directly on wallet
-            # We assume settlement_system handles the transfer logic
-            if hasattr(wallet, 'get_balance'):
-                 bal = wallet.get_balance(DEFAULT_CURRENCY)
-            else:
-                 bal = wallet.assets
+            bal = wallet.get_balance(DEFAULT_CURRENCY)
 
             if bal >= severance_pay and settlement_system:
-                if settlement_system.transfer(wallet, employee, severance_pay, "Severance", currency=DEFAULT_CURRENCY):
+                if settlement_system.transfer(agent, employee, severance_pay, "Severance", currency=DEFAULT_CURRENCY):
                     employee.quit()
                     self.remove_employee(hr_state, employee)
                     logger.info(f"INTERNAL_EXEC | Firm {firm_id} fired employee {employee_id}.")
@@ -233,11 +216,3 @@ class HREngine:
             else:
                 logger.warning(f"INTERNAL_EXEC | Firm {firm_id} failed to fire {employee_id} (insufficient funds).")
         return False
-
-    def get_total_labor_skill(self, hr_state: HRState) -> float:
-        return sum(emp.labor_skill for emp in hr_state.employees)
-
-    def get_avg_skill(self, hr_state: HRState) -> float:
-        if not hr_state.employees:
-            return 0.0
-        return self.get_total_labor_skill(hr_state) / len(hr_state.employees)

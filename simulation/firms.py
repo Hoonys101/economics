@@ -537,7 +537,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
 
         elif order.order_type == "INVEST_AUTOMATION":
             amount = get_amount(order)
-            if self.finance_engine.invest_in_automation(self.finance_state, self.wallet, amount, government, self.settlement_system):
+            if self.finance_engine.invest_in_automation(self.finance_state, self, self.wallet, amount, government, self.settlement_system):
                  gained = self.production_engine.invest_in_automation(
                      self.production_state, amount, self.config.automation_cost_per_pct
                  )
@@ -547,20 +547,21 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
             amount = get_amount(order)
             currency = get_currency(order)
             reason = order.item_id
-            if government and self.settlement_system:
-                if self.settlement_system.transfer(self, government, amount, reason, currency=currency):
-                    self.finance_engine._record_expense(self.finance_state, amount, currency)
+            # Use engine for consistency
+            self.finance_engine.pay_ad_hoc_tax(
+                self.finance_state, self, self.wallet, amount, currency, reason, government, self.settlement_system, current_time
+            )
 
         elif order.order_type == "INVEST_RD":
             amount = get_amount(order)
-            if self.finance_engine.invest_in_rd(self.finance_state, self.wallet, amount, government, self.settlement_system):
+            if self.finance_engine.invest_in_rd(self.finance_state, self, self.wallet, amount, government, self.settlement_system):
                 revenue = self.finance_state.last_revenue
                 if self.production_engine.execute_rd_outcome(self.production_state, self.hr_state, revenue, amount, current_time):
                     self.logger.info(f"INTERNAL_EXEC | Firm {self.id} R&D SUCCESS (Budget: {amount:.1f})")
 
         elif order.order_type == "INVEST_CAPEX":
             amount = get_amount(order)
-            if self.finance_engine.invest_in_capex(self.finance_state, self.wallet, amount, government, self.settlement_system):
+            if self.finance_engine.invest_in_capex(self.finance_state, self, self.wallet, amount, government, self.settlement_system):
                 self.production_engine.invest_in_capex(self.production_state, amount, self.config.capital_to_output_ratio)
                 self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {amount:.1f} in CAPEX.")
 
@@ -573,7 +574,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
 
         elif order.order_type == "FIRE":
             self.hr_engine.fire_employee(
-                self.hr_state, self.id, self.wallet, self.settlement_system, order.target_agent_id, order.price
+                self.hr_state, self.id, self, self.wallet, self.settlement_system, order.target_agent_id, order.price
             )
 
     def _calculate_invisible_hand_price(self, market_snapshot: MarketSnapshotDTO, current_tick: int) -> None:
@@ -607,7 +608,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
 
         # 1. Payroll
         tx_payroll = self.hr_engine.process_payroll(
-            self.hr_state, self.id, self, self.config, current_time, government, market_data, market_context
+            self.hr_state, self.id, self.wallet, self.config, current_time, government, market_data, market_context
         )
         transactions.extend(tx_payroll)
 
@@ -619,7 +620,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
             inventory_value += qty * price
 
         tx_finance = self.finance_engine.generate_financial_transactions(
-            self.finance_state, self.id, self, self.config, government, shareholder_registry, current_time, market_context, inventory_value
+            self.finance_state, self.id, self.wallet, self.config, government, shareholder_registry, current_time, market_context, inventory_value
         )
         transactions.extend(tx_finance)
 
@@ -680,7 +681,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
     def calculate_valuation(self, market_context: MarketContextDTO = None) -> float:
         inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self._inventory)
         return self.finance_engine.calculate_valuation(
-            self.finance_state, self, self.config, inventory_value, market_context
+            self.finance_state, self.wallet, self.config, inventory_value, market_context
         )
 
     def get_financial_snapshot(self) -> Dict[str, Any]:
