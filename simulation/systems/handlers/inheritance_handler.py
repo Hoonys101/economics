@@ -26,7 +26,6 @@ class InheritanceHandler(ITransactionHandler):
         heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
 
         # Round total cash to 2 decimals to prevent floating point dust propagation.
-        # Any residual dust (< 0.01) remains on the deceased agent (effectively burnt or ignored).
         assets_val = 0.0
         if hasattr(deceased_agent, 'wallet'):
             assets_val = deceased_agent.wallet.get_balance(DEFAULT_CURRENCY)
@@ -35,11 +34,19 @@ class InheritanceHandler(ITransactionHandler):
         elif hasattr(deceased_agent, 'assets'):
             assets_val = float(deceased_agent.assets)
 
-        total_cash = round(assets_val, 2)
+        # TD-233: Use floor to ensure we don't distribute non-existent rounded-up cents
+        total_cash = math.floor(assets_val * 100) / 100.0
+        dust = assets_val - total_cash
 
-        if total_cash <= 0 or not heir_ids:
-            context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no assets ({total_cash}) or heirs.")
-            return True # Nothing to distribute, technically a success (no-op)
+        if total_cash <= 0 and dust <= 1e-9:
+            context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no assets ({assets_val}).")
+            return True
+
+        if not heir_ids:
+            # If no heirs but we have dust/cash, handled elsewhere or we skip
+            # InheritanceManager should handle escheatment if no heirs.
+             context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no heirs.")
+             return True
 
         count = len(heir_ids)
         # Calculate amount per heir, avoiding float precision issues (floor to cent)
@@ -67,12 +74,16 @@ class InheritanceHandler(ITransactionHandler):
             if remaining_amount > 0:
                 credits.append((last_heir, remaining_amount, "inheritance_distribution_final"))
 
+        # TD-233: Sweep fractional dust to Government to ensure Zero Leak (Agent balance -> 0.0)
+        if dust > 1e-9 and context.government:
+             credits.append((context.government, dust, "inheritance_dust_sweep"))
+
         # Atomic Settlement
         if credits:
             success = context.settlement_system.settle_atomic(deceased_agent, credits, context.time)
 
             if success:
-                 context.logger.info(f"INHERITANCE_SUCCESS | Distributed {total_cash} from {deceased_agent.id} to {count} heirs.")
+                 context.logger.info(f"INHERITANCE_SUCCESS | Distributed {total_cash} from {deceased_agent.id} to {count} heirs. Swept {dust:.4f} dust.")
             else:
                  context.logger.error(f"INHERITANCE_FAIL | Atomic settlement failed for {deceased_agent.id}.")
 

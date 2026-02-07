@@ -110,7 +110,8 @@ class DemographicManager:
             elif hasattr(parent, 'assets'):
                 parent_assets = float(parent.assets)
 
-            initial_gift = max(0.0, min(parent_assets * 0.1, parent_assets))
+            # TD-233: Round to 2 decimals to prevent floating point leaks
+            initial_gift = round(max(0.0, min(parent_assets * 0.1, parent_assets)), 2)
 
             # WO-124: Removed direct asset modification. Transfer happens via SettlementSystem after creation.
 

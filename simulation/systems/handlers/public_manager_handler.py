@@ -30,9 +30,39 @@ class PublicManagerTransactionHandler(ITransactionHandler):
         # Using SettlementSystem to ensure zero-sum integrity.
         # PublicManager now implements IFinancialEntity.
 
-        success = context.settlement_system.transfer(
-            buyer, pm, trade_value, f"public_sale:{tx.item_id}"
-        )
+        success = False
+        trade_value = round(trade_value, 2) # Ensure precision
+
+        if tx.transaction_type == "goods" and getattr(context, 'taxation_system', None):
+            # TD-233: Calculate Tax Atomically
+            intents = context.taxation_system.calculate_tax_intents(tx, buyer, pm, context.government, context.market_data)
+
+            credits: List[Tuple[Any, float, str]] = []
+            credits.append((pm, trade_value, f"public_sale:{tx.item_id}"))
+
+            # Note: total_cost calculation removed as it's not used here, settle_atomic handles total debit.
+
+            for intent in intents:
+                credits.append((context.government, intent.amount, intent.reason))
+
+            success = context.settlement_system.settle_atomic(buyer, credits, context.time)
+
+            if success:
+                 # Record Revenue
+                 for intent in intents:
+                    context.government.record_revenue({
+                         "success": True,
+                         "amount_collected": intent.amount,
+                         "tax_type": intent.reason,
+                         "payer_id": intent.payer_id,
+                         "payee_id": intent.payee_id,
+                         "error_message": None
+                    })
+        else:
+             # Legacy/Non-taxable (e.g. assets)
+             success = context.settlement_system.transfer(
+                buyer, pm, trade_value, f"public_sale:{tx.item_id}"
+             )
 
         if not success:
             context.logger.error(f"PUBLIC_MANAGER transaction failed: Settlement refused.")
