@@ -4,6 +4,7 @@ import logging
 from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction
 from modules.system.api import DEFAULT_CURRENCY
+from modules.finance.api import IPortfolioHandler, PortfolioDTO, PortfolioAsset
 
 logger = logging.getLogger(__name__)
 
@@ -38,14 +39,32 @@ class InheritanceHandler(ITransactionHandler):
         total_cash = math.floor(assets_val * 100) / 100.0
         dust = assets_val - total_cash
 
-        if total_cash <= 0 and dust <= 1e-9:
-            context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no assets ({assets_val}).")
+        # Capture Portfolio (Atomic Step 1)
+        original_portfolio = None
+        has_portfolio = False
+        if isinstance(deceased_agent, IPortfolioHandler):
+             original_portfolio = deceased_agent.get_portfolio()
+             # Clear immediately to prevent cloning/double-spending.
+             # Will be restored if settlement fails.
+             deceased_agent.clear_portfolio()
+             if original_portfolio and original_portfolio.assets:
+                 has_portfolio = True
+
+        if total_cash <= 0 and dust <= 1e-9 and not has_portfolio:
+            context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no assets ({assets_val}) and no portfolio.")
+            # Restore if somehow captured empty one (unlikely but safe)
+            if original_portfolio:
+                 deceased_agent.receive_portfolio(original_portfolio)
             return True
 
         if not heir_ids:
             # If no heirs but we have dust/cash, handled elsewhere or we skip
             # InheritanceManager should handle escheatment if no heirs.
              context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no heirs.")
+             # Restore portfolio if no heirs (so it can be escheated later if logic allows, though this handler assumes distribution)
+             # But usually InheritanceManager checks for heirs first.
+             if original_portfolio:
+                 deceased_agent.receive_portfolio(original_portfolio)
              return True
 
         count = len(heir_ids)
@@ -78,15 +97,47 @@ class InheritanceHandler(ITransactionHandler):
         if dust > 1e-9 and context.government:
              credits.append((context.government, dust, "inheritance_dust_sweep"))
 
-        # Atomic Settlement
+        # Atomic Settlement (Cash)
+        cash_success = True
         if credits:
-            success = context.settlement_system.settle_atomic(deceased_agent, credits, context.time)
+            cash_success = context.settlement_system.settle_atomic(deceased_agent, credits, context.time)
 
-            if success:
+            if cash_success:
                  context.logger.info(f"INHERITANCE_SUCCESS | Distributed {total_cash} from {deceased_agent.id} to {count} heirs. Swept {dust:.4f} dust.")
             else:
                  context.logger.error(f"INHERITANCE_FAIL | Atomic settlement failed for {deceased_agent.id}.")
+                 # Rollback Portfolio
+                 if original_portfolio:
+                      deceased_agent.receive_portfolio(original_portfolio)
+                 return False
 
-            return success
+        # Distribute Portfolio (Atomic Step 2 - Side Effect)
+        if cash_success and original_portfolio and original_portfolio.assets:
+             self._distribute_portfolio(original_portfolio, heir_ids, agents)
 
         return True
+
+    def _distribute_portfolio(self, portfolio: PortfolioDTO, heir_ids: List[int], agents: dict[int, Any]):
+        if not heir_ids or not portfolio.assets:
+            return
+
+        count = len(heir_ids)
+        if count == 0:
+            return
+
+        # Distribute assets evenly among heirs
+        for asset in portfolio.assets:
+            quantity_per_heir = asset.quantity / count
+
+            for h_id in heir_ids:
+                heir = agents.get(h_id)
+                if isinstance(heir, IPortfolioHandler):
+                    # Construct a single-asset portfolio for transfer
+                    heir_portfolio = PortfolioDTO(assets=[
+                        PortfolioAsset(
+                            asset_type=asset.asset_type,
+                            asset_id=asset.asset_id,
+                            quantity=quantity_per_heir
+                        )
+                    ])
+                    heir.receive_portfolio(heir_portfolio)
