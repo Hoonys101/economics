@@ -249,10 +249,8 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
         if amount < 0:
             raise LoanRepaymentError("Repayment amount must be positive.")
 
-        # Delegate to LoanManager
-        if hasattr(self.loan_manager, 'repay_loan'):
-             return self.loan_manager.repay_loan(loan_id, amount)
-        return False
+        # Delegate to LoanManager (Protocol guaranteed)
+        return self.loan_manager.repay_loan(loan_id, amount)
 
     def get_balance(self, account_id: str) -> float:
         try:
@@ -309,10 +307,8 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
             logger.error(f"BANK_LIQUIDITY_CRISIS | Bank {self.id} cannot fulfill withdrawal of {amount} for {depositor_id}. Insufficient Reserves.")
             return False
 
-        # Delegate update to manager
-        success = False
-        if hasattr(self.deposit_manager, 'withdraw'):
-            success = self.deposit_manager.withdraw(depositor_id, amount)
+        # Delegate update to manager (Protocol guaranteed)
+        success = self.deposit_manager.withdraw(depositor_id, amount)
 
         if not success:
             # Rollback wallet
