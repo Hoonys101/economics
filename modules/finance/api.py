@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple, runtime_checkable, TYPE_CHECKING, Union
+from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple, runtime_checkable, TYPE_CHECKING, Union, Callable
 from dataclasses import dataclass
 import abc
 from abc import ABC, abstractmethod
 from uuid import UUID
-from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
+from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO, LoanApplicationDTO, LoanDTO, DepositDTO
 from modules.system.api import MarketContextDTO
 
 if TYPE_CHECKING:
@@ -529,4 +529,31 @@ class ITaxService(ABC):
     @abstractmethod
     def calculate_liquidation_tax_claims(self, firm: Firm) -> List[Claim]:
         """Calculates corporate tax claims for a firm in liquidation."""
+        ...
+
+# --- Bank Decomposition Interfaces (TD-274) ---
+
+class ILoanManager(Protocol):
+    """Interface for managing the entire lifecycle of loans."""
+    def submit_loan_application(self, application: LoanApplicationDTO) -> str: ...
+    def process_applications(self) -> None: ...
+    def service_loans(self, current_tick: int, payment_callback: Callable[[int, float], bool]) -> List[Any]:
+        """
+        Calculates interest and attempts to collect payments via callback.
+        Returns generated transactions or events.
+        """
+        ...
+    def get_loan_by_id(self, loan_id: str) -> Optional[LoanDTO]: ...
+    def get_loans_for_agent(self, agent_id: int) -> List[LoanDTO]: ...
+
+class IDepositManager(Protocol):
+    """Interface for managing agent deposit accounts."""
+    def create_deposit(self, owner_id: int, amount: float, interest_rate: float, currency: str = "USD") -> str: ...
+    def get_balance(self, agent_id: int) -> float: ...
+    def get_deposit_dto(self, agent_id: int) -> Optional[DepositDTO]: ...
+    def calculate_interest(self, current_tick: int) -> List[Tuple[int, float]]:
+        """
+        Calculates interest due for all deposits.
+        Returns a list of (depositor_id, interest_amount).
+        """
         ...
