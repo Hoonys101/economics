@@ -9,6 +9,7 @@ from simulation.policies.smart_leviathan_policy import SmartLeviathanPolicy
 from simulation.policies.adaptive_gov_policy import AdaptiveGovPolicy
 from simulation.dtos import GovernmentStateDTO
 from simulation.dtos.api import MarketSnapshotDTO
+from simulation.dtos.policy_dtos import PolicyContextDTO, PolicyDecisionResultDTO
 from simulation.utils.shadow_logger import log_shadow
 from simulation.models import Transaction
 from simulation.systems.ministry_of_education import MinistryOfEducation
@@ -363,58 +364,57 @@ class Government(ICurrencyHolder, IFinancialEntity):
             self.fiscal_policy.corporate_tax_rate = self.corporate_tax_rate
             self.fiscal_policy.income_tax_rate = self.income_tax_rate
 
-        # 1. 정책 엔진 실행 (Actuator 및 Shadow Mode 로직 포함)
-        decision = self.policy_engine.decide(self, self.sensory_data, current_tick, central_bank)
+        # 1. Create PolicyContextDTO
+        locked_tags = self.policy_lockout_manager.get_locked_tags(current_tick) if hasattr(self.policy_lockout_manager, 'get_locked_tags') else []
         
-        if decision.get("status") == "EXECUTED":
+        cb_rate = central_bank.get_base_rate() if central_bank else 0.05
+
+        context = PolicyContextDTO(
+            agent_id=self.id,
+            tick=current_tick,
+            sensory_data=self.sensory_data,
+            central_bank_base_rate=cb_rate,
+            locked_policies=locked_tags,
+            current_welfare_budget_multiplier=self.welfare_budget_multiplier,
+            current_corporate_tax_rate=self.corporate_tax_rate,
+            current_income_tax_rate=self.income_tax_rate,
+            potential_gdp=self.potential_gdp,
+            fiscal_stance=self.fiscal_stance,
+            ruling_party=self.ruling_party
+        )
+
+        # 2. Call Decide
+        result = self.policy_engine.decide(context)
+
+        if result.status == "EXECUTED":
              logger.debug(
-                f"POLICY_EXECUTED | Tick: {current_tick} | Action: {decision.get('action_taken')}",
+                f"POLICY_EXECUTED | Tick: {current_tick} | Action: {result.action_taken}",
                 extra={"tick": current_tick, "agent_id": self.id}
             )
 
-        gdp_gap = 0.0
-        if self.potential_gdp > 0:
-            current_gdp = market_data.get("total_production", 0.0)
-            gdp_gap = (current_gdp - self.potential_gdp) / self.potential_gdp
+        # 3. Apply Result
+        if result.updated_potential_gdp is not None:
+            self.potential_gdp = result.updated_potential_gdp
 
-            alpha = 0.01
-            self.potential_gdp = (alpha * current_gdp) + ((1-alpha) * self.potential_gdp)
+        if result.updated_fiscal_stance is not None:
+            self.fiscal_stance = result.updated_fiscal_stance
 
-        # 1. Calculate Inflation (YoY)
-        inflation = 0.0
-        if len(self.price_history_shadow) >= 2:
-            current_p = self.price_history_shadow[-1]
-            past_p = self.price_history_shadow[0]
-            if past_p > 0:
-                inflation = (current_p - past_p) / past_p
+        if result.updated_income_tax_rate is not None:
+            self.income_tax_rate = result.updated_income_tax_rate
 
-        # 2. Calculate Real GDP Growth
-        real_gdp_growth = 0.0
-        if len(self.gdp_history) >= 2:
-            current_gdp = self.gdp_history[-1]
-            past_gdp = self.gdp_history[-2]
-            if past_gdp > 0:
-                real_gdp_growth = (current_gdp - past_gdp) / past_gdp
+        if result.updated_corporate_tax_rate is not None:
+            self.corporate_tax_rate = result.updated_corporate_tax_rate
 
-        target_inflation = getattr(self.config_module, "CB_INFLATION_TARGET", 0.02)
-        neutral_rate = max(0.01, real_gdp_growth)
-        target_rate = neutral_rate + inflation + 0.5 * (inflation - target_inflation) + 0.5 * gdp_gap
+        if result.updated_welfare_budget_multiplier is not None:
+            self.welfare_budget_multiplier = result.updated_welfare_budget_multiplier
 
-        current_base_rate = 0.05
-        if "loan_market" in market_data:
-            current_base_rate = market_data["loan_market"].get("interest_rate", 0.05)
+        if result.interest_rate_target is not None:
+            if result.policy_type == "AI_ADAPTIVE" and central_bank:
+                 central_bank.set_base_rate(result.interest_rate_target)
 
-        gap = target_rate - current_base_rate
-
-        log_shadow(
-            tick=current_tick,
-            agent_id=self.id,
-            agent_type="Government",
-            metric="taylor_rule_rate",
-            current_value=current_base_rate,
-            shadow_value=target_rate,
-            details=f"Inf={inflation:.2%}, Growth={real_gdp_growth:.2%}, Gap={gdp_gap:.2%}, RateGap={gap:.4f}"
-        )
+        if result.action_request:
+            if result.action_request.action_type == "FIRE_ADVISOR":
+                self.fire_advisor(result.action_request.target, current_tick)
 
     SCHOOL_TO_POLICY_MAP = {
         EconomicSchool.KEYNESIAN: [PolicyActionTag.KEYNESIAN_FISCAL],

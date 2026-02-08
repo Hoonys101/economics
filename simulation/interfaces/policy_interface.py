@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from simulation.dtos.policy_dtos import PolicyContextDTO, PolicyDecisionResultDTO
 
 class IGovernmentPolicy(ABC):
     """
@@ -8,11 +11,14 @@ class IGovernmentPolicy(ABC):
     """
     
     @abstractmethod
-    def decide(self, government: Any, market_data: Dict[str, Any], current_tick: int) -> Dict[str, Any]:
+    def decide(self, context: "PolicyContextDTO") -> "PolicyDecisionResultDTO":
         """
         경제 상황을 분석하여 정책(금리, 세율, 예산 배분 등)을 결정합니다.
         
+        Args:
+            context (PolicyContextDTO): 정책 결정을 위한 읽기 전용 컨텍스트.
+
         Returns:
-            Dict[str, Any]: 결정된 정책 변수들 (e.g., {"base_rate": 0.05, "income_tax": 0.1, ...})
+            PolicyDecisionResultDTO: 결정된 정책 및 상태 업데이트.
         """
         pass

@@ -9,12 +9,12 @@ def government_setup():
     # We patch TaxService
     with patch('simulation.agents.government.TaxService') as mock_tax_service_cls, \
          patch('simulation.agents.government.MinistryOfEducation') as mock_education_ministry_cls, \
-         patch('simulation.agents.government.WelfareService') as mock_welfare_service_cls, \
+         patch('simulation.agents.government.WelfareManager') as mock_welfare_manager_cls, \
          patch('simulation.agents.government.InfrastructureManager') as mock_infra_manager_cls:
 
         mock_tax_service_instance = mock_tax_service_cls.return_value
         mock_education_ministry_instance = mock_education_ministry_cls.return_value
-        mock_welfare_service_instance = mock_welfare_service_cls.return_value
+        mock_welfare_manager_instance = mock_welfare_manager_cls.return_value
         mock_infra_manager_instance = mock_infra_manager_cls.return_value
 
         # Configure mock_tax_service defaults
@@ -52,7 +52,7 @@ def government_setup():
             "government": government,
             "mock_tax_service": mock_tax_service_instance,
             "mock_education_ministry": mock_education_ministry_instance,
-            "mock_welfare_service": mock_welfare_service_instance,
+            "mock_welfare_manager": mock_welfare_manager_instance,
             "mock_infra_manager": mock_infra_manager_instance,
             "mock_config": mock_config
         }
@@ -190,6 +190,9 @@ def test_deficit_spending_blocked_beyond_limit(deficit_government_setup):
     # Simulate FinanceSystem denying the bond issuance
     government.finance_system.issue_treasury_bonds.return_value = (None, [])
     
+    # Also simulate settlement failure because funds are missing
+    government.settlement_system.transfer.return_value = False
+
     txs = government.provide_household_support(target_agent, 500, current_tick=1)
 
     # Should return empty list because bond failed

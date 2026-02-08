@@ -58,3 +58,7 @@ class PolicyLockoutManager:
     def get_lockout_end_tick(self, tag: PolicyActionTag) -> Optional[int]:
         """Returns the tick when the lockout expires, or None if not locked."""
         return self._lockouts.get(tag)
+
+    def get_locked_tags(self, current_tick: int) -> List[PolicyActionTag]:
+        """Returns a list of currently locked policy tags."""
+        return [tag for tag in self._lockouts if self.is_locked(tag, current_tick)]

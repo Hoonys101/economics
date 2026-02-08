@@ -26,6 +26,7 @@ from simulation.components.engines.production_engine import ProductionEngine
 from simulation.components.engines.sales_engine import SalesEngine
 from simulation.dtos.context_dtos import PayrollProcessingContext, FinancialTransactionContext, SalesContext
 
+from simulation.components.firm_order_processor import FirmOrderProcessor, FirmExecutionContext
 from simulation.utils.shadow_logger import log_shadow
 from modules.finance.api import InsufficientFundsError, IFinancialEntity, ICreditFrozen
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
@@ -97,6 +98,12 @@ class Firm(ILearningAgent, IFinancialEntity, IOrchestratorAgent, ICreditFrozen, 
         self.finance_engine = FinanceEngine()
         self.production_engine = ProductionEngine()
         self.sales_engine = SalesEngine()
+
+        # Inventory Manager (Composition)
+        self.inventory_manager = InventoryManager(self.id, self._inventory, self.production_state.inventory_quality)
+
+        # Order Processor (Composition)
+        self.order_processor = FirmOrderProcessor()
 
         # Initialize core attributes in State
         self.production_state.specialization = specialization
@@ -391,48 +398,29 @@ class Firm(ILearningAgent, IFinancialEntity, IOrchestratorAgent, ICreditFrozen, 
 
     @override
     def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0) -> bool:
-        self._add_inventory_internal(item_id, quantity, quality)
-        return True
+        return self.inventory_manager.add_item(item_id, quantity, transaction_id, quality)
 
     @override
     def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool:
-        if quantity < 0: return False
-        current = self._inventory.get(item_id, 0.0)
-        if current < quantity: return False
-        self._inventory[item_id] = current - quantity
-        if self._inventory[item_id] <= 1e-9:
-             del self._inventory[item_id]
-        return True
+        return self.inventory_manager.remove_item(item_id, quantity, transaction_id)
 
     @override
     def get_quantity(self, item_id: str) -> float:
-        return self._inventory.get(item_id, 0.0)
+        return self.inventory_manager.get_quantity(item_id)
 
     @override
     def get_quality(self, item_id: str) -> float:
-        return self.inventory_quality.get(item_id, 1.0)
+        return self.inventory_manager.get_quality(item_id)
 
     @override
     def get_all_items(self) -> Dict[str, float]:
         """Returns a copy of the inventory."""
-        return self._inventory.copy()
+        return self.inventory_manager.get_all_items()
 
     @override
     def clear_inventory(self) -> None:
         """Clears the inventory."""
-        self._inventory.clear()
-        self.inventory_quality.clear()
-
-    def _add_inventory_internal(self, item_id: str, quantity: float, quality: float):
-        current_inventory = self.get_quantity(item_id)
-        current_quality = self.get_quality(item_id)
-
-        total_qty = current_inventory + quantity
-        if total_qty > 0:
-            new_avg_quality = ((current_inventory * current_quality) + (quantity * quality)) / total_qty
-            self.inventory_quality[item_id] = new_avg_quality
-
-        self._inventory[item_id] = total_qty # Implementation
+        self.inventory_manager.clear_inventory()
 
     def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
         brand_snapshot = {
@@ -468,7 +456,7 @@ class Firm(ILearningAgent, IFinancialEntity, IOrchestratorAgent, ICreditFrozen, 
     def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
         self.current_production = self.production_engine.produce(
             self.production_state,
-            self, # IInventoryHandler
+            self.inventory_manager, # IInventoryHandler
             self.hr_state,
             self.config,
             current_time,
@@ -632,84 +620,26 @@ class Firm(ILearningAgent, IFinancialEntity, IOrchestratorAgent, ICreditFrozen, 
     def _execute_internal_order(self, order: Order, government: Optional[Any], current_time: int, market_context: Optional[MarketContextDTO] = None) -> None:
         """
         Command Bus: Routes internal orders to the correct engine.
+        Delegates to FirmOrderProcessor.
         """
-        def get_amount(o: Order) -> float:
-            return o.monetary_amount['amount'] if o.monetary_amount else o.quantity
-
-        def get_currency(o: Order) -> CurrencyCode:
-             return o.monetary_amount['currency'] if o.monetary_amount else DEFAULT_CURRENCY
-
-        gov_id = government.id if government else None
-
-        fin_ctx = FinancialTransactionContext(
-            government_id=gov_id,
-            tax_rates={},
-            market_context=market_context or {},
-            shareholder_registry=None
+        context = FirmExecutionContext(
+            firm_id=self.id,
+            wallet=self.wallet,
+            production_state=self.production_state,
+            finance_state=self.finance_state,
+            hr_state=self.hr_state,
+            sales_state=self.sales_state,
+            production_engine=self.production_engine,
+            finance_engine=self.finance_engine,
+            hr_engine=self.hr_engine,
+            sales_engine=self.sales_engine,
+            settlement_system=self.settlement_system,
+            config=self.config,
+            logger=self.logger,
+            firm_proxy=self
         )
 
-        if order.order_type == "SET_TARGET":
-            self.production_state.production_target = order.quantity
-            self.logger.info(f"INTERNAL_EXEC | Firm {self.id} set production target to {order.quantity:.1f}")
-
-        elif order.order_type == "INVEST_AUTOMATION":
-            amount = get_amount(order)
-            tx = self.finance_engine.invest_in_automation(
-                self.finance_state, self.id, self.wallet, amount, fin_ctx, current_time
-            )
-            if tx:
-                if self.settlement_system and self.settlement_system.transfer(self, government, amount, "Automation", currency=tx.currency):
-                    gained = self.production_engine.invest_in_automation(
-                        self.production_state, amount, self.config.automation_cost_per_pct
-                    )
-                    self.finance_engine.record_expense(self.finance_state, amount, tx.currency)
-                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {amount:.1f} in automation (+{gained:.4f}).")
-
-        elif order.order_type == "PAY_TAX":
-            amount = get_amount(order)
-            currency = get_currency(order)
-            reason = order.item_id
-
-            tx = self.finance_engine.pay_ad_hoc_tax(
-                self.finance_state, self.id, self.wallet, amount, currency, reason, fin_ctx, current_time
-            )
-            if tx:
-                if self.settlement_system and self.settlement_system.transfer(self, government, amount, reason, currency=currency):
-                    self.finance_engine.record_expense(self.finance_state, amount, currency)
-
-        elif order.order_type == "INVEST_RD":
-            amount = get_amount(order)
-            tx = self.finance_engine.invest_in_rd(
-                self.finance_state, self.id, self.wallet, amount, fin_ctx, current_time
-            )
-            if tx:
-                if self.settlement_system and self.settlement_system.transfer(self, government, amount, "R&D", currency=tx.currency):
-                    self.finance_engine.record_expense(self.finance_state, amount, tx.currency)
-                    revenue = self.finance_state.last_revenue
-                    if self.production_engine.execute_rd_outcome(self.production_state, self.hr_state, revenue, amount, current_time):
-                        self.logger.info(f"INTERNAL_EXEC | Firm {self.id} R&D SUCCESS (Budget: {amount:.1f})")
-
-        elif order.order_type == "INVEST_CAPEX":
-            amount = get_amount(order)
-            tx = self.finance_engine.invest_in_capex(
-                self.finance_state, self.id, self.wallet, amount, fin_ctx, current_time
-            )
-            if tx:
-                if self.settlement_system and self.settlement_system.transfer(self, government, amount, "CAPEX", currency=tx.currency):
-                    self.production_engine.invest_in_capex(self.production_state, amount, self.config.capital_to_output_ratio)
-                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {amount:.1f} in CAPEX.")
-
-        elif order.order_type == "SET_DIVIDEND":
-            self.finance_state.dividend_rate = order.quantity
-
-        elif order.order_type == "SET_PRICE":
-            # Just logs logic, actual pricing happens in post_ask
-            pass
-
-        elif order.order_type == "FIRE":
-            self.hr_engine.fire_employee(
-                self.hr_state, self.id, self, self.wallet, self.settlement_system, order.target_agent_id, order.price
-            )
+        self.order_processor.process_order(order, context, government, current_time, market_context)
 
     def _calculate_invisible_hand_price(self, market_snapshot: MarketSnapshotDTO, current_tick: int) -> None:
         if not market_snapshot.market_signals: return
