@@ -134,8 +134,8 @@ class AnalyticsSystem:
                 # Access via snapshot for purity
                 if hasattr(h, 'create_snapshot_dto'):
                     snap = h.create_snapshot_dto()
-                    total_labor_income += snap.econ_state.last_labor_income
-                    total_capital_income += snap.econ_state.last_capital_income
+                    total_labor_income += snap.econ_state.labor_income_this_tick
+                    total_capital_income += snap.econ_state.capital_income_this_tick
 
             # Flatten assets for DB
             hh_assets = tracker_indicators.get("total_household_assets", 0.0)
