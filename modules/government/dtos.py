@@ -31,6 +31,8 @@ class TaxBracketDTO:
 class FiscalPolicyDTO:
     """State of the current fiscal policy."""
     progressive_tax_brackets: List[TaxBracketDTO]
+    corporate_tax_rate: float = 0.2
+    income_tax_rate: float = 0.1
     # TBD: Other fiscal tools like subsidies, welfare
 
 @dataclass

@@ -122,8 +122,14 @@ class AnalyticsSystem:
 
             # Recalculate some aggregates if needed or rely on tracker.
             # PersistenceManager logic:
-            total_labor_income = sum(getattr(h, "labor_income_this_tick", 0.0) for h in world_state.households)
-            total_capital_income = sum(getattr(h, "capital_income_this_tick", 0.0) for h in world_state.households)
+            total_labor_income = sum(
+                h.tick_analytics.get("labor_income_this_tick", 0.0)
+                for h in world_state.households if hasattr(h, 'tick_analytics')
+            )
+            total_capital_income = sum(
+                h.tick_analytics.get("capital_income_this_tick", 0.0)
+                for h in world_state.households if hasattr(h, 'tick_analytics')
+            )
 
             # Flatten assets for DB
             hh_assets = tracker_indicators.get("total_household_assets", 0.0)

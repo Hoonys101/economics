@@ -9,7 +9,6 @@ from simulation.models import Order, Transaction
 from simulation.brands.brand_manager import BrandManager
 from simulation.core_agents import Household
 from simulation.markets.order_book_market import OrderBookMarket
-from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext, FiscalContext, DecisionInputDTO
 from simulation.dtos.config_dtos import FirmConfigDTO
@@ -344,6 +343,22 @@ class Firm(ILearningAgent, IFinancialEntity, IOrchestratorAgent, ICreditFrozen, 
     def record_sale(self, item_id: str, quantity: float, current_tick: int) -> None:
         self.sales_state.inventory_last_sale_tick[item_id] = current_tick
 
+    def record_revenue(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """
+        Records revenue for the current turn.
+        Required by GoodsTransactionHandler.
+        """
+        if currency not in self.finance_state.revenue_this_turn:
+            self.finance_state.revenue_this_turn[currency] = 0.0
+        self.finance_state.revenue_this_turn[currency] += amount
+
+    def record_expense(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """
+        Records expense for the current tick.
+        Required by GoodsTransactionHandler.
+        """
+        self.finance_engine.record_expense(self.finance_state, amount, currency)
+
     def liquidate_assets(self, current_tick: int = -1) -> Dict[CurrencyCode, float]:
         """Liquidate assets using Protocol Purity."""
         # 1. Write off Inventory
@@ -420,8 +435,14 @@ class Firm(ILearningAgent, IFinancialEntity, IOrchestratorAgent, ICreditFrozen, 
         self._inventory[item_id] = total_qty
 
     def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
+        brand_snapshot = {
+            "brand_awareness": self.brand_manager.brand_awareness,
+            "perceived_quality": self.brand_manager.perceived_quality,
+            "quality": self.get_quality(item_id),
+        }
         return self.sales_engine.post_ask(
-            self.sales_state, self.id, item_id, price, quantity, market, current_tick, self.get_quantity(item_id)
+            self.sales_state, self.id, item_id, price, quantity, market, current_tick, self.get_quantity(item_id),
+            brand_snapshot=brand_snapshot
         )
 
     def calculate_brand_premium(self, market_data: Dict[str, Any]) -> float:
@@ -586,7 +607,11 @@ class Firm(ILearningAgent, IFinancialEntity, IOrchestratorAgent, ICreditFrozen, 
             else:
                 external_orders.append(order)
 
-        self.sales_engine.check_and_apply_dynamic_pricing(self.sales_state, external_orders, current_time)
+        self.sales_engine.check_and_apply_dynamic_pricing(
+            self.sales_state, external_orders, current_time,
+            config=self.config,
+            unit_cost_estimator=lambda item_id: self.finance_engine.get_estimated_unit_cost(self.finance_state, item_id, self.config)
+        )
 
         if market_snapshot:
              self._calculate_invisible_hand_price(market_snapshot, current_time)
@@ -711,8 +736,11 @@ class Firm(ILearningAgent, IFinancialEntity, IOrchestratorAgent, ICreditFrozen, 
         transactions = []
         gov_id = government.id if government else None
 
-        # Need tax rates. Government provides?
-        tax_rates = {"income_tax": 0.2} # Placeholder
+        # Extract dynamic tax rates from MarketContext
+        fiscal_policy = market_context.get("fiscal_policy")
+        corporate_tax_rate = fiscal_policy.corporate_tax_rate if fiscal_policy else 0.2
+
+        tax_rates = {"income_tax": corporate_tax_rate}
 
         # 1. Payroll
         tx_payroll = self.hr_engine.process_payroll(
@@ -843,96 +871,3 @@ class Firm(ILearningAgent, IFinancialEntity, IOrchestratorAgent, ICreditFrozen, 
                 next_market_data=next_market_data,
             )
 
-    # Compatibility methods for other agents/tests
-    # e.g., hr property exposing employees if accessed directly?
-    # No, we removed self.hr. Any code accessing firm.hr.employees will break.
-    # We should add a property if needed, or fix call sites.
-    # The user instruction was "Rewriting Firm tests". This implies we accept breaking changes.
-    # However, other agents (like Government) might access firm internal structure?
-    # No, usually they access via public API.
-    # HRDepartment was "SoC Refactor" previously.
-
-    @property
-    def hr(self):
-        # Backward compatibility proxy
-        class HRProxy:
-            def __init__(self, firm):
-                self.firm = firm
-            @property
-            def employees(self):
-                return self.firm.hr_state.employees
-            @employees.setter
-            def employees(self, value):
-                self.firm.hr_state.employees = value
-            def get_total_labor_skill(self):
-                return self.firm.hr_engine.get_total_labor_skill(self.firm.hr_state)
-            def get_avg_skill(self):
-                 return self.firm.hr_engine.get_avg_skill(self.firm.hr_state)
-            @property
-            def employee_wages(self):
-                return self.firm.hr_state.employee_wages
-            def hire(self, employee, wage, current_tick):
-                return self.firm.hr_engine.hire(self.firm.hr_state, employee, wage, current_tick)
-            def fire_employee(self, employee_id, severance_pay):
-                # Note: This is instruction only, execution logic handled in command bus usually.
-                # But for legacy handler compatibility:
-                return self.firm.hr_engine.fire_employee(self.firm.hr_state, self.firm.id, self.firm, self.firm.wallet, self.firm.settlement_system, employee_id, severance_pay)
-
-            def remove_employee(self, employee):
-                return self.firm.hr_engine.remove_employee(self.firm.hr_state, employee)
-        return HRProxy(self)
-
-    @property
-    def finance(self):
-        # Backward compatibility proxy
-        class FinanceProxy:
-            def __init__(self, firm):
-                self.firm = firm
-            @property
-            def balance(self):
-                return self.firm.wallet.get_all_balances()
-            def get_balance(self, cur):
-                return self.firm.wallet.get_balance(cur)
-            @property
-            def revenue_this_turn(self):
-                return self.firm.finance_state.revenue_this_turn
-            @property
-            def expenses_this_tick(self):
-                return self.firm.finance_state.expenses_this_tick
-            @property
-            def consecutive_loss_turns(self):
-                return self.firm.finance_state.consecutive_loss_turns
-            @property
-            def profit_history(self):
-                 return self.firm.finance_state.profit_history
-            def get_book_value_per_share(self):
-                return {'amount': self.firm.get_book_value_per_share(), 'currency': DEFAULT_CURRENCY}
-            def get_market_cap(self, p):
-                return self.firm.get_market_cap(p)
-            def calculate_valuation(self, ctx):
-                return {'amount': self.firm.calculate_valuation(ctx), 'currency': DEFAULT_CURRENCY}
-            def get_financial_snapshot(self):
-                return self.firm.get_financial_snapshot()
-
-            def check_bankruptcy(self):
-                return self.firm.finance_engine.check_bankruptcy(self.firm.finance_state, self.firm.config)
-
-            def check_cash_crunch(self):
-                return False
-
-            def get_inventory_value(self):
-                return 0.0
-
-            def trigger_emergency_liquidation(self):
-                return []
-
-            def record_revenue(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY):
-                self.firm.finance_state.revenue_this_turn[currency] += amount
-
-            def record_expense(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY):
-                self.firm.finance_state.expenses_this_tick[currency] += amount
-
-            def __getattr__(self, name):
-                return getattr(self.firm.finance_state, name)
-
-        return FinanceProxy(self)

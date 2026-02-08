@@ -1,26 +1,21 @@
 import pytest
 from unittest.mock import MagicMock
-from simulation.components.production_department import ProductionDepartment
-from simulation.systems.technology_manager import TechnologyManager
 from simulation.firms import Firm
+from simulation.systems.technology_manager import TechnologyManager
+from modules.simulation.api import AgentCoreConfigDTO
 
 class TestPhase23Production:
     @pytest.fixture
     def config(self):
         mock_config = MagicMock()
-        # Use lower-case attributes to match FirmConfigDTO usage in ProductionDepartment
         mock_config.labor_alpha = 0.5
         mock_config.labor_elasticity_min = 0.1
         mock_config.automation_labor_reduction = 0.0
         mock_config.capital_depreciation_rate = 0.0
-        # Mock GOODS structure
         mock_config.goods = {"food": {"sector": "FOOD"}}
-        # Tech manager might still expect upper case for global economy params if it uses config_module
-        # But ProductionDepartment uses FirmConfigDTO which is lowercase.
-        # Let's set both just in case TechManager uses this same mock object differently.
+        # Tech manager params
         mock_config.TECH_FERTILIZER_UNLOCK_TICK = 0
         mock_config.TECH_DIFFUSION_RATE = 0.0
-        # Fix: Ensure multiplier is a float, not a Mock, because MagicMock attributes always exist
         mock_config.TECH_FERTILIZER_MULTIPLIER = 3.0
         mock_config.TECH_UNLOCK_COST_THRESHOLD = 5000.0
         mock_config.TECH_UNLOCK_PROB_CAP = 0.1
@@ -29,36 +24,41 @@ class TestPhase23Production:
     @pytest.fixture
     def firm_setup(self, config):
         def _create_firm(firm_id):
-            firm = MagicMock(spec=Firm)
-            firm.id = firm_id
-            firm.sector = "FOOD"
-            firm.specialization = "food"
-            firm.productivity_factor = 1.0
-            firm.capital_stock = 100.0
-            firm.automation_level = 0.0
-            firm.base_quality = 1.0
-            firm.inventory = {}
-            firm.input_inventory = {}
-            firm.hr = MagicMock()
-            firm.hr.employees = [MagicMock()] # At least one employee
-            firm.hr.get_total_labor_skill.return_value = 100.0
-            firm.hr.get_avg_skill.return_value = 1.0
+            core_config = AgentCoreConfigDTO(
+                id=firm_id,
+                name=f"Firm_{firm_id}",
+                logger=MagicMock(),
+                memory_interface=None,
+                value_orientation="PROFIT",
+                initial_needs={}
+            )
+            firm = Firm(
+                core_config=core_config,
+                engine=MagicMock(),
+                specialization="food",
+                productivity_factor=1.0,
+                config_dto=config,
+                initial_inventory={},
+                loan_market=None,
+                sector="FOOD"
+            )
+            # Setup State
+            firm.production_state.capital_stock = 100.0
+            firm.production_state.automation_level = 0.0
+            firm.production_state.base_quality = 1.0
 
-            # Create real ProductionDepartment for the mock firm
-            firm.production_department = ProductionDepartment(firm, config)
-            # Inject production department back into firm.production if needed by other components,
-            # but here we test production_department directly or via produce
+            # HR State - Need employees
+            mock_emp = MagicMock()
+            mock_emp.labor_skill = 100.0 # Match original test skill
+            firm.hr_state.employees = [mock_emp]
 
-            # Add inventory method
-            firm.add_inventory = MagicMock()
-
-            return firm, firm.production_department
+            return firm
         return _create_firm
 
     def test_production_boost_from_fertilizer_tech(self, config, firm_setup):
         # 1. Create two identical firms
-        firm_A, prod_A = firm_setup(1)
-        firm_B, prod_B = firm_setup(2)
+        firm_A = firm_setup(1)
+        firm_B = firm_setup(2)
 
         # 2. Create TechnologyManager and unlock Tech
         tech_manager = TechnologyManager(config, MagicMock())
@@ -70,10 +70,11 @@ class TestPhase23Production:
         tech_manager._adopt(firm_A.id, tech_node)
 
         # 4. Run produce
-        # Note: ProductionDepartment.produce returns quantity
+        firm_A.produce(10, tech_manager)
+        firm_B.produce(10, tech_manager)
 
-        qty_A = prod_A.produce(10, tech_manager)
-        qty_B = prod_B.produce(10, tech_manager)
+        qty_A = firm_A.get_quantity("food")
+        qty_B = firm_B.get_quantity("food")
 
         # 5. Assert production_A is approx 3.0 * production_B
         assert qty_B > 0

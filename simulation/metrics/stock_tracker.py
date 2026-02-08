@@ -66,9 +66,9 @@ class StockMarketTracker:
         
         # 기업 실적
         # Refactor: Use finance component
-        firm_assets = firm.finance.balance
-        firm_profit = firm.finance.current_profit
-        dividend_paid = firm.finance.dividends_paid_last_tick
+        firm_assets = firm.wallet.get_all_balances()
+        firm_profit = firm.finance_state.current_profit
+        dividend_paid = firm.finance_state.dividends_paid_last_tick
         market_cap = firm.get_market_cap(stock_price)
         
         return {

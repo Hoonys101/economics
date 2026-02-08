@@ -116,8 +116,12 @@ class GoodsTransactionHandler(ITransactionHandler):
 
         # 2. Seller Financial Records (Revenue)
         if isinstance(seller, Firm):
-            seller.finance.record_revenue(trade_value)
-            seller.finance.sales_volume_this_tick += tx.quantity
+            if hasattr(seller, 'record_revenue'):
+                seller.record_revenue(trade_value)
+
+            # Service Firms track volume
+            if hasattr(seller, 'sales_volume_this_tick'):
+                seller.sales_volume_this_tick += tx.quantity
 
             # WO-157: Record Sale for Velocity Tracking
             if hasattr(seller, 'record_sale'):
@@ -125,7 +129,8 @@ class GoodsTransactionHandler(ITransactionHandler):
 
         # 3. Buyer Financial Records (Expense) - WO-124 Fix
         if isinstance(buyer, Firm):
-            buyer.finance.record_expense(buyer_total_cost)
+            if hasattr(buyer, 'record_expense'):
+                buyer.record_expense(buyer_total_cost)
 
         # 4. Household Consumption Tracking
         if isinstance(buyer, Household):

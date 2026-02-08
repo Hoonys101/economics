@@ -86,7 +86,7 @@ class EconomicIndicatorsViewModel:
         # Based on config, firms have liquidity need.
         firm_count = len(firms)
         if firm_count > 0:
-            # Firm needs are stored in 'needs' dict just like households in BaseAgent
+            # Firm needs are stored in 'needs' dict just like households in core_agents
             total_liquidity_need = sum(f.needs.get('liquidity_need', 0) for f in firms)
             firm_needs['liquidity_need'] = total_liquidity_need / firm_count
 

@@ -359,6 +359,9 @@ class Government(ICurrencyHolder, IFinancialEntity):
                 market_data=market_data
             )
             self.fiscal_policy = self.tax_service.determine_fiscal_stance(snapshot)
+            # Inject dynamic tax rates from Government state into the policy DTO
+            self.fiscal_policy.corporate_tax_rate = self.corporate_tax_rate
+            self.fiscal_policy.income_tax_rate = self.income_tax_rate
 
         # 1. 정책 엔진 실행 (Actuator 및 Shadow Mode 로직 포함)
         decision = self.policy_engine.decide(self, self.sensory_data, current_tick, central_bank)

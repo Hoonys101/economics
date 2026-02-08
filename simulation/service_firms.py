@@ -1,12 +1,16 @@
 import logging
 import math
-from typing import Optional, Dict, Any, List, override
+from typing import Optional, Dict, Any, List, override, TYPE_CHECKING
 
 from simulation.firms import Firm
 from simulation.ai.enums import Personality
 from simulation.models import Order
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine
+
+if TYPE_CHECKING:
+    from simulation.loan_market import LoanMarket
 
 logger = logging.getLogger(__name__)
 
@@ -18,38 +22,31 @@ class ServiceFirm(Firm):
 
     def __init__(
         self,
-        id: int,
-        initial_capital: float,
-        initial_liquidity_need: float,
+        core_config: AgentCoreConfigDTO,
+        engine: IDecisionEngine,
         specialization: str,
         productivity_factor: float,
-        decision_engine: Any,
-        value_orientation: str,
         config_dto: FirmConfigDTO,
         initial_inventory: Optional[Dict[str, float]] = None,
-        loan_market: Optional[Any] = None,
-        logger: Optional[logging.Logger] = None,
+        loan_market: Optional["LoanMarket"] = None,
         sector: str = "SERVICE",
         personality: Optional[Personality] = None,
     ) -> None:
         super().__init__(
-            id,
-            initial_capital,
-            initial_liquidity_need,
-            specialization,
-            productivity_factor,
-            decision_engine,
-            value_orientation,
-            config_dto,
-            initial_inventory,
-            loan_market,
-            logger,
-            sector,
-            personality,
+            core_config=core_config,
+            engine=engine,
+            specialization=specialization,
+            productivity_factor=productivity_factor,
+            config_dto=config_dto,
+            initial_inventory=initial_inventory,
+            loan_market=loan_market,
+            sector=sector,
+            personality=personality,
         )
         # Service Specific Metrics
         self.capacity_this_tick: float = 0.0
         self.waste_this_tick: float = 0.0
+        self.sales_volume_this_tick: float = 0.0
 
     def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
         """
@@ -65,8 +62,10 @@ class ServiceFirm(Firm):
         self.capital_stock *= (1.0 - depreciation_rate)
 
         # 2. 생산 용량 계산 (Cobb-Douglas)
-        total_labor_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
-        if not self.employees:
+        # Access employees via HR State (Protocol Purity)
+        employees = self.hr_state.employees
+        total_labor_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in employees)
+        if not employees:
             total_labor_skill = 1.0
         capital = max(self.capital_stock, 0.01)
 
@@ -84,9 +83,9 @@ class ServiceFirm(Firm):
 
         # Phase 15: Quality Calculation (Same as Goods)
         avg_skill = 0.0
-        if self.employees:
-            total_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in self.employees if hasattr(emp, 'labor_skill'))
-            avg_skill = total_skill / len(self.employees)
+        if employees:
+            total_skill = sum(getattr(emp, 'labor_skill', 1.0) for emp in employees)
+            avg_skill = total_skill / len(employees)
 
         item_config = self.config.goods.get(self.specialization, {})
         quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
@@ -145,7 +144,7 @@ class ServiceFirm(Firm):
 
     @override
     def get_agent_data(self) -> Dict[str, Any]:
-        """AI 의사결정에 필요한 에이전트의 현재 상태 데이터를 반환합니다."""
+        """AI Data Provider."""
         data = super().get_agent_data()
         data["capacity_this_tick"] = self.capacity_this_tick
         data["sales_volume_this_tick"] = self.sales_volume_this_tick

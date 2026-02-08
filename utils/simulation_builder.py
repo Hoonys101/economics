@@ -321,13 +321,13 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
         for _ in range(num_to_hire_per_firm):
             if unemployed_households:
                 household_to_hire = unemployed_households.pop()
-                firm.hr.employees.append(household_to_hire)
+                firm.hr_state.employees.append(household_to_hire)
                 household_to_hire._econ_state.employer_id = firm.id
                 household_to_hire._econ_state.is_employed = (
                     True  # Explicitly set is_employed to True
                 )
                 household_to_hire._econ_state.current_wage = config.INITIAL_WAGE
-                firm.hr.employee_wages[household_to_hire.id] = config.INITIAL_WAGE
+                firm.hr_state.employee_wages[household_to_hire.id] = config.INITIAL_WAGE
                 logger.info(
                     f"Firm {firm.id} initially hired Household {household_to_hire.id}.",
                     extra={"tick": 0, "agent_id": firm.id, "tags": ["hiring", "init"]},

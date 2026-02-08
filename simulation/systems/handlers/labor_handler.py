@@ -4,6 +4,7 @@ from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction
 from simulation.core_agents import Household, Skill
 from simulation.firms import Firm
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +82,7 @@ class LaborTransactionHandler(ITransactionHandler):
                 # Need to remove from previous employer
                 previous_employer = context.agents.get(seller.employer_id) or context.inactive_agents.get(seller.employer_id)
                 if isinstance(previous_employer, Firm):
-                    previous_employer.hr.remove_employee(seller)
+                    previous_employer.hr_engine.remove_employee(previous_employer.hr_state, seller)
 
             seller.is_employed = True
             seller.employer_id = buyer.id
@@ -95,13 +96,13 @@ class LaborTransactionHandler(ITransactionHandler):
         # 2. Firm Logic (Buyer)
         if isinstance(buyer, Firm):
             # HR Update
-            if seller not in buyer.hr.employees:
-                buyer.hr.hire(seller, tx.price, context.time)
+            if seller not in buyer.hr_state.employees:
+                buyer.hr_engine.hire(buyer.hr_state, seller, tx.price, context.time)
             else:
-                 buyer.hr.employee_wages[seller.id] = tx.price
+                 buyer.hr_state.employee_wages[seller.id] = tx.price
 
             # Finance Update
-            buyer.finance.record_expense(buyer_total_cost)
+            buyer.finance_engine.record_expense(buyer.finance_state, buyer_total_cost, DEFAULT_CURRENCY)
 
             # Research Labor Productivity Boost
             if tx.transaction_type == "research_labor" and isinstance(seller, Household):

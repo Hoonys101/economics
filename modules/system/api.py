@@ -25,10 +25,12 @@ class MarketContextDTO(TypedDict):
     """
     exchange_rates: Dict[CurrencyCode, float]
     benchmark_rates: Dict[str, float]  # e.g., {'cpi': 1.02, 'central_bank_rate': 0.05}
+    fiscal_policy: "FiscalPolicyDTO"
 
 if TYPE_CHECKING:
     from simulation.agents import Agent
     from simulation.dtos.api import SimulationState
+    from modules.government.dtos import FiscalPolicyDTO
 
 # --- DTOs for Market Stability Signals ---
 

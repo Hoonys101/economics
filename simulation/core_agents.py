@@ -6,7 +6,6 @@ from collections import deque, defaultdict
 import random
 import copy
 
-from simulation.base_agent import BaseAgent
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.models import Order, Skill, Talent
 from simulation.ai.api import (
@@ -41,6 +40,7 @@ from modules.household.dtos import (
     BioStateDTO, EconStateDTO, SocialStateDTO,
     HouseholdSnapshotDTO
 )
+from modules.analytics.dtos import AgentTickAnalyticsDTO
 from modules.household.services import HouseholdSnapshotAssembler
 from modules.household.api import (
     OrchestrationContextDTO
@@ -292,7 +292,7 @@ class Household(
         self.decision_engine.loan_market = loan_market
         self.decision_engine.logger = self.logger
 
-        super().__init__(core_config, engine)
+        # super().__init__(core_config, engine) # Removed BaseAgent
 
         # Ensure BaseAgent uses the same wallet as EconStateDTO
         self._wallet = self._econ_state.wallet
@@ -338,6 +338,23 @@ class Household(
     @is_active.setter
     def is_active(self, value: bool):
         self._bio_state.is_active = value
+
+    @property
+    def tick_analytics(self) -> AgentTickAnalyticsDTO:
+        """
+        Returns transient tick analytics data.
+        Refactored to avoid getattr probing.
+        """
+        return AgentTickAnalyticsDTO(
+            run_id=0, # Unknown to agent
+            time=0,   # Unknown to agent property context
+            agent_id=self.id,
+            labor_income_this_tick=self._econ_state.labor_income_this_tick,
+            capital_income_this_tick=self._econ_state.capital_income_this_tick,
+            consumption_this_tick=self._econ_state.current_consumption,
+            utility_this_tick=None, # TBD
+            savings_rate_this_tick=None # TBD
+        )
 
     # --- ICreditFrozen Implementation ---
 

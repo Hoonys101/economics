@@ -1,11 +1,13 @@
 import pytest
 from unittest.mock import Mock, MagicMock
 from simulation.firms import Firm
-from simulation.components.sales_department import SalesDepartment
-from simulation.components.finance_department import FinanceDepartment
+from simulation.components.engines.sales_engine import SalesEngine
+from simulation.components.state.firm_state_models import SalesState
 from simulation.models import Order, Transaction
 from simulation.systems.transaction_processor import TransactionProcessor
+from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
 from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.api import AgentCoreConfigDTO
 
 class TestWO157DynamicPricing:
 
@@ -36,69 +38,54 @@ class TestWO157DynamicPricing:
         config.GOODS = {}
         return config
 
-    @pytest.fixture
-    def firm(self, mock_config):
-        # Create a partial mock firm
-        firm = Mock(spec=Firm)
-        firm.id = 1
-        firm.config = mock_config
-        firm.logger = MagicMock()
-        firm.inventory_last_sale_tick = {}
-        firm.last_prices = {"widget": 100.0}
-
-        # Attach real departments (or mocks if preferred, but we want to test logic)
-        # We test SalesDepartment logic, so we need real SalesDepartment
-        firm.sales = SalesDepartment(firm, mock_config)
-
-        # Mock Finance for unit cost
-        firm.finance = Mock(spec=FinanceDepartment)
-        firm.finance.get_estimated_unit_cost.return_value = 50.0 # Floor price
-
-        return firm
-
     def test_record_sale_updates_tick(self, mock_config):
-        # We can't use Firm() constructor easily due to dependencies,
-        # so we test the method on a real instance or a mocked instance with the method attached.
-        # Since I added record_sale to Firm, I should use a real Firm or monkeypatch.
-        # Let's instantiate a real Firm with minimal deps.
-
-        decision_engine = Mock()
-        decision_engine.loan_market = Mock()
-
+        # Construct Firm with minimal mocks
+        core_config = AgentCoreConfigDTO(
+            id=1, name="Firm_1", logger=Mock(), memory_interface=None, value_orientation="PROFIT", initial_needs={}
+        )
         firm = Firm(
-            id=1, initial_capital=1000.0, initial_liquidity_need=100.0,
-            specialization="widget", productivity_factor=1.0,
-            decision_engine=decision_engine, value_orientation="profit",
+            core_config=core_config,
+            engine=Mock(),
+            specialization="widget",
+            productivity_factor=1.0,
             config_dto=mock_config
         )
 
         firm.record_sale("widget", 10.0, 100)
-        assert firm.inventory_last_sale_tick["widget"] == 100
+        assert firm.sales_state.inventory_last_sale_tick["widget"] == 100
 
         firm.record_sale("widget", 5.0, 105)
-        assert firm.inventory_last_sale_tick["widget"] == 105
+        assert firm.sales_state.inventory_last_sale_tick["widget"] == 105
 
-    def test_dynamic_pricing_reduction(self, firm):
-        # Setup: Stale item
+    def test_dynamic_pricing_reduction(self, mock_config):
+        # Test SalesEngine logic directly
+        engine = SalesEngine()
+        state = SalesState()
+
         current_tick = 100
         last_sale = 80 # Diff 20 > Timeout 10
-        firm.inventory_last_sale_tick["widget"] = last_sale
+        state.inventory_last_sale_tick["widget"] = last_sale
 
         orders = [
             Order(1, "SELL", "widget", 10.0, 100.0, "market")
         ]
 
-        firm.sales.check_and_apply_dynamic_pricing(orders, current_tick)
+        def estimator(item_id): return 50.0
+
+        engine.check_and_apply_dynamic_pricing(state, orders, current_tick, mock_config, estimator)
 
         # Expect price reduction: 100.0 * 0.9 = 90.0
-        assert orders[0].price == 90.0
-        assert firm.last_prices["widget"] == 90.0
+        assert orders[0].price_limit == 90.0
+        assert state.last_prices["widget"] == 90.0
 
-    def test_dynamic_pricing_floor(self, firm):
+    def test_dynamic_pricing_floor(self, mock_config):
         # Setup: Stale item, price near floor
+        engine = SalesEngine()
+        state = SalesState()
+
         current_tick = 100
         last_sale = 80
-        firm.inventory_last_sale_tick["widget"] = last_sale
+        state.inventory_last_sale_tick["widget"] = last_sale
 
         # Floor is 50.0
         orders = [
@@ -107,24 +94,31 @@ class TestWO157DynamicPricing:
 
         # 52 * 0.9 = 46.8 < 50.0
         # Should clap to 50.0
-        firm.sales.check_and_apply_dynamic_pricing(orders, current_tick)
+        def estimator(item_id): return 50.0
 
-        assert orders[0].price == 50.0
-        assert firm.last_prices["widget"] == 50.0
+        engine.check_and_apply_dynamic_pricing(state, orders, current_tick, mock_config, estimator)
 
-    def test_dynamic_pricing_not_stale(self, firm):
+        assert orders[0].price_limit == 50.0
+        assert state.last_prices["widget"] == 50.0
+
+    def test_dynamic_pricing_not_stale(self, mock_config):
         # Setup: Fresh item
+        engine = SalesEngine()
+        state = SalesState()
+
         current_tick = 100
         last_sale = 95 # Diff 5 < Timeout 10
-        firm.inventory_last_sale_tick["widget"] = last_sale
+        state.inventory_last_sale_tick["widget"] = last_sale
 
         orders = [
             Order(1, "SELL", "widget", 10.0, 100.0, "market")
         ]
 
-        firm.sales.check_and_apply_dynamic_pricing(orders, current_tick)
+        def estimator(item_id): return 50.0
 
-        assert orders[0].price == 100.0
+        engine.check_and_apply_dynamic_pricing(state, orders, current_tick, mock_config, estimator)
+
+        assert orders[0].price_limit == 100.0
 
     def test_transaction_processor_calls_record_sale(self, mock_config):
         processor = TransactionProcessor(mock_config)
@@ -133,20 +127,20 @@ class TestWO157DynamicPricing:
         state.settlement_system = Mock()
         state.settlement_system.transfer.return_value = True
         state.market_data = {}
+        # Mock taxation system to return iterable intents
+        state.taxation_system = Mock()
+        state.taxation_system.calculate_tax_intents.return_value = []
 
         buyer = Mock()
         buyer.assets = 1000.0 # Sufficient funds
         buyer.inventory = {}
         buyer.inventory_quality = {}
 
-        seller = Mock(spec=Firm) # Must be instance of Firm
-        # We need to ensure isinstance(seller, Firm) is true. Mock(spec=Firm) works.
-        # But we need record_sale method on it.
+        # Seller needs to be a Firm instance logic-wise, but Mock(spec=Firm) is safer for unit test
+        seller = Mock(spec=Firm)
         seller.record_sale = Mock()
-        seller.finance = Mock()
-        seller.finance.sales_volume_this_tick = 0.0
-        seller.inventory = {}
-        seller.input_inventory = {}
+        # Mock other needed attributes/methods if TransactionProcessor accesses them
+        # TransactionProcessor checks: isinstance(seller, Firm) -> seller.record_sale(...)
 
         state.agents = {1: buyer, 2: seller}
 
@@ -156,6 +150,10 @@ class TestWO157DynamicPricing:
             transaction_type="goods", time=200
         )
         state.transactions = [tx]
+
+        # Register Handler
+        handler = GoodsTransactionHandler()
+        processor.register_handler("goods", handler)
 
         processor.execute(state)
 

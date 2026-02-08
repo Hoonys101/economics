@@ -361,3 +361,19 @@ class FinanceEngine:
     def record_expense(self, state: FinanceState, amount: float, currency: CurrencyCode):
         """Public method to record expense (e.g. after successful transaction execution)."""
         self._record_expense(state, amount, currency)
+
+    def get_estimated_unit_cost(self, state: FinanceState, item_id: str, config: FirmConfigDTO) -> float:
+        """
+        Estimates unit cost for pricing floors.
+        Uses a heuristic based on total expenses and production, or a configured base cost.
+        """
+        # 1. Try Config Base Cost
+        goods_config = config.goods.get(item_id, {})
+        base_cost = goods_config.get("base_cost", 0.0)
+        if base_cost > 0:
+            return base_cost
+
+        # 2. Heuristic: Total Expenses / Total Production (if available)
+        # Note: Production data is in ProductionState, not FinanceState.
+        # So we rely on a simplified heuristic or default.
+        return 5.0 # Safe default

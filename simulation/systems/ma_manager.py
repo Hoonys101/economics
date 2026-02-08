@@ -33,10 +33,7 @@ class MAManager:
              self.settlement_system = None
 
     def _get_balance(self, firm: "Firm") -> float:
-        bal = firm.finance.balance
-        if isinstance(bal, dict):
-            return bal.get(DEFAULT_CURRENCY, 0.0)
-        return float(bal)
+        return firm.wallet.get_balance(DEFAULT_CURRENCY)
 
     def process_market_exits_and_entries(self, current_tick: int):
         """
@@ -74,13 +71,13 @@ class MAManager:
                 continue
             
             # Standard Distress (Friendly M&A)
-            if firm.finance.consecutive_loss_turns >= self.bankruptcy_loss_threshold:
+            if firm.finance_state.consecutive_loss_turns >= self.bankruptcy_loss_threshold:
                  preys.append(firm)
             elif firm_balance < avg_assets * 0.2:
                 preys.append(firm)
             
             # Phase 21: Hostile Takeover Criteria
-            intrinsic_value = firm.valuation
+            intrinsic_value = firm.finance_state.valuation
             market_cap = firm.get_market_cap()
             threshold = getattr(self.config, "HOSTILE_TAKEOVER_DISCOUNT_THRESHOLD", 0.7)
 
@@ -88,7 +85,7 @@ class MAManager:
                 hostile_targets.append(firm)
 
             # Predator Criteria
-            if firm_balance > avg_assets * 1.5 and firm.finance.current_profit.get(DEFAULT_CURRENCY, 0) > 0:
+            if firm_balance > avg_assets * 1.5 and firm.finance_state.current_profit.get(DEFAULT_CURRENCY, 0) > 0:
                 predators.append(firm)
 
         # 2. M&A Matching Loop
@@ -188,12 +185,12 @@ class MAManager:
                  self.settlement_system.transfer(predator, self.simulation.government, price, f"M&A Acquisition {prey.id} (State)", tick=tick)
         
         # 2. Asset Transfer
-        predator.production.add_capital(prey.capital_stock)
+        predator.capital_stock += prey.capital_stock
         
         if hasattr(prey, "automation_level") and hasattr(predator, "automation_level"):
             if prey.automation_level > predator.automation_level:
                 new_level = (predator.automation_level + prey.automation_level) / 2.0
-                predator.production.set_automation_level(new_level)
+                predator.automation_level = new_level
 
         # Inventory
         for item, qty in prey.get_all_items().items():
@@ -207,16 +204,16 @@ class MAManager:
         # [0] = Hostile, [1] = Friendly
         retention_rate = retention_rates[0] if is_hostile else retention_rates[1]
 
-        for emp in list(prey.hr.employees):
+        for emp in list(prey.hr_state.employees):
             if random.random() > retention_rate:
                 # Fire
                 emp.quit()
                 fired_count += 1
             else:
                 # Retain
-                prey.hr.remove_employee(emp)
-                wage = prey.hr.employee_wages.get(emp.id, 10.0)
-                predator.hr.hire(emp, wage, tick)
+                prey.hr_engine.remove_employee(prey.hr_state, emp)
+                wage = prey.hr_state.employee_wages.get(emp.id, 10.0)
+                predator.hr_engine.hire(predator.hr_state, emp, wage, tick)
                 emp.employer_id = predator.id
                 retained_count += 1
                 
@@ -265,7 +262,7 @@ class MAManager:
         # 4. Escheat Cash to Government (State Capture) - Handled by record_liquidation
         
         # 5. Clear Employees
-        for emp in list(firm.hr.employees):
+        for emp in list(firm.hr_state.employees):
             emp.quit()
             
         firm.is_active = False

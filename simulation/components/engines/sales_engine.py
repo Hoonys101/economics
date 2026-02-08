@@ -27,7 +27,8 @@ class SalesEngine:
         quantity: float,
         market: OrderBookMarket,
         current_tick: int,
-        inventory_quantity: float
+        inventory_quantity: float,
+        brand_snapshot: Optional[Dict[str, Any]] = None
     ) -> Order:
         """
         Posts an ask order to the market.
@@ -45,7 +46,8 @@ class SalesEngine:
             item_id=item_id,
             quantity=actual_quantity,
             price_limit=price,
-            market_id=item_id, # Assuming market_id is item_id for goods
+            market_id=market.id,
+            brand_info=brand_snapshot,
             currency=DEFAULT_CURRENCY
         )
 
@@ -94,11 +96,49 @@ class SalesEngine:
         self,
         state: SalesState,
         orders: List[Order],
-        current_time: int
+        current_time: int,
+        config: Optional[FirmConfigDTO] = None,
+        unit_cost_estimator: Optional[Any] = None
     ) -> None:
         """
         Overrides prices in orders if dynamic pricing logic dictates.
-        (Currently a placeholder or simple logic if needed)
+        WO-157: Applies dynamic pricing discounts to stale inventory.
         """
-        # Logic from SalesDepartment: currently just pass-through or basic checks
-        pass
+        if not config:
+            return
+
+        sale_timeout = config.sale_timeout_ticks
+        reduction_factor = config.dynamic_price_reduction_factor
+        from dataclasses import replace
+
+        for i, order in enumerate(orders):
+            # Check if order is a goods order (has item_id)
+            if not hasattr(order, "item_id") or not order.item_id:
+                continue
+
+            # Alias check for backward compatibility
+            side = getattr(order, "side", getattr(order, "order_type", None))
+
+            if side == "SELL":
+                item_id = order.item_id
+                last_sale = state.inventory_last_sale_tick.get(item_id, 0)
+
+                # Check Staleness
+                if (current_time - last_sale) > sale_timeout:
+                    # Apply Discount
+                    original_price = getattr(order, "price_limit", getattr(order, "price", 0.0))
+                    discounted_price = original_price * reduction_factor
+
+                    # Check Cost Floor if estimator provided
+                    final_price = discounted_price
+                    if unit_cost_estimator:
+                        unit_cost = unit_cost_estimator(item_id)
+                        final_price = max(discounted_price, unit_cost)
+
+                    # Apply if lower
+                    if final_price < original_price:
+                        new_order = replace(order, price_limit=final_price)
+                        orders[i] = new_order
+
+                        # Update price memory
+                        state.last_prices[item_id] = final_price

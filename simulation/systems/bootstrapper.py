@@ -38,7 +38,7 @@ class Bootstrapper:
         for firm in firms:
             if not firm.is_active:
                 continue
-            if len(firm.hr.employees) == 0:
+            if len(firm.hr_state.employees) == 0:
                 workers_needed = min(MAX_FORCED_WORKERS, len(unemployed))
                 for _ in range(workers_needed):
                     if not unemployed:
@@ -46,7 +46,8 @@ class Bootstrapper:
                     worker = unemployed.pop(0)
                     worker.employer_id = firm.id
                     worker.wage = DEFAULT_WAGE
-                    firm.hr.hire(worker, DEFAULT_WAGE, 0) # Genesis Tick
+                    # Use HR Engine directly
+                    firm.hr_engine.hire(firm.hr_state, worker, DEFAULT_WAGE, 0) # Genesis Tick
                     assigned_count += 1
                 logger.info(f'BOOTSTRAPPER | Force-assigned {workers_needed} workers to Firm {firm.id}')
 
@@ -94,8 +95,8 @@ class Bootstrapper:
 
 
             # 2. Capital Injection (Demand Side)
-            # Refactor: Use finance.balance
-            current_balance = firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+            # Refactor: Use wallet directly
+            current_balance = firm.wallet.get_balance(DEFAULT_CURRENCY)
             if current_balance < Bootstrapper.MIN_CAPITAL:
                 diff = Bootstrapper.MIN_CAPITAL - current_balance
                 if settlement_system and central_bank:
@@ -103,8 +104,7 @@ class Bootstrapper:
                     logger.info(f"BOOTSTRAPPER | Injected {diff:.2f} capital to Firm {firm.id} via Settlement.")
                 else:
                     # Fallback (Should not be used in Genesis mode, but keeps compatibility)
-                    # Use finance.credit explicitly
-                    firm.finance.credit(diff, "Legacy Bootstrap", currency=DEFAULT_CURRENCY)
+                    firm.deposit(diff, DEFAULT_CURRENCY)
                     logger.warning(f"BOOTSTRAPPER | Legacy injection of {diff:.2f} to Firm {firm.id} (No SettlementSystem).")
 
         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")
