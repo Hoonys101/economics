@@ -5,8 +5,9 @@ from simulation.models import Transaction, Order
 from simulation.components.state.firm_state_models import FinanceState
 from modules.finance.api import IFinancialEntity, InsufficientFundsError, IShareholderRegistry
 from modules.finance.wallet.api import IWallet
-from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, MarketContextDTO
+from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
+from simulation.dtos.context_dtos import FinancialTransactionContext
 
 if TYPE_CHECKING:
     from simulation.dtos.config_dtos import FirmConfigDTO
@@ -25,25 +26,24 @@ class FinanceEngine:
         firm_id: int,
         wallet: IWallet,
         config: FirmConfigDTO,
-        government: Any,
-        shareholder_registry: IShareholderRegistry,
         current_time: int,
-        market_context: MarketContextDTO,
+        context: FinancialTransactionContext,
         inventory_value: float # Passed from orchestrator
     ) -> List[Transaction]:
         """
         Consolidates all financial outflow generation logic.
         """
         transactions = []
+        gov_id = context.government_id
 
         # 1. Holding Cost
         holding_cost = inventory_value * config.inventory_holding_cost_rate
-        if holding_cost > 0:
+        if holding_cost > 0 and gov_id is not None:
             self._record_expense(state, holding_cost, DEFAULT_CURRENCY)
             transactions.append(
                 Transaction(
                     buyer_id=firm_id,
-                    seller_id=government.id,
+                    seller_id=gov_id,
                     item_id="holding_cost",
                     quantity=1.0,
                     price=holding_cost,
@@ -59,12 +59,12 @@ class FinanceEngine:
         current_balance = wallet.get_balance(DEFAULT_CURRENCY)
         payment = min(current_balance, fee)
 
-        if payment > 0:
+        if payment > 0 and gov_id is not None:
             self._record_expense(state, payment, DEFAULT_CURRENCY)
             transactions.append(
                 Transaction(
                     buyer_id=firm_id,
-                    seller_id=government.id,
+                    seller_id=gov_id,
                     item_id="firm_maintenance",
                     quantity=1.0,
                     price=payment,
@@ -77,7 +77,7 @@ class FinanceEngine:
 
         # 3. Profit Distribution (Dividends & Bailout Repayment)
         txs_public = self._process_profit_distribution(
-            state, firm_id, config, shareholder_registry, government, current_time, market_context
+            state, firm_id, config, current_time, context
         )
         transactions.extend(txs_public)
 
@@ -98,14 +98,14 @@ class FinanceEngine:
         state: FinanceState,
         firm_id: int,
         config: FirmConfigDTO,
-        shareholder_registry: IShareholderRegistry,
-        government: Any,
         current_time: int,
-        market_context: MarketContextDTO
+        context: FinancialTransactionContext
     ) -> List[Transaction]:
         """Internal helper for dividends and bailout repayment."""
         transactions = []
-        exchange_rates = market_context['exchange_rates']
+        exchange_rates = context.market_context.get('exchange_rates', {})
+        gov_id = context.government_id
+        registry = context.shareholder_registry
 
         # Helper
         def convert(amt, cur):
@@ -122,14 +122,14 @@ class FinanceEngine:
 
         # 2. Bailout Repayment
         usd_profit = state.current_profit.get(DEFAULT_CURRENCY, 0.0)
-        if state.has_bailout_loan and usd_profit > 0:
+        if state.has_bailout_loan and usd_profit > 0 and gov_id is not None:
             repayment_ratio = config.bailout_repayment_ratio
             repayment = usd_profit * repayment_ratio
 
             transactions.append(
                 Transaction(
                     buyer_id=firm_id,
-                    seller_id=government.id,
+                    seller_id=gov_id,
                     item_id="bailout_repayment",
                     quantity=1.0,
                     price=repayment,
@@ -147,7 +147,7 @@ class FinanceEngine:
 
         # 3. Dividends
         state.dividends_paid_last_tick = 0.0
-        shareholders = shareholder_registry.get_shareholders_of_firm(firm_id)
+        shareholders = registry.get_shareholders_of_firm(firm_id) if registry else []
 
         for cur, profit in state.current_profit.items():
             distributable_profit = max(0, profit * state.dividend_rate)
@@ -186,13 +186,11 @@ class FinanceEngine:
              state.current_profit[cur] = 0.0
              state.revenue_this_turn[cur] = 0.0
              state.cost_this_turn[cur] = 0.0
-             # Note: revenue_this_tick and expenses_this_tick are reset in finalize_tick
 
         return transactions
 
     def check_bankruptcy(self, state: FinanceState, config: FirmConfigDTO):
         """Checks bankruptcy condition based on consecutive losses."""
-        # Check primary currency profit as proxy
         primary_profit = state.current_profit.get(DEFAULT_CURRENCY, 0.0)
 
         if primary_profit < 0:
@@ -207,133 +205,159 @@ class FinanceEngine:
     def calculate_valuation(
         self,
         state: FinanceState,
-        wallet: IFinancialEntity,
+        wallet: IWallet,
         config: FirmConfigDTO,
         inventory_value: float,
-        market_context: Optional[MarketContextDTO]
+        capital_stock: float,
+        context: Optional[FinancialTransactionContext]
     ) -> float:
         """
         Calculates firm valuation.
-        Note: Keeps IFinancialEntity for wallet here as we rely on 'assets' for simple valuation,
-        or we should switch to IWallet for consistency if we use get_balance.
-        Original code used wallet.get_balance if available.
-        Let's try to stick to IWallet if possible, but Firm.calculate_valuation passes 'self'.
-        If we want strict typing, Firm should pass self.wallet and we change type here.
-        Let's change to IWallet for consistency with other methods.
         """
-        exchange_rates = market_context['exchange_rates'] if market_context else {DEFAULT_CURRENCY: 1.0}
+        exchange_rates = context.market_context.get('exchange_rates', {}) if context else {DEFAULT_CURRENCY: 1.0}
 
         def convert(amt, cur):
             rate = exchange_rates.get(cur, 1.0) if cur != DEFAULT_CURRENCY else 1.0
             return amt * rate
 
-        # Total Assets (Cash + Inventory + Capital)
         total_assets_val = 0.0
-        # Cash
-        if hasattr(wallet, 'get_all_balances'):
-             # IWallet path
-             for cur, amount in wallet.get_all_balances().items():
-                 total_assets_val += convert(amount, cur)
-        else:
-             # Fallback IFinancialEntity path (assets property)
-             total_assets_val = wallet.assets
+        for cur, amount in wallet.get_all_balances().items():
+             total_assets_val += convert(amount, cur)
 
-        total_assets_val += inventory_value + state.capital_stock # Assume capital stock in primary val
+        total_assets_val += inventory_value + capital_stock
 
         avg_profit = sum(state.profit_history) / len(state.profit_history) if state.profit_history else 0.0
         valuation = total_assets_val + max(0.0, avg_profit) * config.valuation_per_multiplier
 
-        state.valuation = valuation # Cache
+        state.valuation = valuation
         return valuation
 
     def invest_in_automation(
         self,
         state: FinanceState,
-        agent: IFinancialEntity,
+        firm_id: int,
         wallet: IWallet,
         amount: float,
-        government: Any,
-        settlement_system: Any
-    ) -> bool:
+        context: FinancialTransactionContext,
+        current_time: int
+    ) -> Optional[Transaction]:
         """
-        Executes investment in automation.
+        Creates investment transaction for automation.
         """
-        # Balance check via Wallet
         current_balance = wallet.get_balance(DEFAULT_CURRENCY)
         if current_balance < amount:
-            return False
+            return None
 
-        if not settlement_system or not government:
-            return False
+        if context.government_id is None:
+            return None
 
-        # Transfer via Agent (IFinancialEntity)
-        return settlement_system.transfer(agent, government, amount, "Automation", currency=DEFAULT_CURRENCY)
+        return Transaction(
+            buyer_id=firm_id,
+            seller_id=context.government_id,
+            item_id="Automation",
+            quantity=1.0,
+            price=amount,
+            market_id="system",
+            transaction_type="investment",
+            time=current_time,
+            currency=DEFAULT_CURRENCY
+        )
 
     def invest_in_rd(
         self,
         state: FinanceState,
-        agent: IFinancialEntity,
+        firm_id: int,
         wallet: IWallet,
         amount: float,
-        government: Any,
-        settlement_system: Any
-    ) -> bool:
+        context: FinancialTransactionContext,
+        current_time: int
+    ) -> Optional[Transaction]:
         """
-        Executes investment in R&D. Records expense.
+        Creates investment transaction for R&D.
         """
         current_balance = wallet.get_balance(DEFAULT_CURRENCY)
         if current_balance < amount:
-            return False
+            return None
 
-        if not settlement_system or not government:
-            return False
+        if context.government_id is None:
+            return None
 
-        if settlement_system.transfer(agent, government, amount, "R&D", currency=DEFAULT_CURRENCY):
-            self._record_expense(state, amount, DEFAULT_CURRENCY)
-            return True
-        return False
+        return Transaction(
+            buyer_id=firm_id,
+            seller_id=context.government_id,
+            item_id="R&D",
+            quantity=1.0,
+            price=amount,
+            market_id="system",
+            transaction_type="investment",
+            time=current_time,
+            currency=DEFAULT_CURRENCY
+        )
 
     def invest_in_capex(
         self,
         state: FinanceState,
-        agent: IFinancialEntity,
+        firm_id: int,
         wallet: IWallet,
         amount: float,
-        government: Any,
-        settlement_system: Any
-    ) -> bool:
+        context: FinancialTransactionContext,
+        current_time: int
+    ) -> Optional[Transaction]:
         """
-        Executes investment in CAPEX.
+        Creates investment transaction for CAPEX.
         """
         current_balance = wallet.get_balance(DEFAULT_CURRENCY)
         if current_balance < amount:
-            return False
+            return None
 
-        if not settlement_system or not government:
-            return False
+        if context.government_id is None:
+            return None
 
-        return settlement_system.transfer(agent, government, amount, "CAPEX", currency=DEFAULT_CURRENCY)
+        return Transaction(
+            buyer_id=firm_id,
+            seller_id=context.government_id,
+            item_id="CAPEX",
+            quantity=1.0,
+            price=amount,
+            market_id="system",
+            transaction_type="investment",
+            time=current_time,
+            currency=DEFAULT_CURRENCY
+        )
 
     def pay_ad_hoc_tax(
         self,
         state: FinanceState,
-        agent: IFinancialEntity,
+        firm_id: int,
         wallet: IWallet,
         amount: float,
         currency: CurrencyCode,
         reason: str,
-        government: Any,
-        settlement_system: Any,
+        context: FinancialTransactionContext,
         current_time: int
-    ) -> bool:
+    ) -> Optional[Transaction]:
         """
-        Pays an ad-hoc tax.
+        Creates tax payment transaction.
         """
         current_balance = wallet.get_balance(currency)
         if current_balance < amount:
-            return False
+            return None
 
-        if settlement_system.transfer(agent, government, amount, reason, currency=currency):
-            self._record_expense(state, amount, currency)
-            return True
-        return False
+        if context.government_id is None:
+            return None
+
+        return Transaction(
+            buyer_id=firm_id,
+            seller_id=context.government_id,
+            item_id=reason,
+            quantity=1.0,
+            price=amount,
+            market_id="system",
+            transaction_type="tax",
+            time=current_time,
+            currency=currency
+        )
+
+    def record_expense(self, state: FinanceState, amount: float, currency: CurrencyCode):
+        """Public method to record expense (e.g. after successful transaction execution)."""
+        self._record_expense(state, amount, currency)

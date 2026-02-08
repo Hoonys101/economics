@@ -65,6 +65,13 @@ class CentralBank(ICurrencyHolder):
         Purchases government bonds, adding them to the Central Bank's balance sheet.
         This is a key part of Quantitative Easing (QE).
         """
+        self.add_bond_to_portfolio(bond)
+
+    def add_bond_to_portfolio(self, bond: Any) -> None:
+        """
+        Adds a bond to the portfolio.
+        Protocol method expected by FinanceSystem.
+        """
         self.bonds.append(bond)
         logger.info(
             f"CENTRAL_BANK_QE | Purchased bond {bond.id} for {bond.face_value:.2f}. "

@@ -18,12 +18,12 @@ from simulation.dtos import DecisionContext, FiscalContext, MacroFinancialContex
 
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.portfolio import Portfolio
-from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IOrchestratorAgent, IInventoryHandler
 
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.systems.api import LifecycleContext, MarketInteractionContext, LearningUpdateContext, ILearningAgent
-from modules.finance.api import IFinancialEntity
+from modules.finance.api import IFinancialEntity, ICreditFrozen
 from modules.simulation.api import IEducated
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.finance.wallet.wallet import Wallet
@@ -68,10 +68,13 @@ class Household(
     HouseholdLifecycleMixin,
     HouseholdReproductionMixin,
     HouseholdStateAccessMixin,
-    BaseAgent,
     ILearningAgent,
     IEmployeeDataProvider,
-    IEducated
+    IEducated,
+    IFinancialEntity,
+    IOrchestratorAgent,
+    ICreditFrozen,
+    IInventoryHandler
 ):
     """
     Household Agent (Facade).
@@ -189,10 +192,24 @@ class Household(
             initial_assets_record=initial_assets_record if initial_assets_record is not None else 0.0
         )
 
-        super().__init__(core_config, engine)
+        # Composition: Initialize Core Attributes manually (No BaseAgent)
+        self._core_config = core_config
+        self.decision_engine = engine
+        self.id = core_config.id
+        self.name = core_config.name
+        self.logger = core_config.logger
+        self.memory_v2 = core_config.memory_interface
+        self.value_orientation = core_config.value_orientation
+        self.needs = core_config.initial_needs.copy()
 
-        # Sync EconState wallet with BaseAgent wallet (since BaseAgent creates a new one)
-        self._econ_state.wallet = self._wallet
+        # ICreditFrozen
+        self._credit_frozen_until_tick = 0
+
+        # Pre-State Data for AI Learning
+        self._pre_state_data: Dict[str, Any] = {}
+
+        # Sync Wallet
+        self._wallet = self._econ_state.wallet
 
         # --- Value Orientation (3 Pillars) ---
         mapping = self.config.value_orientation_mapping
@@ -295,6 +312,42 @@ class Household(
             f"HOUSEHOLD_INIT | Household {self.id} initialized (Decomposed).",
             extra={"tags": ["household_init"]}
         )
+
+    # --- IOrchestratorAgent Implementation ---
+
+    def get_core_config(self) -> AgentCoreConfigDTO:
+        return self._core_config
+
+    def get_current_state(self) -> AgentStateDTO:
+        return AgentStateDTO(
+            assets=self._econ_state.wallet.get_all_balances(),
+            inventory=self._econ_state.inventory.copy(),
+            is_active=self.is_active
+        )
+
+    def load_state(self, state: AgentStateDTO) -> None:
+        self._econ_state.wallet.load_balances(state.assets)
+        self._econ_state.inventory.clear()
+        self._econ_state.inventory.update(state.inventory)
+        self.is_active = state.is_active
+
+    @property
+    def is_active(self) -> bool:
+        return self._bio_state.is_active
+
+    @is_active.setter
+    def is_active(self, value: bool):
+        self._bio_state.is_active = value
+
+    # --- ICreditFrozen Implementation ---
+
+    @property
+    def credit_frozen_until_tick(self) -> int:
+        return self._credit_frozen_until_tick
+
+    @credit_frozen_until_tick.setter
+    def credit_frozen_until_tick(self, value: int) -> None:
+        self._credit_frozen_until_tick = value
 
     # --- IFinancialEntity Implementation ---
 
@@ -469,3 +522,37 @@ class Household(
         """Clears the inventory."""
         self._econ_state.inventory.clear()
         self._econ_state.inventory_quality.clear()
+
+    @override
+    def get_agent_data(self) -> Dict[str, Any]:
+        """AI Data Provider."""
+        return {
+            "assets": self._econ_state.wallet.get_all_balances(),
+            "needs": self._bio_state.needs.copy(),
+            "inventory": self._econ_state.inventory.copy(),
+            "is_active": self.is_active,
+            "is_employed": self._econ_state.is_employed,
+            "labor_skill": self._econ_state.labor_skill,
+            "current_wage": self._econ_state.current_wage,
+            "social_status": self._social_state.social_status
+        }
+
+    def get_pre_state_data(self) -> Dict[str, Any]:
+        return self._pre_state_data
+
+    def update_pre_state_data(self):
+        self._pre_state_data = self.get_agent_data()
+
+    def update_learning(self, context: LearningUpdateContext) -> None:
+        """Called by PostSequence to update AI models."""
+        reward = context["reward"]
+        next_agent_data = context["next_agent_data"]
+        next_market_data = context["next_market_data"]
+
+        # Delegate to AI Engine if supported
+        if hasattr(self.decision_engine, 'ai_engine'):
+             self.decision_engine.ai_engine.update_learning_v2(
+                reward=reward,
+                next_agent_data=next_agent_data,
+                next_market_data=next_market_data,
+            )

@@ -10,6 +10,7 @@ from simulation.ai_model import AIEngineRegistry
 from simulation.finance.api import ISettlementSystem
 from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.api import AgentCoreConfigDTO
 
 logger = logging.getLogger(__name__)
 
@@ -114,18 +115,24 @@ class ImmigrationManager:
             # Talent is randomized
             talent = Talent(max(0.5, random.gauss(1.0, 0.2)), {})
 
-            household = Household(
+            core_config = AgentCoreConfigDTO(
                 id=agent_id,
+                value_orientation=value_orientation,
+                initial_needs=initial_needs,
+                name=f"Immigrant_{agent_id}",
+                logger=logger,
+                memory_interface=None # Immigrants start fresh
+            )
+
+            household = Household(
+                core_config=core_config,
+                engine=household_decision_engine,
                 talent=talent,
                 goods_data=goods_data,
-                initial_assets=0.0, # Start with 0, grant applied below
-                initial_needs=initial_needs,
-                decision_engine=household_decision_engine,
-                value_orientation=value_orientation,
                 personality=personality,
                 config_dto=hh_config_dto,
                 risk_aversion=risk_aversion,
-                logger=logger
+                initial_assets_record=0.0
             )
 
             # Set specific immigrant traits

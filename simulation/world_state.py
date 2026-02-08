@@ -190,10 +190,15 @@ class WorldState:
                     m2_totals[cur] = m2_totals.get(cur, 0.0) - amount
 
                 # 2. Add Deposits
-                # Bank.deposits is Dict[str, Deposit]. Deposit has amount and currency.
-                if hasattr(holder, 'deposits'):
+                if hasattr(holder, 'get_total_deposits'):
+                    # New Architecture: DepositManager Facade
+                    total_dep = holder.get_total_deposits()
+                    # Assuming DepositManager aggregates to DEFAULT_CURRENCY or we should expand this for MC later
+                    m2_totals["USD"] = m2_totals.get("USD", 0.0) + total_dep
+                elif hasattr(holder, 'deposits'):
+                    # Legacy
                     for deposit in holder.deposits.values():
-                        cur = getattr(deposit, 'currency', "USD") # Default to USD/DEFAULT
+                        cur = getattr(deposit, 'currency', "USD")
                         m2_totals[cur] = m2_totals.get(cur, 0.0) + deposit.amount
 
         return m2_totals

@@ -56,7 +56,13 @@ class HouseholdAI(BaseAIEngine):
         Common state: Assets, General Needs, Debt Ratio, Interest Burden
         """
         # 1. Asset Level
-        assets = agent_data.get("assets", 0)
+        assets_data = agent_data.get("assets", 0)
+        if isinstance(assets_data, dict):
+             from modules.system.api import DEFAULT_CURRENCY
+             assets = assets_data.get(DEFAULT_CURRENCY, 0.0)
+        else:
+             assets = float(assets_data)
+
         asset_bins = [100.0, 500.0, 2000.0, 10000.0]
         asset_idx = self._discretize(assets, asset_bins)
         
@@ -165,7 +171,13 @@ class HouseholdAI(BaseAIEngine):
 
         # 3. Investment Aggressiveness
         # 자산이 충분할 때만 투자 고려
-        assets = agent_data.get("assets", 0)
+        assets_data = agent_data.get("assets", 0)
+        if isinstance(assets_data, dict):
+             from modules.system.api import DEFAULT_CURRENCY
+             assets = assets_data.get(DEFAULT_CURRENCY, 0.0)
+        else:
+             assets = float(assets_data)
+
         if assets >= 500.0 and not is_starving:  # 최소 투자 자산 및 배고프지 않을 때
             self.last_investment_state = state
             inv_actions = list(range(len(self.AGGRESSIVENESS_LEVELS)))

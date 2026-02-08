@@ -15,8 +15,8 @@ from simulation.dtos import DecisionContext, FiscalContext, DecisionInputDTO
 from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
-from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
-from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO
+from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO, ICurrencyHolder
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler
 from dataclasses import replace
 
 # Orchestrator-Engine Refactor
@@ -25,10 +25,13 @@ from simulation.components.engines.hr_engine import HREngine
 from simulation.components.engines.finance_engine import FinanceEngine
 from simulation.components.engines.production_engine import ProductionEngine
 from simulation.components.engines.sales_engine import SalesEngine
+from simulation.dtos.context_dtos import PayrollProcessingContext, FinancialTransactionContext, SalesContext
 
 from simulation.utils.shadow_logger import log_shadow
-from modules.finance.api import InsufficientFundsError, IFinancialEntity
+from modules.finance.api import InsufficientFundsError, IFinancialEntity, ICreditFrozen
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
+from modules.finance.wallet.wallet import Wallet
+from modules.inventory.manager import InventoryManager
 from simulation.systems.api import ILearningAgent, LearningUpdateContext
 from simulation.systems.tech.api import FirmTechInfoDTO
 
@@ -44,10 +47,11 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+class Firm(ILearningAgent, IFinancialEntity, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder):
     """
     Firm Agent (Orchestrator).
     Manages state and delegates logic to stateless engines.
+    Refactored to Composition (No BaseAgent).
     """
 
     def __init__(
@@ -62,7 +66,25 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         sector: str = "FOOD",
         personality: Optional[Personality] = None,
     ) -> None:
-        super().__init__(core_config, engine)
+        # Composition: Initialize Core Attributes manually (No BaseAgent)
+        self._core_config = core_config
+        self.decision_engine = engine
+        self.id = core_config.id
+        self.name = core_config.name
+        self.logger = core_config.logger
+        self.memory_v2 = core_config.memory_interface
+        self.value_orientation = core_config.value_orientation
+        self.needs = core_config.initial_needs.copy()
+
+        # ICreditFrozen
+        self._credit_frozen_until_tick = 0
+
+        # Wallet & Inventory
+        self._wallet = Wallet(self.id, {})
+        self._inventory: Dict[str, float] = {} # Direct dict for IInventoryHandler
+
+        self.is_active = True
+
         self.config = config_dto
 
         # State Initialization
@@ -108,6 +130,38 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
 
         # Legacy/Compatibility attributes (mapped to State where possible or kept if transient)
         # These properties route to State
+
+    # --- IOrchestratorAgent Implementation ---
+
+    def get_core_config(self) -> AgentCoreConfigDTO:
+        return self._core_config
+
+    def get_current_state(self) -> AgentStateDTO:
+        return AgentStateDTO(
+            assets=self._wallet.get_all_balances(),
+            inventory=self._inventory.copy(),
+            is_active=self.is_active
+        )
+
+    def load_state(self, state: AgentStateDTO) -> None:
+        self._wallet.load_balances(state.assets)
+        self._inventory.clear()
+        self._inventory.update(state.inventory)
+        self.is_active = state.is_active
+
+    @property
+    def wallet(self) -> Wallet:
+        return self._wallet
+
+    # --- ICreditFrozen Implementation ---
+
+    @property
+    def credit_frozen_until_tick(self) -> int:
+        return self._credit_frozen_until_tick
+
+    @credit_frozen_until_tick.setter
+    def credit_frozen_until_tick(self, value: int) -> None:
+        self._credit_frozen_until_tick = value
 
     # --- Properties routing to State ---
 
@@ -255,6 +309,26 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
     def inventory_last_sale_tick(self) -> Dict[str, int]:
         return self.sales_state.inventory_last_sale_tick
 
+    @property
+    def prev_awareness(self) -> float:
+        return self.sales_state.prev_awareness
+
+    @prev_awareness.setter
+    def prev_awareness(self, value: float):
+        self.sales_state.prev_awareness = value
+
+    @property
+    def prev_avg_quality(self) -> float:
+        return self.sales_state.prev_avg_quality
+
+    @prev_avg_quality.setter
+    def prev_avg_quality(self, value: float):
+        self.sales_state.prev_avg_quality = value
+
+    @property
+    def last_revenue(self) -> float:
+        return self.finance_state.last_revenue
+
     # --- Methods ---
 
     def init_ipo(self, stock_market: StockMarket):
@@ -322,6 +396,17 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
     @override
     def get_quality(self, item_id: str) -> float:
         return self.inventory_quality.get(item_id, 1.0)
+
+    @override
+    def get_all_items(self) -> Dict[str, float]:
+        """Returns a copy of the inventory."""
+        return self._inventory.copy()
+
+    @override
+    def clear_inventory(self) -> None:
+        """Clears the inventory."""
+        self._inventory.clear()
+        self.inventory_quality.clear()
 
     def _add_inventory_internal(self, item_id: str, quantity: float, quality: float):
         current_inventory = self._inventory.get(item_id, 0)
@@ -519,7 +604,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
         )
         return external_orders, tactic
 
-    def _execute_internal_order(self, order: Order, government: Optional[Any], current_time: int) -> None:
+    def _execute_internal_order(self, order: Order, government: Optional[Any], current_time: int, market_context: Optional[MarketContextDTO] = None) -> None:
         """
         Command Bus: Routes internal orders to the correct engine.
         """
@@ -528,6 +613,15 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
 
         def get_currency(o: Order) -> CurrencyCode:
              return o.monetary_amount['currency'] if o.monetary_amount else DEFAULT_CURRENCY
+
+        gov_id = government.id if government else None
+
+        fin_ctx = FinancialTransactionContext(
+            government_id=gov_id,
+            tax_rates={},
+            market_context=market_context or {},
+            shareholder_registry=None
+        )
 
         if order.order_type == "SET_TARGET":
             self.production_state.production_target = order.quantity
@@ -545,23 +639,35 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
             amount = get_amount(order)
             currency = get_currency(order)
             reason = order.item_id
-            # Use engine for consistency
-            self.finance_engine.pay_ad_hoc_tax(
-                self.finance_state, self, self.wallet, amount, currency, reason, government, self.settlement_system, current_time
+
+            tx = self.finance_engine.pay_ad_hoc_tax(
+                self.finance_state, self.id, self.wallet, amount, currency, reason, fin_ctx, current_time
             )
+            if tx:
+                if self.settlement_system and self.settlement_system.transfer(self, government, amount, reason, currency=currency):
+                    self.finance_engine.record_expense(self.finance_state, amount, currency)
 
         elif order.order_type == "INVEST_RD":
             amount = get_amount(order)
-            if self.finance_engine.invest_in_rd(self.finance_state, self, self.wallet, amount, government, self.settlement_system):
-                revenue = self.finance_state.last_revenue
-                if self.production_engine.execute_rd_outcome(self.production_state, self.hr_state, revenue, amount, current_time):
-                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} R&D SUCCESS (Budget: {amount:.1f})")
+            tx = self.finance_engine.invest_in_rd(
+                self.finance_state, self.id, self.wallet, amount, fin_ctx, current_time
+            )
+            if tx:
+                if self.settlement_system and self.settlement_system.transfer(self, government, amount, "R&D", currency=tx.currency):
+                    self.finance_engine.record_expense(self.finance_state, amount, tx.currency)
+                    revenue = self.finance_state.last_revenue
+                    if self.production_engine.execute_rd_outcome(self.production_state, self.hr_state, revenue, amount, current_time):
+                        self.logger.info(f"INTERNAL_EXEC | Firm {self.id} R&D SUCCESS (Budget: {amount:.1f})")
 
         elif order.order_type == "INVEST_CAPEX":
             amount = get_amount(order)
-            if self.finance_engine.invest_in_capex(self.finance_state, self, self.wallet, amount, government, self.settlement_system):
-                self.production_engine.invest_in_capex(self.production_state, amount, self.config.capital_to_output_ratio)
-                self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {amount:.1f} in CAPEX.")
+            tx = self.finance_engine.invest_in_capex(
+                self.finance_state, self.id, self.wallet, amount, fin_ctx, current_time
+            )
+            if tx:
+                if self.settlement_system and self.settlement_system.transfer(self, government, amount, "CAPEX", currency=tx.currency):
+                    self.production_engine.invest_in_capex(self.production_state, amount, self.config.capital_to_output_ratio)
+                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {amount:.1f} in CAPEX.")
 
         elif order.order_type == "SET_DIVIDEND":
             self.finance_state.dividend_rate = order.quantity
@@ -603,6 +709,10 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
 
     def generate_transactions(self, government: Optional[Any], market_data: Dict[str, Any], shareholder_registry: IShareholderRegistry, current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
         transactions = []
+        gov_id = government.id if government else None
+
+        # Need tax rates. Government provides?
+        tax_rates = {"income_tax": 0.2} # Placeholder
 
         # 1. Payroll
         tx_payroll = self.hr_engine.process_payroll(
@@ -617,8 +727,15 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
             price = self.last_prices.get(item, 10.0)
             inventory_value += qty * price
 
+        fin_ctx = FinancialTransactionContext(
+            government_id=gov_id,
+            tax_rates=tax_rates,
+            market_context=market_context,
+            shareholder_registry=shareholder_registry
+        )
+
         tx_finance = self.finance_engine.generate_financial_transactions(
-            self.finance_state, self.id, self.wallet, self.config, government, shareholder_registry, current_time, market_context, inventory_value
+            self.finance_state, self.id, self.wallet, self.config, current_time, fin_ctx, inventory_value
         )
         transactions.extend(tx_finance)
 
@@ -663,6 +780,11 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
             )
          self.wallet.subtract(amount, DEFAULT_CURRENCY)
 
+    @override
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
+        """Implementation of ICurrencyHolder."""
+        return self.wallet.get_all_balances()
+
     # --- Facade Methods ---
 
     def get_book_value_per_share(self) -> float:
@@ -678,19 +800,36 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
 
     def calculate_valuation(self, market_context: MarketContextDTO = None) -> float:
         inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self.get_all_items())
+        # Wrap market_context in FinancialTransactionContext if needed, or update Engine to accept optional context
+        # Engine expects FinancialTransactionContext.
+        fin_ctx = None
+        if market_context:
+            fin_ctx = FinancialTransactionContext(
+                government_id=None, # Not needed for valuation?
+                tax_rates={},
+                market_context=market_context,
+                shareholder_registry=None
+            )
+
         return self.finance_engine.calculate_valuation(
-            self.finance_state, self.wallet, self.config, inventory_value, market_context
+            self.finance_state, self.wallet, self.config, inventory_value, self.capital_stock, fin_ctx
         )
 
     def get_financial_snapshot(self) -> Dict[str, Any]:
         inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self.get_all_items())
-        total_assets = self.wallet.get_balance(DEFAULT_CURRENCY) + inventory_value + self.capital_stock
+        cash = self.wallet.get_balance(DEFAULT_CURRENCY)
+        total_assets = cash + inventory_value + self.capital_stock
+        working_capital = cash + inventory_value # Simplified: Current Assets
+
         return {
              "wallet": MultiCurrencyWalletDTO(balances=self.wallet.get_all_balances()),
              "total_assets": total_assets,
              "total_debt": self.finance_state.total_debt,
              "retained_earnings": self.finance_state.retained_earnings,
-             "average_profit": sum(self.finance_state.profit_history)/len(self.finance_state.profit_history) if self.finance_state.profit_history else 0.0
+             "average_profit": sum(self.finance_state.profit_history)/len(self.finance_state.profit_history) if self.finance_state.profit_history else 0.0,
+             "working_capital": working_capital,
+             "ebit": self.finance_state.current_profit.get(DEFAULT_CURRENCY, 0.0), # Current EBIT proxy
+             "market_value_equity": self.get_market_cap()
         }
 
     def update_learning(self, context: LearningUpdateContext) -> None:
@@ -732,6 +871,15 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
             @property
             def employee_wages(self):
                 return self.firm.hr_state.employee_wages
+            def hire(self, employee, wage, current_tick):
+                return self.firm.hr_engine.hire(self.firm.hr_state, employee, wage, current_tick)
+            def fire_employee(self, employee_id, severance_pay):
+                # Note: This is instruction only, execution logic handled in command bus usually.
+                # But for legacy handler compatibility:
+                return self.firm.hr_engine.fire_employee(self.firm.hr_state, self.firm.id, self.firm, self.firm.wallet, self.firm.settlement_system, employee_id, severance_pay)
+
+            def remove_employee(self, employee):
+                return self.firm.hr_engine.remove_employee(self.firm.hr_state, employee)
         return HRProxy(self)
 
     @property

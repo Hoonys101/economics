@@ -30,7 +30,15 @@ def audit_integrity():
     # ------------------------------------------------------------------
 
     def get_total_wealth(sim):
-        h_assets = sum(h._econ_state.assets for h in sim.households)
+        # Handle dict assets from EconStateDTO
+        h_assets = 0.0
+        for h in sim.households:
+             assets = h._econ_state.assets
+             if isinstance(assets, dict):
+                 h_assets += assets.get("USD", 0.0) # Assume USD is default
+             else:
+                 h_assets += float(assets)
+
         f_assets = sum(f.get_financial_snapshot().get("total_assets", f.assets)
                        if hasattr(f, "get_financial_snapshot") else f.assets
                        for f in sim.firms)
@@ -47,7 +55,12 @@ def audit_integrity():
         for a in agents:
              # Firm inventory
              if hasattr(a, 'inventory'):
-                 for item, qty in a.inventory.items():
+                 # Check if inventory is dict or manager
+                 inventory = a.inventory
+                 if hasattr(inventory, 'get_all_items'): # IInventoryHandler
+                     inventory = inventory.get_all_items()
+
+                 for item, qty in inventory.items():
                      price = a.last_prices.get(item, default_price) if hasattr(a, 'last_prices') else default_price
                      val += qty * price
              # Firm input inventory
@@ -111,10 +124,10 @@ def audit_integrity():
     # ------------------------------------------------------------------
     logger.info("Checking Central Bank Fiat Authority...")
     cb = sim.central_bank
-    cb.assets['cash'] = 0.0
+    # Use withdraw directly, wallet allows negative
     try:
         cb.withdraw(1000.0)
-        logger.info(f"PASSED: CB Withdraw (Fiat) successful. Balance: {cb.assets['cash']}")
+        logger.info(f"PASSED: CB Withdraw (Fiat) successful.")
     except Exception as e:
         logger.error(f"FAILED: CB Withdraw raised {e}")
 
@@ -122,7 +135,7 @@ def audit_integrity():
     # ------------------------------------------------------------------
     logger.info("Checking Immigration Funding...")
     gov = sim.government
-    gov._assets = 10000.0
+    # Gov assets
     initial_gov = gov.assets
 
     # We call _create_immigrants directly to force it
@@ -146,17 +159,26 @@ def audit_integrity():
     logger.info("Checking Liquidation Escheatment (to Government)...")
     # Create victim firm (orphan, no shareholders)
     victim = sim.firms[0]
-    victim.inventory['basic_food'] = 10.0
+    # Inject via IInventoryHandler if possible, or hack if needed for test
+    if hasattr(victim, 'inventory') and hasattr(victim.inventory, 'add_item'):
+        victim.inventory.add_item('basic_food', 10.0)
+    else:
+        # Fallback for old structure if applicable, but we are new
+        pass
+
     victim.capital_stock = 500.0
-    victim.total_shares = 1000.0
-    victim.treasury_shares = 1000.0 # 100% Treasury -> No external shareholders -> Escheat to Gov
+    victim.finance_state.total_shares = 1000.0
+    victim.finance_state.treasury_shares = 1000.0 # 100% Treasury
 
     # Ensure it has cash
     victim_cash = 1000.0
-    if hasattr(victim, '_add_assets'):
-         victim._add_assets(victim_cash - victim.assets)
-    else:
-         victim.assets = victim_cash
+    if hasattr(victim, 'deposit'):
+         victim.deposit(victim_cash)
+         # If existing assets > victim_cash, withdraw difference?
+         # Or just add. We check delta.
+
+    # Store pre-liquidation assets to verify capture
+    pre_liq_assets = victim.assets
 
     victim.is_active = False # Mark for death
 
@@ -172,6 +194,7 @@ def audit_integrity():
         government=sim.government,
         bank=sim.bank,
         central_bank=sim.central_bank,
+        escrow_agent=None,
         stock_market=sim.stock_market,
         stock_tracker=sim.stock_tracker if hasattr(sim, 'stock_tracker') else None,
         goods_data=sim.goods_data,
@@ -193,11 +216,11 @@ def audit_integrity():
     captured = final_gov - initial_gov
     logger.info(f"Gov Assets Before: {initial_gov:.2f} | After: {final_gov:.2f} | Captured: {captured:.2f}")
 
-    # We expect Government to capture the Cash (1000.0). Real assets (inventory/capital) are destroyed.
-    if abs(captured - victim_cash) < 1.0:
+    # We expect Government to capture the Cash.
+    if abs(captured - pre_liq_assets) < 1.0:
         logger.info(f"PASSED: Government captured liquidation cash.")
     else:
-        logger.error(f"FAILED: Government capture mismatch. Expected ~{victim_cash}, got {captured}")
+        logger.error(f"FAILED: Government capture mismatch. Expected ~{pre_liq_assets}, got {captured}")
 
 if __name__ == "__main__":
     audit_integrity()

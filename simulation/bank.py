@@ -621,3 +621,6 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
             self.repay_loan(loan_id, amount)
         except Exception:
             pass
+
+    def get_total_deposits(self) -> float:
+        return self.deposit_manager.get_total_deposits()

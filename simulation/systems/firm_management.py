@@ -105,22 +105,32 @@ class FirmSystem:
         # Create Config DTO
         firm_config_dto = create_config_dto(self.config, FirmConfigDTO)
 
-        new_firm = instance_class(
+        # Create Core Config
+        from modules.simulation.api import AgentCoreConfigDTO
+        initial_needs = {"liquidity_need": getattr(self.config, "INITIAL_FIRM_LIQUIDITY_NEED_MEAN", 50.0)}
+
+        core_config = AgentCoreConfigDTO(
             id=new_firm_id,
-            initial_capital=0.0, # WO-116: Start with 0, transfer later
-            initial_liquidity_need=getattr(self.config, "INITIAL_FIRM_LIQUIDITY_NEED_MEAN", 50.0),
+            name=f"Firm_{new_firm_id}",
+            value_orientation=value_orientation,
+            initial_needs=initial_needs,
+            logger=simulation.logger,
+            memory_interface=None
+        )
+
+        loan_market = simulation.markets.get("loan_market")
+
+        new_firm = instance_class(
+            core_config=core_config,
+            engine=firm_decision_engine,
             specialization=specialization,
             productivity_factor=random.uniform(8.0, 12.0),
-            decision_engine=firm_decision_engine,
-            value_orientation=value_orientation,
             config_dto=firm_config_dto,
-            logger=simulation.logger,
+            loan_market=loan_market,
             sector=sector,
         )
         
         new_firm.founder_id = founder_household.id
-        if "loan_market" in simulation.markets:
-            new_firm.decision_engine.loan_market = simulation.markets["loan_market"]
 
         # 6. Execute Financial Transfer (SettlementSystem)
         # Check for settlement_system on simulation (via world_state usually)

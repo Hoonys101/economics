@@ -111,7 +111,13 @@ class BaseAIEngine(ABC):
         에이전트의 순자산(Total Wealth)을 계산한다.
         Wealth = Cash (Assets) + Sum(Inventory * MarketPrice)
         """
-        cash = agent_data.get("assets", 0.0)
+        cash_data = agent_data.get("assets", 0.0)
+        if isinstance(cash_data, dict):
+            from modules.system.api import DEFAULT_CURRENCY
+            cash = cash_data.get(DEFAULT_CURRENCY, 0.0)
+        else:
+            cash = float(cash_data)
+
         inventory = agent_data.get("inventory", {})
         
         # 시장 가격 데이터를 활용하여 재고 가치 평가

@@ -54,12 +54,13 @@ class AnalyticsSystem:
                 # Phase 9.1 Refactor: Use snapshot DTO for safe observation
                 snapshot = agent.create_snapshot_dto()
                 
-                agent_dto.is_employed = snapshot.econ.is_employed
-                agent_dto.employer_id = snapshot.econ.employer_id
+                # SnapshotDTO uses full names: econ_state, bio_state
+                agent_dto.is_employed = snapshot.econ_state.is_employed
+                agent_dto.employer_id = snapshot.econ_state.employer_id
 
                 # Needs
-                agent_dto.needs_survival = snapshot.bio.needs.get("survival", 0)
-                agent_dto.needs_labor = snapshot.bio.needs.get("labor_need", 0)
+                agent_dto.needs_survival = snapshot.bio_state.needs.get("survival", 0)
+                agent_dto.needs_labor = snapshot.bio_state.needs.get("labor_need", 0)
 
                 # Inventory (Using public protocol)
                 agent_dto.inventory_food = agent.get_quantity("food")

@@ -148,11 +148,6 @@ class FinanceSystem(IFinanceSystem):
         self.outstanding_bonds.append(new_bond)
         if hasattr(buyer, 'add_bond_to_portfolio'):
             buyer.add_bond_to_portfolio(new_bond)
-        elif buyer == self.central_bank:
-            if isinstance(buyer.assets, dict):
-                 if "bonds" not in buyer.assets:
-                     buyer.assets["bonds"] = []
-                 buyer.assets["bonds"].append(new_bond)
 
         return [new_bond], generated_transactions
 
@@ -252,11 +247,6 @@ class FinanceSystem(IFinanceSystem):
                        self.outstanding_bonds.append(new_bond)
                        if hasattr(buyer, 'add_bond_to_portfolio'):
                             buyer.add_bond_to_portfolio(new_bond)
-                       elif buyer == self.central_bank:
-                           if isinstance(buyer.assets, dict):
-                               if "bonds" not in buyer.assets:
-                                   buyer.assets["bonds"] = []
-                               buyer.assets["bonds"].append(new_bond)
 
                        # QE specific: If buyer is Central Bank, record money issuance
                        if buyer == self.central_bank and hasattr(self.government, 'total_money_issued'):
