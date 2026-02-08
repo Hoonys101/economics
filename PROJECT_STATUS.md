@@ -28,6 +28,13 @@
             - [x] **Shareholder Registry**: `IShareholderRegistry` service implemented & $O(N \times M)$ optimized. ✅
             - [x] **Bank Transformation**: `Bank` refactored to Facade with `Loan/Deposit` managers. ✅
 
+    - **`Phase 10.1: Maintenance & Harvesting`** 🧹 ✅ (2026-02-09)
+        - **Achievement**: Fixed `harvest-go` script and cleared backlog of 16 remote branches.
+        - **Status**:
+            - [x] **Harvester Fix**: Added `communications/insights/` to monitored paths. ✅
+            - [x] **Cleanup**: 16 remote branches scavenged and deleted. ✅
+            - [x] **Merge Awareness**: Switched to `git ls-tree` for post-merge harvesting. ✅
+
     - **`Phase 6: The Pulse of the Market (Stress & Visualization)`** 📈 ✅ (2026-02-06)
 - **Achievement**: Real-time observability bridge and high-performance tech diffusion engine complete.
 - **Status**:
@@ -109,31 +116,16 @@ Technical debt is now managed via the [Technical Debt Ledger](./design/2_operati
 
 ---
 
-## 6. 감사 결과 및 권장 조치 (Audit Results & Recommended Actions)
+### 6. 감사 결과 및 권장 조치 (Audit Results & Recommended Actions)
 
-**감사 보고서**: [WATCHTOWER_SUMMARY.md](./reports/audits/WATCHTOWER_SUMMARY.md) (2026-02-07)
-*참조된 임시 보고서 (Temp Reports): `report_20260207_190303_Domain_Auditor.md` 외 8건*
+**최신 감사 보고서**: [PROJECT_WATCHTOWER_AUDIT_REPORT_20260209.md](./reports/audits/PROJECT_WATCHTOWER_AUDIT_REPORT_20260209.md) (2026-02-09)
+- **결론**: 후속 감사를 통해 프로토콜 우회 및 SoC 위반 문제가 지속적으로 발생하고 있음이 확인되었습니다. 특히 `SensorySystem` 등 인프라 계층에서의 캡슐화 파괴가 심각한 수준(FAIL)으로 진단되었습니다.
 
-### 주요 발견 사항: 전역 아키텍처 드리프트 (Global Architectural Drift)
-
-- **문제점**: 프로젝트 전반에 걸쳐 **관심사 분리(SoC) 원칙 위반**이 체계적으로 발생하고 있습니다. 다수의 모듈이 정의된 프로토콜(`api.py`)을 우회하여 다른 컴포넌트의 내부 상태에 직접 접근하고 있습니다.
-    - **에이전트**: `firms.py` 내에서 `.inventory` 직접 조작 및 `stock_market` 객체 직접 변동.
-    - **금융**: `ITransaction` DTO의 가변성(Mutable TypedDict)으로 인한 데이터 정합성 위협.
-    - **시스템**: `AnalyticsSystem` 등이 에이전트 내부 속성에 직접 접근 (Serialization 프로토콜 미준수).
-- **영향**: 이는 예측 불가능한 버그(예: 자금 유출), 기술 부채 증가, 데이터 무결성 훼손의 근본 원인이 되고 있습니다.
-
-    - **`Phase 9: Architectural Purity & Protocol Enforcement`** 🛡️ [x] (2026-02-07)
-        - **Achievement**: Enforced DTO Immutability & Protocol Boundary Hardening.
-        - **Status**:
-            - [x] **Track 9.1: DTO & Inventory Hardening**: All snapshot DTOs set to `frozen=True`. ✅
-            - [x] **Inventory Purity**: `firms.py` refactored for strict protocol compliance. ✅
-            - [x] **Analytics Isolation**: `AnalyticsSystem` decoupled from internal properties. ✅
-            - [x] **Operational Debt**: Fixed `session-go.bat` & `session_manager.py` pathing (Internal Isolation). ✅
-
-### 권장 다음 단계: Phase 9.2 (제안)
-
-- **`Phase 9.2: Interface Purity Sprint`** 🔍 (PROPOSED)
-    - **Goal**: 나머지 모듈의 프로토콜 준수 여부를 전수 조사하고 계층 간 경계를 더욱 공고히 합니다.
+- **`Phase 9.2: Interface Purity Sprint`** 🛡️ (ACTIVE)
+    - **Goal**: 프로젝트 전반의 API 프로토콜 순수성을 강제하고, 계층 간 경계를 공고히 하여 예측 가능성을 확보합니다.
     - **Key Actions**:
-        - [ ] **Global Inventory Audit**: 레거시 모듈 내 직접 접근 사례 전수 해결.
-        - [ ] **Runtime Validation**: `IAgent` 상호작용에 대한 런타임 프로토콜 검증 도입.
+        - [ ] **Financial SSoT Audit**: `SettlementSystem`을 우회하는 모든 `cash`/`asset` 직접 변경 사례 조사 및 해결.
+        - [ ] **Sensory System Refactor**: 내부 상태 직접 참조 제거 및 DTO 관점의 데이터 수집 강제.
+        - [ ] **Dual DTO Unification**: `Order` 객체 등 중복 정의된 DTO의 단일화 및 아키텍처 파편화 해소.
+        - [ ] **Global Inventory Audit**: 레거시 모듈 내 `.inventory` 직접 접근 사례 전수 해결.
+        - [ ] **Runtime Validation**: 핵심 프로토콜 위반 시 런타임 에러를 발생시키는 가드 도입.

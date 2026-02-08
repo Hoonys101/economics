@@ -30,18 +30,17 @@ Run this audit on the provided context files and output the result.'...
 📖 Attached context: design\1_governance\architecture\ARCH_TRANSACTIONS.md
 🚀 [GeminiWorker] Running task with manual: reporter.md
 
-✅ Report Saved: C:\coding\economics\reports\temp\report_20260207_193251_Domain_Auditor.md
+✅ Report Saved: C:\coding\economics\reports\temp\report_20260209_082303_Domain_Auditor.md
 ============================================================
-# ⚖️ Domain Auditor: Markets & Transaction Protocols
+# ⚖️ Domain Auditor Report: Markets & Transactions
 
-### 🚥 Domain Grade: WARNING
+## 🚥 Domain Grade: WARNING
 
-### ❌ Violations
+## ❌ Violations
+
 | File | Line | Violation | Severity |
 | :--- | :--- | :--- | :--- |
-| `simulation/markets/stock_market.py` | 91-103 | `StockMarket.update_reference_prices` depends directly on the concrete `Firm` class, not an interface, to calculate book value. | Medium |
-
-### 💡 Abstracted Feedback (For Management)
-*   Price discovery logic in both `OrderBookMarket` and `StockMarket` correctly generates immutabl
+| `simulation/markets/stock_market.py` | 12, 144 | **Dual Order DTOs**: The system uses two different Order DTOs (`simulation.models.Order` vs. `modules.market.api.OrderDTO`). `StockMarket` relies on a different DTO than `OrderBookMarket`, creating architectural fragmentation. | **High** |
+| `simulation/markets/stock_market.py` | 46
 ...
 ============================================================

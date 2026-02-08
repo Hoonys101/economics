@@ -70,14 +70,15 @@ Run this audit on the provided context files and output the result.'...
 📖 Attached context: design\1_governance\architecture\ARCH_SEQUENCING.md
 🚀 [GeminiWorker] Running task with manual: reporter.md
 
-✅ Report Saved: C:\coding\economics\reports\temp\report_20260207_193401_Domain_Auditor.md
+✅ Report Saved: C:\coding\economics\reports\temp\report_20260209_082401_Domain_Auditor.md
 ============================================================
-### 🚥 Domain Grade: WARNING
+# ⚖️ Domain Auditor: Systems, Persistence & LifeCycles
+
+### 🚥 Domain Grade: FAIL
 ### ❌ Violations
 | File | Line | Violation | Severity |
 | :--- | :--- | :--- | :--- |
-| `simulation/systems/analytics_system.py` | `L150-151` | `AnalyticsSystem` directly accesses agent attributes (`labor_income_this_tick`, `capital_income_this_tick`) instead of using the agent's snapshot DTO interface. This breaks the principle of persistence purity and couples the analytics system to the agent's internal implementation. | Medium |
-
-### 💡 Abstracted Feedback (For Man
+| `simulation\systems\sensory_system.py` | 108 | Direct access to `h._econ_state.assets`, breaking encapsulation. The code comment even notes this is a potential bug if assets is a dict. | HIGH |
+| `simulation\systems\sensory_system.py` | 134 | Direct access to `h._social_state.approval_rating`, bypassing snapshot/DTO pattern. | HI
 ...
 ============================================================

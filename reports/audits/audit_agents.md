@@ -23,22 +23,23 @@ Provide a 3-bullet summary of the most critical structural drift found.
 
 [TASK]
 Run this audit on the provided context files and output the result.'...
-📖 Attached context: simulation\base_agent.py
+⚠️ Context file not found or is not a file: simulation\base_agent.py
 📖 Attached context: simulation\firms.py
 📖 Attached context: simulation\core_agents.py
 📖 Attached context: design\1_governance\architecture\ARCH_AGENTS.md
 🚀 [GeminiWorker] Running task with manual: reporter.md
 
-✅ Report Saved: C:\coding\economics\reports\temp\report_20260207_193027_Domain_Auditor.md
+✅ Report Saved: C:\coding\economics\reports\temp\report_20260209_082138_Domain_Auditor.md
 ============================================================
+# ⚖️ Domain Auditor Report: Agents & Populations
+
 ### 🚥 Domain Grade: WARNING
 
 ### ❌ Violations
 
 | File | Line | Violation | Severity |
 | :--- | :--- | :--- | :--- |
-| `simulation/firms.py` | 288-294 | **Protocol Purity**: `_add_inventory_internal` directly modifies `self._inventory`, bypassing the protocol's intended accessors. | Medium |
-| `simulation/firms.py` | 258-266 | **Protocol Purity**: Overridden `remove_item` method directly modifies `self._inventory` instead of using base class logic or a safe internal helper. | Medium |
-| `simulati
+| `design/1_governance/architecture/ARCH_AGENTS.md` | 53-81 | **Architectural Documentation Mismatch**: The document describes a "parent pointer" stateful component pattern for the `Firm` agent, but the implementation uses stateless engines that receive state DTOs. The documentation is incorrect. | High |
+| `simulation/core_agents.p
 ...
 ============================================================
