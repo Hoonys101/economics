@@ -130,12 +130,6 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 # For now, let's use getattr/setattr on finance_state for transient flags if needed,
                 # or just use firm.finance_state if we added it there.
 
-                # Check FinanceState definition in memory... it likely doesn't have distress counters.
-                # But we can use Firm's agent_data or just add attributes to finance_state instance at runtime.
-                if not hasattr(firm.finance_state, "is_distressed"):
-                    firm.finance_state.is_distressed = False
-                    firm.finance_state.distress_tick_counter = 0
-
                 firm.finance_state.is_distressed = True
                 firm.finance_state.distress_tick_counter += 1
 
@@ -156,10 +150,6 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                     continue
             else:
                 # Recovery or No Crunch
-                if not hasattr(firm.finance_state, "is_distressed"):
-                    firm.finance_state.is_distressed = False
-                    firm.finance_state.distress_tick_counter = 0
-
                 firm.finance_state.is_distressed = False
                 firm.finance_state.distress_tick_counter = 0
 

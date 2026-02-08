@@ -654,11 +654,16 @@ class Firm(ILearningAgent, IFinancialEntity, IOrchestratorAgent, ICreditFrozen, 
 
         elif order.order_type == "INVEST_AUTOMATION":
             amount = get_amount(order)
-            if self.finance_engine.invest_in_automation(self.finance_state, self, self.wallet, amount, government, self.settlement_system):
-                 gained = self.production_engine.invest_in_automation(
-                     self.production_state, amount, self.config.automation_cost_per_pct
-                 )
-                 self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {amount:.1f} in automation (+{gained:.4f}).")
+            tx = self.finance_engine.invest_in_automation(
+                self.finance_state, self.id, self.wallet, amount, fin_ctx, current_time
+            )
+            if tx:
+                if self.settlement_system and self.settlement_system.transfer(self, government, amount, "Automation", currency=tx.currency):
+                    gained = self.production_engine.invest_in_automation(
+                        self.production_state, amount, self.config.automation_cost_per_pct
+                    )
+                    self.finance_engine.record_expense(self.finance_state, amount, tx.currency)
+                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {amount:.1f} in automation (+{gained:.4f}).")
 
         elif order.order_type == "PAY_TAX":
             amount = get_amount(order)

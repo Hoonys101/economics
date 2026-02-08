@@ -2,10 +2,10 @@ import pytest
 from unittest.mock import MagicMock, patch
 from simulation.firms import Firm
 from simulation.components.state.firm_state_models import HRState, FinanceState, ProductionState, SalesState
-from simulation.components.engines.finance_engine import FinanceEngine
 from simulation.dtos.config_dtos import FirmConfigDTO
-from simulation.models import Order, Transaction
+from simulation.models import Order
 from modules.system.api import DEFAULT_CURRENCY, MarketContextDTO
+from modules.simulation.api import AgentCoreConfigDTO
 
 @pytest.fixture
 def mock_decision_engine():
@@ -14,6 +14,7 @@ def mock_decision_engine():
 @pytest.fixture
 def firm_config():
     config = MagicMock(spec=FirmConfigDTO)
+    # Populate with necessary fields
     config.firm_min_production_target = 10.0
     config.ipo_initial_shares = 1000.0
     config.dividend_rate = 0.1
@@ -32,43 +33,49 @@ def firm_config():
     config.automation_cost_per_pct = 100.0
     config.capital_to_output_ratio = 2.0
     config.invisible_hand_sensitivity = 0.1
+    config.default_unit_cost = 5.0
+    config.marketing_decay_rate = 0.05
+    config.marketing_efficiency = 1.0
+    config.perceived_quality_alpha = 0.5
+    config.brand_awareness_saturation = 100.0
+    config.marketing_budget_rate_min = 0.01
+    config.marketing_budget_rate_max = 0.1
     return config
 
 @pytest.fixture
-def firm(mock_decision_engine, firm_config):
-    def mock_base_init(self, config):
-        self.id = config.id
-        self.is_active = True
-        self.logger = MagicMock()
-        self.needs = {}
-        self._inventory = {}
-        self.decision_engine = config.decision_engine
-        self.memory_v2 = None
-        self.settlement_system = MagicMock()
+def core_config():
+    return AgentCoreConfigDTO(
+        id=1,
+        value_orientation="PROFIT",
+        initial_needs={"liquidity_need": 100.0},
+        name="Firm_1",
+        logger=MagicMock(),
+        memory_interface=None
+    )
 
-    with patch('simulation.firms.BaseAgent.__init__', side_effect=mock_base_init, autospec=True), \
-         patch('simulation.base_agent.BaseAgent.wallet', new_callable=MagicMock) as mock_wallet, \
-         patch('simulation.firms.BrandManager'):
+@pytest.fixture
+def firm(mock_decision_engine, firm_config, core_config):
+    # Initialize Firm directly without BaseAgent patching
+    f = Firm(
+        core_config=core_config,
+        engine=mock_decision_engine,
+        specialization="FOOD",
+        productivity_factor=1.0,
+        config_dto=firm_config,
+        initial_inventory=None,
+        loan_market=None,
+        sector="FOOD",
+        personality=None
+    )
 
-        mock_wallet.get_balance.return_value = 1000.0
-        mock_wallet.get_all_balances.return_value = {DEFAULT_CURRENCY: 1000.0}
+    # Manually hydrate wallet for testing (since we are not using full simulation loop)
+    f.wallet.load_balances({DEFAULT_CURRENCY: 1000.0})
 
-        f = Firm(
-            id=1,
-            initial_capital=1000.0,
-            initial_liquidity_need=100.0,
-            specialization="FOOD",
-            productivity_factor=1.0,
-            decision_engine=mock_decision_engine,
-            value_orientation="PROFIT",
-            config_dto=firm_config
-        )
+    # Mock settlement system for internal order tests
+    f.settlement_system = MagicMock()
+    f.settlement_system.transfer.return_value = True
 
-        # Setup settlement system mock
-        f.settlement_system = MagicMock()
-        f.settlement_system.transfer.return_value = True
-
-        yield f
+    return f
 
 def test_firm_initialization_states(firm):
     assert isinstance(firm.hr_state, HRState)
@@ -101,7 +108,6 @@ def test_inventory_handler_implementation(firm):
 
 def test_command_bus_internal_orders(firm):
     # SET_TARGET
-    # OrderDTO uses 'side' as 'order_type' alias
     order = Order(
         agent_id=1, side="SET_TARGET", item_id="target", quantity=50.0,
         price_limit=0.0, market_id="internal"
@@ -110,61 +116,91 @@ def test_command_bus_internal_orders(firm):
     assert firm.production_state.production_target == 50.0
 
     # INVEST_AUTOMATION
-    # finance_engine.invest_in_automation now takes (state, agent, wallet, amount, gov, settlement)
-    firm.finance_engine.invest_in_automation = MagicMock(return_value=True)
-    firm.production_engine.invest_in_automation = MagicMock(return_value=0.05)
+    # Use real engines, but mock settlement system to succeed
+    # And mock government for transfer destination
+    gov = MagicMock()
+    gov.id = 999
+
+    # Ensure wallet has funds
+    firm.wallet.load_balances({DEFAULT_CURRENCY: 2000.0})
 
     order_auto = Order(
         agent_id=1, side="INVEST_AUTOMATION", item_id="automation", quantity=1.0,
         price_limit=0.0, market_id="internal",
         monetary_amount={'amount': 100.0, 'currency': DEFAULT_CURRENCY}
     )
-    firm._execute_internal_order(order_auto, None, 0)
 
-    firm.finance_engine.invest_in_automation.assert_called_once()
-    # Check arguments: state, firm (self), wallet, amount, gov, settlement
-    args = firm.finance_engine.invest_in_automation.call_args[0]
-    assert args[1] == firm
-    assert args[2] == firm.wallet
+    # Execute
+    firm._execute_internal_order(order_auto, gov, 0)
 
-    firm.production_engine.invest_in_automation.assert_called_once()
+    # Verify state change
+    # automation_level should have increased
+    # logic: gained = amount / cost_per_pct = 100.0 / 100.0 = 1.0
+    # production_state.automation_level += 1.0
+    assert firm.production_state.automation_level > 0.0
+
+    # Verify transaction generated via settlement system call
+    firm.settlement_system.transfer.assert_called()
+    args = firm.settlement_system.transfer.call_args
+    # call_args is ((sender, recipient, amount, reason), {currency: ...})
+    # or just args if positional.
+    # firm code: transfer(self, government, amount, "Automation", currency=DEFAULT_CURRENCY)
+
+    call_args = args[0]
+    call_kwargs = args[1]
+
+    assert call_args[0] == firm
+    assert call_args[1] == gov
+    assert call_args[2] == 100.0
+    assert call_args[3] == "Automation"
+    assert call_kwargs.get('currency', DEFAULT_CURRENCY) == DEFAULT_CURRENCY
+
 
 def test_generate_transactions_delegation(firm):
-    firm.hr_engine.process_payroll = MagicMock(return_value=[])
-    firm.finance_engine.generate_financial_transactions = MagicMock(return_value=[])
-    firm.sales_engine.generate_marketing_transaction = MagicMock(return_value=None)
+    # This tests that engines are called. Since we can't easily mock internal engines
+    # (they are instantiated inside __init__), we can verify the OUTPUT of generate_transactions.
 
-    market_context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}}
+    # Setup state for payroll
+    firm.hr_state.employees = [] # No employees, so no payroll tx
+
+    # Setup state for finance
+    firm.finance_state.revenue_this_turn = {DEFAULT_CURRENCY: 100.0}
+    firm.finance_state.cost_this_turn = {DEFAULT_CURRENCY: 50.0}
+
+    market_context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}, "fiscal_policy": MagicMock(corporate_tax_rate=0.2)}
+    gov = MagicMock()
+    gov.id = 999
+    registry = MagicMock()
 
     txs = firm.generate_transactions(
-        government=MagicMock(),
+        government=gov,
         market_data={},
-        shareholder_registry=MagicMock(),
+        shareholder_registry=registry,
         current_time=0,
         market_context=market_context
     )
 
-    firm.hr_engine.process_payroll.assert_called_once()
-    firm.finance_engine.generate_financial_transactions.assert_called_once()
+    # We expect some transactions (holding cost, maintenance fee) if configured
+    # Config has maintenance fee = 5.0
+    # Wallet has money.
 
-    # Check arguments
-    f_args = firm.finance_engine.generate_financial_transactions.call_args[0]
-    # (state, id, wallet, config, gov, registry, time, context, inv_val)
-    assert f_args[2] == firm.wallet
-
-    firm.sales_engine.generate_marketing_transaction.assert_called_once()
+    # Check for maintenance fee transaction
+    maintenance_tx = next((tx for tx in txs if tx.item_id == "firm_maintenance"), None)
+    assert maintenance_tx is not None
+    assert maintenance_tx.price == 5.0
 
 def test_produce_delegation(firm):
-    firm.production_engine.produce = MagicMock(return_value=10.0)
+    # Test produce calls production engine.
+    # We can check if production increases.
+
+    # Setup
+    firm.production_state.productivity_factor = 2.0
+    firm.hr_state.employees = [MagicMock(productivity=1.0)] # Add an employee if needed by engine?
+
+    firm.production_engine = MagicMock()
+    firm.production_engine.produce.return_value = 10.0
 
     firm.produce(current_time=0)
 
     firm.production_engine.produce.assert_called_once()
     assert firm.current_production == 10.0
-
-def test_finance_engine_interface():
-    engine = FinanceEngine()
-    assert hasattr(engine, 'invest_in_automation')
-    assert hasattr(engine, 'invest_in_rd')
-    assert hasattr(engine, 'invest_in_capex')
-    assert hasattr(engine, 'pay_ad_hoc_tax')

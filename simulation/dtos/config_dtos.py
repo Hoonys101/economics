@@ -183,3 +183,4 @@ class FirmConfigDTO:
     # Refactor 2026-02-03: Externalized Constants
     ai_epsilon_decay_params: Tuple[float, float, int]
     ai_reward_brand_value_multiplier: float
+    default_unit_cost: float = 5.0

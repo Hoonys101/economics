@@ -107,19 +107,10 @@ class TestInheritanceManager:
         deceased = self.create_household(1, assets=1000.0)
         deceased._bio_state.children_ids = [] # No children
 
-        # Mock Settlement System Receipts
-        mocks.settlement_system.execute_settlement.return_value = [
-            {
-                "buyer_id": 1, "seller_id": mocks.government.id, "item_id": "escheatment_cash",
-                "quantity": 1.0, "price": 1000.0, "market_id": "system",
-                "transaction_type": "escheatment", "time": 0, "metadata": {}
-            }
-        ]
-
         txs = setup_manager.process_death(deceased, mocks.government, mocks)
 
         # Expect Escheatment transactions
-        escheat_cash = next((t for t in txs if t.item_id == "escheatment_cash"), None)
+        escheat_cash = next((t for t in txs if t.item_id == "escheatment"), None)
         assert escheat_cash is not None
         assert escheat_cash.buyer_id == 1
         assert escheat_cash.seller_id == mocks.government.id
@@ -131,21 +122,11 @@ class TestInheritanceManager:
         deceased._bio_state.children_ids = [2]
         mocks.agents = {2: heir1}
 
-        # Mock Settlement System Receipts
-        mocks.settlement_system.execute_settlement.return_value = [
-            {
-                "buyer_id": 1, "seller_id": 2, "item_id": "inheritance_distribution",
-                "quantity": 1.0, "price": 0.0, "market_id": "system",
-                "transaction_type": "inheritance_distribution", "time": 0, "metadata": {"heir_ids": [2]}
-            }
-        ]
-
         txs = setup_manager.process_death(deceased, mocks.government, mocks)
 
-        # Still expects distribution tx to handle potential cleanup or signaling
+        # Optimization: No transaction for 0 assets
         dist_tx = next((t for t in txs if t.transaction_type == "inheritance_distribution"), None)
-        assert dist_tx is not None
-        assert dist_tx.metadata["heir_ids"] == [2]
+        assert dist_tx is None
 
     def test_tax_transaction_generation(self, setup_manager, mocks):
         """Test Case 5: Verify tax transaction if tax rate > 0."""

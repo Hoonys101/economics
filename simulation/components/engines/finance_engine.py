@@ -376,4 +376,4 @@ class FinanceEngine:
         # 2. Heuristic: Total Expenses / Total Production (if available)
         # Note: Production data is in ProductionState, not FinanceState.
         # So we rely on a simplified heuristic or default.
-        return 5.0 # Safe default
+        return config.default_unit_cost
