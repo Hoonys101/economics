@@ -29,6 +29,14 @@ This is the definitive entry point for all contributors. **Read this first.**
 - **코드 수정**: ⚠️ (최후의 수단. 오직 확신이 있을 때만 수정하며, 디버깅은 금지)
 - **디버깅**: 🚫 **NEVER.** (병목 현상의 주범. 반드시 Jules에게 위임)
 
+### 3.5. Architectural Threshold Rules (The "Stop" Rule)
+Any task that exceeds the following thresholds MUST be delegated to Jules (Implementation) or Gemini-Go (Analysis/Spec). **Antigravity must stop direct action immediately.**
+
+- **Reading Threshold**: If the task requires referencing more than **5** code documents/files.
+- **Modification Threshold**: If the task requires modifying more than **3** files.
+- **Complexity Guard**: Even if the fix is "only 2-4 lines", if it touches more than 3 files or requires deep context from 5+ files, it's an architectural change, not a quick fix.
+- **Action**: Halt implementation, draft the Integrated Mission Guide, and register a Jules-Go/Gemini-Go mission.
+
 ### 4. The Confidence-Driven Coding Rule (Antigravity's Exception)
 **Antigravity가 코드를 직접 수정할 경우, 반드시 다음 절차를 엄수합니다.**
 1.  **Branch Isolation**: `main` 브랜치 직접 수정 금지. `feature/` 브랜치 생성.

@@ -1,10 +1,11 @@
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
-import config
 from modules.finance.api import IDepositManager, DepositDTO
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 
-TICKS_PER_YEAR = config.TICKS_PER_YEAR
+
+# Default fallback
+_DEFAULT_TICKS_PER_YEAR = 365.0
 
 @dataclass
 class _Deposit:
@@ -12,18 +13,25 @@ class _Deposit:
     amount: float
     annual_interest_rate: float
     currency: CurrencyCode = DEFAULT_CURRENCY
+    ticks_per_year: float = _DEFAULT_TICKS_PER_YEAR
 
     @property
     def tick_interest_rate(self) -> float:
-        return self.annual_interest_rate / TICKS_PER_YEAR
+        return self.annual_interest_rate / self.ticks_per_year
 
 class DepositManager(IDepositManager):
     """
     Manages agent deposit accounts and interest calculations.
     """
-    def __init__(self):
+    def __init__(self, config: Any = None):
         self._deposits: Dict[str, _Deposit] = {}
         self._next_deposit_id = 0
+        self.config = config
+
+        if hasattr(config, "get"):
+            self.ticks_per_year = config.get("finance.ticks_per_year", _DEFAULT_TICKS_PER_YEAR)
+        else:
+            self.ticks_per_year = getattr(config, "TICKS_PER_YEAR", _DEFAULT_TICKS_PER_YEAR) if config else _DEFAULT_TICKS_PER_YEAR
 
     def create_deposit(self, owner_id: int, amount: float, interest_rate: float, currency: str = DEFAULT_CURRENCY) -> str:
         deposit_id = f"dep_{self._next_deposit_id}"
@@ -33,7 +41,8 @@ class DepositManager(IDepositManager):
             depositor_id=owner_id,
             amount=amount,
             annual_interest_rate=interest_rate,
-            currency=currency
+            currency=currency,
+            ticks_per_year=self.ticks_per_year
         )
         self._deposits[deposit_id] = deposit
         return deposit_id

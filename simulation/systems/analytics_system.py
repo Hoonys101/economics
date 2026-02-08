@@ -65,7 +65,8 @@ class AnalyticsSystem:
                 # Inventory (Using public protocol)
                 agent_dto.inventory_food = agent.get_quantity("food")
 
-                # Time Allocation
+                # Time Allocation - world_state.household_time_allocation should also come from DTO if possible
+                # For now keeping it as it's a world state property, but checking if it's in snapshot
                 time_leisure = world_state.household_time_allocation.get(agent.id, 0.0)
 
                 # Config access via snapshot/agent
@@ -83,6 +84,9 @@ class AnalyticsSystem:
                 agent_dto.inventory_food = agent.get_quantity("food")
                 agent_dto.current_production = state_dto.production.current_production
                 agent_dto.num_employees = len(state_dto.hr.employees)
+                
+                # Metadata extraction
+                agent_dto.generation = getattr(state_dto, "generation", 0)
 
             else:
                 # Other agents (Bank, Gov, etc)
@@ -122,14 +126,16 @@ class AnalyticsSystem:
 
             # Recalculate some aggregates if needed or rely on tracker.
             # PersistenceManager logic:
-            total_labor_income = sum(
-                h.tick_analytics.get("labor_income_this_tick", 0.0)
-                for h in world_state.households if hasattr(h, 'tick_analytics')
-            )
-            total_capital_income = sum(
-                h.tick_analytics.get("capital_income_this_tick", 0.0)
-                for h in world_state.households if hasattr(h, 'tick_analytics')
-            )
+            # Recalculate some aggregates via snapshots
+            total_labor_income = 0.0
+            total_capital_income = 0.0
+            
+            for h in world_state.households:
+                # Access via snapshot for purity
+                if hasattr(h, 'create_snapshot_dto'):
+                    snap = h.create_snapshot_dto()
+                    total_labor_income += snap.econ_state.last_labor_income
+                    total_capital_income += snap.econ_state.last_capital_income
 
             # Flatten assets for DB
             hh_assets = tracker_indicators.get("total_household_assets", 0.0)

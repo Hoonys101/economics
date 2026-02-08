@@ -13,10 +13,7 @@ from dataclasses import dataclass, replace
 from simulation.models import Transaction, Order
 from simulation.core_markets import Market
 from modules.market.api import OrderDTO
-from modules.finance.api import IShareholderRegistry
-
-if TYPE_CHECKING:
-    from simulation.firms import Firm
+from modules.finance.api import IShareholderRegistry, IShareholderView
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +62,7 @@ class StockMarket(Market):
         """
         self.shareholder_registry.register_shares(firm_id, agent_id, quantity)
 
-    def update_reference_prices(self, firms: Dict[int, "Firm"]) -> None:
+    def update_reference_prices(self, firms: Dict[int, IShareholderView]) -> None:
         """
         기업들의 순자산가치를 기반으로 기준 주가를 업데이트합니다.
         
@@ -81,7 +78,7 @@ class StockMarket(Market):
             book_value = self._calculate_book_value_per_share(firm)
             self.reference_prices[firm_id] = max(0.01, book_value * multiplier)
 
-    def _calculate_book_value_per_share(self, firm: "Firm") -> float:
+    def _calculate_book_value_per_share(self, firm: IShareholderView) -> float:
         """기업의 주당 순자산가치를 계산합니다."""
         return firm.get_book_value_per_share()
 

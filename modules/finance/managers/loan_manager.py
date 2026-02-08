@@ -1,6 +1,5 @@
 from typing import Dict, List, Optional, Tuple, Any, Callable
 from dataclasses import dataclass
-import config
 from modules.finance.api import (
     ILoanManager, LoanDTO, LoanApplicationDTO, LoanNotFoundError,
     IDepositManager, ICreditScoringService, BorrowerProfileDTO,
@@ -10,7 +9,9 @@ from modules.finance.dtos import LoanStatus
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 from modules.finance.wallet.api import IWallet
 
-TICKS_PER_YEAR = config.TICKS_PER_YEAR
+
+# Default fallback if config not available
+_DEFAULT_TICKS_PER_YEAR = 365.0
 
 @dataclass
 class _Loan:
@@ -25,18 +26,25 @@ class _Loan:
     status: LoanStatus = "ACTIVE"
     created_deposit_id: Optional[str] = None
     currency: CurrencyCode = DEFAULT_CURRENCY
+    ticks_per_year: float = _DEFAULT_TICKS_PER_YEAR
 
     @property
     def tick_interest_rate(self) -> float:
-        return self.annual_interest_rate / TICKS_PER_YEAR
+        return self.annual_interest_rate / self.ticks_per_year
 
 class LoanManager(ILoanManager):
     """
     Manages the lifecycle of loans.
     """
-    def __init__(self):
+    def __init__(self, config: Any = None):
         self._loans: Dict[str, _Loan] = {}
         self._next_loan_id = 0
+        self.config = config
+        
+        if hasattr(config, "get"):
+            self.ticks_per_year = config.get("finance.ticks_per_year", _DEFAULT_TICKS_PER_YEAR)
+        else:
+            self.ticks_per_year = getattr(config, "TICKS_PER_YEAR", _DEFAULT_TICKS_PER_YEAR) if config else _DEFAULT_TICKS_PER_YEAR
 
     def create_loan(self, borrower_id: int, amount: float, interest_rate: float,
                     start_tick: int, term_ticks: int, created_deposit_id: Optional[str] = None) -> str:
@@ -56,7 +64,8 @@ class LoanManager(ILoanManager):
             start_tick=start_tick,
             origination_tick=start_tick,
             created_deposit_id=created_deposit_id,
-            status="ACTIVE"
+            status="ACTIVE",
+            ticks_per_year=self.ticks_per_year
         )
         self._loans[loan_id] = loan
         return loan_id
@@ -261,7 +270,7 @@ class LoanManager(ILoanManager):
     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
         loans = self.get_loans_for_agent(agent_id)
         total_principal = sum(l['remaining_principal'] for l in loans)
-        daily_interest_burden = sum((l['remaining_principal'] * l['interest_rate']) / TICKS_PER_YEAR for l in loans)
+        daily_interest_burden = sum((l['remaining_principal'] * l['interest_rate']) / self.ticks_per_year for l in loans)
         return {"total_principal": total_principal, "daily_interest_burden": daily_interest_burden}
 
     def _map_to_dto(self, loan: _Loan) -> LoanDTO:

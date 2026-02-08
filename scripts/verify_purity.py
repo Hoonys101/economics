@@ -125,12 +125,12 @@ def main():
             files_to_check_imports.add(f) # Ensure these are also checked for imports
 
     # 3. Process Files
-    # Union of all files
-    all_files = files_to_check_imports.union(files_to_check_types)
+    all_files = {Path(f).resolve() for f in files_to_check_imports.union(files_to_check_types)}
+    type_check_files = {Path(f).resolve() for f in files_to_check_types}
 
     for filepath in all_files:
-        should_check_types = filepath in files_to_check_types
-        errors = check_file_purity(filepath, check_types=should_check_types)
+        should_check_types = filepath in type_check_files
+        errors = check_file_purity(str(filepath), check_types=should_check_types)
         if errors:
             all_violations[filepath] = errors
 

@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "C:\coding\economics\scripts\audit_zero_sum.py", line 10, in <module>
+    from main import create_simulation
+  File "C:\coding\economics\main.py", line 9, in <module>
+    from utils.simulation_builder import create_simulation
+  File "C:\coding\economics\utils\simulation_builder.py", line 29, in <module>
+    from simulation.initialization.initializer import SimulationInitializer
+  File "C:\coding\economics\simulation\initialization\initializer.py", line 27, in <module>
+    from simulation.bank import Bank
+  File "C:\coding\economics\simulation\bank.py", line 22, in <module>
+    from modules.finance.managers.loan_manager import LoanManager
+  File "C:\coding\economics\modules\finance\managers\loan_manager.py", line 12, in <module>
+    TICKS_PER_YEAR = config.TICKS_PER_YEAR
+                     ^^^^^^
+NameError: name 'config' is not defined

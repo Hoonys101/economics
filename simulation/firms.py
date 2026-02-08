@@ -424,15 +424,15 @@ class Firm(ILearningAgent, IFinancialEntity, IOrchestratorAgent, ICreditFrozen, 
         self.inventory_quality.clear()
 
     def _add_inventory_internal(self, item_id: str, quantity: float, quality: float):
-        current_inventory = self._inventory.get(item_id, 0)
-        current_quality = self.inventory_quality.get(item_id, 1.0)
+        current_inventory = self.get_quantity(item_id)
+        current_quality = self.get_quality(item_id)
 
         total_qty = current_inventory + quantity
         if total_qty > 0:
             new_avg_quality = ((current_inventory * current_quality) + (quantity * quality)) / total_qty
             self.inventory_quality[item_id] = new_avg_quality
 
-        self._inventory[item_id] = total_qty
+        self._inventory[item_id] = total_qty # Implementation
 
     def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
         brand_snapshot = {

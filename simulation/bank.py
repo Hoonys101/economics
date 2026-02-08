@@ -26,7 +26,6 @@ from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
 from simulation.models import Transaction
 from simulation.portfolio import Portfolio
-import config
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -34,8 +33,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-TICKS_PER_YEAR = config.TICKS_PER_YEAR
-INITIAL_BASE_ANNUAL_RATE = config.INITIAL_BASE_ANNUAL_RATE
+
+# Default fallbacks
+_DEFAULT_TICKS_PER_YEAR = 365.0
+_DEFAULT_INITIAL_BASE_ANNUAL_RATE = 0.03
 
 from modules.finance.api import IFinancialEntity
 
@@ -67,10 +68,12 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
         self.government: Optional["Government"] = None
 
         # TD-274: Initialize Managers
-        self.loan_manager: ILoanManager = LoanManager()
-        self.deposit_manager: IDepositManager = DepositManager()
+        self.loan_manager: ILoanManager = LoanManager(config_manager)
+        self.deposit_manager: IDepositManager = DepositManager(config_manager)
 
-        self.base_rate = self._get_config("bank.initial_base_annual_rate", INITIAL_BASE_ANNUAL_RATE)
+        self.ticks_per_year = self._get_config("finance.ticks_per_year", _DEFAULT_TICKS_PER_YEAR)
+        initial_rate = self._get_config("finance.bank_defaults.initial_base_annual_rate", _DEFAULT_INITIAL_BASE_ANNUAL_RATE)
+        self.base_rate = self._get_config("bank.initial_base_annual_rate", initial_rate)
 
         # Current tick tracker (updated via run_tick usually)
         self.current_tick_tracker = 0
@@ -155,7 +158,7 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
             current_tick=self.current_tick_tracker,
             is_gold_standard=self._get_config("gold_standard_mode", False),
             reserve_req_ratio=self._get_config("reserve_req_ratio", 0.1),
-            default_term_ticks=getattr(config, "DEFAULT_LOAN_TERM_TICKS", 50)
+            default_term_ticks=self._get_config("finance.bank_defaults.default_loan_term_ticks", 50)
         )
 
         if not result:
@@ -195,11 +198,11 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
 
         # Step 3: Book Loan
         start_tick = self.current_tick_tracker
-        term_ticks = getattr(config, "DEFAULT_LOAN_TERM_TICKS", 50)
         if due_tick is not None:
              term_ticks = max(1, due_tick - start_tick)
         else:
-             term_ticks = self._get_config("bank.default_loan_term_ticks", term_ticks)
+             default_val = self._get_config("finance.bank_defaults.default_loan_term_ticks", 50)
+             term_ticks = self._get_config("bank.default_loan_term_ticks", default_val)
              due_tick = start_tick + term_ticks
 
         loan_id = self.loan_manager.create_loan(
@@ -271,8 +274,11 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
     # --- Legacy / Internal Methods ---
 
     def deposit_from_customer(self, depositor_id: int, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> Optional[str]:
-        margin = self._get_config("bank.deposit_margin", getattr(config, "BANK_DEPOSIT_MARGIN", 0.02))
-        spread = self._get_config("bank.credit_spread_base", getattr(config, "BANK_CREDIT_SPREAD_BASE", 0.02))
+        default_margin = self._get_config("finance.bank_defaults.deposit_margin", 0.02)
+        default_spread = self._get_config("finance.bank_defaults.credit_spread_base", 0.02)
+        
+        margin = self._get_config("bank.deposit_margin", default_margin)
+        spread = self._get_config("bank.credit_spread_base", default_spread)
         deposit_rate = max(0.0, self.base_rate + spread - margin)
 
         return self.deposit_manager.create_deposit(depositor_id, amount, deposit_rate, currency)
@@ -308,7 +314,7 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
         loans = self.loan_manager.get_loans_for_agent(agent_id)
         total_principal = sum(l['remaining_principal'] for l in loans)
-        daily_interest_burden = sum((l['remaining_principal'] * l['interest_rate']) / TICKS_PER_YEAR for l in loans)
+        daily_interest_burden = sum((l['remaining_principal'] * l['interest_rate']) / self.ticks_per_year for l in loans)
         return {"total_principal": total_principal, "daily_interest_burden": daily_interest_burden}
 
     def get_deposit_balance(self, agent_id: int) -> float:
@@ -485,12 +491,14 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
 
         # Credit Freeze (Jail)
         if isinstance(agent, ICreditFrozen):
-            jail_ticks = self._get_config("bank.credit_recovery_ticks", getattr(config, "CREDIT_RECOVERY_TICKS", 100))
+            default_recovery = self._get_config("finance.bank_defaults.credit_recovery_ticks", 100)
+            jail_ticks = self._get_config("bank.credit_recovery_ticks", default_recovery)
             agent.credit_frozen_until_tick = current_tick + jail_ticks
 
         # XP Penalty
         if isinstance(agent, IEducated):
-            xp_penalty = self._get_config("bank.bankruptcy_xp_penalty", getattr(config, "BANKRUPTCY_XP_PENALTY", 0.2))
+            default_penalty = self._get_config("finance.bank_defaults.bankruptcy_xp_penalty", 0.2)
+            xp_penalty = self._get_config("bank.bankruptcy_xp_penalty", default_penalty)
             agent.education_xp *= (1.0 - xp_penalty)
 
         # 3. Asset Recovery (Seize Cash)
@@ -532,7 +540,8 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
     def generate_solvency_transactions(self, government: "Government") -> List[Transaction]:
         usd_assets = self._wallet.get_balance(DEFAULT_CURRENCY)
         if usd_assets < 0:
-            solvency_buffer = self._get_config("bank.solvency_buffer", getattr(config, "BANK_SOLVENCY_BUFFER", 1000.0))
+            default_buffer = self._get_config("finance.bank_defaults.solvency_buffer", 1000.0)
+            solvency_buffer = self._get_config("bank.solvency_buffer", default_buffer)
             borrow_amount = abs(usd_assets) + solvency_buffer
 
             tx = Transaction(

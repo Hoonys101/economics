@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Type, TypeVar
+from typing import Type, TypeVar, Any, cast
 
 T = TypeVar('T')
 
@@ -9,13 +9,14 @@ def create_config_dto(config_module: object, dto_class: Type[T]) -> T:
     It iterates over the DTO's fields and gets the corresponding (uppercase)
     attribute from the config module.
     """
-    dto_fields = {f.name for f in dataclasses.fields(dto_class)}
     config_values = {}
-
-    for field_name in dto_fields:
+    for field in dataclasses.fields(cast(Any, dto_class)):
+        field_name = field.name
         config_key = field_name.upper()
         if hasattr(config_module, config_key):
             config_values[field_name] = getattr(config_module, config_key)
+        elif field.default is not dataclasses.MISSING or field.default_factory is not dataclasses.MISSING:
+            continue # Use dataclass default
         else:
             # This provides a clear error when a config is missing
             raise AttributeError(

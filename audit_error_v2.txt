@@ -1,0 +1,170 @@
+2026-02-08 19:21:05 [INFO] root: Logging setup complete with basic configuration (config file not found). Standard format applied.
+2026-02-08 19:21:05 [WARNING] root: SamplingFilter not found in logging handlers. Sampling rates not applied.
+2026-02-08 19:21:05 [INFO] AUDIT: Initializing Simulation via main.create_simulation...
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Initializing simulation.
+2026-02-08 19:21:05 [DEBUG] simulation.db.market_repository: Cleared transactions and market_history tables.
+2026-02-08 19:21:05 [DEBUG] simulation.db.agent_repository: Cleared agent_states table.
+2026-02-08 19:21:05 [DEBUG] simulation.db.analytics_repository: Cleared economic_indicators and ai_decisions_history tables.
+2026-02-08 19:21:05 [INFO] simulation.db.repository: All simulation data cleared and VACUUMed database.
+2026-02-08 19:21:05 [DEBUG] modules.common.config.impl: Loaded config domain: government
+2026-02-08 19:21:05 [DEBUG] modules.common.config.impl: Loaded config domain: finance
+2026-02-08 19:21:05 [DEBUG] modules.common.config.impl: Loaded config domain: stock_market
+2026-02-08 19:21:05 [DEBUG] modules.common.config.impl: Loaded config domain: household
+2026-02-08 19:21:05 [INFO] simulation.ai.model_wrapper: No existing model found for wealth_and_needs.
+2026-02-08 19:21:05 [INFO] simulation.ai.model_wrapper: No existing model found for needs_and_growth.
+2026-02-08 19:21:05 [INFO] simulation.ai.model_wrapper: No existing model found for needs_and_social_status.
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 100 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 101 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 102 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 103 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 104 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 105 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 106 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 107 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 108 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 109 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 110 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 111 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 112 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 113 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 114 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 115 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 116 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 117 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 118 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 119 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 120 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 121 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 122 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 123 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 124 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 125 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 126 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 127 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 128 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 129 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 130 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 131 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 132 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 133 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 134 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 135 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 136 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 137 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 138 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 139 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 140 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 141 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 142 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 143 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 144 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 145 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 146 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 147 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 148 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-08 19:21:05 [DEBUG] utils.simulation_builder: HOUSEHOLD_INIT | Household 149 initialized (Decomposed).
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-08 19:21:05 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 150 initially hired Household 136.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 150 initially hired Household 126.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 151 initially hired Household 130.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 151 initially hired Household 147.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 152 initially hired Household 116.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 152 initially hired Household 118.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 153 initially hired Household 133.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 153 initially hired Household 121.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 154 initially hired Household 101.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 154 initially hired Household 140.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 155 initially hired Household 114.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 155 initially hired Household 131.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 156 initially hired Household 110.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 156 initially hired Household 111.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 157 initially hired Household 139.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 157 initially hired Household 100.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 158 initially hired Household 102.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 158 initially hired Household 142.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 159 initially hired Household 107.
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: Firm 159 initially hired Household 112.
+2026-02-08 19:21:05 [WARNING] utils.simulation_builder: File locking (fcntl) is not supported on this platform. Concurrency safety is not guaranteed.
+2026-02-08 19:21:05 [INFO] simulation.agents.central_bank: CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+2026-02-08 19:21:05 [INFO] utils.simulation_builder: GENESIS | Central Bank minted M0: 100,000.00
+Traceback (most recent call last):
+  File "C:\coding\economics\scripts\audit_zero_sum.py", line 226, in <module>
+    audit_integrity()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\coding\economics\scripts\audit_zero_sum.py", line 27, in audit_integrity
+    sim = create_simulation(overrides)
+  File "C:\coding\economics\utils\simulation_builder.py", line 348, in create_simulation
+    sim = initializer.build_simulation()
+  File "C:\coding\economics\simulation\initialization\initializer.py", line 285, in build_simulation
+    sim.bank = Bank(
+               ~~~~^
+        id=sim.next_agent_id,
+        ^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        credit_scoring_service=credit_scoring_service
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\coding\economics\simulation\bank.py", line 71, in __init__
+    self.loan_manager: ILoanManager = LoanManager(config_module)
+                                                  ^^^^^^^^^^^^^
+NameError: name 'config_module' is not defined. Did you mean: 'config_manager'?

@@ -554,6 +554,13 @@ class ShareholderData(TypedDict):
     firm_id: int
     quantity: float
 
+@runtime_checkable
+class IShareholderView(Protocol):
+    """View interface for a firm from the perspective of the stock market."""
+    id: int
+    is_active: bool
+    def get_book_value_per_share(self) -> float: ...
+
 class IShareholderRegistry(Protocol):
     """Single source of truth for stock ownership."""
     def register_shares(self, firm_id: int, agent_id: int, quantity: float) -> None:

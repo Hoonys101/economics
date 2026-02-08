@@ -1,0 +1,14 @@
+🛡️  Running Purity Gate v2 (Externalized Rules)...
+
+❌ Purity Violations Found:
+
+📄 modules\finance\managers\loan_manager.py:
+  - Line 3: Direct import of forbidden module 'config'
+
+📄 simulation\bank.py:
+  - Line 29: Direct import of forbidden module 'config'
+
+📄 modules\finance\managers\deposit_manager.py:
+  - Line 3: Direct import of forbidden module 'config'
+
+🚫 Verification FAILED. Please fix the violations above.
