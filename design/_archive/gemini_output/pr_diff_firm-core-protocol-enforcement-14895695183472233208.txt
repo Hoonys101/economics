@@ -1,0 +1,243 @@
+diff --git a/communications/insights/PH9.2_Firm_Core_Protocol_Enforcement.md b/communications/insights/PH9.2_Firm_Core_Protocol_Enforcement.md
+new file mode 100644
+index 00000000..572608c4
+--- /dev/null
++++ b/communications/insights/PH9.2_Firm_Core_Protocol_Enforcement.md
+@@ -0,0 +1,36 @@
++# PH9.2 Firm & Core Protocol Enforcement Report
++
++## 1. Problem Phenomenon
++- **Conflicting OrderDTO Definitions**: `OrderDTO` was defined in three different places (`modules/market/api.py`, `simulation/dtos/api.py`, `simulation/api.py`) with inconsistent fields (e.g., `currency` present in one but not others, `side` missing in some). This created ambiguity and potential type errors.
++- **Protocol Bypass in Agents**:
++    - `Firm` agent directly accessed `self._inventory` (a `BaseAgent` implementation detail) in methods like `liquidate_assets`, `calculate_valuation`, etc., violating the `IInventoryHandler` protocol.
++    - `Household` agent bypassed encapsulation by aliasing `self._inventory = self._econ_state.inventory` in `__init__`, exposing internal state to the base class structure inappropriately.
++
++## 2. Root Cause Analysis
++- **Code Duplication**: `OrderDTO` was redefined in "public API" files (`simulation/api.py`) instead of being imported from the canonical source, leading to drift over time (e.g., Phase 33 updates applied only to one copy).
++- **Inheritance vs Composition**: `Firm` inherits from `BaseAgent`, which exposes `_inventory` as a protected attribute. Developers naturally used it directly instead of the public protocol methods (`get_quantity`, `get_all_items`).
++- **Legacy Patterns**: The `Household` alias was a legacy workaround to make `BaseAgent` methods work with `EconStateDTO`, but it broke the "pure state" abstraction.
++
++## 3. Solution Implementation Details
++
++### 3.1 OrderDTO Standardization
++- **Central Source of Truth**: Established `modules.market.api.OrderDTO` as the canonical definition (aliased as `simulation.models.Order`).
++- **Unified Imports**: Replaced local class definitions in `simulation/dtos/api.py` and `simulation/api.py` with aliases to `simulation.models.Order`.
++- **Field Updates**: Added `currency: CurrencyCode = DEFAULT_CURRENCY` to the canonical `OrderDTO` to support Phase 33 requirements and standardize usage.
++
++### 3.2 Firm Protocol Enforcement
++- Refactored `Firm` methods (`liquidate_assets`, `get_agent_data`, `calculate_valuation`, `get_financial_snapshot`, `generate_transactions`, `clone`) to use `IInventoryHandler` methods:
++    - Replaced `self._inventory.keys()` with `self.get_all_items().keys()`.
++    - Replaced `self._inventory.items()` with `self.get_all_items().items()`.
++    - Replaced `self._inventory.copy()` with `self.get_all_items()`.
++- This ensures `Firm` logic is decoupled from the underlying storage mechanism of inventory.
++
++### 3.3 Household Protocol Enforcement
++- Removed the `self._inventory = self._econ_state.inventory` alias in `Household.__init__`.
++- Updated `make_decision` to pass `self.get_all_items()` to the social component instead of raw state access.
++- Confirmed `Household` overrides all `IInventoryHandler` methods, making the `BaseAgent._inventory` attribute effectively unused and irrelevant, which is cleaner.
++
++## 4. Lessons Learned & Technical Debt
++- **DTO Centralization**: DTOs should never be redefined for "convenience". Use imports or strictly typed aliases.
++- **Protocol Usage**: When inheriting from a base class that implements a protocol (like `BaseAgent` implements `IInventoryHandler`), subclasses should strictly adhere to the protocol interface even for internal logic where possible, to facilitate future refactoring (e.g., changing storage backend).
++- **Redundancy**: `OrderDTO` now contains both `currency` and `monetary_amount` (Optional). `monetary_amount` is used for internal firm orders (`INVEST_...`), while `currency` is used for market orders. Future refactoring should merge these into a single consistent monetary representation.
+diff --git a/modules/market/api.py b/modules/market/api.py
+index ddf533ed..475617f3 100644
+--- a/modules/market/api.py
++++ b/modules/market/api.py
+@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
+ from typing import Optional, Dict, Any, TypedDict, Protocol, TYPE_CHECKING, List
+ import uuid
+ from modules.finance.dtos import MoneyDTO
++from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+ 
+ if TYPE_CHECKING:
+     from simulation.dtos.api import SimulationState
+@@ -28,6 +29,7 @@ class OrderDTO:
+ 
+     # TD-213: Multi-Currency Support
+     monetary_amount: Optional[MoneyDTO] = None
++    currency: CurrencyCode = DEFAULT_CURRENCY
+ 
+     # Auto-generated ID
+     id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
+diff --git a/simulation/api.py b/simulation/api.py
+index 9549a731..24933d14 100644
+--- a/simulation/api.py
++++ b/simulation/api.py
+@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
+ from typing import Dict, Any, Optional, List, Union, TYPE_CHECKING
+ 
+ from simulation.ai.enums import Personality
+-from simulation.models import Share
++from simulation.models import Share, Order as OrderDTO
+ 
+ if TYPE_CHECKING:
+     from simulation.dtos.scenario import StressScenarioConfig
+@@ -70,16 +70,6 @@ class MarketHistoryDTO:
+     worst_ask: float
+     worst_bid: float
+ 
+-@dataclass(frozen=True)
+-class OrderDTO:
+-    """
+-    Represents an order in the market.
+-    """
+-    agent_id: int
+-    item_id: str
+-    quantity: float
+-    price: float
+-
+ @dataclass(frozen=True)
+ class MarketSnapshotDTO:
+     """
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index a527b375..7b477170 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -283,9 +283,6 @@ class Household(
+ 
+         # Ensure BaseAgent uses the same wallet as EconStateDTO
+         self._wallet = self._econ_state.wallet
+-        # EXPLICITLY ALIAS INVENTORY: Ensure BaseAgent._inventory points to EconStateDTO.inventory
+-        # This prevents "Split Brain" if BaseAgent methods are inadvertently used or if inheritance overrides are missed.
+-        self._inventory = self._econ_state.inventory
+ 
+         # WO-123: Memory Logging - Record Birth
+         if self.memory_v2:
+@@ -355,7 +352,7 @@ class Household(
+         self._social_state = self.social_component.calculate_social_status(
+             self._social_state,
+             self._econ_state.assets,
+-            self._econ_state.inventory,
++            self.get_all_items(),
+             self.config
+         )
+ 
+diff --git a/simulation/dtos/api.py b/simulation/dtos/api.py
+index 5d103175..4d8a9482 100644
+--- a/simulation/dtos/api.py
++++ b/simulation/dtos/api.py
+@@ -6,6 +6,9 @@ from simulation.models import Order
+ from simulation.dtos.decision_dtos import DecisionOutputDTO
+ from modules.finance.api import IFinancialEntity
+ 
++# Alias for standardization
++OrderDTO = Order
++
+ 
+ if TYPE_CHECKING:
+     from simulation.core_agents import Household
+@@ -120,14 +123,6 @@ class MarketHistoryDTO(TypedDict, total=False):
+     worst_ask: float
+     worst_bid: float
+ 
+-@dataclass
+-class OrderDTO:
+-    agent_id: int
+-    item_id: str
+-    quantity: float
+-    price: float
+-    currency: CurrencyCode # Added for Phase 33
+-
+ # Phase 1: MarketSnapshotDTO moved to modules.system.api
+ from modules.system.api import (
+     CurrencyCode, # Added for Phase 33
+diff --git a/simulation/firms.py b/simulation/firms.py
+index c37aa324..fb0a9628 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -260,6 +260,14 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+     def has_bailout_loan(self, value: bool):
+         self.finance_state.has_bailout_loan = value
+ 
++    @property
++    def total_debt(self) -> float:
++        return self.finance_state.total_debt
++
++    @total_debt.setter
++    def total_debt(self, value: float):
++        self.finance_state.total_debt = value
++
+     @property
+     def inventory_last_sale_tick(self) -> Dict[str, int]:
+         return self.sales_state.inventory_last_sale_tick
+@@ -282,7 +290,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+     def liquidate_assets(self, current_tick: int = -1) -> Dict[CurrencyCode, float]:
+         """Liquidate assets using Protocol Purity."""
+         # 1. Write off Inventory
+-        for item_id in list(self._inventory.keys()):
++        for item_id in list(self.get_all_items().keys()):
+             self.remove_item(item_id, self.get_quantity(item_id))
+         
+         # 2. Write off Capital Stock
+@@ -392,7 +400,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+             decision_engine=cloned_decision_engine,
+             value_orientation=self.value_orientation,
+             config_dto=self.config,
+-            initial_inventory=copy.deepcopy(self._inventory),
++            initial_inventory=self.get_all_items(),
+             loan_market=self.decision_engine.loan_market,
+             logger=self.logger,
+             personality=self.personality
+@@ -413,7 +421,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+         return {
+             "assets": MultiCurrencyWalletDTO(balances=self.wallet.get_all_balances()),
+             "needs": self.needs.copy(),
+-            "inventory": self._inventory.copy(),
++            "inventory": self.get_all_items(),
+             "input_inventory": self.input_inventory.copy(),
+             "employees": [emp.id for emp in self.hr_state.employees],
+             "is_active": self.is_active,
+@@ -615,7 +623,7 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+         # 2. Finance
+         # Calculate inventory value for holding cost
+         inventory_value = 0.0
+-        for item, qty in self._inventory.items():
++        for item, qty in self.get_all_items().items():
+             price = self.last_prices.get(item, 10.0)
+             inventory_value += qty * price
+ 
+@@ -679,13 +687,13 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+         return (self.total_shares - self.treasury_shares) * stock_price
+ 
+     def calculate_valuation(self, market_context: MarketContextDTO = None) -> float:
+-        inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self._inventory)
++        inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self.get_all_items())
+         return self.finance_engine.calculate_valuation(
+             self.finance_state, self.wallet, self.config, inventory_value, market_context
+         )
+ 
+     def get_financial_snapshot(self) -> Dict[str, Any]:
+-        inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self._inventory)
++        inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self.get_all_items())
+         total_assets = self.wallet.get_balance(DEFAULT_CURRENCY) + inventory_value + self.capital_stock
+         return {
+              "wallet": MultiCurrencyWalletDTO(balances=self.wallet.get_all_balances()),
+@@ -757,11 +765,11 @@ class Firm(BaseAgent, ILearningAgent, IFinancialEntity):
+             def profit_history(self):
+                  return self.firm.finance_state.profit_history
+             def get_book_value_per_share(self):
+-                return {'amount': self.firm.get_book_value_per_share()}
++                return {'amount': self.firm.get_book_value_per_share(), 'currency': DEFAULT_CURRENCY}
+             def get_market_cap(self, p):
+                 return self.firm.get_market_cap(p)
+             def calculate_valuation(self, ctx):
+-                return {'amount': self.firm.calculate_valuation(ctx)}
++                return {'amount': self.firm.calculate_valuation(ctx), 'currency': DEFAULT_CURRENCY}
+             def get_financial_snapshot(self):
+                 return self.firm.get_financial_snapshot()
+         return FinanceProxy(self)
+diff --git a/tests/unit/test_stock_market.py b/tests/unit/test_stock_market.py
+index a8c13f6a..7fc3a51f 100644
+--- a/tests/unit/test_stock_market.py
++++ b/tests/unit/test_stock_market.py
+@@ -26,7 +26,8 @@ def mock_config(golden_config):
+ 
+ @pytest.fixture
+ def stock_market(mock_config):
+-    return StockMarket(config_module=mock_config)
++    registry = MagicMock()
++    return StockMarket(config_module=mock_config, shareholder_registry=registry)
+ 
+ @pytest.fixture
+ def sample_buy_order_dto():

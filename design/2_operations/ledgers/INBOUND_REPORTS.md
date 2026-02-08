@@ -28,3 +28,6 @@
 ## Harvested on 2026-02-07 07:58:44
 - **audit_parity_verification.md** (from `audit-parity-verification-9333247906312188129`) -> `parity-verification-9333247906312188129_audit_parity_verification.md`
 - **audit_structural_20241024.md** (from `audit-structural-20241024-3897336574840583858`) -> `structural-20241024-3897336574840583858_audit_structural_20241024.md`
+
+## Harvested on 2026-02-08 08:28:17
+- **audit_structural_20250521.md** (from `audit-structural-report-10003829597377810907`) -> `structural-report-10003829597377810907_audit_structural_20250521.md`
