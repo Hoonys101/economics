@@ -21,6 +21,15 @@ class CommerceSystem(ICommerceSystem):
     def __init__(self, config: Any):
         self.config = config
 
+    def calculate_total_cost(self, price: float, quantity: float, tax_rate: float) -> float:
+        """
+        Calculates the total execution cost including sales tax,
+        matching the rounding logic in GoodsTransactionHandler exactly.
+        """
+        trade_value = round(quantity * price, 2)
+        tax_amount = round(trade_value * tax_rate, 2)
+        return round(trade_value + tax_amount, 2)
+
     def plan_consumption_and_leisure(self, context: CommerceContext, scenario_config: Optional["StressScenarioConfig"] = None) -> Tuple[Dict[int, Dict[str, Any]], List[Transaction]]:
         """
         Phase 1: Decisions.
@@ -84,7 +93,7 @@ class CommerceSystem(ICommerceSystem):
 
                     # TD-231: Account for Sales Tax in affordability check
                     tax_rate = context.get('sales_tax_rate', 0.05)
-                    price_with_tax = price * (1 + tax_rate)
+                    price_with_tax = self.calculate_total_cost(price, 1.0, tax_rate)
 
                     assets = household._econ_state.assets
                     cash = assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(assets, dict) else float(assets)
@@ -140,7 +149,8 @@ class CommerceSystem(ICommerceSystem):
                     else:
                         # Legacy Emergency Buy
                         tax_rate = context.get('sales_tax_rate', 0.05)
-                        cost = b_amt * food_price * (1 + tax_rate) # TD-231: Include tax
+                        # Fix: Use exact cost calculation to match GoodsTransactionHandler (Atomicity)
+                        cost = self.calculate_total_cost(food_price, b_amt, tax_rate)
 
                         assets = household._econ_state.assets
                         cash = assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(assets, dict) else float(assets)
