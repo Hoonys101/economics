@@ -347,6 +347,15 @@ class IFinancialAgent(Protocol):
         """Returns the current balance for the specified currency."""
         ...
 
+    def get_all_balances(self) -> Dict[CurrencyCode, float]:
+        """Returns a copy of all currency balances."""
+        ...
+
+    @property
+    def total_wealth(self) -> float:
+        """Returns the total wealth in default currency estimation."""
+        ...
+
 
 class IBank(IFinancialAgent, Protocol):
     """

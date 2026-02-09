@@ -6,7 +6,8 @@ from dataclasses import dataclass
 
 from simulation.models import Order, Transaction
 from simulation.core_markets import Market
-from modules.market.api import CanonicalOrderDTO
+from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO
+from simulation.markets.matching_engine import OrderBookMatchingEngine
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +90,9 @@ class OrderBookMarket(Market):
         # WO-136: Dynamic Circuit Breakers (Price History)
         # Store last 20 trade prices per item for volatility calculation
         self.price_history: Dict[str, deque] = {}
+
+        # Phase 10: Stateless Matching Engine
+        self.matching_engine = OrderBookMatchingEngine()
 
         self.logger.info(
             f"OrderBookMarket {self.id} initialized.",
@@ -254,10 +258,49 @@ class OrderBookMarket(Market):
             },
         )
 
-        for item_id in all_item_ids:
-            item_transactions = self._match_orders_for_item(item_id, current_time)
-            all_transactions.extend(item_transactions)
-            self.matched_transactions.extend(item_transactions)
+        # 1. Prepare State DTO
+        buy_orders_dto = {
+            item_id: [order.to_dto(self.id) for order in orders]
+            for item_id, orders in self._buy_orders.items()
+        }
+        sell_orders_dto = {
+            item_id: [order.to_dto(self.id) for order in orders]
+            for item_id, orders in self._sell_orders.items()
+        }
+
+        state = OrderBookStateDTO(
+            buy_orders=buy_orders_dto,
+            sell_orders=sell_orders_dto,
+            market_id=self.id
+        )
+
+        # 2. Execute Matching via Engine
+        result = self.matching_engine.match(state, current_time)
+
+        # 3. Apply Results
+        all_transactions = result.transactions
+        self.matched_transactions.extend(all_transactions)
+
+        # Update Order Books (Replace with unfilled)
+        self._buy_orders = {
+            item_id: [MarketOrder.from_dto(dto) for dto in dtos]
+            for item_id, dtos in result.unfilled_buy_orders.items()
+        }
+        self._sell_orders = {
+            item_id: [MarketOrder.from_dto(dto) for dto in dtos]
+            for item_id, dtos in result.unfilled_sell_orders.items()
+        }
+
+        # Update Market Stats
+        for item_id, price in result.market_stats.get("last_traded_prices", {}).items():
+            self.last_traded_prices[item_id] = price
+            self._update_price_history(item_id, price)
+
+        for item_id, tick in result.market_stats.get("last_trade_ticks", {}).items():
+            self.last_trade_ticks[item_id] = tick
+
+        for item_id, volume in result.market_stats.get("daily_total_volume", {}).items():
+             self.daily_total_volume[item_id] = self.daily_total_volume.get(item_id, 0.0) + volume
 
         return all_transactions
 
@@ -282,174 +325,6 @@ class OrderBookMarket(Market):
             target_order_book[order.item_id].sort(key=lambda o: o.price, reverse=True)
         else:
             target_order_book[order.item_id].sort(key=lambda o: o.price)
-
-    def _match_orders_for_item(
-        self, item_id: str, current_tick: int
-    ) -> List[Transaction]:
-        """주어진 아이템에 대해 매수/매도 주문을 매칭하고 거래를 체결합니다.
-        Phase 6: Targeted Orders (Brand Economy) are processed first.
-        """
-        transactions = []
-        log_extra = {
-            "tick": current_tick,
-            "market_id": self.id,
-            "item_id": item_id,
-        }
-
-        buy_orders_list = self._buy_orders.get(item_id, [])
-        sell_orders_list = self._sell_orders.get(item_id, [])
-
-        if not buy_orders_list or not sell_orders_list:
-            return transactions
-
-        # --- Phase 6: Targeted Matching ---
-        # 1. Separate targeted vs general buys
-        targeted_buys = []
-        general_buys = []
-        for order in buy_orders_list:
-            if order.target_agent_id is not None:
-                targeted_buys.append(order)
-            else:
-                general_buys.append(order)
-        
-        # 2. Process Targeted Buys
-        # Dictionary of AgentID -> List[MarketOrder]
-        sell_map: Dict[int, List[MarketOrder]] = {}
-        for s_order in sell_orders_list:
-             if s_order.agent_id not in sell_map:
-                 sell_map[s_order.agent_id] = []
-             sell_map[s_order.agent_id].append(s_order)
-             
-        remaining_targeted_buys = []
-        
-        for b_order in targeted_buys:
-             target_id = b_order.target_agent_id
-             # Check if target seller has stock
-             target_asks = sell_map.get(target_id)
-             
-             if target_asks and target_asks[0].quantity > 0:
-                 s_order = target_asks[0] # Pick best price ask from this seller (assuming sorted)
-                 
-                 # Price Check: Does buyer accept seller's price?
-                 if b_order.price >= s_order.price:
-                     trade_price = s_order.price # Brand Loyalty -> Pay Ask Price
-                     trade_quantity = min(b_order.quantity, s_order.quantity)
-                     
-                     transaction = Transaction(
-                         item_id=item_id,
-                         quantity=trade_quantity,
-                         price=trade_price,
-                         buyer_id=b_order.agent_id,
-                         seller_id=s_order.agent_id,
-                         market_id=self.id,
-                         transaction_type="labor" if "labor" in self.id else ("housing" if "housing" in self.id else "goods"),
-                         time=current_tick,
-                         quality=s_order.brand_info.get("quality", 1.0) if s_order.brand_info else 1.0
-                     )
-                     self.last_traded_prices[item_id] = trade_price
-                     # WO-136: Update Price History
-                     self._update_price_history(item_id, trade_price)
-                     transactions.append(transaction)
-                     
-                     self.logger.info(
-                         f"MATCHED_TARGETED | {trade_quantity:.2f} of {item_id} at {trade_price:.2f}. "
-                         f"Buyer {b_order.agent_id} -> Seller {s_order.agent_id} (Targeted)",
-                         extra={**log_extra, "buyer_id":b_order.agent_id, "seller_id":s_order.agent_id, "match_type": "targeted"}
-                     )
-                     
-                     b_order.quantity -= trade_quantity
-                     s_order.quantity -= trade_quantity
-                     
-                     if s_order.quantity <= 0.001:
-                         target_asks.pop(0) # Remove exhausted ask
-                         
-                 else:
-                     # Price mismatch (Buyer willing to pay X, Seller wants Y, X < Y)
-                     pass
-             else:
-                 # Target sold out or not present
-                 pass
-             
-             if b_order.quantity > 0.001:
-                 remaining_targeted_buys.append(b_order)
-
-        # Fallback: Add remaining targeted buys to general pool
-        if remaining_targeted_buys:
-            general_buys.extend(remaining_targeted_buys)
-            # Re-sort general buys by price desc to maintain priority
-            general_buys.sort(key=lambda o: o.price, reverse=True)
-
-        # Re-flatten sell map to list for general matching
-        remaining_sells = []
-        for s_list in sell_map.values():
-            remaining_sells.extend(s_list)
-        # Sort by price (asc) for general matching
-        remaining_sells.sort(key=lambda o: o.price)
-        
-        # General Matching Loop
-        idx_b = 0
-        idx_s = 0
-        
-        while idx_b < len(general_buys) and idx_s < len(remaining_sells):
-            b_order = general_buys[idx_b]
-            s_order = remaining_sells[idx_s]
-            
-            if b_order.quantity <= 0.001:
-                idx_b += 1
-                continue
-            if s_order.quantity <= 0.001:
-                idx_s += 1
-                continue
-                
-            if b_order.price >= s_order.price:
-                # Labor Market Logic
-                if self.id == "labor" or self.id == "research_labor":
-                    trade_price = b_order.price
-                else:
-                    trade_price = (b_order.price + s_order.price) / 2
-                
-                trade_quantity = min(b_order.quantity, s_order.quantity)
-                
-                transaction = Transaction(
-                    item_id=item_id,
-                    quantity=trade_quantity,
-                    price=trade_price,
-                    buyer_id=b_order.agent_id,
-                    seller_id=s_order.agent_id,
-                    market_id=self.id,
-                    transaction_type="labor" if "labor" in self.id else ("housing" if "housing" in self.id else "goods"),
-                    time=current_tick,
-                    quality=s_order.brand_info.get("quality", 1.0) if s_order.brand_info else 1.0
-                )
-                self.last_traded_prices[item_id] = trade_price
-                self.last_trade_ticks[item_id] = current_tick
-                # WO-136: Update Price History
-                self._update_price_history(item_id, trade_price)
-                transactions.append(transaction)
-                
-                self.logger.info(
-                    f"MATCHED_GENERAL | {trade_quantity:.2f} of {item_id} at {trade_price:.2f}. "
-                    f"Buyer {b_order.agent_id} -> Seller {s_order.agent_id}",
-                    extra={**log_extra, "buyer_id":b_order.agent_id, "seller_id":s_order.agent_id, "match_type": "general"}
-                )
-                
-                b_order.quantity -= trade_quantity
-                s_order.quantity -= trade_quantity
-            else:
-                 # Prices don't cross anymore (lists are sorted)
-                 break
-        
-        # Re-save lists to cleanup empty orders
-        new_buy_list = [o for o in (remaining_targeted_buys + general_buys) if o.quantity > 0.001]
-        new_buy_list.sort(key=lambda o: o.price, reverse=True) # Maintain sorted invariant
-        
-        new_sell_list = [o for o in remaining_sells if o.quantity > 0.001]
-        new_sell_list.sort(key=lambda o: o.price)
-        
-        self._buy_orders[item_id] = new_buy_list
-        self._sell_orders[item_id] = new_sell_list
-
-        return transactions
 
     def get_best_ask(self, item_id: str) -> float | None:
         """주어진 아이템의 최저 판매 가격(best ask)을 반환합니다."""

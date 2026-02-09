@@ -41,6 +41,10 @@ class Phase_Production(IPhaseStrategy):
         # 3. Trigger Firm Production
         for firm in state.firms:
             if firm.is_active:
-                firm.produce(state.time, technology_manager=self.world_state.technology_manager)
+                firm.produce(
+                    state.time,
+                    technology_manager=self.world_state.technology_manager,
+                    effects_queue=state.effects_queue
+                )
 
         return state

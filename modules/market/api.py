@@ -98,7 +98,35 @@ class HousingConfigDTO(TypedDict):
     mortgage_term_ticks: int
     # Note: Interest rate is handled by the banking/lending system config
 
+@dataclass
+class OrderBookStateDTO:
+    """State DTO for generic OrderBook markets (Goods, Labor)."""
+    buy_orders: Dict[str, List[CanonicalOrderDTO]]
+    sell_orders: Dict[str, List[CanonicalOrderDTO]]
+    market_id: str
+
+@dataclass
+class StockMarketStateDTO:
+    """State DTO for Stock Markets."""
+    buy_orders: Dict[int, List[CanonicalOrderDTO]] # firm_id -> orders
+    sell_orders: Dict[int, List[CanonicalOrderDTO]]
+    market_id: str
+
+@dataclass
+class MatchingResultDTO:
+    """Result DTO returned by stateless matching engines."""
+    transactions: List["Transaction"]
+    unfilled_buy_orders: Dict[str, List[CanonicalOrderDTO]] # item_id (or firm_id str) -> orders
+    unfilled_sell_orders: Dict[str, List[CanonicalOrderDTO]]
+    market_stats: Dict[str, Any] # e.g. last_traded_prices, volume
+
 # --- Interfaces ---
+
+class IMatchingEngine(Protocol):
+    """Protocol for stateless market matching engines."""
+    def match(self, state: Any, current_tick: int) -> MatchingResultDTO:
+        """Executes matching logic on the provided state snapshot."""
+        ...
 
 class ISpecializedTransactionHandler(Protocol):
     """

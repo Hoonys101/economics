@@ -699,6 +699,16 @@ class Household(
         return self._econ_state.wallet.get_balance(currency)
 
     @override
+    def get_all_balances(self) -> Dict[CurrencyCode, float]:
+        """Returns a copy of all currency balances."""
+        return self._econ_state.wallet.get_all_balances()
+
+    @property
+    def total_wealth(self) -> float:
+        """Returns the total wealth in default currency estimation."""
+        return self._econ_state.wallet.get_balance(DEFAULT_CURRENCY)
+
+    @override
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
         return self._econ_state.wallet.get_all_balances()
 

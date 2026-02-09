@@ -12,8 +12,9 @@ from dataclasses import dataclass, replace
 
 from simulation.models import Transaction, Order
 from simulation.core_markets import Market
-from modules.market.api import CanonicalOrderDTO
+from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO
 from modules.finance.api import IShareholderRegistry, IShareholderView
+from simulation.markets.matching_engine import StockMatchingEngine
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,9 @@ class StockMarket(Market):
         self.daily_volumes: Dict[int, float] = {}    # 일일 거래량
         self.daily_high: Dict[int, float] = {}       # 일일 최고가
         self.daily_low: Dict[int, float] = {}        # 일일 최저가
+
+        # Phase 10: Stateless Matching Engine
+        self.matching_engine = StockMatchingEngine()
 
     def update_shareholder(self, agent_id: int, firm_id: int, quantity: float) -> None:
         """
@@ -198,112 +202,72 @@ class StockMarket(Market):
     def match_orders(self, tick: int) -> List[Transaction]:
         """
         모든 기업의 주식 주문을 매칭하여 거래를 성사시킵니다.
-        
-        Args:
-            tick: 현재 시뮬레이션 틱
-            
-        Returns:
-            성사된 주식 거래 목록
+        Delegates to Stateless Matching Engine.
         """
-        all_transactions: List[Transaction] = []
         
-        # 모든 기업에 대해 매칭 수행
-        all_firm_ids = set(self.buy_orders.keys()) | set(self.sell_orders.keys())
-        
-        for firm_id in all_firm_ids:
-            transactions = self._match_orders_for_firm(firm_id, tick)
-            all_transactions.extend(transactions)
-        
-        return all_transactions
+        # 1. Construct State DTO
+        def to_dto_with_metadata(managed: ManagedOrder) -> CanonicalOrderDTO:
+            dto = replace(managed.order, quantity=managed.remaining_quantity)
+            new_metadata = dto.metadata.copy() if dto.metadata else {}
+            new_metadata['created_tick'] = managed.created_tick
+            return replace(dto, metadata=new_metadata)
 
-    def _match_orders_for_firm(self, firm_id: int, tick: int) -> List[Transaction]:
-        """특정 기업의 주식 주문을 매칭합니다."""
-        transactions: List[Transaction] = []
+        buy_orders_dto = {
+            firm_id: [to_dto_with_metadata(managed) for managed in orders]
+            for firm_id, orders in self.buy_orders.items()
+        }
+        sell_orders_dto = {
+            firm_id: [to_dto_with_metadata(managed) for managed in orders]
+            for firm_id, orders in self.sell_orders.items()
+        }
         
-        buy_orders = self.buy_orders.get(firm_id, [])
-        sell_orders = self.sell_orders.get(firm_id, [])
+        state = StockMarketStateDTO(
+            buy_orders=buy_orders_dto,
+            sell_orders=sell_orders_dto,
+            market_id=self.id
+        )
         
-        while buy_orders and sell_orders:
-            best_buy_managed = buy_orders[0]
-            best_sell_managed = sell_orders[0]
+        # 2. Execute Matching via Engine
+        result = self.matching_engine.match(state, tick)
 
-            best_buy_dto = best_buy_managed.order
-            best_sell_dto = best_sell_managed.order
+        # 3. Apply Results
+        # Update Stats
+        for firm_id_str, price in result.market_stats.get("last_prices", {}).items():
+            firm_id = int(firm_id_str)
+            self.last_prices[firm_id] = price
             
-            # 매수가 >= 매도가 이면 거래 성립
-            if best_buy_dto.price_limit >= best_sell_dto.price_limit:
-                # 거래 가격: 두 호가의 평균
-                trade_price = (best_buy_dto.price_limit + best_sell_dto.price_limit) / 2
-                trade_quantity = min(best_buy_managed.remaining_quantity, best_sell_managed.remaining_quantity)
+        for firm_id_str, volume in result.market_stats.get("daily_volumes", {}).items():
+            firm_id = int(firm_id_str)
+            self.daily_volumes[firm_id] = self.daily_volumes.get(firm_id, 0.0) + volume
 
-                # Validation (Tech Debt Fix)
-                if best_buy_dto.agent_id is None or best_sell_dto.agent_id is None:
-                    self.logger.critical(
-                        f"STOCK_MATCH_FATAL | NULL ID in matched order! "
-                        f"BuyerID: {best_buy_dto.agent_id}, SellerID: {best_sell_dto.agent_id}. Skipping match.",
-                        extra={"tick": tick, "firm_id": firm_id}
-                    )
-                    # Skip this match and possibly pop the problematic order?
-                    # For safety, we just break or continue.
-                    # If we don't pop, we infinite loop.
-                    # We should pop the invalid one.
-                    if best_buy_dto.agent_id is None:
-                        buy_orders.pop(0)
-                    if best_sell_dto.agent_id is None:
-                        sell_orders.pop(0)
-                    continue
-                
-                # 거래 생성
-                transaction = Transaction(
-                    buyer_id=best_buy_dto.agent_id,
-                    seller_id=best_sell_dto.agent_id,
-                    item_id=f"stock_{firm_id}",
-                    quantity=trade_quantity,
-                    price=trade_price,
-                    market_id=self.id,
-                    transaction_type="stock",
-                    time=tick,
-                )
-                transactions.append(transaction)
-                
-                # 가격 및 거래량 업데이트
-                self.last_prices[firm_id] = trade_price
-                self.daily_volumes[firm_id] = self.daily_volumes.get(firm_id, 0) + trade_quantity
-                
-                # 일일 고저가 업데이트
-                if firm_id not in self.daily_high or trade_price > self.daily_high[firm_id]:
-                    self.daily_high[firm_id] = trade_price
-                if firm_id not in self.daily_low or trade_price < self.daily_low[firm_id]:
-                    self.daily_low[firm_id] = trade_price
-                
-                self.logger.info(
-                    f"Stock trade: {trade_quantity:.1f} shares of firm {firm_id} "
-                    f"at {trade_price:.2f} (buyer: {best_buy_dto.agent_id}, seller: {best_sell_dto.agent_id})",
-                    extra={
-                        "tick": tick,
-                        "firm_id": firm_id,
-                        "quantity": trade_quantity,
-                        "price": trade_price,
-                        "buyer_id": best_buy_dto.agent_id,
-                        "seller_id": best_sell_dto.agent_id,
-                        "tags": ["stock", "trade"]
-                    }
-                )
-                
-                # 주문 수량 조정 (ManagedOrder 내부 상태 변경)
-                best_buy_managed.remaining_quantity -= trade_quantity
-                best_sell_managed.remaining_quantity -= trade_quantity
-                
-                # 완료된 주문 제거
-                if best_buy_managed.remaining_quantity <= 0:
-                    buy_orders.pop(0)
-                if best_sell_managed.remaining_quantity <= 0:
-                    sell_orders.pop(0)
-            else:
-                # 더 이상 매칭 가능한 주문 없음
-                break
+        for firm_id_str, high in result.market_stats.get("daily_high", {}).items():
+            firm_id = int(firm_id_str)
+            if firm_id not in self.daily_high or high > self.daily_high[firm_id]:
+                self.daily_high[firm_id] = high
+
+        for firm_id_str, low in result.market_stats.get("daily_low", {}).items():
+            firm_id = int(firm_id_str)
+            if firm_id not in self.daily_low or low < self.daily_low[firm_id]:
+                self.daily_low[firm_id] = low
+
+        # Reconstruct ManagedOrders
+        def from_dto(dto: CanonicalOrderDTO) -> ManagedOrder:
+            created_tick = dto.metadata.get('created_tick', tick) if dto.metadata else tick
+            # Remove created_tick from metadata to keep DTO clean? Or keep it?
+            # Keeping it doesn't hurt.
+            return ManagedOrder(order=dto, remaining_quantity=dto.quantity, created_tick=created_tick)
+
+        self.buy_orders = defaultdict(list)
+        for firm_id_str, dtos in result.unfilled_buy_orders.items():
+            firm_id = int(firm_id_str)
+            self.buy_orders[firm_id] = [from_dto(dto) for dto in dtos]
+
+        self.sell_orders = defaultdict(list)
+        for firm_id_str, dtos in result.unfilled_sell_orders.items():
+            firm_id = int(firm_id_str)
+            self.sell_orders[firm_id] = [from_dto(dto) for dto in dtos]
         
-        return transactions
+        return result.transactions
 
     def clear_expired_orders(self, current_tick: int) -> int:
         """

@@ -36,6 +36,49 @@ from modules.inventory.manager import InventoryManager
 from simulation.systems.api import ILearningAgent, LearningUpdateContext
 from simulation.systems.tech.api import FirmTechInfoDTO
 
+class RealEstateUtilizationComponent:
+    """
+    TD-271: Converts firm-owned real estate into a production bonus.
+    Applies production cost reduction based on owned space and market conditions.
+    """
+    def apply(self, firm: "Firm", current_tick: int, market_data: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+        # 1. Calculate Owned Space
+        # Assuming 1 property = 1 unit of space for now (or configurable)
+        owned_space = len(firm.owned_properties)
+        if owned_space <= 0:
+            return None
+
+        # 2. Get Factors
+        # space_utility_factor: How much cost reduction per unit of space?
+        # Ideally from config. Assuming default 100.0 if not in config.
+        space_utility_factor = getattr(firm.config, "space_utility_factor", 100.0)
+
+        # regional_rent_index: From market data or default 1.0
+        regional_rent_index = 1.0
+        # Placeholder for market data integration
+
+        # 3. Calculate Cost Reduction (Bonus)
+        # Formula: owned_space * space_utility_factor * regional_rent_index
+        cost_reduction = owned_space * space_utility_factor * regional_rent_index
+
+        # 4. Apply Bonus
+        # Effectively reduces net cost by increasing revenue/profit internally
+        if cost_reduction > 0:
+             # We assume this is a virtual saving.
+             firm.record_revenue(cost_reduction, DEFAULT_CURRENCY)
+
+             return {
+                 "type": "PRODUCTION_COST_REDUCTION",
+                 "agent_id": firm.id,
+                 "amount": cost_reduction,
+                 "tick": current_tick,
+                 "details": {
+                     "owned_space": owned_space,
+                     "utility_factor": space_utility_factor
+                 }
+             }
+        return None
+
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
     from simulation.loan_market import LoanMarket
@@ -123,6 +166,9 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         # Brand Manager (Kept as component for now, or could be moved to SalesState/Engine)
         self.brand_manager = BrandManager(self.id, self.config, self.logger)
         
+        # TD-271: Real Estate Utilization
+        self.real_estate_utilization_component = RealEstateUtilizationComponent()
+
         # Loan Market
         self.decision_engine.loan_market = loan_market
         
@@ -568,7 +614,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
         self.sales_engine.adjust_marketing_budget(self.sales_state, market_context, total_revenue)
 
-    def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
+    def produce(self, current_time: int, technology_manager: Optional[Any] = None, effects_queue: Optional[List[Dict[str, Any]]] = None) -> None:
         self.current_production = self.production_engine.produce(
             self.production_state,
             self, # IInventoryHandler
@@ -578,6 +624,11 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             self.id,
             technology_manager
         )
+
+        # TD-271: Real Estate Utilization
+        effect = self.real_estate_utilization_component.apply(self, current_time)
+        if effect and effects_queue is not None:
+            effects_queue.append(effect)
 
     @override
     def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "Firm":
@@ -932,6 +983,15 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
         """Implements IFinancialAgent.get_balance."""
         return self.wallet.get_balance(currency)
+
+    def get_all_balances(self) -> Dict[CurrencyCode, float]:
+        """Returns a copy of all currency balances."""
+        return self.wallet.get_all_balances()
+
+    @property
+    def total_wealth(self) -> float:
+        """Returns the total wealth in default currency estimation."""
+        return self.wallet.get_balance(DEFAULT_CURRENCY)
 
     @override
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:

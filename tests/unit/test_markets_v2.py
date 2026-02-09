@@ -29,10 +29,10 @@ class TestPlaceOrderToBook:
         """단일 매수 주문이 오더북에 올바르게 추가되는지 테스트합니다."""
         order = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=10,
-            price=100,
+            price_limit=100,
             market_id="test_market",
         )
         market.place_order(order, 1)
@@ -47,26 +47,26 @@ class TestPlaceOrderToBook:
         """여러 매수 주문이 가격 내림차순으로 정렬되는지 테스트합니다."""
         order1 = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=10,
-            price=100,
+            price_limit=100,
             market_id="test_market",
         )
         order2 = Order(
             agent_id=2,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=5,
-            price=110,
+            price_limit=110,
             market_id="test_market",
         )
         order3 = Order(
             agent_id=3,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=8,
-            price=105,
+            price_limit=105,
             market_id="test_market",
         )
 
@@ -82,26 +82,26 @@ class TestPlaceOrderToBook:
         """여러 매도 주문이 가격 오름차순으로 정렬되는지 테스트합니다."""
         order1 = Order(
             agent_id=1,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=10,
-            price=100,
+            price_limit=100,
             market_id="test_market",
         )
         order2 = Order(
             agent_id=2,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=5,
-            price=90,
+            price_limit=90,
             market_id="test_market",
         )
         order3 = Order(
             agent_id=3,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=8,
-            price=95,
+            price_limit=95,
             market_id="test_market",
         )
 
@@ -118,26 +118,26 @@ class TestPlaceOrderToBook:
         # 이 테스트는 현재 bisect 구현 상 통과함 (stable sort와 유사하게 동작)
         order1 = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=10,
-            price=100,
+            price_limit=100,
             market_id="test_market",
         )
         order2 = Order(
             agent_id=2,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=5,
-            price=110,
+            price_limit=110,
             market_id="test_market",
         )
         order3 = Order(
             agent_id=3,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=8,
-            price=100,
+            price_limit=100,
             market_id="test_market",
         )  # order1과 가격 동일
 
@@ -158,20 +158,20 @@ class TestOrderMatching:
         # Arrange: 매도 110, 매수 100 (가격 불일치)
         sell_order = Order(
             agent_id=1,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=10,
-            price=110,
+            price_limit=110,
             market_id="test_market",
         )
         market.place_order(sell_order, current_time=1)
 
         buy_order = Order(
             agent_id=2,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=10,
-            price=100,
+            price_limit=100,
             market_id="test_market",
         )
         market.place_order(buy_order, current_time=2)
@@ -194,20 +194,20 @@ class TestOrderMatching:
         """매수 주문 1개와 매도 주문 1개가 완전히 체결되는 경우를 테스트합니다."""
         sell_order = Order(
             agent_id=2,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=10,
-            price=100,
+            price_limit=100,
             market_id="test_market",
         )
         market.place_order(sell_order, current_time=1)
 
         buy_order = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=10,
-            price=105,
+            price_limit=105,
             market_id="test_market",
         )
         market.place_order(buy_order, current_time=2)
@@ -229,20 +229,20 @@ class TestOrderMatching:
         """새로운 매수 주문이 부분 체결된 후 나머지가 오더북에 등록되는 경우를 테스트합니다."""
         sell_order = Order(
             agent_id=2,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=5,
-            price=100,
+            price_limit=100,
             market_id="test_market",
         )
         market.place_order(sell_order, current_time=1)
 
         buy_order = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=10,
-            price=105,
+            price_limit=105,
             market_id="test_market",
         )
         market.place_order(buy_order, current_time=2)
@@ -265,18 +265,18 @@ class TestOrderMatching:
         """새로운 큰 주문 하나가 여러 개의 작은 주문과 체결되는 경우를 테스트합니다."""
         sell1 = Order(
             agent_id=2,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=5,
-            price=98,
+            price_limit=98,
             market_id="test_market",
         )
         sell2 = Order(
             agent_id=3,
-            order_type="SELL",
+            side="SELL",
             item_id="food",
             quantity=5,
-            price=100,
+            price_limit=100,
             market_id="test_market",
         )
         market.place_order(sell1, current_time=1)
@@ -284,10 +284,10 @@ class TestOrderMatching:
 
         buy_order = Order(
             agent_id=1,
-            order_type="BUY",
+            side="BUY",
             item_id="food",
             quantity=12,
-            price=105,
+            price_limit=105,
             market_id="test_market",
         )
         market.place_order(buy_order, current_time=3)
