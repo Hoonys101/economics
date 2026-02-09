@@ -19,6 +19,7 @@ from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY, ICurrency
 from modules.system.registry import AgentRegistry
 from modules.hr.service import HRService
 from modules.finance.service import TaxService
+from modules.finance.api import IShareholderRegistry
 
 class AgentLifecycleManager(AgentLifecycleManagerInterface):
     """
@@ -29,7 +30,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
     def __init__(self, config_module: Any, demographic_manager: DemographicManager,
                  inheritance_manager: InheritanceManager, firm_system: FirmSystem,
-                 settlement_system: ISettlementSystem, public_manager: IAssetRecoverySystem, logger: logging.Logger):
+                 settlement_system: ISettlementSystem, public_manager: IAssetRecoverySystem, logger: logging.Logger,
+                 shareholder_registry: IShareholderRegistry = None):
         self.config = config_module
         self.demographic_manager = demographic_manager
         self.inheritance_manager = inheritance_manager
@@ -37,6 +39,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         self.settlement_system = settlement_system
         self.public_manager = public_manager
         self.immigration_manager = ImmigrationManager(config_module=config_module, settlement_system=settlement_system)
+        self.shareholder_registry = shareholder_registry
 
         # Dependencies for LiquidationManager
         self.agent_registry = AgentRegistry()
@@ -49,6 +52,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             self.hr_service,
             self.tax_service,
             self.agent_registry,
+            self.shareholder_registry,
             public_manager
         )
 

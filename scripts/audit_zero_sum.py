@@ -206,7 +206,8 @@ def audit_integrity():
         ai_trainer=sim.ai_trainer,
         next_agent_id=sim.next_agent_id,
         real_estate_units=sim.real_estate_units,
-        settlement_system=sim.world_state.settlement_system
+        settlement_system=sim.world_state.settlement_system,
+        shareholder_registry=sim.shareholder_registry if hasattr(sim, 'shareholder_registry') else None
     )
 
     # Run lifecycle manager
