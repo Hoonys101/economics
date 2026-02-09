@@ -1,0 +1,419 @@
+diff --git a/communications/insights/PH9.2_TrackB_SensoryPurity.md b/communications/insights/PH9.2_TrackB_SensoryPurity.md
+new file mode 100644
+index 00000000..54a13d88
+--- /dev/null
++++ b/communications/insights/PH9.2_TrackB_SensoryPurity.md
+@@ -0,0 +1,44 @@
++# PH9.2 Track B: Sensory System & Observation Purity
++
++## 1. Problem Phenomenon
++The `SensorySystem`, responsible for aggregating economic indicators for the Government, was directly accessing the internal state of agents. Specifically:
++- It accessed `_bio_state.is_active` on Households.
++- It accessed `_econ_state.assets` (checking for dict or float) on Households.
++- It accessed `_social_state.approval_rating` on Households.
++
++This violated the **encapsulation principle** and the **Separation of Concerns**. Agents' internal structure (DTOs like `_econ_state`) should be private. External systems should interact via defined interfaces. This coupling made refactoring agents difficult, as changing internal state structure would break the `SensorySystem`.
++
++## 2. Root Cause Analysis
++- **Lack of Interface:** There was no standard protocol for agents to expose their "observable" state to the world.
++- **Leaky Abstractions:** The `SensorySystem` had knowledge of the specific implementation details of `Household` (e.g., that it has `_econ_state` and `_social_state` attributes).
++- **Inconsistent Data Access:** The code had to handle `assets` being either a dictionary or a float, indicating a lack of standardized data contracts.
++
++## 3. Solution Implementation Details
++To resolve this, we implemented **Track B** of the Interface Purity reforms:
++
++1.  **Defined `ISensoryDataProvider` Protocol:**
++    - Located in `modules/simulation/api.py`.
++    - Defines a single method: `get_sensory_snapshot() -> AgentSensorySnapshotDTO`.
++
++2.  **Defined `AgentSensorySnapshotDTO`:**
++    - A `TypedDict` containing strictly typed fields: `is_active`, `approval_rating`, `total_wealth`.
++    - This serves as the Data Transfer Object between Agents and Observers.
++
++3.  **Implemented Protocol in Agents:**
++    - **`Household`:** Maps its internal `_bio_state`, `_social_state`, and `assets` to the DTO.
++    - **`Firm`:** Maps `is_active` and `assets`. Returns `0.0` for `approval_rating` (neutral).
++    - **`Government`:** Maps `approval_rating` and `assets`.
++
++4.  **Refactored `SensorySystem`:**
++    - Updated `generate_government_sensory_dto` to iterate over agents as `ISensoryDataProvider` objects.
++    - Replaced all direct attribute access with `get_sensory_snapshot()`.
++    - Removed fragile logic for handling `dict` vs `float` assets, as the DTO enforces a `float` contract for `total_wealth`.
++
++## 4. Lessons Learned & Technical Debt
++- **Legacy Debt in Verification Scripts:** The `scripts/audit_zero_sum.py` script failed with a `LIQUIDATION_ERROR` ("Firm 150 missing finance component"). This indicates that `LiquidationManager` is still relying on the deprecated `finance` component attribute, whereas `Firm` has moved to a Composition-based architecture (`finance_state` + `finance_engine`). This is unrelated to the Sensory refactor but blocked clean verification of the entire system.
++- **Protocol Adoption:** Explicitly defining protocols like `ISensoryDataProvider` significantly improves code readability and safety. It allows for mocking in tests (as demonstrated in `tests/unit/test_sensory_purity.py`) without needing complex object graphs.
++- **DTO vs. Dict:** Moving from raw dictionaries or direct attribute access to TypedDict/Dataclass DTOs enforces type safety and makes data flow explicit.
++
++## 5. Verification
++- **Unit Tests:** Created `tests/unit/test_sensory_purity.py` to verify that `SensorySystem` correctly aggregates data using the new protocol. Tests passed.
++- **Purity Check:** Ran `scripts/verify_purity.py` which passed, confirming no architectural violations were introduced.
+diff --git a/modules/simulation/api.py b/modules/simulation/api.py
+index 4f8e0a3f..98ee9515 100644
+--- a/modules/simulation/api.py
++++ b/modules/simulation/api.py
+@@ -32,6 +32,14 @@ class AgentStateDTO:
+     inventory: Dict[str, float]
+     is_active: bool
+ 
++class AgentSensorySnapshotDTO(TypedDict):
++    """
++    A stable, read-only view of an agent's state for observation.
++    """
++    is_active: bool
++    approval_rating: float
++    total_wealth: float
++
+ @dataclass
+ class DecisionDTO:
+     """(Placeholder) Represents a decision made by an engine."""
+@@ -79,6 +87,14 @@ class HouseholdSnapshotDTO:
+ 
+ # --- Protocols ---
+ 
++@runtime_checkable
++class ISensoryDataProvider(Protocol):
++    """
++    Protocol for agents to expose their state safely to observer systems.
++    """
++    def get_sensory_snapshot(self) -> AgentSensorySnapshotDTO:
++        ...
++
+ @runtime_checkable
+ class IInventoryHandler(Protocol):
+     """
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index 615cf6d1..c3bcbe6c 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -30,6 +30,7 @@ from modules.government.components.policy_lockout_manager import PolicyLockoutMa
+ from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
+ from modules.finance.wallet.wallet import Wallet
+ from modules.finance.wallet.api import IWallet
++from modules.simulation.api import ISensoryDataProvider, AgentSensorySnapshotDTO
+ 
+ if TYPE_CHECKING:
+     from simulation.finance.api import ISettlementSystem
+@@ -39,7 +40,7 @@ if TYPE_CHECKING:
+ 
+ logger = logging.getLogger(__name__)
+ 
+-class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent):
++class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDataProvider):
+     """
+     정부 에이전트. 세금을 징수하고 보조금을 지급하거나 인프라에 투자합니다.
+     """
+@@ -160,6 +161,13 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent):
+             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "government"]},
+         )
+ 
++    def get_sensory_snapshot(self) -> AgentSensorySnapshotDTO:
++        return {
++            "is_active": True,
++            "approval_rating": self.approval_rating,
++            "total_wealth": self.assets
++        }
++
+     # --- IFinancialEntity Implementation ---
+ 
+     @property
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index dc5d039d..0da38157 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -17,7 +17,7 @@ from simulation.dtos import DecisionContext, FiscalContext, MacroFinancialContex
+ 
+ from simulation.dtos.config_dtos import HouseholdConfigDTO
+ from simulation.portfolio import Portfolio
+-from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IOrchestratorAgent, IInventoryHandler
++from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO
+ 
+ from simulation.ai.household_ai import HouseholdAI
+ from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
+@@ -75,7 +75,8 @@ class Household(
+     IFinancialAgent,
+     IOrchestratorAgent,
+     ICreditFrozen,
+-    IInventoryHandler
++    IInventoryHandler,
++    ISensoryDataProvider
+ ):
+     """
+     Household Agent (Facade).
+@@ -319,6 +320,14 @@ class Household(
+     def get_core_config(self) -> AgentCoreConfigDTO:
+         return self._core_config
+ 
++    def get_sensory_snapshot(self) -> AgentSensorySnapshotDTO:
++        return {
++            "is_active": self.is_active,
++            "approval_rating": self._social_state.approval_rating,
++            # WO-124: Explicitly use wallet balance to satisfy Protocol Purity
++            "total_wealth": self._econ_state.wallet.get_balance(DEFAULT_CURRENCY)
++        }
++
+     def get_current_state(self) -> AgentStateDTO:
+         return AgentStateDTO(
+             assets=self._econ_state.wallet.get_all_balances(),
+diff --git a/simulation/firms.py b/simulation/firms.py
+index a4c748e2..214c9920 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -15,7 +15,7 @@ from simulation.dtos.config_dtos import FirmConfigDTO
+ from simulation.dtos.firm_state_dto import FirmStateDTO
+ from simulation.ai.enums import Personality
+ from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO, ICurrencyHolder
+-from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler
++from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO
+ from dataclasses import replace
+ 
+ # Orchestrator-Engine Refactor
+@@ -46,7 +46,7 @@ if TYPE_CHECKING:
+ 
+ logger = logging.getLogger(__name__)
+ 
+-class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder):
++class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider):
+     """
+     Firm Agent (Orchestrator).
+     Manages state and delegates logic to stateless engines.
+@@ -135,6 +135,13 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, IOrchestratorAgent
+     def get_core_config(self) -> AgentCoreConfigDTO:
+         return self._core_config
+ 
++    def get_sensory_snapshot(self) -> AgentSensorySnapshotDTO:
++        return {
++            "is_active": self.is_active,
++            "approval_rating": 0.0,
++            "total_wealth": self.assets
++        }
++
+     def get_current_state(self) -> AgentStateDTO:
+         return AgentStateDTO(
+             assets=self._wallet.get_all_balances(),
+diff --git a/simulation/systems/sensory_system.py b/simulation/systems/sensory_system.py
+index 38bb41b1..d02efebf 100644
+--- a/simulation/systems/sensory_system.py
++++ b/simulation/systems/sensory_system.py
+@@ -5,6 +5,7 @@ from collections import deque
+ from typing import Any, Deque, List, Optional
+ from simulation.systems.api import ISensorySystem, SensoryContext
+ from simulation.dtos import GovernmentStateDTO
++from modules.simulation.api import ISensoryDataProvider, AgentSensorySnapshotDTO
+ 
+ class SensorySystem(ISensorySystem):
+     """
+@@ -76,81 +77,44 @@ class SensorySystem(ISensorySystem):
+         households = context.get("households", [])
+ 
+         # Only process if we have households
+-        active_households = [h for h in households if h._bio_state.is_active]
+-        if active_households:
+-             # Calculate Gini
+-             if inequality_tracker:
+-                 # Ensure we use default currency assets
+-                 # Household assets structure might vary based on Phase 33
+-                 # Assuming _econ_state.assets is Dict or float.
+-                 # InequalityTracker expects list of floats.
+-
+-                 # Helper to extract asset value safely
+-                 def get_asset_val(h):
+-                     if hasattr(h._econ_state, 'wallet'):
+-                         return h._econ_state.wallet.get_total_value() # Assuming this exists or similar
+-                     if isinstance(h._econ_state.assets, dict):
+-                         # Just use default currency for Gini or sum?
+-                         # Usually Wealth = Sum of all assets in base currency
+-                         # For now, let's assume default currency is enough or assets is float
+-                         # But wait, InequalityTracker.calculate_wealth_distribution accesses h._econ_state.assets directly
+-                         # If assets is a dict, InequalityTracker might fail if it doesn't handle it.
+-                         # Let's check InequalityTracker again? No, let's trust it handles it or we handle it here.
+-                         from modules.system.api import DEFAULT_CURRENCY
+-                         return h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0)
+-                     return float(h._econ_state.assets)
+-
+-                 # However, InequalityTracker.calculate_gini_coefficient takes List[float].
+-                 # We should pass floats.
+-
+-                 # Actually, let's look at how InequalityTracker uses assets.
+-                 # "sorted(households, key=lambda h: h._econ_state.assets)"
+-                 # If assets is dict, this fails.
+-                 # This implies InequalityTracker might be broken for Phase 33 if assets is dict.
+-                 # BUT, for this task, I will extract float.
+-
+-                 assets_list = []
+-                 for h in active_households:
+-                     val = 0.0
+-                     if isinstance(h._econ_state.assets, dict):
+-                         from modules.system.api import DEFAULT_CURRENCY
+-                         val = h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0)
+-                     else:
+-                         val = float(h._econ_state.assets)
+-                     assets_list.append(val)
++        # Use ISensoryDataProvider protocol
++        active_snapshots: List[tuple[Any, AgentSensorySnapshotDTO]] = []
++
++        for h in households:
++            # We assume households implement ISensoryDataProvider as per Protocol Purity
++            # But we can check or try/except for robustness during migration if needed
++            # For this task, we assume strict compliance or fallback
++            if isinstance(h, ISensoryDataProvider):
++                snapshot = h.get_sensory_snapshot()
++                if snapshot['is_active']:
++                    active_snapshots.append((h, snapshot))
++            else:
++                # Fallback for legacy agents not yet migrated (should not happen if all are migrated)
++                pass
++
++        if active_snapshots:
++             assets_list = [snap['total_wealth'] for _, snap in active_snapshots]
+ 
++             if inequality_tracker:
+                  gini_index = inequality_tracker.calculate_gini_coefficient(assets_list)
+ 
+-                 # Use same values for sorting
+-                 # Sort by assets
+-                 # Zip assets and households
+-                 combined = list(zip(active_households, assets_list))
+-                 combined.sort(key=lambda x: x[1]) # Sort by asset value
+-
+-                 sorted_hh = [x[0] for x in combined]
+-             else:
+-                 # Fallback sorting if no tracker (though we need logic)
+-                 # Replicate extraction logic
+-                 def get_val(h):
+-                     if isinstance(h._econ_state.assets, dict):
+-                         from modules.system.api import DEFAULT_CURRENCY
+-                         return h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0)
+-                     return float(h._econ_state.assets)
+-                 sorted_hh = sorted(active_households, key=get_val)
+-
+-             n = len(sorted_hh)
++             # Sort by assets
++             combined = sorted(active_snapshots, key=lambda x: x[1]['total_wealth'])
++
++             # Extract approval ratings from sorted list
++             n = len(combined)
+ 
+              # Low Asset: Bottom 50%
+              n_low = int(n * 0.5)
+-             low_hh = sorted_hh[:n_low]
+-             if low_hh:
+-                 approval_low_asset = sum(h._social_state.approval_rating for h in low_hh) / len(low_hh)
++             low_group = combined[:n_low]
++             if low_group:
++                 approval_low_asset = sum(snap['approval_rating'] for _, snap in low_group) / len(low_group)
+ 
+              # High Asset: Top 20%
+              n_high = int(n * 0.2)
+-             high_hh = sorted_hh[-n_high:] if n_high > 0 else []
+-             if high_hh:
+-                 approval_high_asset = sum(h._social_state.approval_rating for h in high_hh) / len(high_hh)
++             high_group = combined[-n_high:] if n_high > 0 else []
++             if high_group:
++                 approval_high_asset = sum(snap['approval_rating'] for _, snap in high_group) / len(high_group)
+ 
+         return GovernmentStateDTO(
+             tick=time,
+diff --git a/tests/unit/test_sensory_purity.py b/tests/unit/test_sensory_purity.py
+new file mode 100644
+index 00000000..12124008
+--- /dev/null
++++ b/tests/unit/test_sensory_purity.py
+@@ -0,0 +1,97 @@
++import unittest
++from collections import deque
++from unittest.mock import MagicMock, Mock
++from simulation.systems.sensory_system import SensorySystem
++from modules.simulation.api import ISensoryDataProvider, AgentSensorySnapshotDTO, AgentStateDTO
++
++class MockAgent:
++    def __init__(self, is_active, wealth, approval):
++        self.is_active = is_active
++        self.wealth = wealth
++        self.approval = approval
++
++    def get_sensory_snapshot(self) -> AgentSensorySnapshotDTO:
++        return {
++            "is_active": self.is_active,
++            "total_wealth": self.wealth,
++            "approval_rating": self.approval
++        }
++
++class MockInequalityTracker:
++    def calculate_gini_coefficient(self, assets):
++        # Simplified Gini for testing: just return 0.5 or something deterministic if list is not empty
++        return 0.3 if assets else 0.0
++
++class TestSensoryPurity(unittest.TestCase):
++    def setUp(self):
++        self.config = MagicMock()
++        self.system = SensorySystem(self.config)
++        self.tracker = MagicMock()
++        self.tracker.get_latest_indicators.return_value = {
++            "avg_goods_price": 10.0,
++            "unemployment_rate": 0.05,
++            "total_production": 1000.0,
++            "avg_wage": 20.0
++        }
++        self.government = MagicMock()
++        self.government.approval_rating = 0.6
++
++    def test_generate_government_sensory_dto_purity(self):
++        # Setup context
++        households = [
++            MockAgent(True, 100.0, 0.4), # Low wealth
++            MockAgent(True, 200.0, 0.5), # Mid wealth
++            MockAgent(True, 300.0, 0.6), # High wealth
++            MockAgent(False, 1000.0, 0.9) # Inactive
++        ]
++
++        inequality_tracker = MockInequalityTracker()
++
++        context = {
++            "tracker": self.tracker,
++            "government": self.government,
++            "time": 100,
++            "households": households,
++            "inequality_tracker": inequality_tracker
++        }
++
++        # Act
++        dto = self.system.generate_government_sensory_dto(context)
++
++        # Assert
++        self.assertEqual(dto.tick, 100)
++        self.assertEqual(dto.gini_index, 0.3)
++
++        # 3 active households.
++        # Low: Bottom 50% -> 1 household (int(3*0.5)=1) -> wealth 100 -> approval 0.4
++        # High: Top 20% -> 1 household (int(3*0.2)=0). Wait, int(0.6) = 0.
++        # Let's recheck logic: n_high = int(n * 0.2). If n=3, n_high=0.
++        # If n_high=0, approval_high_asset = 0.5 (default init)
++
++        self.assertEqual(dto.approval_low_asset, 0.4)
++        self.assertEqual(dto.approval_high_asset, 0.5)
++
++    def test_logic_with_more_agents(self):
++        # 10 agents
++        households = [MockAgent(True, i*100, i/10.0) for i in range(10)]
++        # wealths: 0, 100, ..., 900
++        # approvals: 0.0, 0.1, ..., 0.9
++
++        context = {
++            "tracker": self.tracker,
++            "government": self.government,
++            "time": 100,
++            "households": households,
++            "inequality_tracker": MockInequalityTracker()
++        }
++
++        dto = self.system.generate_government_sensory_dto(context)
++
++        # Bottom 50% = 5 agents (0..4). Approvals sum: 0+0.1+0.2+0.3+0.4 = 1.0. Avg = 1.0/5 = 0.2
++        self.assertAlmostEqual(dto.approval_low_asset, 0.2)
++
++        # Top 20% = 2 agents (8, 9). Approvals sum: 0.8+0.9 = 1.7. Avg = 1.7/2 = 0.85
++        self.assertAlmostEqual(dto.approval_high_asset, 0.85)
++
++if __name__ == '__main__':
++    unittest.main()
