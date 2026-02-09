@@ -130,8 +130,11 @@ class Phase5_PostSequence(IPhaseStrategy):
             }
 
         for f in state.firms:
-            if hasattr(f, 'finance') and hasattr(f.finance, 'finalize_tick'):
-                # Correctly handles multi-currency reset and capitalization
+            if hasattr(f, 'reset'):
+                # WO-4.6: New reset interface
+                f.reset()
+            elif hasattr(f, 'finance') and hasattr(f.finance, 'finalize_tick'):
+                # Legacy: Correctly handles multi-currency reset and capitalization
                 f.finance.finalize_tick(market_context)
             else:
                 logger.warning(

@@ -886,8 +886,8 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         self.brand_manager.update(self.sales_state.marketing_budget, self.productivity_factor / 10.0)
         self.sales_engine.adjust_marketing_budget(self.sales_state, market_context, self.finance_state.last_revenue)
 
-        # Finance cleanup for next tick
-        self.finance_state.reset_tick_counters(DEFAULT_CURRENCY)
+        # WO-4.6: Finance cleanup is now handled in Post-Sequence via reset()
+        # This ensures expenses_this_tick accumulates for the full tick duration.
 
         return transactions
 
@@ -996,3 +996,17 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
                 next_market_data=next_market_data,
             )
 
+    def reset_finance(self) -> None:
+        """
+        Resets the financial state for the next tick.
+        Called by the simulation orchestrator's post-processing phase.
+        Delegates to FinanceState.
+        """
+        self.finance_state.reset_tick_counters(DEFAULT_CURRENCY)
+
+    def reset(self) -> None:
+        """
+        Alias for reset_finance.
+        Called by the simulation orchestrator for general agent reset.
+        """
+        self.reset_finance()
