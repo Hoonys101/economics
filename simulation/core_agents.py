@@ -27,6 +27,7 @@ from modules.finance.api import IFinancialEntity, IFinancialAgent, ICreditFrozen
 from modules.simulation.api import IEducated
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.finance.wallet.wallet import Wallet
+from modules.common.interfaces import IPropertyOwner
 import simulation
 
 # Engines
@@ -67,7 +68,8 @@ class Household(
     IOrchestratorAgent,
     ICreditFrozen,
     IInventoryHandler,
-    ISensoryDataProvider
+    ISensoryDataProvider,
+    IPropertyOwner
 ):
     """
     Household Agent (Orchestrator).
@@ -541,6 +543,24 @@ class Household(
                 housing_system.initiate_purchase(decision_dict, buyer_id=self.id)
 
     # --- Other Interface Implementations ---
+
+    # IPropertyOwner Implementation
+    @property
+    def owned_properties(self) -> List[int]:
+        return self._econ_state.owned_properties
+
+    def add_property(self, property_id: int) -> None:
+        if property_id not in self._econ_state.owned_properties:
+            self._econ_state.owned_properties.append(property_id)
+
+    def remove_property(self, property_id: int) -> None:
+        if property_id in self._econ_state.owned_properties:
+            self._econ_state.owned_properties.remove(property_id)
+
+    # IHousingTransactionParticipant Implementation
+    @property
+    def current_wage(self) -> float:
+        return self._econ_state.current_wage
 
     @property
     def credit_frozen_until_tick(self) -> int:

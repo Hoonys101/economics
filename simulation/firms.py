@@ -28,6 +28,7 @@ from simulation.dtos.context_dtos import PayrollProcessingContext, FinancialTran
 
 from simulation.utils.shadow_logger import log_shadow
 from modules.finance.api import InsufficientFundsError, IFinancialEntity, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake
+from modules.common.interfaces import IPropertyOwner
 from modules.common.dtos import Claim
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
 from modules.finance.wallet.wallet import Wallet
@@ -47,7 +48,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable):
+class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner):
     """
     Firm Agent (Orchestrator).
     Manages state and delegates logic to stateless engines.
@@ -872,6 +873,19 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
     @override
     def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, technology_manager: Optional[Any] = None) -> None:
         pass
+
+    # --- IPropertyOwner Implementation ---
+    @property
+    def owned_properties(self) -> List[int]:
+        return self.finance_state.owned_properties
+
+    def add_property(self, property_id: int) -> None:
+        if property_id not in self.finance_state.owned_properties:
+            self.finance_state.owned_properties.append(property_id)
+
+    def remove_property(self, property_id: int) -> None:
+        if property_id in self.finance_state.owned_properties:
+            self.finance_state.owned_properties.remove(property_id)
 
     # --- IFinancialEntity Implementation ---
     # These are handled by BaseAgent and wallet, but we expose properties for convenience or protocol satisfaction

@@ -1,10 +1,33 @@
 import unittest
-from unittest.mock import MagicMock, call, PropertyMock, patch
+from unittest.mock import MagicMock, call, PropertyMock, patch, create_autospec
 from modules.market.handlers.housing_transaction_handler import HousingTransactionHandler
+from modules.market.api import IHousingTransactionParticipant
+from modules.common.interfaces import IPropertyOwner, IResident
 from simulation.models import Transaction
 from simulation.agents.government import Government
 from simulation.core_agents import Household
 from modules.system.escrow_agent import EscrowAgent
+
+class DummyHousingParticipant(IHousingTransactionParticipant, IResident):
+    id = 3
+    current_wage = 20.0
+    owned_properties = []
+    residing_property_id = None
+    is_homeless = True
+    def get_balance(self, currency): return 20000.0
+    def add_property(self, pid): pass
+    def remove_property(self, pid): pass
+    def deposit(self, amt, currency): pass
+    def withdraw(self, amt, currency): pass
+
+class DummySeller(IPropertyOwner):
+    id = 4
+    owned_properties = [101]
+    def get_balance(self, currency): return 50000.0
+    def add_property(self, pid): pass
+    def remove_property(self, pid): pass
+    def deposit(self, amt, currency): pass
+    def withdraw(self, amt, currency): pass
 
 class TestHousingTransactionHandler(unittest.TestCase):
     def setUp(self):
@@ -33,32 +56,18 @@ class TestHousingTransactionHandler(unittest.TestCase):
         self.state.transaction_queue = []
 
         # Mock Agents
-        self.buyer = MagicMock(spec=Household)
+        self.buyer = create_autospec(DummyHousingParticipant, instance=True)
         self.buyer.id = 3
-        self.buyer._econ_state = MagicMock()
-        self.buyer._bio_state = MagicMock()
-        self.buyer._econ_state.assets = 20000.0
-
-        # Handle assets property on Household spec
-        type(self.buyer).assets = PropertyMock(return_value=20000.0)
         self.buyer.get_balance.return_value = 20000.0
+        self.buyer.current_wage = 20.0
+        self.buyer.owned_properties = []
+        self.buyer.residing_property_id = None
+        self.buyer.is_homeless = True
 
-        self.buyer._econ_state.current_wage = 20.0
-        self.buyer.current_wage = 20.0 # Satisfy hasattr checks
-        self.buyer._bio_state.is_active = True
-        self.buyer._econ_state.owned_properties = []
-        self.buyer._econ_state.residing_property_id = None
-
-        self.seller = MagicMock(spec=Household)
+        self.seller = create_autospec(DummySeller, instance=True)
         self.seller.id = 4
-        self.seller._econ_state = MagicMock()
-        self.seller._bio_state = MagicMock()
-        self.seller._econ_state.assets = 50000.0
-        type(self.seller).assets = PropertyMock(return_value=50000.0)
         self.seller.get_balance.return_value = 50000.0
-
-        self.seller._bio_state.is_active = True
-        self.seller._econ_state.owned_properties = [101]
+        self.seller.owned_properties = [101]
 
         # Mock Escrow Agent
         self.escrow_agent = MagicMock(spec=EscrowAgent)

@@ -1,8 +1,10 @@
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, TypedDict, Protocol, TYPE_CHECKING, List
+from typing import Optional, Dict, Any, TypedDict, Protocol, TYPE_CHECKING, List, runtime_checkable
 import uuid
 from modules.finance.dtos import MoneyDTO
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+from modules.common.interfaces import IPropertyOwner
+from modules.finance.api import IFinancialAgent
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
@@ -119,6 +121,17 @@ class ISpecializedTransactionHandler(Protocol):
 class IHousingTransactionHandler(ISpecializedTransactionHandler, Protocol):
     """Explicit protocol for the housing transaction handler."""
     ...
+
+@runtime_checkable
+class IHousingTransactionParticipant(IPropertyOwner, IFinancialAgent, Protocol):
+    """
+    Protocol for agents participating in housing transactions as buyers.
+    Combines financial capabilities with property ownership and income verification.
+    """
+    @property
+    def current_wage(self) -> float:
+        """Current wage for mortgage eligibility calculation."""
+        ...
 
 class IMarket(Protocol):
     """

@@ -2,8 +2,8 @@ from typing import Any, Optional, Tuple, Dict
 import logging
 from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction
-from modules.market.api import IHousingTransactionHandler, HousingConfigDTO
-from modules.finance.api import BorrowerProfileDTO, LienDTO
+from modules.market.api import IHousingTransactionHandler, HousingConfigDTO, IHousingTransactionParticipant
+from modules.finance.api import BorrowerProfileDTO, LienDTO, IFinancialAgent
 from modules.system.escrow_agent import EscrowAgent
 from modules.common.interfaces import IPropertyOwner, IResident, IMortgageBorrower
 from modules.system.api import DEFAULT_CURRENCY
@@ -69,8 +69,8 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
         down_payment = sale_price
 
         # Determine Mortgage Eligibility
-        # Only Agents implementing IMortgageBorrower get mortgages usually.
-        is_borrower = isinstance(buyer, IMortgageBorrower) or hasattr(buyer, 'current_wage')
+        # Agents implementing IHousingTransactionParticipant (which includes current_wage) are eligible.
+        is_borrower = isinstance(buyer, IHousingTransactionParticipant)
         use_mortgage = is_borrower and context.bank is not None
 
         if use_mortgage:
@@ -82,22 +82,8 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
 
         # Check Buyer Funds for Down Payment
         buyer_assets = 0.0
-        if hasattr(buyer, "get_balance"):
+        if isinstance(buyer, IFinancialAgent):
              buyer_assets = buyer.get_balance(tx_currency)
-        elif isinstance(buyer, IMortgageBorrower):
-            # Safe extraction for protocols using Dict assets
-            assets_attr = buyer.assets
-            if isinstance(assets_attr, dict):
-                buyer_assets = assets_attr.get(tx_currency, 0.0)
-            else:
-                buyer_assets = float(assets_attr)
-        elif hasattr(buyer, "assets"):
-            # Legacy/Firm fallback
-            attr = getattr(buyer, "assets", 0.0)
-            if isinstance(attr, dict):
-                 buyer_assets = attr.get(tx_currency, 0.0)
-            else:
-                 buyer_assets = float(attr)
         else:
              buyer_assets = 0.0
 
@@ -223,7 +209,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
 
     def _create_borrower_profile(self, buyer: Any, trade_value: float, context: TransactionContext, currency: str = DEFAULT_CURRENCY) -> BorrowerProfileDTO:
         gross_income = 0.0
-        if isinstance(buyer, IMortgageBorrower) or hasattr(buyer, "current_wage"):
+        if isinstance(buyer, IHousingTransactionParticipant):
              # Estimate monthly income
              work_hours = getattr(context.config_module, "WORK_HOURS_PER_DAY", 8.0)
              ticks_per_year = getattr(context.config_module, "TICKS_PER_YEAR", 100.0)
@@ -238,20 +224,10 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
              except: pass
 
         assets_val = 0.0
-        if hasattr(buyer, "get_balance"):
+        if isinstance(buyer, IFinancialAgent):
              assets_val = buyer.get_balance(currency)
-        elif isinstance(buyer, IMortgageBorrower):
-            assets_attr = buyer.assets
-            if isinstance(assets_attr, dict):
-                assets_val = assets_attr.get(currency, 0.0)
-            else:
-                assets_val = float(assets_attr)
         else:
-            attr = getattr(buyer, "assets", 0.0)
-            if isinstance(attr, dict):
-                 assets_val = attr.get(currency, 0.0)
-            else:
-                 assets_val = float(attr)
+             assets_val = 0.0
 
         return BorrowerProfileDTO(
             borrower_id=str(buyer.id),
@@ -305,12 +281,6 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
         # Update Seller (if not None/Govt)
         if seller and isinstance(seller, IPropertyOwner):
              seller.remove_property(unit_id)
-        elif seller and hasattr(seller, "owned_properties"):
-             # Legacy/Other agents fallback
-             if hasattr(seller, "remove_property"):
-                  seller.remove_property(unit_id)
-             elif unit_id in seller.owned_properties:
-                  seller.owned_properties.remove(unit_id)
 
         # Update Buyer
         if isinstance(buyer, IPropertyOwner):
@@ -322,12 +292,3 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                     unit.occupant_id = buyer.id
                     buyer.residing_property_id = unit_id
                     buyer.is_homeless = False
-        elif hasattr(buyer, "owned_properties"):
-            if unit_id not in buyer.owned_properties:
-                buyer.owned_properties.append(unit_id)
-
-            # Auto-move-in if homeless
-            if getattr(buyer, "residing_property_id", None) is None:
-                unit.occupant_id = buyer.id
-                buyer.residing_property_id = unit_id
-                buyer.is_homeless = False

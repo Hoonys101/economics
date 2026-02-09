@@ -46,6 +46,9 @@ class FinanceState:
     has_bailout_loan: bool = False
     is_bankrupt: bool = False
 
+    # Real Estate Assets (IPropertyOwner)
+    owned_properties: List[int] = field(default_factory=list)
+
     # For IPO initialization
     is_publicly_traded: bool = True
     founder_id: Optional[int] = None
