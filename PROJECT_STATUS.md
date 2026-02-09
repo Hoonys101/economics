@@ -1,8 +1,14 @@
 # 프로젝트 상태 보고서 (PROJECT_STATUS.md)
 
-**최종 업데이트**: 2026-02-06 (Phase 7: Structural Hardening & Domain Purity)
+**최종 업데이트**: 2026-02-09 (Verification-Driven Development Reorientation)
 
 이 문서는 "살아있는 디지털 경제" 프로젝트의 현재 진행 상황을 종합적으로 관리합니다.
+
+### 📑 주요 문서 (Core Documents)
+- [Master Roadmap](./design/1_governance/roadmap.md)
+- [Technical Debt Ledger](./design/2_operations/ledgers/TECH_DEBT_LEDGER.md)
+- [SPVM Matrix](./design/1_governance/verification/SPVM_MATRIX.md)
+- [Scenario Cards](./design/1_governance/verification/SCENARIO_CARDS.md)
 
 ---
 

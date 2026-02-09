@@ -8,7 +8,9 @@
 ## 🟡 Medium Risk: Agent Logic & Tuning
 - [ ] 4. Mitosis Mechanism Verification & Tuning
 - [ ] 5. Social Inheritance (Child-Parent state transfer)
-- [ ] 6. Advanced Needs Hierarchy (Maslow's model)
+- [ ] 6. **Maslow 5-Level Need Hierarchy** ⭐ **[PRIORITY]**
+  - Goal: Replace 3-level model with full Bio-Psychological cycle.
+  - Verification: See [SPVM Matrix](../3_work_artifacts/specs/SPVM_MATRIX.md).
 
 ## 🔵 Completed / Integrated (Recent Phases)
 - [x] 7. Brand Value & Product Quality Differentiation (Phase 6)
@@ -17,7 +19,17 @@
 - [x] 10. Monetary Policy (Phase 10)
 - [x] 11. Portfolio Optimization (Phase 16 -> Phase 25)
 - [x] 12. Corporate Intelligence (Phase 16-B)
+- [x] 12. Corporate Intelligence (Phase 16-B)
 - [x] 13. Stock Exchange High-Fidelity Activation (Phase 25)
+
+## 🧪 Scenario-Driven Verification (Strategic Reorientation)
+- [ ] Implement **Scenario Runner** Framework (O(1) experimental scaling)
+- [ ] Tier 1 Verification: Female Labor (Technology-Biology Trade-off)
+- [ ] Tier 1 Verification: Housing/Fertility (Economic NPV Trap)
+- [ ] Tier 2 Verification: **Malthusian Trap** (Fixed Land SSoT)
+- [ ] Tier 2 Verification: **Esteem Signaling** (Veblen emergence from status rank)
+
+> **Reference**: [SPVM Matrix](verification/SPVM_MATRIX.md) / [Scenario Cards](verification/SCENARIO_CARDS.md)
 
 ## 🔴 Pending / Future
 - [x] 14. Phase 17+: Market Diversity (Real Estate, Services, Raw Materials)
