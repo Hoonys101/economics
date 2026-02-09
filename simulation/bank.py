@@ -27,6 +27,8 @@ from modules.finance.managers.deposit_manager import DepositManager
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
+from modules.system.event_bus.api import IEventBus
+from modules.events.dtos import LoanDefaultedEvent
 from simulation.models import Transaction
 from simulation.portfolio import Portfolio
 
@@ -52,7 +54,8 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager,
                  shareholder_registry: Optional[IShareholderRegistry] = None,
                  settlement_system: Optional["ISettlementSystem"] = None,
-                 credit_scoring_service: Optional[ICreditScoringService] = None):
+                 credit_scoring_service: Optional[ICreditScoringService] = None,
+                 event_bus: Optional[IEventBus] = None):
         self._id = id
 
         initial_balance_dict = {}
@@ -67,6 +70,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         self.settlement_system = settlement_system
         self.credit_scoring_service = credit_scoring_service
         self.shareholder_registry = shareholder_registry
+        self.event_bus = event_bus
         self.government: Optional["Government"] = None
 
         # TD-274: Initialize Managers
@@ -473,85 +477,36 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     def _handle_default(self, event: Dict[str, Any], agents_dict: Dict[int, Any], current_tick: int) -> List[Transaction]:
         transactions = []
         borrower_id = event['borrower_id']
-        agent = agents_dict.get(borrower_id)
+        amount_defaulted = event['amount_defaulted']
+        loan_id = event['loan_id']
 
-        # 1. Credit Destruction
-        if event['amount_defaulted'] > 0:
+        # 1. Credit Destruction (Monetary Policy)
+        # This remains the Bank's responsibility as it's a balance sheet write-off.
+        if amount_defaulted > 0:
             transactions.append(Transaction(
                 buyer_id=self.government.id if self.government else -1,
                 seller_id=self.id,
                 item_id=f"credit_destruction_default_{borrower_id}",
                 quantity=1,
-                price=event['amount_defaulted'],
+                price=amount_defaulted,
                 market_id="monetary_policy",
                 transaction_type="credit_destruction",
                 time=current_tick
             ))
 
-        if not agent:
-            return transactions
-
-        # 2. Penalties (Protocol Purity)
-
-        # Share Seizure
-        if isinstance(agent, IPortfolioHandler):
-            portfolio = agent.get_portfolio()
-            for asset in portfolio.assets:
-                if asset.asset_type == 'stock':
-                    try:
-                        firm_id = int(asset.asset_id)
-                        # Remove from registry
-                        if self.shareholder_registry:
-                            self.shareholder_registry.register_shares(firm_id, borrower_id, 0)
-                    except ValueError:
-                        pass
-            agent.clear_portfolio()
-
-        # Credit Freeze (Jail)
-        if isinstance(agent, ICreditFrozen):
-            default_recovery = self._get_config("finance.bank_defaults.credit_recovery_ticks", 100)
-            jail_ticks = self._get_config("bank.credit_recovery_ticks", default_recovery)
-            agent.credit_frozen_until_tick = current_tick + jail_ticks
-
-        # XP Penalty
-        if isinstance(agent, IEducated):
-            default_penalty = self._get_config("finance.bank_defaults.bankruptcy_xp_penalty", 0.2)
-            xp_penalty = self._get_config("bank.bankruptcy_xp_penalty", default_penalty)
-            agent.education_xp *= (1.0 - xp_penalty)
-
-        # 3. Asset Recovery (Seize Cash)
-        assets_val = 0.0
-        # Use IFinancialEntity if possible
-        if isinstance(agent, IFinancialEntity):
-             assets_val = agent.assets
-        # Fallback for legacy (should not happen if all are IFinancialEntity)
-        elif hasattr(agent, 'wallet'):
-             assets_val = agent.wallet.get_balance(DEFAULT_CURRENCY)
-
-        if assets_val > 0:
-             memo = f"Default Recovery {event['loan_id']}"
-             success = False
-             if self.settlement_system:
-                 tx_rec = self.settlement_system.transfer(agent, self, assets_val, memo, tick=current_tick)
-                 success = tx_rec is not None
-             else:
-                 try:
-                     agent.withdraw(assets_val)
-                     self.deposit(assets_val)
-                     success = True
-                 except: pass
-
-             if success:
-                 transactions.append(Transaction(
-                    buyer_id=agent.id,
-                    seller_id=self.id,
-                    item_id=event['loan_id'],
-                    quantity=1.0,
-                    price=assets_val,
-                    market_id="financial",
-                    transaction_type="loan_default_recovery",
-                    time=current_tick
-                ))
+        # 2. Publish Default Event (Consequences & Recovery delegated to JudicialSystem)
+        if self.event_bus:
+            default_event: LoanDefaultedEvent = {
+                "event_type": "LOAN_DEFAULTED",
+                "tick": current_tick,
+                "agent_id": borrower_id,
+                "loan_id": loan_id,
+                "defaulted_amount": amount_defaulted,
+                "creditor_id": self.id
+            }
+            self.event_bus.publish(default_event)
+        else:
+            logger.warning("Bank: EventBus not injected. Loan default consequences (penalties, seizure) skipped.")
 
         return transactions
 

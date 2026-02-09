@@ -90,6 +90,9 @@ from modules.system.execution.public_manager import PublicManager
 from modules.finance.kernel.ledger import MonetaryLedger
 from modules.finance.sagas.orchestrator import SagaOrchestrator
 from modules.finance.shareholder_registry import ShareholderRegistry
+from modules.system.event_bus.event_bus import EventBus
+from modules.governance.judicial.system import JudicialSystem
+from modules.system.registry import AgentRegistry
 
 
 class SimulationInitializer(SimulationInitializerInterface):
@@ -148,6 +151,7 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         # 2. Populate the shell with all its components
         sim.settlement_system = SettlementSystem(logger=self.logger)
+        sim.event_bus = EventBus()
         sim.world_state.taxation_system = TaxationSystem(config_module=self.config)
 
         # TD-253: Saga & Ledger
@@ -287,7 +291,8 @@ class SimulationInitializer(SimulationInitializerInterface):
             initial_assets=0.0, # Will be funded via Genesis Grant
             config_manager=self.config_manager,
             settlement_system=sim.settlement_system,
-            credit_scoring_service=credit_scoring_service
+            credit_scoring_service=credit_scoring_service,
+            event_bus=sim.event_bus
         )
         sim.settlement_system.bank = sim.bank # TD-179: Enable bank-integrated seamless payments
         self.initial_balances[sim.bank.id] = self.config.INITIAL_BANK_ASSETS # Record for distribution
@@ -455,6 +460,16 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.agents[sim.escrow_agent.id] = sim.escrow_agent
         sim.next_agent_id += 1
 
+        # TD-261: Initialize Judicial System
+        sim.agent_registry = AgentRegistry()
+        sim.judicial_system = JudicialSystem(
+            event_bus=sim.event_bus,
+            settlement_system=sim.settlement_system,
+            agent_registry=sim.agent_registry,
+            shareholder_registry=sim.shareholder_registry,
+            config_manager=self.config_manager
+        )
+
         # Phase 3: Public Manager
         sim.public_manager = PublicManager(config=self.config)
         sim.world_state.public_manager = sim.public_manager
@@ -567,6 +582,9 @@ class SimulationInitializer(SimulationInitializerInterface):
             f"Simulation run started with run_id: {sim.run_id}",
             extra={"run_id": sim.run_id},
         )
+
+        # Finalize AgentRegistry state
+        sim.agent_registry.set_state(sim.world_state)
 
         self.logger.info(f"Simulation fully initialized with run_id: {sim.run_id}")
 
