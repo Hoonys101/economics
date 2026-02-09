@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List, Optional, TYPE_CHECKING, Any, Dict
 import logging
 
-from simulation.dtos.api import SimulationState, GovernmentStateDTO
+from simulation.dtos.api import SimulationState, GovernmentSensoryDTO
 from simulation.orchestration.phases import (
     Phase0_PreSequence, Phase_Production, Phase1_Decision, Phase2_Matching,
     Phase3_Transaction, Phase_Bankruptcy, Phase_HousingSaga, Phase_Consumption, Phase5_PostSequence,
@@ -47,7 +47,7 @@ class TickOrchestrator:
             Phase5_PostSequence(world_state)
         ]
 
-    def run_tick(self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None) -> None:
+    def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:
         state = self.world_state
 
         # Money Supply Verification (Tick 0)
@@ -90,7 +90,7 @@ class TickOrchestrator:
             extra={"tick": state.time, "tags": ["tick_end"]},
         )
 
-    def _create_simulation_state_dto(self, injectable_sensory_dto: Optional[GovernmentStateDTO]) -> SimulationState:
+    def _create_simulation_state_dto(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO]) -> SimulationState:
         state = self.world_state
 
         # Ensure injectable_sensory_dto has valid current_gdp if provided

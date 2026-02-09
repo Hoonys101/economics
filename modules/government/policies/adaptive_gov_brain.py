@@ -2,7 +2,7 @@ from typing import List, Dict, Any, Optional
 import logging
 from simulation.ai.enums import PoliticalParty, PolicyActionTag
 from modules.government.dtos import PolicyActionDTO
-from simulation.dtos import GovernmentStateDTO as SensoryDTO
+from simulation.dtos import GovernmentSensoryDTO as SensoryDTO
 
 logger = logging.getLogger(__name__)
 

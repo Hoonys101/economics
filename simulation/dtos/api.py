@@ -461,7 +461,7 @@ class LeisureEffectDTO:
     xp_gained: float           # 자녀 XP 증가 (Parenting) 또는 본인 생산성 (Self-Dev)
 
 @dataclass
-class GovernmentStateDTO:
+class GovernmentSensoryDTO:
     """
     WO-057-B: Sensory Module DTO.
     Transfers 10-tick SMA macro data to the Government Agent.

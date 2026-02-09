@@ -6,7 +6,7 @@ import logging
 
 if TYPE_CHECKING:
     from simulation.agents.government import Government
-    from simulation.dtos import GovernmentStateDTO
+    from simulation.dtos import GovernmentSensoryDTO
     from simulation.agents.central_bank import CentralBank
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class AdaptiveGovPolicy(IGovernmentPolicy):
         self.brain = AdaptiveGovBrain(config_module)
         # LockoutManager is in government agent
 
-    def decide(self, government: "Government", sensory_data: "GovernmentStateDTO", current_tick: int, central_bank: "CentralBank") -> Dict[str, Any]:
+    def decide(self, government: "Government", sensory_data: "GovernmentSensoryDTO", current_tick: int, central_bank: "CentralBank") -> Dict[str, Any]:
 
         # 30-tick Interval (Optional, matching legacy behavior for stability)
         action_interval = getattr(self.config, "GOV_ACTION_INTERVAL", 30)

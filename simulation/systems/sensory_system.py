@@ -4,7 +4,7 @@ Implements the SensorySystem which processes raw economic indicators into smooth
 from collections import deque
 from typing import Any, Deque, List, Optional
 from simulation.systems.api import ISensorySystem, SensoryContext
-from simulation.dtos import GovernmentStateDTO
+from simulation.dtos import GovernmentSensoryDTO
 from modules.simulation.api import ISensoryDataProvider, AgentSensorySnapshotDTO
 
 class SensorySystem(ISensorySystem):
@@ -26,7 +26,7 @@ class SensorySystem(ISensorySystem):
         self.last_avg_price_for_sma: float = 10.0
         self.last_gdp_for_sma: float = 0.0
 
-    def generate_government_sensory_dto(self, context: SensoryContext) -> GovernmentStateDTO:
+    def generate_government_sensory_dto(self, context: SensoryContext) -> GovernmentSensoryDTO:
         """
         Calculates indicators, updates buffers, and returns the DTO.
         """
@@ -116,7 +116,7 @@ class SensorySystem(ISensorySystem):
              if high_group:
                  approval_high_asset = sum(snap['approval_rating'] for _, snap in high_group) / len(high_group)
 
-        return GovernmentStateDTO(
+        return GovernmentSensoryDTO(
             tick=time,
             inflation_sma=calculate_sma(self.inflation_buffer),
             unemployment_sma=calculate_sma(self.unemployment_buffer),

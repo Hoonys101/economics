@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 import logging
 
 from simulation.orchestration.api import IPhaseStrategy
-from simulation.dtos.api import SimulationState, GovernmentStateDTO
+from simulation.dtos.api import SimulationState, GovernmentSensoryDTO
 from modules.government.dtos import MacroEconomicSnapshotDTO
 from simulation.systems.api import (
     EventContext, SocialMobilityContext, SensoryContext
@@ -66,7 +66,7 @@ class Phase0_PreSequence(IPhaseStrategy):
             "households": state.households
         }
 
-        sensory_dto = GovernmentStateDTO(state.time, 0, 0, 0, 0, 0, 0)
+        sensory_dto = GovernmentSensoryDTO(state.time, 0, 0, 0, 0, 0, 0)
         if self.world_state.sensory_system:
             sensory_dto = self.world_state.sensory_system.generate_government_sensory_dto(sensory_context)
         else:
