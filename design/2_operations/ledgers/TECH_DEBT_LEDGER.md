@@ -10,6 +10,24 @@
 
 ---
 
+### TD-270: Protocol Interface Mismatch (Mortgage vs Finance)
+
+- **Phenomenon**: `IMortgageBorrower` defines `assets` as a `Dict[str, float]`, but `IFinancialAgent` and actual implementations often treat `assets` as a `float` (Total Wealth).
+- **Risk**: Prevents seamless protocol composition. The `HousingTransactionHandler` had to bypass `IMortgageBorrower` for balance checks.
+- **Resolution**: Unify the asset representation across financial protocols. Standardize on `Dict[str, float]` for multi-currency support while providing a `total_wealth` property.
+- **Reference**: `protocol_shield_hardening.md` (2026-02-09)
+
+---
+
+### TD-271: Firm Real Estate Underutilization
+
+- **Phenomenon**: `Firm` agents can now own property (to satisfy `IPropertyOwner`), but they do not use it for production, office space, or rental income.
+- **Risk**: Property held by firms acts as a sterile asset, potentially causing a liquidity sink without contributing to simulation utility or GDP.
+- **Resolution**: Integrate property ownership into the `ProductionEngine` (e.g., land/space as a factor) and `FirmManagement` (ROI calculations for real estate).
+- **Reference**: `protocol_shield_hardening.md` (2026-02-09)
+
+---
+
 ### TD-255: Cockpit's Direct State Injection
 
 - **Phenomenon**: Control functions from `mission_active_cockpit` (`SET_BASE_RATE`, `SET_TAX_RATE`) directly modify the WorldState.
@@ -90,3 +108,4 @@
 | **TD-FIN-PURE** | Finance | **Stateless**: Refactored bailout request to Command pattern. | PH10.3 | [Insight](../_archive/insights/2026-02-09_PH10.3_Structural_Integrity.md) |
 | **TD-JUD-ASSET** | Judicial | **Waterfall**: Implemented hierarchical asset seizure. | PH10.3 | [Insight](../_archive/insights/2026-02-09_PH10.3_Structural_Integrity.md) |
 | **TD-LIQ-INV** | Liquidation | **Protocol**: `IConfigurable` replacement for `getattr` hacks. | PH10.4 | [Insight](../_archive/insights/2026-02-09_TD-LIQ-INV_Protocol_Purification.md) |
+| **TD-255** | Housing | **Hardening**: Replaced `hasattr` with `IHousingTransactionParticipant`. | PH12 (Shield) | [Insight](../../communications/insights/protocol_shield_hardening.md) |

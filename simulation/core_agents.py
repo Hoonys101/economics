@@ -344,6 +344,90 @@ class Household(
         self._bio_state.age = value
 
     @property
+    def spouse_id(self) -> Optional[int]:
+        return self._bio_state.spouse_id
+
+    @spouse_id.setter
+    def spouse_id(self, value: Optional[int]) -> None:
+        self._bio_state.spouse_id = value
+
+    @property
+    def children_ids(self) -> List[int]:
+        return self._bio_state.children_ids
+
+    @property
+    def social_status(self) -> float:
+        return self._social_state.social_status
+
+    @social_status.setter
+    def social_status(self, value: float) -> None:
+        self._social_state.social_status = value
+
+    @property
+    def social_rank(self) -> float:
+        return self._social_state.social_rank
+
+    @social_rank.setter
+    def social_rank(self, value: float) -> None:
+        self._social_state.social_rank = value
+
+    @property
+    def conformity(self) -> float:
+        return self._social_state.conformity
+
+    @conformity.setter
+    def conformity(self, value: float) -> None:
+        self._social_state.conformity = value
+
+    @property
+    def is_employed(self) -> bool:
+        return self._econ_state.is_employed
+
+    @is_employed.setter
+    def is_employed(self, value: bool) -> None:
+        self._econ_state.is_employed = value
+
+    @property
+    def employer_id(self) -> Optional[int]:
+        return self._econ_state.employer_id
+
+    @employer_id.setter
+    def employer_id(self, value: Optional[int]) -> None:
+        self._econ_state.employer_id = value
+
+    @property
+    def labor_skill(self) -> float:
+        return self._econ_state.labor_skill
+
+    @labor_skill.setter
+    def labor_skill(self, value: float) -> None:
+        self._econ_state.labor_skill = value
+
+    @property
+    def inventory(self) -> Dict[str, float]:
+        return self._econ_state.inventory
+
+    @property
+    def talent(self) -> Talent:
+        return self._econ_state.talent
+
+    @property
+    def labor_income_this_tick(self) -> float:
+        return self._econ_state.labor_income_this_tick
+
+    @labor_income_this_tick.setter
+    def labor_income_this_tick(self, value: float) -> None:
+        self._econ_state.labor_income_this_tick = value
+
+    @property
+    def capital_income_this_tick(self) -> float:
+        return self._econ_state.capital_income_this_tick
+
+    @capital_income_this_tick.setter
+    def capital_income_this_tick(self, value: float) -> None:
+        self._econ_state.capital_income_this_tick = value
+
+    @property
     def tick_analytics(self) -> AgentTickAnalyticsDTO:
         return AgentTickAnalyticsDTO(
             run_id=0,
