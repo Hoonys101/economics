@@ -1,0 +1,193 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0
+rootdir: C:\coding\economics
+configfile: pytest.ini
+plugins: anyio-4.12.0, cov-7.0.0, mock-3.15.1
+collected 3 items
+
+tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_asset_liquidation_integration 
+-------------------------------- live log call --------------------------------
+ERROR    simulation.systems.liquidation_manager:liquidation_manager.py:50 LIQUIDATION_ERROR | Agent 1 does not implement ILiquidatable.
+FAILED                                                                   [ 33%]
+tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_bank_claim_handling 
+-------------------------------- live log call --------------------------------
+ERROR    simulation.systems.liquidation_manager:liquidation_manager.py:50 LIQUIDATION_ERROR | Agent 1 does not implement ILiquidatable.
+FAILED                                                                   [ 66%]
+tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_initiate_liquidation_orchestration 
+-------------------------------- live log call --------------------------------
+ERROR    simulation.systems.liquidation_manager:liquidation_manager.py:50 LIQUIDATION_ERROR | Agent 1 does not implement ILiquidatable.
+FAILED                                                                   [100%]
+
+================================== FAILURES ===================================
+__________ TestLiquidationManager.test_asset_liquidation_integration __________
+
+self = <MagicMock name='mock.transfer' id='2038443022992'>
+args = (<MagicMock spec='IAssetRecoverySystem' id='2038443020976'>, <MagicMock id='2038443021648'>, 40.0, 'Asset Liquidation (Inventory) - Firm 1')
+kwargs = {'currency': 'USD'}
+expected = call(<MagicMock spec='IAssetRecoverySystem' id='2038443020976'>, <MagicMock id='2038443021648'>, 40.0, 'Asset Liquidation (Inventory) - Firm 1', currency='USD')
+cause = None, actual = []
+expected_string = "transfer(<MagicMock spec='IAssetRecoverySystem' id='2038443020976'>, <MagicMock id='2038443021648'>, 40.0, 'Asset Liquidation (Inventory) - Firm 1', currency='USD')"
+
+    def assert_any_call(self, /, *args, **kwargs):
+        """assert the mock has been called with the specified arguments.
+    
+        The assert passes if the mock has *ever* been called, unlike
+        `assert_called_with` and `assert_called_once_with` that only pass if
+        the call is the most recent one."""
+        expected = self._call_matcher(_Call((args, kwargs), two=True))
+        cause = expected if isinstance(expected, Exception) else None
+        actual = [self._call_matcher(c) for c in self.call_args_list]
+        if cause or expected not in _AnyComparer(actual):
+            expected_string = self._format_mock_call_signature(args, kwargs)
+>           raise AssertionError(
+                '%s call not found' % expected_string
+            ) from cause
+E           AssertionError: transfer(<MagicMock spec='IAssetRecoverySystem' id='2038443020976'>, <MagicMock id='2038443021648'>, 40.0, 'Asset Liquidation (Inventory) - Firm 1', currency='USD') call not found
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1050: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_liquidation_manager.TestLiquidationManager testMethod=test_asset_liquidation_integration>
+
+    def test_asset_liquidation_integration(self):
+        # Setup Inventory
+        self.firm.inventory = {"apple": 10}
+        self.firm.get_all_items = MagicMock(return_value={"apple": 10})
+        self.firm.get_liquidation_config.return_value = LiquidationConfigDTO(
+            haircut=0.2,
+            initial_prices={"default": 10.0},
+            default_price=10.0,
+            market_prices={"apple": 5.0}
+        )
+    
+        self.mock_settlement.transfer.return_value = True
+    
+        self.manager.initiate_liquidation(self.firm, self.state)
+    
+        # Check transfer for asset liquidation
+        # 10 * 5.0 * 0.8 = 40.0
+>       self.mock_settlement.transfer.assert_any_call(
+            self.mock_public,
+            self.firm,
+            40.0,
+            "Asset Liquidation (Inventory) - Firm 1",
+            currency=DEFAULT_CURRENCY
+        )
+E       AssertionError: transfer(<MagicMock spec='IAssetRecoverySystem' id='2038443020976'>, <MagicMock id='2038443021648'>, 40.0, 'Asset Liquidation (Inventory) - Firm 1', currency='USD') call not found
+
+tests\unit\systems\test_liquidation_manager.py:130: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    simulation.systems.liquidation_manager:liquidation_manager.py:50 LIQUIDATION_ERROR | Agent 1 does not implement ILiquidatable.
+_______________ TestLiquidationManager.test_bank_claim_handling _______________
+
+self = <MagicMock name='mock.transfer' id='2038461825440'>
+args = (<MagicMock id='2038443028704'>, <MagicMock name='mock.get_agent()' id='2038443032064'>, 500.0, 'Liquidation Payout: Secured Loan')
+kwargs = {'currency': 'USD'}
+expected = "transfer(<MagicMock id='2038443028704'>, <MagicMock name='mock.get_agent()' id='2038443032064'>, 500.0, 'Liquidation Payout: Secured Loan', currency='USD')"
+actual = 'not called.'
+error_message = "expected call not found.\nExpected: transfer(<MagicMock id='2038443028704'>, <MagicMock name='mock.get_agent()' id='2038443032064'>, 500.0, 'Liquidation Payout: Secured Loan', currency='USD')\n  Actual: not called."
+
+    def assert_called_with(self, /, *args, **kwargs):
+        """assert that the last call was made with the specified arguments.
+    
+        Raises an AssertionError if the args and keyword args passed in are
+        different to the last call to the mock."""
+        if self.call_args is None:
+            expected = self._format_mock_call_signature(args, kwargs)
+            actual = 'not called.'
+            error_message = ('expected call not found.\nExpected: %s\n  Actual: %s'
+                    % (expected, actual))
+>           raise AssertionError(error_message)
+E           AssertionError: expected call not found.
+E           Expected: transfer(<MagicMock id='2038443028704'>, <MagicMock name='mock.get_agent()' id='2038443032064'>, 500.0, 'Liquidation Payout: Secured Loan', currency='USD')
+E             Actual: not called.
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:970: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_liquidation_manager.TestLiquidationManager testMethod=test_bank_claim_handling>
+
+    def test_bank_claim_handling(self):
+        self.mock_hr.calculate_liquidation_employee_claims.return_value = []
+        self.mock_tax.calculate_liquidation_tax_claims.return_value = []
+    
+        # Setup Bank Debt
+        self.firm.total_debt = 500.0
+        bank = MagicMock()
+        bank.id = "bank_1"
+        self.firm.decision_engine.loan_market.bank = bank
+    
+        bank_agent = MagicMock()
+        bank_agent.id = "bank_1"
+        self.mock_registry.get_agent.return_value = bank_agent
+    
+        self.manager.initiate_liquidation(self.firm, self.state)
+    
+        # Check transfer to bank
+>       self.mock_settlement.transfer.assert_called_with(
+            self.firm, bank_agent, 500.0, "Liquidation Payout: Secured Loan", currency=DEFAULT_CURRENCY
+        )
+E       AssertionError: expected call not found.
+E       Expected: transfer(<MagicMock id='2038443028704'>, <MagicMock name='mock.get_agent()' id='2038443032064'>, 500.0, 'Liquidation Payout: Secured Loan', currency='USD')
+E         Actual: not called.
+
+tests\unit\systems\test_liquidation_manager.py:109: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    simulation.systems.liquidation_manager:liquidation_manager.py:50 LIQUIDATION_ERROR | Agent 1 does not implement ILiquidatable.
+_______ TestLiquidationManager.test_initiate_liquidation_orchestration ________
+
+self = <MagicMock name='mock.liquidate_assets' id='2038461828800'>
+args = (100,), kwargs = {}
+msg = "Expected 'liquidate_assets' to be called once. Called 0 times."
+
+    def assert_called_once_with(self, /, *args, **kwargs):
+        """assert that the mock was called exactly once and that that call was
+        with the specified arguments."""
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to be called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'liquidate_assets' to be called once. Called 0 times.
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:990: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_liquidation_manager.TestLiquidationManager testMethod=test_initiate_liquidation_orchestration>
+
+    def test_initiate_liquidation_orchestration(self):
+        # Setup Claims returned by services
+        claim_hr = Claim(creditor_id=101, amount=100.0, tier=1, description="Wage")
+        claim_tax = Claim(creditor_id="gov", amount=50.0, tier=3, description="Tax")
+    
+        self.mock_hr.calculate_liquidation_employee_claims.return_value = [claim_hr]
+        self.mock_tax.calculate_liquidation_tax_claims.return_value = [claim_tax]
+    
+        # Mock Registry resolution
+        agent_101 = MagicMock()
+        agent_101.id = 101
+        agent_gov = MagicMock()
+        agent_gov.id = "gov"
+    
+        self.mock_registry.get_agent.side_effect = lambda x: {101: agent_101, "gov": agent_gov}.get(x)
+        self.mock_settlement.transfer.return_value = True
+    
+        # Run
+        self.manager.initiate_liquidation(self.firm, self.state)
+    
+        # Verify Firm Write-off
+>       self.firm.liquidate_assets.assert_called_once_with(self.state.time)
+E       AssertionError: Expected 'liquidate_assets' to be called once. Called 0 times.
+
+tests\unit\systems\test_liquidation_manager.py:79: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    simulation.systems.liquidation_manager:liquidation_manager.py:50 LIQUIDATION_ERROR | Agent 1 does not implement ILiquidatable.
+=========================== short test summary info ===========================
+FAILED tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_asset_liquidation_integration
+FAILED tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_bank_claim_handling
+FAILED tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_initiate_liquidation_orchestration
+============================== 3 failed in 2.13s ==============================

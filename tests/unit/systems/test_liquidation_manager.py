@@ -8,8 +8,9 @@ from simulation.firms import Firm
 from simulation.dtos.api import SimulationState
 from modules.system.api import IAssetRecoverySystem, IAgentRegistry, DEFAULT_CURRENCY
 from modules.hr.api import IHRService
-from modules.finance.api import ITaxService
+from modules.finance.api import ITaxService, ILiquidatable
 from simulation.finance.api import ISettlementSystem
+from modules.simulation.api import IConfigurable, LiquidationConfigDTO
 
 class TestLiquidationManager(unittest.TestCase):
     def setUp(self):
@@ -17,6 +18,7 @@ class TestLiquidationManager(unittest.TestCase):
         self.mock_hr = MagicMock(spec=IHRService)
         self.mock_tax = MagicMock(spec=ITaxService)
         self.mock_registry = MagicMock(spec=IAgentRegistry)
+        self.mock_shareholder = MagicMock(spec=IShareholderRegistry)
         self.mock_public = MagicMock(spec=IAssetRecoverySystem)
 
         self.manager = LiquidationManager(
@@ -24,13 +26,19 @@ class TestLiquidationManager(unittest.TestCase):
             self.mock_hr,
             self.mock_tax,
             self.mock_registry,
+            self.mock_shareholder,
             self.mock_public
         )
 
         self.firm = MagicMock()
         self.firm.id = 1
-        # Mock liquidate_assets to return cash balance
-        self.firm.liquidate_assets.return_value = 1000.0
+        # Mock liquidate_assets to return cash balance dictionary (TD-033)
+        self.firm.liquidate_assets.return_value = {DEFAULT_CURRENCY: 1000.0}
+        
+        # New ILiquidatable requirements
+        self.firm.get_all_claims = MagicMock(return_value=[])
+        self.firm.get_equity_stakes = MagicMock(return_value=[])
+        
         self.firm.finance.balance = 1000.0
         self.firm.total_shares = 1000.0
         self.firm.treasury_shares = 0.0
@@ -38,7 +46,15 @@ class TestLiquidationManager(unittest.TestCase):
         # Mock last_prices and inventory for asset liquidation check
         self.firm.last_prices = {}
         self.firm.inventory = {}
-        self.firm.config = MagicMock()
+        
+        # Add required protocol methods
+        self.firm.get_liquidation_config = MagicMock()
+        self.firm.get_liquidation_config.return_value = LiquidationConfigDTO(
+            haircut=0.2,
+            initial_prices={},
+            default_price=10.0,
+            market_prices={}
+        )
 
         self.state = MagicMock(spec=SimulationState)
         self.state.time = 100
@@ -62,6 +78,9 @@ class TestLiquidationManager(unittest.TestCase):
 
         self.mock_registry.get_agent.side_effect = lambda x: {101: agent_101, "gov": agent_gov}.get(x)
         self.mock_settlement.transfer.return_value = True
+        
+        # Mock Claims via Protocol
+        self.firm.get_all_claims.return_value = [claim_hr, claim_tax]
 
         # Run
         self.manager.initiate_liquidation(self.firm, self.state)
@@ -93,6 +112,11 @@ class TestLiquidationManager(unittest.TestCase):
         bank_agent = MagicMock()
         bank_agent.id = "bank_1"
         self.mock_registry.get_agent.return_value = bank_agent
+        
+        # Mock Bank Claim via Protocol
+        bank_claim = Claim(creditor_id="bank_1", amount=500.0, tier=2, description="Secured Loan")
+        self.firm.get_all_claims.return_value = bank_claim # Wait, should be list
+        self.firm.get_all_claims.return_value = [bank_claim]
 
         self.manager.initiate_liquidation(self.firm, self.state)
 
@@ -104,10 +128,13 @@ class TestLiquidationManager(unittest.TestCase):
     def test_asset_liquidation_integration(self):
         # Setup Inventory
         self.firm.inventory = {"apple": 10}
-        self.firm.last_prices = {"apple": 5.0}
-        self.firm.config.liquidation_haircut = 0.2
-        self.firm.config.goods_initial_price = {"default": 10.0}
-        self.firm.config.goods = {}
+        self.firm.get_all_items = MagicMock(return_value={"apple": 10})
+        self.firm.get_liquidation_config.return_value = LiquidationConfigDTO(
+            haircut=0.2,
+            initial_prices={"default": 10.0},
+            default_price=10.0,
+            market_prices={"apple": 5.0}
+        )
 
         self.mock_settlement.transfer.return_value = True
 
@@ -125,5 +152,5 @@ class TestLiquidationManager(unittest.TestCase):
 
         # Also check receive_liquidated_assets
         self.mock_public.receive_liquidated_assets.assert_called_with({"apple": 10})
-        # Check inventory is cleared
-        self.assertEqual(self.firm.inventory, {})
+        # Check inventory is cleared via clearing method
+        self.firm.clear_inventory.assert_called_once()

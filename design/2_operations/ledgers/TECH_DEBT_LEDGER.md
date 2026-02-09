@@ -8,23 +8,56 @@
 
 ### [Domain: Systems & Infrastructure]
 
-*   **ID: TD-FIN-PURE (FinanceSystem Pure Service)**
-    *   **현상 (Phenomenon)**: `FinanceSystem` 구현이 여전히 상태 변경 로직과 트랜잭션 생성을 혼합하여 반환(`grant_bailout_loan`).
-    *   **기술 부채 (Tech Debt)**: Service 계층의 순수성 위반. Orchestrator가 반환값을 재처리해야 하는 번거로움.
-    *   **해결 방안 (Resolution)**: Stateless Service로 전환하고 명확한 DTO를 반환하도록 리팩토링.
-    *   **Origin**: TD-259 Review
+---
 
-*   **ID: TD-JUD-ASSET (Judicial Asset Seizure Granularity)**
-    *   **현상 (Phenomenon)**: `JudicialSystem`의 자산 압류 로직이 "All-or-Nothing" 방식으로 구현됨.
-    *   **기술 부채 (Tech Debt)**: 부분 압류나 자산 유형별 우선순위 지정 불가.
-    *   **해결 방안 (Resolution)**: 압류 목표액 및 우선순위 규칙을 정교화.
-    *   **Origin**: TD-261 Review
+### TD-255: Cockpit's Direct State Injection
 
-*   **ID: TD-LIQ-INV (InventoryHandler Config Protocol)**
-    *   **현상 (Phenomenon)**: `InventoryLiquidationHandler`가 여전히 `getattr(agent, 'config')`를 사용하여 설정에 접근.
-    *   **기술 부채 (Tech Debt)**: Protocol Purity 위반. 런타임 오류 위험.
-    *   **해결 방안 (Resolution)**: `IConfigurable` 프로토콜 도입하여 접근 정규화.
-    *   **Origin**: TD-269 Review
+- **Phenomenon**: Control functions from `mission_active_cockpit` (`SET_BASE_RATE`, `SET_TAX_RATE`) directly modify the WorldState.
+- **Risk**: Bypasses the event pipeline, potentially causing state inconsistencies as other agents or systems do not react to the change. Conflicts with automated logic (e.g., fiscal stabilizers) can occur.
+- **Resolution**: Refactor commands into traceable "Manual Intervention" events processed through the standard Action Processor.
+- **Related Mission**: `mission_active_cockpit`
+- **Reference**: `2026-02-09_Cockpit_Direct_State_Intervention.md`
+
+---
+
+### [Pattern] DTO Contract Instability
+
+- **Phenomenon**: A consumer system (`AnalyticsSystem`) crashed due to an `AttributeError` after a field was renamed in a DTO (`EconStateDTO`).
+- **Cause**: The change in the DTO, which acts as a data contract, was not propagated to all its consumers.
+- **Lesson**: DTOs are a critical API boundary. Any changes must be treated as a breaking change, requiring a full audit of all dependencies. Automated integration or smoke tests are essential for detecting such regressions early.
+- **Reference**: `2026-02-09_DTO_Contract_Stability.md`
+
+---
+
+### TD-LIQ-INV: Protocol Purity Violation via `getattr`
+
+- **Phenomenon**: A handler (`InventoryLiquidationHandler`) used `getattr` and `hasattr` to access internal agent attributes (`config`, `last_prices`), creating a tight coupling to a concrete class (`Firm`).
+- **Risk**: Hinders extensibility and makes refactoring fragile. Violates architectural principles of depending on abstractions, not concretions.
+- **Resolution**:
+  1. Define a `LiquidationConfigDTO` for data transfer.
+  2. Define an `IConfigurable` protocol with a `get_liquidation_config()` method.
+  3. Implement the protocol on `Firm` to adapt its internal state into the DTO.
+  4. The handler now checks for the protocol (`isinstance`) and operates on the DTO.
+- **Lesson**:
+  - **Protocols over Concretions**: Logic must depend on abstract protocols, not concrete classes.
+  - **Test with `spec`**: `unittest.mock.MagicMock` must use the `spec` argument to enforce interface compliance in tests.
+- **Reference**: `2026-02-09_Protocol_Purity_and_Mock_Specs.md`
+
+---
+
+### [Pattern] Legacy DTO Migration via Adapter
+
+- **Phenomenon**: Multiple, incompatible versions of a DTO exist in the system (e.g., `StockOrder` vs `CanonicalOrderDTO`), causing type errors and increasing maintenance costs.
+- **Cause**: Incomplete or phased refactoring leaves legacy DTOs in the codebase.
+- **Solution**:
+  1. Define a single, canonical DTO as the system standard.
+  2. Implement an **Adapter function** to convert legacy DTOs or dictionaries into the canonical format. Use duck-typing sparingly to avoid circular imports if necessary.
+  3. Enforce that core modules only accept the canonical DTO in their interfaces.
+  4. Trace and refactor all legacy call sites to use the adapter.
+- **Lesson**: The Adapter pattern is an effective, non-disruptive method for incrementally resolving technical debt. Logging within the adapter helps track legacy usage to plan for final removal.
+- **Reference**: `2026-02-09_Adapter_Pattern_for_Legacy_DTOs.md`
+
+---
 
 ---
 
@@ -54,3 +87,6 @@
 | **TD-261** | Bank / Judicial | **Purification**: Bank 비금융 로직 JudicialSystem 이관 | PH9.3 | [Insight](file:///c:/coding/economics/design/_archive/insights/TD-261_Judicial_Decoupling.md) |
 | **TD-269** | Liquidation | **Protocol**: `ILiquidatable` 도입으로 `Firm` 결합 제거 | PH9.3 | [Insight](file:///c:/coding/economics/design/_archive/insights/TD-269_Liquidation_Refactor_Insight.md) |
 | **TD-260** | Household Agent | **Decomposition**: Refactored God-Object into Orchestrator-Engine pattern. | PH10.2 | [Insight Report](../_archive/insights/2026-02-09_Household_Decomposition.md) |
+| **TD-FIN-PURE** | Finance | **Stateless**: Refactored bailout request to Command pattern. | PH10.3 | [Insight](../_archive/insights/2026-02-09_PH10.3_Structural_Integrity.md) |
+| **TD-JUD-ASSET** | Judicial | **Waterfall**: Implemented hierarchical asset seizure. | PH10.3 | [Insight](../_archive/insights/2026-02-09_PH10.3_Structural_Integrity.md) |
+| **TD-LIQ-INV** | Liquidation | **Protocol**: `IConfigurable` replacement for `getattr` hacks. | PH10.4 | [Insight](../_archive/insights/2026-02-09_TD-LIQ-INV_Protocol_Purification.md) |

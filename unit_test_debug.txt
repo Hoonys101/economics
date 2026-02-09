@@ -1,0 +1,1300 @@
+
+tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_disbursement_failure FAILED [  1%]
+tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_government_seller FAILED [  2%]
+tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_payment_failure FAILED [  3%]
+tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_purchase_success FAILED [  5%]
+tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_fallback_price 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.liquidation_handlers:liquidation_handlers.py:87 LIQUIDATION_ASSET_SALE | Agent 1 sold inventory to PublicManager for 80.00.
+PASSED                                                                   [  6%]
+tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_no_inventory PASSED [  7%]
+tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_no_public_manager PASSED [  9%]
+tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_payment_fail 
+-------------------------------- live log call --------------------------------
+ERROR    simulation.systems.liquidation_handlers:liquidation_handlers.py:95 LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 40.00 to Agent 1.
+PASSED                                                                   [ 10%]
+tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_with_inventory 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.liquidation_handlers:liquidation_handlers.py:87 LIQUIDATION_ASSET_SALE | Agent 1 sold inventory to PublicManager for 40.00.
+PASSED                                                                   [ 11%]
+tests/unit/systems/test_commerce_system.py::test_execute_consumption_and_leisure FAILED [ 12%]
+tests/unit/systems/test_commerce_system.py::test_fast_track_consumption_if_needed FAILED [ 14%]
+tests/unit/systems/test_commerce_system_logging.py::test_log_reject_when_stock_out_and_insolvent FAILED [ 15%]
+tests/unit/systems/test_commerce_system_logging.py::test_log_reject_when_stock_out_but_solvent FAILED [ 16%]
+tests/unit/systems/test_demographic_manager_newborn.py::test_newborn_receives_initial_needs_from_config ERROR [ 18%]
+tests/unit/systems/test_event_system.py::test_inflation_shock FAILED     [ 19%]
+tests/unit/systems/test_event_system.py::test_recession_shock FAILED     [ 20%]
+tests/unit/systems/test_event_system.py::test_no_event FAILED            [ 22%]
+tests/unit/systems/test_firm_management_leak.py::TestFirmManagementLeak::test_spawn_firm_leak_detection FAILED [ 23%]
+tests/unit/systems/test_firm_management_refactor.py::TestFirmManagementRefactor::test_spawn_firm_missing_settlement_system FAILED [ 24%]
+tests/unit/systems/test_firm_management_refactor.py::TestFirmManagementRefactor::test_spawn_firm_transfer_failure PASSED [ 25%]
+tests/unit/systems/test_housing_service.py::test_housing_service_handle_housing_updates_mortgage 
+-------------------------------- live log call --------------------------------
+INFO     modules.housing.service:service.py:204 HOUSING_REGISTRY | Unit 101 transferred from 2 to 1
+PASSED                                                                   [ 27%]
+tests/unit/systems/test_housing_service.py::test_housing_service_handle_housing_clears_mortgage_if_missing 
+-------------------------------- live log call --------------------------------
+INFO     modules.housing.service:service.py:204 HOUSING_REGISTRY | Unit 101 transferred from 2 to 1
+PASSED                                                                   [ 28%]
+tests/unit/systems/test_housing_system.py::TestHousingSystemRefactor::test_process_housing_maintenance_uses_transfer FAILED [ 29%]
+tests/unit/systems/test_housing_system.py::TestHousingSystemRefactor::test_process_housing_rent_collection_uses_transfer FAILED [ 31%]
+tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_distribution_transaction_generation 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.inheritance_manager:inheritance_manager.py:49 INHERITANCE_START | Processing death for Household 1. Assets: 10000.00
+PASSED                                                                   [ 32%]
+tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_multiple_heirs_metadata 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.inheritance_manager:inheritance_manager.py:49 INHERITANCE_START | Processing death for Household 1. Assets: 100.00
+PASSED                                                                   [ 33%]
+tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_escheatment_when_no_heirs 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.inheritance_manager:inheritance_manager.py:49 INHERITANCE_START | Processing death for Household 1. Assets: 1000.00
+PASSED                                                                   [ 35%]
+tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_zero_assets_distribution 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.inheritance_manager:inheritance_manager.py:49 INHERITANCE_START | Processing death for Household 1. Assets: 0.00
+PASSED                                                                   [ 36%]
+tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_tax_transaction_generation 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.inheritance_manager:inheritance_manager.py:49 INHERITANCE_START | Processing death for Household 1. Assets: 1000.00
+PASSED                                                                   [ 37%]
+tests/unit/systems/test_labor_market_analyzer.py::test_update_market_history PASSED [ 38%]
+tests/unit/systems/test_labor_market_analyzer.py::test_calculate_shadow_reservation_wage_increase PASSED [ 40%]
+tests/unit/systems/test_labor_market_analyzer.py::test_calculate_shadow_reservation_wage_decay PASSED [ 41%]
+tests/unit/systems/test_labor_market_analyzer.py::test_calculate_shadow_reservation_wage_floor PASSED [ 42%]
+tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_asset_liquidation_integration FAILED [ 44%]
+tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_bank_claim_handling FAILED [ 45%]
+tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_initiate_liquidation_orchestration FAILED [ 46%]
+tests/unit/systems/test_ma_manager.py::TestMAManager::test_execute_bankruptcy_records_loss_in_ledger 
+-------------------------------- live log call --------------------------------
+INFO     MAManager:ma_manager.py:243 BANKRUPTCY | Firm 999 liquidated. Cash Remaining: 1,000.00.
+PASSED                                                                   [ 48%]
+tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_budget_constraints FAILED [ 49%]
+tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_run_public_education_basic_grant_legacy FAILED [ 50%]
+tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_run_public_education_basic_grant_settlement FAILED [ 51%]
+tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_run_public_education_scholarship_settlement FAILED [ 53%]
+tests/unit/systems/test_sensory_system.py::test_sensory_dto_generation FAILED [ 54%]
+tests/unit/systems/test_sensory_system.py::test_sensory_dto_missing_tracker PASSED [ 55%]
+tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_initiated_to_credit_check FAILED [ 57%]
+tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_cancellation FAILED [ 58%]
+tests/unit/systems/test_settlement_system.py::test_transfer_success PASSED [ 59%]
+tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_funds 
+-------------------------------- live log call --------------------------------
+ERROR    simulation.systems.settlement_system:settlement_system.py:334 SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 1. Cash: 10.00, Bank: 0.00, Total: 10.00. Required: 20.00. Memo: Test Fail
+PASSED                                                                   [ 61%]
+tests/unit/systems/test_settlement_system.py::test_create_and_transfer_minting 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:582 MINT_AND_TRANSFER | Created 100.00 USD from 0 to 1. Reason: Minting
+PASSED                                                                   [ 62%]
+tests/unit/systems/test_settlement_system.py::test_create_and_transfer_government_grant PASSED [ 63%]
+tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_burning 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:617 TRANSFER_AND_DESTROY | Destroyed 50.00 USD from 1 to 0. Reason: Burning
+PASSED                                                                   [ 64%]
+tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_tax PASSED [ 66%]
+tests/unit/systems/test_settlement_system.py::test_record_liquidation 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:268 LIQUIDATION: Agent 1 liquidated. Inventory: 100.00, Capital: 50.00, Recovered: 20.00. Net Destruction: 130.00. Total Destroyed: 130.00. Reason: Bankruptcy
+INFO     simulation.systems.settlement_system:settlement_system.py:268 LIQUIDATION: Agent 1 liquidated. Inventory: 10.00, Capital: 0.00, Recovered: 0.00. Net Destruction: 10.00. Total Destroyed: 140.00. Reason: More Loss
+PASSED                                                                   [ 67%]
+tests/unit/systems/test_settlement_system.py::test_record_liquidation_escheatment 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:268 LIQUIDATION: Agent 1 liquidated. Inventory: 10.00, Capital: 10.00, Recovered: 0.00. Net Destruction: 20.00. Total Destroyed: 20.00. Reason: Escheatment Test
+PASSED                                                                   [ 68%]
+tests/unit/systems/test_settlement_system.py::test_transfer_rollback 
+-------------------------------- live log call --------------------------------
+ERROR    simulation.systems.settlement_system:settlement_system.py:539 SETTLEMENT_ROLLBACK | Deposit failed for 2. Rolling back withdrawal of 20.00 from 1. Error: Deposit Failed
+INFO     simulation.systems.settlement_system:settlement_system.py:544 SETTLEMENT_ROLLBACK_SUCCESS | Rolled back 20.00 to 1.
+PASSED                                                                   [ 70%]
+tests/unit/systems/test_settlement_system.py::test_atomic_settlement_success 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:85 SETTLEMENT_CREATED | Escrow account created for Agent 101. Cash: 500.00. Portfolio items: 0. Heir: NONE (Escheatment)
+INFO     simulation.systems.settlement_system:settlement_system.py:240 SETTLEMENT_CLOSED | Account 101 closed successfully.
+PASSED                                                                   [ 71%]
+tests/unit/systems/test_settlement_system.py::test_atomic_settlement_leak_prevention 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:85 SETTLEMENT_CREATED | Escrow account created for Agent 102. Cash: 100.00. Portfolio items: 0. Heir: NONE (Escheatment)
+WARNING  simulation.systems.settlement_system:settlement_system.py:219 SETTLEMENT_LEAK | Account 102 closed with remaining cash: 10.00. Burning it.
+PASSED                                                                   [ 72%]
+tests/unit/systems/test_settlement_system.py::test_atomic_settlement_overdraft_protection 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:85 SETTLEMENT_CREATED | Escrow account created for Agent 103. Cash: 100.00. Portfolio items: 0. Heir: NONE (Escheatment)
+CRITICAL simulation.systems.settlement_system:settlement_system.py:159 SETTLEMENT_OVERDRAFT | Attempted to distribute more than escrow! Escrow: 100.00, Distributed: 0.00, Requested: 150.00
+PASSED                                                                   [ 74%]
+tests/unit/systems/test_settlement_system.py::test_transfer_seamless_success 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:372 SEAMLESS_PAYMENT | Agent 1 paid 50.00 using 10.00 cash and 40.00 from bank.
+PASSED                                                                   [ 75%]
+tests/unit/systems/test_settlement_system.py::test_transfer_seamless_fail_bank 
+-------------------------------- live log call --------------------------------
+ERROR    simulation.systems.settlement_system:settlement_system.py:334 SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 1. Cash: 10.00, Bank: 10.00, Total: 20.00. Required: 50.00. Memo: Seamless Fail
+PASSED                                                                   [ 76%]
+tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_success PASSED [ 77%]
+tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_rollback 
+-------------------------------- live log call --------------------------------
+ERROR    simulation.systems.settlement_system:settlement_system.py:334 SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for B. Cash: 150.00, Bank: 0.00, Total: 150.00. Required: 200.00. Memo: multiparty_seq_1
+WARNING  simulation.systems.settlement_system:settlement_system.py:409 MULTIPARTY_FAIL | Transfer 1 failed (B -> C). Rolling back 1 previous transfers.
+PASSED                                                                   [ 79%]
+tests/unit/systems/test_settlement_system.py::test_settle_atomic_success PASSED [ 80%]
+tests/unit/systems/test_settlement_system.py::test_settle_atomic_rollback 
+-------------------------------- live log call --------------------------------
+ERROR    simulation.systems.settlement_system:settlement_system.py:334 SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for A. Cash: 90.00, Bank: 0.00, Total: 90.00. Required: 100.00. Memo: atomic_batch_2_txs
+PASSED                                                                   [ 81%]
+tests/unit/systems/test_settlement_system.py::test_settle_atomic_credit_fail_rollback 
+-------------------------------- live log call --------------------------------
+ERROR    simulation.systems.settlement_system:settlement_system.py:468 SETTLEMENT_ROLLBACK | Deposit failed for B. Rolling back atomic batch. Error: Deposit Fail
+PASSED                                                                   [ 83%]
+tests/unit/systems/test_settlement_system.py::test_inheritance_portfolio_transfer 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:85 SETTLEMENT_CREATED | Escrow account created for Agent 100. Cash: 0.00. Portfolio items: 1. Heir: 900
+INFO     simulation.systems.settlement_system:settlement_system.py:141 PORTFOLIO_TRANSFER | Transferred portfolio to 900
+PASSED                                                                   [ 84%]
+tests/unit/systems/test_settlement_system.py::test_escheatment_portfolio_transfer 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:85 SETTLEMENT_CREATED | Escrow account created for Agent 100. Cash: 0.00. Portfolio items: 1. Heir: NONE (Escheatment)
+INFO     simulation.systems.settlement_system:settlement_system.py:141 PORTFOLIO_TRANSFER | Transferred portfolio to GOVERNMENT
+PASSED                                                                   [ 85%]
+tests/unit/systems/test_social_system.py::test_update_social_ranks PASSED [ 87%]
+tests/unit/systems/test_social_system.py::test_calculate_reference_standard PASSED [ 88%]
+tests/unit/systems/test_tax_agency.py::TestTaxAgency::test_calculate_corporate_tax PASSED [ 89%]
+tests/unit/systems/test_tax_agency.py::TestTaxAgency::test_calculate_income_tax_flat PASSED [ 90%]
+tests/unit/systems/test_tax_agency.py::TestTaxAgency::test_calculate_income_tax_progressive_scaling PASSED [ 92%]
+tests/unit/systems/test_tax_agency.py::TestTaxAgency::test_calculate_income_tax_progressive_with_brackets PASSED [ 93%]
+tests/unit/systems/test_tax_agency.py::TestTaxAgency::test_collect_tax 
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.tax_agency:tax_agency.py:140 TAX_COLLECTION_SUCCESS | Tick 1 | Collected 100.00 of income from 101
+PASSED                                                                   [ 94%]
+tests/unit/systems/test_technology_manager.py::TestTechnologyManager::test_effective_diffusion_rate PASSED [ 96%]
+tests/unit/systems/test_technology_manager.py::TestTechnologyManager::test_unlock_mechanism PASSED [ 97%]
+tests/unit/systems/test_technology_manager.py::TestTechnologyManager::test_diffusion_over_time PASSED [ 98%]
+tests/unit/systems/test_technology_manager.py::TestTechnologyManager::test_productivity_multiplier PASSED [100%]
+
+=================================== ERRORS ====================================
+______ ERROR at setup of test_newborn_receives_initial_needs_from_config ______
+
+mock_config = <MagicMock id='1848600328048'>
+
+    @pytest.fixture
+    def parent_agent(mock_config):
+        """Fixture for a parent Household agent ready to give birth."""
+        parent = MagicMock(spec=Household)
+        parent.id = 1
+        parent.age = 30
+        parent.assets = 1000.0
+        parent.talent = MagicMock()
+        parent.personality = Personality.MISER
+        parent.value_orientation = "TRADITIONAL"
+        parent.risk_aversion = 0.5
+        parent.generation = 1
+        parent.children_ids = []
+    
+        # Mock methods
+>       parent._sub_assets.return_value = None
+        ^^^^^^^^^^^^^^^^^^
+
+tests\unit\systems\test_demographic_manager_newborn.py:109: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <MagicMock spec='Household' id='1848600324016'>, name = '_sub_assets'
+
+    def __getattr__(self, name):
+        if name in {'_mock_methods', '_mock_unsafe'}:
+            raise AttributeError(name)
+        elif self._mock_methods is not None:
+            if name not in self._mock_methods or name in _all_magics:
+>               raise AttributeError("Mock object has no attribute %r" % name)
+E               AttributeError: Mock object has no attribute '_sub_assets'
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:690: AttributeError
+================================== FAILURES ===================================
+_______ TestHousingTransactionHandler.test_handle_disbursement_failure ________
+
+self = <MagicMock name='mock.bank.terminate_loan' id='1848596046448'>
+args = ('loan_123',), kwargs = {}, expected = "terminate_loan('loan_123')"
+actual = 'not called.'
+error_message = "expected call not found.\nExpected: terminate_loan('loan_123')\n  Actual: not called."
+
+    def assert_called_with(self, /, *args, **kwargs):
+        """assert that the last call was made with the specified arguments.
+    
+        Raises an AssertionError if the args and keyword args passed in are
+        different to the last call to the mock."""
+        if self.call_args is None:
+            expected = self._format_mock_call_signature(args, kwargs)
+            actual = 'not called.'
+            error_message = ('expected call not found.\nExpected: %s\n  Actual: %s'
+                    % (expected, actual))
+>           raise AssertionError(error_message)
+E           AssertionError: expected call not found.
+E           Expected: terminate_loan('loan_123')
+E             Actual: not called.
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:970: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_housing_handler.TestHousingTransactionHandler testMethod=test_handle_disbursement_failure>
+
+    def test_handle_disbursement_failure(self):
+        # Testing failure at Loan Disbursement (Bank -> Escrow)
+        tx = Transaction(
+            buyer_id=3,
+            seller_id=4,
+            item_id="unit_101",
+            price=10000.0,
+            quantity=1.0,
+            market_id="housing",
+            transaction_type="housing",
+            time=100
+        )
+    
+        # Sequence of transfer results:
+        # 1. Down Payment (Buyer->Escrow): True
+        # 2. Disbursement (Bank->Escrow): False
+        # 3. Compensation (Escrow->Buyer): True
+        self.state.settlement_system.transfer.side_effect = [True, False, True]
+    
+        success = self.handler.handle(tx, self.buyer, self.seller, self.state)
+    
+        self.assertFalse(success)
+    
+        # Should call terminate_loan because deposit was withdrawn
+>       self.state.bank.terminate_loan.assert_called_with("loan_123")
+E       AssertionError: expected call not found.
+E       Expected: terminate_loan('loan_123')
+E         Actual: not called.
+
+tests\unit\systems\handlers\test_housing_handler.py:152: AssertionError
+_________ TestHousingTransactionHandler.test_handle_government_seller _________
+
+self = <MagicMock name='mock.settlement_system.transfer' id='1848596910096'>
+args = (<MagicMock spec='EscrowAgent' id='1848596909424'>, <MagicMock name='mock.government' spec='Government' id='1848596906400'>, 10000.0, 'final_settlement:unit_101')
+kwargs = {'tick': 100}
+expected = call(<MagicMock spec='EscrowAgent' id='1848596909424'>, <MagicMock name='mock.government' spec='Government' id='1848596906400'>, 10000.0, 'final_settlement:unit_101', tick=100)
+cause = None
+actual = [call(<MagicMock spec='Household' id='1848596906736'>, <MagicMock spec='EscrowAgent' id='1848596909424'>, 10000.0, 'es...ock.government' spec='Government' id='1848596906400'>, 10000.0, 'final_settlement:unit_101', tick=100, currency='USD')]
+expected_string = "transfer(<MagicMock spec='EscrowAgent' id='1848596909424'>, <MagicMock name='mock.government' spec='Government' id='1848596906400'>, 10000.0, 'final_settlement:unit_101', tick=100)"
+
+    def assert_any_call(self, /, *args, **kwargs):
+        """assert the mock has been called with the specified arguments.
+    
+        The assert passes if the mock has *ever* been called, unlike
+        `assert_called_with` and `assert_called_once_with` that only pass if
+        the call is the most recent one."""
+        expected = self._call_matcher(_Call((args, kwargs), two=True))
+        cause = expected if isinstance(expected, Exception) else None
+        actual = [self._call_matcher(c) for c in self.call_args_list]
+        if cause or expected not in _AnyComparer(actual):
+            expected_string = self._format_mock_call_signature(args, kwargs)
+>           raise AssertionError(
+                '%s call not found' % expected_string
+            ) from cause
+E           AssertionError: transfer(<MagicMock spec='EscrowAgent' id='1848596909424'>, <MagicMock name='mock.government' spec='Government' id='1848596906400'>, 10000.0, 'final_settlement:unit_101', tick=100) call not found
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1050: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_housing_handler.TestHousingTransactionHandler testMethod=test_handle_government_seller>
+
+    def test_handle_government_seller(self):
+        tx = Transaction(
+            buyer_id=3,
+            seller_id=-1,
+            item_id="unit_101",
+            price=10000.0,
+            quantity=1.0,
+            market_id="housing",
+            transaction_type="housing",
+            time=100
+        )
+    
+        # Pass government as seller
+        success = self.handler.handle(tx, self.buyer, self.state.government, self.state)
+    
+        self.assertTrue(success)
+    
+        # Verify transfer to Government
+>       self.state.settlement_system.transfer.assert_any_call(
+            self.escrow_agent, self.state.government, 10000.0, f"final_settlement:unit_101", tick=100
+        )
+E       AssertionError: transfer(<MagicMock spec='EscrowAgent' id='1848596909424'>, <MagicMock name='mock.government' spec='Government' id='1848596906400'>, 10000.0, 'final_settlement:unit_101', tick=100) call not found
+E       
+E       pytest introspection follows:
+E       
+E       Kwargs:
+E       assert {'currency': ..., 'tick': 100} == {'tick': 100}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Left contains 1 more item:
+E         {'currency': 'USD'}
+E         
+E         Full diff:
+E           {...
+E         
+E         ...Full output truncated (3 lines hidden), use '-vv' to show
+
+tests\unit\systems\handlers\test_housing_handler.py:225: AssertionError
+__________ TestHousingTransactionHandler.test_handle_payment_failure __________
+
+self = <test_housing_handler.TestHousingTransactionHandler testMethod=test_handle_payment_failure>
+
+    def test_handle_payment_failure(self):
+        # Testing failure at Final Settlement (Escrow -> Seller)
+        tx = Transaction(
+            buyer_id=3,
+            seller_id=4,
+            item_id="unit_101",
+            price=10000.0,
+            quantity=1.0,
+            market_id="housing",
+            transaction_type="housing",
+            time=100
+        )
+    
+        # Sequence:
+        # 1. Down Payment (Buyer->Escrow): True
+        # 2. Disbursement (Bank->Escrow): True
+        # 3. Final Settlement (Escrow->Seller): False
+        # 4. Compensation 1 (Escrow->Bank, Loan): True
+        # 5. Compensation 2 (Escrow->Buyer, Down): True
+        self.state.settlement_system.transfer.side_effect = [True, True, False, True, True]
+    
+        success = self.handler.handle(tx, self.buyer, self.seller, self.state)
+    
+>       self.assertFalse(success)
+E       AssertionError: True is not false
+
+tests\unit\systems\handlers\test_housing_handler.py:183: AssertionError
+_________ TestHousingTransactionHandler.test_handle_purchase_success __________
+
+self = <MagicMock name='mock.settlement_system.transfer' id='1848599864592'>
+args = (<MagicMock spec='Household' id='1848599861232'>, <MagicMock spec='EscrowAgent' id='1848599863920'>, 2000.0, 'escrow_hold:down_payment:unit_101')
+kwargs = {'tick': 100}
+expected = call(<MagicMock spec='Household' id='1848599861232'>, <MagicMock spec='EscrowAgent' id='1848599863920'>, 2000.0, 'escrow_hold:down_payment:unit_101', tick=100)
+cause = None
+actual = [call(<MagicMock spec='Household' id='1848599861232'>, <MagicMock spec='EscrowAgent' id='1848599863920'>, 10000.0, 'es...20'>, <MagicMock spec='Household' id='1848599862576'>, 10000.0, 'final_settlement:unit_101', tick=100, currency='USD')]
+expected_string = "transfer(<MagicMock spec='Household' id='1848599861232'>, <MagicMock spec='EscrowAgent' id='1848599863920'>, 2000.0, 'escrow_hold:down_payment:unit_101', tick=100)"
+
+    def assert_any_call(self, /, *args, **kwargs):
+        """assert the mock has been called with the specified arguments.
+    
+        The assert passes if the mock has *ever* been called, unlike
+        `assert_called_with` and `assert_called_once_with` that only pass if
+        the call is the most recent one."""
+        expected = self._call_matcher(_Call((args, kwargs), two=True))
+        cause = expected if isinstance(expected, Exception) else None
+        actual = [self._call_matcher(c) for c in self.call_args_list]
+        if cause or expected not in _AnyComparer(actual):
+            expected_string = self._format_mock_call_signature(args, kwargs)
+>           raise AssertionError(
+                '%s call not found' % expected_string
+            ) from cause
+E           AssertionError: transfer(<MagicMock spec='Household' id='1848599861232'>, <MagicMock spec='EscrowAgent' id='1848599863920'>, 2000.0, 'escrow_hold:down_payment:unit_101', tick=100) call not found
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1050: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_housing_handler.TestHousingTransactionHandler testMethod=test_handle_purchase_success>
+
+    def test_handle_purchase_success(self):
+        tx = Transaction(
+            buyer_id=3,
+            seller_id=4,
+            item_id="unit_101",
+            price=10000.0,
+            quantity=1.0,
+            market_id="housing",
+            transaction_type="housing",
+            time=100
+        )
+    
+        success = self.handler.handle(tx, self.buyer, self.seller, self.state)
+    
+        self.assertTrue(success)
+    
+        loan_amount = 8000.0 # 80% LTV of 10000
+        down_payment = 2000.0
+    
+        # 1. Down Payment (Buyer -> Escrow)
+>       self.state.settlement_system.transfer.assert_any_call(
+            self.buyer, self.escrow_agent, down_payment, f"escrow_hold:down_payment:unit_101", tick=100
+        )
+E       AssertionError: transfer(<MagicMock spec='Household' id='1848599861232'>, <MagicMock spec='EscrowAgent' id='1848599863920'>, 2000.0, 'escrow_hold:down_payment:unit_101', tick=100) call not found
+E       
+E       pytest introspection follows:
+E       
+E       Args:
+E       assert (<MagicMock s...ent:unit_101') == (<MagicMock s...ent:unit_101')
+E         
+E         At index 0 diff: <MagicMock spec='EscrowAgent' id='1848599863920'> != <MagicMock spec='Household' id='1848599861232'>
+E         
+E         Full diff:
+E           (
+E         -     <MagicMock spec='Household' id='1848599861232'>,
+E               <MagicMock spec='EscrowAgent' id='1848599863920'>,...
+E         
+E         ...Full output truncated (8 lines hidden), use '-vv' to show
+E       Kwargs:
+E       assert {'currency': ..., 'tick': 100} == {'tick': 100}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Left contains 1 more item:
+E         {'currency': 'USD'}
+E         
+E         Full diff:
+E           {...
+E         
+E         ...Full output truncated (3 lines hidden), use '-vv' to show
+
+tests\unit\systems\handlers\test_housing_handler.py:108: AssertionError
+____________________ test_execute_consumption_and_leisure _____________________
+
+commerce_system = <simulation.systems.commerce_system.CommerceSystem object at 0x000001AE692A4D70>
+
+    def test_execute_consumption_and_leisure(commerce_system):
+        # Setup Households
+        h1 = MagicMock()
+        h1.id = 1
+        h1.is_active = True
+        h1._assets = 100.0
+        h1.inventory = {"basic_food": 0}
+        # Mock apply_leisure_effect return
+        effect_dto = MagicMock()
+        effect_dto.utility_gained = 5.0
+        effect_dto.leisure_type = "IDLE"
+        h1.apply_leisure_effect.return_value = effect_dto
+    
+        households = [h1]
+    
+        # Mock Vector Planner
+        planner = MagicMock()
+        # h1 consumes 1, buys 2
+        planner.decide_consumption_batch.return_value = {
+            "consume": [1.0],
+            "buy": [2.0],
+            "price": 10.0
+        }
+    
+        # Mock Context
+        mock_reflux = MagicMock()
+        context: CommerceContext = {
+            "households": households,
+            "breeding_planner": planner,
+            "household_time_allocation": {1: 8.0},
+            "reflux_system": mock_reflux,
+            "market_data": {},
+            "config": commerce_system.config,
+            "time": 1
+        }
+    
+        # Execute
+>       leisure_effects = commerce_system.execute_consumption_and_leisure(context)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'CommerceSystem' object has no attribute 'execute_consumption_and_leisure'. Did you mean: 'finalize_consumption_and_leisure'?
+
+tests\unit\systems\test_commerce_system.py:50: AttributeError
+____________________ test_fast_track_consumption_if_needed ____________________
+
+commerce_system = <simulation.systems.commerce_system.CommerceSystem object at 0x000001AE1ECA0410>
+
+    def test_fast_track_consumption_if_needed(commerce_system):
+        # Case: Inventory 0, Consumes 0 (in vector), Buys 2.
+        # Should trigger immediate consumption from bought items.
+    
+        h1 = MagicMock()
+        h1.id = 1
+        h1.is_active = True
+        h1._assets = 100.0
+        h1.inventory = {"basic_food": 0}
+    
+        effect_dto = MagicMock()
+        effect_dto.utility_gained = 0.0
+        h1.apply_leisure_effect.return_value = effect_dto
+    
+        planner = MagicMock()
+        planner.decide_consumption_batch.return_value = {
+            "consume": [0.0], # Planner says consume 0 because inventory was 0
+            "buy": [2.0],
+            "price": 10.0
+        }
+    
+        context: CommerceContext = {
+            "households": [h1],
+            "breeding_planner": planner,
+            "household_time_allocation": {},
+>           "reflux_system": commerce_system.reflux_system,
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            "market_data": {},
+            "config": commerce_system.config,
+            "time": 1
+        }
+E       AttributeError: 'CommerceSystem' object has no attribute 'reflux_system'
+
+tests\unit\systems\test_commerce_system.py:97: AttributeError
+________________ test_log_reject_when_stock_out_and_insolvent _________________
+
+self = <MagicMock name='simulation.logger.log_thought' id='1848600327040'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'log_thought' to have been called once. Called 0 times.
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:958: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+mock_simulation = <MagicMock name='simulation' id='1848600329728'>
+
+    @patch("simulation.systems.commerce_system.simulation")
+    def test_log_reject_when_stock_out_and_insolvent(mock_simulation):
+        # Setup
+        config = MagicMock()
+        commerce_system = CommerceSystem(config)
+    
+        # Mock Household
+        h1 = MagicMock()
+        h1.id = 1
+        h1.is_active = True
+        h1.assets = 10.0
+        h1.inventory = {"basic_food": 0}
+        h1.needs = {"survival": 80.0}
+    
+        # Mock Planner
+        planner = MagicMock()
+        planner.survival_threshold = 50.0
+        # Consumes 0 (stock out), Buys 0 (insolvent? or just didn't buy)
+        planner.decide_consumption_batch.return_value = {
+            "consume": [0.0],
+            "buy": [0.0],
+            "price": 20.0 # High price > assets
+        }
+    
+        context = {
+            "households": [h1],
+            "breeding_planner": planner,
+            "market_data": {},
+            "time": 1,
+            "household_time_allocation": {}
+        }
+    
+        # Enable logging
+        mock_simulation.logger = MagicMock()
+    
+        # Execute
+        commerce_system.plan_consumption_and_leisure(context)
+    
+        # Verify
+>       mock_simulation.logger.log_thought.assert_called_once()
+E       AssertionError: Expected 'log_thought' to have been called once. Called 0 times.
+
+tests\unit\systems\test_commerce_system_logging.py:45: AssertionError
+_________________ test_log_reject_when_stock_out_but_solvent __________________
+
+self = <MagicMock name='simulation.logger.log_thought' id='1848598961120'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'log_thought' to have been called once. Called 0 times.
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:958: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+mock_simulation = <MagicMock name='simulation' id='1848600319312'>
+
+    @patch("simulation.systems.commerce_system.simulation")
+    def test_log_reject_when_stock_out_but_solvent(mock_simulation):
+        # Setup
+        config = MagicMock()
+        commerce_system = CommerceSystem(config)
+    
+        # Mock Household
+        h1 = MagicMock()
+        h1.id = 1
+        h1.is_active = True
+        h1.assets = 100.0 # Solvent
+        h1.inventory = {"basic_food": 0}
+        h1.needs = {"survival": 80.0}
+    
+        # Mock Planner
+        planner = MagicMock()
+        planner.survival_threshold = 50.0
+        # Consumes 0 (stock out), Buys 0 (planner didn't buy for some reason)
+        planner.decide_consumption_batch.return_value = {
+            "consume": [0.0],
+            "buy": [0.0],
+            "price": 20.0
+        }
+    
+        context = {
+            "households": [h1],
+            "breeding_planner": planner,
+            "market_data": {},
+            "time": 1,
+            "household_time_allocation": {}
+        }
+    
+        # Enable logging
+        mock_simulation.logger = MagicMock()
+    
+        # Execute
+        commerce_system.plan_consumption_and_leisure(context)
+    
+        # Verify
+>       mock_simulation.logger.log_thought.assert_called_once()
+E       AssertionError: Expected 'log_thought' to have been called once. Called 0 times.
+
+tests\unit\systems\test_commerce_system_logging.py:89: AssertionError
+____________________________ test_inflation_shock _____________________________
+
+event_system = <simulation.systems.event_system.EventSystem object at 0x000001AE692A4C20>
+
+    def test_inflation_shock(event_system):
+        # Setup
+        market = MagicMock()
+        market.current_price = 100.0
+        market.avg_price = 100.0
+        markets = {"goods": market}
+    
+        context: EventContext = {
+            "markets": markets,
+            "households": [],
+            "firms": []
+        }
+    
+        # Execute Tick 200
+>       event_system.execute_scheduled_events(200, context)
+E       TypeError: EventSystem.execute_scheduled_events() missing 1 required positional argument: 'config'
+
+tests\unit\systems\test_event_system.py:26: TypeError
+____________________________ test_recession_shock _____________________________
+
+event_system = <simulation.systems.event_system.EventSystem object at 0x000001AE1EB33B10>
+
+    def test_recession_shock(event_system):
+        # Setup
+        h1 = MagicMock()
+        h1._assets = 1000.0
+        households = [h1]
+    
+        context: EventContext = {
+            "markets": {},
+            "households": households,
+            "firms": []
+        }
+    
+        # Execute Tick 600
+>       event_system.execute_scheduled_events(600, context)
+E       TypeError: EventSystem.execute_scheduled_events() missing 1 required positional argument: 'config'
+
+tests\unit\systems\test_event_system.py:45: TypeError
+________________________________ test_no_event ________________________________
+
+event_system = <simulation.systems.event_system.EventSystem object at 0x000001AE1EB339D0>
+
+    def test_no_event(event_system):
+        # Setup
+        h1 = MagicMock()
+        h1._assets = 1000.0
+        market = MagicMock()
+        market.current_price = 100.0
+    
+        context: EventContext = {
+            "markets": {"goods": market},
+            "households": [h1],
+            "firms": []
+        }
+    
+        # Execute Tick 100 (No event)
+>       event_system.execute_scheduled_events(100, context)
+E       TypeError: EventSystem.execute_scheduled_events() missing 1 required positional argument: 'config'
+
+tests\unit\systems\test_event_system.py:64: TypeError
+____________ TestFirmManagementLeak.test_spawn_firm_leak_detection ____________
+
+self = <MagicMock name='mock.settlement_system.transfer' id='1848600319648'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'transfer' to have been called once. Called 0 times.
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:958: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_firm_management_leak.TestFirmManagementLeak testMethod=test_spawn_firm_leak_detection>
+
+    def test_spawn_firm_leak_detection(self):
+        """
+        Verify that startup_cost is calculated correctly and transferred via SettlementSystem.
+        """
+        # 1. Setup Household
+        household = MagicMock()
+        household.id = 1
+        household._econ_state.assets = 5000.0
+        household._sub_assets = MagicMock()
+    
+        # 2. Patch dependencies
+        with patch('simulation.systems.firm_management.random.choice', return_value='steel'), \
+             patch('simulation.systems.firm_management.random.random', return_value=0.9), \
+             patch('simulation.firms.Firm') as MockFirm, \
+             patch('simulation.ai.firm_ai.FirmAI'), \
+             patch('simulation.ai.service_firm_ai.ServiceFirmAI'), \
+             patch('simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine'):
+    
+            # Mock Firm instance
+            mock_firm_instance = MockFirm.return_value
+            mock_firm_instance.id = 101
+            # Mock _add_assets for legacy fallback check (should not be called if settlement_system exists)
+            mock_firm_instance._add_assets = MagicMock()
+    
+            # 3. Run spawn_firm
+            self.firm_system.spawn_firm(self.mock_simulation, household)
+    
+            # 4. Check Settlement System Usage
+            # Expected Cost: 1000 * 1.5 = 1500.0
+            expected_cost = 1500.0
+    
+>           self.mock_simulation.settlement_system.transfer.assert_called_once()
+E           AssertionError: Expected 'transfer' to have been called once. Called 0 times.
+
+tests\unit\systems\test_firm_management_leak.py:70: AssertionError
+____ TestFirmManagementRefactor.test_spawn_firm_missing_settlement_system _____
+
+self = <test_firm_management_refactor.TestFirmManagementRefactor testMethod=test_spawn_firm_missing_settlement_system>
+
+    def test_spawn_firm_missing_settlement_system(self):
+        """
+        Verify that spawn_firm raises RuntimeError if settlement_system is missing.
+        """
+        self.mock_simulation.settlement_system = None
+    
+        household = MagicMock()
+        household._econ_state.assets = 5000.0
+    
+        with patch('simulation.systems.firm_management.random.choice', return_value='food'), \
+             patch('simulation.systems.firm_management.random.random', return_value=0.9), \
+             patch('simulation.firms.Firm'), \
+             patch('simulation.ai.firm_ai.FirmAI'), \
+             patch('simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine'):
+    
+>           with self.assertRaisesRegex(RuntimeError, "SettlementSystem required for firm creation"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError: RuntimeError not raised
+
+tests\unit\systems\test_firm_management_refactor.py:46: AssertionError
+__ TestHousingSystemRefactor.test_process_housing_maintenance_uses_transfer ___
+
+self = <MagicMock name='mock.settlement_system.transfer' id='1848598964144'>
+args = (<MagicMock id='1848599052704'>, <MagicMock name='mock.government' spec='Government' id='1848598969856'>, 100.0, 'housing_maintenance')
+kwargs = {'tick': 100}
+expected = call(<MagicMock id='1848599052704'>, <MagicMock name='mock.government' spec='Government' id='1848598969856'>, 100.0, 'housing_maintenance', tick=100)
+cause = None
+actual = [call(<MagicMock id='1848599052704'>, <MagicMock name='mock.government' spec='Government' id='1848598969856'>, 100.0, ... call(<MagicMock id='1848599052368'>, <MagicMock id='1848599052704'>, 500.0, 'rent_payment', tick=100, currency='USD')]
+expected_string = "transfer(<MagicMock id='1848599052704'>, <MagicMock name='mock.government' spec='Government' id='1848598969856'>, 100.0, 'housing_maintenance', tick=100)"
+
+    def assert_any_call(self, /, *args, **kwargs):
+        """assert the mock has been called with the specified arguments.
+    
+        The assert passes if the mock has *ever* been called, unlike
+        `assert_called_with` and `assert_called_once_with` that only pass if
+        the call is the most recent one."""
+        expected = self._call_matcher(_Call((args, kwargs), two=True))
+        cause = expected if isinstance(expected, Exception) else None
+        actual = [self._call_matcher(c) for c in self.call_args_list]
+        if cause or expected not in _AnyComparer(actual):
+            expected_string = self._format_mock_call_signature(args, kwargs)
+>           raise AssertionError(
+                '%s call not found' % expected_string
+            ) from cause
+E           AssertionError: transfer(<MagicMock id='1848599052704'>, <MagicMock name='mock.government' spec='Government' id='1848598969856'>, 100.0, 'housing_maintenance', tick=100) call not found
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1050: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_housing_system.TestHousingSystemRefactor testMethod=test_process_housing_maintenance_uses_transfer>
+
+    def test_process_housing_maintenance_uses_transfer(self):
+        """Test that maintenance cost uses SettlementSystem.transfer"""
+        # Arrange
+        cost = 10000.0 * 0.01 # 100.0
+    
+        # Act
+        self.housing_system.process_housing(self.simulation)
+    
+        # Assert
+>       self.simulation.settlement_system.transfer.assert_any_call(
+            self.owner, self.simulation.government, cost, "housing_maintenance", tick=100
+        )
+E       AssertionError: transfer(<MagicMock id='1848599052704'>, <MagicMock name='mock.government' spec='Government' id='1848598969856'>, 100.0, 'housing_maintenance', tick=100) call not found
+E       
+E       pytest introspection follows:
+E       
+E       Args:
+E       assert (<MagicMock i...rent_payment') == (<MagicMock i..._maintenance')
+E         
+E         At index 0 diff: <MagicMock id='1848599052368'> != <MagicMock id='1848599052704'>
+E         
+E         Full diff:
+E           (
+E         +     <MagicMock id='1848599052368'>,
+E               <MagicMock id='1848599052704'>,...
+E         
+E         ...Full output truncated (8 lines hidden), use '-vv' to show
+E       Kwargs:
+E       assert {'currency': ..., 'tick': 100} == {'tick': 100}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Left contains 1 more item:
+E         {'currency': 'USD'}
+E         
+E         Full diff:
+E           {...
+E         
+E         ...Full output truncated (3 lines hidden), use '-vv' to show
+
+tests\unit\systems\test_housing_system.py:111: AssertionError
+_ TestHousingSystemRefactor.test_process_housing_rent_collection_uses_transfer _
+
+self = <MagicMock name='mock.settlement_system.transfer' id='1848599061776'>
+args = (<MagicMock id='1848599059424'>, <MagicMock id='1848599059760'>, 500.0, 'rent_payment')
+kwargs = {'tick': 100}
+expected = call(<MagicMock id='1848599059424'>, <MagicMock id='1848599059760'>, 500.0, 'rent_payment', tick=100)
+cause = None
+actual = [call(<MagicMock id='1848599059760'>, <MagicMock name='mock.government' spec='Government' id='1848599059088'>, 100.0, ... call(<MagicMock id='1848599059424'>, <MagicMock id='1848599059760'>, 500.0, 'rent_payment', tick=100, currency='USD')]
+expected_string = "transfer(<MagicMock id='1848599059424'>, <MagicMock id='1848599059760'>, 500.0, 'rent_payment', tick=100)"
+
+    def assert_any_call(self, /, *args, **kwargs):
+        """assert the mock has been called with the specified arguments.
+    
+        The assert passes if the mock has *ever* been called, unlike
+        `assert_called_with` and `assert_called_once_with` that only pass if
+        the call is the most recent one."""
+        expected = self._call_matcher(_Call((args, kwargs), two=True))
+        cause = expected if isinstance(expected, Exception) else None
+        actual = [self._call_matcher(c) for c in self.call_args_list]
+        if cause or expected not in _AnyComparer(actual):
+            expected_string = self._format_mock_call_signature(args, kwargs)
+>           raise AssertionError(
+                '%s call not found' % expected_string
+            ) from cause
+E           AssertionError: transfer(<MagicMock id='1848599059424'>, <MagicMock id='1848599059760'>, 500.0, 'rent_payment', tick=100) call not found
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:1050: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_housing_system.TestHousingSystemRefactor testMethod=test_process_housing_rent_collection_uses_transfer>
+
+    def test_process_housing_rent_collection_uses_transfer(self):
+        """Test that rent collection uses SettlementSystem.transfer"""
+        # Arrange
+        self.unit.owner_id = 2
+        self.unit.occupant_id = 1
+    
+        # Act
+        self.housing_system.process_housing(self.simulation)
+    
+        # Assert
+        # Verify transfer was called for rent
+>       self.simulation.settlement_system.transfer.assert_any_call(
+            self.tenant, self.owner, 500.0, "rent_payment", tick=100
+        )
+E       AssertionError: transfer(<MagicMock id='1848599059424'>, <MagicMock id='1848599059760'>, 500.0, 'rent_payment', tick=100) call not found
+E       
+E       pytest introspection follows:
+E       
+E       Kwargs:
+E       assert {'currency': ..., 'tick': 100} == {'tick': 100}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Left contains 1 more item:
+E         {'currency': 'USD'}
+E         
+E         Full diff:
+E           {...
+E         
+E         ...Full output truncated (3 lines hidden), use '-vv' to show
+
+tests\unit\systems\test_housing_system.py:94: AssertionError
+__________ TestLiquidationManager.test_asset_liquidation_integration __________
+
+self = <test_liquidation_manager.TestLiquidationManager testMethod=test_asset_liquidation_integration>
+
+    def setUp(self):
+        self.mock_settlement = MagicMock(spec=ISettlementSystem)
+        self.mock_hr = MagicMock(spec=IHRService)
+        self.mock_tax = MagicMock(spec=ITaxService)
+        self.mock_registry = MagicMock(spec=IAgentRegistry)
+>       self.mock_shareholder = MagicMock(spec=IShareholderRegistry)
+                                               ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'IShareholderRegistry' is not defined
+
+tests\unit\systems\test_liquidation_manager.py:21: NameError
+_______________ TestLiquidationManager.test_bank_claim_handling _______________
+
+self = <test_liquidation_manager.TestLiquidationManager testMethod=test_bank_claim_handling>
+
+    def setUp(self):
+        self.mock_settlement = MagicMock(spec=ISettlementSystem)
+        self.mock_hr = MagicMock(spec=IHRService)
+        self.mock_tax = MagicMock(spec=ITaxService)
+        self.mock_registry = MagicMock(spec=IAgentRegistry)
+>       self.mock_shareholder = MagicMock(spec=IShareholderRegistry)
+                                               ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'IShareholderRegistry' is not defined
+
+tests\unit\systems\test_liquidation_manager.py:21: NameError
+_______ TestLiquidationManager.test_initiate_liquidation_orchestration ________
+
+self = <test_liquidation_manager.TestLiquidationManager testMethod=test_initiate_liquidation_orchestration>
+
+    def setUp(self):
+        self.mock_settlement = MagicMock(spec=ISettlementSystem)
+        self.mock_hr = MagicMock(spec=IHRService)
+        self.mock_tax = MagicMock(spec=ITaxService)
+        self.mock_registry = MagicMock(spec=IAgentRegistry)
+>       self.mock_shareholder = MagicMock(spec=IShareholderRegistry)
+                                               ^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'IShareholderRegistry' is not defined
+
+tests\unit\systems\test_liquidation_manager.py:21: NameError
+_______________ TestMinistryOfEducation.test_budget_constraints _______________
+
+self = <MagicMock name='mock._sub_assets' id='1848598139568'>
+
+    def assert_called(self):
+        """assert that the mock was called at least once
+        """
+        if self.call_count == 0:
+            msg = ("Expected '%s' to have been called." %
+                   (self._mock_name or 'mock'))
+>           raise AssertionError(msg)
+E           AssertionError: Expected '_sub_assets' to have been called.
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:948: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_ministry_of_education.TestMinistryOfEducation testMethod=test_budget_constraints>
+
+    def test_budget_constraints(self):
+        # Government has 10k assets, budget is 10% = 1k
+        # Basic edu costs 100 each. 11 households want it. Only 10 should get it.
+        households = [self._create_household(i, 500, 0, 0.5) for i in range(11)]
+    
+        # Use legacy mode for simplicity in this check, or new mode with mock transfer
+        # Since logic is shared until execution, legacy is fine for counting promotions.
+        # self.ministry.run_public_education(households, self.mock_government, 1)
+    
+        # promoted_count = sum(1 for h in households if h._econ_state.education_level == 1)
+        # self.assertEqual(promoted_count, 10)
+    
+        # Check assets (legacy behavior)
+        expected_spent = 10 * 100
+>       self.mock_government._sub_assets.assert_called()
+E       AssertionError: Expected '_sub_assets' to have been called.
+
+tests\unit\systems\test_ministry_of_education.py:138: AssertionError
+____ TestMinistryOfEducation.test_run_public_education_basic_grant_legacy _____
+
+self = <test_ministry_of_education.TestMinistryOfEducation testMethod=test_run_public_education_basic_grant_legacy>
+
+    def test_run_public_education_basic_grant_legacy(self):
+        # Legacy Mode (No SettlementSystem)
+        households = [
+            self._create_household(101, 500, 0, 0.5), # Eligible for basic
+            self._create_household(102, 1000, 1, 0.6) # Already has basic
+        ]
+    
+        initial_gov_assets = self.mock_government._assets # Use backing field for check
+        cost = self.mock_config.EDUCATION_COST_PER_LEVEL[1] # 100
+    
+>       self.ministry.run_public_education(households, self.mock_government, 1)
+
+tests\unit\systems\test_ministry_of_education.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.systems.ministry_of_education.MinistryOfEducation object at 0x000001AE1ECA1590>
+households = [<Household id='1848598141584'>, <Household id='1848598142592'>]
+government = <MagicMock id='1848598141248'>, current_tick = 1
+
+    def run_public_education(self, households: List[Any], government: Any, current_tick: int) -> List[Transaction]:
+        """
+        WO-054: Public Education System Implementation.
+        Returns a list of Transactions.
+        """
+        transactions = []
+        budget_ratio = getattr(self.config_module, "PUBLIC_EDU_BUDGET_RATIO", 0.20)
+        # WO-057 Deficit Spending: Budget is based on REVENUE, not ASSETS
+    
+        # Handle revenue_this_tick being Dict or float
+        revenue = 0.0
+        if isinstance(government.revenue_this_tick, dict):
+            revenue = government.revenue_this_tick.get(DEFAULT_CURRENCY, 0.0)
+        else:
+            try:
+                revenue = float(government.revenue_this_tick)
+            except (ValueError, TypeError):
+                revenue = 0.0
+    
+        edu_budget = revenue * budget_ratio
+    
+        active_households = [h for h in households if h._bio_state.is_active]
+        if not active_households:
+            return []
+    
+        # Identify Potential Teachers (Households with Education > 0)
+        teachers = [h for h in active_households if h._econ_state.education_level > 0]
+        # Fallback if no educated households (Generation 0)
+        if not teachers:
+            teachers = active_households
+    
+>       active_households.sort(key=lambda x: x._econ_state.wallet.get_balance(DEFAULT_CURRENCY))
+E       TypeError: '<' not supported between instances of 'Mock' and 'Mock'
+
+simulation\systems\ministry_of_education.py:47: TypeError
+__ TestMinistryOfEducation.test_run_public_education_basic_grant_settlement ___
+
+self = <MagicMock name='mock.transfer' id='1848598148640'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'transfer' to have been called once. Called 0 times.
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:958: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_ministry_of_education.TestMinistryOfEducation testMethod=test_run_public_education_basic_grant_settlement>
+
+    def test_run_public_education_basic_grant_settlement(self):
+        # New Mode (With SettlementSystem)
+        households = [
+            self._create_household(101, 500, 0, 0.5),
+        ]
+    
+        mock_settlement = MagicMock()
+        mock_settlement.transfer.return_value = True
+        mock_reflux = MagicMock()
+    
+        cost = self.mock_config.EDUCATION_COST_PER_LEVEL[1] # 100
+    
+        # API Mismatch: run_public_education no longer accepts settlement_system
+        # self.ministry.run_public_education(households, self.mock_government, 1,
+        #                                    reflux_system=mock_reflux,
+        #                                    settlement_system=mock_settlement)
+    
+        # self.assertEqual(households[0]._econ_state.education_level, 1)
+    
+        # Verify Transfer called
+>       mock_settlement.transfer.assert_called_once()
+E       AssertionError: Expected 'transfer' to have been called once. Called 0 times.
+
+tests\unit\systems\test_ministry_of_education.py:75: AssertionError
+__ TestMinistryOfEducation.test_run_public_education_scholarship_settlement ___
+
+self = <test_ministry_of_education.TestMinistryOfEducation testMethod=test_run_public_education_scholarship_settlement>
+
+    def test_run_public_education_scholarship_settlement(self):
+        # Add dummy rich households to ensure percentile logic works
+        households = [
+            self._create_household(101, 150, 1, 0.9),   # Eligible (Poor & Smart)
+            self._create_household(102, 1000, 1, 0.5),
+            self._create_household(103, 1000, 1, 0.5),
+            self._create_household(104, 1000, 1, 0.5),
+            self._create_household(105, 1000, 1, 0.5),
+        ]
+    
+        mock_settlement = MagicMock()
+        mock_settlement.transfer.return_value = True
+        mock_reflux = MagicMock()
+    
+        cost = self.mock_config.EDUCATION_COST_PER_LEVEL[2] # 500
+        subsidy = cost * 0.8
+        student_share = cost * 0.2
+    
+        # self.ministry.run_public_education(households, self.mock_government, 1,
+        #                                    reflux_system=mock_reflux,
+        #                                    settlement_system=mock_settlement)
+    
+        # self.assertEqual(households[0]._econ_state.education_level, 2)
+    
+        # Verify Transfers
+        # 1. Subsidy (Gov -> Reflux)
+        # 2. Tuition (Student -> Reflux)
+>       self.assertEqual(mock_settlement.transfer.call_count, 2)
+E       AssertionError: 0 != 2
+
+tests\unit\systems\test_ministry_of_education.py:112: AssertionError
+_________________________ test_sensory_dto_generation _________________________
+
+sensory_system = <simulation.systems.sensory_system.SensorySystem object at 0x000001AE69200EC0>
+
+    def test_sensory_dto_generation(sensory_system):
+        mock_tracker = Mock()
+        mock_tracker.get_latest_indicators.return_value = {
+            "avg_goods_price": 10.0,
+            "unemployment_rate": 0.05,
+            "total_production": 1000.0,
+            "avg_wage": 50.0
+        }
+    
+        mock_gov = Mock()
+        mock_gov.approval_rating = 0.5
+    
+        mock_inequality = Mock()
+        mock_inequality.calculate_gini_coefficient.return_value = 0.35
+    
+        # Mock Households with assets
+        h1 = Mock()
+        h1._bio_state.is_active = True
+        h1._econ_state.assets = 100.0
+        h1._social_state.approval_rating = 0.2
+    
+        h2 = Mock()
+        h2._bio_state.is_active = True
+        h2._econ_state.assets = 1000.0
+        h2._social_state.approval_rating = 0.8
+    
+        households = [h1, h2]
+    
+        context: SensoryContext = {
+            "tracker": mock_tracker,
+            "government": mock_gov,
+            "time": 1,
+            "inequality_tracker": mock_inequality,
+            "households": households
+        }
+    
+        dto = sensory_system.generate_government_sensory_dto(context)
+    
+>       assert dto.gini_index == 0.35
+E       assert 0.0 == 0.35
+E        +  where 0.0 = GovernmentSensoryDTO(tick=1, inflation_sma=0.0, unemployment_sma=0.05, gdp_growth_sma=0.0, wage_sma=50.0, approval_sma=0.5, current_gdp=1000.0, gini_index=0.0, approval_low_asset=0.5, approval_high_asset=0.5).gini_index
+
+tests\unit\systems\test_sensory_system.py:48: AssertionError
+_ TestSettlementSagaIntegration.test_process_sagas_integration_initiated_to_credit_check _
+
+self = <test_settlement_saga_integration.TestSettlementSagaIntegration object at 0x000001AE1ECA2210>
+mock_simulation_state = <MagicMock id='1848599650592'>
+
+    def test_process_sagas_integration_initiated_to_credit_check(self, mock_simulation_state):
+        """
+        Tests that SettlementSystem correctly orchestrates the Real HousingTransactionSagaHandler
+        to transition a saga from INITIATED to CREDIT_CHECK.
+        """
+        # 1. Setup Settlement System
+        settlement = SettlementSystem()
+    
+        # Wire up circular dependency (Handler needs access to SettlementSystem)
+        mock_simulation_state.settlement_system = settlement
+    
+        # 2. Setup a Saga
+        saga_id = "saga-integration-1"
+        saga = {
+            "saga_id": saga_id,
+            "saga_type": "HOUSING_TRANSACTION",
+            "status": "INITIATED",
+            "current_step": 0,
+            "buyer_id": 1,
+            "seller_id": 2,
+            "property_id": 101,
+            "offer_price": 100000.0,
+            "down_payment_amount": 20000.0,
+            "last_processed_tick": 99 # To ensure it processes
+        }
+>       settlement.submit_saga(saga)
+        ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'SettlementSystem' object has no attribute 'submit_saga'
+
+tests\unit\systems\test_settlement_saga_integration.py:46: AttributeError
+__ TestSettlementSagaIntegration.test_process_sagas_integration_cancellation __
+
+self = <test_settlement_saga_integration.TestSettlementSagaIntegration object at 0x000001AE1ECA2350>
+mock_simulation_state = <MagicMock id='1848599652608'>
+
+    def test_process_sagas_integration_cancellation(self, mock_simulation_state):
+        """
+        Tests that if a participant is inactive, SettlementSystem cancels the saga
+        and triggers compensation (using the real handler's compensate logic).
+        """
+        # 1. Setup Settlement System
+        settlement = SettlementSystem()
+        mock_simulation_state.settlement_system = settlement
+    
+        # 2. Setup a Saga (in CREDIT_CHECK state)
+        saga_id = "saga-integration-cancel"
+        saga = {
+            "saga_id": saga_id,
+            "status": "CREDIT_CHECK",
+            "buyer_id": 1,
+            "seller_id": 2,
+            "property_id": 101,
+            "staged_loan_id": "loan_staged_x",
+            "last_processed_tick": 99
+        }
+>       settlement.submit_saga(saga)
+        ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'SettlementSystem' object has no attribute 'submit_saga'
+
+tests\unit\systems\test_settlement_saga_integration.py:104: AttributeError
+=========================== short test summary info ===========================
+ERROR tests/unit/systems/test_demographic_manager_newborn.py::test_newborn_receives_initial_needs_from_config
+FAILED tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_disbursement_failure
+FAILED tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_government_seller
+FAILED tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_payment_failure
+FAILED tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_purchase_success
+FAILED tests/unit/systems/test_commerce_system.py::test_execute_consumption_and_leisure
+FAILED tests/unit/systems/test_commerce_system.py::test_fast_track_consumption_if_needed
+FAILED tests/unit/systems/test_commerce_system_logging.py::test_log_reject_when_stock_out_and_insolvent
+FAILED tests/unit/systems/test_commerce_system_logging.py::test_log_reject_when_stock_out_but_solvent
+FAILED tests/unit/systems/test_event_system.py::test_inflation_shock - TypeEr...
+FAILED tests/unit/systems/test_event_system.py::test_recession_shock - TypeEr...
+FAILED tests/unit/systems/test_event_system.py::test_no_event - TypeError: Ev...
+FAILED tests/unit/systems/test_firm_management_leak.py::TestFirmManagementLeak::test_spawn_firm_leak_detection
+FAILED tests/unit/systems/test_firm_management_refactor.py::TestFirmManagementRefactor::test_spawn_firm_missing_settlement_system
+FAILED tests/unit/systems/test_housing_system.py::TestHousingSystemRefactor::test_process_housing_maintenance_uses_transfer
+FAILED tests/unit/systems/test_housing_system.py::TestHousingSystemRefactor::test_process_housing_rent_collection_uses_transfer
+FAILED tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_asset_liquidation_integration
+FAILED tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_bank_claim_handling
+FAILED tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_initiate_liquidation_orchestration
+FAILED tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_budget_constraints
+FAILED tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_run_public_education_basic_grant_legacy
+FAILED tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_run_public_education_basic_grant_settlement
+FAILED tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_run_public_education_scholarship_settlement
+FAILED tests/unit/systems/test_sensory_system.py::test_sensory_dto_generation
+FAILED tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_initiated_to_credit_check
+FAILED tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_cancellation
+=================== 25 failed, 51 passed, 1 error in 2.38s ====================
