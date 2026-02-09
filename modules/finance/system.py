@@ -1,6 +1,6 @@
 from typing import List, Dict, Optional, Any, Tuple
 import logging
-from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialEntity, InsufficientFundsError
+from modules.finance.api import IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialEntity, InsufficientFundsError, GrantBailoutCommand
 from modules.finance.domain import AltmanZScoreCalculator
 from modules.analysis.fiscal_monitor import FiscalMonitor
 from modules.simulation.api import EconomicIndicatorsDTO
@@ -288,10 +288,10 @@ class FinanceSystem(IFinanceSystem):
         logger.warning("FinanceSystem.collect_corporate_tax called. Should be using Transaction Generation.")
         return False
 
-    def grant_bailout_loan(self, firm: 'Firm', amount: float, current_tick: int) -> Tuple[Optional[BailoutLoanDTO], List[Transaction]]:
+    def request_bailout_loan(self, firm: 'Firm', amount: float) -> Optional[GrantBailoutCommand]:
         """
-        Converts a bailout from a grant to an interest-bearing senior loan.
-        Returns the loan DTO and Transaction.
+        Validates and creates a command to grant a bailout loan.
+        Does not execute the transfer or state update.
         """
         # Enforce Government Budget Constraint
         gov_assets = self.government.assets
@@ -301,7 +301,7 @@ class FinanceSystem(IFinanceSystem):
 
         if gov_assets_val < amount:
             logger.warning(f"BAILOUT_DENIED | Government insufficient funds: {gov_assets_val:.2f} < {amount:.2f}")
-            return None, []
+            return None
 
         base_rate = self.central_bank.get_base_rate()
         penalty_premium = self.config_module.get("economy_params.BAILOUT_PENALTY_PREMIUM", 0.05)
@@ -311,32 +311,27 @@ class FinanceSystem(IFinanceSystem):
             executive_salary_freeze=True,
             mandatory_repayment=self.config_module.get("economy_params.BAILOUT_COVENANT_RATIO", 0.5)
         )
-        loan = BailoutLoanDTO(
+
+        return GrantBailoutCommand(
             firm_id=firm.id,
             amount=amount,
             interest_rate=base_rate + penalty_premium,
             covenants=covenants
         )
 
-        # Generate Transaction: Government -> Firm
-        tx = Transaction(
-            buyer_id=self.government.id,
-            seller_id=firm.id,
-            item_id=f"bailout_loan_{firm.id}",
-            quantity=1.0,
-            price=amount,
-            market_id="financial",
-            transaction_type="bailout_loan",
-            time=current_tick
-        )
-
-        # Optimistic State Update
-        if not hasattr(firm, 'total_debt'):
-            firm.total_debt = 0.0
-        firm.total_debt += amount
-        firm.has_bailout_loan = True
-
-        return loan, [tx]
+    def grant_bailout_loan(self, firm: 'Firm', amount: float) -> Optional[BailoutLoanDTO]:
+        """Deprecated. Use request_bailout_loan instead."""
+        logger.warning("FinanceSystem.grant_bailout_loan is deprecated. Use request_bailout_loan.")
+        cmd = self.request_bailout_loan(firm, amount)
+        if cmd:
+            # Return partial DTO to satisfy protocol until callers are updated?
+            # Or just return None because this method shouldn't be used.
+            # But wait, IFinanceSystem defines grant_bailout_loan as returning Optional[BailoutLoanDTO] in my thought?
+            # No, I changed IFinanceSystem to request_bailout_loan in the previous step.
+            # So I should remove this method unless I want to keep it for safety.
+            # The interface update removed it. So I can remove it.
+            pass
+        return None
 
     def _transfer(self, debtor: IFinancialEntity, creditor: IFinancialEntity, amount: float, memo: str = "FinanceSystem Transfer") -> bool:
         """

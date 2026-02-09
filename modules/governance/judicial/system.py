@@ -1,13 +1,13 @@
 from typing import Dict, Any, Optional
 import logging
 from modules.common.config_manager.api import ConfigManager
-from modules.events.dtos import FinancialEvent, LoanDefaultedEvent
+from modules.events.dtos import FinancialEvent, LoanDefaultedEvent, DebtRestructuringRequiredEvent
 from modules.system.event_bus.api import IEventBus
-from modules.governance.judicial.api import IJudicialSystem
+from modules.governance.judicial.api import IJudicialSystem, SeizureWaterfallResultDTO
 from simulation.finance.api import ISettlementSystem
 from modules.system.api import IAgentRegistry
 from modules.finance.api import (
-    IShareholderRegistry, IPortfolioHandler, ICreditFrozen, IFinancialEntity
+    IShareholderRegistry, IPortfolioHandler, ICreditFrozen, IFinancialEntity, IFinancialAgent, ILiquidatable
 )
 from modules.simulation.api import IEducated
 from modules.system.api import DEFAULT_CURRENCY
@@ -40,8 +40,8 @@ class JudicialSystem(IJudicialSystem):
                 tick=loan_event['tick']
             )
 
-            # Seize assets logic
-            self.execute_asset_seizure(
+            # Execute Seizure Waterfall
+            result = self.execute_seizure_waterfall(
                 agent_id=loan_event['agent_id'],
                 creditor_id=loan_event['creditor_id'],
                 amount=loan_event['defaulted_amount'],
@@ -55,19 +55,7 @@ class JudicialSystem(IJudicialSystem):
             logger.warning(f"JudicialSystem: Agent {agent_id} not found for penalty application.")
             return
 
-        # 1. Share Seizure
-        if isinstance(agent, IPortfolioHandler):
-            portfolio = agent.get_portfolio()
-            for asset in portfolio.assets:
-                if asset.asset_type == 'stock':
-                    try:
-                        firm_id = int(asset.asset_id)
-                        if self.shareholder_registry:
-                            self.shareholder_registry.register_shares(firm_id, agent_id, 0)
-                    except ValueError:
-                        pass
-            agent.clear_portfolio()
-            logger.info(f"JudicialSystem: Seized portfolio of Agent {agent_id}.")
+        # 1. Share Seizure moved to execute_seizure_waterfall
 
         # 2. Credit Freeze
         if isinstance(agent, ICreditFrozen):
@@ -83,39 +71,119 @@ class JudicialSystem(IJudicialSystem):
             agent.education_xp *= (1.0 - xp_penalty)
             logger.info(f"JudicialSystem: Applied XP penalty to Agent {agent_id}.")
 
-    def execute_asset_seizure(self, agent_id: int, creditor_id: int, amount: float, loan_id: str, tick: int) -> None:
-        agent = self.agent_registry.get_agent(agent_id)
-        creditor = self.agent_registry.get_agent(creditor_id)
-
-        if not agent or not creditor:
-            return
-
-        # Determine seizable amount (all liquid assets)
-        seizable_amount = 0.0
-
-        # Accessing `assets` directly to check balance.
-        # We prioritize IFinancialEntity interface
-        if isinstance(agent, IFinancialEntity):
-             seizable_amount = agent.assets
-        # Fallback if agent exposes wallet directly
+    def _get_agent_balance(self, agent: Any) -> float:
+        if isinstance(agent, IFinancialAgent):
+            return agent.get_balance(DEFAULT_CURRENCY)
+        elif isinstance(agent, IFinancialEntity):
+            return agent.assets
         elif hasattr(agent, 'wallet'):
-             seizable_amount = agent.wallet.get_balance(DEFAULT_CURRENCY)
+            return agent.wallet.get_balance(DEFAULT_CURRENCY)
+        return 0.0
 
-        if seizable_amount <= 0:
-            return
+    def _transfer_cash(self, agent: Any, creditor: Any, amount: float, memo: str, tick: int) -> float:
+        """Attempts to transfer amount. Returns actual transferred amount."""
+        balance = self._get_agent_balance(agent)
+        transfer_amount = min(balance, amount)
 
-        memo = f"Asset Seizure: Default {loan_id}"
+        if transfer_amount <= 0:
+            return 0.0
 
-        # We assume agents retrieved from registry implement IFinancialEntity
-        # as required by ISettlementSystem.
-
-        tx = self.settlement_system.transfer(
-            debit_agent=agent, # type: ignore
-            credit_agent=creditor, # type: ignore
-            amount=seizable_amount,
+        success = self.settlement_system.transfer(
+            debit_agent=agent,
+            credit_agent=creditor,
+            amount=transfer_amount,
             memo=memo,
             tick=tick
         )
 
-        if tx:
-            logger.info(f"JudicialSystem: Seized {seizable_amount} from Agent {agent_id} for Creditor {creditor_id}.")
+        return transfer_amount if success else 0.0
+
+    def execute_seizure_waterfall(self, agent_id: int, creditor_id: int, amount: float, loan_id: str, tick: int) -> SeizureWaterfallResultDTO:
+        agent = self.agent_registry.get_agent(agent_id)
+        creditor = self.agent_registry.get_agent(creditor_id)
+
+        result = SeizureWaterfallResultDTO(
+            success=False,
+            total_seized=0.0,
+            remaining_debt=amount,
+            cash_seized=0.0,
+            stocks_seized_value=0.0,
+            inventory_seized_value=0.0
+        )
+
+        if not agent or not creditor:
+            return result
+
+        memo_base = f"Seizure: Default {loan_id}"
+
+        # Stage 1: Cash
+        cash_1 = self._transfer_cash(agent, creditor, result.remaining_debt, f"{memo_base} (Cash Stage 1)", tick)
+        result.cash_seized += cash_1
+        result.total_seized += cash_1
+        result.remaining_debt -= cash_1
+
+        if result.remaining_debt <= 0.001: # Epsilon check
+             result.success = True
+             return result
+
+        # Stage 2: Stocks
+        if isinstance(agent, IPortfolioHandler):
+            portfolio = agent.get_portfolio()
+            # We assume stocks don't immediately reduce debt value (valuation issue),
+            # but we transfer them to creditor to prevent leakage.
+            for asset in portfolio.assets:
+                if asset.asset_type == 'stock':
+                    try:
+                        firm_id = int(asset.asset_id)
+                        quantity = asset.quantity
+                        if self.shareholder_registry and quantity > 0:
+                            # 1. Remove from Debtor
+                            self.shareholder_registry.register_shares(firm_id, agent_id, 0)
+
+                            # 2. Add to Creditor (Need to fetch existing shares first)
+                            # Assuming shareholder_registry can handle this or we just re-register
+                            # Since we don't have atomic 'transfer_shares', we do best effort.
+                            # Ideally we get creditor shares first.
+                            current_holdings = self.shareholder_registry.get_shareholders_of_firm(firm_id)
+                            creditor_qty = 0.0
+                            for holding in current_holdings:
+                                if holding['agent_id'] == creditor_id:
+                                    creditor_qty = holding['quantity']
+                                    break
+
+                            self.shareholder_registry.register_shares(firm_id, creditor_id, creditor_qty + quantity)
+                            # Note: We don't increment result.stocks_seized_value because we don't know the price.
+                            # And we don't reduce remaining_debt.
+                            logger.info(f"JudicialSystem: Transferred {quantity} shares of Firm {firm_id} from {agent_id} to {creditor_id}.")
+
+                    except ValueError:
+                        pass
+            agent.clear_portfolio()
+
+        # Stage 3: Inventory (Liquidation)
+        # Check remaining debt again (stocks didn't reduce it)
+        if result.remaining_debt > 0.001 and isinstance(agent, ILiquidatable):
+             # This converts inventory to cash
+             _ = agent.liquidate_assets(tick)
+
+             # Now seize the generated cash
+             cash_2 = self._transfer_cash(agent, creditor, result.remaining_debt, f"{memo_base} (Inventory Stage 3)", tick)
+             result.inventory_seized_value += cash_2 # We assume cash obtained came from liquidation
+             result.total_seized += cash_2
+             result.remaining_debt -= cash_2
+
+        if result.remaining_debt <= 0.001:
+            result.success = True
+        else:
+            # Emit DebtRestructuringRequiredEvent
+            event = DebtRestructuringRequiredEvent(
+                event_type="DEBT_RESTRUCTURING_REQUIRED",
+                tick=tick,
+                agent_id=agent_id,
+                remaining_debt=result.remaining_debt,
+                creditor_id=creditor_id
+            )
+            self.event_bus.publish(event)
+            logger.warning(f"JudicialSystem: Debt Restructuring Required for Agent {agent_id}. Remaining Debt: {result.remaining_debt}")
+
+        return result

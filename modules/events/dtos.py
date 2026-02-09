@@ -22,5 +22,16 @@ class InsolvencyDeclaredEvent(TypedDict):
     total_debt: float
     total_assets: float
 
+class DebtRestructuringRequiredEvent(TypedDict):
+    """
+    Event emitted when a borrower still has outstanding debt after
+    the judicial seizure waterfall (Cash -> Stocks -> Inventory) has been exhausted.
+    """
+    event_type: Literal["DEBT_RESTRUCTURING_REQUIRED"]
+    tick: int
+    agent_id: int
+    remaining_debt: float
+    creditor_id: int
+
 # A union type for all financial events
-FinancialEvent = Union[LoanDefaultedEvent, InsolvencyDeclaredEvent]
+FinancialEvent = Union[LoanDefaultedEvent, InsolvencyDeclaredEvent, DebtRestructuringRequiredEvent]

@@ -105,6 +105,17 @@ class BailoutLoanDTO:
     interest_rate: float
     covenants: BailoutCovenant
 
+@dataclass
+class GrantBailoutCommand:
+    """
+    Command to grant a bailout loan.
+    Encapsulates all necessary parameters for execution by the PolicyExecutionEngine.
+    """
+    firm_id: int
+    amount: float
+    interest_rate: float
+    covenants: BailoutCovenant
+
 # --- Portfolio DTOs (TD-160) ---
 
 @dataclass
@@ -423,8 +434,11 @@ class IFinanceSystem(Protocol):
         """Collects corporate tax using atomic settlement."""
         ...
 
-    def grant_bailout_loan(self, firm: 'Firm', amount: float) -> Optional[BailoutLoanDTO]:
-        """Converts a bailout from a grant to an interest-bearing senior loan."""
+    def request_bailout_loan(self, firm: 'Firm', amount: float) -> Optional[GrantBailoutCommand]:
+        """
+        Validates and creates a command to grant a bailout loan.
+        Does not execute the transfer or state update.
+        """
         ...
 
     def service_debt(self, current_tick: int) -> None:
