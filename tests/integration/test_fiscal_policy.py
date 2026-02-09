@@ -10,20 +10,26 @@ def test_potential_gdp_ema_convergence(government, mock_central_bank):
     government.update_sensory_data(dto)
 
     # Initial GDP: The old test was wrong. The EMA calculation runs on the first step.
-    # New potential_gdp = (0.01 * 1000) + (0.99 * 0) = 10. Let's fix this logic.
+    # If potential_gdp is 0, it initializes to current_gdp.
+    # New logic in DecisionEngine:
+    # potential_gdp = state.potential_gdp (0.0)
+    # if potential_gdp == 0.0: potential_gdp = current_gdp (1000.0)
+
     government.make_policy_decision({}, 1, mock_central_bank)
-    assert abs(government.potential_gdp - 990.0) < 0.01
+    assert abs(government.potential_gdp - 1000.0) < 0.01
 
     # Update with same GDP, potential GDP should now update via EMA
+    # potential = (0.01 * 1000) + (0.99 * 1000) = 1000.0
     government.make_policy_decision({}, 2, mock_central_bank)
-    assert abs(government.potential_gdp - 980.2) < 0.01
+    assert abs(government.potential_gdp - 1000.0) < 0.01
 
     # Update with higher GDP, should increase but lag
     dto.current_gdp = 2000.0
     government.update_sensory_data(dto)
     government.make_policy_decision({}, 3, mock_central_bank)
-    # new = (0.01 * 2000) + (0.99 * 980.2) = 20 + 970.398 = 990.398
-    assert abs(government.potential_gdp - 980.5) < 0.01
+    # new = (0.01 * 2000) + (0.99 * 1000) = 20 + 990 = 1010.0
+    assert abs(government.potential_gdp - 1010.0) < 0.01
+
 
 def test_counter_cyclical_tax_adjustment_recession(government, mock_config, mock_central_bank):
     """Test Fiscal Expansion during Recession (GDP < Potential)."""

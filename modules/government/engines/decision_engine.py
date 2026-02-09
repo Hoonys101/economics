@@ -28,6 +28,17 @@ class GovernmentDecisionEngine(IGovernmentDecisionEngine):
         """
         Decides on a policy action based on current state and market data.
         """
+        # Calculate Potential GDP (Common Logic for all strategies)
+        current_gdp = market_snapshot.market_data.get("total_production", 0.0)
+        if current_gdp == 0.0 and state.sensory_data:
+             current_gdp = state.sensory_data.current_gdp
+
+        potential_gdp = state.potential_gdp
+        if potential_gdp == 0.0:
+            potential_gdp = current_gdp
+        else:
+            alpha = 0.01
+            potential_gdp = (alpha * current_gdp) + ((1-alpha) * potential_gdp)
 
         if self.strategy_mode == "AI_ADAPTIVE":
              if not state.sensory_data:
@@ -55,32 +66,24 @@ class GovernmentDecisionEngine(IGovernmentDecisionEngine):
                  return PolicyDecisionDTO(action_tag=PolicyActionTag.GENERAL_ADMIN, status="NO_VALID_ACTIONS", parameters={})
 
              best = valid[0]
+             # Inject potential_gdp into result parameters so it updates state
+             params = best.params.copy()
+             params["potential_gdp"] = potential_gdp
+
              return PolicyDecisionDTO(
                  action_tag=best.tag,
-                 parameters=best.params,
+                 parameters=params,
                  metadata={"action_type": best.action_type, "utility": best.utility, "name": best.name},
                  status="EXECUTED"
              )
 
         else: # TAYLOR_RULE or default
-            return self._decide_taylor_rule(state, market_snapshot, central_bank)
+            return self._decide_taylor_rule(state, market_snapshot, central_bank, potential_gdp, current_gdp)
 
-    def _decide_taylor_rule(self, state: GovernmentStateDTO, market_snapshot: MarketSnapshotDTO, central_bank: Any) -> PolicyDecisionDTO:
+    def _decide_taylor_rule(self, state: GovernmentStateDTO, market_snapshot: MarketSnapshotDTO, central_bank: Any, potential_gdp: float, current_gdp: float) -> PolicyDecisionDTO:
         """
         Implements Taylor Rule-based fiscal policy logic.
         """
-        current_gdp = market_snapshot.market_data.get("total_production", 0.0)
-        if current_gdp == 0.0 and state.sensory_data:
-             current_gdp = state.sensory_data.current_gdp
-
-        # Calculate Potential GDP (Legacy Logic)
-        potential_gdp = state.potential_gdp
-        if potential_gdp == 0.0:
-            potential_gdp = current_gdp
-        else:
-            alpha = 0.01
-            potential_gdp = (alpha * current_gdp) + ((1-alpha) * potential_gdp)
-
         gdp_gap = 0.0
         if potential_gdp > 0:
             gdp_gap = (current_gdp - potential_gdp) / potential_gdp

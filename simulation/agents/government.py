@@ -346,11 +346,10 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
 
     def _log_shadow_metrics(self, market_data: Dict[str, Any], current_tick: int, central_bank: Any):
         # Re-implementation of legacy logging logic
-        if self.potential_gdp > 0:
-            current_gdp = market_data.get("total_production", 0.0)
-            alpha = 0.01
-            self.potential_gdp = (alpha * current_gdp) + ((1-alpha) * self.potential_gdp)
-        elif self.sensory_data and self.sensory_data.current_gdp > 0:
+        # Note: self.potential_gdp is now updated via _apply_state_updates from DecisionEngine.
+        # We rely on the Engine's calculation to be the single source of truth for the state update.
+        # Only fallback if engine didn't provide it (which it should).
+        if self.potential_gdp == 0.0 and self.sensory_data and self.sensory_data.current_gdp > 0:
              self.potential_gdp = self.sensory_data.current_gdp
 
         inflation = 0.0
@@ -469,21 +468,23 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
             decision, current_state_dto, [firm], {}, context
         )
 
+        # Refactored: Use executed loans/transactions from Engine result
         if result.bailout_results:
-            # We must replicate the legacy side-effects (loan issuance) here or inside execution engine
-            # Since ExecutionEngine calls provide_firm_bailout on welfare manager but NOT grant_bailout_loan on finance system (my oversight),
-            # I will invoke it here to maintain behavior until FinanceSystem logic is also moved.
+            loans = result.executed_loans
+            txs = result.transactions
 
-            # Re-check solvency to be safe
-            is_solvent = self.finance_system.evaluate_solvency(firm, current_tick)
-
-            # Grant loan
-            loan, txs = self.finance_system.grant_bailout_loan(firm, amount, current_tick)
-            if loan:
+            # Process expenditures for statistics
+            for loan in loans:
+                # Assuming loan has 'amount' or we infer from request.
+                # The engine called grant_bailout_loan(firm, amount...)
+                # We can use the 'amount' from the decision parameters
+                amt = decision.parameters.get("amount", 0.0)
                 cur = getattr(loan, 'currency', DEFAULT_CURRENCY)
                 if cur not in self.expenditure_this_tick: self.expenditure_this_tick[cur] = 0.0
-                self.expenditure_this_tick[cur] += amount
-            return loan, txs
+                self.expenditure_this_tick[cur] += amt
+
+            # Return first loan and all txs (Legacy Signature limitation)
+            return (loans[0] if loans else None), txs
 
         return None, []
 
@@ -536,10 +537,6 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
             payer = req.payer
             payee = req.payee
 
-            # DEBUG
-            if isinstance(payee, str):
-                print(f"DEBUG: payee string: '{payee}'")
-
             if payer == self.id: payer = self
             # Resolve Payee
             # Note: TaxService usually sets payee="GOVERNMENT"
@@ -549,10 +546,6 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
                 payee = self
             elif payee == self.id:
                 payee = self
-
-            # DEBUG
-            if isinstance(payee, str):
-                 print(f"DEBUG: payee is STILL string: '{payee}'")
 
             if self.settlement_system:
                 success = self.settlement_system.transfer(payer, payee, req.amount, req.memo, currency=req.currency)

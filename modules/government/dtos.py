@@ -55,7 +55,7 @@ class GovernmentStateDTO:
     ruling_party: Any # e.g., PoliticalParty Enum
     approval_rating: float
     policy_lockouts: Dict[Any, int] = field(default_factory=dict) # <PolicyActionTag, locked_until_tick>
-    sensory_data: Optional[Any] = None # Simplified representation of sensory DTO
+    sensory_data: Optional['GovernmentSensoryDTO'] = None # Forward reference
     gdp_history: List[float] = field(default_factory=list)
     welfare_budget_multiplier: float = 1.0
     monetary_policy: Optional[MonetaryPolicyDTO] = None
@@ -77,6 +77,8 @@ class ExecutionResultDTO:
     bailout_results: List['BailoutResultDTO'] = field(default_factory=list)
     monetary_ledger_updates: Dict[str, float] = field(default_factory=dict)
     state_updates: Dict[str, Any] = field(default_factory=dict) # For Orchestrator to update its state
+    transactions: List[Any] = field(default_factory=list) # General transactions (e.g. from bailouts)
+    executed_loans: List[Any] = field(default_factory=list) # Executed loan objects (e.g. from bailouts)
 
 @dataclass
 class MacroEconomicSnapshotDTO:

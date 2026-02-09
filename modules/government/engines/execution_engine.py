@@ -128,6 +128,15 @@ class PolicyExecutionEngine(IPolicyExecutionEngine):
         if bailout_res:
              result.bailout_results.append(bailout_res)
 
+             # Execute the loan via FinanceSystem (Logic moved from Orchestrator)
+             # Note: grant_bailout_loan returns (loan, transactions)
+             if context.finance_system:
+                 loan, txs = context.finance_system.grant_bailout_loan(firm, amount, state.tick)
+                 if loan:
+                     result.executed_loans.append(loan)
+                 if txs:
+                     result.transactions.extend(txs)
+
              # Asset Recovery Hook: If insolvent, notify PublicManager (if bailout terms require asset collateral)
              # But bailout usually implies trying to save.
              # If we had Logic for "Partial Nationalization", we'd use PublicManager here.
