@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from simulation.core_agents import Household
 
 @dataclass(frozen=True)
-class OrderDTO:
+class CanonicalOrderDTO:
     """Standardized Market Order Data Transfer Object.
     Replaces legacy dictionary/tuple usage in decision engines.
     Immutable to prevent side-effects during processing.
@@ -43,6 +43,50 @@ class OrderDTO:
     def order_type(self) -> str:
         """Alias for legacy compatibility during migration."""
         return self.side
+
+# Alias for backward compatibility
+OrderDTO = CanonicalOrderDTO
+
+def convert_legacy_order_to_canonical(order: Any) -> CanonicalOrderDTO:
+    """
+    Adapter to convert legacy order objects (like StockOrder) or dictionaries
+    to the CanonicalOrderDTO format.
+    """
+    if isinstance(order, CanonicalOrderDTO):
+        return order
+
+    # Handle dictionary input
+    if isinstance(order, dict):
+        item_id = order.get("item_id")
+        if not item_id and order.get("firm_id"):
+             item_id = f"stock_{order.get('firm_id')}"
+
+        return CanonicalOrderDTO(
+            agent_id=order.get("agent_id"),
+            side=order.get("side") or order.get("order_type"),
+            item_id=item_id,
+            quantity=order.get("quantity"),
+            price_limit=order.get("price_limit") or order.get("price"),
+            market_id=order.get("market_id", "stock_market"),
+            target_agent_id=order.get("target_agent_id"),
+            brand_info=order.get("brand_info"),
+            metadata=order.get("metadata"),
+            monetary_amount=order.get("monetary_amount"),
+            currency=order.get("currency", DEFAULT_CURRENCY)
+        )
+
+    # Handle Legacy StockOrder (duck typing to avoid circular import)
+    if hasattr(order, "firm_id") and hasattr(order, "order_type") and hasattr(order, "price"):
+        return CanonicalOrderDTO(
+            agent_id=order.agent_id,
+            side=order.order_type,
+            item_id=f"stock_{order.firm_id}",
+            quantity=order.quantity,
+            price_limit=order.price,
+            market_id=getattr(order, "market_id", "stock_market"),
+        )
+
+    raise ValueError(f"Cannot convert object of type {type(order)} to CanonicalOrderDTO")
 
 # --- Data Transfer Objects (DTOs) ---
 
@@ -79,21 +123,21 @@ class IHousingTransactionHandler(ISpecializedTransactionHandler, Protocol):
 class IMarket(Protocol):
     """
     Standard interface for all market types.
-    TD-271: Enforces strictly typed Order DTOs for public access.
+    TD-271: Enforces strictly typed CanonicalOrderDTOs for public access.
     """
     id: str
 
     @property
-    def buy_orders(self) -> Dict[str, List[OrderDTO]]:
+    def buy_orders(self) -> Dict[str, List[CanonicalOrderDTO]]:
         """Returns active buy orders as immutable/copy DTOs."""
         ...
 
     @property
-    def sell_orders(self) -> Dict[str, List[OrderDTO]]:
+    def sell_orders(self) -> Dict[str, List[CanonicalOrderDTO]]:
         """Returns active sell orders as immutable/copy DTOs."""
         ...
 
-    def place_order(self, order_dto: OrderDTO, current_time: int) -> None:
+    def place_order(self, order_dto: CanonicalOrderDTO, current_time: int) -> None:
         """Submits a new order to the market."""
         ...
 

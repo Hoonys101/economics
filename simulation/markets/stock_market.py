@@ -12,15 +12,15 @@ from dataclasses import dataclass, replace
 
 from simulation.models import Transaction, Order
 from simulation.core_markets import Market
-from modules.market.api import OrderDTO
+from modules.market.api import CanonicalOrderDTO
 from modules.finance.api import IShareholderRegistry, IShareholderView
 
 logger = logging.getLogger(__name__)
 
 @dataclass
 class ManagedOrder:
-    """A mutable wrapper for an immutable OrderDTO to manage its state within the order book."""
-    order: OrderDTO
+    """A mutable wrapper for an immutable CanonicalOrderDTO to manage its state within the order book."""
+    order: CanonicalOrderDTO
     remaining_quantity: float
     created_tick: int
 
@@ -123,12 +123,12 @@ class StockMarket(Market):
             return None
         return min(managed.order.price_limit for managed in orders)
 
-    def place_order(self, order: OrderDTO, tick: int) -> None:
+    def place_order(self, order: CanonicalOrderDTO, tick: int) -> None:
         """
         주식 주문을 제출합니다.
         """
-        if not isinstance(order, OrderDTO):
-            self.logger.error(f"Invalid order type passed to StockMarket: {type(order)}. Expected OrderDTO.")
+        if not isinstance(order, CanonicalOrderDTO):
+            self.logger.error(f"Invalid order type passed to StockMarket: {type(order)}. Expected CanonicalOrderDTO.")
             return
 
         # item_id에서 firm_id 추출 ("stock_{firm_id}")
@@ -154,7 +154,7 @@ class StockMarket(Market):
                 f"[{min_price:.2f}, {max_price:.2f}] for firm {firm_id}",
                 extra={"tick": tick, "agent_id": order.agent_id, "firm_id": firm_id}
             )
-            # 가격을 제한 범위 내로 조정하여 새로운 OrderDTO 생성
+            # 가격을 제한 범위 내로 조정하여 새로운 CanonicalOrderDTO 생성
             clamped_price = max(min_price, min(max_price, order.price_limit))
             final_order = replace(order, price_limit=clamped_price)
 

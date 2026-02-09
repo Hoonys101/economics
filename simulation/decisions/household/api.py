@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional, Protocol, TYPE_CHECKING
 from dataclasses import dataclass
 
-from simulation.models import Order, StockOrder
+from simulation.models import Order
 from simulation.dtos import MacroFinancialContext, MarketSnapshotDTO
 
 if TYPE_CHECKING:

@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, List, TYPE_CHECKING
 import uuid
-from modules.market.api import OrderDTO
+from modules.market.api import CanonicalOrderDTO
 from modules.finance.api import LienDTO
 from modules.system.api import DEFAULT_CURRENCY
 
 # Alias for backward compatibility and migration
-Order = OrderDTO
+Order = CanonicalOrderDTO
 
 @dataclass
 class Transaction:
@@ -27,7 +27,10 @@ class Transaction:
 
 @dataclass
 class StockOrder:
-    """주식 시장에 제출되는 주문을 나타내는 데이터 클래스"""
+    """
+    DEPRECATED: Use CanonicalOrderDTO instead.
+    Legacy DTO for Stock Market orders. Will be removed in Phase 10.
+    """
 
     agent_id: int          # 주문 제출자 ID
     order_type: str        # "BUY" or "SELL"

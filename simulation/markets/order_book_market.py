@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from simulation.models import Order, Transaction
 from simulation.core_markets import Market
+from modules.market.api import CanonicalOrderDTO
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ class MarketOrder:
     brand_info: Optional[Dict[str, Any]] = None
 
     @classmethod
-    def from_dto(cls, dto: Order) -> 'MarketOrder':
+    def from_dto(cls, dto: CanonicalOrderDTO) -> 'MarketOrder':
         return cls(
             agent_id=dto.agent_id,
             side=dto.side,
@@ -38,9 +39,9 @@ class MarketOrder:
     def order_type(self) -> str:
         return self.side
 
-    def to_dto(self, market_id: str) -> Order:
-        """Converts internal MarketOrder to public immutable Order DTO."""
-        return Order(
+    def to_dto(self, market_id: str) -> CanonicalOrderDTO:
+        """Converts internal MarketOrder to public immutable CanonicalOrderDTO."""
+        return CanonicalOrderDTO(
             agent_id=self.agent_id,
             side=self.side,
             item_id=self.item_id,
@@ -97,16 +98,16 @@ class OrderBookMarket(Market):
     # --- TD-271: Public Interface Implementation ---
 
     @property
-    def buy_orders(self) -> Dict[str, List[Order]]:
-        """Returns active buy orders as immutable Order DTOs."""
+    def buy_orders(self) -> Dict[str, List[CanonicalOrderDTO]]:
+        """Returns active buy orders as immutable CanonicalOrderDTOs."""
         return {
             item_id: [order.to_dto(self.id) for order in orders]
             for item_id, orders in self._buy_orders.items()
         }
 
     @property
-    def sell_orders(self) -> Dict[str, List[Order]]:
-        """Returns active sell orders as immutable Order DTOs."""
+    def sell_orders(self) -> Dict[str, List[CanonicalOrderDTO]]:
+        """Returns active sell orders as immutable CanonicalOrderDTOs."""
         return {
             item_id: [order.to_dto(self.id) for order in orders]
             for item_id, orders in self._sell_orders.items()
@@ -179,12 +180,12 @@ class OrderBookMarket(Market):
             extra={"market_id": self.id, "tags": ["market_clear"]},
         )
 
-    def place_order(self, order_dto: Order, current_time: int):
+    def place_order(self, order_dto: CanonicalOrderDTO, current_time: int):
         """시장에 주문을 제출합니다. 매칭은 별도의 메서드로 처리됩니다.
         WO-136: Checks dynamic circuit breakers before accepting.
 
         Args:
-            order_dto (Order): 제출할 주문 객체 (OrderDTO).
+            order_dto (CanonicalOrderDTO): 제출할 주문 객체.
             current_time (int): 현재 시뮬레이션 틱 (시간) 입니다.
         """
         # WO-136: Circuit Breaker Check

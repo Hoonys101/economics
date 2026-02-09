@@ -66,7 +66,7 @@ class HouseholdFinancialsMixin:
     def trigger_emergency_liquidation(self) -> List[Any]:
         """
         WO-167: Generates emergency sell orders for all inventory items and stocks.
-        Returns mixed list of Order and StockOrder.
+        Returns list of Order.
         """
         orders = []
 
