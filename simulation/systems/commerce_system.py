@@ -142,6 +142,9 @@ class CommerceSystem(ICommerceSystem):
                         tax_rate = context.get('sales_tax_rate', 0.05)
                         cost = b_amt * food_price * (1 + tax_rate) # TD-231: Include tax
 
+                        # Round cost to 2 decimal places to match currency precision and avoid float errors
+                        cost = round(cost, 2)
+
                         assets = household._econ_state.assets
                         cash = assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(assets, dict) else float(assets)
 
