@@ -181,6 +181,15 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
     def wallet(self) -> Wallet:
         return self._wallet
 
+    # --- Legacy/Compatibility ---
+    @property
+    def finance(self) -> "Firm":
+        """
+        Legacy proxy for backward compatibility.
+        Routes `firm.finance.record_expense()` to `firm.record_expense()`.
+        """
+        return self
+
     # --- ICreditFrozen Implementation ---
 
     @property
@@ -356,6 +365,18 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
     @property
     def last_revenue(self) -> float:
         return self.finance_state.last_revenue
+
+    @property
+    def revenue_this_turn(self) -> Dict[CurrencyCode, float]:
+        return self.finance_state.revenue_this_turn
+
+    @property
+    def expenses_this_tick(self) -> Dict[CurrencyCode, float]:
+        return self.finance_state.expenses_this_tick
+
+    @property
+    def cost_this_turn(self) -> Dict[CurrencyCode, float]:
+        return self.finance_state.cost_this_turn
 
     # --- Methods ---
 

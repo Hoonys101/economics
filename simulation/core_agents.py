@@ -336,6 +336,10 @@ class Household(
         return self._bio_state.parent_id
 
     @property
+    def generation(self) -> int:
+        return self._bio_state.generation
+
+    @property
     def age(self) -> float:
         return self._bio_state.age
 
@@ -406,6 +410,10 @@ class Household(
     @property
     def inventory(self) -> Dict[str, float]:
         return self._econ_state.inventory
+
+    @property
+    def portfolio(self) -> Portfolio:
+        return self._econ_state.portfolio
 
     @property
     def talent(self) -> Talent:
@@ -641,10 +649,30 @@ class Household(
         if property_id in self._econ_state.owned_properties:
             self._econ_state.owned_properties.remove(property_id)
 
+    @property
+    def residing_property_id(self) -> Optional[int]:
+        return self._econ_state.residing_property_id
+
+    @residing_property_id.setter
+    def residing_property_id(self, value: Optional[int]) -> None:
+        self._econ_state.residing_property_id = value
+
+    @property
+    def is_homeless(self) -> bool:
+        return self._econ_state.is_homeless
+
+    @is_homeless.setter
+    def is_homeless(self, value: bool) -> None:
+        self._econ_state.is_homeless = value
+
     # IHousingTransactionParticipant Implementation
     @property
     def current_wage(self) -> float:
         return self._econ_state.current_wage
+
+    @current_wage.setter
+    def current_wage(self, value: float) -> None:
+        self._econ_state.current_wage = value
 
     @property
     def credit_frozen_until_tick(self) -> int:
@@ -979,6 +1007,26 @@ class Household(
             utility_gained=utility_gained,
             xp_gained=xp_gained
         )
+
+    def consume(self, item_id: str, amount: float, current_tick: int) -> None:
+        """
+        Consumes an item from inventory and updates consumption stats.
+        Restored legacy method used by CommerceSystem.
+        """
+        if amount <= 0: return
+
+        # Remove from inventory
+        available = self.get_quantity(item_id)
+        to_remove = min(available, amount)
+
+        if to_remove > 0:
+            self.remove_item(item_id, to_remove)
+
+            # Update Econ State
+            # Note: We track quantity here. Utility is calculated elsewhere or implied.
+            self._econ_state.current_consumption += to_remove
+            if item_id == "basic_food" or item_id == "luxury_food":
+                 self._econ_state.current_food_consumption += to_remove
 
     def trigger_emergency_liquidation(self) -> List[Order]:
         """

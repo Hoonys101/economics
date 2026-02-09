@@ -538,6 +538,10 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
             payee = req.payee
 
             if payer == self.id: payer = self
+            # Resolve Payer (similar to Payee logic for self-reference)
+            if isinstance(payer, str) and "GOVERNMENT" in payer:
+                payer = self
+
             # Resolve Payee
             # Note: TaxService usually sets payee="GOVERNMENT"
             if isinstance(payee, str) and "GOVERNMENT" in payee:

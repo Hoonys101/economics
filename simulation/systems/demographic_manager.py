@@ -124,7 +124,12 @@ class DemographicManager:
                 # Ideally Simulation passes factory or we use parent's references.
 
                 # 1. Talent Inheritance & Mutation
-                child_talent = self._inherit_talent(parent.talent)
+                # Safely access parent talent or use default
+                if hasattr(parent, 'talent'):
+                    child_talent = self._inherit_talent(parent.talent)
+                else:
+                    from simulation.models import Talent
+                    child_talent = Talent(base_learning_rate=1.0, max_potential={})
 
                 # 2. Brain (HouseholdAI) - Inherit weights/policy
                 # This requires creating a new decision engine.
