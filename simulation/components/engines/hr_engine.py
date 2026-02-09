@@ -118,7 +118,7 @@ class HREngine:
                     generated_transactions.append(tx_tax)
 
                 # Track Labor Income (Side Effect on Employee)
-                current_income = getattr(employee, "labor_income_this_tick", 0.0)
+                current_income = employee.labor_income_this_tick
                 if current_income is None: current_income = 0.0
                 employee.labor_income_this_tick = current_income + net_wage
 

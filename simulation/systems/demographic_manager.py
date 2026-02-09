@@ -7,7 +7,7 @@ from simulation.core_agents import Household
 from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from modules.system.api import DEFAULT_CURRENCY
-from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO
+from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO, ITalented
 
 if TYPE_CHECKING:
     from simulation.dtos.strategy import ScenarioStrategy
@@ -125,7 +125,7 @@ class DemographicManager:
 
                 # 1. Talent Inheritance & Mutation
                 # Safely access parent talent or use default
-                if hasattr(parent, 'talent'):
+                if isinstance(parent, ITalented):
                     child_talent = self._inherit_talent(parent.talent)
                 else:
                     from simulation.models import Talent

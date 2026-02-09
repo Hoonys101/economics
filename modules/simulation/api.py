@@ -161,6 +161,13 @@ class IEducated(Protocol):
         ...
 
 @runtime_checkable
+class ITalented(Protocol):
+    """Protocol for agents that possess natural talent."""
+    @property
+    def talent(self) -> Any:
+        ...
+
+@runtime_checkable
 class ICentralBank(Protocol):
     base_rate: float
 
