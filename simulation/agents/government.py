@@ -30,6 +30,7 @@ from modules.government.components.policy_lockout_manager import PolicyLockoutMa
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
+from modules.simulation.api import ISensoryDataProvider, AgentSensorySnapshotDTO
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -39,7 +40,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent):
+class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDataProvider):
     """
     정부 에이전트. 세금을 징수하고 보조금을 지급하거나 인프라에 투자합니다.
     """
@@ -159,6 +160,13 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent):
             f"Government {self.id} initialized with assets: {self.wallet.get_all_balances()}",
             extra={"tick": 0, "agent_id": self.id, "tags": ["init", "government"]},
         )
+
+    def get_sensory_snapshot(self) -> AgentSensorySnapshotDTO:
+        return {
+            "is_active": True,
+            "approval_rating": self.approval_rating,
+            "total_wealth": self.assets
+        }
 
     # --- IFinancialEntity Implementation ---
 

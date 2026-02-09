@@ -17,7 +17,7 @@ from simulation.dtos import DecisionContext, FiscalContext, MacroFinancialContex
 
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.portfolio import Portfolio
-from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IOrchestratorAgent, IInventoryHandler
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO
 
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
@@ -75,7 +75,8 @@ class Household(
     IFinancialAgent,
     IOrchestratorAgent,
     ICreditFrozen,
-    IInventoryHandler
+    IInventoryHandler,
+    ISensoryDataProvider
 ):
     """
     Household Agent (Facade).
@@ -318,6 +319,14 @@ class Household(
 
     def get_core_config(self) -> AgentCoreConfigDTO:
         return self._core_config
+
+    def get_sensory_snapshot(self) -> AgentSensorySnapshotDTO:
+        return {
+            "is_active": self.is_active,
+            "approval_rating": self._social_state.approval_rating,
+            # WO-124: Explicitly use wallet balance to satisfy Protocol Purity
+            "total_wealth": self._econ_state.wallet.get_balance(DEFAULT_CURRENCY)
+        }
 
     def get_current_state(self) -> AgentStateDTO:
         return AgentStateDTO(

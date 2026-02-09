@@ -5,6 +5,7 @@ from collections import deque
 from typing import Any, Deque, List, Optional
 from simulation.systems.api import ISensorySystem, SensoryContext
 from simulation.dtos import GovernmentStateDTO
+from modules.simulation.api import ISensoryDataProvider, AgentSensorySnapshotDTO
 
 class SensorySystem(ISensorySystem):
     """
@@ -76,81 +77,44 @@ class SensorySystem(ISensorySystem):
         households = context.get("households", [])
 
         # Only process if we have households
-        active_households = [h for h in households if h._bio_state.is_active]
-        if active_households:
-             # Calculate Gini
+        # Use ISensoryDataProvider protocol
+        active_snapshots: List[tuple[Any, AgentSensorySnapshotDTO]] = []
+
+        for h in households:
+            # We assume households implement ISensoryDataProvider as per Protocol Purity
+            # But we can check or try/except for robustness during migration if needed
+            # For this task, we assume strict compliance or fallback
+            if isinstance(h, ISensoryDataProvider):
+                snapshot = h.get_sensory_snapshot()
+                if snapshot['is_active']:
+                    active_snapshots.append((h, snapshot))
+            else:
+                # Fallback for legacy agents not yet migrated (should not happen if all are migrated)
+                pass
+
+        if active_snapshots:
+             assets_list = [snap['total_wealth'] for _, snap in active_snapshots]
+
              if inequality_tracker:
-                 # Ensure we use default currency assets
-                 # Household assets structure might vary based on Phase 33
-                 # Assuming _econ_state.assets is Dict or float.
-                 # InequalityTracker expects list of floats.
-
-                 # Helper to extract asset value safely
-                 def get_asset_val(h):
-                     if hasattr(h._econ_state, 'wallet'):
-                         return h._econ_state.wallet.get_total_value() # Assuming this exists or similar
-                     if isinstance(h._econ_state.assets, dict):
-                         # Just use default currency for Gini or sum?
-                         # Usually Wealth = Sum of all assets in base currency
-                         # For now, let's assume default currency is enough or assets is float
-                         # But wait, InequalityTracker.calculate_wealth_distribution accesses h._econ_state.assets directly
-                         # If assets is a dict, InequalityTracker might fail if it doesn't handle it.
-                         # Let's check InequalityTracker again? No, let's trust it handles it or we handle it here.
-                         from modules.system.api import DEFAULT_CURRENCY
-                         return h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0)
-                     return float(h._econ_state.assets)
-
-                 # However, InequalityTracker.calculate_gini_coefficient takes List[float].
-                 # We should pass floats.
-
-                 # Actually, let's look at how InequalityTracker uses assets.
-                 # "sorted(households, key=lambda h: h._econ_state.assets)"
-                 # If assets is dict, this fails.
-                 # This implies InequalityTracker might be broken for Phase 33 if assets is dict.
-                 # BUT, for this task, I will extract float.
-
-                 assets_list = []
-                 for h in active_households:
-                     val = 0.0
-                     if isinstance(h._econ_state.assets, dict):
-                         from modules.system.api import DEFAULT_CURRENCY
-                         val = h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0)
-                     else:
-                         val = float(h._econ_state.assets)
-                     assets_list.append(val)
-
                  gini_index = inequality_tracker.calculate_gini_coefficient(assets_list)
 
-                 # Use same values for sorting
-                 # Sort by assets
-                 # Zip assets and households
-                 combined = list(zip(active_households, assets_list))
-                 combined.sort(key=lambda x: x[1]) # Sort by asset value
+             # Sort by assets
+             combined = sorted(active_snapshots, key=lambda x: x[1]['total_wealth'])
 
-                 sorted_hh = [x[0] for x in combined]
-             else:
-                 # Fallback sorting if no tracker (though we need logic)
-                 # Replicate extraction logic
-                 def get_val(h):
-                     if isinstance(h._econ_state.assets, dict):
-                         from modules.system.api import DEFAULT_CURRENCY
-                         return h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0)
-                     return float(h._econ_state.assets)
-                 sorted_hh = sorted(active_households, key=get_val)
-
-             n = len(sorted_hh)
+             # Extract approval ratings from sorted list
+             n = len(combined)
 
              # Low Asset: Bottom 50%
              n_low = int(n * 0.5)
-             low_hh = sorted_hh[:n_low]
-             if low_hh:
-                 approval_low_asset = sum(h._social_state.approval_rating for h in low_hh) / len(low_hh)
+             low_group = combined[:n_low]
+             if low_group:
+                 approval_low_asset = sum(snap['approval_rating'] for _, snap in low_group) / len(low_group)
 
              # High Asset: Top 20%
              n_high = int(n * 0.2)
-             high_hh = sorted_hh[-n_high:] if n_high > 0 else []
-             if high_hh:
-                 approval_high_asset = sum(h._social_state.approval_rating for h in high_hh) / len(high_hh)
+             high_group = combined[-n_high:] if n_high > 0 else []
+             if high_group:
+                 approval_high_asset = sum(snap['approval_rating'] for _, snap in high_group) / len(high_group)
 
         return GovernmentStateDTO(
             tick=time,

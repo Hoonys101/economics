@@ -32,6 +32,14 @@ class AgentStateDTO:
     inventory: Dict[str, float]
     is_active: bool
 
+class AgentSensorySnapshotDTO(TypedDict):
+    """
+    A stable, read-only view of an agent's state for observation.
+    """
+    is_active: bool
+    approval_rating: float
+    total_wealth: float
+
 @dataclass
 class DecisionDTO:
     """(Placeholder) Represents a decision made by an engine."""
@@ -78,6 +86,14 @@ class HouseholdSnapshotDTO:
     assets_value: float
 
 # --- Protocols ---
+
+@runtime_checkable
+class ISensoryDataProvider(Protocol):
+    """
+    Protocol for agents to expose their state safely to observer systems.
+    """
+    def get_sensory_snapshot(self) -> AgentSensorySnapshotDTO:
+        ...
 
 @runtime_checkable
 class IInventoryHandler(Protocol):

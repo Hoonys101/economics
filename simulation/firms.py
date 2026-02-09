@@ -15,7 +15,7 @@ from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
 from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO, ICurrencyHolder
-from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO
 from dataclasses import replace
 
 # Orchestrator-Engine Refactor
@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder):
+class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider):
     """
     Firm Agent (Orchestrator).
     Manages state and delegates logic to stateless engines.
@@ -134,6 +134,13 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, IOrchestratorAgent
 
     def get_core_config(self) -> AgentCoreConfigDTO:
         return self._core_config
+
+    def get_sensory_snapshot(self) -> AgentSensorySnapshotDTO:
+        return {
+            "is_active": self.is_active,
+            "approval_rating": 0.0,
+            "total_wealth": self.assets
+        }
 
     def get_current_state(self) -> AgentStateDTO:
         return AgentStateDTO(
