@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from simulation.config import SimulationConfig
     from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
     from simulation.metrics.economic_tracker import EconomicIndicatorTracker
-    from simulation.dtos import GovernmentStateDTO, LeisureEffectDTO
+    from simulation.dtos import GovernmentSensoryDTO, LeisureEffectDTO
     from simulation.markets.market import Market
     from simulation.dtos.scenario import StressScenarioConfig
     from simulation.dtos.api import SimulationState
@@ -133,7 +133,7 @@ class ISensorySystem(Protocol):
 
     def __init__(self, config: Any): ...
 
-    def generate_government_sensory_dto(self, context: SensoryContext) -> 'GovernmentStateDTO':
+    def generate_government_sensory_dto(self, context: SensoryContext) -> 'GovernmentSensoryDTO':
         """주요 지표의 SMA를 계산하고 DTO로 패키징합니다."""
         ...
 

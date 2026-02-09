@@ -1,12 +1,12 @@
 import pytest
 from unittest.mock import Mock
-from simulation.dtos import GovernmentStateDTO
+from simulation.dtos import GovernmentSensoryDTO
 
 # Note: The 'government', 'mock_config', 'mock_central_bank' fixtures are provided by tests/conftest.py
 
 def test_potential_gdp_ema_convergence(government, mock_central_bank):
     """Test that potential GDP converges using EMA."""
-    dto = GovernmentStateDTO(tick=1, current_gdp=1000.0, inflation_sma=0.02, unemployment_sma=0.05, gdp_growth_sma=0.01, wage_sma=100, approval_sma=0.5)
+    dto = GovernmentSensoryDTO(tick=1, current_gdp=1000.0, inflation_sma=0.02, unemployment_sma=0.05, gdp_growth_sma=0.01, wage_sma=100, approval_sma=0.5)
     government.update_sensory_data(dto)
 
     # Initial GDP: The old test was wrong. The EMA calculation runs on the first step.
@@ -30,7 +30,7 @@ def test_counter_cyclical_tax_adjustment_recession(government, mock_config, mock
     mock_config.AUTO_COUNTER_CYCLICAL_ENABLED = True
     government.potential_gdp = 1000.0
     initial_tax_rate = government.income_tax_rate
-    dto = GovernmentStateDTO(tick=1, current_gdp=800.0, inflation_sma=0.02, unemployment_sma=0.05, gdp_growth_sma=0.01, wage_sma=100, approval_sma=0.5)
+    dto = GovernmentSensoryDTO(tick=1, current_gdp=800.0, inflation_sma=0.02, unemployment_sma=0.05, gdp_growth_sma=0.01, wage_sma=100, approval_sma=0.5)
     government.update_sensory_data(dto)
 
     # Sudden drop in current GDP (Recession)
@@ -44,7 +44,7 @@ def test_counter_cyclical_tax_adjustment_boom(government, mock_config, mock_cent
     mock_config.AUTO_COUNTER_CYCLICAL_ENABLED = True
     government.potential_gdp = 1000.0
     initial_tax_rate = government.income_tax_rate
-    dto = GovernmentStateDTO(tick=1, current_gdp=1200.0, inflation_sma=0.02, unemployment_sma=0.05, gdp_growth_sma=0.01, wage_sma=100, approval_sma=0.5)
+    dto = GovernmentSensoryDTO(tick=1, current_gdp=1200.0, inflation_sma=0.02, unemployment_sma=0.05, gdp_growth_sma=0.01, wage_sma=100, approval_sma=0.5)
     government.update_sensory_data(dto)
 
     # Sudden rise in current GDP (Boom)
@@ -59,7 +59,7 @@ def test_debt_ceiling_enforcement(government):
     government.total_debt = 0.0
     government.potential_gdp = 1000.0
     # From config, Debt Ceiling Ratio is 2.0, so ceiling is 2000.0
-    government.sensory_data = GovernmentStateDTO(tick=0, current_gdp=1000.0, inflation_sma=0.02, unemployment_sma=0.05, gdp_growth_sma=0.01, wage_sma=100, approval_sma=0.5)
+    government.sensory_data = GovernmentSensoryDTO(tick=0, current_gdp=1000.0, inflation_sma=0.02, unemployment_sma=0.05, gdp_growth_sma=0.01, wage_sma=100, approval_sma=0.5)
 
 
     agent = Mock()
@@ -70,7 +70,8 @@ def test_debt_ceiling_enforcement(government):
     # `issue_treasury_bonds`, which is that the government's assets INCREASE
     # by the amount of the bond. A simple mock doesn't do this.
     def issue_bonds_side_effect(amount, tick):
-        government._assets += amount
+        government.wallet.add(amount, "USD") # Update Wallet!
+        government._assets += amount # Keep this for legacy check if any
         return [Mock()], [] # Return a successful bond issuance and empty transactions
 
     government.finance_system.issue_treasury_bonds = Mock(side_effect=issue_bonds_side_effect)
@@ -83,6 +84,7 @@ def test_debt_ceiling_enforcement(government):
 
     # Simulate execution (deduct spent amount)
     government._assets -= paid
+    government.wallet.subtract(paid, "USD")
 
     # After spending 500, assets should be 0, and total_debt (which is -assets) should be 0.
     # The bonds were issued for 500, assets became 500, then spent.
@@ -96,6 +98,7 @@ def test_debt_ceiling_enforcement(government):
 
     # Simulate execution
     government._assets -= paid
+    government.wallet.subtract(paid, "USD")
 
     assert government.assets == 0.0
 

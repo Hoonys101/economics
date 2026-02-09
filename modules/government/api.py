@@ -1,9 +1,13 @@
 from __future__ import annotations
 from typing import Protocol, List, Any, Optional, Dict, TypedDict
+from dataclasses import dataclass
+from abc import abstractmethod
 from modules.government.dtos import (
     FiscalPolicyDTO,
     MonetaryPolicyDTO,
     GovernmentStateDTO,
+    PolicyDecisionDTO,
+    ExecutionResultDTO,
     MacroEconomicSnapshotDTO,
     WelfareResultDTO,
     BailoutResultDTO,
@@ -141,4 +145,52 @@ class IGovernment(Protocol):
     state: GovernmentStateDTO
 
     def make_policy_decision(self, market_snapshot: "MarketSnapshotDTO") -> None:
+        ...
+
+
+@dataclass
+class GovernmentExecutionContext:
+    """Injectable dependencies for the ExecutionEngine."""
+    settlement_system: Any # ISettlementSystem
+    finance_system: Any # IFinanceSystem
+    tax_service: ITaxService
+    welfare_manager: IWelfareManager
+    infrastructure_manager: Any = None # Optional for now
+    public_manager: Any = None # PublicManager (IAssetRecoverySystem)
+
+
+class IGovernmentDecisionEngine(Protocol):
+    """
+    Interface for the stateless decision-making engine.
+    Determines *what* policy action to take.
+    """
+    def decide(
+        self,
+        state: GovernmentStateDTO,
+        market_snapshot: MarketSnapshotDTO,
+        central_bank: Any
+    ) -> PolicyDecisionDTO:
+        """
+        Decides on a policy action based on current state and market data.
+        """
+        ...
+
+
+class IPolicyExecutionEngine(Protocol):
+    """
+    Interface for the stateless policy execution engine.
+    Determines *how* to implement a decided action.
+    """
+    def execute(
+        self,
+        decision: PolicyDecisionDTO,
+        current_state: GovernmentStateDTO,
+        agents: List[IAgent],
+        market_data: Dict[str, Any],
+        context: GovernmentExecutionContext
+    ) -> ExecutionResultDTO:
+        """
+        Takes a high-level policy decision and translates it into concrete,
+        executable results by orchestrating various services (Tax, Welfare, etc.).
+        """
         ...

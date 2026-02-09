@@ -96,6 +96,10 @@ def government(mock_config, mock_tracker, finance_system):
     # The FinanceSystem was created with a shell, now we link it to the real government instance
     gov.finance_system.government = gov
 
+    # Inject Mock SettlementSystem
+    gov.settlement_system = Mock()
+    gov.settlement_system.transfer.return_value = True
+
     return gov
 
 @pytest.fixture

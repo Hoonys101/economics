@@ -45,11 +45,38 @@ class MonetaryPolicyDTO:
 
 @dataclass
 class GovernmentStateDTO:
-    """The complete state of the Government agent."""
-    id: int
-    assets: float
-    fiscal_policy: FiscalPolicyDTO
-    monetary_policy: MonetaryPolicyDTO
+    """Immutable snapshot of the Government's state."""
+    tick: int
+    assets: Dict[str, float]
+    total_debt: float
+    income_tax_rate: float
+    corporate_tax_rate: float
+    fiscal_policy: 'FiscalPolicyDTO'
+    ruling_party: Any # e.g., PoliticalParty Enum
+    approval_rating: float
+    policy_lockouts: Dict[Any, int] = field(default_factory=dict) # <PolicyActionTag, locked_until_tick>
+    sensory_data: Optional[Any] = None # Simplified representation of sensory DTO
+    gdp_history: List[float] = field(default_factory=list)
+    welfare_budget_multiplier: float = 1.0
+    monetary_policy: Optional[MonetaryPolicyDTO] = None
+    potential_gdp: float = 0.0
+    fiscal_stance: float = 0.0
+
+@dataclass
+class PolicyDecisionDTO:
+    """High-level strategic decision from the DecisionEngine."""
+    action_tag: Any # e.g., PolicyActionTag Enum
+    parameters: Dict[str, Any] = field(default_factory=dict)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    status: str = "OK"
+
+@dataclass
+class ExecutionResultDTO:
+    """Concrete commands resulting from policy execution."""
+    payment_requests: List['PaymentRequestDTO'] = field(default_factory=list)
+    bailout_results: List['BailoutResultDTO'] = field(default_factory=list)
+    monetary_ledger_updates: Dict[str, float] = field(default_factory=dict)
+    state_updates: Dict[str, Any] = field(default_factory=dict) # For Orchestrator to update its state
 
 @dataclass
 class MacroEconomicSnapshotDTO:

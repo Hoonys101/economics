@@ -4,7 +4,7 @@ import logging
 
 from modules.common.config_manager.api import ConfigManager
 from simulation.db.repository import SimulationRepository
-from simulation.dtos import GovernmentStateDTO
+from simulation.dtos import GovernmentSensoryDTO
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.systems.tech.api import FirmTechInfoDTO, HouseholdEducationDTO
 
@@ -83,7 +83,7 @@ class Simulation:
             except Exception as e:
                 self.world_state.logger.error(f"Failed to release simulation.lock: {e}")
 
-    def run_tick(self, injectable_sensory_dto: Optional[GovernmentStateDTO] = None) -> None:
+    def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:
         self.tick_orchestrator.run_tick(injectable_sensory_dto)
         
         # Log macro snapshot for ThoughtStream analysis

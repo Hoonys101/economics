@@ -136,3 +136,6 @@ class PolicyActionTag(Enum):
     AUSTRIAN_AUSTERITY = auto() # Spending Cuts, Liquidation
     MONETARIST_RULES = auto()   # Fixed M-Growth, Interest Rules
     GENERAL_ADMIN = auto()     # Education, Infra
+    SOCIAL_POLICY = auto()     # Wealth Tax, Welfare
+    FIRM_BAILOUT = auto()      # Bailouts
+    INFRASTRUCTURE_INVESTMENT = auto() # Infrastructure
