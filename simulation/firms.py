@@ -15,7 +15,7 @@ from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.ai.enums import Personality
 from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO, ICurrencyHolder
-from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, IConfigurable, LiquidationConfigDTO
 from dataclasses import replace
 
 # Orchestrator-Engine Refactor
@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider):
+class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable):
     """
     Firm Agent (Orchestrator).
     Manages state and delegates logic to stateless engines.
@@ -130,6 +130,26 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
         # Legacy/Compatibility attributes (mapped to State where possible or kept if transient)
         # These properties route to State
+
+    # --- IConfigurable Implementation ---
+
+    def get_liquidation_config(self) -> LiquidationConfigDTO:
+        """
+        Implements IConfigurable.get_liquidation_config.
+        Extracts liquidation parameters from the internal config DTO.
+        """
+        initial_prices = {}
+        if self.config.goods and isinstance(self.config.goods, dict):
+             for k, v in self.config.goods.items():
+                 if isinstance(v, dict) and "initial_price" in v:
+                     initial_prices[k] = v["initial_price"]
+
+        return LiquidationConfigDTO(
+            haircut=self.config.fire_sale_discount if hasattr(self.config, "fire_sale_discount") else 0.2,
+            initial_prices=initial_prices,
+            default_price=10.0,
+            market_prices=self.last_prices.copy()
+        )
 
     # --- IOrchestratorAgent Implementation ---
 

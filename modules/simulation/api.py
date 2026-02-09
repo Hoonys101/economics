@@ -85,7 +85,21 @@ class HouseholdSnapshotDTO:
     existing_debt: float
     assets_value: float
 
+@dataclass
+class LiquidationConfigDTO:
+    """Config for liquidation logic."""
+    haircut: float
+    initial_prices: Dict[str, float]
+    default_price: float
+    market_prices: Dict[str, float]
+
 # --- Protocols ---
+
+@runtime_checkable
+class IConfigurable(Protocol):
+    """Protocol for agents that expose a configuration DTO for liquidation."""
+    def get_liquidation_config(self) -> LiquidationConfigDTO:
+        ...
 
 @runtime_checkable
 class ISensoryDataProvider(Protocol):

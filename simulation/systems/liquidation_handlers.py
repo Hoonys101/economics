@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Dict, Any, Optional
 import logging
 from modules.system.api import DEFAULT_CURRENCY
 from modules.finance.api import ILiquidatable
-from modules.simulation.api import IInventoryHandler
+from modules.simulation.api import IInventoryHandler, IConfigurable
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -42,46 +42,31 @@ class InventoryLiquidationHandler(ILiquidationHandler):
             return
 
         # Check capability
-        if not isinstance(agent, IInventoryHandler):
+        if not (isinstance(agent, IInventoryHandler) and isinstance(agent, IConfigurable)):
             return
 
-        # We treat 'agent' as the entity with inventory (Firm)
-        # We also need access to 'config' and 'last_prices' which are currently Firm-specific.
-        # Ideally, we would have IPricingProvider or similar, but for now getattr is safe.
-        firm = agent
+        # Use Protocol Access
+        liq_config = agent.get_liquidation_config()
+        haircut = liq_config.haircut
+        initial_prices = liq_config.initial_prices
+        default_price = liq_config.default_price
+        market_prices = liq_config.market_prices
 
         # Calculate Total Value
         total_value = 0.0
 
-        # Use last prices or default config price from firm's config
-        # Default price fallback: 10.0 if not found in config
-        default_price = 10.0
-        config = getattr(firm, "config", None)
-
-        if config and hasattr(config, "goods_initial_price") and isinstance(config.goods_initial_price, dict):
-             default_price = config.goods_initial_price.get("default", 10.0)
-
-        # Configurable Haircut (Default 20%)
-        haircut = getattr(config, "liquidation_haircut", 0.2) if config else 0.2
-
         inventory_transfer = {}
-        # Iterate over a copy to allow modification if needed (though we only read keys/values here)
-        # firm.inventory is a dict
-        for item_id, qty in firm.get_all_items().items():
+        # Iterate via Interface
+        for item_id, qty in agent.get_all_items().items():
             if qty <= 0:
                 continue
 
             # Determine fair value
-            price = 0.0
-            if hasattr(firm, "last_prices") and isinstance(firm.last_prices, dict):
-                price = firm.last_prices.get(item_id, 0.0)
+            price = market_prices.get(item_id, 0.0)
 
             if price <= 0:
-                # Fallback to configured initial price if available
-                if config and hasattr(config, "goods") and isinstance(config.goods, dict):
-                     price = config.goods.get(item_id, {}).get("initial_price", default_price)
-                else:
-                     price = default_price
+                # Fallback to configured initial price
+                price = initial_prices.get(item_id, default_price)
 
             # Apply Liquidation Discount (Haircut)
             liquidation_value = price * qty * (1.0 - haircut)
@@ -89,24 +74,22 @@ class InventoryLiquidationHandler(ILiquidationHandler):
             inventory_transfer[item_id] = qty
 
         if total_value > 0:
-            # Transfer Funds: PublicManager -> Firm
-            # Note: PublicManager must implement IFinancialEntity to be a sender in SettlementSystem
-            # and it must have funds (System Treasury).
+            # Transfer Funds: PublicManager -> Agent
             success = self.settlement_system.transfer(
                 self.public_manager,
-                firm,
+                agent,
                 total_value,
-                f"Asset Liquidation (Inventory) - Agent {firm.id}",
+                f"Asset Liquidation (Inventory) - Agent {agent.id}",
                 currency=DEFAULT_CURRENCY
             )
 
             if success:
-                logger.info(f"LIQUIDATION_ASSET_SALE | Agent {firm.id} sold inventory to PublicManager for {total_value:.2f}.")
+                logger.info(f"LIQUIDATION_ASSET_SALE | Agent {agent.id} sold inventory to PublicManager for {total_value:.2f}.")
 
                 # Transfer Inventory via Interface (Encapsulation)
                 self.public_manager.receive_liquidated_assets(inventory_transfer)
 
-                # Clear Firm Inventory
-                firm.clear_inventory()
+                # Clear Agent Inventory
+                agent.clear_inventory()
             else:
-                logger.error(f"LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay {total_value:.2f} to Agent {firm.id}.")
+                logger.error(f"LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay {total_value:.2f} to Agent {agent.id}.")
