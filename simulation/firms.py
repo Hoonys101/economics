@@ -27,7 +27,8 @@ from simulation.components.engines.sales_engine import SalesEngine
 from simulation.dtos.context_dtos import PayrollProcessingContext, FinancialTransactionContext, SalesContext
 
 from simulation.utils.shadow_logger import log_shadow
-from modules.finance.api import InsufficientFundsError, IFinancialEntity, IFinancialAgent, ICreditFrozen
+from modules.finance.api import InsufficientFundsError, IFinancialEntity, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake
+from modules.common.dtos import Claim
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
 from modules.finance.wallet.wallet import Wallet
 from modules.inventory.manager import InventoryManager
@@ -46,7 +47,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider):
+class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider):
     """
     Firm Agent (Orchestrator).
     Manages state and delegates logic to stateless engines.
@@ -365,6 +366,59 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, IOrchestratorAgent
         Required by GoodsTransactionHandler.
         """
         self.finance_engine.record_expense(self.finance_state, amount, currency)
+
+    def get_all_claims(self, ctx: LiquidationContext) -> List[Claim]:
+        """
+        Implements ILiquidatable.get_all_claims.
+        Delegates to specialized helpers to gather all claims.
+        """
+        all_claims: List[Claim] = []
+
+        # 1. Get HR Claims (Tier 1)
+        if ctx.hr_service:
+            employee_claims = ctx.hr_service.calculate_liquidation_employee_claims(self, ctx.current_tick)
+            all_claims.extend(employee_claims)
+
+        # 2. Get Tax Claims (Tier 3)
+        if ctx.tax_service:
+            tax_claims = ctx.tax_service.calculate_liquidation_tax_claims(self)
+            all_claims.extend(tax_claims)
+
+        # 3. Get Secured Debt Claims (Tier 2)
+        # Abstracts away knowledge of LoanMarket
+        total_debt = self.finance_state.total_debt
+        bank_agent_id = "BANK_UNKNOWN" # Default
+        if self.decision_engine.loan_market and self.decision_engine.loan_market.bank:
+            bank_agent_id = self.decision_engine.loan_market.bank.id
+
+        if total_debt > 0:
+            all_claims.append(Claim(
+                creditor_id=bank_agent_id,
+                amount=total_debt,
+                tier=2,
+                description="Secured Loan"
+            ))
+
+        return all_claims
+
+    def get_equity_stakes(self, ctx: LiquidationContext) -> List[EquityStake]:
+        """
+        Implements ILiquidatable.get_equity_stakes.
+        Uses the Shareholder Registry to get ownership data.
+        """
+        if not ctx.shareholder_registry:
+            return []
+
+        shareholders = ctx.shareholder_registry.get_shareholders_of_firm(self.id)
+        outstanding_shares = self.total_shares - self.treasury_shares
+
+        if outstanding_shares <= 0:
+            return []
+
+        return [
+            EquityStake(shareholder_id=sh['agent_id'], ratio=sh['quantity'] / outstanding_shares)
+            for sh in shareholders
+        ]
 
     def liquidate_assets(self, current_tick: int = -1) -> Dict[CurrencyCode, float]:
         """Liquidate assets using Protocol Purity."""

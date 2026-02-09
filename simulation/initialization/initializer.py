@@ -533,7 +533,8 @@ class SimulationInitializer(SimulationInitializerInterface):
             firm_system=sim.firm_system,
             settlement_system=sim.settlement_system,
             public_manager=sim.public_manager,
-            logger=self.logger
+            logger=self.logger,
+            shareholder_registry=sim.shareholder_registry
         )
 
         # Initialize New Systems (Social, Event, Sensory, Commerce, Labor)

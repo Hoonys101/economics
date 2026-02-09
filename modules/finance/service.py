@@ -16,7 +16,7 @@ class TaxService(ITaxService):
         claims = []
         tax_rate = getattr(firm.config, "corporate_tax_rate", 0.0)
 
-        current_profit_raw = firm.finance.current_profit
+        current_profit_raw = firm.finance_state.current_profit
         current_profit = current_profit_raw
         if isinstance(current_profit_raw, dict):
             current_profit = current_profit_raw.get(DEFAULT_CURRENCY, 0.0)

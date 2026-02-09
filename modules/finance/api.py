@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from simulation.models import Order, Transaction
     from modules.common.dtos import Claim
     from modules.finance.wallet.api import IWallet
+    from modules.hr.api import IHRService
 
 # Forward reference for type hinting
 class Firm: pass
@@ -239,6 +240,49 @@ class ICreditScoringService(Protocol):
 
         Returns:
             A DTO indicating approval status and other relevant details.
+        """
+        ...
+
+class EquityStake(TypedDict):
+    """Represents a shareholder's stake for Tier 5 distribution."""
+    shareholder_id: int
+    ratio: float # Proportional ownership, e.g., 0.1 for 10%
+
+@dataclass
+class LiquidationContext:
+    """Context object to supply necessary services for claim calculation."""
+    current_tick: int
+    hr_service: Optional[IHRService] = None
+    tax_service: Optional[Union[ITaxService, Any]] = None # Use Union[ITaxService, Any] to avoid forward ref issue if ITaxService not defined yet or use string
+    shareholder_registry: Optional[IShareholderRegistry] = None
+
+@runtime_checkable
+class ILiquidatable(Protocol):
+    """
+    An interface for any entity that can undergo a formal liquidation process.
+    Provides all necessary financial claims and asset information to a liquidator.
+    """
+    id: int
+
+    def liquidate_assets(self, current_tick: int) -> Dict[CurrencyCode, float]:
+        """
+        Performs internal write-offs of non-cash assets (inventory, capital)
+        and returns a dictionary of all remaining cash-equivalent assets by currency.
+        This signals the final step before cash distribution begins.
+        """
+        ...
+
+    def get_all_claims(self, ctx: LiquidationContext) -> List[Claim]:
+        """
+        Aggregates all non-equity claims (HR, Tax, Debt) against the entity.
+        The implementation is responsible for determining the amounts and creditors.
+        """
+        ...
+
+    def get_equity_stakes(self, ctx: LiquidationContext) -> List[EquityStake]:
+        """
+        Returns a list of all shareholders and their proportional stake for Tier 5 distribution.
+        An empty list signifies no equity holders.
         """
         ...
 
