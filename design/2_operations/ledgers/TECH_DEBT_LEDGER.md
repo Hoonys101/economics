@@ -21,25 +21,12 @@
     *   **기술 부채 (Tech Debt)**: 은행 본연의 기능(예금/예출) 외의 책임이 섞여 있음.
     *   **해결 방안 (Resolution)**: 해당 로직을 `JudicialSystem` 등으로 이관.
 
-*   **ID: TD-264 (Settlement Bypass)**
-    *   **현상 (Phenomenon)**: `SettlementSystem`을 우회하여 `agent.assets`에 직접 접근/수정하는 사례 발견.
-    *   **기술 부채 (Tech Debt)**: 금융 정합성(Zero-leak) 보장의 불확실성 증대.
-    *   **해결 방안 (Resolution)**: 모든 자산 변동을 `SettlementSystem` API로 강제 통일. [Spec](../3_work_artifacts/specs/spec_ph9_2_interface_purity.md)
 
-*   **ID: TD-265 (Sensory System Encapsulation)**
-    *   **현상 (Phenomenon)**: `SensorySystem`이 에이전트의 `_econ_state` 등 내부 속성에 직접 접근.
-    *   **기술 부채 (Tech Debt)**: DTO/Protocol 기반의 관찰 계층 설계 원칙 위반.
-    *   **해결 방안 (Resolution)**: 공인된 DTO Snapshot만을 통해 데이터를 수집하도록 리팩토링. [Spec](../3_work_artifacts/specs/spec_ph9_2_interface_purity.md)
 
-*   **ID: TD-266 (Dual Order DTO Fragmentation)**
-    *   **현상 (Phenomenon)**: `simulation.models.Order`와 `modules.market.api.OrderDTO`가 혼재되어 사용됨.
-    *   **기술 부채 (Tech Debt)**: 마켓 유형별 구현의 비일관성 및 유지보수 복잡성.
-    *   **해결 방안 (Resolution)**: 단일화된 `Order` DTO 프로토콜 정의 및 적용. [Spec](../3_work_artifacts/specs/spec_ph9_2_interface_purity.md)
-
-*   **ID: TD-267 (Architectural Doc Sync)**
-    *   **현상 (Phenomenon)**: `ARCH_AGENTS.md`가 실제 구현(Stateless Engine)과 다른 구조(Stateful Parent Pointer)를 서술함.
-    *   **기술 부채 (Tech Debt)**: 설계 문서와 코드 간의 불일치로 인한 오해 유발.
-    *   **해결 방안 (Resolution)**: 아키텍처 문서를 현재의 패턴에 맞게 업데이트. [Spec](../3_work_artifacts/specs/spec_ph9_2_interface_purity.md)
+*   **ID: TD-269 (Liquidation Manager Legacy Debt)**
+    *   **현상 (Phenomenon)**: `LiquidationManager` 및 `audit_zero_sum.py`가 `Firm` 에이전트의 예전 `finance` 속성에 의존함.
+    *   **기술 부채 (Tech Debt)**: `Firm`이 Composition 구조로 리팩토링된 이후 정합성 검증 스크립트 실패 유발.
+    *   **해결 방안 (Resolution)**: `LiquidationManager`가 프로토콜 인터페이스를 통해 금융 상태에 접근하도록 리팩토링.
 
 ---
 
@@ -61,3 +48,7 @@
 | **TD-262** | Scripts | BaseAgent 제거 이후 깨진 검증 스크립트 복구 | PH10 | [Insight](file:///c:/coding/economics/design/_archive/gemini_output/pr_review_bundle-purity-regression-1978915247438186068.md) |
 | **TD-DTO-CONTRACT** | Simulation | DTO 필드명 변경 시 발생한 contract 불일치 해결 | PH10 | [Insight](file:///c:/coding/economics/design/_archive/gemini_output/pr_review_bundle-purity-regression-1978915247438186068.md) |
 | **TD-263** | Scripts / Maintenance | Report Harvester 누락 경로 반영 및 원격 브랜치 청소 로직 최적화 | PH10.1 | [Log](./design/2_operations/ledgers/INBOUND_REPORTS.md) |
+| **TD-264** | Financials | `SettlementSystem` 우회 코드 제거 및 `IFinancialAgent` 도입 | PH9.2 | [Insight](./communications/insights/PH9.2_TrackA.md) |
+| **TD-265** | Sensory | `SensorySystem` 캡슐화 파괴 해결 및 DTO 전환 | PH9.2 | [Insight](./communications/insights/PH9.2_TrackB_SensoryPurity.md) |
+| **TD-266** | Markets | `CanonicalOrderDTO` 도입 및 주문 파편화 해소 | PH9.2 | [Insight](./communications/insights/PH9.2_Market_DTO_Unification.md) |
+| **TD-267** | Governance | `ARCH_AGENTS.md` 아키텍처 문서 동기화 | PH9.2 | [Spec](../3_work_artifacts/specs/spec_ph9_2_interface_purity.md) |

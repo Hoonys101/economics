@@ -121,11 +121,10 @@ Technical debt is now managed via the [Technical Debt Ledger](./design/2_operati
 **최신 감사 보고서**: [PROJECT_WATCHTOWER_AUDIT_REPORT_20260209.md](./reports/audits/PROJECT_WATCHTOWER_AUDIT_REPORT_20260209.md) (2026-02-09)
 - **결론**: 후속 감사를 통해 프로토콜 우회 및 SoC 위반 문제가 지속적으로 발생하고 있음이 확인되었습니다. 특히 `SensorySystem` 등 인프라 계층에서의 캡슐화 파괴가 심각한 수준(FAIL)으로 진단되었습니다.
 
-- **`Phase 9.2: Interface Purity Sprint`** 🛡️ (ACTIVE)
+- **`Phase 9.2: Interface Purity Sprint`** 🛡️ ✅ (2026-02-09)
     - **Goal**: 프로젝트 전반의 API 프로토콜 순수성을 강제하고, 계층 간 경계를 공고히 하여 예측 가능성을 확보합니다.
-    - **Key Actions**:
-        - [ ] **Financial SSoT Audit**: `SettlementSystem`을 우회하는 모든 `cash`/`asset` 직접 변경 사례 조사 및 해결.
-        - [ ] **Sensory System Refactor**: 내부 상태 직접 참조 제거 및 DTO 관점의 데이터 수집 강제.
-        - [ ] **Dual DTO Unification**: `Order` 객체 등 중복 정의된 DTO의 단일화 및 아키텍처 파편화 해소.
-        - [ ] **Global Inventory Audit**: 레거시 모듈 내 `.inventory` 직접 접근 사례 전수 해결.
-        - [ ] **Runtime Validation**: 핵심 프로토콜 위반 시 런타임 에러를 발생시키는 가드 도입.
+    - **Status**:
+        - [x] **Track A: Financial SSoT**: `IFinancialAgent` 도입 및 `SettlementSystem` 우회 제거. ✅
+        - [x] **Track B: Sensory Purity**: `ISensoryDataProvider` & DTO 기반 관찰 계층 전환. ✅
+        - [x] **Track C: Market DTO**: `CanonicalOrderDTO` 도입 및 레거시 `StockOrder` 통합. ✅
+        - [x] **Track D: Doc Sync**: `ARCH_AGENTS.md`를 실제 구현(Stateless Engine)에 맞게 업데이트. ✅

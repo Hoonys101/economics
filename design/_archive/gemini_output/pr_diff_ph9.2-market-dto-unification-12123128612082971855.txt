@@ -1,0 +1,373 @@
+diff --git a/communications/insights/PH9.2_Market_DTO_Unification.md b/communications/insights/PH9.2_Market_DTO_Unification.md
+new file mode 100644
+index 00000000..864d0c69
+--- /dev/null
++++ b/communications/insights/PH9.2_Market_DTO_Unification.md
+@@ -0,0 +1,22 @@
++# PH9.2 Market DTO Unification Insights
++
++## 1. Problem Phenomenon
++The system currently has two conflicting Order definitions:
++- `OrderDTO` (in `modules/market/api.py`): The intended modern, immutable DTO.
++- `StockOrder` (in `simulation/models.py`): A legacy mutable dataclass used for stock markets.
++
++Audit reports indicated that `StockMarket` was using `StockOrder` and failing parity checks. However, code inspection reveals `StockMarket` currently enforces `OrderDTO` via `isinstance` checks, suggesting a partial refactor occurred but left `StockOrder` as dead/legacy code or potentially causing silent failures if passed.
++
++## 2. Root Cause Analysis
++- **Incomplete Refactoring**: Previous efforts to modernize `StockMarket` updated the method signature to `OrderDTO` but didn't fully eradicate `StockOrder` from `simulation/models.py` or legacy logic.
++- **DTO Fragmentation**: `StockOrder` has different field names (`order_type` vs `side`, `price` vs `price_limit`, `firm_id` vs `item_id`), making them incompatible without adaptation.
++
++## 3. Solution Implementation Details
++- **CanonicalOrderDTO**: Renamed `OrderDTO` to `CanonicalOrderDTO` in `modules/market/api.py` to strictly follow the spec. Aliased `OrderDTO` for backward compatibility.
++- **Adapter Pattern**: Implemented `convert_legacy_order_to_canonical` to handle `StockOrder` (via structural typing to avoid circular imports) and dictionary inputs. It handles field mapping (`order_type` -> `side`, `firm_id` -> `item_id`).
++- **Market Purity**: Updated `StockMarket` and `OrderBookMarket` to explicitly type hint `CanonicalOrderDTO`.
++- **Legacy Cleanup**: Removed unused imports of `StockOrder` in decision modules to prevent future usage.
++
++## 4. Lessons Learned
++- **Dead Code Persistence**: Legacy classes like `StockOrder` can persist in the codebase long after they are supposedly replaced, causing confusion in audits.
++- **Naming Consistency**: Field name mismatches (`order_type` vs `side`) are a major source of friction in DTO unification.
+diff --git a/modules/household/mixins/_financials.py b/modules/household/mixins/_financials.py
+index c0ec8684..cf06954e 100644
+--- a/modules/household/mixins/_financials.py
++++ b/modules/household/mixins/_financials.py
+@@ -66,7 +66,7 @@ class HouseholdFinancialsMixin:
+     def trigger_emergency_liquidation(self) -> List[Any]:
+         """
+         WO-167: Generates emergency sell orders for all inventory items and stocks.
+-        Returns mixed list of Order and StockOrder.
++        Returns list of Order.
+         """
+         orders = []
+ 
+diff --git a/modules/market/api.py b/modules/market/api.py
+index 475617f3..99a8e2f5 100644
+--- a/modules/market/api.py
++++ b/modules/market/api.py
+@@ -10,7 +10,7 @@ if TYPE_CHECKING:
+     from simulation.core_agents import Household
+ 
+ @dataclass(frozen=True)
+-class OrderDTO:
++class CanonicalOrderDTO:
+     """Standardized Market Order Data Transfer Object.
+     Replaces legacy dictionary/tuple usage in decision engines.
+     Immutable to prevent side-effects during processing.
+@@ -44,6 +44,50 @@ class OrderDTO:
+         """Alias for legacy compatibility during migration."""
+         return self.side
+ 
++# Alias for backward compatibility
++OrderDTO = CanonicalOrderDTO
++
++def convert_legacy_order_to_canonical(order: Any) -> CanonicalOrderDTO:
++    """
++    Adapter to convert legacy order objects (like StockOrder) or dictionaries
++    to the CanonicalOrderDTO format.
++    """
++    if isinstance(order, CanonicalOrderDTO):
++        return order
++
++    # Handle dictionary input
++    if isinstance(order, dict):
++        item_id = order.get("item_id")
++        if not item_id and order.get("firm_id"):
++             item_id = f"stock_{order.get('firm_id')}"
++
++        return CanonicalOrderDTO(
++            agent_id=order.get("agent_id"),
++            side=order.get("side") or order.get("order_type"),
++            item_id=item_id,
++            quantity=order.get("quantity"),
++            price_limit=order.get("price_limit") or order.get("price"),
++            market_id=order.get("market_id", "stock_market"),
++            target_agent_id=order.get("target_agent_id"),
++            brand_info=order.get("brand_info"),
++            metadata=order.get("metadata"),
++            monetary_amount=order.get("monetary_amount"),
++            currency=order.get("currency", DEFAULT_CURRENCY)
++        )
++
++    # Handle Legacy StockOrder (duck typing to avoid circular import)
++    if hasattr(order, "firm_id") and hasattr(order, "order_type") and hasattr(order, "price"):
++        return CanonicalOrderDTO(
++            agent_id=order.agent_id,
++            side=order.order_type,
++            item_id=f"stock_{order.firm_id}",
++            quantity=order.quantity,
++            price_limit=order.price,
++            market_id=getattr(order, "market_id", "stock_market"),
++        )
++
++    raise ValueError(f"Cannot convert object of type {type(order)} to CanonicalOrderDTO")
++
+ # --- Data Transfer Objects (DTOs) ---
+ 
+ class HousingConfigDTO(TypedDict):
+@@ -79,21 +123,21 @@ class IHousingTransactionHandler(ISpecializedTransactionHandler, Protocol):
+ class IMarket(Protocol):
+     """
+     Standard interface for all market types.
+-    TD-271: Enforces strictly typed Order DTOs for public access.
++    TD-271: Enforces strictly typed CanonicalOrderDTOs for public access.
+     """
+     id: str
+ 
+     @property
+-    def buy_orders(self) -> Dict[str, List[OrderDTO]]:
++    def buy_orders(self) -> Dict[str, List[CanonicalOrderDTO]]:
+         """Returns active buy orders as immutable/copy DTOs."""
+         ...
+ 
+     @property
+-    def sell_orders(self) -> Dict[str, List[OrderDTO]]:
++    def sell_orders(self) -> Dict[str, List[CanonicalOrderDTO]]:
+         """Returns active sell orders as immutable/copy DTOs."""
+         ...
+ 
+-    def place_order(self, order_dto: OrderDTO, current_time: int) -> None:
++    def place_order(self, order_dto: CanonicalOrderDTO, current_time: int) -> None:
+         """Submits a new order to the market."""
+         ...
+ 
+diff --git a/simulation/decisions/household/api.py b/simulation/decisions/household/api.py
+index 15b17d60..c3ab815f 100644
+--- a/simulation/decisions/household/api.py
++++ b/simulation/decisions/household/api.py
+@@ -2,7 +2,7 @@ from __future__ import annotations
+ from typing import List, Dict, Any, Optional, Protocol, TYPE_CHECKING
+ from dataclasses import dataclass
+ 
+-from simulation.models import Order, StockOrder
++from simulation.models import Order
+ from simulation.dtos import MacroFinancialContext, MarketSnapshotDTO
+ 
+ if TYPE_CHECKING:
+diff --git a/simulation/markets/order_book_market.py b/simulation/markets/order_book_market.py
+index f7e22499..071cada2 100644
+--- a/simulation/markets/order_book_market.py
++++ b/simulation/markets/order_book_market.py
+@@ -6,6 +6,7 @@ from dataclasses import dataclass
+ 
+ from simulation.models import Order, Transaction
+ from simulation.core_markets import Market
++from modules.market.api import CanonicalOrderDTO
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -22,7 +23,7 @@ class MarketOrder:
+     brand_info: Optional[Dict[str, Any]] = None
+ 
+     @classmethod
+-    def from_dto(cls, dto: Order) -> 'MarketOrder':
++    def from_dto(cls, dto: CanonicalOrderDTO) -> 'MarketOrder':
+         return cls(
+             agent_id=dto.agent_id,
+             side=dto.side,
+@@ -38,9 +39,9 @@ class MarketOrder:
+     def order_type(self) -> str:
+         return self.side
+ 
+-    def to_dto(self, market_id: str) -> Order:
+-        """Converts internal MarketOrder to public immutable Order DTO."""
+-        return Order(
++    def to_dto(self, market_id: str) -> CanonicalOrderDTO:
++        """Converts internal MarketOrder to public immutable CanonicalOrderDTO."""
++        return CanonicalOrderDTO(
+             agent_id=self.agent_id,
+             side=self.side,
+             item_id=self.item_id,
+@@ -97,16 +98,16 @@ class OrderBookMarket(Market):
+     # --- TD-271: Public Interface Implementation ---
+ 
+     @property
+-    def buy_orders(self) -> Dict[str, List[Order]]:
+-        """Returns active buy orders as immutable Order DTOs."""
++    def buy_orders(self) -> Dict[str, List[CanonicalOrderDTO]]:
++        """Returns active buy orders as immutable CanonicalOrderDTOs."""
+         return {
+             item_id: [order.to_dto(self.id) for order in orders]
+             for item_id, orders in self._buy_orders.items()
+         }
+ 
+     @property
+-    def sell_orders(self) -> Dict[str, List[Order]]:
+-        """Returns active sell orders as immutable Order DTOs."""
++    def sell_orders(self) -> Dict[str, List[CanonicalOrderDTO]]:
++        """Returns active sell orders as immutable CanonicalOrderDTOs."""
+         return {
+             item_id: [order.to_dto(self.id) for order in orders]
+             for item_id, orders in self._sell_orders.items()
+@@ -179,12 +180,12 @@ class OrderBookMarket(Market):
+             extra={"market_id": self.id, "tags": ["market_clear"]},
+         )
+ 
+-    def place_order(self, order_dto: Order, current_time: int):
++    def place_order(self, order_dto: CanonicalOrderDTO, current_time: int):
+         """시장에 주문을 제출합니다. 매칭은 별도의 메서드로 처리됩니다.
+         WO-136: Checks dynamic circuit breakers before accepting.
+ 
+         Args:
+-            order_dto (Order): 제출할 주문 객체 (OrderDTO).
++            order_dto (CanonicalOrderDTO): 제출할 주문 객체.
+             current_time (int): 현재 시뮬레이션 틱 (시간) 입니다.
+         """
+         # WO-136: Circuit Breaker Check
+diff --git a/simulation/markets/stock_market.py b/simulation/markets/stock_market.py
+index e14c2270..f4a7c020 100644
+--- a/simulation/markets/stock_market.py
++++ b/simulation/markets/stock_market.py
+@@ -12,15 +12,15 @@ from dataclasses import dataclass, replace
+ 
+ from simulation.models import Transaction, Order
+ from simulation.core_markets import Market
+-from modules.market.api import OrderDTO
++from modules.market.api import CanonicalOrderDTO
+ from modules.finance.api import IShareholderRegistry, IShareholderView
+ 
+ logger = logging.getLogger(__name__)
+ 
+ @dataclass
+ class ManagedOrder:
+-    """A mutable wrapper for an immutable OrderDTO to manage its state within the order book."""
+-    order: OrderDTO
++    """A mutable wrapper for an immutable CanonicalOrderDTO to manage its state within the order book."""
++    order: CanonicalOrderDTO
+     remaining_quantity: float
+     created_tick: int
+ 
+@@ -123,12 +123,12 @@ class StockMarket(Market):
+             return None
+         return min(managed.order.price_limit for managed in orders)
+ 
+-    def place_order(self, order: OrderDTO, tick: int) -> None:
++    def place_order(self, order: CanonicalOrderDTO, tick: int) -> None:
+         """
+         주식 주문을 제출합니다.
+         """
+-        if not isinstance(order, OrderDTO):
+-            self.logger.error(f"Invalid order type passed to StockMarket: {type(order)}. Expected OrderDTO.")
++        if not isinstance(order, CanonicalOrderDTO):
++            self.logger.error(f"Invalid order type passed to StockMarket: {type(order)}. Expected CanonicalOrderDTO.")
+             return
+ 
+         # item_id에서 firm_id 추출 ("stock_{firm_id}")
+@@ -154,7 +154,7 @@ class StockMarket(Market):
+                 f"[{min_price:.2f}, {max_price:.2f}] for firm {firm_id}",
+                 extra={"tick": tick, "agent_id": order.agent_id, "firm_id": firm_id}
+             )
+-            # 가격을 제한 범위 내로 조정하여 새로운 OrderDTO 생성
++            # 가격을 제한 범위 내로 조정하여 새로운 CanonicalOrderDTO 생성
+             clamped_price = max(min_price, min(max_price, order.price_limit))
+             final_order = replace(order, price_limit=clamped_price)
+ 
+diff --git a/simulation/models.py b/simulation/models.py
+index 73ff8a93..dd62cd30 100644
+--- a/simulation/models.py
++++ b/simulation/models.py
+@@ -1,12 +1,12 @@
+ from dataclasses import dataclass, field
+ from typing import Optional, Dict, Any, List, TYPE_CHECKING
+ import uuid
+-from modules.market.api import OrderDTO
++from modules.market.api import CanonicalOrderDTO
+ from modules.finance.api import LienDTO
+ from modules.system.api import DEFAULT_CURRENCY
+ 
+ # Alias for backward compatibility and migration
+-Order = OrderDTO
++Order = CanonicalOrderDTO
+ 
+ @dataclass
+ class Transaction:
+@@ -27,7 +27,10 @@ class Transaction:
+ 
+ @dataclass
+ class StockOrder:
+-    """주식 시장에 제출되는 주문을 나타내는 데이터 클래스"""
++    """
++    DEPRECATED: Use CanonicalOrderDTO instead.
++    Legacy DTO for Stock Market orders. Will be removed in Phase 10.
++    """
+ 
+     agent_id: int          # 주문 제출자 ID
+     order_type: str        # "BUY" or "SELL"
+diff --git a/tests/unit/test_market_adapter.py b/tests/unit/test_market_adapter.py
+new file mode 100644
+index 00000000..4ebc69c3
+--- /dev/null
++++ b/tests/unit/test_market_adapter.py
+@@ -0,0 +1,74 @@
++import pytest
++from dataclasses import dataclass
++from modules.market.api import CanonicalOrderDTO, convert_legacy_order_to_canonical
++from simulation.models import StockOrder
++
++class TestMarketAdapter:
++    def test_pass_through(self):
++        dto = CanonicalOrderDTO(
++            agent_id=1,
++            side="BUY",
++            item_id="stock_100",
++            quantity=10.0,
++            price_limit=50.0,
++            market_id="stock_market"
++        )
++        converted = convert_legacy_order_to_canonical(dto)
++        assert converted is dto
++
++    def test_convert_stock_order(self):
++        legacy = StockOrder(
++            agent_id=1,
++            order_type="SELL",
++            firm_id=100,
++            quantity=5.0,
++            price=45.0
++        )
++        converted = convert_legacy_order_to_canonical(legacy)
++
++        assert isinstance(converted, CanonicalOrderDTO)
++        assert converted.agent_id == 1
++        assert converted.side == "SELL"
++        assert converted.item_id == "stock_100"
++        assert converted.quantity == 5.0
++        assert converted.price_limit == 45.0
++        assert converted.market_id == "stock_market"
++
++    def test_convert_dict_legacy_format(self):
++        legacy_dict = {
++            "agent_id": 2,
++            "order_type": "BUY",
++            "firm_id": 200,
++            "quantity": 20.0,
++            "price": 60.0,
++            "market_id": "stock_market"
++        }
++        converted = convert_legacy_order_to_canonical(legacy_dict)
++
++        assert isinstance(converted, CanonicalOrderDTO)
++        assert converted.agent_id == 2
++        assert converted.side == "BUY"
++        assert converted.item_id == "stock_200"
++        assert converted.quantity == 20.0
++        assert converted.price_limit == 60.0
++
++    def test_convert_dict_canonical_format(self):
++        canonical_dict = {
++            "agent_id": 3,
++            "side": "SELL",
++            "item_id": "stock_300",
++            "quantity": 15.0,
++            "price_limit": 55.0,
++            "market_id": "stock_market"
++        }
++        converted = convert_legacy_order_to_canonical(canonical_dict)
++
++        assert isinstance(converted, CanonicalOrderDTO)
++        assert converted.agent_id == 3
++        assert converted.side == "SELL"
++        assert converted.item_id == "stock_300"
++        assert converted.price_limit == 55.0
++
++    def test_invalid_input(self):
++        with pytest.raises(ValueError):
++            convert_legacy_order_to_canonical("invalid_string")
