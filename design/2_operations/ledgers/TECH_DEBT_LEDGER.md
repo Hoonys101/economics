@@ -2,31 +2,29 @@
 
 ## 🔴 Active Technical Debt
 
+
 ### [Domain: Agents & Orchestration]
 
-*   **ID: TD-259 (Government Agent Monolith)**
-    *   **현상 (Phenomenon)**: `Government`는 여전히 거대 상속 클래스로 남아있음.
-    *   **기술 부채 (Tech Debt)**: 모든 로직이 하나의 클래스에 몰려 있어 확장이 어려움.
-    *   **해결 방안 (Resolution)**: `Firm`과 같은 Orchestrator-Engine 구조로 리팩토링 필요.
-
-*   **ID: TD-260 (Household Agent Complexity)**
-    *   **현상 (Phenomenon)**: `Household` 내부가 과도한 Mixin으로 복잡함.
-    *   **기술 부채 (Tech Debt)**: 상태와 로직의 경계가 모호하여 유지보수 비용 증대.
-    *   **해결 방안 (Resolution)**: 하위 시스템(NeedsManager 등)으로 추가 분해 고려.
 
 ### [Domain: Systems & Infrastructure]
 
-*   **ID: TD-261 (Bank Domain Purification)**
-    *   **현상 (Phenomenon)**: `Bank` Facade가 여전히 비금융 "Consequence" 로직(XP 패널티 등)을 처리함.
-    *   **기술 부채 (Tech Debt)**: 은행 본연의 기능(예금/예출) 외의 책임이 섞여 있음.
-    *   **해결 방안 (Resolution)**: 해당 로직을 `JudicialSystem` 등으로 이관.
+*   **ID: TD-FIN-PURE (FinanceSystem Pure Service)**
+    *   **현상 (Phenomenon)**: `FinanceSystem` 구현이 여전히 상태 변경 로직과 트랜잭션 생성을 혼합하여 반환(`grant_bailout_loan`).
+    *   **기술 부채 (Tech Debt)**: Service 계층의 순수성 위반. Orchestrator가 반환값을 재처리해야 하는 번거로움.
+    *   **해결 방안 (Resolution)**: Stateless Service로 전환하고 명확한 DTO를 반환하도록 리팩토링.
+    *   **Origin**: TD-259 Review
 
+*   **ID: TD-JUD-ASSET (Judicial Asset Seizure Granularity)**
+    *   **현상 (Phenomenon)**: `JudicialSystem`의 자산 압류 로직이 "All-or-Nothing" 방식으로 구현됨.
+    *   **기술 부채 (Tech Debt)**: 부분 압류나 자산 유형별 우선순위 지정 불가.
+    *   **해결 방안 (Resolution)**: 압류 목표액 및 우선순위 규칙을 정교화.
+    *   **Origin**: TD-261 Review
 
-
-*   **ID: TD-269 (Liquidation Manager Legacy Debt)**
-    *   **현상 (Phenomenon)**: `LiquidationManager` 및 `audit_zero_sum.py`가 `Firm` 에이전트의 예전 `finance` 속성에 의존함.
-    *   **기술 부채 (Tech Debt)**: `Firm`이 Composition 구조로 리팩토링된 이후 정합성 검증 스크립트 실패 유발.
-    *   **해결 방안 (Resolution)**: `LiquidationManager`가 프로토콜 인터페이스를 통해 금융 상태에 접근하도록 리팩토링.
+*   **ID: TD-LIQ-INV (InventoryHandler Config Protocol)**
+    *   **현상 (Phenomenon)**: `InventoryLiquidationHandler`가 여전히 `getattr(agent, 'config')`를 사용하여 설정에 접근.
+    *   **기술 부채 (Tech Debt)**: Protocol Purity 위반. 런타임 오류 위험.
+    *   **해결 방안 (Resolution)**: `IConfigurable` 프로토콜 도입하여 접근 정규화.
+    *   **Origin**: TD-269 Review
 
 ---
 
@@ -48,7 +46,11 @@
 | **TD-262** | Scripts | BaseAgent 제거 이후 깨진 검증 스크립트 복구 | PH10 | [Insight](file:///c:/coding/economics/design/_archive/gemini_output/pr_review_bundle-purity-regression-1978915247438186068.md) |
 | **TD-DTO-CONTRACT** | Simulation | DTO 필드명 변경 시 발생한 contract 불일치 해결 | PH10 | [Insight](file:///c:/coding/economics/design/_archive/gemini_output/pr_review_bundle-purity-regression-1978915247438186068.md) |
 | **TD-263** | Scripts / Maintenance | Report Harvester 누락 경로 반영 및 원격 브랜치 청소 로직 최적화 | PH10.1 | [Log](./design/2_operations/ledgers/INBOUND_REPORTS.md) |
-| **TD-264** | Financials | `SettlementSystem` 우회 코드 제거 및 `IFinancialAgent` 도입 | PH9.2 | [Insight](./communications/insights/PH9.2_TrackA.md) |
-| **TD-265** | Sensory | `SensorySystem` 캡슐화 파괴 해결 및 DTO 전환 | PH9.2 | [Insight](./communications/insights/PH9.2_TrackB_SensoryPurity.md) |
-| **TD-266** | Markets | `CanonicalOrderDTO` 도입 및 주문 파편화 해소 | PH9.2 | [Insight](./communications/insights/PH9.2_Market_DTO_Unification.md) |
+| **TD-264** | Financials | `SettlementSystem` 우회 코드 제거 및 `IFinancialAgent` 도입 | PH9.2 | [Insight](file:///c:/coding/economics/design/_archive/insights/PH9.2_TrackA.md) |
+| **TD-265** | Sensory | `SensorySystem` 캡슐화 파괴 해결 및 DTO 전환 | PH9.2 | [Insight](file:///c:/coding/economics/design/_archive/insights/PH9.2_TrackB_SensoryPurity.md) |
+| **TD-266** | Markets | `CanonicalOrderDTO` 도입 및 주문 파편화 해소 | PH9.2 | [Insight](file:///c:/coding/economics/design/_archive/insights/PH9.2_Market_DTO_Unification.md) |
 | **TD-267** | Governance | `ARCH_AGENTS.md` 아키텍처 문서 동기화 | PH9.2 | [Spec](../3_work_artifacts/specs/spec_ph9_2_interface_purity.md) |
+| **TD-259** | Government | **Refactor**: Orchestrator-Engine 분해 완료 | PH9.3 | [Insight](file:///c:/coding/economics/design/_archive/insights/TD-259_Government_Refactor.md) |
+| **TD-261** | Bank / Judicial | **Purification**: Bank 비금융 로직 JudicialSystem 이관 | PH9.3 | [Insight](file:///c:/coding/economics/design/_archive/insights/TD-261_Judicial_Decoupling.md) |
+| **TD-269** | Liquidation | **Protocol**: `ILiquidatable` 도입으로 `Firm` 결합 제거 | PH9.3 | [Insight](file:///c:/coding/economics/design/_archive/insights/TD-269_Liquidation_Refactor_Insight.md) |
+| **TD-260** | Household Agent | **Decomposition**: Refactored God-Object into Orchestrator-Engine pattern. | PH10.2 | [Insight Report](../_archive/insights/2026-02-09_Household_Decomposition.md) |

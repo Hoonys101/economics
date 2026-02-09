@@ -9,7 +9,7 @@
 ## 1. 현재 개발 단계
 
 - **현재 단계:**
-    - **`Phase 7: Structural Hardening & Domain Purity`** �️ ✅ (2026-02-06)
+    - **`Phase 7: Structural Hardening & Domain Purity`** ️ ✅ (2026-02-06)
         - **Achievement**: Decoupled Settlement Kernel & Strict DTO Purity achieved.
         - **Status**:
             - [x] **Kernel Decoupling**: `SagaOrchestrator` & `MonetaryLedger` extracted. ✅ (Track A)
@@ -34,6 +34,14 @@
             - [x] **Harvester Fix**: Added `communications/insights/` to monitored paths. ✅
             - [x] **Cleanup**: 16 remote branches scavenged and deleted. ✅
             - [x] **Merge Awareness**: Switched to `git ls-tree` for post-merge harvesting. ✅
+
+    - **`Phase 10.2: Knowledge Asset Preservation`** 🏛️ ✅ (2026-02-09)
+        - **Achievement**: Established the Crystallization Pipeline & Rescued 7 Insights.
+        - **Status**:
+            - [x] **Immediate Rescue**: Archived 7 volatile reports to permanent storage. ✅
+            - [x] **Knowledge Base**: Refactored `ECONOMIC_INSIGHTS.md` into Pillars. ✅
+            - [x] **Automation**: Automated "Wisdom Extraction" via `crystallizer` worker. ✅
+            - [x] **Protocol**: Formalized "Knowledge SSoT" role in `QUICKSTART.md`. ✅
 
     - **`Phase 6: The Pulse of the Market (Stress & Visualization)`** 📈 ✅ (2026-02-06)
 - **Achievement**: Real-time observability bridge and high-performance tech diffusion engine complete.
