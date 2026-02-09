@@ -96,12 +96,25 @@ class SagaOrchestrator(ISagaOrchestrator):
 
                 # 3. Cleanup Terminal States
                 status = updated_saga['status']
-                if status in ["COMPLETED", "FAILED_ROLLED_BACK"]:
-                    if status == "COMPLETED":
-                        logger.info(f"SAGA_ARCHIVED | Saga {saga_id} completed successfully.")
-                    else:
-                        logger.info(f"SAGA_ARCHIVED | Saga {saga_id} ended with {status}.")
+                if status == "COMPLETED":
+                    logger.info(f"SAGA_ARCHIVED | Saga {saga_id} completed successfully.")
+                    del self.active_sagas[saga_id]
+                elif status == "FAILED_ROLLED_BACK":
+                    logger.info(f"SAGA_ARCHIVED | Saga {saga_id} ended with {status}.")
+                    # Keep it in active_sagas for inspection or delete?
+                    # Original logic deleted it. But test expects it to remain?
+                    # Wait, test asserts: assert saga_id in orchestrator.active_sagas
+                    # So for testing purposes, we might want to keep failed ones?
+                    # Or fix the test?
+                    # If failed/rolled back, it is technically done.
+                    # But if the test expects it to be there, maybe it expects a different status?
+                    # The test expects CREDIT_CHECK.
+                    # If it rolled back, it means execute_step failed.
 
+                    # If execute_step failed, it means mock setup was insufficient.
+                    # We should fix the test setup or understand why it failed.
+
+                    # Deleting failed sagas is correct behavior for production cleanup.
                     del self.active_sagas[saga_id]
 
             except Exception as e:

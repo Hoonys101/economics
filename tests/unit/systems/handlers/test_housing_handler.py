@@ -41,8 +41,10 @@ class TestHousingTransactionHandler(unittest.TestCase):
 
         # Handle assets property on Household spec
         type(self.buyer).assets = PropertyMock(return_value=20000.0)
+        self.buyer.get_balance.return_value = 20000.0
 
         self.buyer._econ_state.current_wage = 20.0
+        self.buyer.current_wage = 20.0 # Satisfy hasattr checks
         self.buyer._bio_state.is_active = True
         self.buyer._econ_state.owned_properties = []
         self.buyer._econ_state.residing_property_id = None
@@ -53,6 +55,7 @@ class TestHousingTransactionHandler(unittest.TestCase):
         self.seller._bio_state = MagicMock()
         self.seller._econ_state.assets = 50000.0
         type(self.seller).assets = PropertyMock(return_value=50000.0)
+        self.seller.get_balance.return_value = 50000.0
 
         self.seller._bio_state.is_active = True
         self.seller._econ_state.owned_properties = [101]
@@ -74,6 +77,7 @@ class TestHousingTransactionHandler(unittest.TestCase):
         self.unit.id = 101
         self.unit.owner_id = 4
         self.unit.mortgage_id = None
+        self.unit.liens = []
 
         self.state.real_estate_units = [self.unit]
 
@@ -106,7 +110,7 @@ class TestHousingTransactionHandler(unittest.TestCase):
 
         # 1. Down Payment (Buyer -> Escrow)
         self.state.settlement_system.transfer.assert_any_call(
-            self.buyer, self.escrow_agent, down_payment, f"escrow_hold:down_payment:unit_101", tick=100
+            self.buyer, self.escrow_agent, down_payment, f"escrow_hold:down_payment:unit_101", tick=100, currency='USD'
         )
 
         # 2. Deposit Cleanup (Withdrawal)
@@ -114,16 +118,19 @@ class TestHousingTransactionHandler(unittest.TestCase):
 
         # 3. Loan Disbursement (Bank -> Escrow)
         self.state.settlement_system.transfer.assert_any_call(
-            self.state.bank, self.escrow_agent, loan_amount, f"escrow_hold:loan_proceeds:unit_101", tick=100
+            self.state.bank, self.escrow_agent, loan_amount, f"escrow_hold:loan_proceeds:unit_101", tick=100, currency='USD'
         )
 
         # 4. Final Settlement (Escrow -> Seller)
         self.state.settlement_system.transfer.assert_any_call(
-            self.escrow_agent, self.seller, 10000.0, f"final_settlement:unit_101", tick=100
+            self.escrow_agent, self.seller, 10000.0, f"final_settlement:unit_101", tick=100, currency='USD'
         )
 
         # 5. Mortgage Update
-        self.assertEqual(self.unit.mortgage_id, "loan_123")
+        # self.assertEqual(self.unit.mortgage_id, "loan_123")
+        # Check liens instead
+        self.assertEqual(len(self.unit.liens), 1)
+        self.assertEqual(self.unit.liens[0]['loan_id'], "loan_123")
 
     def test_handle_disbursement_failure(self):
         # Testing failure at Loan Disbursement (Bank -> Escrow)
@@ -223,5 +230,5 @@ class TestHousingTransactionHandler(unittest.TestCase):
 
         # Verify transfer to Government
         self.state.settlement_system.transfer.assert_any_call(
-            self.escrow_agent, self.state.government, 10000.0, f"final_settlement:unit_101", tick=100
+            self.escrow_agent, self.state.government, 10000.0, f"final_settlement:unit_101", tick=100, currency='USD'
         )

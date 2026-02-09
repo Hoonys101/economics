@@ -326,6 +326,22 @@ class Household(
         self._bio_state.is_active = value
 
     @property
+    def gender(self) -> str:
+        return self._bio_state.gender
+
+    @property
+    def parent_id(self) -> Optional[int]:
+        return self._bio_state.parent_id
+
+    @property
+    def age(self) -> float:
+        return self._bio_state.age
+
+    @age.setter
+    def age(self, value: float) -> None:
+        self._bio_state.age = value
+
+    @property
     def tick_analytics(self) -> AgentTickAnalyticsDTO:
         return AgentTickAnalyticsDTO(
             run_id=0,
@@ -345,6 +361,26 @@ class Household(
     @property
     def education_xp(self) -> float:
         return self._econ_state.education_xp
+
+    @education_xp.setter
+    def education_xp(self, value: float) -> None:
+        self._econ_state.education_xp = value
+
+    @property
+    def education_level(self) -> int:
+        return self._econ_state.education_level
+
+    @education_level.setter
+    def education_level(self, value: int) -> None:
+        self._econ_state.education_level = value
+
+    @property
+    def expected_wage(self) -> float:
+        return self._econ_state.expected_wage
+
+    @expected_wage.setter
+    def expected_wage(self, value: float) -> None:
+        self._econ_state.expected_wage = value
 
     # --- Lifecycle & Needs Management ---
 

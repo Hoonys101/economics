@@ -84,7 +84,11 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
 
                  # Void Loan
                  loan_id = saga['mortgage_approval']['loan_id']
-                 if hasattr(self.loan_market, 'void_staged_application'):
+                 # Use correct method to void/terminate existing loan
+                 if hasattr(self.settlement_system.bank, 'terminate_loan'):
+                    self.settlement_system.bank.terminate_loan(loan_id)
+                 elif hasattr(self.loan_market, 'void_staged_application'):
+                    # Fallback if approval but no bank method (unlikely)
                     self.loan_market.void_staged_application(loan_id)
 
             # 3. Cleanup Staged Loan (if no approval yet)

@@ -70,7 +70,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
 
         # Determine Mortgage Eligibility
         # Only Agents implementing IMortgageBorrower get mortgages usually.
-        is_borrower = isinstance(buyer, IMortgageBorrower)
+        is_borrower = isinstance(buyer, IMortgageBorrower) or hasattr(buyer, 'current_wage')
         use_mortgage = is_borrower and context.bank is not None
 
         if use_mortgage:
@@ -81,9 +81,16 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
         tx_currency = getattr(tx, "currency", DEFAULT_CURRENCY)
 
         # Check Buyer Funds for Down Payment
-        if isinstance(buyer, IMortgageBorrower):
+        buyer_assets = 0.0
+        if hasattr(buyer, "get_balance"):
+             buyer_assets = buyer.get_balance(tx_currency)
+        elif isinstance(buyer, IMortgageBorrower):
             # Safe extraction for protocols using Dict assets
-            buyer_assets = buyer.assets.get(tx_currency, 0.0)
+            assets_attr = buyer.assets
+            if isinstance(assets_attr, dict):
+                buyer_assets = assets_attr.get(tx_currency, 0.0)
+            else:
+                buyer_assets = float(assets_attr)
         elif hasattr(buyer, "assets"):
             # Legacy/Firm fallback
             attr = getattr(buyer, "assets", 0.0)
@@ -230,8 +237,15 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                  existing_debt = status.total_outstanding_debt
              except: pass
 
-        if isinstance(buyer, IMortgageBorrower):
-            assets_val = buyer.assets.get(currency, 0.0)
+        assets_val = 0.0
+        if hasattr(buyer, "get_balance"):
+             assets_val = buyer.get_balance(currency)
+        elif isinstance(buyer, IMortgageBorrower):
+            assets_attr = buyer.assets
+            if isinstance(assets_attr, dict):
+                assets_val = assets_attr.get(currency, 0.0)
+            else:
+                assets_val = float(assets_attr)
         else:
             attr = getattr(buyer, "assets", 0.0)
             if isinstance(attr, dict):

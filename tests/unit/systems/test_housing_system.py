@@ -92,7 +92,7 @@ class TestHousingSystemRefactor(unittest.TestCase):
         # Assert
         # Verify transfer was called for rent
         self.simulation.settlement_system.transfer.assert_any_call(
-            self.tenant, self.owner, 500.0, "rent_payment", tick=100
+            self.tenant, self.owner, 500.0, "rent_payment", tick=100, currency='USD'
         )
 
         # Verify NO direct asset modification
@@ -109,7 +109,7 @@ class TestHousingSystemRefactor(unittest.TestCase):
 
         # Assert
         self.simulation.settlement_system.transfer.assert_any_call(
-            self.owner, self.simulation.government, cost, "housing_maintenance", tick=100
+            self.owner, self.simulation.government, cost, "housing_maintenance", tick=100, currency='USD'
         )
 
         # Verify NO direct asset modification (fallback)

@@ -16,6 +16,12 @@ def test_log_reject_when_stock_out_and_insolvent(mock_simulation):
     h1.assets = 10.0
     h1.inventory = {"basic_food": 0}
     h1.needs = {"survival": 80.0}
+    # Ensure _bio_state.needs is also set for code that uses it
+    h1._bio_state.needs = h1.needs
+    h1._bio_state.is_active = True
+    h1.get_quantity.return_value = 0 # stock out
+    h1._econ_state.assets = 10.0
+    h1._econ_state.inventory = h1.inventory
 
     # Mock Planner
     planner = MagicMock()
@@ -60,6 +66,11 @@ def test_log_reject_when_stock_out_but_solvent(mock_simulation):
     h1.assets = 100.0 # Solvent
     h1.inventory = {"basic_food": 0}
     h1.needs = {"survival": 80.0}
+    h1._bio_state.needs = h1.needs
+    h1._bio_state.is_active = True
+    h1.get_quantity.return_value = 0
+    h1._econ_state.assets = 100.0
+    h1._econ_state.inventory = h1.inventory
 
     # Mock Planner
     planner = MagicMock()

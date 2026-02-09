@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import Mock, MagicMock
 from simulation.systems.sensory_system import SensorySystem
 from simulation.systems.api import SensoryContext
+from modules.simulation.api import ISensoryDataProvider
 
 @pytest.fixture
 def sensory_system():
@@ -23,15 +24,11 @@ def test_sensory_dto_generation(sensory_system):
     mock_inequality.calculate_gini_coefficient.return_value = 0.35
 
     # Mock Households with assets
-    h1 = Mock()
-    h1._bio_state.is_active = True
-    h1._econ_state.assets = 100.0
-    h1._social_state.approval_rating = 0.2
+    h1 = Mock(spec=ISensoryDataProvider)
+    h1.get_sensory_snapshot.return_value = {"is_active": True, "total_wealth": 100.0, "approval_rating": 0.2}
 
-    h2 = Mock()
-    h2._bio_state.is_active = True
-    h2._econ_state.assets = 1000.0
-    h2._social_state.approval_rating = 0.8
+    h2 = Mock(spec=ISensoryDataProvider)
+    h2.get_sensory_snapshot.return_value = {"is_active": True, "total_wealth": 1000.0, "approval_rating": 0.8}
 
     households = [h1, h2]
 
@@ -58,10 +55,12 @@ def test_sensory_dto_generation(sensory_system):
     # Let's add more households to test Top 20%
     households_extended = []
     for i in range(10):
-        h = Mock()
-        h._bio_state.is_active = True
-        h._econ_state.assets = float(i * 100)
-        h._social_state.approval_rating = i / 10.0
+        h = Mock(spec=ISensoryDataProvider)
+        h.get_sensory_snapshot.return_value = {
+            "is_active": True,
+            "total_wealth": float(i * 100),
+            "approval_rating": i / 10.0
+        }
         households_extended.append(h)
 
     context["households"] = households_extended

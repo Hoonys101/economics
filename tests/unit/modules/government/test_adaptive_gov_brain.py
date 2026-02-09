@@ -1,13 +1,13 @@
 import pytest
 from unittest.mock import Mock, MagicMock
 from simulation.ai.enums import PoliticalParty, PolicyActionTag
-from simulation.dtos import GovernmentStateDTO
+from simulation.dtos.api import GovernmentSensoryDTO
 from modules.government.policies.adaptive_gov_brain import AdaptiveGovBrain
 from modules.government.dtos import PolicyActionDTO
 
 @pytest.fixture
 def mock_sensory_data():
-    return GovernmentStateDTO(
+    return GovernmentSensoryDTO(
         tick=100,
         inflation_sma=0.02,
         unemployment_sma=0.05,

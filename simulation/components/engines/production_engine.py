@@ -46,7 +46,7 @@ class ProductionEngine:
             if state.automation_level < 0.001: state.automation_level = 0.0
 
             # 2. Labor & Capital Inputs
-            total_labor_skill = sum(emp.labor_skill for emp in hr_state.employees)
+            total_labor_skill = sum(emp.labor_skill or 0.0 for emp in hr_state.employees)
 
             # Cobb-Douglas Parameters
             base_alpha = config.labor_alpha
@@ -155,7 +155,7 @@ class ProductionEngine:
 
         avg_skill = 1.0
         if hr_state.employees:
-            avg_skill = sum(emp.labor_skill for emp in hr_state.employees) / len(hr_state.employees)
+            avg_skill = sum(emp.labor_skill or 0.0 for emp in hr_state.employees) / len(hr_state.employees)
 
         success_chance = base_chance * avg_skill
 

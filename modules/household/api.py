@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Protocol, List, Dict, Optional, Any, TypedDict
+from typing import Protocol, List, Dict, Optional, Any, TypedDict, Tuple
 from dataclasses import dataclass, field
 
 from simulation.models import Order
@@ -12,7 +12,7 @@ from modules.household.dtos import (
 )
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from modules.system.api import MarketSnapshotDTO
-from simulation.dtos import StressScenarioConfig
+from simulation.dtos import StressScenarioConfig, LaborResult, ConsumptionResult
 
 # --- Engine DTOs ---
 
@@ -151,3 +151,60 @@ class OrchestrationContextDTO(TypedDict):
     config: HouseholdConfigDTO
     household_state: HouseholdSnapshotDTO
     housing_system: Optional[Any]
+
+class IConsumptionManager(Protocol):
+    """
+    Stateless manager responsible for consumption logic.
+    """
+    def consume(
+        self,
+        state: EconStateDTO,
+        needs: Dict[str, float],
+        item_id: str,
+        quantity: float,
+        current_time: int,
+        goods_info: Dict[str, Any],
+        config: HouseholdConfigDTO
+    ) -> Tuple[EconStateDTO, Dict[str, float], ConsumptionResult]: ...
+
+    def decide_and_consume(
+        self,
+        state: EconStateDTO,
+        needs: Dict[str, float],
+        current_time: int,
+        goods_info_map: Dict[str, Any],
+        config: HouseholdConfigDTO
+    ) -> Tuple[EconStateDTO, Dict[str, float], Dict[str, float]]: ...
+
+class IDecisionUnit(Protocol):
+    """
+    Stateless unit responsible for coordinating decision making.
+    """
+    def orchestrate_economic_decisions(
+        self,
+        state: EconStateDTO,
+        context: OrchestrationContextDTO,
+        initial_orders: List[Order]
+    ) -> Tuple[EconStateDTO, List[Order]]: ...
+
+class IEconComponent(Protocol):
+    """
+    Stateless component managing economic aspects of the Household.
+    """
+    def update_wage_dynamics(self, state: EconStateDTO, config: HouseholdConfigDTO, is_employed: bool) -> EconStateDTO: ...
+    def work(self, state: EconStateDTO, hours: float, config: HouseholdConfigDTO) -> Tuple[EconStateDTO, LaborResult]: ...
+    def update_skills(self, state: EconStateDTO, config: HouseholdConfigDTO) -> EconStateDTO: ...
+    def update_perceived_prices(
+        self,
+        state: EconStateDTO,
+        market_data: Dict[str, Any],
+        goods_info_map: Dict[str, Any],
+        stress_scenario_config: Optional[StressScenarioConfig],
+        config: HouseholdConfigDTO
+    ) -> EconStateDTO: ...
+    def prepare_clone_state(
+        self,
+        parent_state: EconStateDTO,
+        parent_skills: Dict[str, Any],
+        config: HouseholdConfigDTO
+    ) -> Dict[str, Any]: ...

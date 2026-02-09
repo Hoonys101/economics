@@ -22,9 +22,11 @@ class TestMinistryOfEducation(unittest.TestCase):
         self.mock_government.current_tick_stats = {"education_spending": 0}
 
     def _create_household(self, id, assets, edu_level, aptitude, is_active=True):
-        h = Mock()
+        h = MagicMock()
         h.id = id
-        h._econ_state.assets = assets # Fix: Set assets property directly
+        # Mock wallet balance for sorting (required by Ministry)
+        h._econ_state.wallet.get_balance.return_value = float(assets)
+        h._econ_state.assets = assets
         h._econ_state.education_level = edu_level
         h._econ_state.aptitude = aptitude
         h._bio_state.is_active = is_active
@@ -32,55 +34,34 @@ class TestMinistryOfEducation(unittest.TestCase):
         return h
 
     def test_run_public_education_basic_grant_legacy(self):
-        # Legacy Mode (No SettlementSystem)
+        # Verification of Transactions instead of direct transfers
         households = [
             self._create_household(101, 500, 0, 0.5), # Eligible for basic
             self._create_household(102, 1000, 1, 0.6) # Already has basic
         ]
 
-        initial_gov_assets = self.mock_government._assets # Use backing field for check
-        cost = self.mock_config.EDUCATION_COST_PER_LEVEL[1] # 100
+        transactions = self.ministry.run_public_education(households, self.mock_government, 1)
 
-        self.ministry.run_public_education(households, self.mock_government, 1)
-
-        # self.assertEqual(households[0]._econ_state.education_level, 1) # Logic doesn't update state directly anymore
-        # self.assertEqual(households[1]._econ_state.education_level, 1)
-
-        # Check Legacy Behavior
-        self.mock_government._sub_assets.assert_called_with(cost)
-
-        self.assertEqual(self.mock_government.expenditure_this_tick, cost)
-        self.assertEqual(self.mock_government.current_tick_stats["education_spending"], cost)
+        # 1 eligible, 1 not
+        self.assertEqual(len(transactions), 1)
+        tx = transactions[0]
+        self.assertEqual(tx.buyer_id, self.mock_government.id)
+        self.assertEqual(tx.item_id, "education_level_1")
+        self.assertEqual(tx.price, 100) # Cost for Level 1
 
     def test_run_public_education_basic_grant_settlement(self):
-        # New Mode (With SettlementSystem)
+        # Same logic, verifying transactions are generated
         households = [
             self._create_household(101, 500, 0, 0.5),
         ]
 
-        mock_settlement = MagicMock()
-        mock_settlement.transfer.return_value = True
-        mock_reflux = MagicMock()
+        transactions = self.ministry.run_public_education(households, self.mock_government, 1)
 
-        cost = self.mock_config.EDUCATION_COST_PER_LEVEL[1] # 100
-
-        # API Mismatch: run_public_education no longer accepts settlement_system
-        # self.ministry.run_public_education(households, self.mock_government, 1,
-        #                                    reflux_system=mock_reflux,
-        #                                    settlement_system=mock_settlement)
-
-        # self.assertEqual(households[0]._econ_state.education_level, 1)
-
-        # Verify Transfer called
-        mock_settlement.transfer.assert_called_once()
-        args = mock_settlement.transfer.call_args[0]
-        # (government, reflux, cost, memo)
-        self.assertEqual(args[0], self.mock_government)
-        self.assertEqual(args[1], mock_reflux)
-        self.assertEqual(args[2], cost)
-
-        # Verify Legacy NOT called
-        self.mock_government._sub_assets.assert_not_called()
+        # Verify Transaction
+        self.assertEqual(len(transactions), 1)
+        tx = transactions[0]
+        self.assertEqual(tx.buyer_id, self.mock_government.id)
+        self.assertEqual(tx.price, 100)
 
     def test_run_public_education_scholarship_settlement(self):
         # Add dummy rich households to ensure percentile logic works
@@ -92,51 +73,34 @@ class TestMinistryOfEducation(unittest.TestCase):
             self._create_household(105, 1000, 1, 0.5),
         ]
 
-        mock_settlement = MagicMock()
-        mock_settlement.transfer.return_value = True
-        mock_reflux = MagicMock()
-
         cost = self.mock_config.EDUCATION_COST_PER_LEVEL[2] # 500
         subsidy = cost * 0.8
         student_share = cost * 0.2
 
-        # self.ministry.run_public_education(households, self.mock_government, 1,
-        #                                    reflux_system=mock_reflux,
-        #                                    settlement_system=mock_settlement)
+        transactions = self.ministry.run_public_education(households, self.mock_government, 1)
 
-        # self.assertEqual(households[0]._econ_state.education_level, 2)
+        # Verify Transactions
+        # 1. Subsidy (Gov -> Teacher)
+        # 2. Tuition (Student -> Teacher)
+        self.assertEqual(len(transactions), 2)
 
-        # Verify Transfers
-        # 1. Subsidy (Gov -> Reflux)
-        # 2. Tuition (Student -> Reflux)
-        self.assertEqual(mock_settlement.transfer.call_count, 2)
+        tx_subsidy = transactions[0]
+        self.assertEqual(tx_subsidy.buyer_id, self.mock_government.id)
+        self.assertEqual(tx_subsidy.price, subsidy)
 
-        # Check args
-        calls = mock_settlement.transfer.call_args_list
-        # Call 1: Subsidy
-        self.assertEqual(calls[0][0][0], self.mock_government)
-        self.assertEqual(calls[0][0][2], subsidy)
-
-        # Call 2: Tuition
-        self.assertEqual(calls[1][0][0], households[0])
-        self.assertEqual(calls[1][0][2], student_share)
+        tx_student = transactions[1]
+        self.assertEqual(tx_student.buyer_id, households[0].id)
+        self.assertEqual(tx_student.price, student_share)
 
     def test_budget_constraints(self):
         # Government has 10k assets, budget is 10% = 1k
         # Basic edu costs 100 each. 11 households want it. Only 10 should get it.
         households = [self._create_household(i, 500, 0, 0.5) for i in range(11)]
 
-        # Use legacy mode for simplicity in this check, or new mode with mock transfer
-        # Since logic is shared until execution, legacy is fine for counting promotions.
-        # self.ministry.run_public_education(households, self.mock_government, 1)
+        transactions = self.ministry.run_public_education(households, self.mock_government, 1)
 
-        # promoted_count = sum(1 for h in households if h._econ_state.education_level == 1)
-        # self.assertEqual(promoted_count, 10)
-
-        # Check assets (legacy behavior)
-        expected_spent = 10 * 100
-        self.mock_government._sub_assets.assert_called()
-        self.assertEqual(self.mock_government.expenditure_this_tick, expected_spent)
+        # Max budget 1000 / cost 100 = 10 grants
+        self.assertEqual(len(transactions), 10)
 
 
 if __name__ == '__main__':

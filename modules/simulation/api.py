@@ -188,6 +188,24 @@ class IAgentRepository(Protocol):
     def get_attrition_counts(self, start_tick: int, end_tick: int, run_id: Any = None) -> Dict[str, int]:
         ...
 
+class ShareholderData(TypedDict):
+    agent_id: int
+    firm_id: int
+    quantity: float
+
+@runtime_checkable
+class IShareholderRegistry(Protocol):
+    """Single source of truth for stock ownership."""
+    def register_shares(self, firm_id: int, agent_id: int, quantity: float) -> None:
+        """Adds/removes shares. Zero quantity removes the registry entry."""
+        ...
+    def get_shareholders_of_firm(self, firm_id: int) -> List[ShareholderData]:
+        """Returns list of owners for a firm."""
+        ...
+    def get_total_shares(self, firm_id: int) -> float:
+        """Returns total outstanding shares."""
+        ...
+
 class IConfig(Protocol):
     STARVATION_THRESHOLD: float
 

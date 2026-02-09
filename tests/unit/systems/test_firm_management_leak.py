@@ -43,6 +43,7 @@ class TestFirmManagementLeak(unittest.TestCase):
         # 1. Setup Household
         household = MagicMock()
         household.id = 1
+        household.assets = 5000.0
         household._econ_state.assets = 5000.0
         household._sub_assets = MagicMock()
 
@@ -75,10 +76,10 @@ class TestFirmManagementLeak(unittest.TestCase):
             self.assertEqual(args[2], expected_cost)
 
             # 5. Check Firm Initial Capital passed to constructor
-            # Should be 0.0
+            # Should be None (not passed, so starts with 0)
             call_kwargs = MockFirm.call_args[1]
             firm_initial_capital = call_kwargs.get('initial_capital')
-            self.assertEqual(firm_initial_capital, 0.0)
+            self.assertIsNone(firm_initial_capital)
 
             # 6. Check that direct _sub_assets was NOT called on household (since transfer handles it)
             # Wait, SettlementSystem.transfer calls withdraw/deposit.

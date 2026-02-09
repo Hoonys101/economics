@@ -66,6 +66,16 @@ def mock_config():
     config.QUALITY_PREF_MISER_MAX = 0.3
     config.QUALITY_PREF_SNOB_MIN = 0.7
     config.SOCIAL_STATUS_ASSET_WEIGHT = 0.5
+    config.INITIAL_HOUSEHOLD_AGE_RANGE = (20, 50)
+    config.INITIAL_APTITUDE_DISTRIBUTION = (0.5, 0.1) # Mean, StdDev for gauss
+    config.PRICE_MEMORY_LENGTH = 10
+    config.WAGE_MEMORY_LENGTH = 10
+    config.TICKS_PER_YEAR = 100
+    config.ADAPTATION_RATE_NORMAL = 0.1
+    config.ADAPTATION_RATE_IMPULSIVE = 0.2
+    config.ADAPTATION_RATE_CONSERVATIVE = 0.05
+    config.PERCEIVED_PRICE_UPDATE_FACTOR = 0.1
+    config.LEISURE_COEFFS = {}
 
     return config
 
@@ -106,7 +116,7 @@ def parent_agent(mock_config):
     parent.children_ids = []
 
     # Mock methods
-    parent._sub_assets.return_value = None
+    # parent._sub_assets.return_value = None # Removed legacy method mock
 
     return parent
 
@@ -127,6 +137,10 @@ def test_newborn_receives_initial_needs_from_config(mock_config, mock_simulation
     new_children = manager.process_births(mock_simulation, birth_requests)
 
     # ASSERT
+    if len(new_children) == 0:
+        # Debugging helper: print logs if empty
+        print(f"DEBUG: Logger calls: {manager.logger.method_calls}")
+
     assert len(new_children) == 1
     child = new_children[0]
 

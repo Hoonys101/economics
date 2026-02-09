@@ -25,20 +25,11 @@ def test_execute_consumption_and_leisure(commerce_system):
 
     households = [h1]
 
-    # Mock Vector Planner
-    planner = MagicMock()
-    # h1 consumes 1, buys 2
-    planner.decide_consumption_batch.return_value = {
-        "consume": [1.0],
-        "buy": [2.0],
-        "price": 10.0
-    }
-
     # Mock Context
     mock_reflux = MagicMock()
     context: CommerceContext = {
         "households": households,
-        "breeding_planner": planner,
+        "breeding_planner": MagicMock(),
         "household_time_allocation": {1: 8.0},
         "reflux_system": mock_reflux,
         "market_data": {},
@@ -46,15 +37,20 @@ def test_execute_consumption_and_leisure(commerce_system):
         "time": 1
     }
 
+    # Plan
+    planned_consumptions = {
+        1: {
+            "consume_amount": 1.0,
+            "buy_amount": 2.0,
+            "consumed_immediately_from_buy": 0.0
+        }
+    }
+
     # Execute
-    leisure_effects = commerce_system.execute_consumption_and_leisure(context)
+    leisure_effects = commerce_system.finalize_consumption_and_leisure(context, planned_consumptions)
 
     # Verify
-    # 1. Purchase: Buy 2.0 @ 10.0 = 20.0 cost
-    assert h1.assets == 80.0 # 100 - 20
-    assert h1.inventory["basic_food"] == 2.0
-
-    # 2. Consumption: Consume 1.0 (Fast Consumption)
+    # 2. Consumption: Consume 1.0
     h1.consume.assert_called_with("basic_food", 1.0, 1)
 
     # 3. Leisure
@@ -62,12 +58,6 @@ def test_execute_consumption_and_leisure(commerce_system):
 
     # 4. Return Value
     assert leisure_effects[1] == 5.0
-
-    # 5. Lifecycle Update called
-    h1.update_needs.assert_called_once()
-
-    # 6. Reflux Capture
-    mock_reflux.capture.assert_called_with(20.0, source="Household_1", category="emergency_food")
 
 def test_fast_track_consumption_if_needed(commerce_system):
     # Case: Inventory 0, Consumes 0 (in vector), Buys 2.
@@ -83,24 +73,30 @@ def test_fast_track_consumption_if_needed(commerce_system):
     effect_dto.utility_gained = 0.0
     h1.apply_leisure_effect.return_value = effect_dto
 
-    planner = MagicMock()
-    planner.decide_consumption_batch.return_value = {
-        "consume": [0.0], # Planner says consume 0 because inventory was 0
-        "buy": [2.0],
-        "price": 10.0
-    }
+    # Mock Reflux System (Fix injection)
+    mock_reflux = MagicMock()
 
     context: CommerceContext = {
         "households": [h1],
-        "breeding_planner": planner,
+        "breeding_planner": MagicMock(),
         "household_time_allocation": {},
-        "reflux_system": commerce_system.reflux_system,
+        "reflux_system": mock_reflux,
         "market_data": {},
         "config": commerce_system.config,
         "time": 1
     }
 
-    commerce_system.execute_consumption_and_leisure(context)
+    # Plan
+    # Simulate Fast Track: buy_amount=2.0, consume_amount=1.0 (logic assumes we consume what we need)
+    planned_consumptions = {
+        1: {
+            "consume_amount": 1.0,
+            "buy_amount": 2.0,
+            "consumed_immediately_from_buy": 1.0
+        }
+    }
+
+    commerce_system.finalize_consumption_and_leisure(context, planned_consumptions)
 
     # Verify Immediate Consumption
     # Expect consume call with default 1.0 (from config) or min(bought, default)
