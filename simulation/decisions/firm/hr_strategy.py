@@ -64,6 +64,7 @@ class HRStrategy:
                     emp_data = firm.hr.employees_data.get(emp_id, {})
                     wage = emp_data.get("wage", config.labor_market_min_wage)
                     skill = emp_data.get("skill", 1.0)
+                    if skill is None: skill = 1.0
 
                     adjusted_wage = wage * skill
                     severance_pay = adjusted_wage * severance_weeks
