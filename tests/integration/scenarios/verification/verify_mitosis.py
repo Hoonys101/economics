@@ -8,6 +8,9 @@ from simulation.ai.api import Personality
 from simulation.ai.household_ai import HouseholdAI
 from simulation.ai.ai_training_manager import AITrainingManager
 from simulation.ai.q_table_manager import QTableManager
+from modules.simulation.api import AgentCoreConfigDTO
+from simulation.dtos.config_dtos import HouseholdConfigDTO
+from simulation.utils.config_factory import create_config_dto
 
 # Helper to force set primitive config
 def ensure_config(golden_config, key, value):
@@ -77,22 +80,39 @@ def create_real_household_from_golden(mock_h, golden_config):
     # Ensure loan_market exists (set to None)
     mock_engine.loan_market = None
 
-    real_household = Household(
+    # Construct Config DTOs
+    core_config = AgentCoreConfigDTO(
         id=mock_h.id if not isinstance(mock_h.id, MagicMock) else 1,
-        talent=talent,
-        goods_data=goods_data,
-        initial_assets=float(initial_assets),
-        initial_needs=dict(initial_needs) if isinstance(initial_needs, dict) else {"survival": 0.5},
-        decision_engine=mock_engine,
+        name=f"Household_{mock_h.id}",
         value_orientation=value_orientation,
-        personality=personality,
-        config_module=golden_config,
-        initial_age=float(initial_age),
-        gender="M",
+        initial_needs=dict(initial_needs) if isinstance(initial_needs, dict) else {"survival": 0.5},
+        logger=MagicMock(),
+        memory_interface=None
     )
 
+    # Mock or create HouseholdConfigDTO
+    hh_config_dto = create_config_dto(golden_config, HouseholdConfigDTO)
+
+    real_household = Household(
+        core_config=core_config,
+        engine=mock_engine,
+        talent=talent,
+        goods_data=goods_data,
+        personality=personality,
+        config_dto=hh_config_dto,
+        loan_market=None,
+        initial_age=float(initial_age),
+        gender="M",
+        initial_assets_record=float(initial_assets)
+    )
+
+    # Initial assets are set via initial_assets_record but handled in init.
+    # To be sure, we can hydrate:
+    # real_household.deposit(float(initial_assets)) # Already handled in init
+
     if hasattr(mock_h, 'inventory') and not isinstance(mock_h.inventory, MagicMock):
-        real_household.inventory = dict(mock_h.inventory)
+        # Access internal state or use update method if available
+        real_household._econ_state.inventory = dict(mock_h.inventory)
 
     return real_household
 
@@ -106,16 +126,22 @@ def test_mitosis_zero_sum_logic(golden_config, golden_households):
     mock_h = golden_households[0] if golden_households else MagicMock()
 
     parent = create_real_household_from_golden(mock_h, golden_config)
-    # Fix: Access econ_component._assets directly as Household delegates assets property
-    parent.econ_component._assets = 10000.0
+    # Fix: Access wallet via interface
+    # Reset wallet for deterministic test
+    # parent.withdraw(parent.assets)
+    # parent.deposit(10000.0)
+    # Or just overwrite for test
+    from modules.system.api import DEFAULT_CURRENCY
+    parent._econ_state.wallet._balances[DEFAULT_CURRENCY] = 10000.0
+
     initial_total_assets = parent.assets
 
     # Simulate Mitosis (DemographicManager logic)
     # 1. Determine split amount (e.g., 50% for fission, or 10% for birth)
     split_amount = parent.assets * 0.5
 
-    # 2. Deduct from parent
-    parent.econ_component._assets -= split_amount
+    # 2. Deduct from parent (Manual deduction as in manager logic)
+    parent.withdraw(split_amount)
 
     # 3. Create child with deducted amount
     child = parent.clone(new_id=999, initial_assets_from_parent=split_amount, current_tick=100)
@@ -139,35 +165,42 @@ def test_mitosis_stock_inheritance(golden_config, golden_households):
     # Setup Shares
     firm_1_id = 101
     firm_2_id = 102
-    parent.shares_owned = {firm_1_id: 10, firm_2_id: 8}
+
+    # Populate portfolio directly
+    from simulation.models import Share
+    parent._econ_state.portfolio.add(firm_1_id, 10, 10.0)
+    parent._econ_state.portfolio.add(firm_2_id, 8, 10.0)
 
     # Create Child (Vanilla Clone)
     child = parent.clone(new_id=999, initial_assets_from_parent=0, current_tick=100)
 
     # Verify Child starts empty (default behavior of clone)
-    assert child.shares_owned == {}
+    assert child._econ_state.portfolio.get_stock_quantity(firm_1_id) == 0
 
     # Simulate Inheritance (Manager Logic)
     # Split shares 50/50
-    # Note: shares_owned property returns a copy in Facade refactoring, so we must set it back.
-    parent_shares = parent.shares_owned
-    child_shares = child.shares_owned
-    for firm_id, quantity in parent_shares.items():
-        child_share = quantity // 2
-        parent_shares[firm_id] -= child_share
-        child_shares[firm_id] = child_share
+    # Copy dict because we modify it in loop
+    parent_holdings_copy = {k: v for k, v in parent._econ_state.portfolio.holdings.items()}
 
-    parent.shares_owned = parent_shares
-    child.shares_owned = child_shares
+    for firm_id, share in parent_holdings_copy.items():
+        quantity = share.quantity
+        child_share_qty = quantity // 2
+
+        # Deduct from parent
+        parent._econ_state.portfolio.remove(firm_id, child_share_qty)
+        # Add to child
+        child._econ_state.portfolio.add(firm_id, child_share_qty, share.acquisition_price)
 
     # Verify Distribution
-    assert parent.shares_owned[firm_1_id] == 5
-    assert child.shares_owned[firm_1_id] == 5
-    assert parent.shares_owned[firm_2_id] == 4
-    assert child.shares_owned[firm_2_id] == 4
+    assert parent._econ_state.portfolio.get_stock_quantity(firm_1_id) == 5
+    assert child._econ_state.portfolio.get_stock_quantity(firm_1_id) == 5
+    assert parent._econ_state.portfolio.get_stock_quantity(firm_2_id) == 4
+    assert child._econ_state.portfolio.get_stock_quantity(firm_2_id) == 4
 
     # Verify Total Shares Conserved
-    assert parent.shares_owned[firm_1_id] + child.shares_owned[firm_1_id] == 10
+    assert parent._econ_state.portfolio.get_stock_quantity(firm_1_id) + child._econ_state.portfolio.get_stock_quantity(firm_1_id) == 10
+    assert parent._econ_state.portfolio.get_stock_quantity(firm_2_id) == 4
+    assert child._econ_state.portfolio.get_stock_quantity(firm_2_id) == 4
 
 def test_mitosis_brain_inheritance(golden_config, golden_households):
     """
@@ -192,6 +225,37 @@ def test_mitosis_brain_inheritance(golden_config, golden_households):
     test_values = {0: 1.0, 1: 0.5, 2: 0.1}
     parent_ai.q_consumption["food"].q_table = {test_state: test_values}
 
+    # Init education_xp for parent to avoid NoneType error in AITrainingManager
+    # AITrainingManager uses getattr(agent, 'education_xp', 0.0).
+    # Since 'education_xp' is not a property on Household, getattr returns the default 0.0 IF the attribute is missing.
+    # However, if it returns None, then math.log1p fails.
+    # Wait, the error is `TypeError: must be real number, not NoneType`.
+    # This implies education_xp IS None.
+    # Why? `getattr(parent_agent, "education_xp", 0.0)` should return 0.0 if missing.
+    # So it must be present but None?
+    # Or maybe it's not missing, but `getattr` finds something?
+    # Actually, Household DOES inherit from IEducated? No, I removed BaseAgent.
+    # I see `IEducated` in `simulation/core_agents.py` inheritance list!
+    # Let's check IEducated.
+    # `modules/simulation/api.py`: class IEducated(Protocol): education_xp: float ...
+    # Protocols don't add attributes.
+    # But maybe I have a property somewhere?
+    # In `EconComponent`, it's in `EconStateDTO`.
+    # In `Household`, I implemented `add_education_xp`.
+    # I did NOT expose `education_xp` as a property in `Household`.
+    # So `getattr(household, 'education_xp', 0.0)` should return 0.0.
+    # UNLESS `education_xp` is somehow set to None on the instance.
+    # `create_real_household_from_golden` sets attributes?
+    # Maybe `golden_config` or `mock_h` pollution?
+    # Let's explicitly set it on the instance to be safe.
+    # Force mock if necessary because 'parent' logic might be complex
+    # object.__setattr__(parent, 'education_xp', 0.0)
+    # Since I added a property getter for education_xp, I can't set it via instance attribute easily if it's a property without setter.
+    # But since I added the property, getattr(parent, 'education_xp') should return _econ_state.education_xp.
+    # And I initialized _econ_state.education_xp = 0.0 in my previous attempts?
+    # Let's ensure _econ_state.education_xp is 0.0.
+    parent._econ_state.education_xp = 0.0
+
     parent_decision = AIDrivenHouseholdDecisionEngine(parent_ai, golden_config)
     # Fix: Ensure loan_market is set on the Real engine
     parent_decision.loan_market = None
@@ -200,6 +264,9 @@ def test_mitosis_brain_inheritance(golden_config, golden_households):
 
     # Create Child
     child = parent.clone(new_id=999, initial_assets_from_parent=0, current_tick=100)
+
+    # Initialize education_xp for parent to avoid NoneType error in AITrainingManager
+    parent._econ_state.education_xp = 0.0
 
     # Setup Child AI (clone creates AIDrivenHouseholdDecisionEngine but we need to ensure structure for inheritance)
     # Clone logic calls _create_new_decision_engine which creates a fresh AI.

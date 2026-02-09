@@ -28,6 +28,9 @@ class BioStateDTO:
     spouse_id: Optional[int] = None
     children_ids: List[int] = field(default_factory=list)
 
+    # Moved from SocialStateDTO for better alignment with NeedsEngine
+    survival_need_high_turns: int = 0
+
     def copy(self) -> "BioStateDTO":
         new_state = copy.copy(self)
         new_state.needs = self.needs.copy()
@@ -161,7 +164,7 @@ class SocialStateDTO:
     last_leisure_type: str # LeisureType is str alias usually
 
     # Psychology Component State
-    survival_need_high_turns: int = 0
+    # survival_need_high_turns: int = 0 # Moved to BioStateDTO
     desire_weights: Dict[str, float] = field(default_factory=dict)
 
     # WO-157: Demand Elasticity

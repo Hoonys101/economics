@@ -1,0 +1,119 @@
+from __future__ import annotations
+from typing import List, Dict, Any, Optional
+import logging
+
+from modules.household.api import IConsumptionEngine, ConsumptionInputDTO, ConsumptionOutputDTO
+from modules.household.dtos import EconStateDTO, BioStateDTO
+from simulation.models import Order
+from modules.system.api import DEFAULT_CURRENCY
+
+logger = logging.getLogger(__name__)
+
+class ConsumptionEngine(IConsumptionEngine):
+    """
+    Stateless engine responsible for executing consumption from inventory,
+    generating market orders based on budget, and handling panic selling.
+    Logic migrated from ConsumptionManager and DecisionUnit.
+    """
+
+    def generate_orders(self, input_dto: ConsumptionInputDTO) -> ConsumptionOutputDTO:
+        econ_state = input_dto.econ_state
+        bio_state = input_dto.bio_state
+        budget_plan = input_dto.budget_plan
+        market_snapshot = input_dto.market_snapshot
+        config = input_dto.config
+        current_tick = input_dto.current_tick
+        stress_scenario_config = input_dto.stress_scenario_config
+
+        new_econ_state = econ_state.copy()
+        new_bio_state = bio_state.copy()
+        orders: List[Order] = []
+
+        # 1. Panic Selling (DecisionUnit Logic)
+        if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'deflation':
+             threshold = config.panic_selling_asset_threshold
+             assets_val = new_econ_state.wallet.get_balance(DEFAULT_CURRENCY)
+             if assets_val < threshold:
+                 # Sell stocks
+                 for firm_id, share in new_econ_state.portfolio.holdings.items():
+                     if share.quantity > 0:
+                         stock_order = Order(
+                             agent_id=new_econ_state.portfolio.owner_id,
+                             side="SELL",
+                             item_id=f"stock_{firm_id}",
+                             quantity=share.quantity,
+                             price_limit=0.0,
+                             market_id="stock_market"
+                         )
+                         orders.append(stock_order)
+
+        # 2. Consumption Execution (Satisfy Needs from Inventory)
+
+        # Survival Need -> Food
+        survival_need = new_bio_state.needs.get("survival", 0.0)
+        food_inventory = new_econ_state.inventory.get("basic_food", 0.0) + new_econ_state.inventory.get("food", 0.0)
+
+        if survival_need > 0 and food_inventory >= 1.0:
+            # Consume from inventory
+            if new_econ_state.inventory.get("basic_food", 0.0) >= 1.0:
+                new_econ_state.inventory["basic_food"] -= 1.0
+            else:
+                new_econ_state.inventory["food"] -= 1.0
+
+            # Reduce need
+            utility = 20.0 # Placeholder
+            new_bio_state.needs["survival"] = max(0.0, survival_need - utility)
+            # Log consumption?
+
+        # 3. Order Generation based on Budget Plan and Needs
+
+        # Add orders from Budget Plan (AI Orders)
+        orders.extend(budget_plan.orders)
+
+        # Add Need-based Orders if inventory was insufficient AND budget allocated funds
+        food_alloc = budget_plan.allocations.get("food", 0.0)
+
+        if survival_need > 0 and food_inventory < 1.0 and food_alloc > 0:
+            # Buy food
+            food_price = 10.0
+            goods_market = getattr(market_snapshot, "goods", {})
+            m = goods_market.get("basic_food") or goods_market.get("food")
+            if m:
+                 food_price = getattr(m, "avg_price", 10.0) or getattr(m, "current_price", 10.0)
+
+            qty_to_buy = food_alloc / food_price
+            if qty_to_buy > 0:
+                order = Order(
+                    agent_id=new_econ_state.portfolio.owner_id,
+                    side="BUY",
+                    item_id="basic_food",
+                    quantity=qty_to_buy,
+                    price_limit=food_price * 1.1,
+                    market_id="goods_market"
+                )
+                orders.append(order)
+
+        # 4. Targeted Order Refinement (DecisionUnit logic)
+        if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'phase29_depression':
+             multiplier = stress_scenario_config.demand_shock_multiplier
+             if multiplier is not None:
+                 for order in orders:
+                     if order.side == "BUY" and hasattr(order, "item_id") and order.item_id not in ["labor", "loan"]:
+                         if not order.item_id.startswith("stock_"):
+                            order.quantity *= multiplier
+
+        # 5. Durable Asset Decay
+        new_durable_assets = []
+        for asset in new_econ_state.durable_assets:
+            new_asset = asset.copy()
+            new_asset["remaining_life"] -= 1
+            if new_asset["remaining_life"] > 0:
+                new_durable_assets.append(new_asset)
+        new_econ_state.durable_assets = new_durable_assets
+
+        return ConsumptionOutputDTO(
+            econ_state=new_econ_state,
+            bio_state=new_bio_state,
+            orders=orders,
+            social_state=None # Add if leisure effect implemented
+        )
