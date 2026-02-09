@@ -1,10 +1,24 @@
 "use client";
 
 import { useWatchtowerStore } from "@/store/useWatchtowerStore";
-import { Activity, AlertTriangle, TrendingUp, Users } from "lucide-react";
+import { Activity, AlertTriangle, TrendingUp, Users, Play, Pause, FastForward, Settings } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function OverviewPage() {
-  const { snapshot, isConnected, endpoint } = useWatchtowerStore();
+  const { snapshot, isConnected, commandConnected, sendCommand, endpoint } = useWatchtowerStore();
+
+  // Local state for sliders to ensure smooth dragging
+  const [baseRate, setBaseRate] = useState(0.05);
+
+  // Sync local state with snapshot when it arrives (optional, but good for initial load)
+  useEffect(() => {
+    if (snapshot) {
+        // If we wanted to sync the slider to the actual simulation state:
+        // setBaseRate(snapshot.monetary.base_rate);
+        // But for "commanding", we might want it to stay where we put it.
+        // Let's just use the default or last set value for now.
+    }
+  }, [snapshot]);
 
   if (!isConnected || !snapshot) {
     return (
@@ -20,9 +34,52 @@ export default function OverviewPage() {
 
   const { system_integrity, macro_economy, politics } = snapshot;
 
+  const handleBaseRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = parseFloat(e.target.value);
+      setBaseRate(val);
+      sendCommand("SET_BASE_RATE", { rate: val });
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Mission Control</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Mission Control</h1>
+        <div className="flex space-x-2">
+            <button onClick={() => sendCommand("PAUSE")} className="p-2 bg-yellow-500 text-white rounded hover:bg-yellow-600" title="Pause"><Pause size={20}/></button>
+            <button onClick={() => sendCommand("RESUME")} className="p-2 bg-green-500 text-white rounded hover:bg-green-600" title="Resume"><Play size={20}/></button>
+            <button onClick={() => sendCommand("STEP")} className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600" title="Step"><FastForward size={20}/></button>
+        </div>
+      </div>
+
+      {/* Control Panel */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold flex items-center"><Settings className="mr-2"/> Active Controls</h3>
+              <span className={`text-xs px-2 py-1 rounded ${commandConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  {commandConnected ? 'Connected' : 'Disconnected'}
+              </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Central Bank Base Rate: {(baseRate * 100).toFixed(1)}%
+                  </label>
+                  <input
+                      type="range"
+                      min="0.0"
+                      max="0.2"
+                      step="0.005"
+                      value={baseRate}
+                      onChange={handleBaseRateChange}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>0%</span>
+                      <span>20%</span>
+                  </div>
+              </div>
+          </div>
+      </div>
 
       {/* Alert Banner if Leak */}
       {system_integrity.m2_leak !== 0 && (

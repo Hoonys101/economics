@@ -23,7 +23,7 @@ class Phase_Production(IPhaseStrategy):
 
         # 1. Calculate Human Capital Index
         active_households_dto = [
-            HouseholdEducationDTO(is_active=h._bio_state.is_active, education_level=getattr(h, 'education_level', 0))
+            HouseholdEducationDTO(is_active=h._bio_state.is_active, education_level=getattr(h, 'education_level', 0) or 0)
             for h in state.households if h._bio_state.is_active
         ]
 
