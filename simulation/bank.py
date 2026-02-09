@@ -4,7 +4,8 @@ import math
 from modules.common.config_manager.api import ConfigManager
 from modules.finance.api import (
     InsufficientFundsError,
-    IBankService,
+    IBank,
+    IBankService, # Alias
     LoanInfoDTO,
     DebtStatusDTO,
     LoanNotFoundError,
@@ -16,7 +17,9 @@ from modules.finance.api import (
     IDepositManager,
     IShareholderRegistry,
     IPortfolioHandler,
-    ICreditFrozen
+    ICreditFrozen,
+    IFinancialAgent,
+    IFinancialEntity
 )
 from modules.simulation.api import IEducated
 from modules.finance.managers.loan_manager import LoanManager
@@ -38,13 +41,12 @@ logger = logging.getLogger(__name__)
 _DEFAULT_TICKS_PER_YEAR = 365.0
 _DEFAULT_INITIAL_BASE_ANNUAL_RATE = 0.03
 
-from modules.finance.api import IFinancialEntity
-
-class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
+class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     """
     Phase 3: Central & Commercial Bank Hybrid System.
     WO-109: Refactored for Sacred Sequence (Transactions).
     TD-274: Decomposed into LoanManager and DepositManager Facade.
+    PH9.2: Implements IBank & IFinancialAgent for Protocol Purity.
     """
 
     def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager,
@@ -96,6 +98,8 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
     def wallet(self) -> IWallet:
         return self._wallet
 
+    # --- IFinancialEntity Implementation (Deprecated/Legacy) ---
+
     @property
     def assets(self) -> float:
         """
@@ -103,8 +107,28 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
         """
         return self._wallet.get_balance(DEFAULT_CURRENCY)
 
+    # --- IFinancialAgent Implementation ---
+
+    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        if amount <= 0:
+            raise ValueError("Deposit amount must be positive.")
+        self._wallet.add(amount, currency, memo="Deposit")
+
+    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        if amount <= 0:
+            raise ValueError("Withdrawal amount must be positive.")
+        self._wallet.subtract(amount, currency, memo="Withdraw")
+
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
+        """
+        Returns the Bank's OWN funds (Reserves/Equity).
+        Implements IFinancialAgent.get_balance.
+        """
+        return self._wallet.get_balance(currency)
+
+    # --- ICurrencyHolder Implementation ---
+
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
-        """Implementation of ICurrencyHolder."""
         return self._wallet.get_all_balances()
 
     def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
@@ -131,7 +155,7 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
         self.base_rate = new_rate
         logger.info(f"MONETARY_POLICY | Base Rate updated: {self.base_rate:.2%}")
 
-    # --- IBankService Implementation ---
+    # --- IBank Implementation ---
 
     def grant_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanInfoDTO, Transaction]]:
         """
@@ -233,9 +257,13 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
         # Delegate to LoanManager (Protocol guaranteed)
         return self.loan_manager.repay_loan(loan_id, amount)
 
-    def get_balance(self, account_id: str) -> float:
+    def get_customer_balance(self, agent_id: str) -> float:
+        """
+        Retrieves the current balance for a given CUSTOMER account (deposit).
+        Renamed from get_balance to avoid conflict with IFinancialAgent.get_balance.
+        """
         try:
-            aid_int = int(account_id)
+            aid_int = int(agent_id)
             return self.deposit_manager.get_balance(aid_int)
         except ValueError:
             return 0.0
@@ -300,16 +328,6 @@ class Bank(IBankService, ICurrencyHolder, IFinancialEntity):
             return False
 
         return True
-
-    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        if amount <= 0:
-            raise ValueError("Deposit amount must be positive.")
-        self._wallet.add(amount, currency, memo="Deposit")
-
-    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        if amount <= 0:
-            raise ValueError("Withdrawal amount must be positive.")
-        self._wallet.subtract(amount, currency, memo="Withdraw")
 
     def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
         loans = self.loan_manager.get_loans_for_agent(agent_id)

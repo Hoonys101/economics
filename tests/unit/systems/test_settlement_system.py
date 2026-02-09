@@ -1,12 +1,13 @@
 import pytest
 from unittest.mock import MagicMock, PropertyMock, patch
 from simulation.systems.settlement_system import SettlementSystem
-from modules.finance.api import IFinancialEntity, InsufficientFundsError
+from modules.finance.api import IFinancialEntity, IFinancialAgent, IBank, InsufficientFundsError
 from modules.system.constants import ID_CENTRAL_BANK
+from modules.system.api import DEFAULT_CURRENCY
 
 from modules.finance.api import IPortfolioHandler, IHeirProvider, PortfolioDTO, PortfolioAsset
 
-class MockAgent(IFinancialEntity, IPortfolioHandler, IHeirProvider):
+class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
     def __init__(self, agent_id, assets=0.0, heir_id=None):
         self._id = agent_id
         self._assets = float(assets)
@@ -15,7 +16,7 @@ class MockAgent(IFinancialEntity, IPortfolioHandler, IHeirProvider):
 
         # Mock wallet to satisfy SettlementSystem checks
         self._wallet = MagicMock()
-        self._wallet.get_balance.side_effect = lambda c=None: self._assets
+        self._wallet.get_balance.side_effect = lambda c=DEFAULT_CURRENCY: self._assets if c == DEFAULT_CURRENCY else 0.0
         self._wallet.owner_id = self._id
 
     @property
@@ -30,13 +31,24 @@ class MockAgent(IFinancialEntity, IPortfolioHandler, IHeirProvider):
     def assets(self):
         return self._assets
 
-    def withdraw(self, amount, currency="USD"):
+    def withdraw(self, amount, currency=DEFAULT_CURRENCY):
+        if currency != DEFAULT_CURRENCY:
+             raise ValueError("MockAgent only supports USD")
         if self._assets < amount:
             raise InsufficientFundsError("Insufficient funds")
         self._assets -= amount
 
-    def deposit(self, amount, currency="USD"):
-        self._assets += amount
+    def deposit(self, amount, currency=DEFAULT_CURRENCY):
+        if currency != DEFAULT_CURRENCY:
+             # Just ignore other currencies for simple tests or store them if needed
+             pass
+        else:
+             self._assets += amount
+
+    def get_balance(self, currency=DEFAULT_CURRENCY) -> float:
+        if currency == DEFAULT_CURRENCY:
+            return self._assets
+        return 0.0
 
     def _add_assets(self, amount):
         self.deposit(amount)
@@ -58,14 +70,31 @@ class MockAgent(IFinancialEntity, IPortfolioHandler, IHeirProvider):
 
 class MockCentralBank(MockAgent):
     # Central Bank can withdraw infinitely (negative assets allowed for tracking)
-    def withdraw(self, amount, currency="USD"):
+    def withdraw(self, amount, currency=DEFAULT_CURRENCY):
         self._assets -= amount
 
-class MockBank:
+class MockBank(IBank):
     def __init__(self):
+        self.id = 999
         self.accounts = {}
+        self.own_assets = 10000.0
 
-    def get_balance(self, agent_id: str) -> float:
+    # IFinancialAgent impl
+    def deposit(self, amount: float, currency: str = DEFAULT_CURRENCY) -> None:
+        if currency == DEFAULT_CURRENCY:
+            self.own_assets += amount
+
+    def withdraw(self, amount: float, currency: str = DEFAULT_CURRENCY) -> None:
+        if currency == DEFAULT_CURRENCY:
+            self.own_assets -= amount
+
+    def get_balance(self, currency: str = DEFAULT_CURRENCY) -> float:
+        if currency == DEFAULT_CURRENCY:
+            return self.own_assets
+        return 0.0
+
+    # IBank impl
+    def get_customer_balance(self, agent_id: str) -> float:
         return self.accounts.get(str(agent_id), 0.0)
 
     def withdraw_for_customer(self, agent_id: int, amount: float) -> bool:
@@ -79,6 +108,13 @@ class MockBank:
     def deposit_for_customer(self, agent_id: int, amount: float):
         str_id = str(agent_id)
         self.accounts[str_id] = self.accounts.get(str_id, 0.0) + amount
+
+    # Stub other IBank methods
+    def grant_loan(self, *args, **kwargs): return None
+    def stage_loan(self, *args, **kwargs): return None
+    def repay_loan(self, *args, **kwargs): return True
+    def get_debt_status(self, *args, **kwargs): return {}
+    def terminate_loan(self, *args, **kwargs): return None
 
 @pytest.fixture
 def mock_bank():
@@ -178,7 +214,7 @@ def test_record_liquidation_escheatment(settlement_system):
 
 def test_transfer_rollback(settlement_system):
     class FaultyAgent(MockAgent):
-        def deposit(self, amount):
+        def deposit(self, amount, currency=DEFAULT_CURRENCY):
             raise Exception("Deposit Failed")
 
     sender = MockAgent(1, 100.0)
@@ -264,7 +300,7 @@ def test_transfer_seamless_success(settlement_system, mock_bank):
 
     assert tx is not None
     assert sender.assets == 0.0 # Cash drained
-    assert mock_bank.get_balance("1") == 60.0 # 100 - (50 - 10) = 60
+    assert mock_bank.get_customer_balance("1") == 60.0 # 100 - (50 - 10) = 60
     assert receiver.assets == 50.0
 
 def test_transfer_seamless_fail_bank(settlement_system, mock_bank):
@@ -277,7 +313,7 @@ def test_transfer_seamless_fail_bank(settlement_system, mock_bank):
 
     assert tx is None
     assert sender.assets == 10.0 # Untouched (due to check)
-    assert mock_bank.get_balance("1") == 10.0
+    assert mock_bank.get_customer_balance("1") == 10.0
     assert receiver.assets == 0.0
 
 def test_execute_multiparty_settlement_success(settlement_system):
@@ -307,17 +343,7 @@ def test_execute_multiparty_settlement_rollback(settlement_system):
     transfers = [
         (agent_a, agent_b, 50.0), # This succeeds initially
         (agent_b, agent_c, 200.0) # This fails (150 vs 200? No, check is done per transfer.)
-        # Wait, if done sequentially:
-        # 1. A->B: A=50, B=150.
-        # 2. B->C: B=150. If transfer 200 -> Fail.
-        # So rollback A->B.
     ]
-
-    # Note: MockAgent withdraw checks balance.
-    # But wait, settlement_system.transfer calls withdraw.
-    # In seq: A withdraws 50 (OK). B deposits 50 (OK).
-    # Then B withdraws 200 (Fail, has 150).
-    # Rollback: B withdraws 50 (OK). A deposits 50 (OK).
 
     success = settlement_system.execute_multiparty_settlement(transfers, tick=1)
 
@@ -364,7 +390,7 @@ def test_settle_atomic_rollback(settlement_system):
 def test_settle_atomic_credit_fail_rollback(settlement_system):
     # A pays Faulty 50. A has 100.
     class FaultyAgent(MockAgent):
-        def deposit(self, amount):
+        def deposit(self, amount, currency=DEFAULT_CURRENCY):
             raise Exception("Deposit Fail")
 
     agent_a = MockAgent("A", 100.0)
@@ -423,4 +449,3 @@ def test_escheatment_portfolio_transfer(settlement_system):
     assert len(gov.portfolio.assets) == 1
     assert gov.portfolio.assets[0].asset_id == "GOV_TEST"
     assert len(account.escrow_portfolio.assets) == 0
-

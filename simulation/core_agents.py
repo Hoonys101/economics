@@ -22,7 +22,7 @@ from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IOrchest
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.systems.api import LifecycleContext, MarketInteractionContext, LearningUpdateContext, ILearningAgent
-from modules.finance.api import IFinancialEntity, ICreditFrozen
+from modules.finance.api import IFinancialEntity, IFinancialAgent, ICreditFrozen
 from modules.simulation.api import IEducated
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.finance.wallet.wallet import Wallet
@@ -72,6 +72,7 @@ class Household(
     IEmployeeDataProvider,
     IEducated,
     IFinancialEntity,
+    IFinancialAgent,
     IOrchestratorAgent,
     ICreditFrozen,
     IInventoryHandler
@@ -377,18 +378,22 @@ class Household(
         return self._econ_state.wallet.get_balance(DEFAULT_CURRENCY)
 
     @override
-    def deposit(self, amount: float) -> None:
+    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
-        Deposits a given amount of DEFAULT_CURRENCY into the wallet.
+        Deposits a given amount of currency into the wallet.
         """
-        self._econ_state.wallet.add(amount, currency=DEFAULT_CURRENCY, memo="Deposit")
+        self._econ_state.wallet.add(amount, currency=currency, memo="Deposit")
 
     @override
-    def withdraw(self, amount: float) -> None:
+    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
-        Withdraws a given amount of DEFAULT_CURRENCY from the wallet.
+        Withdraws a given amount of currency from the wallet.
         """
-        self._econ_state.wallet.subtract(amount, currency=DEFAULT_CURRENCY, memo="Withdraw")
+        self._econ_state.wallet.subtract(amount, currency=currency, memo="Withdraw")
+
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
+        """Implements IFinancialAgent.get_balance."""
+        return self._econ_state.wallet.get_balance(currency)
 
     @override
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:

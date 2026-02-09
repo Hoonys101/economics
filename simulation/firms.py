@@ -27,7 +27,7 @@ from simulation.components.engines.sales_engine import SalesEngine
 from simulation.dtos.context_dtos import PayrollProcessingContext, FinancialTransactionContext, SalesContext
 
 from simulation.utils.shadow_logger import log_shadow
-from modules.finance.api import InsufficientFundsError, IFinancialEntity, ICreditFrozen
+from modules.finance.api import InsufficientFundsError, IFinancialEntity, IFinancialAgent, ICreditFrozen
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
 from modules.finance.wallet.wallet import Wallet
 from modules.inventory.manager import InventoryManager
@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(ILearningAgent, IFinancialEntity, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder):
+class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder):
     """
     Firm Agent (Orchestrator).
     Manages state and delegates logic to stateless engines.
@@ -801,17 +801,21 @@ class Firm(ILearningAgent, IFinancialEntity, IOrchestratorAgent, ICreditFrozen, 
         return self.wallet.get_balance(DEFAULT_CURRENCY)
 
     @override
-    def deposit(self, amount: float) -> None:
-         self.wallet.add(amount, DEFAULT_CURRENCY)
+    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         self.wallet.add(amount, currency)
 
     @override
-    def withdraw(self, amount: float) -> None:
-         current_bal = self.wallet.get_balance(DEFAULT_CURRENCY)
+    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         current_bal = self.wallet.get_balance(currency)
          if current_bal < amount:
             raise InsufficientFundsError(
-                f"Insufficient funds", required=MoneyDTO(amount=amount, currency=DEFAULT_CURRENCY), available=MoneyDTO(amount=current_bal, currency=DEFAULT_CURRENCY)
+                f"Insufficient funds", required=MoneyDTO(amount=amount, currency=currency), available=MoneyDTO(amount=current_bal, currency=currency)
             )
-         self.wallet.subtract(amount, DEFAULT_CURRENCY)
+         self.wallet.subtract(amount, currency)
+
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
+        """Implements IFinancialAgent.get_balance."""
+        return self.wallet.get_balance(currency)
 
     @override
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:

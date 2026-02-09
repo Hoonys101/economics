@@ -5,14 +5,13 @@ import abc
 from abc import ABC, abstractmethod
 from uuid import UUID
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO, LoanApplicationDTO, LoanDTO, DepositDTO
-from modules.system.api import MarketContextDTO
+from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY, CurrencyCode
 
 if TYPE_CHECKING:
     from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
     from simulation.models import Order, Transaction
     from modules.common.dtos import Claim
     from modules.finance.wallet.api import IWallet
-    from modules.system.api import CurrencyCode
 
 # Forward reference for type hinting
 class Firm: pass
@@ -248,6 +247,7 @@ class IFinancialEntity(Protocol):
     """
     Protocol for any entity that possesses assets and participates in financial transactions.
     Native implementation operates exclusively on DEFAULT_CURRENCY.
+    DEPRECATED: Prefer IFinancialAgent for multi-currency support.
     """
     id: int
 
@@ -269,26 +269,41 @@ class IFinancialEntity(Protocol):
         """
         ...
 
-class IBankService(IFinancialEntity, Protocol):
+@runtime_checkable
+class IFinancialAgent(Protocol):
+    """
+    Strict protocol for any agent participating in the financial system.
+    Supports multi-currency operations and replaces direct attribute access.
+    """
+    id: int
+
+    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Deposits a specific amount of a given currency."""
+        ...
+
+    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """
+        Withdraws a specific amount of a given currency.
+        Raises InsufficientFundsError if funds are insufficient.
+        """
+        ...
+
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
+        """Returns the current balance for the specified currency."""
+        ...
+
+
+class IBank(IFinancialAgent, Protocol):
     """
     Interface for commercial and central banks, providing core banking services.
     Designed to be used as a dependency for Household and Firm agents.
+    Inherits IFinancialAgent for its own equity/reserves management.
     """
 
     @abc.abstractmethod
     def grant_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
         """
         Grants a loan to a borrower.
-
-        Args:
-            borrower_id: The ID of the entity receiving the loan (Household or Firm).
-            amount: The principal amount of the loan.
-            interest_rate: The annual interest rate for the loan.
-            due_tick: Optional. The simulation tick when the loan is due. If None, it's an open-ended loan.
-            borrower_profile: Optional. DTO with financial data for credit scoring.
-
-        Returns:
-            A LoanInfoDTO if the loan is successfully granted, otherwise None.
         """
         ...
 
@@ -296,17 +311,6 @@ class IBankService(IFinancialEntity, Protocol):
     def stage_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
         """
         Creates a loan record but does not disburse funds (no deposit creation).
-        Used for atomic settlements where funds are transferred directly from Bank Reserves via SettlementSystem.
-
-        Args:
-            borrower_id: The ID of the entity receiving the loan.
-            amount: The principal amount.
-            interest_rate: The annual interest rate.
-            due_tick: Optional due tick.
-            borrower_profile: Optional credit scoring profile.
-
-        Returns:
-            A LoanInfoDTO if the loan is successfully staged, otherwise None.
         """
         ...
 
@@ -314,30 +318,14 @@ class IBankService(IFinancialEntity, Protocol):
     def repay_loan(self, loan_id: str, amount: float) -> bool:
         """
         Repays a portion or the full amount of a specific loan.
-
-        Args:
-            loan_id: The unique identifier of the loan to be repaid.
-            amount: The amount to repay.
-
-        Returns:
-            True if the repayment is successful and the loan is updated, False otherwise.
-
-        Raises:
-            LoanNotFoundError: If the loan_id does not correspond to an active loan.
-            LoanRepaymentError: If there's an issue processing the repayment (e.g., negative amount).
         """
         ...
 
     @abc.abstractmethod
-    def get_balance(self, account_id: str) -> float:
+    def get_customer_balance(self, agent_id: str) -> float:
         """
-        Retrieves the current balance for a given account.
-
-        Args:
-            account_id: The ID of the account owner (Household or Firm).
-
-        Returns:
-            The current monetary balance of the account.
+        Retrieves the current balance for a given CUSTOMER account (deposit).
+        Use get_balance(currency) for the Bank's own funds.
         """
         ...
 
@@ -345,12 +333,6 @@ class IBankService(IFinancialEntity, Protocol):
     def get_debt_status(self, borrower_id: str) -> DebtStatusDTO:
         """
         Retrieves the comprehensive debt status for a given borrower.
-
-        Args:
-            borrower_id: The ID of the entity whose debt status is requested.
-
-        Returns:
-            A DebtStatusDTO containing details about all outstanding loans and overall debt.
         """
         ...
 
@@ -358,9 +340,18 @@ class IBankService(IFinancialEntity, Protocol):
     def terminate_loan(self, loan_id: str) -> Optional["Transaction"]:
         """
         Forcefully terminates a loan (e.g. foreclosure or voiding).
-        Returns a credit_destruction transaction if balance was > 0.
         """
         ...
+
+    @abc.abstractmethod
+    def withdraw_for_customer(self, agent_id: int, amount: float) -> bool:
+        """
+        Withdraws funds from a customer's deposit account.
+        """
+        ...
+
+# Alias for backward compatibility during refactor
+IBankService = IBank
 
 class IFiscalMonitor(Protocol):
     """Interface for the fiscal health analysis component."""

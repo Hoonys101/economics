@@ -13,7 +13,7 @@ from simulation.utils.shadow_logger import log_shadow
 from simulation.models import Transaction
 from simulation.systems.ministry_of_education import MinistryOfEducation
 from simulation.portfolio import Portfolio
-from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset, IFinancialEntity
+from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset, IFinancialEntity, IFinancialAgent
 from modules.government.dtos import (
     FiscalPolicyDTO,
     PaymentRequestDTO,
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Government(ICurrencyHolder, IFinancialEntity):
+class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent):
     """
     정부 에이전트. 세금을 징수하고 보조금을 지급하거나 인프라에 투자합니다.
     """
@@ -667,6 +667,10 @@ class Government(ICurrencyHolder, IFinancialEntity):
             raise ValueError("Withdrawal amount must be positive.")
         # Wallet checks sufficiency
         self.wallet.subtract(amount, currency)
+
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
+        """Implements IFinancialAgent.get_balance."""
+        return self.wallet.get_balance(currency)
 
     # WO-054: Public Education System
     def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int) -> List[Transaction]:
