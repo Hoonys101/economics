@@ -1,0 +1,621 @@
+diff --git a/communications/insights/TD-269_Liquidation_Refactor_Insight.md b/communications/insights/TD-269_Liquidation_Refactor_Insight.md
+new file mode 100644
+index 00000000..ddcf1c73
+--- /dev/null
++++ b/communications/insights/TD-269_Liquidation_Refactor_Insight.md
+@@ -0,0 +1,39 @@
++# Technical Insight: LiquidationManager Refactoring (TD-269)
++
++## 1. Problem Phenomenon
++The `LiquidationManager` was tightly coupled to the internal implementation of the `Firm` agent, specifically relying on the `firm.finance` attribute. This caused failures in verification scripts like `audit_zero_sum.py` when they encountered `Firm` instances that had been refactored to use a composition-based architecture (where `finance` was replaced by `finance_state` and `finance_engine`).
++
++**Symptoms:**
++- `AttributeError: 'Firm' object has no attribute 'finance'` in `LiquidationManager.initiate_liquidation`.
++- `audit_zero_sum.py` failing to complete the liquidation escheatment check.
++- `TaxService` and `HRService` attempting to access non-existent `firm.finance` and `firm.hr` attributes.
++
++## 2. Root Cause Analysis
++- **Violations of Law of Demeter:** `LiquidationManager` was accessing deep internal state of `Firm` (`firm.finance.total_debt`, `firm.decision_engine.loan_market.bank`).
++- **Legacy Dependencies:** Auxiliary services (`HRService`, `TaxService`) were not updated to reflect the architectural shift from "Components" (`firm.hr`) to "State+Engine" (`firm.hr_state`, `firm.hr_engine`).
++- **Missing Abstraction:** There was no formal contract defining how an entity should be liquidated, leading to ad-hoc attribute checks (`hasattr(firm, 'finance')`).
++
++## 3. Solution Implementation Details
++To resolve this, we introduced a protocol-based abstraction layer:
++
++1.  **`ILiquidatable` Protocol**: Defined in `modules/finance/api.py`. This protocol enforces a contract for any agent that can be liquidated, requiring methods to:
++    -   `liquidate_assets(current_tick)`: Write off non-cash assets.
++    -   `get_all_claims(ctx)`: return a list of standardized `Claim` objects (Tier 1-4).
++    -   `get_equity_stakes(ctx)`: Return a list of `EquityStake` objects (Tier 5).
++
++2.  **`LiquidationContext`**: A DTO to pass necessary services (`HRService`, `TaxService`, `ShareholderRegistry`) to the agent during liquidation, avoiding permanent coupling.
++
++3.  **Refactored `Firm`**: The `Firm` agent now implements `ILiquidatable`. It encapsulates the logic to gather claims from its internal state (`hr_state`, `finance_state`) and external services, exposing only the standardized data to `LiquidationManager`.
++
++4.  **Refactored `LiquidationManager`**:
++    -   Removed all `hasattr` checks and direct attribute access.
++    -   Now operates exclusively on the `ILiquidatable` interface.
++    -   Uses `ShareholderRegistry` injected via constructor to handle equity distribution, removing global state traversal.
++
++5.  **Service Fixes**: Updated `HRService` and `TaxService` to access `hr_state` and `finance_state` respectively, fixing the legacy crashes.
++
++## 4. Lessons Learned & Technical Debt Identified
++-   **Protocol vs. Implementation**: Defining clear protocols (`ILiquidatable`) is critical for decoupling systems. The previous tight coupling made refactoring `Firm` incredibly risky.
++-   **Dependency Injection**: Injecting `ShareholderRegistry` into `LiquidationManager` (and `AgentLifecycleManager`) clarified ownership and removed hidden dependencies on the global `SimulationState`.
++-   **Legacy Debt**: The `InventoryLiquidationHandler` still relies on run-time checks (`isinstance(agent, IInventoryHandler)`) and `getattr(agent, 'config')`. A future refactor should standardize `IConfigurable` or similar to remove `getattr`.
++-   **PublicManager Insolvency**: During verification, it was noted that `PublicManager` had 0 funds and failed to pay for liquidated inventory. This indicates a need to bootstrap `PublicManager` with funds or allow it to mint money for asset recovery (System Debt).
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 8b767839..6c75c529 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -12,6 +12,7 @@ if TYPE_CHECKING:
+     from simulation.models import Order, Transaction
+     from modules.common.dtos import Claim
+     from modules.finance.wallet.api import IWallet
++    from modules.hr.api import IHRService
+ 
+ # Forward reference for type hinting
+ class Firm: pass
+@@ -242,6 +243,49 @@ class ICreditScoringService(Protocol):
+         """
+         ...
+ 
++class EquityStake(TypedDict):
++    """Represents a shareholder's stake for Tier 5 distribution."""
++    shareholder_id: int
++    ratio: float # Proportional ownership, e.g., 0.1 for 10%
++
++@dataclass
++class LiquidationContext:
++    """Context object to supply necessary services for claim calculation."""
++    current_tick: int
++    hr_service: Optional[IHRService] = None
++    tax_service: Optional[Union[ITaxService, Any]] = None # Use Union[ITaxService, Any] to avoid forward ref issue if ITaxService not defined yet or use string
++    shareholder_registry: Optional[IShareholderRegistry] = None
++
++@runtime_checkable
++class ILiquidatable(Protocol):
++    """
++    An interface for any entity that can undergo a formal liquidation process.
++    Provides all necessary financial claims and asset information to a liquidator.
++    """
++    id: int
++
++    def liquidate_assets(self, current_tick: int) -> Dict[CurrencyCode, float]:
++        """
++        Performs internal write-offs of non-cash assets (inventory, capital)
++        and returns a dictionary of all remaining cash-equivalent assets by currency.
++        This signals the final step before cash distribution begins.
++        """
++        ...
++
++    def get_all_claims(self, ctx: LiquidationContext) -> List[Claim]:
++        """
++        Aggregates all non-equity claims (HR, Tax, Debt) against the entity.
++        The implementation is responsible for determining the amounts and creditors.
++        """
++        ...
++
++    def get_equity_stakes(self, ctx: LiquidationContext) -> List[EquityStake]:
++        """
++        Returns a list of all shareholders and their proportional stake for Tier 5 distribution.
++        An empty list signifies no equity holders.
++        """
++        ...
++
+ @runtime_checkable
+ class IFinancialEntity(Protocol):
+     """
+diff --git a/modules/finance/service.py b/modules/finance/service.py
+index dc8a3ae0..a47851c7 100644
+--- a/modules/finance/service.py
++++ b/modules/finance/service.py
+@@ -16,7 +16,7 @@ class TaxService(ITaxService):
+         claims = []
+         tax_rate = getattr(firm.config, "corporate_tax_rate", 0.0)
+ 
+-        current_profit_raw = firm.finance.current_profit
++        current_profit_raw = firm.finance_state.current_profit
+         current_profit = current_profit_raw
+         if isinstance(current_profit_raw, dict):
+             current_profit = current_profit_raw.get(DEFAULT_CURRENCY, 0.0)
+diff --git a/modules/hr/service.py b/modules/hr/service.py
+index 84da4b14..323b0e7b 100644
+--- a/modules/hr/service.py
++++ b/modules/hr/service.py
+@@ -14,8 +14,8 @@ class HRService(IHRService):
+         # A. Unpaid Wages
+         # Cap at 3 months (ticks_per_year / 4)
+         wage_cutoff_tick = current_tick - (ticks_per_year // 4)
+-        if hasattr(firm.hr, 'unpaid_wages'):
+-            for employee_id, wage_records in firm.hr.unpaid_wages.items():
++        if hasattr(firm.hr_state, 'unpaid_wages'):
++            for employee_id, wage_records in firm.hr_state.unpaid_wages.items():
+                 # Filter strict 3-month window
+                 total_unpaid = sum(amount for tick, amount in wage_records if tick >= wage_cutoff_tick)
+                 if total_unpaid > 0:
+@@ -31,7 +31,7 @@ class HRService(IHRService):
+         accrual_rate_weeks = getattr(firm.config, "severance_pay_weeks", 2.0)
+         ticks_per_week = ticks_per_year / 52.0
+ 
+-        for employee in firm.hr.employees:
++        for employee in firm.hr_state.employees:
+             # Calculate Tenure
+             start_tick = getattr(employee._econ_state, 'employment_start_tick', -1)
+             tenure_years = 0.0
+@@ -42,7 +42,7 @@ class HRService(IHRService):
+             effective_tenure = min(tenure_years, 3.0)
+ 
+             # Calculate Severance Amount
+-            current_wage = firm.hr.employee_wages.get(employee.id, 0.0)
++            current_wage = firm.hr_state.employee_wages.get(employee.id, 0.0)
+             if current_wage > 0:
+                 # Formula: Years * Weeks/Year * Ticks/Week * Wage/Tick
+                 severance_ticks = effective_tenure * accrual_rate_weeks * ticks_per_week
+diff --git a/scripts/audit_zero_sum.py b/scripts/audit_zero_sum.py
+index 02d03a3d..cda80f47 100644
+--- a/scripts/audit_zero_sum.py
++++ b/scripts/audit_zero_sum.py
+@@ -206,7 +206,8 @@ def audit_integrity():
+         ai_trainer=sim.ai_trainer,
+         next_agent_id=sim.next_agent_id,
+         real_estate_units=sim.real_estate_units,
+-        settlement_system=sim.world_state.settlement_system
++        settlement_system=sim.world_state.settlement_system,
++        shareholder_registry=sim.shareholder_registry if hasattr(sim, 'shareholder_registry') else None
+     )
+ 
+     # Run lifecycle manager
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 214c9920..a4505b67 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -27,7 +27,8 @@ from simulation.components.engines.sales_engine import SalesEngine
+ from simulation.dtos.context_dtos import PayrollProcessingContext, FinancialTransactionContext, SalesContext
+ 
+ from simulation.utils.shadow_logger import log_shadow
+-from modules.finance.api import InsufficientFundsError, IFinancialEntity, IFinancialAgent, ICreditFrozen
++from modules.finance.api import InsufficientFundsError, IFinancialEntity, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake
++from modules.common.dtos import Claim
+ from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
+ from modules.finance.wallet.wallet import Wallet
+ from modules.inventory.manager import InventoryManager
+@@ -46,7 +47,7 @@ if TYPE_CHECKING:
+ 
+ logger = logging.getLogger(__name__)
+ 
+-class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider):
++class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider):
+     """
+     Firm Agent (Orchestrator).
+     Manages state and delegates logic to stateless engines.
+@@ -366,6 +367,59 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, IOrchestratorAgent
+         """
+         self.finance_engine.record_expense(self.finance_state, amount, currency)
+ 
++    def get_all_claims(self, ctx: LiquidationContext) -> List[Claim]:
++        """
++        Implements ILiquidatable.get_all_claims.
++        Delegates to specialized helpers to gather all claims.
++        """
++        all_claims: List[Claim] = []
++
++        # 1. Get HR Claims (Tier 1)
++        if ctx.hr_service:
++            employee_claims = ctx.hr_service.calculate_liquidation_employee_claims(self, ctx.current_tick)
++            all_claims.extend(employee_claims)
++
++        # 2. Get Tax Claims (Tier 3)
++        if ctx.tax_service:
++            tax_claims = ctx.tax_service.calculate_liquidation_tax_claims(self)
++            all_claims.extend(tax_claims)
++
++        # 3. Get Secured Debt Claims (Tier 2)
++        # Abstracts away knowledge of LoanMarket
++        total_debt = self.finance_state.total_debt
++        bank_agent_id = "BANK_UNKNOWN" # Default
++        if self.decision_engine.loan_market and self.decision_engine.loan_market.bank:
++            bank_agent_id = self.decision_engine.loan_market.bank.id
++
++        if total_debt > 0:
++            all_claims.append(Claim(
++                creditor_id=bank_agent_id,
++                amount=total_debt,
++                tier=2,
++                description="Secured Loan"
++            ))
++
++        return all_claims
++
++    def get_equity_stakes(self, ctx: LiquidationContext) -> List[EquityStake]:
++        """
++        Implements ILiquidatable.get_equity_stakes.
++        Uses the Shareholder Registry to get ownership data.
++        """
++        if not ctx.shareholder_registry:
++            return []
++
++        shareholders = ctx.shareholder_registry.get_shareholders_of_firm(self.id)
++        outstanding_shares = self.total_shares - self.treasury_shares
++
++        if outstanding_shares <= 0:
++            return []
++
++        return [
++            EquityStake(shareholder_id=sh['agent_id'], ratio=sh['quantity'] / outstanding_shares)
++            for sh in shareholders
++        ]
++
+     def liquidate_assets(self, current_tick: int = -1) -> Dict[CurrencyCode, float]:
+         """Liquidate assets using Protocol Purity."""
+         # 1. Write off Inventory
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 0880b239..a3d5b88c 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -518,7 +518,8 @@ class SimulationInitializer(SimulationInitializerInterface):
+             firm_system=sim.firm_system,
+             settlement_system=sim.settlement_system,
+             public_manager=sim.public_manager,
+-            logger=self.logger
++            logger=self.logger,
++            shareholder_registry=sim.shareholder_registry
+         )
+ 
+         # Initialize New Systems (Social, Event, Sensory, Commerce, Labor)
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index 6bc1bd5b..f0eabb26 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -19,6 +19,7 @@ from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY, ICurrency
+ from modules.system.registry import AgentRegistry
+ from modules.hr.service import HRService
+ from modules.finance.service import TaxService
++from modules.finance.api import IShareholderRegistry
+ 
+ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+     """
+@@ -29,7 +30,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+ 
+     def __init__(self, config_module: Any, demographic_manager: DemographicManager,
+                  inheritance_manager: InheritanceManager, firm_system: FirmSystem,
+-                 settlement_system: ISettlementSystem, public_manager: IAssetRecoverySystem, logger: logging.Logger):
++                 settlement_system: ISettlementSystem, public_manager: IAssetRecoverySystem, logger: logging.Logger,
++                 shareholder_registry: IShareholderRegistry = None):
+         self.config = config_module
+         self.demographic_manager = demographic_manager
+         self.inheritance_manager = inheritance_manager
+@@ -37,6 +39,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+         self.settlement_system = settlement_system
+         self.public_manager = public_manager
+         self.immigration_manager = ImmigrationManager(config_module=config_module, settlement_system=settlement_system)
++        self.shareholder_registry = shareholder_registry
+ 
+         # Dependencies for LiquidationManager
+         self.agent_registry = AgentRegistry()
+@@ -49,6 +52,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+             self.hr_service,
+             self.tax_service,
+             self.agent_registry,
++            self.shareholder_registry,
+             public_manager
+         )
+ 
+diff --git a/simulation/systems/liquidation_handlers.py b/simulation/systems/liquidation_handlers.py
+index ea689daa..18670e43 100644
+--- a/simulation/systems/liquidation_handlers.py
++++ b/simulation/systems/liquidation_handlers.py
+@@ -1,7 +1,10 @@
++from __future__ import annotations
+ from abc import ABC, abstractmethod
+ from typing import TYPE_CHECKING, Dict, Any, Optional
+ import logging
+ from modules.system.api import DEFAULT_CURRENCY
++from modules.finance.api import ILiquidatable
++from modules.simulation.api import IInventoryHandler
+ 
+ if TYPE_CHECKING:
+     from simulation.firms import Firm
+@@ -16,7 +19,7 @@ class ILiquidationHandler(ABC):
+     Interface for asset-specific liquidation logic.
+     """
+     @abstractmethod
+-    def liquidate(self, firm: 'Firm', state: 'SimulationState') -> None:
++    def liquidate(self, agent: ILiquidatable, state: SimulationState) -> None:
+         """
+         Liquidates specific assets of the firm to generate cash.
+         """
+@@ -26,11 +29,11 @@ class InventoryLiquidationHandler(ILiquidationHandler):
+     """
+     Liquidates firm inventory by selling to PublicManager.
+     """
+-    def __init__(self, settlement_system: 'ISettlementSystem', public_manager: 'IAssetRecoverySystem'):
++    def __init__(self, settlement_system: ISettlementSystem, public_manager: IAssetRecoverySystem):
+         self.settlement_system = settlement_system
+         self.public_manager = public_manager
+ 
+-    def liquidate(self, firm: 'Firm', state: 'SimulationState') -> None:
++    def liquidate(self, agent: ILiquidatable, state: SimulationState) -> None:
+         """
+         Liquidates non-cash assets (Inventory) by selling them to the PublicManager.
+         This prevents the 'Asset-Rich Cash-Poor' leak.
+@@ -38,17 +41,28 @@ class InventoryLiquidationHandler(ILiquidationHandler):
+         if not self.public_manager:
+             return
+ 
++        # Check capability
++        if not isinstance(agent, IInventoryHandler):
++            return
++
++        # We treat 'agent' as the entity with inventory (Firm)
++        # We also need access to 'config' and 'last_prices' which are currently Firm-specific.
++        # Ideally, we would have IPricingProvider or similar, but for now getattr is safe.
++        firm = agent
++
+         # Calculate Total Value
+         total_value = 0.0
+ 
+         # Use last prices or default config price from firm's config
+         # Default price fallback: 10.0 if not found in config
+         default_price = 10.0
+-        if firm.config and hasattr(firm.config, "goods_initial_price") and isinstance(firm.config.goods_initial_price, dict):
+-             default_price = firm.config.goods_initial_price.get("default", 10.0)
++        config = getattr(firm, "config", None)
++
++        if config and hasattr(config, "goods_initial_price") and isinstance(config.goods_initial_price, dict):
++             default_price = config.goods_initial_price.get("default", 10.0)
+ 
+         # Configurable Haircut (Default 20%)
+-        haircut = getattr(firm.config, "liquidation_haircut", 0.2)
++        haircut = getattr(config, "liquidation_haircut", 0.2) if config else 0.2
+ 
+         inventory_transfer = {}
+         # Iterate over a copy to allow modification if needed (though we only read keys/values here)
+@@ -58,11 +72,14 @@ class InventoryLiquidationHandler(ILiquidationHandler):
+                 continue
+ 
+             # Determine fair value
+-            price = firm.last_prices.get(item_id, 0.0)
++            price = 0.0
++            if hasattr(firm, "last_prices") and isinstance(firm.last_prices, dict):
++                price = firm.last_prices.get(item_id, 0.0)
++
+             if price <= 0:
+                 # Fallback to configured initial price if available
+-                if firm.config and hasattr(firm.config, "goods") and isinstance(firm.config.goods, dict):
+-                     price = firm.config.goods.get(item_id, {}).get("initial_price", default_price)
++                if config and hasattr(config, "goods") and isinstance(config.goods, dict):
++                     price = config.goods.get(item_id, {}).get("initial_price", default_price)
+                 else:
+                      price = default_price
+ 
+@@ -79,12 +96,12 @@ class InventoryLiquidationHandler(ILiquidationHandler):
+                 self.public_manager,
+                 firm,
+                 total_value,
+-                f"Asset Liquidation (Inventory) - Firm {firm.id}",
++                f"Asset Liquidation (Inventory) - Agent {firm.id}",
+                 currency=DEFAULT_CURRENCY
+             )
+ 
+             if success:
+-                logger.info(f"LIQUIDATION_ASSET_SALE | Firm {firm.id} sold inventory to PublicManager for {total_value:.2f}.")
++                logger.info(f"LIQUIDATION_ASSET_SALE | Agent {firm.id} sold inventory to PublicManager for {total_value:.2f}.")
+ 
+                 # Transfer Inventory via Interface (Encapsulation)
+                 self.public_manager.receive_liquidated_assets(inventory_transfer)
+@@ -92,4 +109,4 @@ class InventoryLiquidationHandler(ILiquidationHandler):
+                 # Clear Firm Inventory
+                 firm.clear_inventory()
+             else:
+-                logger.error(f"LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay {total_value:.2f} to Firm {firm.id}.")
++                logger.error(f"LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay {total_value:.2f} to Agent {firm.id}.")
+diff --git a/simulation/systems/liquidation_manager.py b/simulation/systems/liquidation_manager.py
+index 286835ce..c75aaf33 100644
+--- a/simulation/systems/liquidation_manager.py
++++ b/simulation/systems/liquidation_manager.py
+@@ -4,6 +4,7 @@ import logging
+ from modules.common.dtos import Claim
+ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+ from simulation.systems.liquidation_handlers import InventoryLiquidationHandler, ILiquidationHandler
++from modules.finance.api import ILiquidatable, LiquidationContext
+ 
+ if TYPE_CHECKING:
+     from simulation.firms import Firm
+@@ -11,7 +12,7 @@ if TYPE_CHECKING:
+     from simulation.dtos.api import SimulationState
+     from modules.system.api import IAssetRecoverySystem, IAgentRegistry
+     from modules.hr.api import IHRService
+-    from modules.finance.api import ITaxService
++    from modules.finance.api import ITaxService, IShareholderRegistry
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -19,7 +20,7 @@ class LiquidationManager:
+     """
+     Manages the liquidation waterfall process for insolvent firms.
+     Implements TD-187 Protocol.
+-    Refactored to comply with SRP (WO-211).
++    Refactored to comply with SRP (WO-211) and TD-269 Protocol Purity.
+     """
+ 
+     def __init__(self,
+@@ -27,23 +28,26 @@ class LiquidationManager:
+                  hr_service: IHRService,
+                  tax_service: ITaxService,
+                  agent_registry: IAgentRegistry,
++                 shareholder_registry: IShareholderRegistry,
+                  public_manager: Optional[IAssetRecoverySystem] = None):
+         self.settlement_system = settlement_system
+         self.hr_service = hr_service
+         self.tax_service = tax_service
+         self.agent_registry = agent_registry
++        self.shareholder_registry = shareholder_registry
+         self.public_manager = public_manager
+ 
+         self.handlers: List[ILiquidationHandler] = []
+         if self.public_manager:
+             self.handlers.append(InventoryLiquidationHandler(self.settlement_system, self.public_manager))
+ 
+-    def initiate_liquidation(self, firm: Firm, state: SimulationState) -> None:
++    def initiate_liquidation(self, agent: ILiquidatable, state: SimulationState) -> None:
+         """
+         Executes the liquidation waterfall.
++        Refactored to use ILiquidatable protocol (TD-269).
+         """
+-        if not hasattr(firm, 'finance'):
+-            logger.error(f"LIQUIDATION_ERROR | Firm {firm.id} missing finance component.")
++        if not isinstance(agent, ILiquidatable):
++            logger.error(f"LIQUIDATION_ERROR | Agent {agent.id} does not implement ILiquidatable.")
+             return
+ 
+         current_tick = state.time
+@@ -51,53 +55,37 @@ class LiquidationManager:
+         # 0. Asset Liquidation (TD-187-LEAK Fix)
+         # Use registered handlers to liquidate assets (Sell-offs).
+         for handler in self.handlers:
+-            handler.liquidate(firm, state)
++            handler.liquidate(agent, state)
+ 
+         # 1. Firm Write-offs (WO-212 Atomicity)
+         # Write off remaining assets (Inventory, Capital Stock) and finalize bankruptcy.
+         # Returns the final cash balance for distribution.
+-        all_assets_dict = firm.liquidate_assets(state.time)
++        all_assets_dict = agent.liquidate_assets(state.time)
+ 
+         # TD-033: Handle Multi-Currency
+         available_cash = all_assets_dict.get(DEFAULT_CURRENCY, 0.0)
+         other_assets = {k: v for k, v in all_assets_dict.items() if k != DEFAULT_CURRENCY and v > 0}
+ 
+-        all_claims: List[Claim] = []
+-
+-        # 1. Get HR Claims (Tier 1)
+-        employee_claims = self.hr_service.calculate_liquidation_employee_claims(firm, current_tick)
+-        all_claims.extend(employee_claims)
+-
+-        # 2. Get Tax Claims (Tier 3)
+-        tax_claims = self.tax_service.calculate_liquidation_tax_claims(firm)
+-        all_claims.extend(tax_claims)
+-
+-        # 3. Get Secured Debt Claims (Tier 2)
+-        # Query firm.finance for secured debt (e.g., bank loans).
+-        total_debt = getattr(firm, 'total_debt', 0.0)
+-        bank_agent = None
+-        if hasattr(firm, 'decision_engine') and hasattr(firm.decision_engine, 'loan_market'):
+-            loan_market = firm.decision_engine.loan_market
+-            if loan_market and hasattr(loan_market, 'bank') and loan_market.bank:
+-                bank_agent = loan_market.bank
+-
+-        if total_debt > 0:
+-            all_claims.append(Claim(
+-                creditor_id=bank_agent.id if bank_agent else "BANK_UNKNOWN",
+-                amount=total_debt,
+-                tier=2,
+-                description="Secured Loan"
+-            ))
++        # 2. Build Liquidation Context
++        context = LiquidationContext(
++            current_tick=state.time,
++            hr_service=self.hr_service,
++            tax_service=self.tax_service,
++            shareholder_registry=self.shareholder_registry
++        )
++
++        # 3. Get all claims via the protocol
++        all_claims = agent.get_all_claims(context)
+ 
+         logger.info(
+-            f"LIQUIDATION_START | Firm {firm.id} starting liquidation. Assets: {available_cash:.2f}, Total Claims: {sum(c.amount for c in all_claims):.2f}",
+-            extra={"tick": current_tick, "agent_id": firm.id, "tags": ["liquidation", "waterfall"]}
++            f"LIQUIDATION_START | Agent {agent.id} starting liquidation. Assets: {available_cash:.2f}, Total Claims: {sum(c.amount for c in all_claims):.2f}",
++            extra={"tick": current_tick, "agent_id": agent.id, "tags": ["liquidation", "waterfall"]}
+         )
+ 
+         # 4. Execute Waterfall
+-        self.execute_waterfall(firm, all_claims, available_cash, state, other_assets)
++        self.execute_waterfall(agent, all_claims, available_cash, state, other_assets)
+ 
+-    def execute_waterfall(self, firm: Firm, claims: List[Claim], available_cash: float, state: SimulationState, other_assets: Dict[CurrencyCode, float] = None) -> None:
++    def execute_waterfall(self, agent: ILiquidatable, claims: List[Claim], available_cash: float, state: SimulationState, other_assets: Dict[CurrencyCode, float] = None) -> None:
+         """
+         Distributes cash according to tiers.
+         TD-033: Added other_assets for Tier 5 distribution.
+@@ -132,7 +120,7 @@ class LiquidationManager:
+             if remaining_cash >= total_tier_claim:
+                 # Pay all fully
+                 for claim in tier_claims:
+-                    self._pay_claim(firm, claim, claim.amount)
++                    self._pay_claim(agent, claim, claim.amount)
+                 remaining_cash -= total_tier_claim
+                 logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} fully paid. Remaining cash: {remaining_cash:.2f}")
+             else:
+@@ -140,47 +128,42 @@ class LiquidationManager:
+                 factor = remaining_cash / total_tier_claim
+                 for claim in tier_claims:
+                     payment = claim.amount * factor
+-                    self._pay_claim(firm, claim, payment, partial=True)
++                    self._pay_claim(agent, claim, payment, partial=True)
+                 remaining_cash = 0.0
+                 logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} partially paid (Factor: {factor:.2f}). Cash exhausted.")
+ 
+         # --- Tier 5: Equity ---
+         # TD-033: Check if there is ANY value to distribute (Cash or Foreign Assets)
+         if remaining_cash > 0 or other_assets:
+-            outstanding_shares = firm.total_shares - firm.treasury_shares
+-            if outstanding_shares > 0:
+-                # Gather shareholders from state
+-                shareholders = list(state.households)
+-                if hasattr(state, 'government') and state.government:
+-                    shareholders.append(state.government)
++            # Get equity stakes via protocol, not global state
++            context = LiquidationContext(current_tick=state.time, shareholder_registry=self.shareholder_registry)
++            equity_stakes = agent.get_equity_stakes(context)
+ 
++            if equity_stakes:
+                 total_distributed_cash = 0.0
+                 total_distributed_foreign = {}
+ 
+-                for agent in shareholders:
+-                    shares = 0
+-                    if hasattr(agent, "shares_owned"):
+-                        shares = agent.shares_owned.get(firm.id, 0)
+-
+-                    if shares > 0:
+-                        share_ratio = shares / outstanding_shares
++                for stake in equity_stakes:
++                    shareholder = self.agent_registry.get_agent(stake['shareholder_id'])
++                    ratio = stake['ratio']
+ 
++                    if shareholder and ratio > 0:
+                         # 1. Distribute Primary Currency
+                         if remaining_cash > 0:
+-                            distribution = remaining_cash * share_ratio
+-                            self.settlement_system.transfer(firm, agent, distribution, "Liquidation Dividend (Tier 5)", currency=DEFAULT_CURRENCY)
++                            distribution = remaining_cash * ratio
++                            self.settlement_system.transfer(agent, shareholder, distribution, "Liquidation Dividend (Tier 5)", currency=DEFAULT_CURRENCY)
+                             total_distributed_cash += distribution
+ 
+                         # 2. Distribute Foreign Currencies (TD-033)
+                         for cur, amount in other_assets.items():
+                             if amount > 0:
+-                                dist_amount = amount * share_ratio
+-                                self.settlement_system.transfer(firm, agent, dist_amount, f"Liquidation Dividend (Tier 5 - {cur})", currency=cur)
++                                dist_amount = amount * ratio
++                                self.settlement_system.transfer(agent, shareholder, dist_amount, f"Liquidation Dividend (Tier 5 - {cur})", currency=cur)
+                                 total_distributed_foreign[cur] = total_distributed_foreign.get(cur, 0.0) + dist_amount
+ 
+                 logger.info(f"LIQUIDATION_WATERFALL | Tier 5 (Equity) distributed {total_distributed_cash:.2f} {DEFAULT_CURRENCY} and foreign assets: {total_distributed_foreign} to shareholders.")
+ 
+-    def _pay_claim(self, firm: Firm, claim: Claim, amount: float, partial: bool = False):
++    def _pay_claim(self, agent: ILiquidatable, claim: Claim, amount: float, partial: bool = False):
+         """Helper to execute transfer using AgentRegistry."""
+         if amount <= 0:
+             return
+@@ -190,7 +173,7 @@ class LiquidationManager:
+ 
+         if creditor:
+             memo = f"Liquidation Payout: {claim.description}" + (" (Partial)" if partial else "")
+-            success = self.settlement_system.transfer(firm, creditor, amount, memo, currency=DEFAULT_CURRENCY)
++            success = self.settlement_system.transfer(agent, creditor, amount, memo, currency=DEFAULT_CURRENCY)
+             if not success:
+                  logger.error(f"LIQUIDATION_PAYMENT_FAIL | Failed to transfer {amount:.2f} to {creditor.id}")
+         else:
