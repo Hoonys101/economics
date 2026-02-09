@@ -36,6 +36,9 @@ def test_budget_allocation():
 
     config = MagicMock(spec=HouseholdConfigDTO)
     config.household_min_wage_demand = 5.0
+    # Set new config values to avoid defaults (though defaults exist in logic, explicit is better for test intent)
+    config.default_food_price_estimate = 10.0
+    config.survival_budget_allocation = 50.0
 
     input_dto = BudgetInputDTO(
         econ_state=econ_state,

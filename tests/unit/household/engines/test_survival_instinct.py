@@ -50,6 +50,8 @@ def test_budget_survival_priority():
 
     config = MagicMock(spec=HouseholdConfigDTO)
     config.household_min_wage_demand = 5.0
+    config.survival_budget_allocation = 50.0
+    config.default_food_price_estimate = 10.0
 
     input_dto = BudgetInputDTO(
         econ_state=econ_state,

@@ -114,6 +114,11 @@ class HouseholdConfigDTO:
     fallback_survival_cost: float
     base_labor_skill: float
 
+    # New from Household Engine Decomposition (TD-260)
+    default_food_price_estimate: float = 10.0
+    survival_budget_allocation: float = 50.0
+    food_consumption_utility: float = 20.0
+
 @dataclass
 class FirmConfigDTO:
     """Static configuration values relevant to firm decisions."""

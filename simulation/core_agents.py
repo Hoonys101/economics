@@ -500,6 +500,8 @@ class Household(
                 # I should update BudgetEngine to return full decision or HousingActionDTO to have down_payment.
                 # Since I am in 'Household', I can fix this by updating BudgetEngine later, or hacking now.
                 # Assuming simple purchase for now.
+                # Update: HousingActionDTO now includes down_payment_amount (Refactor Step)
+                decision_dict["down_payment_amount"] = action.down_payment_amount
                 housing_system.initiate_purchase(decision_dict, buyer_id=self.id)
 
     # --- Other Interface Implementations ---
@@ -762,16 +764,12 @@ class Household(
 
     def add_education_xp(self, xp: float) -> None:
         self._econ_state.education_xp += xp
-        # Optionally update skills via ConsumptionEngine or logic here?
-        # Update skills logic was in EconComponent.update_skills.
-        # I moved logic to SocialEngine? No, ConsumptionEngine?
-        # I didn't implement update_skills in Engines yet.
-        # I missed `update_skills` logic in my Engines implementation step.
-        # `EconComponent.update_skills` logic: log(xp) -> skill.
-        # This is simple enough to keep here or put in a helper.
-        log_growth = math.log1p(self._econ_state.education_xp)
+        # Delegate skill calculation to LifecycleEngine (Logic Placement Refactor)
         talent_factor = self._econ_state.talent.base_learning_rate
-        self._econ_state.labor_skill = 1.0 + (log_growth * talent_factor)
+        new_skill = self.lifecycle_engine.calculate_new_skill_level(
+            self._econ_state.education_xp, talent_factor
+        )
+        self._econ_state.labor_skill = new_skill
 
     def add_durable_asset(self, asset: Dict[str, Any]) -> None:
         self._econ_state.durable_assets.append(asset)

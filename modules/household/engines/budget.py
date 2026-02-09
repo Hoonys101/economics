@@ -37,7 +37,7 @@ class BudgetEngine(IBudgetEngine):
 
         # 3. Budget Allocation
         budget_plan = self._create_budget_plan(
-            new_econ_state, prioritized_needs, abstract_plan, market_snapshot
+            new_econ_state, prioritized_needs, abstract_plan, market_snapshot, config
         )
 
         return BudgetOutputDTO(
@@ -96,7 +96,8 @@ class BudgetEngine(IBudgetEngine):
                     return HousingActionDTO(
                         action_type="INITIATE_PURCHASE",
                         property_id=str(decision['target_property_id']),
-                        offer_price=decision['offer_price']
+                        offer_price=decision['offer_price'],
+                        down_payment_amount=decision.get('down_payment_amount', 0.0)
                     )
                 elif decision['decision_type'] == "MAKE_RENTAL_OFFER":
                     state.housing_target_mode = "RENT"
@@ -115,7 +116,8 @@ class BudgetEngine(IBudgetEngine):
         state: EconStateDTO,
         needs: List[PrioritizedNeed],
         abstract_plan: List[Any],
-        market_snapshot: Any
+        market_snapshot: Any,
+        config: Any = None # Optional for backward compatibility in internal calls, but should be passed
     ) -> BudgetPlan:
         # Simple Budgeting:
         # 1. Total Wealth = Cash
@@ -130,18 +132,18 @@ class BudgetEngine(IBudgetEngine):
             # E.g. Survival -> Food.
             if need.need_id == "survival":
                 # Estimate food cost.
-                food_price = 10.0 # Default
+                food_price = config.default_food_price_estimate if config else 10.0
                 goods_market = getattr(market_snapshot, "goods", {})
 
                 # Check different keys for food
                 m = goods_market.get("basic_food") or goods_market.get("food")
                 if m:
                     # MarketSnapshotDTO uses GoodsMarketUnitDTO which has avg_price
-                    food_price = getattr(m, "avg_price", 10.0) or getattr(m, "current_price", 10.0)
+                    food_price = getattr(m, "avg_price", food_price) or getattr(m, "current_price", food_price)
 
                 # Quantity: Place enough for buffer?
                 # Placeholder: Allocate fixed amount
-                amount_to_allocate = 50.0
+                amount_to_allocate = config.survival_budget_allocation if config else 50.0
                 if total_cash - spent >= amount_to_allocate:
                     allocations["food"] = amount_to_allocate
                     spent += amount_to_allocate

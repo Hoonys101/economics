@@ -85,3 +85,12 @@ class LifecycleEngine(ILifecycleEngine):
             "initial_age": 0.0,
             "gender": random.choice(["M", "F"])
         }
+
+    def calculate_new_skill_level(self, current_xp: float, talent_factor: float) -> float:
+        """
+        Calculates the new labor skill level based on current experience and talent.
+        Formula: 1.0 + ln(xp + 1) * talent_base_rate
+        """
+        import math
+        log_growth = math.log1p(current_xp)
+        return 1.0 + (log_growth * talent_factor)

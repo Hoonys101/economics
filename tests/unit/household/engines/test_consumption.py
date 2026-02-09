@@ -25,6 +25,7 @@ def test_consumption_execution():
 
     market_snapshot = MagicMock(spec=MarketSnapshotDTO)
     config = MagicMock(spec=HouseholdConfigDTO)
+    config.food_consumption_utility = 20.0
 
     input_dto = ConsumptionInputDTO(
         econ_state=econ_state,

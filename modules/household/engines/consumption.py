@@ -61,7 +61,7 @@ class ConsumptionEngine(IConsumptionEngine):
                 new_econ_state.inventory["food"] -= 1.0
 
             # Reduce need
-            utility = 20.0 # Placeholder
+            utility = config.food_consumption_utility if config else 20.0
             new_bio_state.needs["survival"] = max(0.0, survival_need - utility)
             # Log consumption?
 

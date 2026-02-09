@@ -40,6 +40,7 @@ class HousingActionDTO:
     action_type: str  # "INITIATE_PURCHASE", "MAKE_RENTAL_OFFER", "STAY"
     property_id: Optional[str] = None
     offer_price: float = 0.0
+    down_payment_amount: float = 0.0
     buyer_id: Optional[int] = None
 
 # --- Engine Input DTOs ---
