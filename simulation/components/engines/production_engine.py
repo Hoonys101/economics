@@ -83,7 +83,7 @@ class ProductionEngine:
                 if input_config:
                     max_by_inputs = float('inf')
                     for mat, req_per_unit in input_config.items():
-                        available = state.input_inventory.get(mat, 0.0)
+                        available = inventory_handler.get_quantity(mat)
                         if req_per_unit > 0:
                             max_by_inputs = min(max_by_inputs, available / req_per_unit)
 
@@ -92,7 +92,7 @@ class ProductionEngine:
                     # Deduct used inputs
                     for mat, req_per_unit in input_config.items():
                         amount_to_deduct = actual_produced * req_per_unit
-                        state.input_inventory[mat] = max(0.0, state.input_inventory.get(mat, 0.0) - amount_to_deduct)
+                        inventory_handler.remove_item(mat, amount_to_deduct)
                 else:
                     actual_produced = produced_quantity
 

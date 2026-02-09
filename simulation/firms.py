@@ -82,7 +82,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
         # Wallet & Inventory
         self._wallet = Wallet(self.id, {})
-        self._inventory: Dict[str, float] = {} # Direct dict for IInventoryHandler
+        self.inventory_manager = InventoryManager(self.id)
 
         self.is_active = True
 
@@ -118,7 +118,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         # Inventory Initialization
         if initial_inventory is not None:
             for item_id, qty in initial_inventory.items():
-                self.add_item(item_id, qty)
+                self.inventory_manager.add_item(item_id, qty)
 
         # Brand Manager (Kept as component for now, or could be moved to SalesState/Engine)
         self.brand_manager = BrandManager(self.id, self.config, self.logger)
@@ -167,14 +167,15 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
     def get_current_state(self) -> AgentStateDTO:
         return AgentStateDTO(
             assets=self._wallet.get_all_balances(),
-            inventory=self._inventory.copy(),
+            inventory=self.inventory_manager.get_all_items(),
             is_active=self.is_active
         )
 
     def load_state(self, state: AgentStateDTO) -> None:
         self._wallet.load_balances(state.assets)
-        self._inventory.clear()
-        self._inventory.update(state.inventory)
+        self.inventory_manager.clear_inventory()
+        for item, qty in state.inventory.items():
+             self.inventory_manager.add_item(item, qty)
         self.is_active = state.is_active
 
     @property
@@ -308,11 +309,12 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
     @property
     def inventory_quality(self) -> Dict[str, float]:
-        return self.production_state.inventory_quality
+        return self.inventory_manager.inventory_quality_map
 
     @property
     def input_inventory(self) -> Dict[str, float]:
-        return self.production_state.input_inventory
+        # DEPRECATED: ProductionEngine now uses InventoryManager
+        return {}
 
     @property
     def base_quality(self) -> float:
@@ -465,8 +467,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
     def liquidate_assets(self, current_tick: int = -1) -> Dict[CurrencyCode, float]:
         """Liquidate assets using Protocol Purity."""
         # 1. Write off Inventory
-        for item_id in list(self.get_all_items().keys()):
-            self.remove_item(item_id, self.get_quantity(item_id))
+        self.inventory_manager.clear_inventory()
         
         # 2. Write off Capital Stock
         self.capital_stock = 0.0
@@ -490,52 +491,33 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
         return assets_to_return
 
-    # --- IInventoryHandler Overrides ---
+    # --- IInventoryHandler Overrides (Delegation) ---
 
     @override
     def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0) -> bool:
-        self._add_inventory_internal(item_id, quantity, quality)
-        return True
+        return self.inventory_manager.add_item(item_id, quantity, transaction_id, quality)
 
     @override
     def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool:
-        if quantity < 0: return False
-        current = self._inventory.get(item_id, 0.0)
-        if current < quantity: return False
-        self._inventory[item_id] = current - quantity
-        if self._inventory[item_id] <= 1e-9:
-             del self._inventory[item_id]
-        return True
+        return self.inventory_manager.remove_item(item_id, quantity, transaction_id)
 
     @override
     def get_quantity(self, item_id: str) -> float:
-        return self._inventory.get(item_id, 0.0)
+        return self.inventory_manager.get_quantity(item_id)
 
     @override
     def get_quality(self, item_id: str) -> float:
-        return self.inventory_quality.get(item_id, 1.0)
+        return self.inventory_manager.get_quality(item_id)
 
     @override
     def get_all_items(self) -> Dict[str, float]:
         """Returns a copy of the inventory."""
-        return self._inventory.copy()
+        return self.inventory_manager.get_all_items()
 
     @override
     def clear_inventory(self) -> None:
         """Clears the inventory."""
-        self._inventory.clear()
-        self.inventory_quality.clear()
-
-    def _add_inventory_internal(self, item_id: str, quantity: float, quality: float):
-        current_inventory = self.get_quantity(item_id)
-        current_quality = self.get_quality(item_id)
-
-        total_qty = current_inventory + quantity
-        if total_qty > 0:
-            new_avg_quality = ((current_inventory * current_quality) + (quantity * quality)) / total_qty
-            self.inventory_quality[item_id] = new_avg_quality
-
-        self._inventory[item_id] = total_qty # Implementation
+        self.inventory_manager.clear_inventory()
 
     def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
         brand_snapshot = {
@@ -571,7 +553,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
     def produce(self, current_time: int, technology_manager: Optional[Any] = None) -> None:
         self.current_production = self.production_engine.produce(
             self.production_state,
-            self, # IInventoryHandler
+            self.inventory_manager, # Use explicit component
             self.hr_state,
             self.config,
             current_time,
@@ -599,7 +581,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         # Hydrate State
         initial_state = AgentStateDTO(
             assets={DEFAULT_CURRENCY: initial_assets_from_parent},
-            inventory=copy.deepcopy(self._inventory),
+            inventory=self.inventory_manager.get_all_items(),
             is_active=True
         )
         new_firm.load_state(initial_state)

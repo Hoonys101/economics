@@ -58,6 +58,11 @@ class InventoryManager(IInventoryHandler):
     def get_all_items(self) -> Dict[str, float]:
         return self._inventory.copy()
 
+    @property
+    def inventory_quality_map(self) -> Dict[str, float]:
+        """Returns a copy of the quality map."""
+        return self._inventory_quality.copy()
+
     def clear_inventory(self) -> None:
         self._inventory.clear()
         self._inventory_quality.clear()
