@@ -22,6 +22,8 @@ from simulation.db.repository import SimulationRepository
 from simulation.models import Order
 import config as cfg
 from tests.utils.factories import create_household_config_dto, create_firm_config_dto
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine
+from modules.system.api import DEFAULT_CURRENCY
 
 # Setup logging
 logging.basicConfig(level=logging.ERROR)
@@ -41,33 +43,51 @@ class TestTaxIncidence(unittest.TestCase):
         self.repository.close()
 
     def _create_household(self, id: int, assets: float):
-        mock_de = MagicMock()
-        return Household(
+        mock_de = MagicMock(spec=IDecisionEngine)
+        core_config = AgentCoreConfigDTO(
             id=id,
+            name=f"Household_{id}",
+            value_orientation="wealth_and_needs",
+            initial_needs={},
+            logger=logger,
+            memory_interface=None
+        )
+        h = Household(
+            core_config=core_config,
+            engine=mock_de,
             talent=Talent(1.0, {}),
             goods_data=[],
-            initial_assets=assets,
-            initial_needs={},
-            decision_engine=mock_de,
-            value_orientation="wealth_and_needs",
             personality=Personality.MISER,
             config_dto=create_household_config_dto(),
-            logger=logger,
+            initial_assets_record=assets
         )
+        # Manually deposit initial assets as per new Household behavior
+        if assets > 0:
+            h.deposit(assets, DEFAULT_CURRENCY)
+        return h
 
     def _create_firm(self, id: int, assets: float):
-        mock_de = MagicMock()
-        return Firm(
+        mock_de = MagicMock(spec=IDecisionEngine)
+        core_config = AgentCoreConfigDTO(
             id=id,
-            initial_capital=assets,
-            initial_liquidity_need=0.0,
+            name=f"Firm_{id}",
+            value_orientation="profit_maximizer",
+            initial_needs={},
+            logger=logger,
+            memory_interface=None
+        )
+        f = Firm(
+            core_config=core_config,
+            engine=mock_de,
             specialization="basic_food",
             productivity_factor=1.0,
-            decision_engine=mock_de,
-            value_orientation="profit_maximizer",
             config_dto=create_firm_config_dto(),
-            logger=logger,
+            sector="FOOD",
+            personality=Personality.BALANCED
         )
+        if assets > 0:
+            f.deposit(assets, DEFAULT_CURRENCY)
+        return f
 
     def _setup_simulation(self, h, f):
         # Mock ConfigManager
@@ -108,11 +128,13 @@ class TestTaxIncidence(unittest.TestCase):
         sim.central_bank = MagicMock() # Mock Central Bank
         sim.central_bank_system = CentralBankSystem(sim.central_bank, sim.settlement_system, logger)
 
+        sim.escrow_agent = MagicMock()
         sim.world_state.transaction_processor = TransactionManager(
             registry=sim.registry,
             accounting_system=sim.accounting_system,
             settlement_system=sim.settlement_system,
             central_bank_system=sim.central_bank_system,
+            escrow_agent=sim.escrow_agent,
             config=cfg,
             handlers={},
             logger=logger
@@ -132,11 +154,11 @@ class TestTaxIncidence(unittest.TestCase):
         tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=100.0, market_id="labor", transaction_type="labor", time=1)
         sim._process_transactions([tx])
         
-        # 가계: 1000 + (100 - 10) = 1090
+        # 가계: 1000 + (100 - 16.25) = 1083.75 (Progressive Tax)
         # 기업: 5000 - 100 = 4900
-        self.assertEqual(h._econ_state.assets, 1090.0)
+        self.assertEqual(h.assets, 1083.75)
         self.assertEqual(f.assets, 4900.0)
-        self.assertEqual(sim.government.assets, 10.0)
+        self.assertEqual(sim.government.assets, 16.25)
         print("✓ Household Payer (Withholding): Agent Assets Correct")
 
     def test_firm_payer_scenario(self):
@@ -152,10 +174,10 @@ class TestTaxIncidence(unittest.TestCase):
         sim._process_transactions([tx])
         
         # 가계: 1000 + 100 = 1100
-        # 기업: 5000 - (100 + 10) = 4890
-        self.assertEqual(h._econ_state.assets, 1100.0)
-        self.assertEqual(f.assets, 4890.0)
-        self.assertEqual(sim.government.assets, 10.0)
+        # 기업: 5000 - (100 + 16.25) = 4883.75
+        self.assertEqual(h.assets, 1100.0)
+        self.assertEqual(f.assets, 4883.75)
+        self.assertEqual(sim.government.assets, 16.25)
         print("✓ Firm Payer (Extra Tax): Agent Assets Correct")
 
 if __name__ == "__main__":

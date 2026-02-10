@@ -57,13 +57,13 @@ class TestTaxService(unittest.TestCase):
             "payer_id": "agent_1",
             "payee_id": "gov_1",
             "error_message": None,
-            "currency": "USD"
+            "currency": DEFAULT_CURRENCY
         }
 
         service.record_revenue(result_data)
 
-        self.assertEqual(service.revenue_this_tick["USD"], 100.0)
-        self.assertEqual(service.total_collected_tax["USD"], 100.0)
+        self.assertEqual(service.revenue_this_tick[DEFAULT_CURRENCY], 100.0)
+        self.assertEqual(service.total_collected_tax[DEFAULT_CURRENCY], 100.0)
         self.assertEqual(service.current_tick_stats["tax_revenue"]["income_tax"], 100.0)
         self.assertEqual(service.current_tick_stats["total_collected"], 100.0)
 

@@ -4,7 +4,7 @@ from modules.governance.judicial.system import JudicialSystem
 from modules.system.event_bus.event_bus import EventBus
 from modules.events.dtos import LoanDefaultedEvent, DebtRestructuringRequiredEvent
 from simulation.finance.api import ISettlementSystem
-from modules.system.api import IAgentRegistry
+from modules.system.api import IAgentRegistry, DEFAULT_CURRENCY
 from modules.finance.api import IShareholderRegistry, IPortfolioHandler, ICreditFrozen, IFinancialEntity, ILiquidatable
 from modules.simulation.api import IEducated
 
@@ -43,13 +43,13 @@ class MockAgent:
     def assets(self) -> float:
         return self._assets
 
-    def deposit(self, amount, currency="USD"):
+    def deposit(self, amount, currency=DEFAULT_CURRENCY):
         self._assets += amount
 
-    def withdraw(self, amount, currency="USD"):
+    def withdraw(self, amount, currency=DEFAULT_CURRENCY):
         self._assets -= amount
 
-    def get_balance(self, currency="USD"):
+    def get_balance(self, currency=DEFAULT_CURRENCY):
         return self._assets
 
     def liquidate_assets(self, tick):
@@ -57,7 +57,7 @@ class MockAgent:
         gain = self.inventory_value
         self._assets += gain
         self.inventory_value = 0
-        return {"USD": gain}
+        return {DEFAULT_CURRENCY: gain}
 
     def get_all_claims(self, ctx):
         return []
@@ -90,7 +90,7 @@ def test_judicial_system_waterfall_full_recovery(mock_dependencies):
     deps = mock_dependencies
 
     # Setup Transfer Side Effect
-    def transfer_side_effect(debit_agent, credit_agent, amount, memo, tick, currency="USD"):
+    def transfer_side_effect(debit_agent, credit_agent, amount, memo, tick, currency=DEFAULT_CURRENCY):
         debit_agent.withdraw(amount)
         credit_agent.deposit(amount)
         return True
@@ -138,7 +138,7 @@ def test_judicial_system_waterfall_partial_recovery_and_restructuring(mock_depen
     deps = mock_dependencies
 
     # Setup Transfer Side Effect
-    def transfer_side_effect(debit_agent, credit_agent, amount, memo, tick, currency="USD"):
+    def transfer_side_effect(debit_agent, credit_agent, amount, memo, tick, currency=DEFAULT_CURRENCY):
         debit_agent.withdraw(amount)
         credit_agent.deposit(amount)
         return True

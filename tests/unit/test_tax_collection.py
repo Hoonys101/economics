@@ -75,7 +75,7 @@ def test_atomic_wealth_tax_collection_success():
 
     # Check assets transferred
     assert household.assets == 2000.0 - 0.2
-    assert gov.assets[DEFAULT_CURRENCY] == 0.2
+    assert gov.assets == 0.2
 
     # Check stats
     assert gov.total_collected_tax[DEFAULT_CURRENCY] == 0.2
@@ -105,7 +105,7 @@ def test_atomic_wealth_tax_collection_insufficient_funds():
 
     # Assets unchanged
     assert household.assets == 2000.0
-    assert gov.assets[DEFAULT_CURRENCY] == 0.0
+    assert gov.assets == 0.0
 
     # Stats unchanged
     assert gov.total_collected_tax[DEFAULT_CURRENCY] == 0.0
@@ -125,7 +125,7 @@ def test_government_collect_tax_adapter_success():
     assert collected['amount_collected'] == 10.0
     assert collected['success'] is True
     assert payer.assets == 90.0
-    assert gov.assets[DEFAULT_CURRENCY] == 10.0
+    assert gov.assets == 10.0
     assert gov.total_collected_tax[DEFAULT_CURRENCY] == 10.0
     assert gov.tax_revenue["test_tax"] == 10.0
 
@@ -143,6 +143,6 @@ def test_government_collect_tax_adapter_failure():
     assert collected['amount_collected'] == 0.0
     assert collected['success'] is False
     assert payer.assets == 5.0
-    assert gov.assets[DEFAULT_CURRENCY] == 0.0
+    assert gov.assets == 0.0
     assert gov.total_collected_tax[DEFAULT_CURRENCY] == 0.0
     assert "test_tax" not in gov.tax_revenue
