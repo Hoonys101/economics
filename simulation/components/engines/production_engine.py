@@ -11,6 +11,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+from simulation.dtos.production_dtos import ProductionInputDTO, ProductionResultDTO
+
+logger = logging.getLogger(__name__)
+
 class ProductionEngine:
     """
     Stateless Engine for Production operations.
@@ -20,22 +24,18 @@ class ProductionEngine:
     def produce(
         self,
         state: ProductionState,
-        inventory_handler: IInventoryHandler,
-        hr_state: HRState,
+        inputs: ProductionInputDTO,
         config: FirmConfigDTO,
-        current_time: int,
-        firm_id: int,
-        productivity_multiplier: float = 1.0
-    ) -> float:
+    ) -> ProductionResultDTO:
         """
         Executes production logic.
-        Updates state (capital stock, automation, input inventory) and adds output to inventory_handler.
+        Updates state (capital stock, automation) and returns a DTO with produced quantities.
+        The Orchestrator is responsible for updating inventory.
         """
         try:
             # [EARLY EXIT]
-            if len(hr_state.employees) == 0:
-                # Logging skipped for brevity, or can be injected
-                return 0.0
+            if inputs.total_labor_skill <= 0:
+                return ProductionResultDTO(quantity=0.0, quality=0.0, specialization=state.specialization)
 
             # 1. Depreciation & Decay
             depreciation_rate = config.capital_depreciation_rate
@@ -46,7 +46,7 @@ class ProductionEngine:
             if state.automation_level < 0.001: state.automation_level = 0.0
 
             # 2. Labor & Capital Inputs
-            total_labor_skill = sum(emp.labor_skill or 0.0 for emp in hr_state.employees)
+            total_labor_skill = inputs.total_labor_skill
 
             # Cobb-Douglas Parameters
             base_alpha = config.labor_alpha
@@ -62,10 +62,10 @@ class ProductionEngine:
 
             # Technology Multiplier
             tfp = state.productivity_factor
-            tfp *= productivity_multiplier
+            tfp *= inputs.productivity_multiplier
 
             # Quality Calculation
-            avg_skill = total_labor_skill / len(hr_state.employees) if hr_state.employees else 0.0
+            avg_skill = inputs.avg_skill
             item_config = config.goods.get(state.specialization, {})
             quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
             actual_quality = state.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
@@ -75,34 +75,50 @@ class ProductionEngine:
                 produced_quantity = tfp * (total_labor_skill ** alpha_adjusted) * (capital ** beta_adjusted)
 
             actual_produced = 0.0
+            consumed_inputs = {}
+
             if produced_quantity > 0:
                 # Input Constraints
-                input_config = config.goods.get(state.specialization, {}).get("inputs", {})
+                input_config = item_config.get("inputs", {})
 
                 if input_config:
                     max_by_inputs = float('inf')
                     for mat, req_per_unit in input_config.items():
-                        available = state.input_inventory.get(mat, 0.0)
+                        available = inputs.input_inventory.get(mat, 0.0)
                         if req_per_unit > 0:
                             max_by_inputs = min(max_by_inputs, available / req_per_unit)
 
                     actual_produced = min(produced_quantity, max_by_inputs)
 
-                    # Deduct used inputs
+                    # Calculate consumed inputs
                     for mat, req_per_unit in input_config.items():
-                        amount_to_deduct = actual_produced * req_per_unit
-                        state.input_inventory[mat] = max(0.0, state.input_inventory.get(mat, 0.0) - amount_to_deduct)
+                        consumed_inputs[mat] = actual_produced * req_per_unit
+                        # Note: State update of input_inventory happens in the Orchestrator?
+                        # Or do we update it here if state is passed?
+                        # The implementation plan says "return a ProductionResultDTO containing quantity, quality, and input_consumption".
+                        # However, since ProductionState is passed, we COULD update it here.
+                        # But for true Abstraction Purity, we should probably treat ProductionState as something the engine CAN mutate,
+                        # but inventory (the wallet/container) is external.
+                        state.input_inventory[mat] = max(0.0, state.input_inventory.get(mat, 0.0) - consumed_inputs[mat])
                 else:
                     actual_produced = produced_quantity
 
-                if actual_produced > 0:
-                    inventory_handler.add_item(state.specialization, actual_produced, quality=actual_quality)
-
-            return actual_produced
+            return ProductionResultDTO(
+                quantity=actual_produced,
+                quality=actual_quality,
+                specialization=state.specialization,
+                consumed_inputs=consumed_inputs
+            )
 
         except Exception as e:
-            logger.error(f'PRODUCTION_ERROR | Firm {firm_id}: {e}')
-            return 0.0
+            logger.error(f'PRODUCTION_ERROR | Firm {inputs.firm_id}: {e}')
+            return ProductionResultDTO(
+                quantity=0.0, 
+                quality=0.0, 
+                specialization=state.specialization,
+                success=False,
+                error_message=str(e)
+            )
 
     def invest_in_automation(
         self,

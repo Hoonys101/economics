@@ -614,15 +614,30 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         if technology_manager:
             productivity_multiplier = technology_manager.get_productivity_multiplier(self.id)
 
-        self.current_production = self.production_engine.produce(
-            self.production_state,
-            self, # IInventoryHandler
-            self.hr_state,
-            self.config,
-            current_time,
-            self.id,
-            productivity_multiplier
+        # 1. Prepare Input DTO (Abstraction Purity: Gathering data from internal states)
+        total_labor_skill = sum(emp.labor_skill or 0.0 for emp in self.hr_state.employees)
+        avg_skill = total_labor_skill / len(self.hr_state.employees) if self.hr_state.employees else 0.0
+        
+        production_inputs = ProductionInputDTO(
+            total_labor_skill=total_labor_skill,
+            avg_skill=avg_skill,
+            input_inventory=self.production_state.input_inventory, # Still passing state ref, but it's a DTO field now
+            productivity_multiplier=productivity_multiplier,
+            firm_id=self.id,
+            current_time=current_time
         )
+
+        # 2. Call Stateless Engine
+        result = self.production_engine.produce(
+            self.production_state,
+            production_inputs,
+            self.config
+        )
+
+        # 3. Apply Results (Orchestrator Responsibility)
+        self.current_production = result.quantity
+        if result.success and result.quantity > 0:
+            self.add_item(result.specialization, result.quantity, quality=result.quality)
 
         # TD-271: Real Estate Utilization
         effect, amount = self.real_estate_utilization_component.apply(

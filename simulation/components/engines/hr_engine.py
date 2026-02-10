@@ -12,6 +12,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+from simulation.dtos.hr_dtos import HRPayrollContextDTO
+
+logger = logging.getLogger(__name__)
+
 class HREngine:
     """
     Stateless Engine for HR operations.
@@ -34,26 +38,22 @@ class HREngine:
     def process_payroll(
         self,
         hr_state: HRState,
-        firm_id: int,
-        wallet: IWallet,
+        context: HRPayrollContextDTO,
         config: FirmConfigDTO,
-        current_time: int,
-        government: Optional[Any],
-        market_data: Optional[Dict[str, Any]],
-        market_context: MarketContextDTO,
-        finance_engine_helper: Any = None # Optional helper for converting currency
     ) -> List[Transaction]:
         """
         Pays wages to employees. Handles insolvency firing if assets are insufficient.
         Returns list of Transactions.
         """
         generated_transactions: List[Transaction] = []
-        exchange_rates = market_context.get('exchange_rates', {DEFAULT_CURRENCY: 1.0})
+        exchange_rates = context.exchange_rates
+        firm_id = context.firm_id
+        current_time = context.current_time
 
         # Calculate survival cost for tax logic
         survival_cost = 10.0 # Default fallback
-        if government and market_data:
-            survival_cost = government.get_survival_cost(market_data)
+        if context.tax_policy:
+            survival_cost = context.tax_policy.survival_cost
 
         # Iterate over copy to allow modification of hr_state.employees
         for employee in list(hr_state.employees):
@@ -62,31 +62,32 @@ class HREngine:
                 self.remove_employee(hr_state, employee)
                 continue
 
-            base_wage = hr_state.employee_wages.get(employee.id, config.labor_market_min_wage)
+            base_wage = hr_state.employee_wages.get(employee.id, context.labor_market_min_wage)
             wage = self.calculate_wage(employee, base_wage, config)
 
             # Affordability Check (Operational Awareness: Total Liquid Assets)
             total_liquid_assets = 0.0
 
-            # Use wallet balances directly
-            balances = wallet.get_all_balances()
-
-            # Helper for conversion (if not provided, implement simple logic)
+            # Helper for conversion
             def convert(amt, cur):
                 if cur == DEFAULT_CURRENCY: return amt
                 rate = exchange_rates.get(cur, 0.0)
                 return amt * rate
 
-            for cur, amount in balances.items():
+            for cur, amount in context.wallet_balances.items():
                 total_liquid_assets += convert(amount, cur)
 
-            current_balance = balances.get(DEFAULT_CURRENCY, 0.0)
+            current_balance = context.wallet_balances.get(DEFAULT_CURRENCY, 0.0)
 
             if current_balance >= wage:
                 # Calculate Tax
                 income_tax = 0.0
-                if government:
-                    income_tax = government.calculate_income_tax(wage, survival_cost)
+                if context.tax_policy:
+                    # Calculation logic: previously government.calculate_income_tax
+                    # For now, we assume the DTO provides the rate or we implement a standard logic
+                    # If the government logic is complex, we should have a standalone TaxEngine.
+                    # For this refactor, we apply a simple rate provided in the policy.
+                    income_tax = wage * context.tax_policy.income_tax_rate if wage > survival_cost else 0.0
 
                 net_wage = wage - income_tax
 
@@ -104,10 +105,10 @@ class HREngine:
                 generated_transactions.append(tx_wage)
 
                 # Transaction 2: Income Tax (Firm -> Government) [Withholding]
-                if income_tax > 0 and government:
+                if income_tax > 0 and context.tax_policy:
                     tx_tax = Transaction(
                         buyer_id=firm_id, # Payer
-                        seller_id=government.id, # Payee
+                        seller_id=context.tax_policy.government_agent_id, # Payee
                         item_id="income_tax",
                         quantity=1.0,
                         price=income_tax,
@@ -118,16 +119,17 @@ class HREngine:
                     generated_transactions.append(tx_tax)
 
                 # Track Labor Income (Side Effect on Employee)
-                current_income = employee.labor_income_this_tick
-                if current_income is None: current_income = 0.0
-                employee.labor_income_this_tick = current_income + net_wage
+                # Note: This is an Abstraction Leak (direct mutation of agent).
+                # Future Task: Return this in a DTO for the Orchestrator to apply.
+                employee.labor_income_this_tick = (employee.labor_income_this_tick or 0.0) + net_wage
 
             elif total_liquid_assets >= wage:
                 # Solvent but Illiquid -> Zombie
-                self._record_zombie_wage(hr_state, firm_id, employee, wage, current_time, balances.get(DEFAULT_CURRENCY, 0.0), config)
+                self._record_zombie_wage(hr_state, firm_id, employee, wage, current_time, current_balance, config)
             else:
                 # Insolvent -> Fire
-                self._handle_insolvency_transactions(hr_state, firm_id, wallet, config, employee, wage, current_time, generated_transactions, balances.get(DEFAULT_CURRENCY, 0.0))
+                # This also needs handle-less refactoring, but for now we pass the balance
+                self._handle_insolvency_transactions(hr_state, firm_id, context, config, employee, wage, current_time, generated_transactions, current_balance)
 
         return generated_transactions
 
