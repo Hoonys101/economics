@@ -10,6 +10,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from main import create_simulation
 from simulation.firms import Firm
 from simulation.dtos.api import SimulationState
+from modules.system.api import DEFAULT_CURRENCY
 
 def audit_integrity():
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -35,7 +36,7 @@ def audit_integrity():
         for h in sim.households:
              assets = h._econ_state.assets
              if isinstance(assets, dict):
-                 h_assets += assets.get("USD", 0.0) # Assume USD is default
+                 h_assets += assets.get(DEFAULT_CURRENCY, 0.0)
              else:
                  h_assets += float(assets)
 

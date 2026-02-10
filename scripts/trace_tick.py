@@ -3,6 +3,7 @@ import sys
 import os
 sys.path.append(os.getcwd())
 from main import create_simulation
+from modules.system.api import DEFAULT_CURRENCY
 import logging
 
 def trace_tick():
@@ -11,7 +12,7 @@ def trace_tick():
     
     def report(name):
         money = state.calculate_total_money()
-        total_usd = money.get("USD", 0.0) if isinstance(money, dict) else money
+        total_usd = money.get(DEFAULT_CURRENCY, 0.0) if isinstance(money, dict) else money
         print(f"[{name}] Total: {total_usd:,.2f}")
         return money
 
@@ -40,7 +41,7 @@ def trace_tick():
     # Firm Financials
     market_context = sim.tick_scheduler.get_market_context(state.tracker) if hasattr(sim.tick_scheduler, "get_market_context") else None
     if not market_context:
-         market_context = {"exchange_rates": {"USD": 1.0}, "benchmark_rates": {}}
+         market_context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}, "benchmark_rates": {}}
 
     for firm in state.firms:
          if firm.is_active:
