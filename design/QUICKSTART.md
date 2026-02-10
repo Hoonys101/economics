@@ -89,9 +89,9 @@ Any task that exceeds the following thresholds MUST be delegated to Jules (Imple
 
 ---
 
-## 🛠️ Phase 2: Operations (The One-Shot Workflow)
-> **🚨 CRITICAL: MASTER `cmd_ops.py` OR FAIL.**
-> Use **SCR (Structured Command Registry)** via `scripts/cmd_ops.py`.
+## 🛠️ Phase 2: Operations (The SCR Workflow)
+> **🚨 CRITICAL: PREFER DIRECT REGISTRY EDITING.**
+> Edit **[command_registry.py](file:///_internal/registry/command_registry.py)** directly for complex missions.
 
 ### 🚨 Zero-Error Operations: Agent HARMONY
 Gemini와 Jules는 정합된 파라미터 구조를 공유합니다. 모든 미션 설정 시 **Key**와 **Title(-t)**은 필수입니다.
@@ -108,21 +108,31 @@ Gemini와 Jules는 정합된 파라미터 구조를 공유합니다. 모든 미�
 ---
 
 ### 1. Analysis & Spec (Gemini)
-**Generic Pattern**:
+**Preferred Pattern (Direct Edit)**:
+1. Open [`command_registry.py`](file:///_internal/registry/command_registry.py).
+2. Follow the `# --- CHOICE REFERENCE ---` comments for valid workers.
+3. Add/Modify a mission dictionary entry using Python triple-quotes for multi-line prompts.
+
+**Legacy/Simple Pattern (CLI)**:
 ```powershell
-python scripts/cmd_ops.py set-gemini <key> -t "<title>" --worker <type> -i "<prompt>" --context <file1> <file2>
+python _internal/scripts/cmd_ops.py set-gemini <key> -t "<title>" --worker <type> -i "<prompt>" --context <file1> <file2>
 ```
 - **Pro-Tip**: 여러 참조 파일은 `--context` 뒤에 나열합니다.
 
 ### 2. Implementation (Jules)
-**Generic Pattern**:
+**Preferred Pattern (Direct Edit)**:
+1. Open [`command_registry.py`](file:///_internal/registry/command_registry.py).
+2. Define a `create` mission for Jules.
+3. Reference an "Integrated Mission Guide" in the `instruction` or `file` field.
+
+**Legacy/Simple Pattern (CLI)**:
 ```powershell
 # Create Mode (New Mission)
-python scripts/cmd_ops.py set-jules <key> -t "<title>" --command create -i "<prompt>" --file <spec_path>
+python _internal/scripts/cmd_ops.py set-jules <key> -t "<title>" --command create -i "<prompt>" --file <spec_path>
 
 # Send Mode (Feedback / Follow-up)
 # Note: session_id는 UI/Orchestrator에서 활성 세션을 검색하여 자동 주입하므로 설정 시 생략 가능합니다.
-python scripts/cmd_ops.py set-jules <key> -t "<title>" --command send-message -i "<prompt>"
+python _internal/scripts/cmd_ops.py set-jules <key> -t "<title>" --command send-message -i "<prompt>"
 ```
 - **Pro-Tip**: Jules는 `--file` (또는 `-f`)만 지원하며, `--context`는 무시됩니다.
 - **Dynamic ID**: `send-message` 시 서버의 활성 ID를 UI에서 선택하면 레지스트리의 설정값이 해당 세션으로 발송됩니다.

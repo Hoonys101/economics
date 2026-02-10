@@ -55,8 +55,8 @@ class SettlementSystem(ISettlementSystem):
             self.logger.warning(f"Agent {agent_id} does not implement IPortfolioHandler. Portfolio not captured.")
 
         # 2. Atomic Transfer: Cash
-        # Native IFinancialEntity usage
-        cash_balance = agent.assets
+        # IFinancialAgent protocol enforcement (was agent.assets)
+        cash_balance = agent.get_balance(DEFAULT_CURRENCY)
 
         if cash_balance > 0:
             agent.withdraw(cash_balance)

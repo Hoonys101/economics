@@ -705,8 +705,16 @@ class Household(
 
     @property
     def total_wealth(self) -> float:
-        """Returns the total wealth in default currency estimation."""
-        return self._econ_state.wallet.get_balance(DEFAULT_CURRENCY)
+        """
+        Returns the total wealth in default currency estimation.
+        TD-270: Standardized multi-currency summation.
+        """
+        balances = self._econ_state.wallet.get_all_balances()
+        total = 0.0
+        # For now, we assume 1:1 exchange rate as per spec draft for simple conversion.
+        for amount in balances.values():
+            total += amount
+        return total
 
     @override
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:

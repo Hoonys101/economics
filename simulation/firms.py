@@ -48,10 +48,9 @@ class RealEstateUtilizationComponent:
         if owned_space <= 0:
             return None
 
-        # 2. Get Factors
         # space_utility_factor: How much cost reduction per unit of space?
-        # Ideally from config. Assuming default 100.0 if not in config.
-        space_utility_factor = getattr(firm.config, "space_utility_factor", 100.0)
+        # Standardized access via config object properties (TD-271 refactor)
+        space_utility_factor = firm.config.space_utility_factor
 
         # regional_rent_index: From market data or default 1.0
         regional_rent_index = 1.0
@@ -990,8 +989,17 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
     @property
     def total_wealth(self) -> float:
-        """Returns the total wealth in default currency estimation."""
-        return self.wallet.get_balance(DEFAULT_CURRENCY)
+        """
+        Returns the total wealth in default currency estimation.
+        TD-270: Standardized multi-currency summation.
+        """
+        balances = self.wallet.get_all_balances()
+        total = 0.0
+        # For now, we assume 1:1 exchange rate as per spec draft for simple conversion.
+        # Future implementations should use an IExchangeRateService.
+        for amount in balances.values():
+            total += amount
+        return total
 
     @override
     def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:

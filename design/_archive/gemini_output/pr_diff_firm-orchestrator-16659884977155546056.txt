@@ -1,0 +1,1409 @@
+diff --git a/communications/insights/firm_orchestrator_refactor.md b/communications/insights/firm_orchestrator_refactor.md
+new file mode 100644
+index 00000000..40dd58b5
+--- /dev/null
++++ b/communications/insights/firm_orchestrator_refactor.md
+@@ -0,0 +1,55 @@
++# Technical Insight Report: Firm Orchestrator-Engine Refactor
++
++## 1. Problem Phenomenon
++The `Firm` agent (`simulation/firms.py`) had evolved into a "God Object" with significant technical debt:
++- **Parent Pointer Anti-Pattern**: Components like `FinanceDepartment` and `HRDepartment` held references to the parent `Firm` instance (`self.firm`), leading to circular dependencies and tight coupling.
++- **Legacy Proxies**: The `Firm` class exposed a `finance` property that returned `self`, allowing calls like `firm.finance.record_expense()` to actually execute `firm.record_expense()`. This "fake" composition confused the architecture.
++- **Stateful Components**: Logic was mixed with state in these "Department" classes, making unit testing difficult without instantiating the entire `Firm` and its dependencies.
++- **Leaky Abstractions**: Strategies and external systems accessed `firm.finance.balance` directly, relying on the proxy.
++
++## 2. Root Cause Analysis
++The architecture initially attempted a "Department" decomposition but failed to fully decouple them.
++- `HRDepartment` and `FinanceDepartment` were instantiated with `self` (`Firm`).
++- To maintain backward compatibility during previous refactors, proxies were added (`@property def finance(self): return self`).
++- Over time, these proxies became the standard way to access `Firm` functionality, entrenching the coupling.
++
++## 3. Solution Implementation Details
++We refactored the `Firm` agent to follow a strict **Orchestrator-Engine** pattern.
++
++### 3.1. Stateless Engines
++We hardened or refactored four stateless engines in `simulation/components/engines/`:
++- **`HREngine`**: Modified `fire_employee` to return a `Transaction` intention instead of executing a transfer directly. This moves the side-effect responsibility to the Orchestrator.
++- **`SalesEngine`**: Updated to accept `market_id` (str) and `government_id` (str) instead of object references, ensuring decoupling from the `Market` and `Government` entities.
++- **`ProductionEngine`**: Updated `produce` to accept a `productivity_multiplier` (float) instead of a `TechnologyManager` object.
++- **`FinanceEngine`**: Verified as the core stateless logic provider for financial calculations.
++
++### 3.2. Firm as Orchestrator
++The `Firm` class was stripped of business logic and now acts as a pure orchestrator:
++- **State Management**: Holds `HRState`, `FinanceState`, `ProductionState`, `SalesState` DTOs.
++- **Delegation**: Methods like `produce`, `generate_transactions`, and `post_ask` delegate purely to the engines, passing the necessary state and context.
++- **Command Execution**: `_execute_internal_order` (Command Bus) now handles the side effects returned by engines (e.g., executing the severance transaction returned by `HREngine`).
++
++### 3.3. Proxy Elimination
++- **Removed**: The `finance` property proxy was removed from `Firm`.
++- **Refactored Call Sites**: Updated `AccountingSystem`, `FinancialTransactionHandler`, and others to call `firm.record_expense()` / `firm.record_revenue()` directly instead of `firm.finance.record_...`.
++- **Deleted**: Legacy `FinanceDepartment` and `HRDepartment` files were removed as they were superseded by Engines and the Orchestrator.
++
++## 4. Lessons Learned & Technical Debt
++
++### 4.1. ID vs Object in Transactions
++A challenge arose with `SettlementSystem.transfer`. It requires `IFinancialEntity` objects (sender/receiver), but our stateless engines (like `HREngine`) prefer working with IDs to remain decoupled.
++- **Solution**: The Engine returns a `Transaction` DTO with IDs. The Orchestrator (`Firm`) resolves these IDs to objects (e.g., looking up `employee` in `hr_state.employees`) before calling `SettlementSystem`.
++- **Insight**: Strict "ID-only" architecture hits a boundary when interacting with legacy Systems that require Objects. The Orchestrator is the correct place to bridge this gap.
++
++### 4.2. DTO Structure Mimicry
++Interestingly, `ProductionStrategy` accessing `firm.finance.balance` did *not* need refactoring.
++- **Reason**: The strategy operates on `FirmStateDTO`, not the `Firm` object. The DTO structure (`firm.finance` being `FinanceStateDTO`) accidentally or intentionally mimicked the legacy proxy structure (`firm.finance` being `self`).
++- **Lesson**: DTOs provide a stable interface for decision logic that isolates it from the underlying agent implementation changes.
++
++### 4.3. Remaining Debt
++- **`process_payroll` Complexity**: `HREngine.process_payroll` still mixes calculation with side effects (updating `hr_state` for firing). Ideally, it should return a complex result object containing "Transactions to execute" and "State updates to apply", which the Orchestrator would then apply. Currently, it modifies `hr_state` in-place.
++- **`RealEstateUtilizationComponent`**: Refactored to be stateless, but it is still a standalone class in `firms.py`. It could be moved to a dedicated engine or module.
++
++## 5. Verification
++- **Unit Tests**: `tests/unit/test_firms.py` and `tests/simulation/test_firm_refactor.py` pass, confirming core functionality.
++- **Integration**: `Firm` operates correctly without `FinanceDepartment`.
+diff --git a/simulation/components/engines/hr_engine.py b/simulation/components/engines/hr_engine.py
+index b3f0d21a..ad88fcf2 100644
+--- a/simulation/components/engines/hr_engine.py
++++ b/simulation/components/engines/hr_engine.py
+@@ -48,7 +48,7 @@ class HREngine:
+         Returns list of Transactions.
+         """
+         generated_transactions: List[Transaction] = []
+-        exchange_rates = market_context['exchange_rates']
++        exchange_rates = market_context.get('exchange_rates', {DEFAULT_CURRENCY: 1.0})
+ 
+         # Calculate survival cost for tax logic
+         survival_cost = 10.0 # Default fallback
+@@ -197,24 +197,39 @@ class HREngine:
+         if employee.id in hr_state.employee_wages:
+             del hr_state.employee_wages[employee.id]
+ 
+-    def fire_employee(self, hr_state: HRState, firm_id: int, agent: Any, wallet: IWallet, settlement_system: Any, employee_id: int, severance_pay: float) -> bool:
++    def create_fire_transaction(self, hr_state: HRState, firm_id: int, wallet: IWallet, employee_id: int, severance_pay: float, current_time: int) -> Optional[Transaction]:
+         """
+-        Fires an employee with severance pay.
+-        Returns True if successful.
++        Creates a severance transaction to fire an employee.
++        Does NOT execute transfer or remove employee.
++        """
++        employee = next((e for e in hr_state.employees if e.id == employee_id), None)
++        if not employee:
++            return None
++
++        # Check funds directly on wallet
++        bal = wallet.get_balance(DEFAULT_CURRENCY)
++        if bal < severance_pay:
++             logger.warning(f"INTERNAL_EXEC | Firm {firm_id} cannot afford severance to fire {employee_id}.")
++             return None
++
++        return Transaction(
++            buyer_id=firm_id,
++            seller_id=employee.id,
++            item_id="Severance",
++            quantity=1.0,
++            price=severance_pay,
++            market_id="system", # or labor?
++            transaction_type="severance",
++            time=current_time,
++            currency=DEFAULT_CURRENCY
++        )
++
++    def finalize_firing(self, hr_state: HRState, employee_id: int):
++        """
++        Removes employee from state and triggers quit().
++        Should be called after successful severance payment.
+         """
+         employee = next((e for e in hr_state.employees if e.id == employee_id), None)
+         if employee:
+-            # Check funds directly on wallet
+-            bal = wallet.get_balance(DEFAULT_CURRENCY)
+-
+-            if bal >= severance_pay and settlement_system:
+-                if settlement_system.transfer(agent, employee, severance_pay, "Severance", currency=DEFAULT_CURRENCY):
+-                    employee.quit()
+-                    self.remove_employee(hr_state, employee)
+-                    logger.info(f"INTERNAL_EXEC | Firm {firm_id} fired employee {employee_id}.")
+-                    return True
+-                else:
+-                    logger.warning(f"INTERNAL_EXEC | Firm {firm_id} failed to fire {employee_id} (transfer failed).")
+-            else:
+-                logger.warning(f"INTERNAL_EXEC | Firm {firm_id} failed to fire {employee_id} (insufficient funds).")
+-        return False
++             employee.quit()
++             self.remove_employee(hr_state, employee)
+diff --git a/simulation/components/engines/production_engine.py b/simulation/components/engines/production_engine.py
+index 0f975ea0..e1b42315 100644
+--- a/simulation/components/engines/production_engine.py
++++ b/simulation/components/engines/production_engine.py
+@@ -25,7 +25,7 @@ class ProductionEngine:
+         config: FirmConfigDTO,
+         current_time: int,
+         firm_id: int,
+-        technology_manager: Optional[Any] = None
++        productivity_multiplier: float = 1.0
+     ) -> float:
+         """
+         Executes production logic.
+@@ -62,8 +62,7 @@ class ProductionEngine:
+ 
+             # Technology Multiplier
+             tfp = state.productivity_factor
+-            if technology_manager:
+-                tfp *= technology_manager.get_productivity_multiplier(firm_id)
++            tfp *= productivity_multiplier
+ 
+             # Quality Calculation
+             avg_skill = total_labor_skill / len(hr_state.employees) if hr_state.employees else 0.0
+diff --git a/simulation/components/engines/sales_engine.py b/simulation/components/engines/sales_engine.py
+index 37b51dbf..08ebeedc 100644
+--- a/simulation/components/engines/sales_engine.py
++++ b/simulation/components/engines/sales_engine.py
+@@ -8,7 +8,6 @@ from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
+ 
+ if TYPE_CHECKING:
+     from simulation.dtos.config_dtos import FirmConfigDTO
+-    from simulation.markets.order_book_market import OrderBookMarket
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -25,7 +24,7 @@ class SalesEngine:
+         item_id: str,
+         price: float,
+         quantity: float,
+-        market: OrderBookMarket,
++        market_id: str,
+         current_tick: int,
+         inventory_quantity: float,
+         brand_snapshot: Optional[Dict[str, Any]] = None
+@@ -46,7 +45,7 @@ class SalesEngine:
+             item_id=item_id,
+             quantity=actual_quantity,
+             price_limit=price,
+-            market_id=market.id,
++            market_id=market_id,
+             brand_info=brand_snapshot,
+             currency=DEFAULT_CURRENCY
+         )
+@@ -71,17 +70,17 @@ class SalesEngine:
+         state: SalesState,
+         firm_id: int,
+         wallet_balance: float, # Primary currency balance
+-        government: Any,
++        government_id: Optional[str],
+         current_time: int
+     ) -> Optional[Transaction]:
+         """
+         Generates marketing spend transaction.
+         """
+         budget = state.marketing_budget
+-        if budget > 0 and wallet_balance >= budget:
++        if budget > 0 and wallet_balance >= budget and government_id:
+             return Transaction(
+                 buyer_id=firm_id,
+-                seller_id=government.id,
++                seller_id=government_id,
+                 item_id="marketing",
+                 quantity=1.0,
+                 price=budget,
+diff --git a/simulation/components/finance_department.py b/simulation/components/finance_department.py
+deleted file mode 100644
+index 8f8bee71..00000000
+--- a/simulation/components/finance_department.py
++++ /dev/null
+@@ -1,509 +0,0 @@
+-from __future__ import annotations
+-from typing import List, Dict, Any, Optional, TYPE_CHECKING, Union
+-import logging
+-from collections import deque
+-from simulation.models import Transaction, Order
+-from modules.finance.api import IFinancialEntity, InsufficientFundsError, IFinanceDepartment, IShareholderRegistry
+-from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
+-from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, MarketContextDTO
+-
+-if TYPE_CHECKING:
+-    from simulation.firms import Firm
+-    from simulation.dtos.config_dtos import FirmConfigDTO
+-    # Household import removed as it is replaced by IFinancialEntity
+-
+-logger = logging.getLogger(__name__)
+-
+-class FinanceDepartment(IFinanceDepartment):
+-    """
+-    Manages assets, maintenance fees, corporate taxes, dividend distribution, and tracks financial metrics.
+-    Centralized Asset Management (WO-103 Phase 1).
+-    Refactored for Multi-Currency support (Phase 33, TD-213-B).
+-    """
+-    def __init__(self, firm: Firm, config: FirmConfigDTO, initial_capital: float = 0.0):
+-        self.firm = firm
+-        self.config = config
+-        self.primary_currency: CurrencyCode = DEFAULT_CURRENCY # Could be from config in future
+-
+-        # Financial State
+-        self.retained_earnings: float = 0.0 # Kept as float (primary currency equivalent)
+-        self.dividends_paid_last_tick: float = 0.0 # Primary currency equivalent
+-        self.consecutive_loss_turns: int = 0
+-        self.current_profit: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+-
+-        # Period Trackers
+-        self.revenue_this_turn: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+-        self.cost_this_turn: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+-        self.revenue_this_tick: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+-        self.expenses_this_tick: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+-
+-        # History
+-        self.profit_history: deque[float] = deque(maxlen=self.config.profit_history_ticks) # In primary currency
+-        self.last_revenue: float = 0.0 # In primary currency
+-        self.last_marketing_spend: float = 0.0 # In primary currency
+-
+-        # Solvency Support
+-        self.last_daily_expenses: float = 10.0 # In primary currency
+-        self.last_sales_volume: float = 1.0
+-        self.sales_volume_this_tick: float = 0.0
+-
+-        # WO-167: Grace Protocol (Distress Mode)
+-        self.is_distressed: bool = False
+-        self.distress_tick_counter: int = 0
+-
+-    @property
+-    def balance(self) -> Dict[CurrencyCode, float]:
+-        return self.firm.wallet.get_all_balances()
+-
+-    def get_balance(self, currency: CurrencyCode) -> float:
+-        return self.firm.wallet.get_balance(currency)
+-
+-    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+-        """Deposits a specific amount of a given currency."""
+-        self.firm.wallet.add(amount, currency)
+-
+-    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+-        """Withdraws a specific amount of a given currency. Raises InsufficientFundsError."""
+-        current_bal = self.firm.wallet.get_balance(currency)
+-        if current_bal < amount:
+-            raise InsufficientFundsError(
+-                f"Insufficient funds for withdrawal",
+-                required=MoneyDTO(amount=amount, currency=currency),
+-                available=MoneyDTO(amount=current_bal, currency=currency)
+-            )
+-        self.firm.wallet.subtract(amount, currency)
+-
+-    def credit(self, amount: float, description: str = "", currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+-        """Legacy helper: Adds funds to the firm's cash reserves."""
+-        self.deposit(amount, currency)
+-
+-    def debit(self, amount: float, description: str = "", currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+-        """Legacy helper: Deducts funds from the firm's cash reserves."""
+-        self.withdraw(amount, currency)
+-
+-    def record_revenue(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY):
+-        if currency not in self.revenue_this_turn:
+-            self.revenue_this_turn[currency] = 0.0
+-            self.revenue_this_tick[currency] = 0.0
+-            self.current_profit[currency] = 0.0
+-        
+-        self.revenue_this_turn[currency] += amount
+-        self.revenue_this_tick[currency] += amount
+-        self.current_profit[currency] += amount
+-
+-    def record_expense(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY):
+-        if currency not in self.cost_this_turn:
+-            self.cost_this_turn[currency] = 0.0
+-            self.expenses_this_tick[currency] = 0.0
+-            self.current_profit[currency] = 0.0
+-            
+-        self.cost_this_turn[currency] += amount
+-        self.expenses_this_tick[currency] += amount
+-        self.current_profit[currency] -= amount
+-
+-    def convert_to_primary(self, amount: float, currency: CurrencyCode, exchange_rates: Dict[CurrencyCode, float]) -> float:
+-        """Helper to convert any currency to primary currency."""
+-        if currency == self.primary_currency:
+-            return amount
+-        # Rate is 1 unit of Currency = X units of DEFAULT_CURRENCY?
+-        # Typically exchange rates are relative to DEFAULT_CURRENCY (USD).
+-        # Assuming exchange_rates[CUR] is price of CUR in USD.
+-        # If primary is USD, then amount * rate.
+-        rate = exchange_rates.get(currency, 0.0)
+-        # If rate is 0/missing, assume 0 value or 1.0 parity? Spec says use exchange_rates.
+-        # Assuming exchange_rates has valid rates.
+-        return amount * rate
+-
+-    def generate_holding_cost_transaction(self, government: IFinancialEntity, current_time: int) -> Optional[Transaction]:
+-        """Generates inventory holding cost transaction."""
+-        # This uses get_inventory_value which currently assumes hardcoded price logic.
+-        # We'll stick to primary currency for internal cost calculation for now.
+-        inventory_value = self.get_inventory_value() # Returns float (assumed primary)
+-        holding_cost = inventory_value * self.config.inventory_holding_cost_rate
+-
+-        if holding_cost > 0:
+-            self.record_expense(holding_cost, self.primary_currency)
+-            return Transaction(
+-                buyer_id=self.firm.id,
+-                seller_id=government.id,
+-                item_id="holding_cost",
+-                quantity=1.0,
+-                price=holding_cost,
+-                market_id="system",
+-                transaction_type="holding_cost",
+-                time=current_time,
+-                currency=self.primary_currency
+-            )
+-        return None
+-
+-    def generate_maintenance_transaction(self, government: IFinancialEntity, current_time: int) -> Optional[Transaction]:
+-        """Generates maintenance fee transaction."""
+-        fee = self.config.firm_maintenance_fee
+-        current_balance = self.firm.wallet.get_balance(self.primary_currency)
+-        payment = min(current_balance, fee)
+-
+-        if payment > 0:
+-            self.record_expense(payment, self.primary_currency)
+-            return Transaction(
+-                buyer_id=self.firm.id,
+-                seller_id=government.id,
+-                item_id="firm_maintenance",
+-                quantity=1.0,
+-                price=payment,
+-                market_id="system",
+-                transaction_type="tax",
+-                time=current_time,
+-                currency=self.primary_currency
+-            )
+-        return None
+-
+-    def generate_marketing_transaction(self, government: IFinancialEntity, current_time: int, amount: float) -> Optional[Transaction]:
+-        """
+-        Generates marketing spend transaction.
+-        Amount is expected to be in primary currency.
+-        """
+-        if amount > 0:
+-            self.record_expense(amount, self.primary_currency)
+-            return Transaction(
+-                buyer_id=self.firm.id,
+-                seller_id=government.id,
+-                item_id="marketing",
+-                quantity=1.0,
+-                price=amount,
+-                market_id="system",
+-                transaction_type="marketing",
+-                time=current_time,
+-                currency=self.primary_currency
+-            )
+-        return None
+-
+-    def process_profit_distribution(self, shareholder_registry: IShareholderRegistry, government: IFinancialEntity, current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
+-        """Public Shareholders Dividend & Bailout Repayment (Multi-Currency)."""
+-        transactions = []
+-        exchange_rates = market_context['exchange_rates']
+-
+-        # Calculate total profit in primary currency for history tracking
+-        total_profit_primary = 0.0
+-        for cur, profit in self.current_profit.items():
+-            total_profit_primary += self.convert_to_primary(profit, cur, exchange_rates)
+-
+-        self.profit_history.append(total_profit_primary)
+-
+-        # Bailout Repayment (Only in Primary Currency usually, but let's check debt currency)
+-        # Assuming debt is in primary currency (USD)
+-        usd_profit = self.current_profit.get(DEFAULT_CURRENCY, 0.0)
+-
+-        if getattr(self.firm, 'has_bailout_loan', False) and usd_profit > 0:
+-            repayment_ratio = self.config.bailout_repayment_ratio
+-            repayment = usd_profit * repayment_ratio
+-
+-            transactions.append(
+-                Transaction(
+-                    buyer_id=self.firm.id,
+-                    seller_id=government.id,
+-                    item_id="bailout_repayment",
+-                    quantity=1.0,
+-                    price=repayment,
+-                    market_id="system",
+-                    transaction_type="repayment",
+-                    time=current_time,
+-                    currency=DEFAULT_CURRENCY
+-                )
+-            )
+-
+-            if hasattr(self.firm, 'total_debt'):
+-                self.firm.total_debt -= repayment
+-            self.current_profit[DEFAULT_CURRENCY] -= repayment
+-            usd_profit -= repayment # Update local var
+-
+-            if getattr(self.firm, 'total_debt', 0.0) <= 0:
+-                self.firm.has_bailout_loan = False
+-
+-        # Dividends (Multi-Currency)
+-        self.dividends_paid_last_tick = 0.0
+-
+-        total_shares = self.firm.total_shares
+-        shareholders = shareholder_registry.get_shareholders_of_firm(self.firm.id)
+-
+-        for cur, profit in self.current_profit.items():
+-            distributable_profit = max(0, profit * self.firm.dividend_rate)
+-            if distributable_profit > 0 and total_shares > 0 and shareholders:
+-                # Add to total paid (converted)
+-                self.dividends_paid_last_tick += self.convert_to_primary(distributable_profit, cur, exchange_rates)
+-
+-                for shareholder in shareholders:
+-                    shares = shareholder['quantity']
+-                    agent_id = shareholder['agent_id']
+-
+-                    # Skip self-owned treasury shares for dividend payment
+-                    if agent_id == self.firm.id:
+-                        continue
+-
+-                    if shares > 0:
+-                        dividend_amount = distributable_profit * (shares / total_shares)
+-                        transactions.append(
+-                            Transaction(
+-                                buyer_id=self.firm.id,
+-                                seller_id=agent_id,
+-                                item_id="dividend",
+-                                quantity=1.0,
+-                                price=dividend_amount,
+-                                market_id="financial",
+-                                transaction_type="dividend",
+-                                time=current_time,
+-                                currency=cur
+-                            )
+-                        )
+-
+-        # Reset period counters
+-        # TD-213-B: Update last_revenue before reset
+-        total_revenue_primary = 0.0
+-        for cur, amount in self.revenue_this_turn.items():
+-            total_revenue_primary += self.convert_to_primary(amount, cur, exchange_rates)
+-        self.last_revenue = total_revenue_primary
+-
+-        for cur in list(self.current_profit.keys()): # List copy to avoid runtime error if we modify keys
+-             self.current_profit[cur] = 0.0
+-             self.revenue_this_turn[cur] = 0.0
+-             self.cost_this_turn[cur] = 0.0
+-             self.revenue_this_tick[cur] = 0.0
+-             self.expenses_this_tick[cur] = 0.0
+-
+-        return transactions
+-
+-    def generate_financial_transactions(self, government: IFinancialEntity, shareholder_registry: IShareholderRegistry, current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
+-        """Consolidates all financial outflow generation logic."""
+-        transactions = []
+-        tx_holding = self.generate_holding_cost_transaction(government, current_time)
+-        if tx_holding: transactions.append(tx_holding)
+-        tx_maint = self.generate_maintenance_transaction(government, current_time)
+-        if tx_maint: transactions.append(tx_maint)
+-        txs_public = self.process_profit_distribution(shareholder_registry, government, current_time, market_context)
+-        transactions.extend(txs_public)
+-        return transactions
+-
+-    def add_liability(self, amount: float, interest_rate: float):
+-        if not hasattr(self.firm, 'total_debt'):
+-            self.firm.total_debt = 0.0
+-        self.firm.total_debt += amount
+-
+-    def calculate_altman_z_score(self, market_context: Optional[MarketContextDTO] = None) -> float:
+-        # TD-240: Multi-currency support
+-        if market_context is None:
+-            exchange_rates = {DEFAULT_CURRENCY: 1.0}
+-        else:
+-            exchange_rates = market_context['exchange_rates']
+-
+-        # Calculate Total Assets (Sum of all currencies converted + Capital + Inventory)
+-        usd_balance = 0.0
+-        for cur, amount in self.firm.wallet.get_all_balances().items():
+-             usd_balance += self.convert_to_primary(amount, cur, exchange_rates)
+-
+-        total_assets = usd_balance + self.firm.capital_stock + self.get_inventory_value()
+-        if total_assets == 0: return 0.0
+-
+-        working_capital = usd_balance - getattr(self.firm, 'total_debt', 0.0)
+-        x1 = working_capital / total_assets
+-        x2 = self.retained_earnings / total_assets
+-        avg_profit = sum(self.profit_history) / len(self.profit_history) if self.profit_history else 0.0
+-        x3 = avg_profit / total_assets
+-        return 1.2 * x1 + 1.4 * x2 + 3.3 * x3
+-
+-    def get_estimated_unit_cost(self, item_id: str) -> float:
+-        target = getattr(self.firm, 'production_target', 10.0)
+-        return self.last_daily_expenses / max(1.0, target)
+-
+-    def check_bankruptcy(self):
+-        # Bankruptcy based on primary currency profit or total?
+-        # Logic says: "consecutive loss turns".
+-        # We track profit history in primary currency.
+-        # But here we check self.current_profit before reset?
+-        # Wait, check_bankruptcy is usually called BEFORE profit distribution/reset?
+-        # If check_bankruptcy assumes current_profit is not yet reset, we need to sum it up.
+-
+-        # NOTE: logic in original was: `if self.current_profit.get(DEFAULT_CURRENCY, 0.0) < 0:`
+-        # We should check total profit converted.
+-        # But we might not have exchange rates here easily.
+-        # Let's rely on primary currency profit for simplicity/robustness if rates not avail.
+-        # OR, assuming check_bankruptcy is called in a context where we just check primary.
+-
+-        primary_profit = self.current_profit.get(self.primary_currency, 0.0)
+-
+-        if primary_profit < 0:
+-            self.consecutive_loss_turns += 1
+-        else:
+-            self.consecutive_loss_turns = 0
+-
+-        threshold = getattr(self.config, "bankruptcy_consecutive_loss_threshold", 20)
+-        if self.consecutive_loss_turns >= threshold:
+-            self.firm.is_bankrupt = True
+-
+-    def check_cash_crunch(self) -> bool:
+-        threshold = 0.1 * self.last_daily_expenses
+-        return self.firm.wallet.get_balance(self.primary_currency) < threshold
+-
+-    def trigger_emergency_liquidation(self) -> List[Order]:
+-        orders = []
+-        for good, qty in self.firm.get_all_items().items():
+-            if qty <= 0: continue
+-            price = self.firm.last_prices.get(good, 10.0)
+-            order = Order(
+-                agent_id=self.firm.id, side="SELL", item_id=good,
+-                quantity=qty, price_limit=price * 0.8, market_id=good,
+-                currency=self.primary_currency
+-            )
+-            orders.append(order)
+-        return orders
+-
+-    def calculate_valuation(self, market_context: MarketContextDTO = None) -> MoneyDTO:
+-        """
+-        Calculates the firm's total valuation, converted to its primary currency.
+-        """
+-        if market_context is None:
+-            exchange_rates = {DEFAULT_CURRENCY: 1.0}
+-        else:
+-            exchange_rates = market_context['exchange_rates']
+-
+-        total_assets_val = 0.0
+-        # Cash
+-        for cur, amount in self.firm.wallet.get_all_balances().items():
+-            total_assets_val += self.convert_to_primary(amount, cur, exchange_rates)
+-
+-        # Inventory & Capital Stock (Assuming priced in primary)
+-        total_assets_val += self.get_inventory_value() + self.firm.capital_stock
+-
+-        avg_profit = sum(self.profit_history) / len(self.profit_history) if self.profit_history else 0.0
+-        valuation_amt = total_assets_val + max(0.0, avg_profit) * self.config.valuation_per_multiplier
+-
+-        self.firm.valuation = valuation_amt # Store float in firm for legacy/cache
+-
+-        return MoneyDTO(amount=valuation_amt, currency=self.primary_currency)
+-
+-    def get_inventory_value(self) -> float:
+-        total_val = 0.0
+-        for good, qty in self.firm.get_all_items().items():
+-             price = self.firm.last_prices.get(good, 10.0)
+-             total_val += qty * price
+-        return total_val
+-
+-    def get_financial_snapshot(self) -> Dict[str, Union[MoneyDTO, MultiCurrencyWalletDTO, float]]:
+-        """
+-        Returns a comprehensive, currency-aware snapshot.
+-        """
+-        wallet_dto = MultiCurrencyWalletDTO(balances=self.firm.wallet.get_all_balances())
+-
+-        # Total assets (estimated in primary for float fields, or return wallet)
+-        # Spec says: Dict[str, MoneyDTO | MultiCurrencyWalletDTO]
+-        # But existing code expects keys like "working_capital" as floats maybe?
+-        # We will provide structured data.
+-
+-        # Calculating legacy float metrics for backward compat where feasible
+-        usd_balance = self.firm.wallet.get_balance(DEFAULT_CURRENCY)
+-        total_assets = usd_balance + self.get_inventory_value() + getattr(self.firm, 'capital_stock', 0.0)
+-        current_liabilities = getattr(self.firm, "total_debt", 0.0)
+-
+-        avg_profit = 0.0
+-        if self.profit_history:
+-            recent = list(self.profit_history)[-10:]
+-            avg_profit = sum(recent) / len(recent)
+-
+-        return {
+-            "wallet": wallet_dto,
+-            "total_assets_est": MoneyDTO(amount=total_assets, currency=DEFAULT_CURRENCY), # Approximate
+-            "working_capital_est": MoneyDTO(amount=total_assets - current_liabilities, currency=DEFAULT_CURRENCY),
+-            "retained_earnings_dto": MoneyDTO(amount=self.retained_earnings, currency=self.primary_currency),
+-            "average_profit_dto": MoneyDTO(amount=avg_profit, currency=self.primary_currency),
+-            "total_debt": MoneyDTO(amount=current_liabilities, currency=DEFAULT_CURRENCY),
+-            # Legacy keys (float) if needed by other systems (optional but helpful)
+-            "total_assets": total_assets,
+-            "working_capital": total_assets - current_liabilities,
+-            "retained_earnings": self.retained_earnings,
+-            "average_profit": avg_profit,
+-        }
+-
+-    def issue_shares(self, quantity: float, price: float) -> float:
+-        if quantity <= 0 or price <= 0: return 0.0
+-        self.firm.total_shares += quantity
+-        return quantity * price
+-
+-    def get_book_value_per_share(self) -> MoneyDTO:
+-        outstanding_shares = self.firm.total_shares - self.firm.treasury_shares
+-        if outstanding_shares <= 0:
+-            return MoneyDTO(amount=0.0, currency=self.primary_currency)
+-
+-        debt = getattr(self.firm, 'total_debt', 0.0)
+-        # Net Assets in primary currency
+-        net_assets = self.firm.wallet.get_balance(self.primary_currency) - debt
+-        # Note: This ignores other currency holdings if not converted.
+-        # Ideally should convert all, but requires exchange rates which we don't have here easily.
+-        # Assuming book value is roughly primary currency based.
+-
+-        val = max(0.0, net_assets) / outstanding_shares
+-        return MoneyDTO(amount=val, currency=self.primary_currency)
+-
+-    def get_market_cap(self, stock_price: Optional[float] = None) -> float:
+-        # Returns float (primary currency)
+-        if stock_price is None:
+-            bv = self.get_book_value_per_share()
+-            stock_price = bv['amount']
+-        return (self.firm.total_shares - self.firm.treasury_shares) * stock_price
+-
+-    def get_assets(self) -> float:
+-        """Legacy accessor: returns primary currency balance."""
+-        return self.firm.wallet.get_balance(self.primary_currency)
+-
+-    def invest_in_automation(self, amount: float, government: Optional[IFinancialEntity] = None) -> bool:
+-        if self.firm.wallet.get_balance(self.primary_currency) < amount: return False
+-        if not self.firm.settlement_system or not government: return False
+-        return self.firm.settlement_system.transfer(self.firm, government, amount, "Automation", currency=self.primary_currency)
+-
+-    def invest_in_rd(self, amount: float, government: Optional[IFinancialEntity] = None) -> bool:
+-        if self.firm.wallet.get_balance(self.primary_currency) < amount: return False
+-        if not self.firm.settlement_system or not government: return False
+-        if self.firm.settlement_system.transfer(self.firm, government, amount, "R&D", currency=self.primary_currency):
+-            self.record_expense(amount, self.primary_currency)
+-            return True
+-        return False
+-
+-    def invest_in_capex(self, amount: float, government: Optional[IFinancialEntity] = None) -> bool:
+-        if self.firm.wallet.get_balance(self.primary_currency) < amount: return False
+-        if not self.firm.settlement_system or not government: return False
+-        return self.firm.settlement_system.transfer(self.firm, government, amount, "CAPEX", currency=self.primary_currency)
+-
+-    def set_dividend_rate(self, new_rate: float) -> None:
+-        self.firm.dividend_rate = new_rate
+-
+-    def pay_severance(self, employee: IFinancialEntity, amount: float) -> bool:
+-        if self.firm.wallet.get_balance(self.primary_currency) >= amount and self.firm.settlement_system:
+-            if self.firm.settlement_system.transfer(self.firm, employee, amount, "Severance", currency=self.primary_currency):
+-                self.record_expense(amount, self.primary_currency)
+-                return True
+-        return False
+-
+-    def pay_ad_hoc_tax(self, amount: float, currency: CurrencyCode, reason: str, government: Any, current_time: int) -> None:
+-        if self.firm.wallet.get_balance(currency) >= amount and self.firm.settlement_system:
+-            if self.firm.settlement_system.transfer(self.firm, government, amount, reason, currency=currency):
+-                self.record_expense(amount, currency)
+-
+-    def finalize_tick(self, market_context: MarketContextDTO) -> None:
+-        """
+-        Resets tick-specific counters and updates history.
+-        Called by PostSequence phase.
+-        """
+-        exchange_rates = market_context['exchange_rates']
+-
+-        # 1. Update last_daily_expenses (SUM of all currency expenses converted to primary)
+-        total_expenses = 0.0
+-        for cur, amount in self.expenses_this_tick.items():
+-            total_expenses += self.convert_to_primary(amount, cur, exchange_rates)
+-        self.last_daily_expenses = total_expenses
+-
+-        # 2. Update last_sales_volume
+-        self.last_sales_volume = self.sales_volume_this_tick
+-
+-        # 3. Reset Counters
+-        self.sales_volume_this_tick = 0.0
+-
+-        # Reset Dicts to initial state (preserve primary currency key)
+-        self.expenses_this_tick = {self.primary_currency: 0.0}
+-        self.revenue_this_tick = {self.primary_currency: 0.0}
+diff --git a/simulation/components/hr_department.py b/simulation/components/hr_department.py
+deleted file mode 100644
+index 4576dc43..00000000
+--- a/simulation/components/hr_department.py
++++ /dev/null
+@@ -1,220 +0,0 @@
+-from __future__ import annotations
+-from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
+-import logging
+-from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
+-from modules.hr.api import IEmployeeDataProvider
+-
+-if TYPE_CHECKING:
+-    from simulation.firms import Firm
+-    from simulation.models import Transaction
+-
+-logger = logging.getLogger(__name__)
+-
+-class HRDepartment:
+-    """
+-    Manages employees, calculates wages (skill + halo), and handles insolvency firing.
+-    Extracted from Firm class (SoC Refactor).
+-    """
+-    def __init__(self, firm: Firm):
+-        self.firm = firm
+-        self.employees: List[IEmployeeDataProvider] = []
+-        self.employee_wages: Dict[int, float] = {}  # AgentID -> Wage
+-        self.unpaid_wages: Dict[int, List[Tuple[int, float]]] = {} # AgentID -> List[(tick, amount)]
+-        self.hires_last_tick: int = 0
+-
+-    def calculate_wage(self, employee: IEmployeeDataProvider, base_wage: float) -> float:
+-        """
+-        Calculates wage based on skill and halo effect.
+-        """
+-        # WO-023-B: Skill-based Wage Bonus
+-        actual_skill = employee.labor_skill
+-
+-        # WO-Sociologist: Halo Effect (Credential Premium)
+-        education_level = employee.education_level
+-        halo_modifier = 1.0 + (education_level * self.firm.config.halo_effect)
+-
+-        return base_wage * actual_skill * halo_modifier
+-
+-    def process_payroll(self, current_time: int, government: Optional[Any], market_data: Optional[Dict[str, Any]], market_context: MarketContextDTO) -> List[Transaction]:
+-        """
+-        Pays wages to employees. Handles insolvency firing if assets are insufficient.
+-        Returns list of Transactions.
+-        Refactored for Multi-Currency Operational Awareness (TD-032).
+-        """
+-        from simulation.models import Transaction
+-
+-        generated_transactions: List[Transaction] = []
+-        exchange_rates = market_context['exchange_rates']
+-
+-        # Calculate survival cost for tax logic
+-        survival_cost = 10.0 # Default fallback
+-        if government and market_data:
+-            survival_cost = government.get_survival_cost(market_data)
+-
+-        # Iterate over copy to allow modification
+-        for employee in list(self.employees):
+-            # Protocol ensures properties exist, but checking employer_id matches firm is logic
+-            if employee.employer_id != self.firm.id or not employee.is_employed:
+-                self.employees.remove(employee)
+-                if employee.id in self.employee_wages:
+-                    del self.employee_wages[employee.id]
+-                continue
+-
+-            base_wage = self.employee_wages.get(employee.id, self.firm.config.labor_market_min_wage)
+-            wage = self.calculate_wage(employee, base_wage)
+-
+-            # Affordability Check (Operational Awareness: Total Liquid Assets)
+-            # TD-032: Check total liquid assets converted to primary to prevent firing if solvent in other currencies.
+-            total_liquid_assets = 0.0
+-            for cur, amount in self.firm.finance.balance.items():
+-                total_liquid_assets += self.firm.finance.convert_to_primary(amount, cur, exchange_rates)
+-
+-            # Check if we can pay specifically in the wage currency (assumed DEFAULT_CURRENCY for now)
+-            current_balance = self.firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+-
+-            if current_balance >= wage:
+-                # Calculate Tax
+-                income_tax = 0.0
+-                if government:
+-                    income_tax = government.calculate_income_tax(wage, survival_cost)
+-
+-                net_wage = wage - income_tax
+-
+-                # Transaction 1: Net Wage (Firm -> Employee)
+-                tx_wage = Transaction(
+-                    buyer_id=self.firm.id, # Payer
+-                    seller_id=employee.id, # Payee
+-                    item_id="labor_wage",
+-                    quantity=1.0,
+-                    price=net_wage,
+-                    market_id="labor",
+-                    transaction_type="wage",
+-                    time=current_time
+-                )
+-                generated_transactions.append(tx_wage)
+-
+-                # Transaction 2: Income Tax (Firm -> Government) [Withholding]
+-                if income_tax > 0 and government:
+-                    tx_tax = Transaction(
+-                        buyer_id=self.firm.id, # Payer
+-                        seller_id=government.id, # Payee
+-                        item_id="income_tax",
+-                        quantity=1.0,
+-                        price=income_tax,
+-                        market_id="system",
+-                        transaction_type="tax",
+-                        time=current_time
+-                    )
+-                    generated_transactions.append(tx_tax)
+-
+-                # Track Labor Income (Side Effect)
+-                employee.labor_income_this_tick += net_wage
+-
+-            elif total_liquid_assets >= wage:
+-                # TD-032: Solvent but Illiquid in Wage Currency -> Zombie (Unpaid Wage) without Firing
+-                self._record_zombie_wage(employee, wage, current_time)
+-            else:
+-                # Insolvent -> Fire (via insolvency handler)
+-                self._handle_insolvency_transactions(employee, wage, current_time, generated_transactions)
+-
+-        return generated_transactions
+-
+-    def _record_zombie_wage(self, employee: IEmployeeDataProvider, wage: float, current_time: int) -> None:
+-        """Records an unpaid wage without firing the employee."""
+-        # Record unpaid wage for Tier 1 claim in liquidation
+-        if employee.id not in self.unpaid_wages:
+-            self.unpaid_wages[employee.id] = []
+-
+-        self.unpaid_wages[employee.id].append((current_time, wage))
+-
+-        # Prune old unpaid wages (older than 3 months)
+-        ticks_per_year = getattr(self.firm.config, "ticks_per_year", 365)
+-        # 3 months = 1/4 year
+-        cutoff_tick = current_time - (ticks_per_year // 4)
+-
+-        self.unpaid_wages[employee.id] = [
+-            (t, w) for t, w in self.unpaid_wages[employee.id]
+-            if t >= cutoff_tick
+-        ]
+-
+-        # Use balance.get for logging deficit
+-        current_balance = self.firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+-        self.firm.logger.warning(
+-            f"ZOMBIE | Firm {self.firm.id} cannot afford wage for Household {employee.id}. Recorded as unpaid wage.",
+-            extra={"tick": current_time, "agent_id": self.firm.id, "wage_deficit": wage - current_balance, "total_unpaid": len(self.unpaid_wages[employee.id])}
+-        )
+-
+-    def _handle_insolvency_transactions(self, employee: IEmployeeDataProvider, wage: float, current_time: int, tx_list: List[Transaction]):
+-        """
+-        Handles case where firm cannot afford wage.
+-        Attempts severance pay; if fails, zombie state (unpaid retention).
+-        """
+-        from simulation.models import Transaction
+-
+-        severance_weeks = self.firm.config.severance_pay_weeks
+-        severance_pay = wage * severance_weeks
+-
+-        # Refactor: Use finance.balance
+-        current_balance = self.firm.finance.balance.get(DEFAULT_CURRENCY, 0.0)
+-        if current_balance >= severance_pay:
+-            # Fire with severance (Transaction)
+-            tx = Transaction(
+-                buyer_id=self.firm.id,
+-                seller_id=employee.id,
+-                item_id="severance_pay",
+-                quantity=1.0,
+-                price=severance_pay,
+-                market_id="labor",
+-                transaction_type="severance",
+-                time=current_time
+-            )
+-            tx_list.append(tx)
+-
+-            self.firm.logger.info(
+-                f"SEVERANCE | Firm {self.firm.id} paid severance {severance_pay:.2f} to Household {employee.id}. Firing due to insolvency.",
+-                extra={"tick": current_time, "agent_id": self.firm.id, "severance_pay": severance_pay}
+-            )
+-
+-            employee.quit()
+-            self.remove_employee(employee)
+-        else:
+-            # Fallback to Zombie if we can't even afford severance
+-            self._record_zombie_wage(employee, wage, current_time)
+-
+-    def hire(self, employee: IEmployeeDataProvider, wage: float, current_tick: int = 0):
+-        self.employees.append(employee)
+-        self.employee_wages[employee.id] = wage
+-        self.hires_last_tick += 1
+-
+-        # Set employment start tick for tenure calculation (Tier 1 Severance)
+-        employee.employment_start_tick = current_tick
+-
+-    def remove_employee(self, employee: IEmployeeDataProvider):
+-        if employee in self.employees:
+-            self.employees.remove(employee)
+-        if employee.id in self.employee_wages:
+-            del self.employee_wages[employee.id]
+-
+-    def fire_employee(self, employee_id: int, severance_pay: float) -> bool:
+-        """
+-        Fires an employee with severance pay.
+-        Returns True if successful (found and paid), False otherwise.
+-        """
+-        employee = next((e for e in self.employees if e.id == employee_id), None)
+-        if employee:
+-            if self.firm.finance.pay_severance(employee, severance_pay):
+-                employee.quit()
+-                self.remove_employee(employee)
+-                self.firm.logger.info(f"INTERNAL_EXEC | Firm {self.firm.id} fired employee {employee_id}.")
+-                return True
+-            else:
+-                self.firm.logger.warning(f"INTERNAL_EXEC | Firm {self.firm.id} failed to fire {employee_id} (insufficient funds).")
+-        return False
+-
+-    def get_total_labor_skill(self) -> float:
+-        return sum(emp.labor_skill for emp in self.employees)
+-
+-    def get_avg_skill(self) -> float:
+-        if not self.employees:
+-            return 0.0
+-        return self.get_total_labor_skill() / len(self.employees)
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 71ca97e3..62b14ac9 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -1,6 +1,6 @@
+ from __future__ import annotations
+ from collections import deque
+-from typing import List, Dict, Any, Optional, override, TYPE_CHECKING
++from typing import List, Dict, Any, Optional, override, TYPE_CHECKING, Tuple
+ import logging
+ import copy
+ import math
+@@ -41,17 +41,17 @@ class RealEstateUtilizationComponent:
+     TD-271: Converts firm-owned real estate into a production bonus.
+     Applies production cost reduction based on owned space and market conditions.
+     """
+-    def apply(self, firm: "Firm", current_tick: int, market_data: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
++    def apply(self, owned_properties: List[int], config: FirmConfigDTO, firm_id: int, current_tick: int, market_data: Optional[Dict[str, Any]] = None) -> Tuple[Optional[Dict[str, Any]], float]:
+         # 1. Calculate Owned Space
+         # Assuming 1 property = 1 unit of space for now (or configurable)
+-        owned_space = len(firm.owned_properties)
++        owned_space = len(owned_properties)
+         if owned_space <= 0:
+-            return None
++            return None, 0.0
+ 
+         # 2. Get Factors
+         # space_utility_factor: How much cost reduction per unit of space?
+         # Ideally from config. Assuming default 100.0 if not in config.
+-        space_utility_factor = getattr(firm.config, "space_utility_factor", 100.0)
++        space_utility_factor = getattr(config, "space_utility_factor", 100.0)
+ 
+         # regional_rent_index: From market data or default 1.0
+         regional_rent_index = 1.0
+@@ -64,12 +64,9 @@ class RealEstateUtilizationComponent:
+         # 4. Apply Bonus
+         # Effectively reduces net cost by increasing revenue/profit internally
+         if cost_reduction > 0:
+-             # We assume this is a virtual saving.
+-             firm.record_revenue(cost_reduction, DEFAULT_CURRENCY)
+-
+-             return {
++             effect = {
+                  "type": "PRODUCTION_COST_REDUCTION",
+-                 "agent_id": firm.id,
++                 "agent_id": firm_id,
+                  "amount": cost_reduction,
+                  "tick": current_tick,
+                  "details": {
+@@ -77,7 +74,8 @@ class RealEstateUtilizationComponent:
+                      "utility_factor": space_utility_factor
+                  }
+              }
+-        return None
++             return effect, cost_reduction
++        return None, 0.0
+ 
+ if TYPE_CHECKING:
+     from simulation.finance.api import ISettlementSystem
+@@ -227,15 +225,6 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
+     def wallet(self) -> Wallet:
+         return self._wallet
+ 
+-    # --- Legacy/Compatibility ---
+-    @property
+-    def finance(self) -> "Firm":
+-        """
+-        Legacy proxy for backward compatibility.
+-        Routes `firm.finance.record_expense()` to `firm.record_expense()`.
+-        """
+-        return self
+-
+     # --- ICreditFrozen Implementation ---
+ 
+     @property
+@@ -590,7 +579,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
+             "quality": self.get_quality(item_id),
+         }
+         return self.sales_engine.post_ask(
+-            self.sales_state, self.id, item_id, price, quantity, market, current_tick, self.get_quantity(item_id),
++            self.sales_state, self.id, item_id, price, quantity, market.id, current_tick, self.get_quantity(item_id),
+             brand_snapshot=brand_snapshot
+         )
+ 
+@@ -615,6 +604,10 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
+         self.sales_engine.adjust_marketing_budget(self.sales_state, market_context, total_revenue)
+ 
+     def produce(self, current_time: int, technology_manager: Optional[Any] = None, effects_queue: Optional[List[Dict[str, Any]]] = None) -> None:
++        productivity_multiplier = 1.0
++        if technology_manager:
++            productivity_multiplier = technology_manager.get_productivity_multiplier(self.id)
++
+         self.current_production = self.production_engine.produce(
+             self.production_state,
+             self, # IInventoryHandler
+@@ -622,11 +615,19 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
+             self.config,
+             current_time,
+             self.id,
+-            technology_manager
++            productivity_multiplier
+         )
+ 
+         # TD-271: Real Estate Utilization
+-        effect = self.real_estate_utilization_component.apply(self, current_time)
++        effect, amount = self.real_estate_utilization_component.apply(
++            self.finance_state.owned_properties,
++            self.config,
++            self.id,
++            current_time
++        )
++        if amount > 0:
++            self.record_revenue(amount, DEFAULT_CURRENCY)
++
+         if effect and effects_queue is not None:
+             effects_queue.append(effect)
+ 
+@@ -861,9 +862,16 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
+             pass
+ 
+         elif order.order_type == "FIRE":
+-            self.hr_engine.fire_employee(
+-                self.hr_state, self.id, self, self.wallet, self.settlement_system, order.target_agent_id, order.price
++            tx = self.hr_engine.create_fire_transaction(
++                self.hr_state, self.id, self.wallet, order.target_agent_id, order.price, current_time
+             )
++            if tx:
++                employee = next((e for e in self.hr_state.employees if e.id == order.target_agent_id), None)
++                if employee and self.settlement_system and self.settlement_system.transfer(self, employee, tx.price, "Severance", currency=tx.currency):
++                    self.hr_engine.finalize_firing(self.hr_state, order.target_agent_id)
++                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} fired employee {order.target_agent_id}.")
++                else:
++                    self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed to fire {order.target_agent_id} (transfer failed).")
+ 
+     def _calculate_invisible_hand_price(self, market_snapshot: MarketSnapshotDTO, current_tick: int) -> None:
+         if not market_snapshot.market_signals: return
+@@ -928,7 +936,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
+ 
+         # 3. Marketing
+         tx_marketing = self.sales_engine.generate_marketing_transaction(
+-            self.sales_state, self.id, self.wallet.get_balance(DEFAULT_CURRENCY), government, current_time
++            self.sales_state, self.id, self.wallet.get_balance(DEFAULT_CURRENCY), gov_id, current_time
+         )
+         if tx_marketing:
+             transactions.append(tx_marketing)
+diff --git a/simulation/orchestration/phases/post_sequence.py b/simulation/orchestration/phases/post_sequence.py
+index bfac0b17..26d40315 100644
+--- a/simulation/orchestration/phases/post_sequence.py
++++ b/simulation/orchestration/phases/post_sequence.py
+@@ -133,13 +133,10 @@ class Phase5_PostSequence(IPhaseStrategy):
+             if hasattr(f, 'reset'):
+                 # WO-4.6: New reset interface
+                 f.reset()
+-            elif hasattr(f, 'finance') and hasattr(f.finance, 'finalize_tick'):
+-                # Legacy: Correctly handles multi-currency reset and capitalization
+-                f.finance.finalize_tick(market_context)
+             else:
+                 logger.warning(
+-                    f"FIRM_RESET_SKIPPED | Firm {f.id} skipped finance reset.",
+-                    extra={"firm_id": f.id, "has_finance": hasattr(f, 'finance')}
++                    f"FIRM_RESET_SKIPPED | Firm {f.id} missing reset method.",
++                    extra={"firm_id": f.id}
+                 )
+ 
+         if self.world_state.generational_wealth_audit and state.time % 100 == 0:
+diff --git a/simulation/systems/accounting.py b/simulation/systems/accounting.py
+index 84184f29..95e4734b 100644
+--- a/simulation/systems/accounting.py
++++ b/simulation/systems/accounting.py
+@@ -27,9 +27,9 @@ class AccountingSystem(IAccountingSystem):
+         if isinstance(seller, Firm):
+             # Goods, Service, or any sales revenue
+             if tx_type in ["goods", "service", "export"]: # Generic sales
+-                seller.finance.record_revenue(amount)
++                seller.record_revenue(amount, transaction.currency)
+                 if tx_type == "goods":
+-                     seller.finance.sales_volume_this_tick += transaction.quantity
++                     seller.finance_state.sales_volume_this_tick += transaction.quantity
+ 
+         elif isinstance(seller, Household):
+             if tx_type in ["labor", "research_labor"]:
+@@ -44,9 +44,9 @@ class AccountingSystem(IAccountingSystem):
+         # 2. Buyer Expenses
+         if isinstance(buyer, Firm):
+             if tx_type in ["labor", "research_labor"]:
+-                buyer.finance.record_expense(amount)
++                buyer.record_expense(amount, transaction.currency)
+             elif tx_type == "interest_payment":
+-                 buyer.finance.record_expense(amount)
++                 buyer.record_expense(amount, transaction.currency)
+             # What about goods (raw materials)?
+             # TransactionProcessor didn't explicitly record expense for raw materials in _handle_goods_transaction
+             # It only updated inventory.
+diff --git a/simulation/systems/handlers/financial_handler.py b/simulation/systems/handlers/financial_handler.py
+index 1b7f7d06..372891e7 100644
+--- a/simulation/systems/handlers/financial_handler.py
++++ b/simulation/systems/handlers/financial_handler.py
+@@ -25,7 +25,7 @@ class FinancialTransactionHandler(ITransactionHandler):
+              success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
+ 
+              if success and isinstance(buyer, Firm):
+-                 buyer.finance.record_expense(trade_value)
++                 buyer.record_expense(trade_value, tx.currency)
+ 
+         elif tx_type == "dividend":
+              success = context.settlement_system.transfer(seller, buyer, trade_value, "dividend_payment")
+@@ -55,7 +55,7 @@ class FinancialTransactionHandler(ITransactionHandler):
+                      })
+ 
+                  # WO-116 Fix: Ensure Firms record tax as expense for accounting integrity
+-                 if isinstance(buyer, Firm) and hasattr(buyer, 'finance'):
+-                     buyer.finance.record_expense(trade_value)
++                 if isinstance(buyer, Firm):
++                     buyer.record_expense(trade_value, tx.currency)
+ 
+         return success is not None
+diff --git a/simulation/systems/handlers/public_manager_handler.py b/simulation/systems/handlers/public_manager_handler.py
+index bccda03d..e1f5781e 100644
+--- a/simulation/systems/handlers/public_manager_handler.py
++++ b/simulation/systems/handlers/public_manager_handler.py
+@@ -83,7 +83,7 @@ class PublicManagerTransactionHandler(ITransactionHandler):
+              # AccountingSystem: "if isinstance(buyer, Firm): ... buyer.finance.record_expense(amount)"
+              # for labor/interest. Not strictly for goods in AccountingSystem, but TP fixed it.
+              # We should record expense if it's a purchase.
+-             buyer.finance.record_expense(trade_value)
++             buyer.record_expense(trade_value, tx.currency)
+ 
+         return True
+ 
+diff --git a/tests/unit/components/test_finance_department_bankruptcy.py b/tests/unit/components/test_finance_department_bankruptcy.py
+deleted file mode 100644
+index 61a839d3..00000000
+--- a/tests/unit/components/test_finance_department_bankruptcy.py
++++ /dev/null
+@@ -1,85 +0,0 @@
+-import pytest
+-from unittest.mock import MagicMock
+-from simulation.components.finance_department import FinanceDepartment
+-from simulation.firms import Firm
+-from modules.system.api import DEFAULT_CURRENCY
+-
+-class TestFinanceDepartmentBankruptcy:
+-    @pytest.fixture
+-    def config(self):
+-        mock_config = MagicMock()
+-        mock_config.bankruptcy_consecutive_loss_threshold = 5
+-        mock_config.brand_resilience_factor = 0.5 # 1 point of awareness = 0.5 tick resilience?
+-        # Wait, implementation was: resilience_ticks = int(awareness * factor)
+-        # So factor should be e.g. 0.5 means 2 awareness -> 1 tick.
+-        # Let's use 0.1. 10 awareness -> 1 tick.
+-        mock_config.brand_resilience_factor = 0.1
+-        mock_config.profit_history_ticks = 10
+-        return mock_config
+-
+-    @pytest.fixture
+-    def firm_setup(self, config):
+-        firm = MagicMock(spec=Firm)
+-        firm.brand_manager = MagicMock()
+-        firm.brand_manager.awareness = 0.0
+-        firm.is_bankrupt = False
+-        finance = FinanceDepartment(firm, config)
+-        return firm, finance
+-
+-    def test_bankruptcy_threshold_no_resilience(self, firm_setup):
+-        firm, finance = firm_setup
+-        firm.brand_manager.awareness = 0.0 # Resilience = 0
+-
+-        # Threshold is 5.
+-        # Simulate 4 losses
+-        for _ in range(4):
+-            finance.current_profit[DEFAULT_CURRENCY] = -100.0
+-            finance.check_bankruptcy()
+-            assert not firm.is_bankrupt
+-
+-        # 5th loss
+-        finance.current_profit[DEFAULT_CURRENCY] = -100.0
+-        finance.check_bankruptcy()
+-        assert firm.is_bankrupt
+-
+-    def test_bankruptcy_resilience(self, firm_setup):
+-        firm, finance = firm_setup
+-        # Resilience factor 0.1.
+-        # Give awareness 20. Resilience = int(20 * 0.1) = 2 ticks.
+-        firm.brand_manager.awareness = 20.0
+-
+-        # Threshold is 5. Effective threshold = 5 + 2 = 7?
+-        # Logic: effective_loss_ticks = consecutive - resilience.
+-        # effective >= threshold.
+-        # consecutive - resilience >= 5
+-        # consecutive >= 5 + resilience = 7.
+-
+-        # So firm should survive 6 losses.
+-        for _ in range(6):
+-            finance.current_profit[DEFAULT_CURRENCY] = -100.0
+-            finance.check_bankruptcy()
+-            assert not firm.is_bankrupt
+-
+-        # 7th loss
+-        finance.current_profit[DEFAULT_CURRENCY] = -100.0
+-        finance.check_bankruptcy()
+-        assert firm.is_bankrupt
+-
+-    def test_bankruptcy_reset_on_profit(self, firm_setup):
+-        firm, finance = firm_setup
+-
+-        # 3 losses
+-        for _ in range(3):
+-            finance.current_profit[DEFAULT_CURRENCY] = -100.0
+-            finance.check_bankruptcy()
+-
+-        # 1 profit
+-        finance.current_profit[DEFAULT_CURRENCY] = 100.0
+-        finance.check_bankruptcy()
+-        assert finance.consecutive_loss_turns == 0
+-
+-        # 3 losses again
+-        for _ in range(3):
+-            finance.current_profit[DEFAULT_CURRENCY] = -100.0
+-            finance.check_bankruptcy()
+-            assert not firm.is_bankrupt
+diff --git a/tests/unit/test_finance_department_currency.py b/tests/unit/test_finance_department_currency.py
+deleted file mode 100644
+index f6aefea7..00000000
+--- a/tests/unit/test_finance_department_currency.py
++++ /dev/null
+@@ -1,137 +0,0 @@
+-import pytest
+-from unittest.mock import Mock, MagicMock
+-from simulation.components.finance_department import FinanceDepartment
+-from modules.finance.dtos import MoneyDTO
+-from modules.system.api import DEFAULT_CURRENCY
+-from modules.finance.api import InsufficientFundsError
+-
+-class MockWallet:
+-    def __init__(self):
+-        self.balances = {DEFAULT_CURRENCY: 1000.0, "EUR": 500.0}
+-
+-    def get_all_balances(self):
+-        return self.balances
+-
+-    def get_balance(self, currency):
+-        return self.balances.get(currency, 0.0)
+-
+-    def add(self, amount, currency, memo=""):
+-        self.balances[currency] = self.balances.get(currency, 0.0) + amount
+-
+-    def subtract(self, amount, currency, memo=""):
+-        self.balances[currency] = self.balances.get(currency, 0.0) - amount
+-
+-@pytest.fixture
+-def firm_mock():
+-    firm = Mock()
+-    firm.wallet = MockWallet()
+-    firm.id = 1
+-    firm.total_shares = 100
+-    firm.treasury_shares = 0
+-    firm.dividend_rate = 0.1
+-    firm.inventory = {}
+-    firm.capital_stock = 100.0
+-    firm.last_prices = {}
+-    firm.settlement_system = None
+-    firm.has_bailout_loan = False
+-    firm.total_debt = 0.0
+-    return firm
+-
+-@pytest.fixture
+-def config_mock():
+-    config = Mock()
+-    config.profit_history_ticks = 10
+-    config.inventory_holding_cost_rate = 0.01
+-    config.firm_maintenance_fee = 10.0
+-    config.valuation_per_multiplier = 10.0
+-    config.bailout_repayment_ratio = 0.1
+-    return config
+-
+-def test_multi_currency_balance(firm_mock, config_mock):
+-    finance = FinanceDepartment(firm_mock, config_mock)
+-    assert finance.get_balance(DEFAULT_CURRENCY) == 1000.0
+-    assert finance.get_balance("EUR") == 500.0
+-
+-def test_deposit_withdraw(firm_mock, config_mock):
+-    finance = FinanceDepartment(firm_mock, config_mock)
+-    finance.deposit(100.0, "EUR")
+-    assert finance.get_balance("EUR") == 600.0
+-
+-    finance.withdraw(50.0, "EUR")
+-    assert finance.get_balance("EUR") == 550.0
+-
+-    with pytest.raises(InsufficientFundsError):
+-        finance.withdraw(1000.0, "EUR")
+-
+-def test_valuation(firm_mock, config_mock):
+-    finance = FinanceDepartment(firm_mock, config_mock)
+-    market_context = {
+-        "exchange_rates": {DEFAULT_CURRENCY: 1.0, "EUR": 1.1},
+-        "benchmark_rates": {}
+-    }
+-
+-    # 1000 USD + 500 EUR * 1.1 = 1000 + 550 = 1550 USD cash
+-    # Inventory 0
+-    # Capital Stock 100
+-    # Total Assets = 1650
+-    # Profit 0
+-    # Valuation = 1650
+-
+-    val = finance.calculate_valuation(market_context)
+-    assert val['currency'] == DEFAULT_CURRENCY
+-    assert val['amount'] == pytest.approx(1650.0)
+-
+-def test_generate_transactions_dividends(firm_mock, config_mock):
+-    finance = FinanceDepartment(firm_mock, config_mock)
+-    finance.current_profit = {DEFAULT_CURRENCY: 100.0, "EUR": 50.0}
+-
+-    # Mock households
+-    h1 = Mock()
+-    h1.id = 101
+-    # TD-233 Fix: Mock get_stock_quantity instead of to_legacy_dict
+-    h1.portfolio.get_stock_quantity.side_effect = lambda fid: 50.0 if fid == 1 else 0.0
+-
+-    market_context = {
+-        "exchange_rates": {DEFAULT_CURRENCY: 1.0, "EUR": 1.1},
+-        "benchmark_rates": {}
+-    }
+-
+-    transactions = finance.process_profit_distribution([h1], Mock(), 1, market_context)
+-
+-    # Expect dividend in USD: 100 * 0.1 = 10 total. H1 gets 5.
+-    # Expect dividend in EUR: 50 * 0.1 = 5 total. H1 gets 2.5.
+-
+-    assert len(transactions) == 2
+-    usd_tx = next(t for t in transactions if t.currency == DEFAULT_CURRENCY)
+-    eur_tx = next(t for t in transactions if t.currency == "EUR")
+-
+-    assert usd_tx.price == 5.0
+-    assert eur_tx.price == 2.5
+-
+-def test_altman_z_score_multi_currency(firm_mock, config_mock):
+-    # TD-240 Verification
+-    finance = FinanceDepartment(firm_mock, config_mock)
+-    market_context = {
+-        "exchange_rates": {DEFAULT_CURRENCY: 1.0, "EUR": 1.2},
+-        "benchmark_rates": {}
+-    }
+-
+-    # USD Balance: 1000.0
+-    # EUR Balance: 500.0 -> 600.0 USD
+-    # Total Cash: 1600.0 USD
+-    # Capital Stock: 100.0 USD
+-    # Inventory: 0.0
+-    # Total Assets = 1700.0
+-
+-    # Working Capital = 1600.0
+-    # Retained Earnings = 0.0
+-    # Avg Profit = 0.0
+-
+-    # x1 = 1600/1700 = 0.941176
+-
+-    score = finance.calculate_altman_z_score(market_context)
+-
+-    expected_x1 = 1600.0 / 1700.0
+-    expected_score = 1.2 * expected_x1
+-
+-    assert score == pytest.approx(expected_score, abs=0.0001)

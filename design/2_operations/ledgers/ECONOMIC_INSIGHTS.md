@@ -29,10 +29,33 @@
 - **[2026-02-09] Cockpit's Direct State Injection (Divine Intervention)**
     - Implementation of a real-time policy control layer. Identified the need for "Divine Intervention" event types to avoid side-effect isolation and state inconsistencies.
     - [Insight Report](../_archive/insights/2026-02-09_Cockpit_Direct_State_Intervention.md)
+- **[2026-02-09] Tick-Level State Reset Best Practices**
+    - **Problem**: Tick-level state variables (e.g., `expenses_this_tick`) were being reset mid-lifecycle, causing data loss for later-stage processes like learning and analysis.
+    - **Principle**: All agent tick-level state resets must occur uniformly at the end of the simulation cycle (e.g., a "Post-Sequence" phase). This ensures that all phases within the tick have access to a consistent, complete dataset.
+    - **Implementation**: Enforce a standardized `reset()` method on agents, to be called exclusively by the orchestrator during the final phase.
+    - [Insight Report](../_archive/insights/2026-02-09_System_Tick_Level_State_Reset_Best_Practices.md)
+- **[2026-02-09] Protocol Composition for Contextual Interfaces**
+    - **Problem**: A component (e.g., `HousingTransactionHandler`) required agents to satisfy multiple distinct capabilities (owning property, having a financial balance, earning a wage), leading to complex and fragile `isinstance` or `hasattr` checks.
+    - **Principle**: Instead of creating a single, monolithic "God Interface," combine multiple small, role-based protocols (e.g., `IPropertyOwner`, `IFinancialAgent`) into a new, context-specific protocol (e.g., `IHousingTransactionParticipant`).
+    - **Implementation**: The new composite protocol is used for a single `isinstance` check, guaranteeing the object fulfills all required contracts for that specific interaction.
+    - [Insight Report](../_archive/insights/2026-02-09_System_Protocol_Composition_Pattern.md)
+- **[2026-02-09] API Contract Preservation During Internal Refactoring**
+    - **Problem**: Refactoring an agent's internal state management (e.g., moving data into internal DTOs) by removing properties and methods from the main class caused cascading system-wide `AttributeError` failures.
+    - **Principle**: An object's public API is a contract that must be maintained even when its internal implementation changes. Abruptly removing or changing the API breaks consumers.
+    - **Implementation**: When refactoring internals, preserve the public API by implementing proxy properties and methods on the main class that delegate calls to the new internal structures. This allows consumers to migrate to a new API gradually.
+    - [Insight Report](../_archive/insights/2026-02-09_System_API_Contract_Preservation.md)
 - **[2026-01-25] R&D Investment and Endogenous Innovation**
     - Transition from time-based to probabilistic unlock models driven by firm activity.
+- **[2026-02-10] Decoupled Decision Engines via DTOs**
+    - **Principle**: An agent's decision-making logic (the "how") should be decoupled from its state (the "what"). Stateless "Engines" (e.g., `SurvivalEngine`, `ProductionEngine`) should operate on input Data Transfer Objects (DTOs) and return output DTOs, without directly modifying the agent's internal state.
+    - **Implementation**: The agent Orchestrator is responsible for preparing the input DTOs, invoking the appropriate Engine, and then integrating the resulting output DTO back into its state. This promotes testability, modularity, and prevents spaghetti-like dependencies.      
+    - [Insight Report](../_archive/insights/2026-02-10_Ecosystem_Health_and_Agent_Decisions.md)
 - **[2026-01-20] Data Contract Mismatch (AttributeError)**
     - Lessons on TypedDict vs Object access patterns in API layers.
+- **[2026-02-10] Tick-Level State Reset Integrity**
+    - **Principle**: To ensure data availability for all simulation phases (e.g., learning, analysis), agent state variables relevant for an entire tick (`expenses_this_tick`) must only be reset at the very end of the simulation cycle (i.e., in the Post-Sequence phase). Resetting state mid-cycle leads to data loss for later-stage processes.
+    - **Implementation**: Enforce a standardized `reset()` method on agents, to be called exclusively by the orchestrator during the final phase of a tick.
+    - [Insight Report](../_archive/insights/2026-02-10_Tick_Level_State_Reset_Integrity.md)
 
 ---
 
@@ -65,5 +88,9 @@
 
 - **[2026-01-25] Grace Protocol for Agent Solvency**
     - Distinguishing Liquidity from Solvency through Fire Sale mechanisms.
+- **[2026-02-10] Ecosystem Health Affects Survival Decisions**
+    - **Insight**: Individual agent decisions (e.g., survival spending, production choices) are directly influenced by their perception of the broader ecosystem's health. A declining economy triggers more conservative, survival-focused behaviors, whereas a booming economy encourages risk-taking and investment.
+    - **Mechanism**: The `health_factor` in the `SurvivalEngine` acts as a key psychological input, modulating an agent's willingness to spend versus save, creating a feedback loop between macro conditions and micro behavior.
+    - [Insight Report](../_archive/insights/2026-02-10_Ecosystem_Health_and_Agent_Decisions.md)
 - **[2026-01-15] Population Dynamics & Birth Rate (r/K Selection)**
     - Analysis of expectation mismatch and childcare time constraints on population.

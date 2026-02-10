@@ -5,28 +5,25 @@
 
 ### [Domain: Agents & Orchestration]
 
+#### [TD-FIRM-GOD-OBJECT] [Open] The `Firm` class is a "God Object" with legacy proxy properties.
+- **Description**: The `Firm` class combines multiple concerns (finance, production, etc.) and uses legacy patterns like the `finance` property returning `self` for backward compatibility. This creates fragile, non-obvious dependencies in orchestration code and increases the risk of state management errors.
+- **Impact**: High. Obscures true component structure, complicates maintenance, and violates Separation of Concerns.
+- **Source**: [Insight Report](../_archive/insights/2026-02-10_Tick_Level_State_Reset_Integrity.md)
 
+---
 ### [Domain: Systems & Infrastructure]
 
 ---
 
-### TD-270: Protocol Interface Mismatch (Mortgage vs Finance)
+### TD-274: Settlement System SSoT Violation (Inheritance Path)
 
-- **Phenomenon**: `IMortgageBorrower` defines `assets` as a `Dict[str, float]`, but `IFinancialAgent` and actual implementations often treat `assets` as a `float` (Total Wealth).
-- **Risk**: Prevents seamless protocol composition. The `HousingTransactionHandler` had to bypass `IMortgageBorrower` for balance checks.
-- **Resolution**: Unify the asset representation across financial protocols. Standardize on `Dict[str, float]` for multi-currency support while providing a `total_wealth` property.
-- **Reference**: `protocol_shield_hardening.md` (2026-02-09)
-
----
-
-### TD-271: Firm Real Estate Underutilization
-
-- **Phenomenon**: `Firm` agents can now own property (to satisfy `IPropertyOwner`), but they do not use it for production, office space, or rental income.
-- **Risk**: Property held by firms acts as a sterile asset, potentially causing a liquidity sink without contributing to simulation utility or GDP.
-- **Resolution**: Integrate property ownership into the `ProductionEngine` (e.g., land/space as a factor) and `FirmManagement` (ROI calculations for real estate).
-- **Reference**: `protocol_shield_hardening.md` (2026-02-09)
+- **Phenomenon**: `SettlementSystem.create_settlement()` was directly accessing `agent.assets` instead of using the `IFinancialAgent.get_balance()` protocol.
+- **Risk**: Creates a bypass of the financial monitoring layers and potential for monetary leaks during agent removal (inheritance/liquidation).
+- **Resolution**: Replaced direct attribute access with the formal `get_balance(DEFAULT_CURRENCY)` protocol method.
+- **Reference**: `Interface Purity Compliance Report` (2026-02-09)
 
 ---
+
 
 ### TD-255: Cockpit's Direct State Injection
 
@@ -77,7 +74,21 @@
 
 ---
 
+### TD-272: Inconsistent Use of System Constants
+
+- **Phenomenon**: The codebase, particularly the test suite, uses a mix of hardcoded literals (e.g., `'USD'`) and system-defined constants (e.g., `DEFAULT_CURRENCY`).
+- **Risk**: Makes the system brittle. A future change to the default currency would require a manual, error-prone search-and-replace.
+- **Resolution**: Mandate the use of system constants and add a linting rule to detect hardcoded literals where a constant is available.
+- **Reference**: `../_archive/insights/2026-02-09_Review_Integrity_Shield_Fix.md`
+
 ---
+
+### TD-273: Stringly-Typed Agent Identifiers
+
+- **Phenomenon**: System processes (e.g., welfare transfers) use a mix of object instances, integer IDs, and special string literals (e.g., `"GOVERNMENT"`) to identify agents.
+- **Risk**: Creates fragile logic that must explicitly check for and handle different identifier types, leading to potential errors if a type is missed.
+- **Resolution**: Implement a unified Agent ID type or class that can encapsulate both regular and singleton agents.
+- **Reference**: `../_archive/insights/2026-02-09_System_API_Contract_Preservation.md`
 
 ---
 
@@ -97,6 +108,7 @@
 | **TD-262** | Scripts | BaseAgent 제거 이후 깨진 검증 스크립트 복구 | PH10 | [Insight](file:///c:/coding/economics/design/_archive/gemini_output/pr_review_bundle-purity-regression-1978915247438186068.md) |
 | **TD-DTO-CONTRACT** | Simulation | DTO 필드명 변경 시 발생한 contract 불일치 해결 | PH10 | [Insight](file:///c:/coding/economics/design/_archive/gemini_output/pr_review_bundle-purity-regression-1978915247438186068.md) |
 | **TD-263** | Scripts / Maintenance | Report Harvester 누락 경로 반영 및 원격 브랜치 청소 로직 최적화 | PH10.1 | [Log](./design/2_operations/ledgers/INBOUND_REPORTS.md) |
+| **TD-274** | Financials | `SettlementSystem` SSoT 위반 (create_settlement) 해결 | PH9.2 | [Report](../../reports/temp/report_20260209_223920_Analyze_the_current.md) |
 | **TD-264** | Financials | `SettlementSystem` 우회 코드 제거 및 `IFinancialAgent` 도입 | PH9.2 | [Insight](file:///c:/coding/economics/design/_archive/insights/PH9.2_TrackA.md) |
 | **TD-265** | Sensory | `SensorySystem` 캡슐화 파괴 해결 및 DTO 전환 | PH9.2 | [Insight](file:///c:/coding/economics/design/_archive/insights/PH9.2_TrackB_SensoryPurity.md) |
 | **TD-266** | Markets | `CanonicalOrderDTO` 도입 및 주문 파편화 해소 | PH9.2 | [Insight](file:///c:/coding/economics/design/_archive/insights/PH9.2_Market_DTO_Unification.md) |
@@ -108,4 +120,6 @@
 | **TD-FIN-PURE** | Finance | **Stateless**: Refactored bailout request to Command pattern. | PH10.3 | [Insight](../_archive/insights/2026-02-09_PH10.3_Structural_Integrity.md) |
 | **TD-JUD-ASSET** | Judicial | **Waterfall**: Implemented hierarchical asset seizure. | PH10.3 | [Insight](../_archive/insights/2026-02-09_PH10.3_Structural_Integrity.md) |
 | **TD-LIQ-INV** | Liquidation | **Protocol**: `IConfigurable` replacement for `getattr` hacks. | PH10.4 | [Insight](../_archive/insights/2026-02-09_TD-LIQ-INV_Protocol_Purification.md) |
-| **TD-255** | Housing | **Hardening**: Replaced `hasattr` with `IHousingTransactionParticipant`. | PH12 (Shield) | [Insight](../../communications/insights/protocol_shield_hardening.md) |
+| **TD-255** | Housing | **Hardening**: Replaced `hasattr` with `IHousingTransactionParticipant`. | PH12 (Shield) | [Insight](../_archive/insights/2026-02-09_System_Protocol_Composition_Pattern.md) |
+| **TD-270** | Financials | **Protocol**: Unified asset representation & added `total_wealth`. | PH10 | [Repo](../_archive/gemini_output/pr_review_market-decoupling-v2-11057596794459553753.md) |
+| **TD-271** | Firms | **Utilization**: RealEstateUtilizationComponent for production bonus. | PH10 | [Repo](../_archive/gemini_output/pr_review_market-decoupling-v2-11057596794459553753.md) |

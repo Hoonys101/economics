@@ -1,0 +1,990 @@
+diff --git a/communications/insights/TD-273_AgentID_Refactor.md b/communications/insights/TD-273_AgentID_Refactor.md
+new file mode 100644
+index 00000000..93eecd59
+--- /dev/null
++++ b/communications/insights/TD-273_AgentID_Refactor.md
+@@ -0,0 +1,33 @@
++# Technical Insight Report: Unified Agent ID Refactor (TD-273)
++
++## 1. Problem Phenomenon
++The codebase currently exhibits inconsistent handling of agent identifiers, leading to "stringly-typed" logic and potential runtime errors.
++- **Symptoms**:
++  - `IBank` interface expects `borrower_id: str`, but `Bank` implementation strictly converts it to `int` and fails otherwise.
++  - `LoanInfoDTO`, `DebtStatusDTO`, and `BorrowerProfileDTO` use `str` for IDs, while `ShareholderData`, `LoanDTO`, and `DepositDTO` use `int`.
++  - `WorldState.resolve_agent_id` converts string roles like "GOVERNMENT" to `int` IDs, but this logic is ad-hoc.
++  - Callers like `LoanMarket` and `HousingTransactionHandler` explicitly cast `agent.id` (int) to `str()` to satisfy mismatched interfaces.
++- **Stack Traces**: None observed yet, but the code is fragile. If a non-integer string (e.g., "GOVERNMENT") were passed to `Bank.grant_loan`, it would log an error and return `None` (silent failure or unexpected behavior in callers).
++
++## 2. Root Cause Analysis
++- **Historical Drift**: The system likely started with integer IDs, but string IDs were introduced for special agents (Government) or UUIDs (Loans). Interfaces were patched to accept `str` to accommodate these cases without a unified strategy.
++- **Lack of Canonical Type**: There was no single source of truth for what an "Agent ID" is.
++- **Protocol/Implementation Mismatch**: Interfaces (`Protocol`) were defined with `str` to be flexible/safe, but concrete implementations (`Bank`, `LoanManager`) enforced `int` logic.
++
++## 3. Solution Implementation Details
++- **Unified Type Definition**: Introduce `AgentID = NewType('AgentID', int)` and `SpecialAgentRole` literals in `modules/simulation/api.py`.
++- **Interface Refactoring**:
++  - Update `IBank`, `IFinancialAgent`, `IShareholderRegistry` and related DTOs (`LoanInfoDTO`, `BorrowerProfileDTO`, etc.) to use `AgentID`.
++  - Remove `str` type hints for agent IDs.
++- **Implementation Updates**:
++  - Remove `int(id_str)` casting in `Bank` and `LoanManager`.
++  - Remove `str(id_int)` casting in `LoanMarket` and `HousingTransactionHandler`.
++  - Update `WorldState.agents` to `Dict[AgentID, Any]`.
++- **Backward Compatibility**: `AgentID` is distinct at type-check time but compatible with `int` at runtime, minimizing disruption to logic that treats IDs as numbers (e.g., `id > 0`).
++
++## 4. Lessons Learned & Technical Debt Identified
++- **Strict Typing Pays Off**: Stringly-typed interfaces hide assumptions (e.g., "this string must be an int").
++- **DTO Consistency**: DTOs crossing module boundaries must share common primitive types.
++- **Protocol/Impl Alignment**: Protocols should reflect the actual constraints of the domain, not just the lowest common denominator (string).
++
++**Technical Debt Resolved**: TD-273 (Stringly-Typed Agent Identifiers).
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 809a60d8..2d191185 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
+ from uuid import UUID
+ from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO, LoanApplicationDTO, LoanDTO, DepositDTO
+ from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY, CurrencyCode
++from modules.simulation.api import AgentID, AnyAgentID
+ 
+ if TYPE_CHECKING:
+     from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
+@@ -100,7 +101,7 @@ class BailoutCovenant:
+ @dataclass
+ class BailoutLoanDTO:
+     """Data Transfer Object for corporate bailout loans."""
+-    firm_id: int
++    firm_id: AgentID
+     amount: float
+     interest_rate: float
+     covenants: BailoutCovenant
+@@ -111,7 +112,7 @@ class GrantBailoutCommand:
+     Command to grant a bailout loan.
+     Encapsulates all necessary parameters for execution by the PolicyExecutionEngine.
+     """
+-    firm_id: int
++    firm_id: AgentID
+     amount: float
+     interest_rate: float
+     covenants: BailoutCovenant
+@@ -137,8 +138,8 @@ class TaxCollectionResult(TypedDict):
+     success: bool
+     amount_collected: float
+     tax_type: str
+-    payer_id: Any
+-    payee_id: Any
++    payer_id: AgentID
++    payee_id: AgentID
+     error_message: Optional[str]
+ 
+ class LoanInfoDTO(TypedDict):
+@@ -146,7 +147,7 @@ class LoanInfoDTO(TypedDict):
+     Data Transfer Object for individual loan information.
+     """
+     loan_id: str
+-    borrower_id: str
++    borrower_id: AgentID
+     original_amount: float
+     outstanding_balance: float
+     interest_rate: float
+@@ -157,7 +158,7 @@ class DebtStatusDTO(TypedDict):
+     """
+     Comprehensive data transfer object for a borrower's overall debt status.
+     """
+-    borrower_id: str
++    borrower_id: AgentID
+     total_outstanding_debt: float
+     loans: List[LoanInfoDTO]
+     is_insolvent: bool
+@@ -194,7 +195,7 @@ class BorrowerProfileDTO(TypedDict):
+     Data Transfer Object holding all financial data for a borrower
+     needed for credit assessment. Anonymized from the concrete agent.
+     """
+-    borrower_id: str
++    borrower_id: AgentID
+     gross_income: float
+     existing_debt_payments: float
+     collateral_value: float # Value of the asset being purchased, if any
+@@ -216,7 +217,7 @@ class LienDTO(TypedDict):
+     This is the canonical data structure for all property-secured debt.
+     """
+     loan_id: str
+-    lienholder_id: int  # The ID of the agent/entity holding the lien (e.g., the bank)
++    lienholder_id: AgentID  # The ID of the agent/entity holding the lien (e.g., the bank)
+     principal_remaining: float
+     lien_type: Literal["MORTGAGE", "TAX_LIEN", "JUDGEMENT_LIEN"]
+ 
+@@ -226,7 +227,7 @@ class MortgageApplicationDTO(TypedDict):
+     This is the primary instrument for the new credit pipeline.
+     [TD-206] Synced with MortgageApplicationRequestDTO for precision.
+     """
+-    applicant_id: int
++    applicant_id: AgentID
+     requested_principal: float
+     purpose: Literal["MORTGAGE"]
+     property_id: int
+@@ -256,7 +257,7 @@ class ICreditScoringService(Protocol):
+ 
+ class EquityStake(TypedDict):
+     """Represents a shareholder's stake for Tier 5 distribution."""
+-    shareholder_id: int
++    shareholder_id: AgentID
+     ratio: float # Proportional ownership, e.g., 0.1 for 10%
+ 
+ @dataclass
+@@ -273,7 +274,7 @@ class ILiquidatable(Protocol):
+     An interface for any entity that can undergo a formal liquidation process.
+     Provides all necessary financial claims and asset information to a liquidator.
+     """
+-    id: int
++    id: AgentID
+ 
+     def liquidate_assets(self, current_tick: int) -> Dict[CurrencyCode, float]:
+         """
+@@ -304,7 +305,7 @@ class IFinancialEntity(Protocol):
+     Native implementation operates exclusively on DEFAULT_CURRENCY.
+     DEPRECATED: Prefer IFinancialAgent for multi-currency support.
+     """
+-    id: int
++    id: AgentID
+ 
+     @property
+     def assets(self) -> float:
+@@ -330,7 +331,7 @@ class IFinancialAgent(Protocol):
+     Strict protocol for any agent participating in the financial system.
+     Supports multi-currency operations and replaces direct attribute access.
+     """
+-    id: int
++    id: AgentID
+ 
+     def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         """Deposits a specific amount of a given currency."""
+@@ -365,14 +366,14 @@ class IBank(IFinancialAgent, Protocol):
+     """
+ 
+     @abc.abstractmethod
+-    def grant_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
++    def grant_loan(self, borrower_id: AgentID, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
+         """
+         Grants a loan to a borrower.
+         """
+         ...
+ 
+     @abc.abstractmethod
+-    def stage_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
++    def stage_loan(self, borrower_id: AgentID, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
+         """
+         Creates a loan record but does not disburse funds (no deposit creation).
+         """
+@@ -386,7 +387,7 @@ class IBank(IFinancialAgent, Protocol):
+         ...
+ 
+     @abc.abstractmethod
+-    def get_customer_balance(self, agent_id: str) -> float:
++    def get_customer_balance(self, agent_id: AgentID) -> float:
+         """
+         Retrieves the current balance for a given CUSTOMER account (deposit).
+         Use get_balance(currency) for the Bank's own funds.
+@@ -394,7 +395,7 @@ class IBank(IFinancialAgent, Protocol):
+         ...
+ 
+     @abc.abstractmethod
+-    def get_debt_status(self, borrower_id: str) -> DebtStatusDTO:
++    def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
+         """
+         Retrieves the comprehensive debt status for a given borrower.
+         """
+@@ -408,7 +409,7 @@ class IBank(IFinancialAgent, Protocol):
+         ...
+ 
+     @abc.abstractmethod
+-    def withdraw_for_customer(self, agent_id: int, amount: float) -> bool:
++    def withdraw_for_customer(self, agent_id: AgentID, amount: float) -> bool:
+         """
+         Withdraws funds from a customer's deposit account.
+         """
+@@ -486,7 +487,7 @@ class ICentralBank(IMonetaryOperations, Protocol):
+     """
+     Represents the Central Bank entity, responsible for executing monetary policy.
+     """
+-    id: int
++    id: AgentID
+ 
+     def process_omo_settlement(self, transaction: "Transaction") -> None:
+         """
+@@ -525,7 +526,7 @@ class IRealEstateRegistry(ABC):
+         ...
+ 
+     @abstractmethod
+-    def add_lien(self, property_id: int, loan_id: str, lienholder_id: int, principal: float) -> Optional[str]:
++    def add_lien(self, property_id: int, loan_id: str, lienholder_id: AgentID, principal: float) -> Optional[str]:
+         """Adds a lien to a property, returns a unique lien_id."""
+         ...
+ 
+@@ -535,7 +536,7 @@ class IRealEstateRegistry(ABC):
+         ...
+ 
+     @abstractmethod
+-    def transfer_ownership(self, property_id: int, new_owner_id: int) -> bool:
++    def transfer_ownership(self, property_id: int, new_owner_id: AgentID) -> bool:
+         """Finalizes the transfer of the property."""
+         ...
+ 
+@@ -608,26 +609,26 @@ class ITaxService(ABC):
+ # --- Shareholder Registry Interfaces (TD-275) ---
+ 
+ class ShareholderData(TypedDict):
+-    agent_id: int
+-    firm_id: int
++    agent_id: AgentID
++    firm_id: AgentID
+     quantity: float
+ 
+ @runtime_checkable
+ class IShareholderView(Protocol):
+     """View interface for a firm from the perspective of the stock market."""
+-    id: int
++    id: AgentID
+     is_active: bool
+     def get_book_value_per_share(self) -> float: ...
+ 
+ class IShareholderRegistry(Protocol):
+     """Single source of truth for stock ownership."""
+-    def register_shares(self, firm_id: int, agent_id: int, quantity: float) -> None:
++    def register_shares(self, firm_id: AgentID, agent_id: AgentID, quantity: float) -> None:
+         """Adds/removes shares. Zero quantity removes the registry entry."""
+         ...
+-    def get_shareholders_of_firm(self, firm_id: int) -> List[ShareholderData]:
++    def get_shareholders_of_firm(self, firm_id: AgentID) -> List[ShareholderData]:
+         """Returns list of owners for a firm."""
+         ...
+-    def get_total_shares(self, firm_id: int) -> float:
++    def get_total_shares(self, firm_id: AgentID) -> float:
+         """Returns total outstanding shares."""
+         ...
+ 
+@@ -637,26 +638,26 @@ class ILoanManager(Protocol):
+     """Interface for managing the entire lifecycle of loans."""
+     def submit_loan_application(self, application: LoanApplicationDTO) -> str: ...
+     def process_applications(self) -> None: ...
+-    def service_loans(self, current_tick: int, payment_callback: Callable[[int, float], bool]) -> List[Any]:
++    def service_loans(self, current_tick: int, payment_callback: Callable[[AgentID, float], bool]) -> List[Any]:
+         """
+         Calculates interest and attempts to collect payments via callback.
+         Returns generated transactions or events.
+         """
+         ...
+     def get_loan_by_id(self, loan_id: str) -> Optional[LoanDTO]: ...
+-    def get_loans_for_agent(self, agent_id: int) -> List[LoanDTO]: ...
++    def get_loans_for_agent(self, agent_id: AgentID) -> List[LoanDTO]: ...
+     def repay_loan(self, loan_id: str, amount: float) -> bool: ...
+ 
+ class IDepositManager(Protocol):
+     """Interface for managing agent deposit accounts."""
+-    def create_deposit(self, owner_id: int, amount: float, interest_rate: float, currency: str = "USD") -> str: ...
+-    def get_balance(self, agent_id: int) -> float: ...
+-    def get_deposit_dto(self, agent_id: int) -> Optional[DepositDTO]: ...
+-    def calculate_interest(self, current_tick: int) -> List[Tuple[int, float]]:
++    def create_deposit(self, owner_id: AgentID, amount: float, interest_rate: float, currency: str = "USD") -> str: ...
++    def get_balance(self, agent_id: AgentID) -> float: ...
++    def get_deposit_dto(self, agent_id: AgentID) -> Optional[DepositDTO]: ...
++    def calculate_interest(self, current_tick: int) -> List[Tuple[AgentID, float]]:
+         """
+         Calculates interest due for all deposits.
+         Returns a list of (depositor_id, interest_amount).
+         """
+         ...
+-    def withdraw(self, agent_id: int, amount: float) -> bool: ...
++    def withdraw(self, agent_id: AgentID, amount: float) -> bool: ...
+     def get_total_deposits(self) -> float: ...
+diff --git a/modules/finance/dtos.py b/modules/finance/dtos.py
+index 7470bc5e..a1b61382 100644
+--- a/modules/finance/dtos.py
++++ b/modules/finance/dtos.py
+@@ -1,4 +1,5 @@
+ from typing import TypedDict, Dict, Optional, List, TypeAlias, Literal
++from modules.simulation.api import AgentID
+ 
+ CurrencyCode: TypeAlias = str
+ 
+@@ -15,14 +16,14 @@ class InvestmentOrderDTO(TypedDict):
+     """Defines an internal order for investment (e.g., R&D, Capex)."""
+     order_type: str # e.g., "INVEST_RD", "INVEST_AUTOMATION"
+     investment: MoneyDTO
+-    target_agent_id: Optional[int] # For M&A, etc.
++    target_agent_id: Optional[AgentID] # For M&A, etc.
+ 
+ # --- Bank Decomposition DTOs (TD-274) ---
+ 
+ LoanStatus = Literal["PENDING", "ACTIVE", "PAID", "DEFAULTED"]
+ 
+ class LoanApplicationDTO(TypedDict):
+-    applicant_id: int
++    applicant_id: AgentID
+     amount: float
+     purpose: str
+     term_months: int # Or ticks, depending on usage. Assuming ticks based on Bank code.
+@@ -30,7 +31,7 @@ class LoanApplicationDTO(TypedDict):
+ 
+ class LoanDTO(TypedDict):
+     loan_id: str
+-    borrower_id: int
++    borrower_id: AgentID
+     principal: float
+     interest_rate: float
+     term_months: int
+@@ -40,6 +41,6 @@ class LoanDTO(TypedDict):
+     due_tick: Optional[int]
+ 
+ class DepositDTO(TypedDict):
+-    owner_id: int
++    owner_id: AgentID
+     balance: float
+     interest_rate: float
+diff --git a/modules/finance/managers/loan_manager.py b/modules/finance/managers/loan_manager.py
+index 19e365c6..d074510b 100644
+--- a/modules/finance/managers/loan_manager.py
++++ b/modules/finance/managers/loan_manager.py
+@@ -1,5 +1,6 @@
+ from typing import Dict, List, Optional, Tuple, Any, Callable
+ from dataclasses import dataclass
++from modules.simulation.api import AgentID
+ from modules.finance.api import (
+     ILoanManager, LoanDTO, LoanApplicationDTO, LoanNotFoundError,
+     IDepositManager, ICreditScoringService, BorrowerProfileDTO,
+@@ -16,7 +17,7 @@ _DEFAULT_TICKS_PER_YEAR = 365.0
+ @dataclass
+ class _Loan:
+     loan_id: str
+-    borrower_id: int
++    borrower_id: AgentID
+     principal: float
+     remaining_balance: float
+     annual_interest_rate: float
+@@ -46,7 +47,7 @@ class LoanManager(ILoanManager):
+         else:
+             self.ticks_per_year = getattr(config, "TICKS_PER_YEAR", _DEFAULT_TICKS_PER_YEAR) if config else _DEFAULT_TICKS_PER_YEAR
+ 
+-    def create_loan(self, borrower_id: int, amount: float, interest_rate: float,
++    def create_loan(self, borrower_id: AgentID, amount: float, interest_rate: float,
+                     start_tick: int, term_ticks: int, created_deposit_id: Optional[str] = None) -> str:
+         """
+         Creates a new loan and returns its ID.
+@@ -72,7 +73,7 @@ class LoanManager(ILoanManager):
+ 
+     def assess_and_create_loan(
+         self,
+-        borrower_id: int,
++        borrower_id: AgentID,
+         amount: float,
+         interest_rate: float,
+         due_tick: Optional[int],
+@@ -165,7 +166,7 @@ class LoanManager(ILoanManager):
+ 
+         dto = LoanInfoDTO(
+             loan_id=loan_id,
+-            borrower_id=str(borrower_id),
++            borrower_id=borrower_id,
+             original_amount=amount,
+             outstanding_balance=amount,
+             interest_rate=interest_rate,
+@@ -187,7 +188,7 @@ class LoanManager(ILoanManager):
+     def process_applications(self) -> None:
+         pass
+ 
+-    def service_loans(self, current_tick: int, payment_callback: Callable[[int, float], bool]) -> List[Any]:
++    def service_loans(self, current_tick: int, payment_callback: Callable[[AgentID, float], bool]) -> List[Any]:
+         """
+         Iterates active loans, calculates interest, and attempts to collect via callback.
+         Returns a list of event dicts:
+@@ -238,10 +239,10 @@ class LoanManager(ILoanManager):
+             return None
+         return self._map_to_dto(loan)
+ 
+-    def get_loans_for_agent(self, agent_id: int) -> List[LoanDTO]:
++    def get_loans_for_agent(self, agent_id: AgentID) -> List[LoanDTO]:
+         return [self._map_to_dto(l) for l in self._loans.values() if l.borrower_id == agent_id]
+ 
+-    def get_debt_status(self, borrower_id: int) -> DebtStatusDTO:
++    def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
+         loans_dto = self.get_loans_for_agent(borrower_id)
+         total_debt = sum(l['remaining_principal'] for l in loans_dto if l['remaining_principal'] > 0)
+ 
+@@ -250,7 +251,7 @@ class LoanManager(ILoanManager):
+             if l['remaining_principal'] <= 0: continue
+             loan_info_list.append(LoanInfoDTO(
+                 loan_id=l['loan_id'],
+-                borrower_id=str(l['borrower_id']),
++                borrower_id=l['borrower_id'],
+                 original_amount=l['principal'],
+                 outstanding_balance=l['remaining_principal'],
+                 interest_rate=l['interest_rate'],
+@@ -259,7 +260,7 @@ class LoanManager(ILoanManager):
+             ))
+ 
+         return DebtStatusDTO(
+-            borrower_id=str(borrower_id),
++            borrower_id=borrower_id,
+             total_outstanding_debt=total_debt,
+             loans=loan_info_list,
+             is_insolvent=False, # Logic for insolvency check can be added if needed
+@@ -267,7 +268,7 @@ class LoanManager(ILoanManager):
+             next_payment_due_tick=None
+         )
+ 
+-    def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
++    def get_debt_summary(self, agent_id: AgentID) -> Dict[str, float]:
+         loans = self.get_loans_for_agent(agent_id)
+         total_principal = sum(l['remaining_principal'] for l in loans)
+         daily_interest_burden = sum((l['remaining_principal'] * l['interest_rate']) / self.ticks_per_year for l in loans)
+diff --git a/modules/market/handlers/housing_transaction_handler.py b/modules/market/handlers/housing_transaction_handler.py
+index cc00bc2c..9812c87c 100644
+--- a/modules/market/handlers/housing_transaction_handler.py
++++ b/modules/market/handlers/housing_transaction_handler.py
+@@ -8,6 +8,7 @@ from modules.system.escrow_agent import EscrowAgent
+ from modules.common.interfaces import IPropertyOwner, IResident, IMortgageBorrower
+ from modules.system.api import DEFAULT_CURRENCY
+ from simulation.firms import Firm
++from modules.simulation.api import AgentID
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -111,7 +112,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+                 due_tick = context.time + mortgage_term
+ 
+                 grant_result = context.bank.grant_loan(
+-                    borrower_id=str(buyer.id),
++                    borrower_id=buyer.id,
+                     amount=loan_amount,
+                     interest_rate=mortgage_rate,
+                     due_tick=due_tick,
+@@ -230,7 +231,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+              assets_val = 0.0
+ 
+         return BorrowerProfileDTO(
+-            borrower_id=str(buyer.id),
++            borrower_id=AgentID(buyer.id),
+             gross_income=gross_income,
+             existing_debt_payments=existing_debt * 0.01, # Approx
+             collateral_value=trade_value,
+diff --git a/modules/simulation/api.py b/modules/simulation/api.py
+index 365fe25c..e770cf3b 100644
+--- a/modules/simulation/api.py
++++ b/modules/simulation/api.py
+@@ -1,9 +1,14 @@
+ from __future__ import annotations
+ from dataclasses import dataclass
+-from typing import Protocol, TypedDict, Any, List, Dict, Optional, TYPE_CHECKING, runtime_checkable
++from typing import Protocol, TypedDict, Any, List, Dict, Optional, TYPE_CHECKING, runtime_checkable, NewType, Literal, Union
+ 
+ import logging
+ 
++# --- Unified Agent Identifier ---
++AgentID = NewType('AgentID', int)
++SpecialAgentRole = Literal["GOVERNMENT", "CENTRAL_BANK", "BANK"]
++AnyAgentID = Union[AgentID, SpecialAgentRole]
++
+ if TYPE_CHECKING:
+     from simulation.finance.api import ISettlementSystem
+     from simulation.systems.api import IRegistry
+@@ -18,7 +23,7 @@ if TYPE_CHECKING:
+ @dataclass
+ class AgentCoreConfigDTO:
+     """Defines the immutable, core properties of an agent."""
+-    id: int
++    id: AgentID
+     value_orientation: str
+     initial_needs: Dict[str, float]
+     name: str
+@@ -127,7 +132,7 @@ class IDecisionEngine(Protocol):
+     def make_decision(self, state: AgentStateDTO, world_context: Any) -> DecisionDTO | Any: ...
+ 
+ class IAgent(Protocol):
+-    id: int
++    id: AgentID
+     is_active: bool
+ 
+ @runtime_checkable
+@@ -196,20 +201,20 @@ class IAgentRepository(Protocol):
+         ...
+ 
+ class ShareholderData(TypedDict):
+-    agent_id: int
+-    firm_id: int
++    agent_id: AgentID
++    firm_id: AgentID
+     quantity: float
+ 
+ @runtime_checkable
+ class IShareholderRegistry(Protocol):
+     """Single source of truth for stock ownership."""
+-    def register_shares(self, firm_id: int, agent_id: int, quantity: float) -> None:
++    def register_shares(self, firm_id: AgentID, agent_id: AgentID, quantity: float) -> None:
+         """Adds/removes shares. Zero quantity removes the registry entry."""
+         ...
+-    def get_shareholders_of_firm(self, firm_id: int) -> List[ShareholderData]:
++    def get_shareholders_of_firm(self, firm_id: AgentID) -> List[ShareholderData]:
+         """Returns list of owners for a firm."""
+         ...
+-    def get_total_shares(self, firm_id: int) -> float:
++    def get_total_shares(self, firm_id: AgentID) -> float:
+         """Returns total outstanding shares."""
+         ...
+ 
+@@ -232,7 +237,7 @@ class ISimulationState(Protocol):
+     settlement_system: "ISettlementSystem"
+     registry: "IRegistry"
+     housing_service: "IHousingService"
+-    agents: Dict[int, IAgent]
++    agents: Dict[AgentID, IAgent]
+     bank: "IBankService"
+     markets: Dict[str, "IMarket"]
+ 
+diff --git a/simulation/bank.py b/simulation/bank.py
+index 4845f7bf..66260a5e 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -21,7 +21,7 @@ from modules.finance.api import (
+     IFinancialAgent,
+     IFinancialEntity
+ )
+-from modules.simulation.api import IEducated
++from modules.simulation.api import IEducated, AgentID, AnyAgentID
+ from modules.finance.managers.loan_manager import LoanManager
+ from modules.finance.managers.deposit_manager import DepositManager
+ from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder
+@@ -51,7 +51,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+     PH9.2: Implements IBank & IFinancialAgent for Protocol Purity.
+     """
+ 
+-    def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager,
++    def __init__(self, id: AgentID, initial_assets: float, config_manager: ConfigManager,
+                  shareholder_registry: Optional[IShareholderRegistry] = None,
+                  settlement_system: Optional["ISettlementSystem"] = None,
+                  credit_scoring_service: Optional[ICreditScoringService] = None,
+@@ -91,11 +91,11 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+         logger.info(f"Bank {self.id} initialized. Assets: {self.wallet.get_all_balances()}")
+ 
+     @property
+-    def id(self) -> int:
++    def id(self) -> AgentID:
+         return self._id
+ 
+     @id.setter
+-    def id(self, value: int):
++    def id(self, value: AgentID):
+         self._id = value
+ 
+     @property
+@@ -161,21 +161,15 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+ 
+     # --- IBank Implementation ---
+ 
+-    def grant_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanInfoDTO, Transaction]]:
++    def grant_loan(self, borrower_id: AgentID, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanInfoDTO, Transaction]]:
+         """
+         Grants a loan to a borrower.
+         Returns LoanInfoDTO and a 'credit_creation' Transaction.
+         Implements IBankService.grant_loan.
+         """
+-        try:
+-            bid_int = int(borrower_id)
+-        except ValueError:
+-            logger.error(f"Bank.grant_loan: Invalid borrower_id {borrower_id}, expected int-convertible string.")
+-            return None
+-
+         # Delegate to LoanManager
+         result = self.loan_manager.assess_and_create_loan(
+-            borrower_id=bid_int,
++            borrower_id=borrower_id,
+             amount=amount,
+             interest_rate=interest_rate,
+             due_tick=due_tick,
+@@ -207,12 +201,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+ 
+         return loan_dto, credit_creation_tx
+ 
+-    def stage_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
+-        try:
+-            bid_int = int(borrower_id)
+-        except ValueError:
+-            return None
+-
++    def stage_loan(self, borrower_id: AgentID, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
+         # Step 1: Credit Assessment
+         if self.credit_scoring_service and borrower_profile:
+              assessment = self.credit_scoring_service.assess_creditworthiness(borrower_profile, amount)
+@@ -234,7 +223,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+              due_tick = start_tick + term_ticks
+ 
+         loan_id = self.loan_manager.create_loan(
+-            borrower_id=bid_int,
++            borrower_id=borrower_id,
+             amount=amount,
+             interest_rate=interest_rate,
+             start_tick=start_tick,
+@@ -261,24 +250,15 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+         # Delegate to LoanManager (Protocol guaranteed)
+         return self.loan_manager.repay_loan(loan_id, amount)
+ 
+-    def get_customer_balance(self, agent_id: str) -> float:
++    def get_customer_balance(self, agent_id: AgentID) -> float:
+         """
+         Retrieves the current balance for a given CUSTOMER account (deposit).
+         Renamed from get_balance to avoid conflict with IFinancialAgent.get_balance.
+         """
+-        try:
+-            aid_int = int(agent_id)
+-            return self.deposit_manager.get_balance(aid_int)
+-        except ValueError:
+-            return 0.0
+-
+-    def get_debt_status(self, borrower_id: str) -> DebtStatusDTO:
+-        try:
+-            bid_int = int(borrower_id)
+-        except ValueError:
+-            bid_int = -1
++        return self.deposit_manager.get_balance(agent_id)
+ 
+-        loans_dto = self.loan_manager.get_loans_for_agent(bid_int)
++    def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
++        loans_dto = self.loan_manager.get_loans_for_agent(borrower_id)
+         total_debt = sum(l['remaining_principal'] for l in loans_dto if l['remaining_principal'] > 0)
+ 
+         loan_info_list = []
+@@ -286,7 +266,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+             if l['remaining_principal'] <= 0: continue
+             loan_info_list.append(LoanInfoDTO(
+                 loan_id=l['loan_id'],
+-                borrower_id=str(l['borrower_id']),
++                borrower_id=l['borrower_id'],
+                 original_amount=l['principal'],
+                 outstanding_balance=l['remaining_principal'],
+                 interest_rate=l['interest_rate'],
+@@ -305,7 +285,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+ 
+     # --- Legacy / Internal Methods ---
+ 
+-    def deposit_from_customer(self, depositor_id: int, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> Optional[str]:
++    def deposit_from_customer(self, depositor_id: AgentID, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> Optional[str]:
+         default_margin = self._get_config("finance.bank_defaults.deposit_margin", 0.02)
+         default_spread = self._get_config("finance.bank_defaults.credit_spread_base", 0.02)
+         
+@@ -315,7 +295,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+ 
+         return self.deposit_manager.create_deposit(depositor_id, amount, deposit_rate, currency)
+ 
+-    def withdraw_for_customer(self, depositor_id: int, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> bool:
++    def withdraw_for_customer(self, depositor_id: AgentID, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> bool:
+         # Check liquidity first
+         try:
+             self._wallet.subtract(amount, currency, memo=f"Customer Withdrawal {depositor_id}")
+@@ -333,16 +313,16 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+ 
+         return True
+ 
+-    def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
++    def get_debt_summary(self, agent_id: AgentID) -> Dict[str, float]:
+         loans = self.loan_manager.get_loans_for_agent(agent_id)
+         total_principal = sum(l['remaining_principal'] for l in loans)
+         daily_interest_burden = sum((l['remaining_principal'] * l['interest_rate']) / self.ticks_per_year for l in loans)
+         return {"total_principal": total_principal, "daily_interest_burden": daily_interest_burden}
+ 
+-    def get_deposit_balance(self, agent_id: int) -> float:
++    def get_deposit_balance(self, agent_id: AgentID) -> float:
+         return self.deposit_manager.get_balance(agent_id)
+ 
+-    def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0) -> List[Transaction]:
++    def run_tick(self, agents_dict: Dict[AgentID, Any], current_tick: int = 0) -> List[Transaction]:
+         self.current_tick_tracker = current_tick
+         generated_transactions: List[Transaction] = []
+ 
+@@ -354,7 +334,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+ 
+         # --- Loan Servicing ---
+ 
+-        def payment_callback(borrower_id: int, amount: float) -> bool:
++        def payment_callback(borrower_id: AgentID, amount: float) -> bool:
+             borrower = agents_dict.get(borrower_id)
+             if not borrower: return False
+ 
+@@ -474,7 +454,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+ 
+         return generated_transactions
+ 
+-    def _handle_default(self, event: Dict[str, Any], agents_dict: Dict[int, Any], current_tick: int) -> List[Transaction]:
++    def _handle_default(self, event: Dict[str, Any], agents_dict: Dict[AgentID, Any], current_tick: int) -> List[Transaction]:
+         transactions = []
+         borrower_id = event['borrower_id']
+         amount_defaulted = event['amount_defaulted']
+@@ -561,7 +541,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+         principal = loan_dto['principal'] # Or 'original_amount' in LoanInfoDTO? LoanDTO uses principal.
+ 
+         # 1. Reverse Deposit
+-        borrower_id = int(loan_dto['borrower_id'])
++        borrower_id = loan_dto['borrower_id']
+         deposit_reversed = self.deposit_manager.remove_deposit_match(borrower_id, principal)
+ 
+         if not deposit_reversed:
+@@ -586,11 +566,11 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+         logger.info(f"LOAN_VOIDED | Loan {loan_id} cancelled and deposit reversed.")
+         return tx
+ 
+-    def get_outstanding_loans_for_agent(self, agent_id: int) -> List[Dict]:
++    def get_outstanding_loans_for_agent(self, agent_id: AgentID) -> List[Dict]:
+         loans = self.loan_manager.get_loans_for_agent(agent_id)
+         return [
+             {
+-                "borrower_id": int(l['borrower_id']),
++                "borrower_id": l['borrower_id'],
+                 "amount": l['remaining_principal'],
+                 "interest_rate": l['interest_rate'],
+                 "duration": l['term_months']
+diff --git a/simulation/components/hr_department.py b/simulation/components/hr_department.py
+index 4576dc43..99c166a2 100644
+--- a/simulation/components/hr_department.py
++++ b/simulation/components/hr_department.py
+@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
+ import logging
+ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
+ from modules.hr.api import IEmployeeDataProvider
++from modules.simulation.api import AgentID
+ 
+ if TYPE_CHECKING:
+     from simulation.firms import Firm
+@@ -18,8 +19,8 @@ class HRDepartment:
+     def __init__(self, firm: Firm):
+         self.firm = firm
+         self.employees: List[IEmployeeDataProvider] = []
+-        self.employee_wages: Dict[int, float] = {}  # AgentID -> Wage
+-        self.unpaid_wages: Dict[int, List[Tuple[int, float]]] = {} # AgentID -> List[(tick, amount)]
++        self.employee_wages: Dict[AgentID, float] = {}  # AgentID -> Wage
++        self.unpaid_wages: Dict[AgentID, List[Tuple[int, float]]] = {} # AgentID -> List[(tick, amount)]
+         self.hires_last_tick: int = 0
+ 
+     def calculate_wage(self, employee: IEmployeeDataProvider, base_wage: float) -> float:
+@@ -195,7 +196,7 @@ class HRDepartment:
+         if employee.id in self.employee_wages:
+             del self.employee_wages[employee.id]
+ 
+-    def fire_employee(self, employee_id: int, severance_pay: float) -> bool:
++    def fire_employee(self, employee_id: AgentID, severance_pay: float) -> bool:
+         """
+         Fires an employee with severance pay.
+         Returns True if successful (found and paid), False otherwise.
+diff --git a/simulation/dtos/api.py b/simulation/dtos/api.py
+index 8f796e49..02be1b82 100644
+--- a/simulation/dtos/api.py
++++ b/simulation/dtos/api.py
+@@ -5,6 +5,7 @@ from simulation.dtos.firm_state_dto import FirmStateDTO
+ from simulation.models import Order
+ from simulation.dtos.decision_dtos import DecisionOutputDTO
+ from modules.finance.api import IFinancialEntity
++from modules.simulation.api import AgentID
+ 
+ # Alias for standardization
+ OrderDTO = Order
+@@ -21,8 +22,8 @@ if TYPE_CHECKING:
+ class TransactionData:
+     run_id: int
+     time: int
+-    buyer_id: int
+-    seller_id: int
++    buyer_id: AgentID
++    seller_id: AgentID
+     item_id: str
+     quantity: float
+     price: float
+@@ -34,12 +35,12 @@ class TransactionData:
+ class AgentStateData:
+     run_id: int
+     time: int
+-    agent_id: int
++    agent_id: AgentID
+     agent_type: str
+     assets: Dict[CurrencyCode, float] # Changed for Phase 33
+     is_active: bool
+     is_employed: Optional[bool] = None
+-    employer_id: Optional[int] = None
++    employer_id: Optional[AgentID] = None
+     needs_survival: Optional[float] = None
+     needs_labor: Optional[float] = None
+     inventory_food: Optional[float] = None
+@@ -93,7 +94,7 @@ class MarketHistoryData:
+ class AIDecisionData:
+     run_id: int
+     tick: int
+-    agent_id: int
++    agent_id: AgentID
+     decision_type: str
+     decision_details: Optional[Dict[str, Any]] = None
+     predicted_reward: Optional[float] = None
+@@ -186,7 +187,7 @@ class DecisionContext:
+     stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
+ 
+     # Agent Discovery Registry (WO-138)
+-    agent_registry: Dict[str, int] = field(default_factory=dict)
++    agent_registry: Dict[str, AgentID] = field(default_factory=dict)
+ 
+     # Tick-Snapshot Injection
+     market_context: Optional[MarketContextDTO] = None
+@@ -211,7 +212,7 @@ class SimulationState:
+     time: int
+     households: List[Household]
+     firms: List[Firm]
+-    agents: Dict[int, Any]
++    agents: Dict[AgentID, Any]
+     markets: Dict[str, Any]
+     government: Any  # Government
+     bank: Any        # Bank
+@@ -233,7 +234,7 @@ class SimulationState:
+     transactions: List[Any] = None # List[Transaction]
+     inter_tick_queue: List[Any] = None # List[Transaction]
+     effects_queue: List[Dict[str, Any]] = None # WO-109: Queue for side-effects
+-    inactive_agents: Dict[int, Any] = None # WO-109: Store inactive agents
++    inactive_agents: Dict[AgentID, Any] = None # WO-109: Store inactive agents
+     taxation_system: Optional[Any] = None # WO-116: Taxation System
+     currency_holders: List[Any] = None # Added for M2 tracking (Phase 33/5)
+     stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
+@@ -246,15 +247,15 @@ class SimulationState:
+ 
+     # --- NEW TRANSIENT FIELDS ---
+     # From Phase 1 (Decisions)
+-    firm_pre_states: Dict[int, Any] = None
+-    household_pre_states: Dict[int, Any] = None
+-    household_time_allocation: Dict[int, float] = None
++    firm_pre_states: Dict[AgentID, Any] = None
++    household_pre_states: Dict[AgentID, Any] = None
++    household_time_allocation: Dict[AgentID, float] = None
+ 
+     # From Commerce System (planned in Phase 1, used in PostSequence)
+-    planned_consumption: Optional[Dict[int, Dict[str, Any]]] = None # TD-118
++    planned_consumption: Optional[Dict[AgentID, Dict[str, Any]]] = None # TD-118
+ 
+     # From Lifecycle (used in PostSequence for Learning)
+-    household_leisure_effects: Dict[int, float] = None
++    household_leisure_effects: Dict[AgentID, float] = None
+ 
+     # Injection
+     injectable_sensory_dto: Optional[Any] = None # GovernmentStateDTO
+@@ -305,7 +306,7 @@ class StockMarketHistoryData:
+     """주식 시장 틱별 이력 (기업별)"""
+     run_id: int
+     time: int
+-    firm_id: int
++    firm_id: AgentID
+     
+     # 주가 관련
+     stock_price: float              # 현재 주가 (거래가 또는 기준가)
+@@ -354,7 +355,7 @@ class HouseholdIncomeData:
+     """가계별 소득 원천 추적"""
+     run_id: int
+     time: int
+-    household_id: int
++    household_id: AgentID
+     
+     labor_income: float             # 노동 소득 (임금)
+     dividend_income: float          # 배당 소득
+@@ -445,10 +446,10 @@ class TimeBudgetDTO:
+ @dataclass
+ class FamilyInfoDTO:
+     """가계의 가족 관계 정보 (AI 의사결정용 입력)"""
+-    agent_id: int
++    agent_id: AgentID
+     generation: int
+-    parent_id: Optional[int]
+-    children_ids: List[int]
++    parent_id: Optional[AgentID]
++    children_ids: List[AgentID]
+     children_avg_xp: float = 0.0  # 자녀들의 평균 지능
+ 
+ 
+diff --git a/simulation/loan_market.py b/simulation/loan_market.py
+index ccd32a6d..8fb68951 100644
+--- a/simulation/loan_market.py
++++ b/simulation/loan_market.py
+@@ -9,6 +9,7 @@ from modules.housing.dtos import MortgageApprovalDTO
+ from modules.market.housing_planner_api import ILoanMarket
+ from modules.finance.api import MortgageApplicationDTO
+ from modules.finance.api import LoanInfoDTO as LoanDTO
++from modules.simulation.api import AgentID
+ 
+ if TYPE_CHECKING:
+     from simulation.bank import Bank # For legacy casting if needed
+@@ -150,7 +151,7 @@ class LoanMarket(Market, ILoanMarket):
+         principal = application.get('requested_principal', 0.0)
+ 
+         loan_info = self.bank.stage_loan(
+-            borrower_id=str(application['applicant_id']),
++            borrower_id=application['applicant_id'],
+             amount=principal,
+             interest_rate=interest_rate,
+             due_tick=None, # Bank defaults using term
+@@ -188,7 +189,7 @@ class LoanMarket(Market, ILoanMarket):
+              loan = self.bank.loans[staged_loan_id]
+              return {
+                  "loan_id": staged_loan_id,
+-                 "borrower_id": str(loan.borrower_id),
++                 "borrower_id": loan.borrower_id,
+                  "original_amount": loan.principal,
+                  "outstanding_balance": loan.remaining_balance,
+                  "interest_rate": loan.annual_interest_rate,
+@@ -225,7 +226,7 @@ class LoanMarket(Market, ILoanMarket):
+         due_tick = current_tick + loan_term
+ 
+         grant_result = self.bank.grant_loan(
+-            borrower_id=str(applicant_id),
++            borrower_id=applicant_id,
+             amount=principal,
+             interest_rate=interest_rate,
+             due_tick=due_tick
+@@ -286,7 +287,7 @@ class LoanMarket(Market, ILoanMarket):
+                 borrower_profile = order.metadata["borrower_profile"]
+ 
+             grant_result = self.bank.grant_loan(
+-                borrower_id=str(order.agent_id),
++                borrower_id=AgentID(order.agent_id),
+                 amount=loan_amount,
+                 interest_rate=interest_rate,
+                 due_tick=due_tick,
+diff --git a/simulation/world_state.py b/simulation/world_state.py
+index bb59e0fa..5074f546 100644
+--- a/simulation/world_state.py
++++ b/simulation/world_state.py
+@@ -45,6 +45,7 @@ from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCo
+ from modules.system.constants import ID_CENTRAL_BANK
+ from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
+ from modules.finance.api import IShareholderRegistry
++from modules.simulation.api import AgentID
+ 
+ 
+ class WorldState:
+@@ -70,7 +71,7 @@ class WorldState:
+         self.run_id: int = 0
+         self.households: List[Household] = []
+         self.firms: List[Firm] = []
+-        self.agents: Dict[int, Any] = {}
++        self.agents: Dict[AgentID, Any] = {}
+         self.next_agent_id: int = 0
+         self.markets: Dict[str, Market] = {}
+         self.bank: Optional[Bank] = None
+@@ -221,16 +222,16 @@ class WorldState:
+         # Fallback if no exchange engine: just return the target currency balance
+         return all_money.get(target_currency, 0.0)
+ 
+-    def resolve_agent_id(self, role: str) -> Optional[int]:
++    def resolve_agent_id(self, role: str) -> Optional[AgentID]:
+         """
+         Dynamically resolves specific agent IDs by role (e.g. GOVERNMENT, CENTRAL_BANK).
+         Used to eliminate hardcoded ID constants.
+         """
+         if role == "GOVERNMENT":
+             self.logger.warning("Call to deprecated method WorldState.resolve_agent_id('GOVERNMENT')")
+-            return self.governments[0].id if self.governments else None
++            return AgentID(self.governments[0].id) if self.governments else None
+         elif role == "CENTRAL_BANK":
+-            return self.central_bank.id if self.central_bank else None
++            return AgentID(self.central_bank.id) if self.central_bank else None
+         return None
+ 
+     def register_currency_holder(self, holder: ICurrencyHolder) -> None:

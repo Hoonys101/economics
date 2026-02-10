@@ -5,19 +5,22 @@ This protocol defines the standard workflow for interacting with the **Structure
 ---
 
 ## 🏗️ 1. The Core Principle: Interface over Implementation
-To ensure registry integrity and ease of use, we interact with the system via the `scripts/cmd_ops.py` utility.
+The **Structured Command Registry (SCR)** is the central hub for mission delegation. We favor direct interaction with the source for maximum precision.
 
-- **Standard User Flow**: Use `cmd_ops.py` for all mission assignments.
-- **Architect Privilege**: Direct JSON editing in `command_registry.json` is reserved for the AI Orchestrator (Antigravity) or advanced manual recovery.
+- **Architect's Workflow (Preferred)**: Edit [`command_registry.py`](file:///_internal/registry/command_registry.py) directly. This allows for rich comments, multi-line strings, and full architectural context.
+- **Legacy/Utility Flow**: Use `_internal/scripts/cmd_ops.py` for simple, one-shot mission assignments.
 
 ---
 
 ## 🤖 2. Managing Gemini Missions (Analysis/Spec)
 Gemini handles planning, auditing, and log analysis.
 
-### Standard Command
+### Standard Workflow (Direct Edit)
+Add an entry to the `REGISTRY` dict in `command_registry.py`. Use the `# --- CHOICE REFERENCE ---` block to ensure valid worker selection.
+
+### Legacy Command
 ```powershell
-python scripts/cmd_ops.py set-gemini <mission_key> --worker [audit|spec|git-review|verify] -i "<instruction>" -c <context_files...>
+python _internal/scripts/cmd_ops.py set-gemini <mission_key> --worker [audit|spec|git-review|verify] -i "<instruction>" -c <context_files...>
 ```
 
 ### Common Examples
@@ -32,9 +35,12 @@ python scripts/cmd_ops.py set-gemini <mission_key> --worker [audit|spec|git-revi
 ## 👩‍💻 3. Managing Jules Missions (Implementation)
 Jules is the primary agent for code modification.
 
-### Standard Command
+### Standard Workflow (Direct Edit)
+Define a mission with `command: "create"` or `command: "send-message"`. For complex tasks, use triple-quotes (`"""`) for the `instruction` field.
+
+### Legacy Command
 ```powershell
-python scripts/cmd_ops.py set-jules <mission_key> --command [create|send-message] -t "<task_title>" -i "<instruction>" -f <spec_file>
+python _internal/scripts/cmd_ops.py set-jules <mission_key> --command [create|send-message] -t "<task_title>" -i "<instruction>" -f <spec_file>
 ```
 
 ### Key Arguments
@@ -48,15 +54,17 @@ python scripts/cmd_ops.py set-jules <mission_key> --command [create|send-message
 To keep the registry clean, delete finished or irrelevant missions:
 
 ```powershell
-python scripts/cmd_ops.py del <mission_key>
+python _internal/scripts/cmd_ops.py del <mission_key>
 ```
+*Alternatively, simply delete the key-value pair from the Python dictionary.*
 
 ---
 
 ## 🚨 Guidelines & Anti-Patterns
-1.  **No Absolute Paths**: `cmd_ops.py` handles paths relative to the root. Do not use `C:\...`.
-2.  **Instruction Quality**: Be specific. Link to work orders (e.g., `-f design/work_orders/WO-124.md`).
-3.  **Verification**: After arming the tool, always run the corresponding `.bat` file (e.g., `.\gemini-go.bat <key>`).
+1.  **No Absolute Paths**: All paths must be relative to the root. Do not use `C:\...`.
+2.  **Instruction Quality**: Be specific. Reference work orders (e.g., `design/work_orders/WO-124.md`).
+3.  **Verification**: After saving `command_registry.py`, run the corresponding `.bat` file (e.g., `.\gemini-go.bat <key>`).
+4.  **Choice Adherence**: Always consult the `# --- CHOICE REFERENCE ---` in the registry file before selecting a worker or command.
 
 ---
 
