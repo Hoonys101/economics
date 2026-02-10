@@ -193,6 +193,18 @@ def mock_households(mock_config_module):
             hh1.current_food_consumption += quantity
     hh1.record_consumption = Mock(side_effect=record_consumption_side_effect_hh1)
 
+    def add_item_side_effect_hh1(item_id, quantity, transaction_id=None, quality=1.0):
+        hh1.inventory[item_id] = hh1.inventory.get(item_id, 0.0) + quantity
+        return True
+    hh1.add_item = Mock(side_effect=add_item_side_effect_hh1)
+
+    def remove_item_side_effect_hh1(item_id, quantity, transaction_id=None):
+        if hh1.inventory.get(item_id, 0.0) >= quantity:
+            hh1.inventory[item_id] -= quantity
+            return True
+        return False
+    hh1.remove_item = Mock(side_effect=remove_item_side_effect_hh1)
+
     hh2 = Mock(spec=Household)
     hh2.id = 2
 
@@ -237,6 +249,18 @@ def mock_households(mock_config_module):
         if is_food:
             hh2.current_food_consumption += quantity
     hh2.record_consumption = Mock(side_effect=record_consumption_side_effect_hh2)
+
+    def add_item_side_effect_hh2(item_id, quantity, transaction_id=None, quality=1.0):
+        hh2.inventory[item_id] = hh2.inventory.get(item_id, 0.0) + quantity
+        return True
+    hh2.add_item = Mock(side_effect=add_item_side_effect_hh2)
+
+    def remove_item_side_effect_hh2(item_id, quantity, transaction_id=None):
+        if hh2.inventory.get(item_id, 0.0) >= quantity:
+            hh2.inventory[item_id] -= quantity
+            return True
+        return False
+    hh2.remove_item = Mock(side_effect=remove_item_side_effect_hh2)
 
     return [hh1, hh2]
 
@@ -489,6 +513,7 @@ class TestSimulation:
         tx.price = 10.0
         tx.quality = 1.0 # Ensure quality is a float
         tx.transaction_type = "goods"
+        tx.metadata = {}
 
         simulation_instance._process_transactions([tx])
 
@@ -526,6 +551,7 @@ class TestSimulation:
         tx.quantity = 1.0
         tx.price = 20.0
         tx.transaction_type = "labor"
+        tx.metadata = {}
 
         simulation_instance._process_transactions([tx])
 
@@ -573,6 +599,7 @@ class TestSimulation:
         tx.quantity = 1.0
         tx.price = 30.0
         tx.transaction_type = "research_labor"
+        tx.metadata = {}
 
         simulation_instance._process_transactions([tx])
 

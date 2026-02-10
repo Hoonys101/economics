@@ -21,8 +21,6 @@ class GoodsTransactionHandler(ITransactionHandler):
             logger.warning(f"Transaction failed: Buyer ({tx.buyer_id}) or Seller ({tx.seller_id}) not found.")
             return False
 
-        # print(f"[DEBUG] GoodsHandler: Buyer {buyer.id} (Assets: {getattr(buyer, 'assets', 'N/A')}), Seller {seller.id}")
-
         # Prevent floating point pollution by rounding to 2 decimal places (cents)
         trade_value = round(tx.quantity * tx.price, 2)
 
