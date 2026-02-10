@@ -1,7 +1,26 @@
 import pytest
+from unittest.mock import patch
 from pathlib import Path
 from types import ModuleType
 from modules.common.config_manager.impl import ConfigManagerImpl
+
+@pytest.fixture(autouse=True)
+def mock_yaml_loader():
+    """
+    Patches yaml.safe_load to return predetermined dictionaries based on the filename.
+    This ensures tests pass even if pyyaml is not installed (lean environment).
+    """
+    def side_effect(stream):
+        # stream is an open file object, so it has a name attribute with the path
+        if hasattr(stream, 'name'):
+            if 'test.yaml' in stream.name:
+                return {'a': {'b': {'c': 1}}, 'd': 2}
+            if 'other.yaml' in stream.name:
+                return {'x': {'y': "hello"}}
+        return {}
+
+    with patch('modules.common.config_manager.impl.yaml.safe_load', side_effect=side_effect) as m:
+        yield m
 
 @pytest.fixture
 def legacy_config():

@@ -11,6 +11,18 @@ for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model"
         if module_name == "numpy":
             mock.bool_ = bool
             mock.float64 = float
+            mock.max.return_value = 0
+
+            def _mock_array_factory(*args, **kwargs):
+                m = MagicMock()
+                m.shape = (0,)
+                return m
+
+            mock.zeros.side_effect = _mock_array_factory
+            mock.array.side_effect = _mock_array_factory
+
+        if module_name == "yaml":
+            mock.safe_load.return_value = {}
         sys.modules[module_name] = mock
 
 from simulation.agents.government import Government
