@@ -7,11 +7,11 @@ class MockAgent:
         self.id = id
         self.assets = assets
 
-    def deposit(self, amount):
+    def deposit(self, amount, currency="USD"):
         if amount < 0: raise ValueError("Negative deposit")
         self.assets += amount
 
-    def withdraw(self, amount):
+    def withdraw(self, amount, currency="USD"):
         if amount < 0: raise ValueError("Negative withdraw")
         # SettlementSystem checks assets property manually before calling withdraw,
         # but pure withdraw should also work.

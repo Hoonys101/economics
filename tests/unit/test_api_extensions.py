@@ -22,12 +22,15 @@ class TestEconomicIndicatorsViewModel:
                  else [MagicMock() for _ in range(2)])
 
         # Override assets
-        households[0]._assets = 10
-        households[1]._assets = 20
-        households[2]._assets = 100
+        # Households access ._econ_state.assets
+        for h, val in zip(households, [10, 20, 100]):
+            if not hasattr(h, '_econ_state'):
+                h._econ_state = MagicMock()
+            h._econ_state.assets = val
 
-        firms[0]._assets = 50
-        firms[1]._assets = 10
+        # Firms access .assets
+        firms[0].assets = 50
+        firms[1].assets = 10
 
         # Total assets: 10, 20, 100, 50, 10
         # Min: 10, Max: 100
@@ -69,7 +72,8 @@ class TestEconomicIndicatorsViewModel:
         assert sales["banana"] == 5
 
     def test_get_market_order_book(self, vm):
-        market = OrderBookMarket("test_market")
+        market = MagicMock(spec=OrderBookMarket)
+        market.id = "test_market"
         # Manually inject orders for testing
         market.buy_orders = {
             "apple": [Order(agent_id=1, side="BUY", market_id="test_market", item_id="apple", quantity=10, price_limit=5)]

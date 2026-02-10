@@ -454,6 +454,7 @@ class SettlementSystem(ISettlementSystem):
         memo = f"atomic_batch_{len(credits_list)}_txs"
         success = self._execute_withdrawal(debit_agent, total_debit, memo, tick)
         if not success:
+            # print(f"[DEBUG] settle_atomic failed at withdrawal. Agent: {debit_agent.id}, Amount: {total_debit}")
             return False
 
         # 3. Execute Credits
