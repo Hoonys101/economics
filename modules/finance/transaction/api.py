@@ -1,5 +1,6 @@
 from typing import Protocol, TypedDict, Literal, runtime_checkable
 from modules.finance.wallet.api import IWallet
+from modules.system.api import CurrencyCode
 
 # ==============================================================================
 # DATA TRANSFER OBJECTS (DTOs)
@@ -14,7 +15,7 @@ class TransactionDTO(TypedDict):
     source_account_id: str
     destination_account_id: str
     amount: float
-    currency: str  # e.g., "GOLD", "USD"
+    currency: CurrencyCode  # e.g., "GOLD", "USD"
     description: str
 
 
@@ -149,7 +150,7 @@ class ITransactionEngine(Protocol):
         source_account_id: str,
         destination_account_id: str,
         amount: float,
-        currency: str,
+        currency: CurrencyCode,
         description: str
     ) -> TransactionResultDTO:
         """

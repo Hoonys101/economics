@@ -2,7 +2,7 @@ import pytest
 from tests.utils.factories import create_firm_config_dto, create_household_config_dto
 from unittest.mock import Mock, MagicMock
 from modules.finance.system import FinanceSystem
-from modules.finance.api import InsufficientFundsError
+from modules.finance.api import InsufficientFundsError, GrantBailoutCommand
 from modules.system.constants import ID_CENTRAL_BANK
 
 @pytest.fixture
@@ -66,7 +66,7 @@ class StubCentralBank:
 
     def get_base_rate(self):
         return self.base_rate
-    def purchase_bonds(self, bond):
+    def add_bond_to_portfolio(self, bond):
         self.assets['bonds'].append(bond)
     def deposit(self, amount): self.assets['cash'] += amount
     def withdraw(self, amount):
@@ -208,9 +208,10 @@ def test_bailout_fails_with_insufficient_government_funds(finance_system, mock_g
     initial_gov_assets = mock_government.assets
     initial_firm_cash = mock_firm.cash_reserve
 
-    loan, txs = finance_system.grant_bailout_loan(mock_firm, amount, 100)
+    # Use request_bailout_loan instead of grant_bailout_loan
+    cmd = finance_system.request_bailout_loan(mock_firm, amount)
 
-    assert loan is None
+    assert cmd is None
     # Assert that no funds were moved
     assert mock_government.assets == initial_gov_assets
     assert mock_firm.cash_reserve == initial_firm_cash
@@ -220,16 +221,18 @@ def test_grant_bailout_loan(finance_system, mock_government, mock_firm, mock_con
     amount = 5000.0
     initial_gov_assets = mock_government.assets
     initial_firm_cash = mock_firm.cash_reserve
-    loan, txs = finance_system.grant_bailout_loan(mock_firm, amount, 100)
-    assert loan.firm_id == mock_firm.id
-    assert loan.amount == amount
-    assert loan.covenants.mandatory_repayment == mock_config.BAILOUT_REPAYMENT_RATIO
 
-    # Verify Transaction generation
-    assert len(txs) == 1
-    assert txs[0].buyer_id == mock_government.id
-    assert txs[0].seller_id == mock_firm.id
-    assert txs[0].price == amount
+    # Use request_bailout_loan instead of grant_bailout_loan
+    cmd = finance_system.request_bailout_loan(mock_firm, amount)
+
+    assert cmd is not None
+    assert isinstance(cmd, GrantBailoutCommand)
+    assert cmd.firm_id == mock_firm.id
+    assert cmd.amount == amount
+    assert cmd.covenants.mandatory_repayment == mock_config.BAILOUT_REPAYMENT_RATIO
+
+    # Note: request_bailout_loan only creates a command, it does not execute transactions.
+    # Therefore, checking txs or state updates here is removed as it's out of scope for this method.
 
 def test_service_debt_central_bank_repayment(finance_system, mock_government, mock_central_bank, mock_config):
     """

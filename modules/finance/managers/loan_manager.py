@@ -291,7 +291,7 @@ class LoanManager(ILoanManager):
 
     def repay_loan(self, loan_id: str, amount: float) -> bool:
         if loan_id not in self._loans:
-            return False
+            raise LoanNotFoundError(f"Loan {loan_id} not found.")
 
         loan = self._loans[loan_id]
         actual_amount = min(amount, loan.remaining_balance)

@@ -2,7 +2,7 @@ from tests.utils.factories import create_firm_config_dto, create_household_confi
 import unittest
 from unittest.mock import MagicMock
 from modules.finance.system import FinanceSystem
-from modules.finance.api import InsufficientFundsError
+from modules.finance.api import InsufficientFundsError, GrantBailoutCommand
 from simulation.models import Transaction
 
 # Mock objects that will be passed to FinanceSystem
@@ -27,7 +27,7 @@ class MockCentralBank:
     def assets(self): return self._assets
     def get_base_rate(self):
         return 0.01
-    def purchase_bonds(self, bond):
+    def add_bond_to_portfolio(self, bond):
         self.assets["bonds"].append(bond)
     # Mocking IFinancialEntity behavior loosely
     def deposit(self, amount): self.assets['cash'] += amount
@@ -102,32 +102,27 @@ class TestDoubleEntry(unittest.TestCase):
         self.finance_system.fiscal_monitor = MagicMock()
         self.finance_system.fiscal_monitor.get_debt_to_gdp_ratio.side_effect = lambda gov, dto: gov.get_debt_to_gdp_ratio()
 
-    def test_bailout_loan_generates_transaction(self):
+    def test_bailout_loan_generates_command(self):
         """
-        Verify that granting a bailout loan generates a Transaction
-        and does NOT modify assets directly (Deferred).
+        Verify that requesting a bailout loan generates a GrantBailoutCommand.
         """
         initial_gov_assets = self.mock_gov.assets
         initial_firm_cash = self.mock_firm.cash_reserve
         bailout_amount = 500
 
-        loan, txs = self.finance_system.grant_bailout_loan(self.mock_firm, bailout_amount, current_tick=1)
+        cmd = self.finance_system.request_bailout_loan(self.mock_firm, bailout_amount)
 
         # Assertions
-        # Assets Unchanged
+        # Assets Unchanged (as command pattern decouples execution)
         self.assertEqual(self.mock_gov.assets, initial_gov_assets)
         self.assertEqual(self.mock_firm.cash_reserve, initial_firm_cash)
 
-        # Transaction Generated
-        self.assertEqual(len(txs), 1)
-        tx = txs[0]
-        self.assertEqual(tx.buyer_id, self.mock_gov.id)
-        self.assertEqual(tx.seller_id, self.mock_firm.id)
-        self.assertEqual(tx.price, bailout_amount)
+        # Command Generated
+        self.assertIsNotNone(cmd)
+        self.assertIsInstance(cmd, GrantBailoutCommand)
+        self.assertEqual(cmd.firm_id, self.mock_firm.id)
+        self.assertEqual(cmd.amount, bailout_amount)
 
-        # State Update (Optimistic)
-        self.assertTrue(self.mock_firm.has_bailout_loan)
-        self.mock_firm.finance.add_liability.assert_called_once()
 
     def test_qe_bond_issuance_generates_transaction(self):
         """

@@ -24,7 +24,7 @@ class CurrencyExchangeEngine:
 
                 self._parity_cache = {k.upper(): float(v) for k, v in raw_parity.items()}
 
-                # Ensure DEFAULT_CURRENCY (USD) is always 1.0
+                # Ensure DEFAULT_CURRENCY is always 1.0
                 if DEFAULT_CURRENCY not in self._parity_cache:
                     self._parity_cache[DEFAULT_CURRENCY] = 1.0
 
@@ -35,7 +35,7 @@ class CurrencyExchangeEngine:
         return self._parity_cache
 
     def get_exchange_rate(self, currency: CurrencyCode) -> float:
-        """Returns the exchange rate of the given currency against the base currency (USD)."""
+        """Returns the exchange rate of the given currency against the base currency."""
         parities = self._load_parity()
         return parities.get(currency.upper(), 1.0)
 
