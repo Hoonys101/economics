@@ -4,6 +4,7 @@ import math
 from simulation.firms import Firm
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.components.state.firm_state_models import FinanceState, SalesState
+from tests.utils.factories import create_firm, create_firm_config_dto
 
 class TestFirmBookValue:
     @pytest.fixture
@@ -12,8 +13,6 @@ class TestFirmBookValue:
 
     @pytest.fixture
     def mock_config(self):
-        from tests.utils.factories import create_firm_config_dto
-
         dto = create_firm_config_dto()
         # Override specific fields if needed for tests
         dto.firm_min_production_target = 10.0
@@ -28,15 +27,15 @@ class TestFirmBookValue:
 
     @pytest.fixture
     def firm(self, mock_decision_engine, mock_config):
-        return Firm(
-            core_config=Mock(id=1, name="Firm_1", logger=Mock(), memory_interface=None, value_orientation="PROFIT", initial_needs={}),
+        return create_firm(
+            id=1,
+            name="Firm_1",
             engine=mock_decision_engine,
             specialization="test",
             productivity_factor=1.0,
             config_dto=mock_config,
-            initial_inventory=None,
-            loan_market=None,
-            sector="FOOD"
+            sector="FOOD",
+            assets=0.0
         )
 
     def test_book_value_no_liabilities(self, firm):
@@ -90,7 +89,6 @@ class TestFirmBookValue:
 class TestFirmProduction:
     @pytest.fixture
     def mock_config(self):
-        from tests.utils.factories import create_firm_config_dto
         dto = create_firm_config_dto()
         dto.labor_alpha = 0.7
         dto.automation_labor_reduction = 0.5
@@ -101,15 +99,15 @@ class TestFirmProduction:
 
     @pytest.fixture
     def firm(self, mock_config):
-        firm = Firm(
-            core_config=Mock(id=1, name="Firm_1", logger=Mock(), memory_interface=None, value_orientation="PROFIT", initial_needs={}),
+        firm = create_firm(
+            id=1,
+            name="Firm_1",
             engine=Mock(),
             specialization="test",
             productivity_factor=1.0,
             config_dto=mock_config,
-            initial_inventory=None,
-            loan_market=None,
-            sector="FOOD"
+            sector="FOOD",
+            assets=0.0
         )
         # Setup Production State
         firm.production_state.capital_stock = 100.0
@@ -147,7 +145,6 @@ class TestFirmProduction:
 class TestFirmSales:
     @pytest.fixture
     def mock_config(self):
-        from tests.utils.factories import create_firm_config_dto
         dto = create_firm_config_dto()
         dto.brand_awareness_saturation = 0.9
         dto.marketing_efficiency_high_threshold = 1.5
@@ -158,15 +155,16 @@ class TestFirmSales:
 
     @pytest.fixture
     def firm(self, mock_config):
-        firm = Firm(
-            core_config=Mock(id=1, name="Firm_1", logger=Mock(), memory_interface=None, value_orientation="PROFIT", initial_needs={}),
+        firm = create_firm(
+            id=1,
+            name="Firm_1",
             engine=Mock(),
             specialization="test",
             productivity_factor=1.0,
             config_dto=mock_config,
             initial_inventory={"test": 100.0},
-            loan_market=None,
-            sector="FOOD"
+            sector="FOOD",
+            assets=0.0
         )
         firm.brand_manager = Mock()
         firm.brand_manager.brand_awareness = 0.5
@@ -186,33 +184,6 @@ class TestFirmSales:
         market.id = "test_market"
 
         order = firm.post_ask("test", 10.0, 5.0, market, 0)
-
-        # SalesEngine.post_ask does NOT call market.place_order (it returns order)
-        # But Firm.post_ask returns what SalesEngine returns.
-        # Wait, the old SalesDepartment called market.place_order.
-        # SalesEngine only returns Order object.
-        # This is a behavior change!
-        # If Firm.post_ask is expected to place order, SalesEngine should place it or Firm should.
-        # Firm.post_ask just returns: return self.sales_engine.post_ask(...)
-        # So Firm.post_ask creates order but does NOT place it on market?
-        # DecisionEngine usually returns list of Orders which are then executed by ActionProcessor.
-        # But if Firm calls post_ask explicitly, maybe it expects it to be placed?
-        # The test expects: market.place_order.assert_called_once()
-        # If SalesEngine doesn't place it, then the test fails.
-        # And if the system expects Firm.post_ask to place it, then the system is broken.
-
-        # Check Firm.make_decision logic in firms.py
-        # decision_output = self.decision_engine.make_decisions(context)
-        # external_orders = ...
-        # return external_orders, tactic
-        # So ActionProcessor places orders.
-
-        # But legacy FirmAI might call post_ask?
-        # No, FirmAI returns actions.
-
-        # So post_ask in Firm might be a helper for Engine or legacy?
-        # If it's just a helper to create Order, then the test should assert on the returned Order object
-        # and NOT expect market.place_order to be called.
 
         assert order.agent_id == firm.id
         assert order.item_id == "test"

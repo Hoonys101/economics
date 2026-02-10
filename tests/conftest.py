@@ -1,5 +1,14 @@
-import pytest
+import sys
 from unittest.mock import Mock, MagicMock, patch
+import pytest
+
+# Mock missing dependencies for CI/Sandbox environments
+for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing"]:
+    try:
+        __import__(module_name)
+    except ImportError:
+        sys.modules[module_name] = MagicMock()
+
 from simulation.agents.government import Government
 from modules.finance.system import FinanceSystem
 

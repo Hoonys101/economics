@@ -60,6 +60,23 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+class HouseholdStateContainer:
+    """Helper to expose Household state components."""
+    def __init__(self, agent: "Household"):
+        self._agent = agent
+
+    @property
+    def econ_state(self) -> EconStateDTO:
+        return self._agent._econ_state
+
+    @property
+    def bio_state(self) -> BioStateDTO:
+        return self._agent._bio_state
+
+    @property
+    def social_state(self) -> SocialStateDTO:
+        return self._agent._social_state
+
 class Household(
     ILearningAgent,
     IEmployeeDataProvider,
@@ -292,10 +309,16 @@ class Household(
         self._prioritized_needs: List[PrioritizedNeed] = []
         self._cloning_requests: List[CloningRequestDTO] = []
 
+        self._state_container = HouseholdStateContainer(self)
+
         self.logger.debug(
             f"HOUSEHOLD_INIT | Household {self.id} initialized (Engine-based).",
             extra={"tags": ["household_init"]}
         )
+
+    @property
+    def state(self) -> HouseholdStateContainer:
+        return self._state_container
 
     # --- IOrchestratorAgent Implementation ---
 

@@ -28,18 +28,18 @@ class TestHouseholdRefactor:
 
         # Test add_property
         household.add_property(101)
-        assert 101 in household.owned_properties
-        assert household.owned_properties == [101]
+        assert 101 in household.state.econ_state.owned_properties
+        assert household.state.econ_state.owned_properties == [101]
 
         # Test add duplicate (should handle safe?)
         household.add_property(101)
-        assert household.owned_properties == [101]
+        assert household.state.econ_state.owned_properties == [101]
 
         # Test remove_property
         household.remove_property(101)
-        assert 101 not in household.owned_properties
-        assert household.owned_properties == []
+        assert 101 not in household.state.econ_state.owned_properties
+        assert household.state.econ_state.owned_properties == []
 
         # Test remove non-existent
         household.remove_property(999) # Should not raise error
-        assert household.owned_properties == []
+        assert household.state.econ_state.owned_properties == []

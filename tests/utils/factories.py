@@ -1,8 +1,10 @@
 from unittest.mock import MagicMock
+from typing import Optional
 from simulation.core_agents import Household
+from simulation.firms import Firm
 from simulation.models import Talent
 from simulation.ai.api import Personality
-from modules.simulation.api import AgentCoreConfigDTO
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine
 from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
 
 def create_household_config_dto(**kwargs) -> HouseholdConfigDTO:
@@ -177,7 +179,7 @@ def create_household(
     assets: float = 1000.0,
     initial_needs: dict = None,
     value_orientation: str = "needs_and_social_status",
-    engine = None,
+    engine: Optional[IDecisionEngine] = None,
     **kwargs
 ) -> Household:
     if config_dto is None:
@@ -215,3 +217,50 @@ def create_household(
     if assets > 0:
         household.deposit(assets)
     return household
+
+def create_firm(
+    config_dto: FirmConfigDTO = None,
+    id: int = 100,
+    name: str = "TestFirm",
+    assets: float = 10000.0,
+    specialization: str = "food",
+    productivity_factor: float = 1.0,
+    initial_needs: dict = None,
+    value_orientation: str = "PROFIT",
+    engine: Optional[IDecisionEngine] = None,
+    **kwargs
+) -> Firm:
+    if config_dto is None:
+        config_dto = create_firm_config_dto()
+
+    if initial_needs is None:
+        initial_needs = {}
+
+    core_config = AgentCoreConfigDTO(
+        id=id,
+        name=name,
+        initial_needs=initial_needs,
+        logger=MagicMock(),
+        memory_interface=None,
+        value_orientation=value_orientation
+    )
+
+    if engine is None:
+        engine = MagicMock()
+
+    firm = Firm(
+        core_config=core_config,
+        engine=engine,
+        specialization=specialization,
+        productivity_factor=productivity_factor,
+        config_dto=config_dto,
+        initial_inventory=kwargs.get("initial_inventory"),
+        loan_market=kwargs.get("loan_market"),
+        sector=kwargs.get("sector", "FOOD"),
+        personality=kwargs.get("personality")
+    )
+
+    if assets > 0:
+        firm.deposit(assets)
+
+    return firm
