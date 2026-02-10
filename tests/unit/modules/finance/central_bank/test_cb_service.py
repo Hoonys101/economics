@@ -4,6 +4,7 @@ from modules.finance.central_bank.service import CentralBankService
 from modules.finance.central_bank.api import InvalidPolicyRateError, TreasuryServiceError
 from modules.government.treasury.api import ITreasuryService, TreasuryOperationResultDTO
 from modules.system.constants import ID_CENTRAL_BANK
+from modules.system.api import DEFAULT_CURRENCY
 
 @pytest.fixture
 def mock_treasury_service():
@@ -38,7 +39,7 @@ def test_conduct_omo_purchase_success(central_bank_service, mock_treasury_servic
     mock_treasury_service.execute_market_purchase.return_value = mock_result
 
     result = central_bank_service.conduct_open_market_operation(
-        mock_treasury_service, "purchase", 1000.0, currency="USD"
+        mock_treasury_service, "purchase", 1000.0, currency=DEFAULT_CURRENCY
     )
 
     assert result["success"]
@@ -49,7 +50,7 @@ def test_conduct_omo_purchase_success(central_bank_service, mock_treasury_servic
     mock_treasury_service.execute_market_purchase.assert_called_with(
         buyer_id=ID_CENTRAL_BANK,
         target_cash_amount=1000.0,
-        currency="USD"
+        currency=DEFAULT_CURRENCY
     )
 
 def test_conduct_omo_sale_success(central_bank_service, mock_treasury_service):

@@ -39,7 +39,9 @@ class TestBankServiceInterface:
         amount = 1000.0
         interest_rate = 0.05
 
-        loan_info = bank.grant_loan(borrower_id, amount, interest_rate)
+        result = bank.grant_loan(borrower_id, amount, interest_rate)
+        assert result is not None
+        loan_info, tx = result
 
         assert loan_info is not None
         assert loan_info["borrower_id"] == borrower_id
@@ -48,16 +50,18 @@ class TestBankServiceInterface:
         assert loan_info["interest_rate"] == interest_rate
         assert "loan_id" in loan_info
 
-        # Verify internal state
-        assert len(bank.loans) == 1
-        internal_loan = list(bank.loans.values())[0]
-        assert internal_loan.borrower_id == 101
+        # Transaction verification
+        assert tx is not None
+        assert tx.price == amount
+        assert tx.buyer_id == bank.id
 
     def test_repay_loan(self, bank):
         borrower_id = "102"
         amount = 1000.0
         interest_rate = 0.05
-        loan_info = bank.grant_loan(borrower_id, amount, interest_rate)
+        result = bank.grant_loan(borrower_id, amount, interest_rate)
+        assert result is not None
+        loan_info, _ = result
         loan_id = loan_info["loan_id"]
 
         success = bank.repay_loan(loan_id, 200.0)
@@ -69,18 +73,18 @@ class TestBankServiceInterface:
         with pytest.raises(LoanNotFoundError):
             bank.repay_loan("invalid_id", 100.0)
 
-        # Test repayment > balance? Implementation caps it currently, usually no error
-        # but let's just test valid repayment.
-
     def test_get_balance(self, bank):
         # Setup legacy deposit
         depositor_id = 202
         bank.deposit_from_customer(depositor_id, 500.0)
 
-        balance = bank.get_balance("202")
+        # Bank.get_balance returns the bank's own assets if called with currency,
+        # or we use get_customer_balance for customer deposits.
+        # The test intent seems to be checking the customer's deposit balance.
+        balance = bank.get_customer_balance(depositor_id)
         assert balance == 500.0
 
-        balance_empty = bank.get_balance("999")
+        balance_empty = bank.get_customer_balance(999)
         assert balance_empty == 0.0
 
     def test_get_debt_status(self, bank):

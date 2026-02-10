@@ -2,7 +2,7 @@ from typing import Protocol, Dict, Any, List, Tuple, Optional
 from uuid import UUID
 
 from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO, IHousingTransactionSagaHandler
-from modules.system.api import CurrencyCode
+from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 from simulation.finance.api import IFinancialEntity, ITransaction
 
 # --- 1. Saga Orchestration ---
@@ -79,7 +79,7 @@ class ISettlementSystem(Protocol):
         debit_context: Optional[Dict[str, Any]] = None,
         credit_context: Optional[Dict[str, Any]] = None,
         tick: int = 0,
-        currency: CurrencyCode = "USD",
+        currency: CurrencyCode = DEFAULT_CURRENCY,
     ) -> Optional[ITransaction]: ...
 
     def settle_atomic(
@@ -103,7 +103,7 @@ class ISettlementSystem(Protocol):
         amount: float,
         reason: str,
         tick: int,
-        currency: CurrencyCode = "USD",
+        currency: CurrencyCode = DEFAULT_CURRENCY,
     ) -> Optional[ITransaction]: ...
 
     def transfer_and_destroy(
@@ -113,7 +113,7 @@ class ISettlementSystem(Protocol):
         amount: float,
         reason: str,
         tick: int,
-        currency: CurrencyCode = "USD",
+        currency: CurrencyCode = DEFAULT_CURRENCY,
     ) -> Optional[ITransaction]: ...
 
     # --- Other Settlement Logic (Unchanged) ---
