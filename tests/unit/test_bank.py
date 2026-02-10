@@ -9,6 +9,7 @@ from modules.finance.api import (
     LoanRollbackError
 )
 from modules.system.event_bus.api import IEventBus
+from modules.system.api import DEFAULT_CURRENCY
 
 @pytest.fixture(autouse=True)
 def mock_logger():
@@ -197,15 +198,15 @@ class TestBank:
         depositor_id = 202
 
         # Create Loan with dummy profile
-        profile = BorrowerProfileDTO(borrower_id=str(borrower_id), gross_income=1000.0, existing_debt_payments=0.0, collateral_value=0.0, existing_assets=0.0)
-        bank_instance.grant_loan(str(borrower_id), 1000.0, 0.05, borrower_profile=profile)
+        profile = BorrowerProfileDTO(borrower_id=borrower_id, gross_income=1000.0, existing_debt_payments=0.0, collateral_value=0.0, existing_assets=0.0)
+        bank_instance.grant_loan(borrower_id, 1000.0, 0.05, borrower_profile=profile)
 
         bank_instance.deposit_from_customer(depositor_id, 500.0)
 
         # Mock Agents
         mock_borrower = MagicMock()
         mock_borrower.id = borrower_id
-        mock_borrower.assets = {"USD": 100.0} # Enough to pay interest
+        mock_borrower.assets = {DEFAULT_CURRENCY: 100.0} # Enough to pay interest
         mock_borrower.wallet.get_balance.return_value = 100.0
         mock_borrower.is_active = True
 
@@ -256,8 +257,8 @@ class TestBank:
         borrower_id = 101
 
         # 1. Setup Defaulting Loan
-        profile = BorrowerProfileDTO(borrower_id=str(borrower_id), gross_income=1000.0, existing_debt_payments=0.0, collateral_value=0.0, existing_assets=0.0)
-        bank_instance.grant_loan(str(borrower_id), 1000.0, 0.05, borrower_profile=profile)
+        profile = BorrowerProfileDTO(borrower_id=borrower_id, gross_income=1000.0, existing_debt_payments=0.0, collateral_value=0.0, existing_assets=0.0)
+        bank_instance.grant_loan(borrower_id, 1000.0, 0.05, borrower_profile=profile)
 
         # Mock Agent that fails to pay
         mock_borrower = MagicMock()
@@ -270,7 +271,7 @@ class TestBank:
         # It checks self.settlement_system (None in test) -> fallback.
         # Fallback checks agent.wallet or agent.assets.
         mock_borrower.wallet.get_balance.return_value = 0.0 # Insufficient funds
-        mock_borrower.assets = {"USD": 0.0}
+        mock_borrower.assets = {DEFAULT_CURRENCY: 0.0}
 
         agents = {borrower_id: mock_borrower}
 

@@ -5,34 +5,35 @@ from modules.household.dtos import EconStateDTO, BioStateDTO, SocialStateDTO
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.ai.api import Personality
 from simulation.models import Talent
+from modules.simulation.api import AgentCoreConfigDTO
+from tests.utils.factories import create_household_config_dto
 
 class TestHouseholdRefactor:
     def test_property_management(self):
-        # Setup DTOs
-        config = MagicMock(spec=HouseholdConfigDTO)
-        config.value_orientation_mapping = {}
-        config.initial_household_age_range = (20, 30)
-        config.price_memory_length = 10
-        config.wage_memory_length = 10
-        config.ticks_per_year = 100
-        config.initial_aptitude_distribution = (0.5, 0.1)
-        config.conformity_ranges = {}
-        config.initial_household_assets_mean = 1000.0
-        config.quality_pref_snob_min = 0.8
-        config.quality_pref_miser_max = 0.2
-        config.adaptation_rate_normal = 0.1
+        # Setup DTOs using factory for completeness
+        config = create_household_config_dto()
+
+        # Override specific values if needed by test, though defaults are usually fine
+        # Here we just need it to be a valid DTO.
+
+        core_config = AgentCoreConfigDTO(
+            id=1,
+            name="Household_1",
+            value_orientation="neutral",
+            initial_needs={},
+            logger=MagicMock(),
+            memory_interface=None
+        )
 
         # Initialize Household
         household = Household(
-            id=1,
+            core_config=core_config,
+            engine=MagicMock(),
             talent=Talent(base_learning_rate=0.1, max_potential=1.0),
             goods_data=[],
-            initial_assets=1000.0,
-            initial_needs={},
-            decision_engine=MagicMock(),
-            value_orientation="neutral",
             personality=Personality.BALANCED,
-            config_dto=config
+            config_dto=config,
+            initial_assets_record=1000.0
         )
 
         # Test add_property

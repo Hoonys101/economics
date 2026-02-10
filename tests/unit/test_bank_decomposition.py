@@ -32,37 +32,41 @@ class TestBankDecomposition(unittest.TestCase):
     def test_grant_loan_delegation(self):
         amount = 500.0
         interest_rate = 0.05
+        borrower_id = 101
 
-        dto, tx = self.bank.grant_loan("101", amount, interest_rate)
+        dto, tx = self.bank.grant_loan(borrower_id, amount, interest_rate)
 
         self.assertIsNotNone(dto)
-        self.assertEqual(dto['borrower_id'], "101")
+        self.assertEqual(dto['borrower_id'], borrower_id)
         self.assertEqual(dto['original_amount'], amount)
 
         loan_dto = self.bank.loan_manager.get_loan_by_id(dto['loan_id'])
         self.assertIsNotNone(loan_dto)
         self.assertEqual(loan_dto['principal'], amount)
 
-        balance = self.bank.get_balance("101")
+        # Use correct API for customer deposit balance
+        balance = self.bank.get_customer_balance(borrower_id)
         self.assertEqual(balance, amount)
 
     def test_run_tick_interest_collection(self):
         amount = 1000.0
-        self.bank.grant_loan("101", amount, 0.12)
+        borrower_id = 101
+        self.bank.grant_loan(borrower_id, amount, 0.12)
 
-        agents_dict = {101: self.agent}
+        agents_dict = {borrower_id: self.agent}
         txs = self.bank.run_tick(agents_dict, current_tick=1)
 
         interest_txs = [tx for tx in txs if tx.transaction_type == 'loan_interest']
         self.assertTrue(len(interest_txs) > 0)
-        self.assertEqual(interest_txs[0].buyer_id, 101)
+        self.assertEqual(interest_txs[0].buyer_id, borrower_id)
         self.assertEqual(interest_txs[0].seller_id, 1)
 
         self.settlement_system.transfer.assert_called()
 
     def test_default_processing(self):
         amount = 10000.0
-        res = self.bank.grant_loan("101", amount, 0.12)
+        borrower_id = 101
+        res = self.bank.grant_loan(borrower_id, amount, 0.12)
         self.assertIsNotNone(res)
 
         # Agent has no money
@@ -72,7 +76,7 @@ class TestBankDecomposition(unittest.TestCase):
         self.settlement_system.transfer.side_effect = None
         self.settlement_system.transfer.return_value = None # Fail transfer
 
-        agents_dict = {101: self.agent}
+        agents_dict = {borrower_id: self.agent}
         txs = self.bank.run_tick(agents_dict, current_tick=2)
 
         default_txs = [tx for tx in txs if tx.transaction_type == 'credit_destruction']
@@ -81,7 +85,7 @@ class TestBankDecomposition(unittest.TestCase):
 
         self.assertTrue(len(default_txs) > 0)
 
-        loans = self.bank.get_outstanding_loans_for_agent(101)
+        loans = self.bank.get_outstanding_loans_for_agent(borrower_id)
         total_outstanding = sum(l['amount'] for l in loans)
         self.assertEqual(total_outstanding, 0.0)
 
