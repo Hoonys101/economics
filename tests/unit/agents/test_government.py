@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, Mock, patch
 from simulation.agents.government import Government
+from modules.system.api import DEFAULT_CURRENCY
 
 @pytest.fixture
 def government_setup():
@@ -9,7 +10,7 @@ def government_setup():
     # We patch TaxService
     with patch('simulation.agents.government.TaxService') as mock_tax_service_cls, \
          patch('simulation.agents.government.MinistryOfEducation') as mock_education_ministry_cls, \
-         patch('simulation.agents.government.WelfareService') as mock_welfare_service_cls, \
+         patch('simulation.agents.government.WelfareManager') as mock_welfare_service_cls, \
          patch('simulation.agents.government.InfrastructureManager') as mock_infra_manager_cls:
 
         mock_tax_service_instance = mock_tax_service_cls.return_value
@@ -161,10 +162,15 @@ def test_deficit_spending_allowed_within_limit(deficit_government_setup):
     # Asset is 1000. Request 500. No bonds needed.
     # We want to force bonds.
     # Set assets (Wallet) to low.
-    government.wallet._balances['USD'] = 100.0
+    government.wallet._balances[DEFAULT_CURRENCY] = 100.0
 
     mock_finance = government.finance_system
-    mock_finance.issue_treasury_bonds.return_value = (["bond"], [Mock(transaction_type='bond_issuance')])
+
+    def issue_bonds_side_effect(amount, tick):
+        government.wallet.add(amount, DEFAULT_CURRENCY)
+        return (["bond"], [Mock(transaction_type='bond_issuance')])
+
+    mock_finance.issue_treasury_bonds.side_effect = issue_bonds_side_effect
 
     target_agent = Mock()
     target_agent.id = "target_1"
@@ -183,7 +189,7 @@ def test_deficit_spending_allowed_within_limit(deficit_government_setup):
 def test_deficit_spending_blocked_beyond_limit(deficit_government_setup):
     """Test that spending is blocked when it would exceed the debt/GDP limit."""
     government = deficit_government_setup
-    government.wallet._balances['USD'] = 100.0
+    government.wallet._balances[DEFAULT_CURRENCY] = 100.0
     target_agent = Mock()
     target_agent.id = "target_1"
 

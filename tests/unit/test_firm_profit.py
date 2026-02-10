@@ -5,68 +5,110 @@ from unittest.mock import Mock
 from simulation.firms import Firm
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 from tests.utils.factories import create_firm_config_dto
-# No need to import config here, as it's passed as a mock
-
+from modules.simulation.api import AgentCoreConfigDTO
+from modules.system.api import DEFAULT_CURRENCY
 
 @pytest.fixture
 def mock_firm():
-    # Create a mock config module
-    mock_config_module = Mock()
-    mock_config_module.PROFIT_HISTORY_TICKS = 3
-    mock_config_module.BASE_WAGE = 10.0
-    mock_config_module.WAGE_PROFIT_SENSITIVITY = 0.5
-    mock_config_module.MAX_WAGE_PREMIUM = 1.0
-
-    # Mock the decision_engine as it's not under test here
+    # Mock the decision_engine
     mock_decision_engine = Mock(spec=AIDrivenFirmDecisionEngine)
 
-    firm = Firm(
+    # Use factory with profit_history_ticks=3, disable maintenance fee
+    config_dto = create_firm_config_dto(profit_history_ticks=3, firm_maintenance_fee=0.0)
+
+    core_config = AgentCoreConfigDTO(
         id=1,
-        initial_capital=1000.0,
-        initial_liquidity_need=50.0,
-        specialization="basic_food",  # Use specialization instead of production_targets
-        productivity_factor=1.0,
-        decision_engine=mock_decision_engine,
+        name="TestFirm_1",
         value_orientation="profit",
-        config_dto=create_firm_config_dto(),
+        initial_needs={},
         logger=Mock(),
+        memory_interface=None
     )
-    firm.production_target = 100.0  # Initialize production_target
-    # Ensure deque is initialized with the mocked config value
-    firm.profit_history = deque(maxlen=mock_config_module.PROFIT_HISTORY_TICKS)
+
+    firm = Firm(
+        core_config=core_config,
+        engine=mock_decision_engine,
+        specialization="basic_food",
+        productivity_factor=1.0,
+        config_dto=config_dto,
+        initial_inventory=None,
+        loan_market=None,
+        sector="FOOD",
+        personality=None
+    )
+
+    # Hydrate wallet
+    firm.wallet.add(1000.0, DEFAULT_CURRENCY)
+    firm.production_target = 100.0
+
     return firm
 
 
 def test_firm_profit_history_update(mock_firm):
-    """Firm.profit_history가 올바르게 업데이트되고 최대 길이를 유지하는지 테스트"""
-    # Simulate profit updates over several ticks
-    mock_firm.profit_history.append(10.0)
-    mock_firm.profit_history.append(20.0)
-    mock_firm.profit_history.append(30.0)
+    """Firm.profit_history updates correctly and maintains max length."""
 
-    assert list(mock_firm.profit_history) == [10.0, 20.0, 30.0]
-    assert len(mock_firm.profit_history) == 3  # Directly use the mocked value
+    # Mock dependencies for generate_transactions
+    government = Mock()
+    government.id = 999
+    market_data = {}
+    shareholder_registry = Mock()
+    shareholder_registry.get_shareholders_of_firm.return_value = []
+    market_context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}}
+    current_time = 1
 
-    # Add one more profit, should push out the oldest one
-    mock_firm.profit_history.append(40.0)
-    assert list(mock_firm.profit_history) == [20.0, 30.0, 40.0]
-    assert len(mock_firm.profit_history) == 3  # Directly use the mocked value
+    # Tick 1: Profit 10.0
+    mock_firm.record_revenue(10.0, DEFAULT_CURRENCY)
+    mock_firm.generate_transactions(government, market_data, shareholder_registry, current_time, market_context)
+    mock_firm.reset_finance()
+
+    # Tick 2: Profit 20.0
+    mock_firm.record_revenue(20.0, DEFAULT_CURRENCY)
+    mock_firm.generate_transactions(government, market_data, shareholder_registry, current_time + 1, market_context)
+    mock_firm.reset_finance()
+
+    # Tick 3: Profit 30.0
+    mock_firm.record_revenue(30.0, DEFAULT_CURRENCY)
+    mock_firm.generate_transactions(government, market_data, shareholder_registry, current_time + 2, market_context)
+    mock_firm.reset_finance()
+
+    history = list(mock_firm.finance_state.profit_history)
+    assert history == [10.0, 20.0, 30.0]
+    assert len(history) == 3
+
+    # Tick 4: Profit 40.0 (Should push out 10.0)
+    mock_firm.record_revenue(40.0, DEFAULT_CURRENCY)
+    mock_firm.generate_transactions(government, market_data, shareholder_registry, current_time + 3, market_context)
+    mock_firm.reset_finance()
+
+    history = list(mock_firm.finance_state.profit_history)
+    assert history == [20.0, 30.0, 40.0]
+    assert len(history) == 3
 
 
 def test_firm_revenue_expenses_reset(mock_firm):
-    """Firm의 revenue_this_tick과 expenses_this_tick이 리셋되는지 테스트 (엔진에서 호출될 로직)"""
-    mock_firm.revenue_this_tick = 100.0
-    mock_firm.expenses_this_tick = 50.0
+    """Firm's revenue and expenses reset after tick."""
+    mock_firm.record_revenue(100.0, DEFAULT_CURRENCY)
+    mock_firm.record_expense(50.0, DEFAULT_CURRENCY)
 
-    # Simulate the reset logic that would be in simulation.engine.py
-    current_profit = mock_firm.revenue_this_tick - mock_firm.expenses_this_tick
-    mock_firm.profit_history.append(current_profit)
-    mock_firm.revenue_this_tick = 0.0
-    mock_firm.expenses_this_tick = 0.0
+    assert mock_firm.finance_state.revenue_this_turn[DEFAULT_CURRENCY] == 100.0
+    assert mock_firm.finance_state.expenses_this_tick[DEFAULT_CURRENCY] == 50.0
 
-    assert mock_firm.revenue_this_tick == 0.0
-    assert mock_firm.expenses_this_tick == 0.0
-    assert list(mock_firm.profit_history)[-1] == 50.0
+    # Reset Tick Counters
+    mock_firm.reset_finance()
 
+    assert mock_firm.finance_state.revenue_this_tick[DEFAULT_CURRENCY] == 0.0
+    assert mock_firm.finance_state.expenses_this_tick[DEFAULT_CURRENCY] == 0.0
 
-# Further tests would involve mocking the engine.run_tick to ensure it calls these resets correctly
+    # Verify revenue_this_turn reset (happens in generate_transactions)
+    mock_firm.record_revenue(100.0, DEFAULT_CURRENCY)
+
+    government = Mock()
+    government.id = 999
+    market_data = {}
+    shareholder_registry = Mock()
+    shareholder_registry.get_shareholders_of_firm.return_value = []
+    market_context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}}
+
+    mock_firm.generate_transactions(government, market_data, shareholder_registry, 1, market_context)
+
+    assert mock_firm.finance_state.revenue_this_turn[DEFAULT_CURRENCY] == 0.0

@@ -150,6 +150,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         self.finance_state.total_shares = self.config.ipo_initial_shares
         self.finance_state.treasury_shares = self.config.ipo_initial_shares # Initially all treasury
         self.finance_state.dividend_rate = self.config.dividend_rate
+        self.finance_state.profit_history = deque(maxlen=self.config.profit_history_ticks)
 
         self.sales_state.marketing_budget_rate = 0.05
 
@@ -435,7 +436,12 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         """
         if currency not in self.finance_state.revenue_this_turn:
             self.finance_state.revenue_this_turn[currency] = 0.0
+            self.finance_state.current_profit[currency] = 0.0 # Initialize if missing
+
         self.finance_state.revenue_this_turn[currency] += amount
+        if currency not in self.finance_state.current_profit:
+             self.finance_state.current_profit[currency] = 0.0
+        self.finance_state.current_profit[currency] += amount
 
     def record_expense(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
