@@ -73,7 +73,10 @@ class Registry(IRegistry):
             if seller.is_employed and seller.employer_id is not None and seller.employer_id != buyer.id:
                 previous_employer = state.agents.get(seller.employer_id)
                 if isinstance(previous_employer, Firm):
-                     previous_employer.hr.remove_employee(seller)
+                     if hasattr(previous_employer, 'hr_engine') and hasattr(previous_employer, 'hr_state'):
+                         previous_employer.hr_engine.remove_employee(previous_employer.hr_state, seller)
+                     elif hasattr(previous_employer, 'hr'): # Legacy fallback if needed
+                         previous_employer.hr.remove_employee(seller)
 
             seller.is_employed = True
             seller.employer_id = buyer.id
@@ -81,10 +84,16 @@ class Registry(IRegistry):
             seller.needs["labor_need"] = 0.0 # Fulfilled need
 
         if isinstance(buyer, Firm):
-            if seller not in buyer.hr.employees:
-                buyer.hr.hire(seller, tx.price, state.time)
-            else:
-                 buyer.hr.employee_wages[seller.id] = tx.price
+            if hasattr(buyer, 'hr_engine') and hasattr(buyer, 'hr_state'):
+                if seller not in buyer.hr_state.employees:
+                    buyer.hr_engine.hire(buyer.hr_state, seller, tx.price, state.time)
+                else:
+                    buyer.hr_state.employee_wages[seller.id] = tx.price
+            elif hasattr(buyer, 'hr'): # Legacy fallback
+                if seller not in buyer.hr.employees:
+                    buyer.hr.hire(seller, tx.price, state.time)
+                else:
+                    buyer.hr.employee_wages[seller.id] = tx.price
 
             # Research Labor Special Effect (Productivity)
             # Is this Registry or TechSystem? It modifies Firm state (productivity_factor).
