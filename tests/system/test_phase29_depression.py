@@ -10,6 +10,7 @@ from simulation.core_agents import Household
 from simulation.firms import Firm
 from simulation.db.repository import SimulationRepository
 from simulation.ai_model import AIEngineRegistry
+from modules.system.api import DEFAULT_CURRENCY
 import logging
 
 class TestPhase29Depression(unittest.TestCase):
@@ -145,6 +146,8 @@ class TestPhase29Depression(unittest.TestCase):
             h._econ_state.owned_properties = []
             h._econ_state.residing_property_id = None
             h._social_state.approval_rating = 1.0
+            h._econ_state.assets = {DEFAULT_CURRENCY: 1000.0}
+            h.get_sensory_snapshot.return_value = {"total_wealth": 1000.0, "approval_rating": 1.0, "is_active": True}
 
         self.firms = [MagicMock(spec=Firm) for _ in range(5)]
         for i, f in enumerate(self.firms):
@@ -170,14 +173,26 @@ class TestPhase29Depression(unittest.TestCase):
             # make_decision must return (orders, action_vector)
             f.make_decision.return_value = ([], MagicMock())
             f.inventory = {f.specialization: 10}
+            f.get_quantity.side_effect = lambda k: f.inventory.get(k, 0.0)
+            f.wallet.get_balance.return_value = 5000.0
             f.needs = {"liquidity_need": 0.0} # Needs initialization
             f.price = 10
             f.productivity_factor = 1.0
             f.hr = MagicMock()
             f.hr.employees = []
+            f.hr_state = MagicMock()
+            f.hr_state.employees = []
+            f.hr_engine = MagicMock()
+            f.config = MagicMock()
+            f.config.profit_history_ticks = 10
 
             # Phase 29 Refinement: Mock FinanceDepartment
             f.finance = MagicMock()
+            f.finance_state = MagicMock()
+            f.finance_state.consecutive_loss_turns = 0
+            f.finance_engine = MagicMock()
+            f.production_state = MagicMock()
+            f.sales_state = MagicMock()
             f.finance.balance = 5000.0  # Initialize balance (fix for Bootstrapper)
             f.finance.consecutive_loss_turns = 0
             f.finance.current_profit = 100.0
@@ -185,6 +200,7 @@ class TestPhase29Depression(unittest.TestCase):
             f.finance.calculate_valuation.return_value = 5000.0
             f.finance.get_inventory_value.return_value = 0.0
             f.finance.check_cash_crunch.return_value = False
+            f.get_sensory_snapshot.return_value = {"total_wealth": 5000.0, "approval_rating": 0.0, "is_active": True}
 
             # Phase 29 Refinement: Mock get_financial_snapshot
             f.get_financial_snapshot.return_value = {
@@ -218,9 +234,18 @@ class TestPhase29Depression(unittest.TestCase):
         self.sim = self.initializer.build_simulation()
         self.sim.run_id = "test_run"
 
+        # Fix: Mock GDP for Taylor Rule to return floats
+        if self.sim.government and self.sim.government.sensory_data:
+             self.sim.government.sensory_data.current_gdp = 1000.0
+             self.sim.government.sensory_data.potential_gdp = 1000.0
+        # Alternatively, if sensory_data is None or mock:
+        self.sim.government.sensory_data = MagicMock()
+        self.sim.government.sensory_data.current_gdp = 1000.0
+        self.sim.government.sensory_data.potential_gdp = 1000.0
+
         # Set Government Revenue
         if self.sim.government:
-            self.sim.government.revenue_this_tick = 10000.0
+            self.sim.government.deposit(10000.0)
 
         # Mock TechnologyManager to avoid config dependency issues
         self.sim.technology_manager = MagicMock()

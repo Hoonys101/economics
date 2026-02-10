@@ -84,7 +84,8 @@ class TransactionManager(SystemInterface):
                     self.accounting.record_transaction(tx, buyer, None, trade_value, 0.0)
 
                 except Exception as e:
-                    self.logger.error(f"PUBLIC_MANAGER transaction failed: {e}")
+                    import traceback
+                    self.logger.error(f"PUBLIC_MANAGER transaction failed: {e}\n{traceback.format_exc()}")
 
                 continue
 
