@@ -45,6 +45,7 @@ from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCo
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
 from modules.finance.api import IShareholderRegistry
+from modules.governance.api import SystemCommand
 
 
 class WorldState:
@@ -103,6 +104,7 @@ class WorldState:
         self.inter_tick_queue: List[Transaction] = []  # WO-109: Queue for next tick
         self.effects_queue: List[Dict[str, Any]] = []  # WO-109: Queue for side-effects
         self.inactive_agents: Dict[int, Any] = {}  # WO-109: Store inactive agents for transaction processing
+        self.system_command_queue: List[SystemCommand] = [] # TD-255: Cockpit Event Queue
 
         # New Systems
         self.social_system: Optional[SocialSystem] = None
