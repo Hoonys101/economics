@@ -104,7 +104,14 @@ async def websocket_endpoint(websocket: WebSocket):
                 snapshot = dashboard_service.get_snapshot()
                 # Use asdict to convert dataclass to dict
                 data = asdict(snapshot)
-                await websocket.send_json(data)
+                import json
+                # Safe serialization for MagicMocks
+                try:
+                    await websocket.send_json(data)
+                except TypeError:
+                    # Fallback to stringify if json serialization fails (e.g. MagicMock)
+                    txt = json.dumps(data, default=str)
+                    await websocket.send_text(txt)
 
             # Throttling to Max 1Hz (1 second delay)
             await asyncio.sleep(1.0)

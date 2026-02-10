@@ -36,7 +36,7 @@ class SimulationLogger:
             action,
             decision,
             reason,
-            json.dumps(context)
+            json.dumps(context, default=str)
         ))
 
     def log_snapshot(self, tick: int, snapshot_data: Any):

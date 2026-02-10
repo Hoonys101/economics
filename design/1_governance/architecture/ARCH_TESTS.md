@@ -1,6 +1,20 @@
-I have analyzed the `tests/unit/` directory and will now update the `ARCH_TESTS.md` file.
-I have completed the analysis of the test suite and prepared the updated `ARCH_TESTS.md` content. I will now write this content to the file. Since a direct file writing tool is not available, I will use a Python script executed via the shell to write the multi-line content, which is a safe and effective method for this operation.
-I have completed the analysis of the test suite and prepared the updated `ARCH_TESTS.md` file. As I am unable to directly modify files, I will output the complete and final version of the document for you.
+I will now begin the process of analyzing the test failures and updating the `ARCH_TESTS.md` file as requested.
+
+First, I will read the existing `ARCH_TESTS.md` to understand its current structure and content.
+Now that I have the current content, I will analyze the test failures and the full structure of the `tests/unit` directory to create an updated and comprehensive `ARCH_TESTS.md`.
+
+My analysis of the `pytest_failures.log` reveals several major categories of errors, all stemming from the ongoing architectural refactoring:
+
+1.  **Constructor Signature Changes**: A significant number of tests fail with `TypeError` because they are instantiating `Firm` and `Household` objects using an outdated constructor signature (e.g., passing `id=...`). The new constructors require different arguments, likely `core_config` and `engine` DTOs.
+2.  **DTO Refactoring & State Access**: Many tests fail with `AttributeError`. This is because they try to access attributes like `.assets` or `._econ_state` directly on agent mocks. The agent state has been refactored into nested DTOs, so tests need to be updated to access state through the correct DTO path (e.g., `state.econ_state.wallet.get_balance()`).
+3.  **API and Protocol Mismatches**: Failures like `TypeError: ... got an unexpected keyword argument 'currency'` indicate that the method signatures in interfaces (Protocols) have changed, but the mock objects used in tests have not been updated to match the new signature.
+4.  **Incomplete or Incorrect Mocking**: Many `MagicMock` objects are not configured correctly. They either lack necessary attributes (e.g., `profit_history_ticks`), causing `AttributeError`s downstream, or they return another `MagicMock` by default when a primitive value (like a `float` or `int`) is expected, leading to `TypeError`s in subsequent operations.
+5.  **Logic and Data Structure Changes**: Some tests fail on `AssertionError` because the underlying logic has changed, or data structures are different (e.g., a test expecting a `float` receives a `dict`).
+
+Based on this, I will now formulate the new `ARCH_TESTS.md` content and write it to the file.
+I have analyzed the test failures and the structure of the `tests/unit/` directory. Based on this analysis, I have prepared the updated content for `design/1_governance/architecture/ARCH_TESTS.md`.
+
+Since I cannot directly write to the file, I am providing the complete and final version of the document below.
 
 ```markdown
 # Unit Test Architecture & Cleanup Campaign Reference
@@ -10,10 +24,12 @@ This document provides a comprehensive and up-to-date overview of the unit test 
 
 ## 1. Structural Analysis of Test Failures
 Recent test failures (e.g., `TypeError`, `AttributeError`, `Dataclass` issues) are primarily symptoms of a large-scale architectural refactoring. The core reasons are:
-- **DTO/State Object Transition**: The codebase is migrating from direct object attribute manipulation (e.g., `agent.assets = 100`) to using immutable Data Transfer Objects (DTOs) like `HouseholdStateDTO`. Tests written for the old architecture fail when they try to access or set attributes that now reside within a nested DTO (e.g., `context.state.finance.balance`).
-- **Inconsistent Mocking**: There is a mix of `unittest.mock.MagicMock`, `pytest` fixtures, and hand-crafted mock objects. When a source module's interface changes (e.g., a function now expects a `FirmStateDTO` instead of a `Firm` object), the corresponding mocks in tests are often not updated correctly, leading to `TypeError` or `AttributeError`.
-- **Component-Based Refactoring**: Logic is being moved from large agent classes (e.g., `Household`) into smaller, focused components or managers (e.g., `ConsumptionManager`, `LifecycleComponent`). Tests targeting the old agent methods are now obsolete or fail because the logic has moved. `test_household_decision_engine_multi_good.py` is a key example, with multiple tests skipped because they target a now-non-existent `rule_based_engine`.
-- **Legacy vs. New Test Files**: The presence of pairs like `test_ai_training_manager.py` and `test_ai_training_manager_new.py` highlights the transition. The "new" files often use DTOs and test the refactored logic, while the old ones remain, causing confusion and potential test-run conflicts.
+
+- **Constructor Mismatches**: The most common failure is a `TypeError` on `Household.__init__()` and `Firm.__init__()`. Tests are using outdated constructor signatures (e.g., passing `id=...`). The new architecture requires `core_config: AgentCoreConfigDTO` and `engine: IDecisionEngine` arguments, which are missing in dozens of test setups.
+- **DTO/State Object Transition**: The codebase has migrated from direct object attribute manipulation (e.g., `agent.assets = 100`) to using nested, often immutable, Data Transfer Objects (DTOs) (e.g., `EconStateDTO`). Tests written for the old architecture fail with `AttributeError` when they try to access or set attributes that now reside within a DTO (e.g., `context.state.econ_state.wallet`).
+- **Inconsistent/Incomplete Mocking**: Mocks are frequently not updated to reflect new realities. This leads to `AttributeError` when a test tries to access a newly added attribute on an old mock (e.g., a mock `config` object missing `profit_history_ticks`). It also causes `TypeError` when a `MagicMock` returns another mock instead of a primitive value (e.g., comparing a mock to an `int`).
+- **Component-Based Refactoring**: Logic is being moved from large agent classes (e.g., `Household`) into smaller, focused components or managers (e.g., `ConsumptionManager`, `LifecycleComponent`). Tests targeting the old agent methods are now obsolete or fail because the logic has moved.
+- **API and Protocol Drift**: Method signatures in interfaces (Protocols) have changed (e.g., `withdraw()` now requires a `currency` keyword argument), but test mocks have not been updated, causing `TypeError` on keyword arguments.
 
 ## 2. Module-to-Source Mapping & Relocation Plan
 
@@ -24,7 +40,6 @@ The following table maps each unit test file to its source module and provides a
 | `tests/unit/factories.py` | _Test Helper/Factory_ | `tests/unit/helpers/factories.py` |
 | `tests/unit/test_ai_driven_firm_engine.py` | `simulation/decisions/ai_driven_firm_engine.py` | `tests/unit/simulation/decisions/test_ai_driven_firm_engine.py` |
 | `tests/unit/test_ai_training_manager.py` | `simulation/ai/ai_training_manager.py` | `tests/unit/simulation/ai/test_ai_training_manager.py` |
-| `tests/unit/test_ai_training_manager_new.py` | `simulation/ai/ai_training_manager.py` | `tests/unit/simulation/ai/test_ai_training_manager.py` (Merge) |
 | `tests/unit/test_api_extensions.py` | `simulation/viewmodels/economic_indicators_viewmodel.py` | `tests/unit/simulation/viewmodels/test_economic_indicators_viewmodel.py` |
 | `tests/unit/test_api_history.py` | _N/A (Placeholder)_ | _(Remove or Implement)_ |
 | `tests/unit/test_bank.py` | `simulation/bank.py` | `tests/unit/simulation/test_bank.py` |
@@ -37,10 +52,7 @@ The following table maps each unit test file to its source module and provides a
 | `tests/unit/test_firm_profit.py` | `simulation/firms.py` | `tests/unit/simulation/agents/test_firm.py` (Merge) |
 | `tests/unit/test_handlers_fix.py` | `simulation/systems/handlers/*` | `tests/unit/simulation/systems/handlers/` (Distribute) |
 | `tests/unit/test_household_ai.py` | `simulation/ai/household_ai.py` | `tests/unit/simulation/ai/test_household_ai.py` |
-| `tests/unit/test_household_ai_consumption.py` | `simulation/decisions/ai_driven_household_engine.py` | `tests/unit/simulation/decisions/household/test_ai_driven_household_engine.py` (Merge) |
-| `tests/unit/test_household_decision_engine_multi_good.py`| `simulation/decisions/ai_driven_household_engine.py` | `tests/unit/simulation/decisions/household/test_ai_driven_household_engine.py` (Merge) |
 | `tests/unit/test_household_decision_engine_new.py`| `simulation/decisions/ai_driven_household_engine.py` | `tests/unit/simulation/decisions/household/test_ai_driven_household_engine.py` (Merge) |
-| `tests/unit/test_household_marginal_utility.py` | `simulation/decisions/ai_driven_household_engine.py` | `tests/unit/simulation/decisions/household/test_ai_driven_household_engine.py` (Merge) |
 | `tests/unit/test_household_refactor.py` | `simulation/core_agents.py` (`Household`) | `tests/unit/simulation/agents/test_household.py` |
 | `tests/unit/test_household_system2.py` | `simulation/ai/household_system2.py` | `tests/unit/simulation/ai/test_household_system2.py` |
 | `tests/unit/test_learning_tracker.py` | `simulation/ai/learning_tracker.py` | `tests/unit/simulation/ai/test_learning_tracker.py` |

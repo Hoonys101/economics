@@ -1,0 +1,17 @@
+{
+  "tick": 1,
+  "status": "RUNNING",
+  "integrity": {
+    "m2_leak": 0.0,
+    "fps": 96.2278675904542
+  },
+  "macro": {
+    "gdp": 0.0,
+    "cpi": 1.0,
+    "unemploy": 5.0,
+    "gini": 0.0
+  },
+  "finance": {
+    "rates": {
+      "base": 5.0,
+      "call": 
