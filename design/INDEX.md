@@ -25,7 +25,7 @@ Start here to understand the project.
 
 ## ⚙️ 2. Operations (`2_operations/`)
 *The "Manual" for agents and developers.*
-- **[Command Registry](command_registry.json)**: The database of AI missions.
+- **[Command Manifest](../_internal/registry/command_manifest.py)**: The Source of Truth for AI missions (auto-synced to JSON).
 - **[Manuals](2_operations/manuals/)**: Detailed guides for Spec Writers, Git Reviewers, etc.
 - **[Ledgers](2_operations/ledgers/)**:
     - **[Technical Debt Ledger](2_operations/ledgers/TECH_DEBT_LEDGER.md)**: The authoritative register of all technical debts and repayment plans.
