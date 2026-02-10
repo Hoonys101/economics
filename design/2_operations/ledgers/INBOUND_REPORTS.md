@@ -3452,3 +3452,9 @@
 
 ## Harvested on 2026-02-10 07:08:03
 - **PROJECT_PARITY_AUDIT_REPORT.md** (from `audit-parity-verification-3684143967604505345`) -> `parity-verification-3684143967604505345_PROJECT_PARITY_AUDIT_REPORT.md`
+
+## Harvested on 2026-02-11 07:05:17
+- **AUDIT_PARITY_REPORT_20260211.md** (from `audit-parity-20260211-1428624614093628492`) -> `parity-20260211-1428624614093628492_AUDIT_PARITY_REPORT_20260211.md`
+- **mission_unit_test_hardening.md** (from `fix-unit-tests-mocking-10138789661756819849`) -> `unit-tests-mocking-10138789661756819849_mission_unit_test_hardening.md`
+- **AUDIT_ECONOMIC_INTEGRITY.md** (from `economic-integrity-audit-fixes-12427536905677583878`) -> `economic-integrity-audit-fixes-124275369_AUDIT_ECONOMIC_INTEGRITY.md`
+- **AUDIT_STRUCTURAL.md** (from `audit-structural-1219713572139269319`) -> `structural-1219713572139269319_AUDIT_STRUCTURAL.md`

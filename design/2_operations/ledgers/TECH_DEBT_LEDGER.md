@@ -6,8 +6,9 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **TD-INT-CONST** | System | Inconsistent use of System Constants (e.g., hardcoded 'USD'). | **Low**: Logic brittleness (TD-272). | Open |
 | **WO-101** | Test | Core logic-protocol changes (e.g., wallet) break test mocks. | **High**: Logic brittleness/Drift. | Partially Mitigated |
-| **TD-CM-001** | System | ConfigManager unit tests failing (MagicMock vs dict). | **Medium**: Auto-verification failure. | Identified |
-| **TD-TM-001** | System | TechnologyManager unit tests failing (MagicMock vs int). | **Medium**: Auto-verification failure. | Identified |
+| **TD-STR-GOD** | Architecture | God Classes: `Firm` (1164 LOC) and `Household` (1121 LOC) exceed maintainability thresholds. | **High**: High maintenance cost & circular dependencies. | Identified |
+| **TD-STR-LEAK** | Architecture | Abstraction Leaks: Raw agents passed to stateless engines (Production, HR, Gov, Policy). | **Medium**: Tight coupling, hard to test in isolation. | Identified |
+| **TD-LEG-TRANS** | System | Legacy `TransactionManager` contains redundant/conflicting logic. | **Low**: Confusion & code bloat. | Pending Deletion |
 
 ## ✅ Resolved Technical Debt
 
@@ -47,3 +48,6 @@
 | **TD-270** | Financials | **Protocol**: Unified asset representation & added `total_wealth`. | PH10 | [Repo](../_archive/gemini_output/pr_review_market-decoupling-v2-11057596794459553753.md) |
 | **TD-271** | Firms | **Utilization**: RealEstateUtilizationComponent for production bonus. | PH10 | [Repo](../_archive/gemini_output/pr_review_market-decoupling-v2-11057596794459553753.md) |
 | **TD-HYGIENE** | Tests / Infrastructure | **Restoration**: Fixed 618+ test collection errors & 80+ unit/integration failures after major refactor. | PH10.5 | [Handover](../HANDOVER.md) |
+| **TD-CM-001** | Common | **Fix**: Patched `yaml.safe_load` for ConfigManager unit tests. | Clean Room Era | [Insight](../../design/3_work_artifacts/reports/inbound/unit-tests-mocking-10138789661756819849_mission_unit_test_hardening.md) |
+| **TD-TM-001** | Systems | **Fix**: Implemented `FakeNumpy` for TechnologyManager unit tests. | Clean Room Era | [Insight](../../design/3_work_artifacts/reports/inbound/unit-tests-mocking-10138789661756819849_mission_unit_test_hardening.md) |
+| **TD-ECO-INH** | Simulation | **Fix**: Resolved inheritance leaks via fallback Escheatment & Final Sweep. | Clean Room Era | [Audit Report](../../design/3_work_artifacts/reports/inbound/economic-integrity-audit-fixes-124275369_AUDIT_ECONOMIC_INTEGRITY.md) |
