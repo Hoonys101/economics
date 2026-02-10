@@ -9,6 +9,7 @@ from simulation.orchestration.phases import (
     Phase_BankAndDebt, Phase_FirmProductionAndSalaries, Phase_GovernmentPrograms, Phase_TaxationIntents,
     Phase_MonetaryProcessing
 )
+from simulation.orchestration.phases.system_commands import Phase_SystemCommands
 from simulation.orchestration.utils import prepare_market_data
 from simulation.orchestration.phases_recovery import Phase_SystemicLiquidation
 from modules.system.api import DEFAULT_CURRENCY
@@ -28,6 +29,7 @@ class TickOrchestrator:
         # Initialize phases with dependencies
         self.phases: List[IPhaseStrategy] = [
             Phase0_PreSequence(world_state),
+            Phase_SystemCommands(world_state), # TD-255: Cockpit Interventions
             Phase_Production(world_state),
             Phase1_Decision(world_state),
             Phase_Bankruptcy(world_state),           # Phase 4 (Spec): Lifecycle & Bankruptcy
@@ -93,6 +95,10 @@ class TickOrchestrator:
     def _create_simulation_state_dto(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO]) -> SimulationState:
         state = self.world_state
 
+        # Drain command queue
+        commands_for_tick = list(state.system_command_queue)
+        state.system_command_queue.clear()
+
         # Ensure injectable_sensory_dto has valid current_gdp if provided
         # This is passed to government as sensory_data, which is then used by FinanceSystem
         # to calculate debt-to-GDP ratio via FiscalMonitor.
@@ -132,6 +138,7 @@ class TickOrchestrator:
             saga_orchestrator=state.saga_orchestrator, # TD-253
             monetary_ledger=state.monetary_ledger,     # TD-253
             shareholder_registry=state.shareholder_registry, # TD-275
+            system_commands=commands_for_tick, # TD-255
             effects_queue=[], # TD-192: Init empty
             inter_tick_queue=[], # TD-192: Init empty
             transactions=[], # TD-192: Init empty

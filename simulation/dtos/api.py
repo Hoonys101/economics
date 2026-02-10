@@ -6,6 +6,7 @@ from simulation.models import Order
 from simulation.dtos.decision_dtos import DecisionOutputDTO
 from modules.finance.api import IFinancialEntity
 from modules.simulation.api import AgentID
+from modules.governance.api import SystemCommand
 
 # Alias for standardization
 OrderDTO = Order
@@ -245,6 +246,9 @@ class SimulationState:
     saga_orchestrator: Optional[Any] = None
     monetary_ledger: Optional[Any] = None
 
+    # TD-255: System Command Pipeline
+    system_commands: List[SystemCommand] = field(default_factory=list)
+
     # --- NEW TRANSIENT FIELDS ---
     # From Phase 1 (Decisions)
     firm_pre_states: Dict[AgentID, Any] = None
@@ -277,6 +281,8 @@ class SimulationState:
     def __post_init__(self):
         if self.transactions is None:
             self.transactions = []
+        if self.system_commands is None:
+            self.system_commands = []
         if self.inter_tick_queue is None:
             self.inter_tick_queue = []
         if self.effects_queue is None:
