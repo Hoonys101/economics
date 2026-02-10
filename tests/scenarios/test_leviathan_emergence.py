@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from simulation.agents.government import Government
 from simulation.policies.adaptive_gov_policy import AdaptiveGovPolicy
-from simulation.dtos import GovernmentStateDTO
+from simulation.dtos.api import GovernmentSensoryDTO
 from simulation.ai.enums import PolicyActionTag, PoliticalParty, Personality
 from modules.household.political_component import PoliticalComponent
 from modules.household.dtos import SocialStateDTO
@@ -25,7 +25,7 @@ class TestLeviathanEmergence:
         policy = AdaptiveGovPolicy(gov, config)
 
         # 2. Force Low Approval
-        sensory_data = GovernmentStateDTO(
+        sensory_data = GovernmentSensoryDTO(
             tick=10,
             inflation_sma=0.02,
             unemployment_sma=0.05,
@@ -131,7 +131,7 @@ class TestLeviathanEmergence:
         gov.ruling_party = PoliticalParty.BLUE
 
         # Case 1: Near Election (Tick 90)
-        sensory_data_election = GovernmentStateDTO(
+        sensory_data_election = GovernmentSensoryDTO(
             tick=90,
             inflation_sma=0.02,
             unemployment_sma=0.05,

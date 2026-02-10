@@ -5,7 +5,7 @@ from modules.common.config.api import BaseConfigDTO, GovernmentConfigDTO
 from dataclasses import dataclass
 
 @dataclass(frozen=True)
-class TestConfigDTO(BaseConfigDTO):
+class ConfigDTOTest(BaseConfigDTO):
     val_int: int
     val_float: float
 
@@ -27,15 +27,15 @@ def test_config_manager_override():
     manager = ConfigManagerImpl()
 
     # Register a dummy domain for testing
-    manager.register_domain("test_domain", TestConfigDTO, {"val_int": 10, "val_float": 20.0})
+    manager.register_domain("test_domain", ConfigDTOTest, {"val_int": 10, "val_float": 20.0})
 
-    config = manager.get_config("test_domain", TestConfigDTO)
+    config = manager.get_config("test_domain", ConfigDTOTest)
     assert config.val_int == 10
 
     # Override
     manager.override("test_domain.val_int", 99)
 
-    config = manager.get_config("test_domain", TestConfigDTO)
+    config = manager.get_config("test_domain", ConfigDTOTest)
     assert config.val_int == 99
 
 def test_legacy_support():
