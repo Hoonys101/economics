@@ -109,8 +109,6 @@ def goods_market():
 @pytest.fixture
 def labor_market():
     market = OrderBookMarket("labor_market")
-    market.buy_orders = {}
-    market.sell_orders = {}
     return market
 
 

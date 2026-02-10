@@ -10,6 +10,7 @@ from simulation.ai.api import Personality
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
+from modules.simulation.api import AgentCoreConfigDTO
 import config as global_config
 
 @pytest.fixture
@@ -104,10 +105,24 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer, mock_co
     firm_config_dto = create_config_dto(global_config, FirmConfigDTO)
 
     talent = Talent(base_learning_rate=0.1, max_potential={})
-    households = [Household(id=i, talent=talent, goods_data=[], initial_assets=1000, initial_needs={'survival': 0}, decision_engine=Mock(spec=AIDrivenHouseholdDecisionEngine), value_orientation="test", personality=Personality.MISER, config_dto=hh_config_dto) for i in range(1)]
+
+    def create_household(i, assets):
+        core = AgentCoreConfigDTO(id=i, name=f"HH_{i}", value_orientation="test", initial_needs={'survival': 0}, logger=Mock(), memory_interface=None)
+        h = Household(core_config=core, engine=Mock(spec=AIDrivenHouseholdDecisionEngine), talent=talent, goods_data=[], personality=Personality.MISER, config_dto=hh_config_dto)
+        h.deposit(assets)
+        return h
+
+    households = [create_household(i, 1000) for i in range(1)]
+
+    def create_firm(i, assets, spec, prod):
+        core = AgentCoreConfigDTO(id=i, name=f"Firm_{i}", value_orientation="Profit", initial_needs={'liquidity_need': 100}, logger=Mock(), memory_interface=None)
+        f = Firm(core_config=core, engine=Mock(spec=AIDrivenFirmDecisionEngine), specialization=spec, productivity_factor=prod, config_dto=firm_config_dto)
+        f.deposit(assets)
+        return f
+
     firms = [
-        Firm(id=100, initial_capital=500, specialization="tools", decision_engine=Mock(spec=AIDrivenFirmDecisionEngine), config_dto=firm_config_dto, value_orientation="Profit", initial_liquidity_need=100, productivity_factor=1),
-        Firm(id=101, initial_capital=2500, specialization="food", decision_engine=Mock(spec=AIDrivenFirmDecisionEngine), config_dto=firm_config_dto, value_orientation="Profit", initial_liquidity_need=100, productivity_factor=1)
+        create_firm(100, 500, "tools", 1),
+        create_firm(101, 2500, "food", 1)
     ]
 
     # The bootstrapper is called during the Simulation initialization
@@ -123,7 +138,7 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer, mock_co
 
     # Assert Assets >= 2000
     for firm in sim.firms:
-        assert firm.finance.balance >= 2000.0, f"Firm {firm.id} undercapitalized"
+        assert firm.wallet.get_balance("USD") >= 2000.0, f"Firm {firm.id} undercapitalized"
 
         # Assert Inputs Present
         if "inputs" in mock_config.GOODS[firm.specialization]:
@@ -137,9 +152,23 @@ def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer, mock_conf
     firm_config_dto = create_config_dto(global_config, FirmConfigDTO)
 
     talent = Talent(base_learning_rate=0.1, max_potential={})
-    households = [Household(id=i, talent=talent, goods_data=[], initial_assets=1000, initial_needs={'survival': 0}, decision_engine=Mock(spec=AIDrivenHouseholdDecisionEngine), value_orientation="test", personality=Personality.MISER, config_dto=hh_config_dto) for i in range(1)]
+
+    def create_household(i, assets):
+        core = AgentCoreConfigDTO(id=i, name=f"HH_{i}", value_orientation="test", initial_needs={'survival': 0}, logger=Mock(), memory_interface=None)
+        h = Household(core_config=core, engine=Mock(spec=AIDrivenHouseholdDecisionEngine), talent=talent, goods_data=[], personality=Personality.MISER, config_dto=hh_config_dto)
+        h.deposit(assets)
+        return h
+
+    households = [create_household(i, 1000) for i in range(1)]
+
+    def create_firm(i, assets, spec, prod):
+        core = AgentCoreConfigDTO(id=i, name=f"Firm_{i}", value_orientation="Profit", initial_needs={'liquidity_need': 100}, logger=Mock(), memory_interface=None)
+        f = Firm(core_config=core, engine=Mock(spec=AIDrivenFirmDecisionEngine), specialization=spec, productivity_factor=prod, config_dto=firm_config_dto)
+        f.deposit(assets)
+        return f
+
     firms = [
-        Firm(id=100, initial_capital=3000, specialization="tools", decision_engine=Mock(spec=AIDrivenFirmDecisionEngine), config_dto=firm_config_dto, value_orientation="Profit", initial_liquidity_need=100, productivity_factor=1),
+        create_firm(100, 3000, "tools", 1),
     ]
 
     # This is a simplified simulation setup; a real test would need more comprehensive mocks
@@ -157,8 +186,7 @@ def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer, mock_conf
     firm = sim.firms[0]
     # To make produce work, we need to ensure the firm has employees
     mock_employee = households[0]
-    firm.employees = [mock_employee]
-    firm.hr.employees = [mock_employee]
+    firm.hr_state.employees = [mock_employee]
     firm.input_inventory['wood'] = 100.0
     firm.productivity_factor = 1.0
 

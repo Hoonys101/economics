@@ -40,6 +40,7 @@ def firm_config():
     config.brand_awareness_saturation = 100.0
     config.marketing_budget_rate_min = 0.01
     config.marketing_budget_rate_max = 0.1
+    config.profit_history_ticks = 10
     return config
 
 @pytest.fixture

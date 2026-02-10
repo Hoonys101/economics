@@ -4,6 +4,7 @@ from simulation.core_agents import Household
 from simulation.firms import Firm
 from simulation.dtos.api import DecisionInputDTO
 from modules.system.api import MarketSnapshotDTO, MarketSignalDTO, HousingMarketSnapshotDTO, LoanMarketSnapshotDTO, LaborMarketSnapshotDTO
+from modules.simulation.api import AgentCoreConfigDTO
 from tests.utils.factories import create_household_config_dto, create_firm_config_dto
 from simulation.models import Talent, Order
 from simulation.ai.api import Personality
@@ -20,17 +21,24 @@ class TestTD194Integration:
         # Talent needs to be valid
         talent = Talent(base_learning_rate=0.5, max_potential={})
 
-        household = Household(
+        core_config = AgentCoreConfigDTO(
             id=1,
+            name="Household_1",
+            value_orientation="neutral",
+            initial_needs={"survival": 0.5},
+            logger=MagicMock(),
+            memory_interface=None
+        )
+
+        household = Household(
+            core_config=core_config,
+            engine=decision_engine,
             talent=talent,
             goods_data=[],
-            initial_assets=1000.0,
-            initial_needs={"survival": 0.5},
-            decision_engine=decision_engine,
-            value_orientation="neutral",
             personality=Personality.BALANCED,
             config_dto=config
         )
+        household.deposit(1000.0)
 
         # 2. Setup Input DTO
         market_snapshot = MarketSnapshotDTO(
@@ -67,16 +75,23 @@ class TestTD194Integration:
         decision_engine = MagicMock()
         decision_engine.make_decisions.return_value = ([], Mock())
 
-        firm = Firm(
+        core_config = AgentCoreConfigDTO(
             id=1,
-            initial_capital=10000.0,
-            initial_liquidity_need=1000.0,
+            name="Firm_1",
+            value_orientation="profit",
+            initial_needs={"liquidity_need": 1000.0},
+            logger=MagicMock(),
+            memory_interface=None
+        )
+
+        firm = Firm(
+            core_config=core_config,
+            engine=decision_engine,
             specialization="goods",
             productivity_factor=1.0,
-            decision_engine=decision_engine,
-            value_orientation="profit",
             config_dto=config
         )
+        firm.deposit(10000.0)
 
         # 2. Setup Input DTO
         signals = {
