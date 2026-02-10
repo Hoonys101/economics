@@ -3,7 +3,8 @@ from unittest.mock import MagicMock
 from collections import deque, defaultdict
 from modules.household.decision_unit import DecisionUnit
 from modules.household.dtos import EconStateDTO
-from modules.household.api import OrchestrationContextDTO, MarketSnapshotDTO, HousingMarketSnapshotDTO, LoanMarketSnapshotDTO, LaborMarketSnapshotDTO
+from modules.household.api import OrchestrationContextDTO
+from modules.system.api import MarketSnapshotDTO, HousingMarketSnapshotDTO, LoanMarketSnapshotDTO, LaborMarketSnapshotDTO
 from simulation.models import Talent, Order
 from simulation.portfolio import Portfolio
 from tests.utils.factories import create_household_config_dto
