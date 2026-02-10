@@ -6,7 +6,8 @@ from modules.finance.api import (
     InsufficientFundsError,
     ICreditScoringService,
     BorrowerProfileDTO,
-    LoanRollbackError
+    LoanRollbackError,
+    IFinancialAgent
 )
 from modules.system.event_bus.api import IEventBus
 from modules.system.api import DEFAULT_CURRENCY
@@ -179,18 +180,18 @@ class TestBank:
         assert success is False
 
     def test_financial_entity_deposit(self, bank_instance):
-        initial = bank_instance.assets
+        initial = bank_instance.get_balance(DEFAULT_CURRENCY)
         bank_instance.deposit(500.0)
-        assert bank_instance.assets == initial + 500.0
+        assert bank_instance.get_balance(DEFAULT_CURRENCY) == initial + 500.0
 
     def test_financial_entity_withdraw(self, bank_instance):
-        initial = bank_instance.assets
+        initial = bank_instance.get_balance(DEFAULT_CURRENCY)
         bank_instance.withdraw(500.0)
-        assert bank_instance.assets == initial - 500.0
+        assert bank_instance.get_balance(DEFAULT_CURRENCY) == initial - 500.0
 
     def test_financial_entity_withdraw_insufficient(self, bank_instance):
         with pytest.raises(InsufficientFundsError):
-            bank_instance.withdraw(bank_instance.assets + 1000.0)
+            bank_instance.withdraw(bank_instance.get_balance(DEFAULT_CURRENCY) + 1000.0)
 
     def test_run_tick_returns_transactions(self, bank_instance):
         # Setup: Loan and Deposit
@@ -204,13 +205,13 @@ class TestBank:
         bank_instance.deposit_from_customer(depositor_id, 500.0)
 
         # Mock Agents
-        mock_borrower = MagicMock()
+        mock_borrower = MagicMock(spec=IFinancialAgent)
         mock_borrower.id = borrower_id
-        mock_borrower.assets = {DEFAULT_CURRENCY: 100.0} # Enough to pay interest
-        mock_borrower.wallet.get_balance.return_value = 100.0
+        # IFinancialAgent uses get_balance
+        mock_borrower.get_balance.return_value = 100.0
         mock_borrower.is_active = True
 
-        mock_depositor = MagicMock()
+        mock_depositor = MagicMock(spec=IFinancialAgent)
         mock_depositor.id = depositor_id
         mock_depositor.is_active = True
 
@@ -228,7 +229,10 @@ class TestBank:
         assert "deposit_interest" in tx_types
 
         # Check assets modified (Interest collected > Interest paid)
-        assert bank_instance.assets > 10000.0
+        assert bank_instance.get_balance(DEFAULT_CURRENCY) > 10000.0
+
+        # Verify Borrower Withdraw called with Currency
+        mock_borrower.withdraw.assert_called_with(ANY, currency=DEFAULT_CURRENCY)
 
     def test_void_loan_failure_raises_exception(self, bank_instance):
         # Setup: Create a loan manually (bypassing normal grant_loan to simulate broken link)
@@ -261,7 +265,7 @@ class TestBank:
         bank_instance.grant_loan(borrower_id, 1000.0, 0.05, borrower_profile=profile)
 
         # Mock Agent that fails to pay
-        mock_borrower = MagicMock()
+        mock_borrower = MagicMock(spec=IFinancialAgent)
         mock_borrower.id = borrower_id
         # Force payment failure via assets check inside Bank (legacy path fallback) or just let callback fail
         # Bank.run_tick uses callback. If callback returns False, default happens.
@@ -269,9 +273,8 @@ class TestBank:
 
         # We need to ensure Bank.run_tick's payment_callback returns False.
         # It checks self.settlement_system (None in test) -> fallback.
-        # Fallback checks agent.wallet or agent.assets.
-        mock_borrower.wallet.get_balance.return_value = 0.0 # Insufficient funds
-        mock_borrower.assets = {DEFAULT_CURRENCY: 0.0}
+        # Fallback checks IFinancialAgent.get_balance (New)
+        mock_borrower.get_balance.return_value = 0.0 # Insufficient funds
 
         agents = {borrower_id: mock_borrower}
 

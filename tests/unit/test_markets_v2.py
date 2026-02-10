@@ -2,6 +2,7 @@ import pytest
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.models import Order
 from utils.logger import Logger
+from modules.system.api import DEFAULT_CURRENCY
 
 
 @pytest.fixture
@@ -220,6 +221,7 @@ class TestOrderMatching:
         assert tx.price == 102.5  # FIX: 매치가격은 중간값으로 설정
         assert tx.buyer_id == 1
         assert tx.seller_id == 2
+        assert tx.currency == DEFAULT_CURRENCY
 
         # 오더북이 비어있는지 확인
         assert not market.buy_orders.get("food", [])

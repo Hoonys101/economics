@@ -6,6 +6,7 @@ from simulation.core_agents import Household
 from simulation.firms import Firm
 from modules.system.api import DEFAULT_CURRENCY
 from modules.simulation.api import IInventoryHandler
+from modules.finance.api import IFinancialAgent
 
 logger = logging.getLogger(__name__)
 
@@ -47,14 +48,17 @@ class GoodsTransactionHandler(ITransactionHandler):
 
         # Solvency Check (Legacy compatibility)
         if hasattr(buyer, 'check_solvency'):
-            current_assets = buyer.assets
-            # TD-024: Handle multi-currency assets safely
-            if isinstance(current_assets, dict):
-                 # Assume transaction currency or fallback to DEFAULT
-                 tx_currency = getattr(tx, 'currency', DEFAULT_CURRENCY)
-                 check_val = current_assets.get(tx_currency, 0.0)
+            tx_currency = getattr(tx, 'currency', DEFAULT_CURRENCY)
+
+            if isinstance(buyer, IFinancialAgent):
+                check_val = buyer.get_balance(tx_currency)
             else:
-                 check_val = float(current_assets)
+                current_assets = buyer.assets
+                # TD-024: Handle multi-currency assets safely
+                if isinstance(current_assets, dict):
+                     check_val = current_assets.get(tx_currency, 0.0)
+                else:
+                     check_val = float(current_assets)
 
             if check_val < total_cost:
                 buyer.check_solvency(context.government)

@@ -347,13 +347,15 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
                 # Using native withdraw/deposit if system missing (Legacy)
                 try:
                     assets = 0.0
-                    if hasattr(borrower, 'wallet'): assets = borrower.wallet.get_balance(DEFAULT_CURRENCY)
+                    if isinstance(borrower, IFinancialAgent):
+                        assets = borrower.get_balance(DEFAULT_CURRENCY)
+                    elif hasattr(borrower, 'wallet'): assets = borrower.wallet.get_balance(DEFAULT_CURRENCY)
                     elif hasattr(borrower, 'assets'):
                         assets = borrower.assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(borrower.assets, dict) else float(borrower.assets)
 
                     if assets >= amount:
-                        borrower.withdraw(amount)
-                        self.deposit(amount)
+                        borrower.withdraw(amount, currency=DEFAULT_CURRENCY)
+                        self.deposit(amount, currency=DEFAULT_CURRENCY)
                         return True
                     return False
                 except Exception:
@@ -404,8 +406,8 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
                     success = tx_int is not None
                 else:
                     try:
-                        self.withdraw(amount)
-                        agent.deposit(amount)
+                        self.withdraw(amount, currency=DEFAULT_CURRENCY)
+                        agent.deposit(amount, currency=DEFAULT_CURRENCY)
                         success = True
                     except: pass
 
@@ -434,8 +436,8 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
                  success = tx_prof is not None
              else:
                  try:
-                     self.withdraw(net_profit)
-                     gov_agent.deposit(net_profit)
+                     self.withdraw(net_profit, currency=DEFAULT_CURRENCY)
+                     gov_agent.deposit(net_profit, currency=DEFAULT_CURRENCY)
                      success = True
                  except: pass
 

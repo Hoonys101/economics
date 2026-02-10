@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, call
 from simulation.systems.transaction_processor import TransactionProcessor
 from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
 from simulation.models import Transaction
+from modules.finance.api import IFinancialAgent
 
 def test_transaction_processor_dispatch_to_handler():
     # Setup
@@ -65,9 +66,9 @@ def test_goods_handler_uses_atomic_settlement():
 
     handler = GoodsTransactionHandler()
 
-    buyer = MagicMock()
+    buyer = MagicMock(spec=IFinancialAgent)
     buyer.id = 1
-    buyer.assets = 100.0 # Set assets for solvency check
+    buyer.get_balance.return_value = 100.0 # Set assets for solvency check
     buyer.inventory = {}
     seller = MagicMock()
     seller.id = 2
