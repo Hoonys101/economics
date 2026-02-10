@@ -88,4 +88,5 @@ class TestPublicManager:
     def test_generate_liquidation_orders_resets_metrics(self, public_manager):
         public_manager.last_tick_revenue = {DEFAULT_CURRENCY: 500.0}
         public_manager.generate_liquidation_orders({})
+        # Ensure it resets to a dictionary with correct currency (not a float)
         assert public_manager.last_tick_revenue == {DEFAULT_CURRENCY: 0.0}

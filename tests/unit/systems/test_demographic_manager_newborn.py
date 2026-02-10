@@ -148,6 +148,7 @@ def test_newborn_receives_initial_needs_from_config(mock_config, mock_simulation
         mock_dto.initial_household_assets_mean = 1000.0
         mock_dto.quality_pref_snob_min = 0.8
         mock_dto.quality_pref_miser_max = 0.2
+        # Ensure mock_dto provides NEWBORN_INITIAL_NEEDS to avoid MagicMock leakage into Agent state
         mock_dto.NEWBORN_INITIAL_NEEDS = mock_config.NEWBORN_INITIAL_NEEDS
         mock_create_dto.return_value = mock_dto
 
