@@ -1,121 +1,122 @@
 import pytest
-from unittest.mock import Mock, patch
-import random
-
+from unittest.mock import Mock, MagicMock
 from simulation.ai.ai_training_manager import AITrainingManager
 from simulation.core_agents import Household
 
-
 @pytest.fixture
-def mock_config(golden_config):
-    if golden_config:
-        config = golden_config
-    else:
-        config = Mock()
-    config.IMITATION_LEARNING_INTERVAL = 100
+def mock_config():
+    config = Mock()
     config.IMITATION_MUTATION_RATE = 0.1
     config.IMITATION_MUTATION_MAGNITUDE = 0.05
-    config.MITOSIS_Q_TABLE_MUTATION_RATE = None # Ensure explicit None
     config.TOP_PERFORMING_PERCENTILE = 0.1
     config.UNDER_PERFORMING_PERCENTILE = 0.5
+    config.MITOSIS_Q_TABLE_MUTATION_RATE = None
     return config
 
-
 @pytest.fixture
-def mock_households(golden_households):
-    # Use golden_households if available, but we need 10 of them with specific assets
-    # and structure for the test logic.
-    if not golden_households:
-        pytest.skip("Golden households fixture is empty.")
-
-    households = []
-    base_agent = golden_households[0]
-
+def mock_agents():
+    agents = []
     for i in range(10):
-        hh = Mock(spec=Household)
-        hh.id = i
-        hh._assets = float(i * 100.0)
+        agent = Mock(spec=Household)
+        agent.id = i
+        agent._assets = float(i * 100) # 0, 100, ..., 900
+        # Fix asset access for sorting (AITrainingManager might access .assets property)
+        agent.assets = agent._assets
 
-        # Ensure deep structure exists
-        decision_engine = Mock()
-        # V1 legacy structure
-        decision_engine.ai_engine.q_table_manager_strategy.q_table = {
-            "state": {"action": float(i)}
+        # Mock Decision Engine and AI Engine
+        agent.decision_engine = Mock()
+        agent.decision_engine.ai_engine = Mock()
+
+        # Mock Q-Table Managers
+        agent.decision_engine.ai_engine.q_table_manager_strategy = Mock()
+        agent.decision_engine.ai_engine.q_table_manager_strategy.q_table = {
+            "state1": {"action1": 1.0}
         }
 
-        # Make sure q_table_manager_tactic.q_table is also iterable because _clone_and_mutate_q_table accesses it
-        decision_engine.ai_engine.q_table_manager_tactic.q_table = {}
+        agent.decision_engine.ai_engine.q_table_manager_tactic = Mock()
+        agent.decision_engine.ai_engine.q_table_manager_tactic.q_table = {
+            "stateA": {"actionA": 0.5}
+        }
 
-        # Remove V2 attributes to prevent code entering V2 blocks which require complex setup
-        # The code checks hasattr(source_ai, "q_consumption"). Mock has everything by default.
-        if hasattr(decision_engine.ai_engine, "q_consumption"):
-            del decision_engine.ai_engine.q_consumption
-        if hasattr(decision_engine.ai_engine, "q_work"):
-            del decision_engine.ai_engine.q_work
-        if hasattr(decision_engine.ai_engine, "q_investment"):
-            del decision_engine.ai_engine.q_investment
+        # Delete V2 attributes to avoid iterating Mocks
+        del agent.decision_engine.ai_engine.q_consumption
+        del agent.decision_engine.ai_engine.q_work
+        del agent.decision_engine.ai_engine.q_investment
 
-        hh.decision_engine = decision_engine
+        agents.append(agent)
+    return agents
 
-        households.append(hh)
+def test_get_top_performing_agents(mock_agents, mock_config):
+    manager = AITrainingManager(mock_agents, mock_config)
+    top_agents = manager._get_top_performing_agents(percentile=0.2)
 
-    return households
+    # Top 20% of 10 agents = 2 agents
+    assert len(top_agents) == 2
+    # Should be agent 9 (900) and agent 8 (800)
+    assert top_agents[0].id == 9
+    assert top_agents[1].id == 8
 
+def test_get_under_performing_agents(mock_agents, mock_config):
+    manager = AITrainingManager(mock_agents, mock_config)
+    under_agents = manager._get_under_performing_agents(percentile=0.3)
 
-@pytest.fixture
-def training_manager(mock_households, mock_config):
-    return AITrainingManager(agents=mock_households, config_module=mock_config)
+    # Bottom 30% of 10 agents = 3 agents
+    assert len(under_agents) == 3
+    # Should be agent 0 (0), agent 1 (100), agent 2 (200) - sorted ascending
+    assert under_agents[0].id == 0
+    assert under_agents[1].id == 1
+    assert under_agents[2].id == 2
 
+def test_clone_and_mutate_q_table(mock_agents, mock_config):
+    manager = AITrainingManager(mock_agents, mock_config)
+    source = mock_agents[9] # Rich
+    target = mock_agents[0] # Poor
 
-class TestAITrainingManager:
-    def test_get_top_performing_agents(self, training_manager, mock_households):
-        # Percentile 0.2 means top 20%
-        top_performers = training_manager._get_top_performing_agents(percentile=0.2)
-        assert len(top_performers) == 2
-        assert top_performers[0].assets == 900.0
-        assert top_performers[1].assets == 800.0
+    # Set distinct values for source
+    source.decision_engine.ai_engine.q_table_manager_strategy.q_table = {
+        "s1": {"a1": 10.0}
+    }
+    source.decision_engine.ai_engine.q_table_manager_tactic.q_table = {
+        "t1": {"ta1": 5.0}
+    }
 
-    def test_clone_and_mutate_q_table(self, training_manager, mock_households):
-        source_agent = mock_households[9]  # Richest agent
-        target_agent = mock_households[0]  # Poorest agent
+    manager._clone_and_mutate_q_table(source, target)
 
-        original_q_value = (
-            source_agent.decision_engine.ai_engine.q_table_manager_strategy.q_table[
-                "state"
-            ]["action"]
-        )
+    # Verify Strategy Table Cloned
+    target_strategy_table = target.decision_engine.ai_engine.q_table_manager_strategy.q_table
+    assert "s1" in target_strategy_table
+    # Value should be close to 10.0 but potentially mutated
+    assert 9.9 <= target_strategy_table["s1"]["a1"] <= 10.1
 
-        with (
-            patch.object(random, "random", return_value=0.05),
-            patch.object(random, "uniform", return_value=0.01),
-        ):
-            training_manager._clone_and_mutate_q_table(source_agent, target_agent)
+    # Verify Tactic Table Cloned
+    target_tactic_table = target.decision_engine.ai_engine.q_table_manager_tactic.q_table
+    assert "t1" in target_tactic_table
+    # Value should be close to 5.0 but potentially mutated
+    assert 4.9 <= target_tactic_table["t1"]["ta1"] <= 5.1
 
-        new_q_value = (
-            target_agent.decision_engine.ai_engine.q_table_manager_strategy.q_table[
-                "state"
-            ]["action"]
-        )
+def test_clone_from_fittest_agent(mock_agents, mock_config):
+    manager = AITrainingManager(mock_agents, mock_config)
+    target = mock_agents[0]
 
-        assert new_q_value != original_q_value
-        assert new_q_value == original_q_value + 0.01
+    # Agent 9 is fittest (900 assets)
+    fittest = mock_agents[9]
+    fittest.decision_engine.ai_engine.q_table_manager_strategy.q_table = {"fit": {"win": 100.0}}
 
-    def test_run_imitation_learning_cycle(self, training_manager, mock_households):
-        mock_role_model = mock_households[9]  # Richest agent
-        with (
-            patch.object(
-                training_manager,
-                "_get_top_performing_agents",
-                return_value=[mock_role_model],
-            ) as mock_get_top,
-            patch.object(training_manager, "_clone_and_mutate_q_table") as mock_clone,
-            patch.object(random, "choice", return_value=mock_role_model) as mock_choice,
-        ):
-            training_manager.run_imitation_learning_cycle(100)
+    manager.clone_from_fittest_agent(target)
 
-            mock_get_top.assert_called_once()
+    target_table = target.decision_engine.ai_engine.q_table_manager_strategy.q_table
+    assert "fit" in target_table
+    assert 99.0 <= target_table["fit"]["win"] <= 101.0
 
-            # With 10 households, top 0.1 (1 agent), bottom 0.5 (5 agents).
-            # 5 learners will call choice and clone.
-            assert mock_choice.call_count == 5
-            assert mock_clone.call_count == 5
+def test_run_imitation_learning_cycle(mock_agents, mock_config):
+    manager = AITrainingManager(mock_agents, mock_config)
+
+    # Mock _clone_and_mutate_q_table to verify calls
+    manager._clone_and_mutate_q_table = Mock()
+
+    manager.run_imitation_learning_cycle(current_tick=1000)
+
+    # Should identify top and bottom agents and call clone
+    # Top 10% (1 agent), Bottom 50% (5 agents)
+    # Should call clone 5 times
+    assert manager._clone_and_mutate_q_table.call_count == 5

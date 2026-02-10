@@ -98,7 +98,7 @@ class TestHouseholdSurvivalOverride:
         mock_household_engine.consumption_manager.decide_consumption = MagicMock(return_value=[])
         mock_household_engine.labor_manager.decide_labor = MagicMock(return_value=[])
         mock_household_engine.asset_manager.decide_investments = MagicMock(return_value=[])
-        mock_household_engine.housing_manager.decide_housing = MagicMock(return_value=[])
+    # mock_household_engine.housing_manager.decide_housing = MagicMock(return_value=[]) # Removed as it doesn't exist
 
         output = mock_household_engine._make_decisions_internal(context)
         orders = output.orders
