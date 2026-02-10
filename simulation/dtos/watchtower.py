@@ -78,6 +78,7 @@ class PopulationDTO:
 @dataclass
 class WatchtowerSnapshotDTO:
     tick: int
+    timestamp: float
     status: str
     integrity: IntegrityDTO
     macro: MacroDTO

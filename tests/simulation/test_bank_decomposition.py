@@ -65,6 +65,7 @@ def mock_config():
 def bank(mock_config):
     registry = MockShareholderRegistry()
     bank = Bank(id=1, initial_assets=10000.0, config_manager=mock_config, shareholder_registry=registry)
+    bank.event_bus = MagicMock()
     return bank
 
 def test_bank_initialization(bank):
@@ -104,12 +105,9 @@ def test_run_tick_defaults(bank):
     # Check for credit destruction
     assert any(tx.transaction_type == 'credit_destruction' for tx in txs)
 
-    # Check Protocol interactions
-    # 1. ICreditFrozen: Should be set to > 10
-    assert agent.credit_frozen_until_tick > 10
-
-    # 2. IEducated: XP should be reduced
-    assert agent.education_xp < 100.0
-
-    # 3. IPortfolioHandler: Cleared
-    assert agent.portfolio_cleared
+    # Check EventBus interaction (Bank no longer applies consequences directly)
+    bank.event_bus.publish.assert_called_once()
+    args, _ = bank.event_bus.publish.call_args
+    event = args[0]
+    assert event["event_type"] == "LOAN_DEFAULTED"
+    assert event["agent_id"] == 101

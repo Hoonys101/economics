@@ -149,6 +149,7 @@ class DashboardService:
 
         snapshot = WatchtowerSnapshotDTO(
             tick=state.time,
+            timestamp=datetime.now().timestamp(),
             status="RUNNING", # TODO: Hook into simulation status if available
             integrity=IntegrityDTO(m2_leak=m2_leak, fps=fps),
             macro=MacroDTO(

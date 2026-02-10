@@ -54,8 +54,7 @@ def test_household_update_political_opinion_integration():
         household._social_state.trust_score = 0.6
         from modules.household.api import SocialOutputDTO
         return SocialOutputDTO(
-            social_state=household._social_state,
-            is_active=True
+            social_state=household._social_state
         )
     household.social_engine.update_status.side_effect = update_status_side_effect
 

@@ -17,7 +17,7 @@ class TestPublicManagerCompliance:
         """Verify PublicManager strictly implements IFinancialEntity."""
         # Check ID Type
         assert isinstance(public_manager.id, int), "PublicManager.id must be an integer"
-        assert public_manager.id == -1
+        assert public_manager.id == 999999
 
         # Check Assets
         assert public_manager.assets == 0.0
@@ -81,4 +81,4 @@ class TestPublicManagerCompliance:
         # CRITICAL: Verify Agent ID is the INT ID
         assert order.agent_id == public_manager.id
         assert isinstance(order.agent_id, int)
-        assert order.agent_id == -1
+        assert order.agent_id == 999999

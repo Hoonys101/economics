@@ -691,6 +691,14 @@ class Household(
     def is_homeless(self, value: bool) -> None:
         self._econ_state.is_homeless = value
 
+    @property
+    def home_quality_score(self) -> float:
+        return self._econ_state.home_quality_score
+
+    @home_quality_score.setter
+    def home_quality_score(self, value: float) -> None:
+        self._econ_state.home_quality_score = value
+
     # IHousingTransactionParticipant Implementation
     @property
     def current_wage(self) -> float:
@@ -796,7 +804,11 @@ class Household(
             "is_employed": self._econ_state.is_employed,
             "labor_skill": self._econ_state.labor_skill,
             "current_wage": self._econ_state.current_wage,
-            "social_status": self._social_state.social_status
+            "social_status": self._social_state.social_status,
+            "gender": self.gender,
+            "age": self.age,
+            "home_quality_score": self._econ_state.home_quality_score,
+            "children_count": len(self.children_ids)
         }
 
     def get_pre_state_data(self) -> Dict[str, Any]:

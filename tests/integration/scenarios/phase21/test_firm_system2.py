@@ -38,7 +38,7 @@ def test_system2_planner_guidance_automation_preference(firm_mock):
     firm_mock.finance_state.revenue_this_turn = {DEFAULT_CURRENCY: 5000.0}
     firm_mock.finance_state.balance = 50000.0
 
-    firm_mock._social_state.personality = Personality.CASH_COW
+    firm_mock.personality = Personality.CASH_COW
     planner = FirmSystem2Planner(firm_mock, firm_mock.config)
 
     # Create Mock FirmStateDTO
@@ -57,7 +57,7 @@ def test_system2_planner_guidance_ma_preference(firm_mock):
     from modules.system.api import DEFAULT_CURRENCY
     firm_mock.finance_state.balance = 1000000.0
     firm_mock.finance_state.revenue_this_turn = {DEFAULT_CURRENCY: 10000.0}
-    firm_mock._social_state.personality = Personality.GROWTH_HACKER
+    firm_mock.personality = Personality.GROWTH_HACKER
     planner = FirmSystem2Planner(firm_mock, firm_mock.config)
 
     # Create Mock FirmStateDTO

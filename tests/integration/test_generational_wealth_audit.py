@@ -14,6 +14,7 @@ class TestGenerationalWealthAudit(unittest.TestCase):
         mock_household.assets = assets
         mock_household.generation = generation
         mock_household.is_active = True
+        mock_household.wallet.get_balance.return_value = float(assets)
         return mock_household
 
     @patch('logging.Logger.info')

@@ -15,6 +15,8 @@ class TestGovernmentFiscalIntegration:
         config.INCOME_TAX_RATE = 0.1
         config.CORPORATE_TAX_RATE = 0.2
         config.CB_INFLATION_TARGET = 0.02
+        config.AUTO_COUNTER_CYCLICAL_ENABLED = True
+        config.FISCAL_SENSITIVITY_ALPHA = 0.5
         return config
 
     def test_calculate_income_tax_uses_fiscal_policy_manager(self, mock_config):
@@ -22,8 +24,8 @@ class TestGovernmentFiscalIntegration:
         gov = Government(id=1, config_module=mock_config)
 
         # Override manager with a mock to verify delegation
-        gov.fiscal_policy_manager = MagicMock()
-        gov.fiscal_policy_manager.calculate_tax_liability.return_value = 123.45
+        gov.tax_service.fiscal_policy_manager = MagicMock()
+        gov.tax_service.fiscal_policy_manager.calculate_tax_liability.return_value = 123.45
 
         # Ensure a policy is set
         gov.fiscal_policy = MagicMock(spec=FiscalPolicyDTO)
@@ -33,16 +35,23 @@ class TestGovernmentFiscalIntegration:
 
         # Verify
         assert tax == 123.45
-        gov.fiscal_policy_manager.calculate_tax_liability.assert_called_once_with(gov.fiscal_policy, 1000.0)
+        gov.tax_service.fiscal_policy_manager.calculate_tax_liability.assert_called_once_with(gov.fiscal_policy, 1000.0)
 
     def test_make_policy_decision_updates_fiscal_policy(self, mock_config):
         # Setup
         gov = Government(id=1, config_module=mock_config)
 
         # Mock manager
-        gov.fiscal_policy_manager = MagicMock()
+        gov.decision_engine.fiscal_policy_manager = MagicMock() # Decision engine uses its own or shared?
+        # Government.make_policy_decision calls decision_engine.decide -> ...
+        # Actually make_policy_decision orchestrates.
+
+        # In make_policy_decision:
+        # self.fiscal_policy = self.tax_service.determine_fiscal_stance(snapshot)
+
+        gov.tax_service.fiscal_policy_manager = MagicMock()
         expected_policy = FiscalPolicyDTO(progressive_tax_brackets=[])
-        gov.fiscal_policy_manager.determine_fiscal_stance.return_value = expected_policy
+        gov.tax_service.fiscal_policy_manager.determine_fiscal_stance.return_value = expected_policy
 
         # Setup market data
         market_data = {
@@ -57,13 +66,14 @@ class TestGovernmentFiscalIntegration:
         gov.sensory_data = MagicMock() # Need sensory data for policy engine
         gov.sensory_data.current_gdp = 1000.0
         gov.sensory_data.inflation_sma = 0.02
+        gov.sensory_data.gdp_growth_sma = 0.05
         gov.make_policy_decision(market_data, 1, cb)
 
         # Verify
         assert gov.fiscal_policy == expected_policy
 
         # Check if determine_fiscal_stance was called with correct snapshot
-        args, _ = gov.fiscal_policy_manager.determine_fiscal_stance.call_args
+        args, _ = gov.tax_service.fiscal_policy_manager.determine_fiscal_stance.call_args
         snapshot = args[0]
         assert isinstance(snapshot, MarketSnapshotDTO)
         # Check market_data field (legacy support) since MarketSnapshotDTO doesn't have prices attribute

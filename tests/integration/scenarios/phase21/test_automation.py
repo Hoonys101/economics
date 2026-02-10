@@ -48,7 +48,7 @@ def test_production_function_with_automation(firm_mock):
     # Y = 10 * (1^0.5) * (100^0.5) = 10 * 1 * 10 = 100
     firm_mock.production_state.automation_level = 0.0
     firm_mock.produce(current_time=1)
-    prod_zero = firm_mock.production_state.production_this_tick
+    prod_zero = firm_mock.production_state.current_production
     assert 99.0 < prod_zero < 101.0
 
     # Case 2: Automation 1.0
@@ -58,7 +58,7 @@ def test_production_function_with_automation(firm_mock):
     # Output should INCREASE because Capital is High (100) and we shifted weight to Capital.
     firm_mock.production_state.automation_level = 1.0
     firm_mock.produce(current_time=2)
-    prod_full = firm_mock.production_state.production_this_tick
+    prod_full = firm_mock.production_state.current_production
 
     assert prod_full > prod_zero # Automation helps when Capital is abundant
     assert prod_full > 310.0
@@ -85,7 +85,7 @@ def test_system2_planner_guidance(firm_mock):
     firm_mock.hr_state.employee_wages = {1: 1000.0, 2: 1000.0}
 
     # Test CASH_COW personality
-    firm_mock.agent_data["personality"] = Personality.CASH_COW
+    firm_mock.personality = Personality.CASH_COW
 
     firm_state = MagicMock()
     firm_state.finance.revenue_this_turn = 5000.0
@@ -101,7 +101,7 @@ def test_system2_planner_guidance(firm_mock):
     assert guidance["target_automation"] > 0.0
 
     # Test GROWTH_HACKER
-    firm_mock.agent_data["personality"] = Personality.GROWTH_HACKER
+    firm_mock.personality = Personality.GROWTH_HACKER
     firm_state.agent_data = {"personality": Personality.GROWTH_HACKER}
 
     guidance = planner.project_future(11, market_data, firm_state=firm_state)

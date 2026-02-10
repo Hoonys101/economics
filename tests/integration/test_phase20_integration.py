@@ -35,6 +35,7 @@ class TestPhase20Integration:
 
         # Add INITIAL_HOUSEHOLD_ASSETS_MEAN as float, not mock
         conf.INITIAL_HOUSEHOLD_ASSETS_MEAN = 5000.0
+        conf.INITIAL_HOUSEHOLD_AGE_RANGE = (20, 50)
         return conf
 
     def test_immigration_trigger(self, mock_config):
@@ -109,6 +110,7 @@ class TestPhase20Integration:
         """Test System2Planner deducting rent for non-owners."""
         agent = MagicMock()
         agent.assets = 1000.0
+        agent.wallet.get_balance.return_value = 1000.0
         agent.expected_wage = 10.0 # Make sure this is float
         agent.residing_property_id = None # Homeless/Renter
         agent.owned_properties = []
@@ -151,6 +153,7 @@ class TestPhase20Integration:
         """Test System2Planner deducting mortgage interest for owners."""
         agent = MagicMock()
         agent.assets = 1000.0
+        agent.wallet.get_balance.return_value = 1000.0
         agent.expected_wage = 10.0 # Make sure this is float
         agent.residing_property_id = 1
         agent.owned_properties = [1]
