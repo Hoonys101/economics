@@ -34,7 +34,7 @@ Any task that exceeds the following thresholds MUST be delegated to Jules (Imple
 - **Reading Threshold**: If the task requires referencing more than **5** code documents/files.
 - **Modification Threshold**: If the task requires modifying more than **3** files.
 - **Complexity Guard**: Even if the fix is "only 2-4 lines", if it touches more than 3 files or requires deep context from 5+ files, it's an architectural change, not a quick fix.
-- **Action**: Halt implementation, draft the Integrated Mission Guide, and register a Jules-Go/Gemini-Go mission.
+- **Action**: Halt implementation, draft the Integrated Mission Guide in `design/3_work_artifacts/specs/`, and add a mission entry in `command_manifest.py`.
 
 ### 4. The Confidence-Driven Coding Rule (Antigravity's Exception)
 **Antigravity가 코드를 직접 수정할 경우, 반드시 다음 절차를 엄수합니다.**
@@ -127,8 +127,8 @@ Jules에게 미션을 위임할 때, "장부(Ledger)"나 "단일 명세서(Singl
 
 #### ✅ 올바른 위임(Good Delegation)
 1.  **통합 가이드 작성**: 관련 명세서, 감사 보고서, 에러 로그 등을 하나의 **"통합 미션 가이드(Integrated Mission Guide)"**로 먼저 작성합니다.
-    - 위치: `design/3_work_artifacts/drafts/bundle_[a|b|c]_[topic]_guide.md`
-2.  **가이드 전달**: `--file` 인자에 통합 가이드 파일을 지정합니다. 이 파일이 Jules의 **유일한 입문서(Single Entry Point)**가 됩니다.
+    - 위치: `design/3_work_artifacts/specs/spec_[topic].md`
+2.  **가이드 전달**: `command_manifest.py`의 `"file"` 필드에 가이드 경로를 설정합니다. 이 파일이 Jules의 **유일한 입문서(Single Entry Point)**가 됩니다.
 3.  **자기 완결성 검증**: 가이드 문서만 읽어도 "뭘 해야 하는지", "어떤 파일을 건드려야 하는지", "성공 기준(Verification)이 뭔지" 알 수 있어야 합니다.
 
 #### 🔥 Anti-Patterns (이렇게 하지 마세요)
