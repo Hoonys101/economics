@@ -131,6 +131,7 @@ class IDecisionEngine(Protocol):
     """Interface for the 'brain' of an agent."""
     def make_decision(self, state: AgentStateDTO, world_context: Any) -> DecisionDTO | Any: ...
 
+@runtime_checkable
 class IAgent(Protocol):
     id: AgentID
     is_active: bool

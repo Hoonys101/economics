@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Optional, Dict, Any
 from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.utils.config_factory import create_config_dto
 from modules.system.api import DEFAULT_CURRENCY
+from modules.simulation.api import IAgent
 
 if TYPE_CHECKING:
     from simulation.engine import Simulation
@@ -146,7 +147,7 @@ class FirmSystem:
             logger.critical(f"STARTUP_FATAL | New firm has NULL ID during creation! Aborting.")
             return None
 
-        if not hasattr(founder_household, 'id') or founder_household.id is None:
+        if not isinstance(founder_household, IAgent) or founder_household.id is None:
             logger.critical(f"STARTUP_FATAL | Founder household has NULL ID! Aborting.")
             return None
 

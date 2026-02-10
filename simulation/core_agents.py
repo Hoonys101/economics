@@ -27,7 +27,7 @@ from modules.finance.api import IFinancialEntity, IFinancialAgent, ICreditFrozen
 from modules.simulation.api import IEducated
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.finance.wallet.wallet import Wallet
-from modules.common.interfaces import IPropertyOwner
+from modules.common.interfaces import IPropertyOwner, IInvestor
 import simulation
 
 # Engines
@@ -69,7 +69,8 @@ class Household(
     ICreditFrozen,
     IInventoryHandler,
     ISensoryDataProvider,
-    IPropertyOwner
+    IPropertyOwner,
+    IInvestor
 ):
     """
     Household Agent (Orchestrator).

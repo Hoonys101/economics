@@ -4,6 +4,7 @@ from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction, RealEstateUnit
 from simulation.firms import Firm
 from simulation.core_agents import Household
+from modules.common.interfaces import IInvestor, IPropertyOwner
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +46,10 @@ class AssetTransferHandler(ITransactionHandler):
 
             if unit:
                 unit.owner_id = buyer.id
-                if hasattr(seller, "owned_properties") and unit_id in seller.owned_properties:
-                    seller.owned_properties.remove(unit_id)
-                if hasattr(buyer, "owned_properties"):
-                    buyer.owned_properties.append(unit_id)
+                if isinstance(seller, IPropertyOwner) and unit_id in seller.owned_properties:
+                    seller.remove_property(unit_id)
+                if isinstance(buyer, IPropertyOwner):
+                    buyer.add_property(unit_id)
 
                 context.logger.info(f"RE_TX | Unit {unit_id} transferred from {seller.id} to {buyer.id}")
             else:
@@ -64,33 +65,23 @@ class AssetTransferHandler(ITransactionHandler):
             return
 
         # 1. Seller Holdings
-        if isinstance(seller, Household):
-            current_shares = seller.shares_owned.get(firm_id, 0)
-            seller.shares_owned[firm_id] = max(0, current_shares - tx.quantity)
-            if seller.shares_owned[firm_id] <= 0 and firm_id in seller.shares_owned:
-                del seller.shares_owned[firm_id]
-            if hasattr(seller, "portfolio"):
-                seller.portfolio.remove(firm_id, tx.quantity)
+        if isinstance(seller, IInvestor):
+            seller.portfolio.remove(firm_id, tx.quantity)
         elif isinstance(seller, Firm) and seller.id == firm_id:
             seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
-        elif hasattr(seller, "portfolio"):
-            seller.portfolio.remove(firm_id, tx.quantity)
 
         # 2. Buyer Holdings
-        if isinstance(buyer, Household):
-            buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
-            if hasattr(buyer, "portfolio"):
-                buyer.portfolio.add(firm_id, tx.quantity, tx.price)
-                buyer.shares_owned[firm_id] = buyer.portfolio.holdings[firm_id].quantity
+        if isinstance(buyer, IInvestor):
+            buyer.portfolio.add(firm_id, tx.quantity, tx.price)
         elif isinstance(buyer, Firm) and buyer.id == firm_id:
             buyer.treasury_shares += tx.quantity
             buyer.total_shares -= tx.quantity
 
         # 3. Market Registry
         if context.stock_market:
-            if hasattr(buyer, "portfolio") and firm_id in buyer.portfolio.holdings:
+            if isinstance(buyer, IInvestor) and firm_id in buyer.portfolio.holdings:
                  context.stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
-            if hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
+            if isinstance(seller, IInvestor) and firm_id in seller.portfolio.holdings:
                 context.stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
             else:
                 context.stock_market.update_shareholder(seller.id, firm_id, 0.0)

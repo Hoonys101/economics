@@ -4,6 +4,7 @@ from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction, RealEstateUnit
 from simulation.firms import Firm
 from simulation.core_agents import Household
+from modules.common.interfaces import IInvestor, IPropertyOwner
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,7 @@ class MonetaryTransactionHandler(ITransactionHandler):
             return
 
         # 1. Seller Holdings
-        if hasattr(seller, "portfolio"):
+        if isinstance(seller, IInvestor):
             seller.portfolio.remove(firm_id, tx.quantity)
         elif isinstance(seller, Household) and hasattr(seller, "shares_owned"):
              # Legacy Fallback
@@ -108,7 +109,7 @@ class MonetaryTransactionHandler(ITransactionHandler):
             seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
 
         # 2. Buyer Holdings
-        if hasattr(buyer, "portfolio"):
+        if isinstance(buyer, IInvestor):
             buyer.portfolio.add(firm_id, tx.quantity, tx.price)
         elif isinstance(buyer, Household) and hasattr(buyer, "shares_owned"):
             # Legacy Fallback
@@ -119,9 +120,9 @@ class MonetaryTransactionHandler(ITransactionHandler):
 
         # 3. Market Registry
         if context.stock_market:
-            if hasattr(buyer, "portfolio") and firm_id in buyer.portfolio.holdings:
+            if isinstance(buyer, IInvestor) and firm_id in buyer.portfolio.holdings:
                  context.stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
-            if hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
+            if isinstance(seller, IInvestor) and firm_id in seller.portfolio.holdings:
                 context.stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
             else:
                 context.stock_market.update_shareholder(seller.id, firm_id, 0.0)
@@ -134,9 +135,9 @@ class MonetaryTransactionHandler(ITransactionHandler):
 
             if unit:
                 unit.owner_id = buyer.id
-                if hasattr(seller, "owned_properties") and unit_id in seller.owned_properties:
-                    seller.owned_properties.remove(unit_id)
-                if hasattr(buyer, "owned_properties"):
-                    buyer.owned_properties.append(unit_id)
+                if isinstance(seller, IPropertyOwner) and unit_id in seller.owned_properties:
+                    seller.remove_property(unit_id)
+                if isinstance(buyer, IPropertyOwner):
+                    buyer.add_property(unit_id)
         except (IndexError, ValueError):
             pass

@@ -7,6 +7,7 @@ from simulation.models import Transaction
 from simulation.agents.government import Government
 from simulation.core_agents import Household
 from modules.system.escrow_agent import EscrowAgent
+from modules.system.api import DEFAULT_CURRENCY
 
 class DummyHousingParticipant(IHousingTransactionParticipant, IResident):
     id = 3
@@ -119,7 +120,7 @@ class TestHousingTransactionHandler(unittest.TestCase):
 
         # 1. Down Payment (Buyer -> Escrow)
         self.state.settlement_system.transfer.assert_any_call(
-            self.buyer, self.escrow_agent, down_payment, f"escrow_hold:down_payment:unit_101", tick=100, currency='USD'
+            self.buyer, self.escrow_agent, down_payment, f"escrow_hold:down_payment:unit_101", tick=100, currency=DEFAULT_CURRENCY
         )
 
         # 2. Deposit Cleanup (Withdrawal)
@@ -127,12 +128,12 @@ class TestHousingTransactionHandler(unittest.TestCase):
 
         # 3. Loan Disbursement (Bank -> Escrow)
         self.state.settlement_system.transfer.assert_any_call(
-            self.state.bank, self.escrow_agent, loan_amount, f"escrow_hold:loan_proceeds:unit_101", tick=100, currency='USD'
+            self.state.bank, self.escrow_agent, loan_amount, f"escrow_hold:loan_proceeds:unit_101", tick=100, currency=DEFAULT_CURRENCY
         )
 
         # 4. Final Settlement (Escrow -> Seller)
         self.state.settlement_system.transfer.assert_any_call(
-            self.escrow_agent, self.seller, 10000.0, f"final_settlement:unit_101", tick=100, currency='USD'
+            self.escrow_agent, self.seller, 10000.0, f"final_settlement:unit_101", tick=100, currency=DEFAULT_CURRENCY
         )
 
         # 5. Mortgage Update
@@ -239,5 +240,5 @@ class TestHousingTransactionHandler(unittest.TestCase):
 
         # Verify transfer to Government
         self.state.settlement_system.transfer.assert_any_call(
-            self.escrow_agent, self.state.government, 10000.0, f"final_settlement:unit_101", tick=100, currency='USD'
+            self.escrow_agent, self.state.government, 10000.0, f"final_settlement:unit_101", tick=100, currency=DEFAULT_CURRENCY
         )

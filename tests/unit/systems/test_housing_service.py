@@ -47,7 +47,7 @@ def test_housing_service_handle_housing_updates_mortgage():
     assert unit.owner_id == 1
     # Check liens for mortgage
     assert any(l['loan_id'] == "loan_999" and l['lien_type'] == "MORTGAGE" for l in unit.liens)
-    assert 101 in buyer.owned_properties
+    buyer.add_property.assert_called_with(101)
     assert 101 not in seller.owned_properties
 
 def test_housing_service_handle_housing_clears_mortgage_if_missing():
