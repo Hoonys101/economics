@@ -5,6 +5,7 @@ from simulation.models import Transaction
 from simulation.core_agents import Household
 from simulation.firms import Firm
 from modules.simulation.api import IInventoryHandler
+from modules.common.interfaces import IInvestor, IPropertyOwner
 
 logger = logging.getLogger(__name__)
 
@@ -124,8 +125,8 @@ class PublicManagerTransactionHandler(ITransactionHandler):
                  unit = next((u for u in context.real_estate_units if u.id == unit_id), None)
                  if unit:
                      unit.owner_id = buyer.id
-                     if hasattr(buyer, "owned_properties"):
-                         buyer.owned_properties.append(unit_id)
+                     if isinstance(buyer, IPropertyOwner):
+                         buyer.add_property(unit_id)
              except:
                  pass
 
@@ -133,14 +134,11 @@ class PublicManagerTransactionHandler(ITransactionHandler):
              # Stock update
              try:
                  firm_id = int(tx.item_id.split("_")[1])
-                 if isinstance(buyer, Household):
-                    buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
-                    if hasattr(buyer, "portfolio"):
-                        buyer.portfolio.add(firm_id, tx.quantity, tx.price)
-                        buyer.shares_owned[firm_id] = buyer.portfolio.holdings[firm_id].quantity
+                 if isinstance(buyer, IInvestor):
+                    buyer.portfolio.add(firm_id, tx.quantity, tx.price)
                  # Registry update
                  if context.stock_market:
-                     if hasattr(buyer, "portfolio") and firm_id in buyer.portfolio.holdings:
+                     if isinstance(buyer, IInvestor) and firm_id in buyer.portfolio.holdings:
                          context.stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
              except:
                  pass

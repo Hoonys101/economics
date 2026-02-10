@@ -9,6 +9,7 @@ from simulation.firms import Firm
 from simulation.dtos.api import SimulationState
 from modules.simulation.api import IInventoryHandler
 from modules.housing.api import IHousingService
+from modules.common.interfaces import IInvestor
 from modules.system.constants import (
     TX_LABOR, TX_RESEARCH_LABOR, TX_GOODS, TX_STOCK,
     TX_EMERGENCY_BUY, TX_ASSET_TRANSFER, TX_HOUSING
@@ -147,16 +148,13 @@ class Registry(IRegistry):
             return
 
         # 1. Seller Holdings
-        if isinstance(seller, Household):
-            # Use portfolio directly. shares_owned is legacy computed property.
+        if isinstance(seller, IInvestor):
             seller.portfolio.remove(firm_id, tx.quantity)
         elif isinstance(seller, Firm) and seller.id == firm_id:
             seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
-        elif hasattr(seller, "portfolio"):
-            seller.portfolio.remove(firm_id, tx.quantity)
 
         # 2. Buyer Holdings
-        if isinstance(buyer, Household):
+        if isinstance(buyer, IInvestor):
             buyer.portfolio.add(firm_id, tx.quantity, tx.price)
         elif isinstance(buyer, Firm) and buyer.id == firm_id:
             buyer.treasury_shares += tx.quantity
@@ -165,15 +163,11 @@ class Registry(IRegistry):
         # 3. Market Registry (Shareholder List)
         if stock_market:
             # Sync Buyer
-            if isinstance(buyer, Household) and firm_id in buyer.portfolio.holdings:
-                 stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
-            elif hasattr(buyer, "portfolio") and firm_id in buyer.portfolio.holdings:
+            if isinstance(buyer, IInvestor) and firm_id in buyer.portfolio.holdings:
                  stock_market.update_shareholder(buyer.id, firm_id, buyer.portfolio.holdings[firm_id].quantity)
 
             # Sync Seller
-            if isinstance(seller, Household) and firm_id in seller.portfolio.holdings:
-                stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
-            elif hasattr(seller, "portfolio") and firm_id in seller.portfolio.holdings:
+            if isinstance(seller, IInvestor) and firm_id in seller.portfolio.holdings:
                 stock_market.update_shareholder(seller.id, firm_id, seller.portfolio.holdings[firm_id].quantity)
             else:
                 stock_market.update_shareholder(seller.id, firm_id, 0.0)

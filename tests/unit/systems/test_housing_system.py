@@ -4,6 +4,7 @@ import pytest
 
 from simulation.systems.housing_system import HousingSystem
 from simulation.agents.government import Government
+from modules.system.api import DEFAULT_CURRENCY
 
 class TestHousingSystemRefactor(unittest.TestCase):
 
@@ -92,7 +93,7 @@ class TestHousingSystemRefactor(unittest.TestCase):
         # Assert
         # Verify transfer was called for rent
         self.simulation.settlement_system.transfer.assert_any_call(
-            self.tenant, self.owner, 500.0, "rent_payment", tick=100, currency='USD'
+            self.tenant, self.owner, 500.0, "rent_payment", tick=100, currency=DEFAULT_CURRENCY
         )
 
         # Verify NO direct asset modification
@@ -109,7 +110,7 @@ class TestHousingSystemRefactor(unittest.TestCase):
 
         # Assert
         self.simulation.settlement_system.transfer.assert_any_call(
-            self.owner, self.simulation.government, cost, "housing_maintenance", tick=100, currency='USD'
+            self.owner, self.simulation.government, cost, "housing_maintenance", tick=100, currency=DEFAULT_CURRENCY
         )
 
         # Verify NO direct asset modification (fallback)

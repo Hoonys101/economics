@@ -24,3 +24,8 @@ class IMortgageBorrower(Protocol):
     id: int
     assets: Dict[CurrencyCode, float]
     current_wage: float
+
+@runtime_checkable
+class IInvestor(Protocol):
+    """Protocol for agents that hold a portfolio of assets."""
+    portfolio: Any # Should ideally be Portfolio, but Any avoids circular imports

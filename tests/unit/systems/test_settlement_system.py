@@ -33,7 +33,7 @@ class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
 
     def withdraw(self, amount, currency=DEFAULT_CURRENCY):
         if currency != DEFAULT_CURRENCY:
-             raise ValueError("MockAgent only supports USD")
+             raise ValueError(f"MockAgent only supports {DEFAULT_CURRENCY}")
         if self._assets < amount:
             raise InsufficientFundsError("Insufficient funds")
         self._assets -= amount
