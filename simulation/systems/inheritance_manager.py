@@ -237,6 +237,26 @@ class InheritanceManager:
                 results = simulation.transaction_processor.execute(simulation, [tx])
                 if results and results[0].success:
                     transactions.append(tx)
+                else:
+                    self.logger.error(
+                        f"INHERITANCE_FAIL | Distribution to heirs failed for {deceased.id}. Fallback to Escheatment.",
+                        extra={"agent_id": deceased.id, "tags": ["inheritance", "leak_prevention"]}
+                    )
+                    # Fallback: Escheat to Government to prevent leak
+                    tx_fallback = Transaction(
+                        buyer_id=deceased.id,
+                        seller_id=government.id,
+                        item_id="escheatment_fallback",
+                        quantity=1.0,
+                        price=cash,
+                        market_id="system",
+                        transaction_type="escheatment",
+                        time=current_tick
+                    )
+                    results_fb = simulation.transaction_processor.execute(simulation, [tx_fallback])
+                    if results_fb and results_fb[0].success:
+                        transactions.append(tx_fallback)
+                        self.logger.info(f"INHERITANCE_FALLBACK | Escheated {cash:.2f} from {deceased.id} to Government.")
 
             # Distribute Real Estate (Round Robin - Synchronous)
             count = len(heirs)
@@ -263,6 +283,39 @@ class InheritanceManager:
         # 5. TD-232: Removed execute_settlement as we dispatched transactions directly.
 
         # 6. TD-232: Removed verify_and_close as no Settlement Account was created.
+
+        # 7. Final Leak Check (Audit Requirement)
+        # Ensure deceased agent has 0 balance. If not, force sweep to Government.
+        final_balance = 0.0
+        if hasattr(deceased, 'wallet'):
+            final_balance = deceased.wallet.get_balance(DEFAULT_CURRENCY)
+        elif hasattr(deceased, 'assets') and isinstance(deceased.assets, dict):
+            final_balance = deceased.assets.get(DEFAULT_CURRENCY, 0.0)
+        elif hasattr(deceased, 'assets'):
+            # Fallback for simple float assets (tests mostly)
+            try:
+                final_balance = float(deceased.assets)
+            except (ValueError, TypeError):
+                final_balance = 0.0
+
+        if final_balance > 0.01:
+            self.logger.warning(
+                f"INHERITANCE_LEAK_DETECTED | Agent {deceased.id} has remaining balance {final_balance:.2f} after processing. forcing sweep.",
+                extra={"agent_id": deceased.id, "tags": ["inheritance", "leak", "audit"]}
+            )
+            tx_sweep = Transaction(
+                buyer_id=deceased.id,
+                seller_id=government.id,
+                item_id="final_sweep",
+                quantity=1.0,
+                price=final_balance,
+                market_id="system",
+                transaction_type="escheatment",
+                time=current_tick
+            )
+            results_sweep = simulation.transaction_processor.execute(simulation, [tx_sweep])
+            if results_sweep and results_sweep[0].success:
+                transactions.append(tx_sweep)
 
         return transactions
 
