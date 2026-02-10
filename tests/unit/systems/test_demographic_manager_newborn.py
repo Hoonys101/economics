@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock, PropertyMock, patch
 
 from simulation.systems.demographic_manager import DemographicManager
 from simulation.core_agents import Household
@@ -134,7 +134,23 @@ def test_newborn_receives_initial_needs_from_config(mock_config, mock_simulation
 
     # ACT
     # This now uses a completely mocked ecosystem
-    new_children = manager.process_births(mock_simulation, birth_requests)
+    # Patch create_config_dto to avoid AttributeError due to incomplete mock_config
+    with patch('simulation.systems.demographic_manager.create_config_dto') as mock_create_dto:
+        # Configure returned mock to satisfy unpacking and type checks in Household.__init__
+        mock_dto = MagicMock()
+        mock_dto.conformity_ranges.get.return_value = (0.3, 0.7)
+        mock_dto.initial_household_age_range = (20, 30)
+        mock_dto.initial_aptitude_distribution = (0.5, 0.1)
+        mock_dto.price_memory_length = 10
+        mock_dto.wage_memory_length = 10
+        mock_dto.ticks_per_year = 100
+        mock_dto.adaptation_rate_normal = 0.1
+        mock_dto.initial_household_assets_mean = 1000.0
+        mock_dto.quality_pref_snob_min = 0.8
+        mock_dto.quality_pref_miser_max = 0.2
+        mock_create_dto.return_value = mock_dto
+
+        new_children = manager.process_births(mock_simulation, birth_requests)
 
     # ASSERT
     if len(new_children) == 0:

@@ -19,6 +19,8 @@ class TestPhase23Production:
         mock_config.TECH_FERTILIZER_MULTIPLIER = 3.0
         mock_config.TECH_UNLOCK_COST_THRESHOLD = 5000.0
         mock_config.TECH_UNLOCK_PROB_CAP = 0.1
+        # Fix for deque maxlen requiring an integer
+        mock_config.profit_history_ticks = 50
         return mock_config
 
     @pytest.fixture
@@ -68,6 +70,11 @@ class TestPhase23Production:
 
         # 3. Manually have firm_A adopt the tech
         tech_manager._adopt(firm_A.id, tech_node)
+
+        # Patch get_productivity_multiplier to bypass mocked numpy issues
+        # Since numpy mocks prevent actual state storage/retrieval in adoption_matrix
+        original_get_multiplier = tech_manager.get_productivity_multiplier
+        tech_manager.get_productivity_multiplier = MagicMock(side_effect=lambda fid: 3.0 if fid == firm_A.id else 1.0)
 
         # 4. Run produce
         firm_A.produce(10, tech_manager)

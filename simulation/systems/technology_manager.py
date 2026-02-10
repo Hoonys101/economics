@@ -91,12 +91,12 @@ class TechnologyManager:
 
     def _ensure_capacity(self, max_firm_id: int):
         """Resize adoption matrix rows if necessary."""
-        current_rows = self.adoption_matrix.shape[0]
+        current_rows = int(self.adoption_matrix.shape[0])
         if max_firm_id >= current_rows:
             # Expand to at least double or max_id + buffer
             new_rows = max(max_firm_id + 1, current_rows * 2)
             rows_to_add = new_rows - current_rows
-            cols = self.adoption_matrix.shape[1]
+            cols = int(self.adoption_matrix.shape[1])
 
             # Append zeros
             padding = np.zeros((rows_to_add, cols), dtype=bool)
@@ -253,7 +253,7 @@ class TechnologyManager:
         """
         Calculate total TFP multiplier for a firm based on adopted techs.
         """
-        if firm_id >= self.adoption_matrix.shape[0]:
+        if firm_id >= int(self.adoption_matrix.shape[0]):
             return 1.0
         
         # Get all adopted techs for this firm

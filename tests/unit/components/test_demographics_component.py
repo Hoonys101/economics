@@ -51,19 +51,20 @@ class TestDemographicsComponent(unittest.TestCase):
         """Test that the agent has a chance to die if above the age threshold."""
         self.component._age = 85
 
-        # Ensure configuration has high probability for testing
-        self.mock_config.AGE_DEATH_PROBABILITIES = {80: 100.0} # 100% per year if >= 80
+        # Ensure configuration has moderate probability for testing
+        self.mock_config.AGE_DEATH_PROBABILITIES = {80: 50.0} # 50% per year if >= 80 -> 0.5 per tick
 
         # Since death is probabilistic, we can't guarantee it.
         # Instead, we check if the logic runs without error and returns a boolean.
         # To make it deterministic for a test, we could mock random.random
-        with unittest.mock.patch('random.random', return_value=0.0): # Force death
+        # We patch the random module used in the component file
+        with unittest.mock.patch('simulation.components.demographics_component.random.random', return_value=0.0): # Force death
             self.assertTrue(self.component.handle_death(current_tick=1))
             self.assertFalse(self.mock_owner.is_active)
 
         # Reset and test the case where it doesn't die
         self.mock_owner.is_active = True
-        with unittest.mock.patch('random.random', return_value=0.99): # Prevent death
+        with unittest.mock.patch('simulation.components.demographics_component.random.random', return_value=0.99): # Prevent death
             self.assertFalse(self.component.handle_death(current_tick=1))
             self.assertTrue(self.mock_owner.is_active)
 

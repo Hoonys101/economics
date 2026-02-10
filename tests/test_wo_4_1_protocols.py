@@ -23,6 +23,26 @@ class MockAgent:
         if property_id in self.owned_properties:
             self.owned_properties.remove(property_id)
 
+    def deposit(self, amount: float, currency: str = DEFAULT_CURRENCY) -> None:
+        if currency not in self.assets:
+            self.assets[currency] = 0.0
+        self.assets[currency] += amount
+
+    def withdraw(self, amount: float, currency: str = DEFAULT_CURRENCY) -> None:
+        if self.assets.get(currency, 0.0) < amount:
+             raise Exception("Insufficient funds")
+        self.assets[currency] -= amount
+
+    def get_balance(self, currency: str = DEFAULT_CURRENCY) -> float:
+        return self.assets.get(currency, 0.0)
+
+    def get_all_balances(self) -> Dict[str, float]:
+        return self.assets.copy()
+
+    @property
+    def total_wealth(self) -> float:
+        return self.assets.get(DEFAULT_CURRENCY, 0.0)
+
 def test_housing_handler_with_protocol_agent():
     # Setup
     handler = HousingTransactionHandler()

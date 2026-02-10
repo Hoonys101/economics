@@ -104,7 +104,7 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder):
         """
         # We can reset "last tick" metrics here, assuming this starts the liquidation cycle for the tick.
         self.last_tick_recovered_assets = defaultdict(float)
-        self.last_tick_revenue = 0.0
+        self.last_tick_revenue = {DEFAULT_CURRENCY: 0.0}
 
         orders: List[Order] = []
         items_to_liquidate = list(self.managed_inventory.items())

@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 from simulation.decisions.portfolio_manager import PortfolioManager
 from simulation.core_agents import Household
 from simulation.bank import Bank
+from modules.system.api import DEFAULT_CURRENCY
 
 class TestPortfolioIntegration(unittest.TestCase):
     def test_portfolio_manager_logic(self):
@@ -53,12 +54,14 @@ class TestPortfolioIntegration(unittest.TestCase):
 
     def test_bank_deposit_balance(self):
         config_manager = MagicMock()
+        # Ensure config returns numeric values to avoid MagicMock comparison errors
+        config_manager.get.return_value = 0.05
         bank = Bank(1, 100000.0, config_manager=config_manager)
-        bank.deposits = {
-            "d1": MagicMock(depositor_id=1, amount=100.0),
-            "d2": MagicMock(depositor_id=2, amount=200.0),
-            "d3": MagicMock(depositor_id=1, amount=50.0)
-        }
+
+        # Use public API to populate deposits
+        bank.deposit_from_customer(1, 100.0, DEFAULT_CURRENCY)
+        bank.deposit_from_customer(2, 200.0, DEFAULT_CURRENCY)
+        bank.deposit_from_customer(1, 50.0, DEFAULT_CURRENCY)
 
         balance = bank.get_deposit_balance(1)
         self.assertEqual(balance, 150.0)

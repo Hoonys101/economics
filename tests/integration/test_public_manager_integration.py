@@ -5,7 +5,7 @@ from modules.system.execution.public_manager import PublicManager
 from simulation.systems.transaction_manager import TransactionManager
 from simulation.systems.registry import Registry
 from simulation.systems.accounting import AccountingSystem
-from modules.system.api import MarketSignalDTO
+from modules.system.api import MarketSignalDTO, DEFAULT_CURRENCY
 
 class MockAgent:
     def __init__(self, agent_id, assets=0.0):
@@ -15,13 +15,23 @@ class MockAgent:
         self.inventory_quality = {}
         self.total_money_issued = 0.0 # for central bank checks if any
 
-    def withdraw(self, amount):
+    def withdraw(self, amount, currency=DEFAULT_CURRENCY):
         if self.assets < amount:
             raise Exception("Insufficient funds")
         self.assets -= amount
 
-    def deposit(self, amount):
+    def deposit(self, amount, currency=DEFAULT_CURRENCY):
         self.assets += amount
+
+    def get_balance(self, currency=DEFAULT_CURRENCY):
+        return self.assets
+
+    def get_all_balances(self):
+        return {DEFAULT_CURRENCY: self.assets}
+
+    @property
+    def total_wealth(self):
+        return self.assets
 
 class TestPublicManagerIntegration:
     def test_full_liquidation_cycle(self):

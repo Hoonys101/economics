@@ -10,6 +10,7 @@ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.system.registry import AgentRegistry
 from modules.hr.service import HRService
 from modules.finance.service import TaxService
+from modules.finance.api import EquityStake
 
 class TestMultiCurrencyLiquidation(unittest.TestCase):
     def setUp(self):
@@ -19,6 +20,7 @@ class TestMultiCurrencyLiquidation(unittest.TestCase):
         self.agent_registry = AgentRegistry()
         self.hr_service = HRService()
         self.tax_service = TaxService(self.agent_registry)
+        self.mock_shareholder_registry = MagicMock()
 
         # Mock public manager
         self.mock_public_manager = MagicMock()
@@ -29,6 +31,7 @@ class TestMultiCurrencyLiquidation(unittest.TestCase):
             self.hr_service,
             self.tax_service,
             self.agent_registry,
+            self.mock_shareholder_registry,
             self.mock_public_manager
         )
 
@@ -50,6 +53,10 @@ class TestMultiCurrencyLiquidation(unittest.TestCase):
         self.firm.total_shares = 100.0
         self.firm.treasury_shares = 0.0
         self.firm.total_debt = 0.0
+        # Mock get_equity_stakes to simulate 100% ownership by shareholder 101
+        self.firm.get_equity_stakes.return_value = [
+            EquityStake(shareholder_id=101, ratio=1.0)
+        ]
 
         self.state = MagicMock(spec=SimulationState)
         self.state.time = 100
