@@ -29,13 +29,13 @@ class LifecycleEngine(ILifecycleEngine):
 
         # 2. Natural Death Check
         # Logic from BioComponent.age_one_tick
-        age_death_probabilities = {
+        age_death_probabilities = getattr(config, 'age_death_probabilities', {
             60: 0.01,
             70: 0.02,
             80: 0.05,
             90: 0.15,
             100: 0.50,
-        }
+        })
 
         death_prob_per_year = 0.0
         # Determine applicable probability

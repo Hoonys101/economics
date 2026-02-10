@@ -5,6 +5,7 @@ from modules.household.dtos import EconStateDTO, BioStateDTO, SocialStateDTO
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.ai.api import Personality
 from simulation.models import Talent
+from tests.utils.factories import create_household
 
 class TestHouseholdRefactor:
     def test_property_management(self):
@@ -23,16 +24,16 @@ class TestHouseholdRefactor:
         config.adaptation_rate_normal = 0.1
 
         # Initialize Household
-        household = Household(
+        household = create_household(
+            config_dto=config,
             id=1,
             talent=Talent(base_learning_rate=0.1, max_potential=1.0),
             goods_data=[],
-            initial_assets=1000.0,
+            assets=1000.0,
             initial_needs={},
-            decision_engine=MagicMock(),
+            engine=MagicMock(),
             value_orientation="neutral",
             personality=Personality.BALANCED,
-            config_dto=config
         )
 
         # Test add_property

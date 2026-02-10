@@ -8,6 +8,7 @@ from modules.system.api import MarketSnapshotDTO, HousingMarketSnapshotDTO, Loan
 from simulation.models import Talent, Order
 from simulation.portfolio import Portfolio
 from tests.utils.factories import create_household_config_dto
+from modules.finance.wallet.wallet import Wallet
 
 class TestDecisionUnit:
     @pytest.fixture
@@ -20,8 +21,10 @@ class TestDecisionUnit:
 
     @pytest.fixture
     def econ_state(self):
+        wallet = Wallet(1, {})
+        wallet.add(1000.0)
         return EconStateDTO(
-            assets=1000.0,
+            wallet=wallet,
             inventory={},
             inventory_quality={},
             durable_assets=[],
@@ -48,6 +51,7 @@ class TestDecisionUnit:
             last_labor_offer_tick=0,
             last_fired_tick=-1,
             job_search_patience=0,
+            employment_start_tick=-1,
             current_consumption=0.0,
             current_food_consumption=0.0,
             expected_inflation=defaultdict(float),
@@ -62,15 +66,26 @@ class TestDecisionUnit:
     def test_orchestrate_housing_buy(self, econ_state, mock_config):
         decision_unit = DecisionUnit()
 
+        # Mock housing planner to isolate DecisionUnit logic
+        decision_unit.housing_planner = MagicMock()
+        decision_unit.housing_planner.evaluate_housing_options.return_value = {
+            'decision_type': "INITIATE_PURCHASE",
+            'target_property_id': "unit_1",
+            'offer_price': 10000.0,
+            'down_payment_amount': 2000.0
+        }
+
         # Setup state for BUY decision
-        econ_state.assets = 5000.0
+        econ_state.wallet.add(4000.0) # 1000 + 4000 = 5000
         econ_state.is_homeless = True
 
         # Construct DTOs
+        from modules.system.api import HousingMarketUnitDTO
         housing_snapshot = HousingMarketSnapshotDTO(
             for_sale_units=[
-                {"unit_id": "unit_1", "price": 10000.0, "quality": 1.0}
+                HousingMarketUnitDTO(unit_id="unit_1", price=10000.0, quality=1.0)
             ],
+            units_for_rent=[],
             avg_rent_price=500.0,
             avg_sale_price=10000.0
         )
@@ -78,16 +93,22 @@ class TestDecisionUnit:
         labor_snapshot = LaborMarketSnapshotDTO(avg_wage=10.0)
 
         market_snapshot = MarketSnapshotDTO(
+            tick=30,
+            market_signals={},
             housing=housing_snapshot,
             loan=loan_snapshot,
             labor=labor_snapshot
         )
 
+        # Mock housing system
+        mock_housing_system = MagicMock()
         context = OrchestrationContextDTO(
             market_snapshot=market_snapshot,
             current_time=30,
             stress_scenario_config=None,
-            config=mock_config
+            config=mock_config,
+            household_state=MagicMock(),
+            housing_system=mock_housing_system
         )
 
         initial_orders = []
@@ -99,10 +120,8 @@ class TestDecisionUnit:
 
         # Verify
         assert new_state.housing_target_mode == "BUY"
-        assert len(refined_orders) == 1
-        assert refined_orders[0].item_id == "unit_1"
-        assert refined_orders[0].price_limit == 10000.0
-        assert refined_orders[0].side == "BUY"
+        # DecisionUnit delegates to housing_system, does not create market orders directly for housing
+        mock_housing_system.initiate_purchase.assert_called()
 
     def test_shadow_wage_update(self, econ_state, mock_config):
         decision_unit = DecisionUnit()
@@ -114,12 +133,14 @@ class TestDecisionUnit:
         # Construct DTOs
         # Housing doesn't matter for this test
         housing_snapshot = HousingMarketSnapshotDTO(
-            for_sale_units=[], avg_rent_price=100.0, avg_sale_price=20000.0
+            for_sale_units=[], units_for_rent=[], avg_rent_price=100.0, avg_sale_price=20000.0
         )
         loan_snapshot = LoanMarketSnapshotDTO(interest_rate=0.05)
         labor_snapshot = LaborMarketSnapshotDTO(avg_wage=12.0)
 
         market_snapshot = MarketSnapshotDTO(
+            tick=100,
+            market_signals={},
             housing=housing_snapshot,
             loan=loan_snapshot,
             labor=labor_snapshot
@@ -129,7 +150,9 @@ class TestDecisionUnit:
             market_snapshot=market_snapshot,
             current_time=100,
             stress_scenario_config=None,
-            config=mock_config
+            config=mock_config,
+            household_state=MagicMock(),
+            housing_system=None
         )
 
         initial_orders = []

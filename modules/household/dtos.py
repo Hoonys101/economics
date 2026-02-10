@@ -101,19 +101,11 @@ class EconStateDTO:
 
     def copy(self) -> "EconStateDTO":
         new_state = copy.copy(self)
-        # Wallet is mutable but we probably shouldn't deep copy it for simulation logic unless intent is cloning.
-        # But DTO copy is used for decision making snapshots usually?
-        # If it's for snapshot, it should be a copy.
-        # But Wallet is an object.
-        # DTO copy is shallow for attributes not explicitly handled.
-        # If we want read-only snapshot, Wallet interface might need to be careful.
-        # For now, we keep reference or new wallet?
-        # Typically copy() is used for creating new state for next tick or planning.
-        # But Wallet is the source of truth.
-        # Ideally, we pass the SAME wallet reference if it's the agent's wallet.
-        # Or if this is a snapshot, we should pass a ReadOnly wallet wrapper or just the balance.
-        # However, EconStateDTO is the internal state of EconComponent.
-        # So we keep the reference.
+
+        # Deep copy wallet to ensure snapshot isolation
+        from modules.finance.wallet.wallet import Wallet
+        new_wallet = Wallet(self.wallet.owner_id, self.wallet.get_all_balances())
+        new_state.wallet = new_wallet
 
         new_state.inventory = self.inventory.copy()
         new_state.inventory_quality = self.inventory_quality.copy()

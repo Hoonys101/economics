@@ -10,6 +10,13 @@ from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
+SHADOW_WAGE_DECAY = 0.95
+SHADOW_WAGE_TARGET_WEIGHT = 0.05
+SHADOW_WAGE_UNEMPLOYED_DECAY = 0.02
+HOUSING_CHECK_FREQUENCY = 30
+DEFAULT_FOOD_PRICE_ESTIMATE = 10.0
+DEFAULT_SURVIVAL_BUDGET = 50.0
+
 class BudgetEngine(IBudgetEngine):
     """
     Stateless engine managing financial planning, budgeting, and housing decisions.
@@ -58,16 +65,16 @@ class BudgetEngine(IBudgetEngine):
 
         if state.is_employed:
             target = max(state.current_wage, state.shadow_reservation_wage)
-            state.shadow_reservation_wage = (state.shadow_reservation_wage * 0.95) + (target * 0.05)
+            state.shadow_reservation_wage = (state.shadow_reservation_wage * SHADOW_WAGE_DECAY) + (target * SHADOW_WAGE_TARGET_WEIGHT)
         else:
-            state.shadow_reservation_wage *= (1.0 - 0.02)
+            state.shadow_reservation_wage *= (1.0 - SHADOW_WAGE_UNEMPLOYED_DECAY)
             min_wage = config.household_min_wage_demand
             if state.shadow_reservation_wage < min_wage:
                 state.shadow_reservation_wage = min_wage
 
     def _plan_housing(self, state: EconStateDTO, market_snapshot: Any, current_tick: int) -> Optional[HousingActionDTO]:
         # Logic from DecisionUnit housing part
-        if state.is_homeless or current_tick % 30 == 0:
+        if state.is_homeless or current_tick % HOUSING_CHECK_FREQUENCY == 0:
             # We need to construct a wrapper that mimics HouseholdSnapshotDTO or just has econ_state
             # HousingPlanner expects `request['household_state']` which has `.econ_state`.
 
@@ -132,7 +139,7 @@ class BudgetEngine(IBudgetEngine):
             # E.g. Survival -> Food.
             if need.need_id == "survival":
                 # Estimate food cost.
-                food_price = config.default_food_price_estimate if config else 10.0
+                food_price = config.default_food_price_estimate if config else DEFAULT_FOOD_PRICE_ESTIMATE
                 goods_market = getattr(market_snapshot, "goods", {})
 
                 # Check different keys for food
@@ -143,7 +150,7 @@ class BudgetEngine(IBudgetEngine):
 
                 # Quantity: Place enough for buffer?
                 # Placeholder: Allocate fixed amount
-                amount_to_allocate = config.survival_budget_allocation if config else 50.0
+                amount_to_allocate = config.survival_budget_allocation if config else DEFAULT_SURVIVAL_BUDGET
                 if total_cash - spent >= amount_to_allocate:
                     allocations["food"] = amount_to_allocate
                     spent += amount_to_allocate

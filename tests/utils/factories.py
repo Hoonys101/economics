@@ -1,3 +1,8 @@
+from unittest.mock import MagicMock
+from simulation.core_agents import Household
+from simulation.models import Talent
+from simulation.ai.api import Personality
+from modules.simulation.api import AgentCoreConfigDTO
 from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
 
 def create_household_config_dto(**kwargs) -> HouseholdConfigDTO:
@@ -164,3 +169,49 @@ def create_firm_config_dto(**kwargs) -> FirmConfigDTO:
     }
     defaults.update(kwargs)
     return FirmConfigDTO(**defaults)
+
+def create_household(
+    config_dto: HouseholdConfigDTO = None,
+    id: int = 1,
+    name: str = "TestHousehold",
+    assets: float = 1000.0,
+    initial_needs: dict = None,
+    value_orientation: str = "needs_and_social_status",
+    engine = None,
+    **kwargs
+) -> Household:
+    if config_dto is None:
+        config_dto = create_household_config_dto()
+
+    if initial_needs is None:
+        initial_needs = config_dto.initial_needs.copy()
+
+    core_config = AgentCoreConfigDTO(
+        id=id,
+        name=name,
+        initial_needs=initial_needs,
+        logger=MagicMock(),
+        memory_interface=None,
+        value_orientation=value_orientation
+    )
+
+    if engine is None:
+        engine = MagicMock()
+
+    talent = kwargs.pop('talent', Talent(base_learning_rate=0.5, max_potential={}))
+    goods_data = kwargs.pop('goods_data', [{"id": "food", "initial_price": 10.0}])
+    personality = kwargs.pop('personality', Personality.CONSERVATIVE)
+
+    household = Household(
+        core_config=core_config,
+        engine=engine,
+        talent=talent,
+        goods_data=goods_data,
+        personality=personality,
+        config_dto=config_dto,
+        initial_assets_record=assets,
+        **kwargs
+    )
+    if assets > 0:
+        household.deposit(assets)
+    return household
