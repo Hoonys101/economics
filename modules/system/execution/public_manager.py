@@ -97,7 +97,7 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder):
                 self.last_tick_recovered_assets[item_id] += quantity
         self.logger.info(f"Received liquidated assets: {inventory}")
 
-    def generate_liquidation_orders(self, market_signals: Dict[str, MarketSignalDTO]) -> List[Order]:
+    def generate_liquidation_orders(self, market_signals: Dict[str, MarketSignalDTO], core_config: Any = None, engine: Any = None) -> List[Order]:
         """
         Generates non-disruptive SELL orders for managed assets.
         This is typically called in Phase 4.5.

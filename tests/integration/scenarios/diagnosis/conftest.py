@@ -9,7 +9,7 @@ from simulation.core_markets import Market
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.ai.api import Personality # Import Personality enum
 import config
-from tests.utils.factories import create_household_config_dto, create_firm_config_dto
+from tests.utils.factories import create_household_config_dto, create_firm_config_dto, create_household, create_firm
 
 # Disable logging for cleaner test output
 logging.getLogger().setLevel(logging.CRITICAL)
@@ -26,31 +26,30 @@ def mock_config_module():
 @pytest.fixture
 def simple_household(mock_config_module):
     mock_engine = MagicMock(spec=BaseDecisionEngine)
-    household = Household(
+    household = create_household(
+        config_dto=create_household_config_dto(),
         id=1,
-        talent=Talent(1.0, {}),
-        goods_data=[], # Simplification
-        initial_assets=100.0,
+        engine=mock_engine,
+        assets=100.0,
         initial_needs={"survival": 50.0},
-        decision_engine=mock_engine,
-        value_orientation="wealth_and_needs", # Default
-        personality=Personality.MISER, # Default
-        config_dto=create_household_config_dto()
+        goods_data=[],
+        personality=Personality.MISER,
+        value_orientation="wealth_and_needs"
     )
     return household
 
 @pytest.fixture
 def simple_firm(mock_config_module):
     mock_engine = MagicMock(spec=BaseDecisionEngine)
-    firm = Firm(
+    firm = create_firm(
+        config_dto=create_firm_config_dto(),
         id=101,
-        initial_capital=1000.0,
-        initial_liquidity_need=0.0,
+        engine=mock_engine,
+        assets=1000.0,
         specialization="basic_food",
         productivity_factor=1.0,
-        decision_engine=mock_engine,
-        value_orientation="wealth_and_needs", # Default
-        config_dto=create_firm_config_dto()
+        value_orientation="wealth_and_needs",
+        initial_inventory={}
     )
     return firm
 

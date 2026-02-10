@@ -1,5 +1,10 @@
+
 import pytest
-from fastapi.testclient import TestClient
+try:
+    from fastapi.testclient import TestClient
+except ImportError:
+    pytest.skip("fastapi not installed", allow_module_level=True)
+
 from unittest.mock import MagicMock, patch
 from server import app
 
@@ -22,6 +27,8 @@ def test_websocket_endpoint():
         world_state.tracker = tracker
         tracker.get_latest_indicators.return_value = {"unemployment_rate": 5.0}
         tracker.get_m2_money_supply.return_value = 1000.0
+        tracker.calculate_monetary_aggregates.return_value = {"m0": 100.0, "m1": 500.0, "m2": 1000.0}
+        tracker.get_smoothed_values.return_value = {"gdp": 1000.0}
         tracker.exchange_engine.get_all_rates.return_value = {"USD": 1.0}
 
         # Government
@@ -29,9 +36,11 @@ def test_websocket_endpoint():
         world_state.governments = [gov]
         gov.gdp_history = [100.0, 105.0]
         gov.sensory_data.inflation_sma = 0.02
+        gov.sensory_data.gdp_growth_sma = 0.05
         gov.sensory_data.gini_index = 0.3
         gov.ruling_party.name = "BLUE"
         gov.approval_rating = 0.6
+        gov.last_revenue = 100.0 # Mock specific field if needed
 
         # Ledger
         ledger = MagicMock()
@@ -41,7 +50,19 @@ def test_websocket_endpoint():
 
         # Mock other components to avoid attribute errors
         world_state.central_bank.base_rate = 0.05
-        world_state.markets.get.return_value = MagicMock(interest_rate=0.04)
+        # Ensure markets return floats for rates, not Mocks
+        mock_loan_market = MagicMock()
+        mock_loan_market.interest_rate = 0.04
+        mock_savings_market = MagicMock()
+        mock_savings_market.interest_rate = 0.02
+
+        def market_get_side_effect(key):
+            if key == "loan": return mock_loan_market
+            if key == "savings": return mock_savings_market
+            return MagicMock(interest_rate=0.0)
+
+        world_state.markets.get.side_effect = market_get_side_effect
+        world_state.markets.__getitem__.side_effect = market_get_side_effect
 
         with TestClient(app) as client:
             with client.websocket_connect("/ws/live") as websocket:

@@ -49,7 +49,7 @@ class TestPublicManager:
 
         assert len(orders) == 1
         order = orders[0]
-        assert order.agent_id == -1
+        assert order.agent_id == 999999
         assert order.item_id == "apple"
         assert order.order_type == "SELL"
 
@@ -71,13 +71,14 @@ class TestPublicManager:
         assert public_manager.managed_inventory["apple"] == 0.0
 
     def test_deposit_revenue(self, public_manager):
+        from modules.system.api import DEFAULT_CURRENCY
         public_manager.deposit_revenue(100.0)
-        assert public_manager.system_treasury == 100.0
-        assert public_manager.last_tick_revenue == 100.0
+        assert public_manager.system_treasury[DEFAULT_CURRENCY] == 100.0
+        assert public_manager.last_tick_revenue[DEFAULT_CURRENCY] == 100.0
 
         public_manager.deposit_revenue(50.0)
-        assert public_manager.system_treasury == 150.0
-        assert public_manager.last_tick_revenue == 150.0
+        assert public_manager.system_treasury[DEFAULT_CURRENCY] == 150.0
+        assert public_manager.last_tick_revenue[DEFAULT_CURRENCY] == 150.0
 
     def test_generate_liquidation_orders_no_signal(self, public_manager):
         public_manager.managed_inventory["pear"] = 10.0

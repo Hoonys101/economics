@@ -4,7 +4,7 @@ from simulation.firms import Firm
 from simulation.ai.firm_system2_planner import FirmSystem2Planner
 from simulation.ai.enums import Personality
 import config # Import from root
-from tests.utils.factories import create_firm_config_dto
+from tests.utils.factories import create_firm_config_dto, create_firm
 
 @pytest.fixture
 def firm_mock():
@@ -12,14 +12,14 @@ def firm_mock():
     decision_engine = Mock()
     decision_engine.loan_market = Mock()
 
-    # Create Firm
-    firm = Firm(
+    # Create Firm using Factory
+    firm = create_firm(
         id=1,
-        initial_capital=10000.0,
+        assets=10000.0,
         initial_liquidity_need=100.0,
         specialization="basic_food",
         productivity_factor=10.0,
-        decision_engine=decision_engine,
+        engine=decision_engine,
         value_orientation="growth",
         config_dto=create_firm_config_dto()
     )
@@ -27,15 +27,15 @@ def firm_mock():
 
 def test_firm_automation_init(firm_mock):
     """Test if automation_level initializes correctly."""
-    assert firm_mock.automation_level == 0.0
-    assert firm_mock.system2_planner is None
+    assert firm_mock.production_state.automation_level == 0.0
+    # firm_mock.system2_planner is not exposed on Firm directly anymore, checking logic instead
 
 def test_production_function_with_automation(firm_mock):
     """Test modified Cobb-Douglas production function."""
     # Setup
-    firm_mock.hr.employees = [Mock(labor_skill=1.0)] # 1 Employee
-    firm_mock.capital_stock = 100.0
-    firm_mock.productivity_factor = 10.0
+    firm_mock.hr_state.employees = [Mock(labor_skill=1.0)] # 1 Employee
+    firm_mock.production_state.capital_stock = 100.0
+    firm_mock.production_state.productivity_factor = 10.0
     firm_mock.config.labor_alpha = 0.5
     firm_mock.config.automation_labor_reduction = 0.5
     firm_mock.config.labor_elasticity_min = 0.0 # Allow alpha to drop below default 0.5
@@ -46,9 +46,9 @@ def test_production_function_with_automation(firm_mock):
     # Case 1: Automation 0.0
     # Alpha = 0.5 * (1 - 0) = 0.5
     # Y = 10 * (1^0.5) * (100^0.5) = 10 * 1 * 10 = 100
-    firm_mock.automation_level = 0.0
+    firm_mock.production_state.automation_level = 0.0
     firm_mock.produce(current_time=1)
-    prod_zero = firm_mock.current_production
+    prod_zero = firm_mock.production_state.production_this_tick
     assert 99.0 < prod_zero < 101.0
 
     # Case 2: Automation 1.0
@@ -56,9 +56,9 @@ def test_production_function_with_automation(firm_mock):
     # Beta = 0.75
     # Y = 10 * (1^0.25) * (100^0.75) = 10 * 1 * 31.62 = 316.2
     # Output should INCREASE because Capital is High (100) and we shifted weight to Capital.
-    firm_mock.automation_level = 1.0
+    firm_mock.production_state.automation_level = 1.0
     firm_mock.produce(current_time=2)
-    prod_full = firm_mock.current_production
+    prod_full = firm_mock.production_state.production_this_tick
 
     assert prod_full > prod_zero # Automation helps when Capital is abundant
     assert prod_full > 310.0
@@ -73,18 +73,19 @@ def test_system2_planner_guidance(firm_mock):
     firm_mock.config.FIRM_MAINTENANCE_FEE = 10.0 # Ensure maintenance is low enough
 
     # Pass firm_mock.config instead of global config to ensure override is respected
-    firm_mock.system2_planner = FirmSystem2Planner(firm_mock, firm_mock.config)
+    planner = FirmSystem2Planner(firm_mock, firm_mock.config)
 
     # Mock Data
     market_data = {}
-    firm_mock.revenue_this_turn = 5000.0
-    firm_mock._assets = 300000.0 # Rich firm (Needs to be > 50 * Revenue = 250k)
+    from modules.system.api import DEFAULT_CURRENCY
+    firm_mock.finance_state.revenue_this_turn = {DEFAULT_CURRENCY: 5000.0}
+    firm_mock.finance_state.balance = 300000.0 # Rich firm (Needs to be > 50 * Revenue = 250k)
 
     # High wages to justify automation
-    firm_mock.employee_wages = {1: 1000.0, 2: 1000.0}
+    firm_mock.hr_state.employee_wages = {1: 1000.0, 2: 1000.0}
 
     # Test CASH_COW personality
-    firm_mock.personality = Personality.CASH_COW
+    firm_mock.agent_data["personality"] = Personality.CASH_COW
 
     firm_state = MagicMock()
     firm_state.finance.revenue_this_turn = 5000.0
@@ -93,17 +94,17 @@ def test_system2_planner_guidance(firm_mock):
     firm_state.hr.employees_data = {1: {'wage': 1000.0}, 2: {'wage': 1000.0}}
     firm_state.agent_data = {"personality": Personality.CASH_COW}
 
-    guidance = firm_mock.system2_planner.project_future(1, market_data, firm_state=firm_state)
+    guidance = planner.project_future(1, market_data, firm_state=firm_state)
 
     # Should favor automation if profitable
     # With lower cost (100.0 * 80 gap = 8000 cost) vs 80k benefit, highly profitable.
     assert guidance["target_automation"] > 0.0
 
     # Test GROWTH_HACKER
-    firm_mock.personality = Personality.GROWTH_HACKER
+    firm_mock.agent_data["personality"] = Personality.GROWTH_HACKER
     firm_state.agent_data = {"personality": Personality.GROWTH_HACKER}
 
-    guidance = firm_mock.system2_planner.project_future(11, market_data, firm_state=firm_state)
+    guidance = planner.project_future(11, market_data, firm_state=firm_state)
 
     # Expansion mode should be MA if rich
     assert guidance["expansion_mode"] == "MA"

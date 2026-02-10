@@ -119,7 +119,7 @@ class Registry(IRegistry):
             # Try Protocol-based Seller Removal
             if isinstance(seller, IInventoryHandler):
                 seller.remove_item(tx.item_id, tx.quantity)
-            else:
+            elif seller:
                  self.logger.warning(f"REGISTRY_WARN | Seller {seller.id} does not implement IInventoryHandler")
 
             # Buyer Inventory

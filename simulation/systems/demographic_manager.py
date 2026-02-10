@@ -206,6 +206,7 @@ class DemographicManager:
                     config_dto=hh_config_dto,
                     loan_market=simulation.markets.get("loan_market"),
                     risk_aversion=parent.risk_aversion, # Inherit risk aversion
+                    initial_age=0.0, # Explicitly set age 0 for newborn
                 )
 
                 # Hydrate State

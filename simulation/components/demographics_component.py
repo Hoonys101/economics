@@ -105,7 +105,8 @@ class DemographicsComponent:
         # Find the highest age threshold that the agent's age has surpassed
         # and get the corresponding death probability.
         death_prob_per_year = 0
-        for age_threshold, prob in age_death_probabilities.items():
+        # Iterate in sorted order to find the highest applicable threshold
+        for age_threshold, prob in sorted(age_death_probabilities.items()):
             if self._age >= age_threshold:
                 death_prob_per_year = prob
 

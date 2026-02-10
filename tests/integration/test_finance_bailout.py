@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import Mock, MagicMock
 
-from modules.finance.api import BailoutCovenant, BailoutLoanDTO, InsufficientFundsError
+from modules.finance.api import BailoutCovenant, BailoutLoanDTO, GrantBailoutCommand, InsufficientFundsError
 from modules.finance.system import FinanceSystem
 
 # A simple stub class for config attributes
@@ -48,48 +48,34 @@ from unittest.mock import PropertyMock
 
 def test_grant_bailout_loan_success_and_covenant_type(finance_test_environment):
     """
-    Tests that a bailout loan is granted successfully, generating the correct transactions
-    and DTOs (Phase 3 Compliance).
+    Tests that a bailout loan request generates a valid GrantBailoutCommand.
+    Note: Transaction generation and state updates are now handled by PolicyExecutionEngine,
+    so we only verify the Command creation here.
     """
     finance_system, mock_government, mock_firm = finance_test_environment
 
-    # Setup dynamic asset property for government to support check in grant_bailout_loan
-    # The method checks if self.government.assets < amount
+    # Setup dynamic asset property for government to support check in request_bailout_loan
     type(mock_government).assets = PropertyMock(return_value=1_000_000.0)
 
-    initial_firm_debt = mock_firm.total_debt
     loan_amount = 50_000.0
-    current_tick = 10
 
     # Act
-    # Update: method now returns (loan_dto, txs)
-    loan_dto, txs = finance_system.grant_bailout_loan(mock_firm, loan_amount, current_tick)
+    # Use request_bailout_loan instead of deprecated grant_bailout_loan
+    command = finance_system.request_bailout_loan(mock_firm, loan_amount)
 
-    # Assert - DTO and Covenant Type
-    assert loan_dto is not None
-    assert isinstance(loan_dto, BailoutLoanDTO)
-    assert isinstance(loan_dto.covenants, BailoutCovenant)
-    assert loan_dto.covenants.dividends_allowed is False
-    assert loan_dto.covenants.mandatory_repayment == 0.5
-
-    # Assert - Transaction Verification (Phase 3 Compliance)
-    # The system should generate a transaction, not mutate assets directly.
-    assert len(txs) == 1
-    tx = txs[0]
-    assert tx.buyer_id == mock_government.id
-    assert tx.seller_id == mock_firm.id
-    assert tx.price == loan_amount
-    assert tx.transaction_type == "bailout_loan"
-    assert tx.time == current_tick
-
-    # 2. Firm should have taken on the liability (Optimistic Update allowed for internal state like debt)
-    assert mock_firm.total_debt == initial_firm_debt + loan_amount
-    assert mock_firm.has_bailout_loan is True
+    # Assert - Command and Covenant Type
+    assert command is not None
+    assert isinstance(command, GrantBailoutCommand)
+    assert isinstance(command.covenants, BailoutCovenant)
+    assert command.covenants.dividends_allowed is False
+    assert command.covenants.mandatory_repayment == 0.5
+    assert command.amount == loan_amount
+    assert command.firm_id == mock_firm.id
 
 
 def test_grant_bailout_loan_insufficient_government_funds(finance_test_environment):
     """
-    Tests that the bailout loan is not granted if the government has insufficient funds.
+    Tests that the bailout loan command is not created if the government has insufficient funds.
     """
     finance_system, mock_government, mock_firm = finance_test_environment
 
@@ -99,12 +85,7 @@ def test_grant_bailout_loan_insufficient_government_funds(finance_test_environme
     type(mock_government).assets = PropertyMock(return_value=1_000_000.0)
 
     # Act
-    loan_dto, txs = finance_system.grant_bailout_loan(mock_firm, loan_amount, current_tick=10)
+    command = finance_system.request_bailout_loan(mock_firm, loan_amount)
 
     # Assert
-    # 1. No loan DTO should be returned
-    assert loan_dto is None
-    # 2. No transactions should be generated
-    assert len(txs) == 0
-    # 3. Firm should not be marked as having a loan
-    assert mock_firm.has_bailout_loan is False
+    assert command is None

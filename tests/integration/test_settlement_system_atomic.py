@@ -34,7 +34,8 @@ def test_settlement_scenario_1_standard_inheritance(settlement_system, golden_ho
     deceased.receive_portfolio = MagicMock() # Required for IPortfolioHandler check
     deceased.get_heir = MagicMock(return_value=heir.id)
     deceased.withdraw = MagicMock()
-    # SimpleNamespace has assets attribute, so mocking withdraw is enough if SettlementSystem reads .assets
+    # Mock get_balance for IFinancialAgent compliance
+    deceased.get_balance = MagicMock(return_value=1000.0)
 
     # Run Create
     account = settlement_system.create_settlement(deceased, tick=100)
@@ -80,6 +81,7 @@ def test_settlement_scenario_2_escheatment(settlement_system, golden_households,
     deceased.receive_portfolio = MagicMock() # Required for IPortfolioHandler check
     deceased.get_heir = MagicMock(return_value=None) # No heir
     deceased.withdraw = MagicMock()
+    deceased.get_balance = MagicMock(return_value=1000.0)
 
     # Mock Government behavior (spy/mock)
     # Government fixture is a real object with mocked deps.
@@ -132,6 +134,7 @@ def test_settlement_scenario_3_insolvency(settlement_system, golden_households, 
     deceased.receive_portfolio = MagicMock() # Required for IPortfolioHandler check
     deceased.get_heir = MagicMock(return_value=None)
     deceased.withdraw = MagicMock()
+    deceased.get_balance = MagicMock(return_value=100.0)
 
     account = settlement_system.create_settlement(deceased, tick=300)
 
@@ -151,6 +154,9 @@ def test_settlement_scenario_3_insolvency(settlement_system, golden_households, 
     # Test Overdraft Protection
     # If we tried to pay 101...
     deceased.assets = 100.0
+    # Reset mock for new call
+    deceased.get_balance = MagicMock(return_value=100.0)
+
     account_fail = settlement_system.create_settlement(deceased, tick=310)
     plan_fail = [(government, 101.0, "tax", "transfer")]
 

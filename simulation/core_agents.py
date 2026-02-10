@@ -1072,6 +1072,16 @@ class Household(
             if item_id == "basic_food" or item_id == "luxury_food":
                  self._econ_state.current_food_consumption += to_remove
 
+    def record_consumption(self, amount: float, is_food: bool = False) -> None:
+        """Records consumption statistics (called by Registry/Handlers)."""
+        self._econ_state.current_consumption += amount
+        if is_food:
+            self._econ_state.current_food_consumption += amount
+
+    def add_labor_income(self, amount: float) -> None:
+        """Adds to labor income tracker (called by Handlers)."""
+        self._econ_state.labor_income_this_tick += amount
+
     def trigger_emergency_liquidation(self) -> List[Order]:
         """
         WO-167: Trigger panic selling/liquidation for distress.

@@ -51,6 +51,9 @@ class TestDemographicsComponent(unittest.TestCase):
         """Test that the agent has a chance to die if above the age threshold."""
         self.component._age = 85
 
+        # Ensure configuration has high probability for testing
+        self.mock_config.AGE_DEATH_PROBABILITIES = {80: 100.0} # 100% per year if >= 80
+
         # Since death is probabilistic, we can't guarantee it.
         # Instead, we check if the logic runs without error and returns a boolean.
         # To make it deterministic for a test, we could mock random.random

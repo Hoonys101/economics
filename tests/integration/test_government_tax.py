@@ -29,15 +29,17 @@ class TestGovernmentTax:
             "payee_id": 1,
             "error_message": None
         }
-        initial_total = government.total_collected_tax
-        initial_revenue = government.revenue_this_tick
+        from modules.system.api import DEFAULT_CURRENCY
+        # Snapshot initial values (dicts)
+        initial_total = government.total_collected_tax.get(DEFAULT_CURRENCY, 0.0)
+        initial_revenue = government.revenue_this_tick.get(DEFAULT_CURRENCY, 0.0)
 
         # Act
         government.record_revenue(result)
 
         # Assert
-        assert government.total_collected_tax == initial_total + 100.0
-        assert government.revenue_this_tick == initial_revenue + 100.0
+        assert government.total_collected_tax[DEFAULT_CURRENCY] == initial_total + 100.0
+        assert government.revenue_this_tick[DEFAULT_CURRENCY] == initial_revenue + 100.0
         assert government.tax_revenue["income_tax"] == 100.0
 
     def test_record_revenue_failure(self, government):
@@ -78,10 +80,12 @@ class TestGovernmentTax:
             payer, government, amount, f"{tax_type} collection"
         )
 
+        from modules.system.api import DEFAULT_CURRENCY
         assert result["success"] is True
         assert result["amount_collected"] == amount
         assert result["tax_type"] == tax_type
-        assert government.total_collected_tax == 50.0 # Should have called record_revenue internally
+        # Verify total collected tax (dict)
+        assert government.total_collected_tax[DEFAULT_CURRENCY] == 50.0 # Should have called record_revenue internally
 
     def test_collect_tax_no_settlement_system(self, government):
         # Arrange

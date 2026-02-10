@@ -23,9 +23,15 @@ def create_firm_state_dto(firm, config):
     # Note: Golden fixtures (SimpleNamespace) are flat, so we check flat attributes first
     if hasattr(firm, 'finance'):
         # Nested Mock structure
-        state.finance.balance = getattr(firm.finance, 'balance', 1000.0)
-        state.finance.revenue_this_turn = getattr(firm.finance, 'revenue_this_turn', 0.0)
-        state.finance.consecutive_loss_turns = getattr(firm.finance, 'consecutive_loss_turns', 0)
+        val_bal = getattr(firm.finance, 'balance', 1000.0)
+        state.finance.balance = 1000.0 if isinstance(val_bal, Mock) else val_bal
+
+        val_rev = getattr(firm.finance, 'revenue_this_turn', 0.0)
+        state.finance.revenue_this_turn = 0.0 if isinstance(val_rev, Mock) else val_rev
+
+        # Ensure consecutive_loss_turns is integer, not Mock
+        val = getattr(firm.finance, 'consecutive_loss_turns', 0)
+        state.finance.consecutive_loss_turns = 0 if isinstance(val, Mock) else val
     else:
         # Flat SimpleNamespace structure (Golden Fixture)
         state.finance.balance = getattr(firm, 'assets', 1000.0)

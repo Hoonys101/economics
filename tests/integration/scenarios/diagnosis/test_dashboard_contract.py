@@ -32,6 +32,9 @@ def mock_sim_instance():
         "m1": 500.0,
         "m2": 600.0
     }
+    sim.world_state.tracker.get_smoothed_values.return_value = {
+        "gdp": 1000.0
+    }
     sim.world_state.time = 42
     sim.world_state.run_id = "test_run"
     sim.world_state.governments = []

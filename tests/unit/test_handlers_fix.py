@@ -20,6 +20,15 @@ class TestHandlerFix(unittest.TestCase):
         # Mock inventory_quality as a dict
         self.mock_household.inventory_quality = {}
 
+        # Mock needs
+        self.mock_household.needs = {}
+
+        # Setup add_item side effect to update inventory
+        def add_item_side_effect(item_id, quantity, transaction_id=None, quality=1.0):
+            self.mock_household.inventory[item_id] = self.mock_household.inventory.get(item_id, 0.0) + quantity
+            return True
+        self.mock_household.add_item.side_effect = add_item_side_effect
+
         # Setup context
         self.mock_context = MagicMock()
         self.mock_context.config_module = MagicMock()
