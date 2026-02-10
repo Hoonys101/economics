@@ -1,36 +1,53 @@
-# Handover Document: Test Restoration & Architectural Alignment
+# 수석 설계자 핸드오버 리포트
 
 ## Executive Summary
-This document summarizes the successful completion of the "Unit Test Cleanup Campaign." The primary achievement was the complete restoration of the test suite, which had been failing due to significant architectural drift. Key technical debts related to protocol impurity, DTO inconsistency, and fragile mocking have been resolved. Residual risks are primarily concentrated in remaining pockets of legacy code and the need for more robust integration test harnesses.
+본 세션은 아키텍처 리팩토링(Multi-Currency, DTO Purity) 이후 발생한 레거시 테스트 부채를 해결하는 데 집중했습니다. 총 46개 이상의 테스트 실패를 포함한 주요 문제들이 해결되었으며, 이를 통해 시스템의 안정성과 프로토콜 일관성을 크게 향상시켰습니다. 그러나 이 과정에서 새로운 기술 부채(Mock 전략, 일부 모듈의 테스트 실패)가 발견되어 다음 세션의 즉각적인 조치가 필요합니다.
 
-## Detailed Analysis
+---
 
-### 1. Key Achievements (Test Restoration)
-- **Status**: ✅ Implemented
-- **Evidence**:
-    - **Complete Test Suite Restoration**: The `pytest` collection and execution process, previously failing due to widespread `ImportError`s, was fully restored. This involved fixing invalid imports, renaming DTOs to avoid accidental test discovery, and patching legacy code references. (`communications/insights/mission_fix_pytest_collection.md`)
-    - **Core Agent Test Refactoring**: Systematically fixed unit and integration tests across all major modules (`decisions`, `finance`, `household`, `market`, `systems`, `government`, `agents`) to align with the new Orchestrator-Engine architecture. This centered on updating agent instantiation to use the standardized `AgentCoreConfigDTO`. (`communications/insights/CoreAgentRefactor.md`, `communications/insights/mod-agents.md`)
-    - **Robust Mocking Strategy**: A centralized `MockFactory` was introduced to create consistent, protocol-aware mocks for agents and their state DTOs. This resolved systemic fragility in AI and decision engine tests, which previously relied on manual and error-prone mock setup. (`communications/insights/MockFactory-AI-Tests.md`)
-    - **Protocol Purity in Tests**: Numerous tests were refactored to respect defined contracts (`IFinancialAgent`, `IPropertyOwner`, `IConfigurable`), moving from fragile attribute patching to verifying method calls on mocks. (`communications/insights/cleanup-mod-systems.md`, `communications/insights/fix_protocol_mismatches.md`, `communications/insights/TD-LIQ-INV.md`)
+### 1. Accomplishments: 핵심 기능 및 아키텍처 변화
 
-### 2. Resolved Tech Debts
-- **Status**: ✅ Implemented
-- **Evidence**:
-    - **DTO Standardization**: Consolidated critical Data Transfer Objects. `StockOrder` was formally deprecated, and the weakly-typed `TransactionDTO = Any` was replaced with a concrete class. The `IFirmStateProvider` protocol was introduced to eliminate fragile `hasattr`-based state scraping. (`communications/insights/TD-DTO-STAB.md`)
-    - **Protocol Enforcement**: Replaced numerous `hasattr` checks throughout the codebase with `isinstance(obj, Protocol)` checks, improving type safety and making architectural contracts explicit. (`communications/insights/cleanup-mod-systems.md`, `communications/insights/TD-LIQ-INV.md`)
-    - **Hardcoded Constant Elimination**: Removed hardcoded `"USD"` currency strings from multiple modules, scripts, and tests, replacing them with the centrally-defined `DEFAULT_CURRENCY`. (`communications/insights/cleanup-mod-infra.md`, `communications/insights/mod-government.md`)
-    - **Legacy Code Cleanup**: Addressed significant "code rot" by updating tests to use new APIs, deleting obsolete tests, and patching dependent systems (e.g., `Registry`) that were still using deprecated agent properties. (`communications/insights/cleanup-mod-household.md`, `communications/insights/mod-government.md`)
+- **테스트 스위트 복원 (Test Suite Restoration)**
+  - Multi-Currency 전환 및 DTO 리팩토링으로 인해 실패했던 46개 이상의 유닛/통합 테스트를 성공적으로 복원했습니다. (`FixTests.md`, `the-final-seven.md`)
+  - 특히 `PublicManager`, `DemographicManager`, `SettlementSystem` 등 핵심 시스템의 테스트 안정성을 확보했습니다. (`100_percent_completion.md`)
 
-### 3. Residual Risks & Next Steps
-- **Status**: ⚠️ Partial
-- **Evidence**:
-    - **Incomplete Test Coverage**: While test *failures* were resolved, some tests were skipped or deleted because they targeted deprecated logic (e.g., legacy AI tactics). This has created a known gap in test coverage for new `ActionVector`-based decision logic. (`communications/insights/cleanup-mod-household.md`)
-    - **Integration Test Complexity**: Integration tests for orchestrator agents (`Household`, `Firm`) remain complex and brittle. A unified `AgentTestBuilder` or `ScenarioFixture` is needed to ensure consistent and valid test setups. (`communications/insights/cleanup-mod-decisions.md:TD-TEST-INTEGRATION-SETUP`)
-    - **Silent Failures & Obscure Logic**: Some engine behaviors, like `BudgetEngine` returning an empty plan without logging a reason, make debugging difficult. Similarly, "hidden" default logic, like progressive tax brackets overriding explicit config values, complicates testing. (`communications/insights/cleanup-mod-decisions.md:TD-DECISIONS-BUDGET-OBSCURITY`, `communications/insights/mod-government.md:TD-TAX-CONFIG-CONFUSION`)
-    - **Pockets of Legacy Code**:
-        - The `simulation/systems/registry.py` module still contains legacy attribute access patterns and requires a full audit. (`communications/insights/mod-government.md:TD-REGISTRY-LEGACY`)
-        - Fallback logic to support deprecated agent attributes (`.assets`, `.wallet`) still exists in core components, delaying full protocol adherence. (`communications/insights/fix_protocol_mismatches.md`)
-        - The `DecisionUnit` class remains as an ambiguous legacy component alongside the modern `BudgetEngine`. (`communications/insights/cleanup-mod-household.md`)
+- **Multi-Currency 아키텍처 정착**
+  - 에이전트의 자산 모델을 단일 `float`에서 `Dict[CurrencyCode, float]` (Wallet)으로 전환하는 리팩토링을 완료하고, 관련 테스트 코드(Mock, Assertion)를 모두 업데이트하여 다중 통화 시스템의 기반을 확립했습니다. (`fix_residual_test_failures.md:L5-8`)
+  - `SettlementSystem`이 다중 통화 환경에서의 자금 정산을 올바르게 처리함을 검증했습니다. (`the-final-seven.md:L18-22`)
 
-## Conclusion
-The project has successfully navigated a major phase of technical debt repayment, resulting in a stable and reliable test environment. The codebase is now better aligned with its architectural goals of protocol purity and modularity. The next phase of work should focus on closing the identified test coverage gaps, simplifying integration test setup, and methodically eliminating the final pockets of legacy code.
+- **프로토콜 및 DTO 순수성(Purity) 강화**
+  - `IFinancialAgent` 프로토콜의 최신 명세(`withdraw`, `deposit`의 `currency` 인자 포함)를 테스트 Mock에 일관되게 적용했습니다. (`mission_core_agent_restoration.md:L7-13`)
+  - ViewModel과 같은 상위 레벨 컴포넌트가 에이전트의 내부 상태(`_econ_state`)에 직접 접근하는 캡슐화 위반 사례를 `agent.assets`와 같은 공용 프로퍼티를 사용하도록 리팩토링했습니다. (`mission_core_agent_restoration.md:L16-22`)
+  - DTO 생성 시 `MagicMock` 객체가 포함되어 JSON 직렬화에 실패하던 문제를 해결하여 로깅 및 상태 캡처 기능의 안정성을 확보했습니다. (`mission_core_agent_restoration.md:L25-32`)
+
+---
+
+### 2. Economic Insights: 발견된 경제적 통찰 (아키텍처 관점)
+
+- **자산 분배 추적 능력 확보**: ViewModel이 에이전트의 자산 데이터를 통해 부의 분배(wealth distribution)를 계산하는 기능이 복원되어, 시뮬레이션 내 경제적 불평등도 분석이 가능해졌습니다. (`mission_core_agent_restoration.md:L16-18`)
+- **다중 통화 경제 모델링 기반 마련**: 모든 금융 관련 지표와 에이전트 자산이 다중 통화를 지원하도록 변경됨에 따라, 향후 국제 무역이나 통화 정책 실험과 같은 복잡한 경제 시나리오를 모델링할 수 있는 기반이 마련되었습니다. (`100_percent_completion.md:L10-12`)
+- **신생아 초기 자산 설정**: 신생 가구(newborn household)가 설정(config)에 정의된 초기 필수품(`NEWBORN_INITIAL_NEEDS`)을 정확히 부여받도록 수정하여, 인구 동학(demographics) 시뮬레이션의 초기 조건을 더욱 정교하게 제어할 수 있게 되었습니다. (`100_percent_completion.md:L15-20`)
+
+---
+
+### 3. Pending Tasks & Tech Debt: 다음 세션 과제
+
+- **Mock 전략의 근본적 개선 필요 (Mock Drift)**
+  - **문제**: 대부분의 테스트 실패 원인은 `MagicMock`이 실제 객체(DTO)의 구조 변경(e.g., `float` -> `dict`)을 따라가지 못하는 "Mock Drift" 현상입니다. 수동으로 Mock을 설정하는 방식은 매우 취약합니다.
+  - **해결책**: `create_mock_household`와 같은 **Mock Factory** 또는 실제 에이전트의 스냅샷을 사용하는 **"Golden Fixtures"** 패턴을 도입하여 테스트의 안정성과 유지보수성을 높여야 합니다. (`fix_residual_test_failures.md:L34-37`, `mission_core_agent_restoration.md:L40-42`)
+
+- **미해결 테스트 실패 (New Failures Uncovered)**
+  - **`ConfigManager` 테스트 실패**: `yaml.safe_load`의 Mock이 예상된 값을 반환하지 않아 `AssertionError: assert <MagicMock ...> == 1` 오류가 발생합니다. (`100_percent_completion_report.md:L21-25`)
+  - **`TechnologyManager` 테스트 실패**: Mock 객체가 `int`를 반환해야 하는 곳에서 `MagicMock`을 반환하여 `TypeError: '>=' not supported...` 오류가 발생합니다. (`100_percent_completion_report.md:L28-32`)
+
+- **일관성 없는 상태 접근**: 일부 레거시 코드가 여전히 `agent.wallet.get_balance()`와 같은 공용 인터페이스 대신 `_econ_state.assets` 같은 내부 상태에 접근하고 있습니다. 이를 인터페이스 사용으로 통일해야 합니다. (`fix_residual_test_failures.md:L39-44`)
+
+---
+
+### 4. Verification Status: `main.py` 및 `pytest` 결과
+
+- **`pytest`**:
+  - **완료**: 미션 목표였던 `PublicManager`, `DemographicManager` 및 Multi-Currency 관련 핵심 테스트 실패는 **모두 해결되었습니다.**
+  - **미결**: 상기 기술 부채 섹션에서 언급된 `ConfigManager`와 `TechnologyManager`의 유닛 테스트에서 **새로운 실패가 발견되었습니다.** 따라서 전체 테스트 스위트는 현재 100% 통과 상태가 아닙니다.
+- **`main.py`**:
+  - 제공된 문서에서는 `main.py`의 실행 여부나 시뮬레이션 전체의 End-to-End 실행 결과에 대한 직접적인 언급이 없습니다. 검증 작업은 주로 유닛/통합 테스트에 집중되었습니다.

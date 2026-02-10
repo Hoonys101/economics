@@ -63,6 +63,14 @@
     - **Insight**: 파편화된 데이터 구조는 모듈 간 소통 오류를 만들고 방어적 로직을 강요함. DTO는 시스템 내에서 정보가 흐르는 "통화"이며, 이 통화가 단일화될 때 거래 비용(버그)이 최소화됨.
     - **Principle**: **"DTO는 시스템의 기축 통화이다."** 표준화된 DTO(`AgentCoreConfigDTO`, `CanonicalOrderDTO`)를 인터페이스 표준으로 사용하여 모듈 간 결합을 제거하고 시스템적 확장성을 확보함.
     - [Insight Report](../_archive/insights/fix-test-systems.md)
+- **[2026-02-11] Mock/Protocol Drift & DTO Purity**
+    - **Insight**: Test suites are highly vulnerable to architectural refactoring. The primary cause is "Mock Drift," where test doubles (`MagicMock`) diverge from production code contracts (`Protocols`, DTOs). This leads to three main failure classes: (1) Protocol Violation (outdated signatures), (2) DTO Impurity (returning mocks instead of primitives), and (3) Encapsulation Violation (direct state access).
+    - **Principle**: Tests must treat architectural protocols and data contracts as first-class citizens. Mocks must be strictly configured (`spec=...`), return primitives to ensure DTO purity, and interact with objects via their public interfaces.
+    - [Insight Report](../_archive/insights/2026-02-11_Mock_Drift_Root_Cause_Analysis.md)
+- **[2026-02-11] Test Scoping and Pattern Enforcement**
+    - **Insight**: Test failures can arise from incorrect mocking scope (patching definition vs consumption) or bypassing established instantiation patterns (direct constructor calls).
+    - **Principle**: Enforce the use of established Factories (e.g., `create_household`) in tests to ensure correct dependency injection. Mocks and patches must be applied with careful attention to module import paths.
+    - [Insight Report](../_archive/insights/2026-02-11_Final_Test_Failures_And_Patch_Scoping.md)
 
 ---
 
@@ -87,6 +95,10 @@
 - **[2026-02-09] Protocol Purification: IConfigurable (TD-LIQ-INV)**
     - Decoupling configuration access from agent internals via formal protocols and DTOs.
     - [Insight Report](../_archive/insights/2026-02-09_TD-LIQ-INV_Protocol_Purification.md)
+- **[2026-02-11] Multi-Currency Representation in Tests**
+    - **Insight**: A architectural shift from representing financial balances as a simple `float` to a `Dict[CurrencyCode, float]` caused widespread test failures. Tests, especially those using mocks, continued to assert against or provide float values.
+    - **Principle**: All financial state, including in tests and mocks, must strictly adhere to the multi-currency dictionary format (e.g., `{DEFAULT_CURRENCY: 100.0}`).
+    - [Insight Report](../_archive/insights/2026-02-11_Multi-Currency_Test_Awareness.md)
 
 ---
 
@@ -101,3 +113,7 @@
     - [Insight Report](../_archive/insights/2026-02-10_Ecosystem_Health_and_Agent_Decisions.md)
 - **[2026-01-15] Population Dynamics & Birth Rate (r/K Selection)**
     - Analysis of expectation mismatch and childcare time constraints on population.
+- **[2026-02-11] Aligning Test Data with Domain Logic**
+    - **Insight**: Agent logic can fail if test data violates domain constraints (e.g., death probability > 1.0). Newborn agents were being created with random adult ages because `initial_age` was not explicitly passed in tests.
+    - **Principle**: Test configurations and mock data must accurately reflect the domain constraints and data types expected by the system under test.
+    - [Insight Report](../_archive/insights/2026-02-11_Legacy_Test_Refactor_Summary.md)

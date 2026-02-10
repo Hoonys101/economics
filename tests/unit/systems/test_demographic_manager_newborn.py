@@ -126,6 +126,8 @@ def test_newborn_receives_initial_needs_from_config(mock_config, mock_simulation
             mocked config, not a hardcoded default.
     """
     # ARRANGE
+    # Reset singleton to ensure this test's mock_config is used
+    DemographicManager._instance = None
     # Instantiate the manager and surgically attach the mock config
     manager = DemographicManager(config_module=mock_config)
     manager.logger = MagicMock() # Isolate logger

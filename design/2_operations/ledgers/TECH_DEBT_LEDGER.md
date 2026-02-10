@@ -5,6 +5,9 @@
 | ID | Domain | Description | Impact / Risk | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **TD-INT-CONST** | System | Inconsistent use of System Constants (e.g., hardcoded 'USD'). | **Low**: Logic brittleness (TD-272). | Open |
+| **WO-101** | Test | Core logic-protocol changes (e.g., wallet) break test mocks. | **High**: Logic brittleness/Drift. | Partially Mitigated |
+| **TD-CM-001** | System | ConfigManager unit tests failing (MagicMock vs dict). | **Medium**: Auto-verification failure. | Identified |
+| **TD-TM-001** | System | TechnologyManager unit tests failing (MagicMock vs int). | **Medium**: Auto-verification failure. | Identified |
 
 ## ✅ Resolved Technical Debt
 
