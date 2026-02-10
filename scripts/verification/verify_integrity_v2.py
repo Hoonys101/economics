@@ -14,6 +14,7 @@ from simulation.systems.settlement_system import SettlementSystem
 from simulation.systems.handlers import InheritanceHandler
 from simulation.models import Transaction
 from modules.system.constants import ID_CENTRAL_BANK
+from modules.system.api import DEFAULT_CURRENCY
 
 # Setup Logging
 logging.basicConfig(level=logging.INFO)
@@ -23,14 +24,14 @@ class MockWallet:
     def __init__(self, agent):
         self.agent = agent
         self.owner_id = agent.id
-    def get_balance(self, currency="USD"):
+    def get_balance(self, currency=DEFAULT_CURRENCY):
         return self.agent.assets
-    def add(self, amount, currency="USD", memo=""):
+    def add(self, amount, currency=DEFAULT_CURRENCY, memo=""):
         pass
-    def subtract(self, amount, currency="USD", memo=""):
+    def subtract(self, amount, currency=DEFAULT_CURRENCY, memo=""):
         pass
     def get_all_balances(self):
-        return {"USD": self.agent.assets}
+        return {DEFAULT_CURRENCY: self.agent.assets}
 
 def verify_zero_sum():
     logger.info("Starting Zero-Sum Verification...")
@@ -72,8 +73,8 @@ def verify_zero_sum():
     buyer.id = 1
     buyer.assets = 1000.0
     # Mock withdraw/deposit
-    def b_withdraw(amt, currency="USD"): buyer.assets -= amt
-    def b_deposit(amt, currency="USD"): buyer.assets += amt
+    def b_withdraw(amt, currency=DEFAULT_CURRENCY): buyer.assets -= amt
+    def b_deposit(amt, currency=DEFAULT_CURRENCY): buyer.assets += amt
     buyer.withdraw = b_withdraw
     buyer.deposit = b_deposit
     buyer.wallet = MockWallet(buyer)
@@ -81,8 +82,8 @@ def verify_zero_sum():
     seller = MagicMock()
     seller.id = 2
     seller.assets = 500.0
-    def s_withdraw(amt, currency="USD"): seller.assets -= amt
-    def s_deposit(amt, currency="USD"): seller.assets += amt
+    def s_withdraw(amt, currency=DEFAULT_CURRENCY): seller.assets -= amt
+    def s_deposit(amt, currency=DEFAULT_CURRENCY): seller.assets += amt
     seller.withdraw = s_withdraw
     seller.deposit = s_deposit
     seller.wallet = MockWallet(seller)
@@ -91,7 +92,7 @@ def verify_zero_sum():
     gov = MagicMock()
     gov.id = "GOV"
     gov.assets = 0.0
-    def g_deposit(amt, currency="USD"): gov.assets += amt
+    def g_deposit(amt, currency=DEFAULT_CURRENCY): gov.assets += amt
     gov.deposit = g_deposit
     gov.wallet = MockWallet(gov)
     # Mock collect_tax to just deposit

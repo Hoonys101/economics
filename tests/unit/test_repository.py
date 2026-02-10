@@ -10,6 +10,7 @@ from simulation.dtos import (
     MarketHistoryData,
     EconomicIndicatorData,
 )
+from modules.system.api import DEFAULT_CURRENCY
 
 
 # Use an in-memory database for testing
@@ -97,6 +98,7 @@ def test_save_and_get_transaction(test_repo: SimulationRepository):
         item_id="food",
         quantity=5.0,
         price=10.0,
+        currency=DEFAULT_CURRENCY,
         transaction_type="Goods",
         market_id="goods_market",
     )

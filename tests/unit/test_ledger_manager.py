@@ -127,7 +127,7 @@ def test_pipe_escaping_in_ledger(mock_ledger_env):
 
     # Verify file content has escaped pipe
     content = ledger_path.read_text(encoding="utf-8")
-    assert "Description with \| pipe" in content
+    assert r"Description with \| pipe" in content
 
     # Verify parsing handles it correctly
     blocks = manager._parse_ledger()
