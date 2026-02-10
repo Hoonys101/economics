@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from modules.system.execution.public_manager import PublicManager
-from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO
+from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, DEFAULT_CURRENCY
 
 class TestPublicManager:
     @pytest.fixture
@@ -71,7 +71,6 @@ class TestPublicManager:
         assert public_manager.managed_inventory["apple"] == 0.0
 
     def test_deposit_revenue(self, public_manager):
-        from modules.system.api import DEFAULT_CURRENCY
         public_manager.deposit_revenue(100.0)
         assert public_manager.system_treasury[DEFAULT_CURRENCY] == 100.0
         assert public_manager.last_tick_revenue[DEFAULT_CURRENCY] == 100.0
@@ -87,6 +86,6 @@ class TestPublicManager:
         assert public_manager.managed_inventory["pear"] == 10.0
 
     def test_generate_liquidation_orders_resets_metrics(self, public_manager):
-        public_manager.last_tick_revenue = 500.0
+        public_manager.last_tick_revenue = {DEFAULT_CURRENCY: 500.0}
         public_manager.generate_liquidation_orders({})
-        assert public_manager.last_tick_revenue == 0.0
+        assert public_manager.last_tick_revenue == {DEFAULT_CURRENCY: 0.0}
