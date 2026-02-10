@@ -10,6 +10,16 @@ from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
+# Political Constants
+STANCE_BLUE = 0.9
+STANCE_RED = 0.1
+SURVIVAL_NEED_SCALE = 100.0
+TRUST_EMA_ALPHA = 0.05
+APPROVAL_WEIGHT_SATISFACTION = 0.4
+APPROVAL_WEIGHT_MATCH = 0.6
+TRUST_THRESHOLD = 0.2
+APPROVAL_THRESHOLD = 0.5
+
 class SocialEngine(ISocialEngine):
     """
     Stateless engine managing social status, political opinion, and other social metrics.
@@ -88,12 +98,12 @@ class SocialEngine(ISocialEngine):
 
         # 1. Derive Gov Stance from Party
         # BLUE (Growth) -> 0.9, RED (Safety) -> 0.1
-        gov_stance = 0.9 if gov_party == PoliticalParty.BLUE else 0.1
+        gov_stance = STANCE_BLUE if gov_party == PoliticalParty.BLUE else STANCE_RED
 
         # 2. Calculate Satisfaction
         # High survival need = Low satisfaction
         # Assuming survival_need is 0-100 scale where 100 is max need (bad)
-        discontent = min(1.0, survival_need / 100.0)
+        discontent = min(1.0, survival_need / SURVIVAL_NEED_SCALE)
         satisfaction = 1.0 - discontent
         new_state.discontent = discontent
 
@@ -104,19 +114,19 @@ class SocialEngine(ISocialEngine):
         # 4. Update Trust (EMA)
         # Trust grows with satisfaction, decays with dissatisfaction
         # Using slow adaptation (alpha=0.05)
-        new_trust = 0.95 * new_state.trust_score + 0.05 * satisfaction
+        new_trust = (1.0 - TRUST_EMA_ALPHA) * new_state.trust_score + TRUST_EMA_ALPHA * satisfaction
         new_state.trust_score = max(0.0, min(1.0, new_trust))
 
         # 5. Calculate Approval
         # Approval = 0.4 * Satisfaction + 0.6 * Match
-        approval_score = (0.4 * satisfaction) + (0.6 * ideological_match)
+        approval_score = (APPROVAL_WEIGHT_SATISFACTION * satisfaction) + (APPROVAL_WEIGHT_MATCH * ideological_match)
 
         # 6. Trust Damper
-        if new_state.trust_score < 0.2:
+        if new_state.trust_score < TRUST_THRESHOLD:
             approval_score = 0.0
 
         # 7. Update Binary Approval Rating
         # Threshold 0.5
-        new_state.approval_rating = 1 if approval_score > 0.5 else 0
+        new_state.approval_rating = 1 if approval_score > APPROVAL_THRESHOLD else 0
 
         return new_state

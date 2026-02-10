@@ -49,6 +49,7 @@ from modules.household.dtos import (
 )
 from modules.analytics.dtos import AgentTickAnalyticsDTO
 from modules.household.services import HouseholdSnapshotAssembler
+from modules.household.mixins._state_access import HouseholdStateAccessMixin
 
 # Protocols
 from modules.hr.api import IEmployeeDataProvider
@@ -70,7 +71,8 @@ class Household(
     IInventoryHandler,
     ISensoryDataProvider,
     IPropertyOwner,
-    IInvestor
+    IInvestor,
+    HouseholdStateAccessMixin
 ):
     """
     Household Agent (Orchestrator).

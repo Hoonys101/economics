@@ -6,6 +6,7 @@ from modules.household.dtos import EconStateDTO
 from simulation.models import Talent
 from simulation.portfolio import Portfolio
 from tests.utils.factories import create_household_config_dto
+from modules.finance.wallet.wallet import Wallet
 
 class TestConsumptionManager:
     @pytest.fixture
@@ -19,8 +20,10 @@ class TestConsumptionManager:
 
     @pytest.fixture
     def econ_state(self):
+        wallet = Wallet(1, {})
+        wallet.add(1000.0)
         return EconStateDTO(
-            assets=1000.0,
+            wallet=wallet,
             inventory={"food": 10.0, "water": 5.0},
             inventory_quality={"food": 1.0, "water": 1.0},
             durable_assets=[],
@@ -47,6 +50,7 @@ class TestConsumptionManager:
             last_labor_offer_tick=0,
             last_fired_tick=-1,
             job_search_patience=0,
+            employment_start_tick=-1,
             current_consumption=0.0,
             current_food_consumption=0.0,
             expected_inflation=defaultdict(float),

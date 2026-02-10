@@ -9,6 +9,10 @@ from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_FOOD_PRICE = 10.0
+DEFAULT_FOOD_UTILITY = 20.0
+PRICE_LIMIT_MULTIPLIER = 1.1
+
 class ConsumptionEngine(IConsumptionEngine):
     """
     Stateless engine responsible for executing consumption from inventory,
@@ -61,7 +65,7 @@ class ConsumptionEngine(IConsumptionEngine):
                 new_econ_state.inventory["food"] -= 1.0
 
             # Reduce need
-            utility = config.food_consumption_utility if config else 20.0
+            utility = config.food_consumption_utility if config else DEFAULT_FOOD_UTILITY
             new_bio_state.needs["survival"] = max(0.0, survival_need - utility)
             # Log consumption?
 
@@ -75,11 +79,11 @@ class ConsumptionEngine(IConsumptionEngine):
 
         if survival_need > 0 and food_inventory < 1.0 and food_alloc > 0:
             # Buy food
-            food_price = 10.0
+            food_price = DEFAULT_FOOD_PRICE
             goods_market = getattr(market_snapshot, "goods", {})
             m = goods_market.get("basic_food") or goods_market.get("food")
             if m:
-                 food_price = getattr(m, "avg_price", 10.0) or getattr(m, "current_price", 10.0)
+                 food_price = getattr(m, "avg_price", DEFAULT_FOOD_PRICE) or getattr(m, "current_price", DEFAULT_FOOD_PRICE)
 
             qty_to_buy = food_alloc / food_price
             if qty_to_buy > 0:
@@ -88,7 +92,7 @@ class ConsumptionEngine(IConsumptionEngine):
                     side="BUY",
                     item_id="basic_food",
                     quantity=qty_to_buy,
-                    price_limit=food_price * 1.1,
+                    price_limit=food_price * PRICE_LIMIT_MULTIPLIER,
                     market_id="goods_market"
                 )
                 orders.append(order)

@@ -2,7 +2,7 @@ import os
 import sys
 import json
 import pytest
-from tests.utils.factories import create_firm_config_dto, create_household_config_dto
+from tests.utils.factories import create_firm_config_dto, create_household_config_dto, create_household
 from unittest.mock import Mock
 
 # Add project root to sys.path to allow imports from other modules
@@ -91,16 +91,16 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
 
     hh_config = create_config_dto(config, HouseholdConfigDTO)
     talent = Talent(base_learning_rate=0.1, max_potential={"strength": 100})
-    household = Household(
+    household = create_household(
+        config_dto=hh_config,
         id=2,
         talent=talent,
         goods_data=goods_data,
-        initial_assets=100.0,
+        assets=100.0,
         initial_needs={"survival": 80.0, "social": 20.0, "improvement": 10.0, "asset": 10.0},
         value_orientation=value_orientation,
-        decision_engine=household_decision_engine,
+        engine=household_decision_engine,
         personality=Personality.MISER,
-        config_dto=hh_config,
     )
 
     market_data = {
@@ -121,6 +121,7 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
         market_data=market_data,
         current_time=1
     )
+    household.update_needs(1, market_data)
     orders, _ = household.make_decision(input_dto)
 
     assert orders is not None
@@ -152,16 +153,16 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
 
     hh_config = create_config_dto(config, HouseholdConfigDTO)
     talent = Talent(base_learning_rate=0.1, max_potential={"strength": 100})
-    household = Household(
+    household = create_household(
+        config_dto=hh_config,
         id=3,
         talent=talent,
         goods_data=goods_data,
-        initial_assets=1000.0,
+        assets=1000.0,
         initial_needs={"survival": 10.0, "social": 80.0, "improvement": 10.0, "asset": 10.0},
         value_orientation=value_orientation,
-        decision_engine=household_decision_engine,
+        engine=household_decision_engine,
         personality=Personality.STATUS_SEEKER,
-        config_dto=hh_config,
     )
 
     market_data = {
@@ -182,6 +183,7 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
         market_data=market_data,
         current_time=1
     )
+    household.update_needs(1, market_data)
     orders, action_vector = household.make_decision(input_dto)
 
     assert orders is not None
