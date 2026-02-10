@@ -3,7 +3,7 @@ setlocal
 chcp 65001 > nul
 set PYTHONIOENCODING=utf-8
 
-:: 1) Manifest → JSON 자동 동기화
+:: 1) Manifest to JSON Auto Sync
 python _internal/scripts/launcher.py sync
 
 :: 2) 실행
