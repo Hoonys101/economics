@@ -55,7 +55,14 @@
 - **[2026-02-10] Tick-Level State Reset Integrity**
     - **Principle**: To ensure data availability for all simulation phases (e.g., learning, analysis), agent state variables relevant for an entire tick (`expenses_this_tick`) must only be reset at the very end of the simulation cycle (i.e., in the Post-Sequence phase). Resetting state mid-cycle leads to data loss for later-stage processes.
     - **Implementation**: Enforce a standardized `reset()` method on agents, to be called exclusively by the orchestrator during the final phase of a tick.
-    - [Insight Report](../_archive/insights/2026-02-10_Tick_Level_State_Reset_Integrity.md)
+- **[2026-02-10] Protocol-Driven Architecture & Test Resilience**
+    - **Insight**: 컴포넌트 내부 구현(private state, hasattr)에 의존하는 테스트는 리팩토링 시 비효율적인 연쇄 파열을 유발함. 이는 계약이 지켜지지 않는 시장의 부실함과 같음.
+    - **Principle**: **"구현이 아닌 계약(Contract)을 테스트하라."** `typing.Protocol`과 엄격한 Mock Spec(`MagicMock(spec=...)`)을 사용하여 아키텍처 경계를 강화하면, 구현 변경 시에도 테스트는 안정적으로 유지됨.
+    - [Insight Report](../_archive/insights/fix-residual-test-errors.md)
+- **[2026-02-10] DTOs as the Universal Medium of Exchange**
+    - **Insight**: 파편화된 데이터 구조는 모듈 간 소통 오류를 만들고 방어적 로직을 강요함. DTO는 시스템 내에서 정보가 흐르는 "통화"이며, 이 통화가 단일화될 때 거래 비용(버그)이 최소화됨.
+    - **Principle**: **"DTO는 시스템의 기축 통화이다."** 표준화된 DTO(`AgentCoreConfigDTO`, `CanonicalOrderDTO`)를 인터페이스 표준으로 사용하여 모듈 간 결합을 제거하고 시스템적 확장성을 확보함.
+    - [Insight Report](../_archive/insights/fix-test-systems.md)
 
 ---
 

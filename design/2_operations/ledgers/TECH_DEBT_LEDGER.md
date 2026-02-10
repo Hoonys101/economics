@@ -43,3 +43,4 @@
 | **TD-255** | Housing | **Hardening**: Replaced `hasattr` with `IHousingTransactionParticipant`. | PH12 (Shield) | [Insight](../_archive/insights/2026-02-09_System_Protocol_Composition_Pattern.md) |
 | **TD-270** | Financials | **Protocol**: Unified asset representation & added `total_wealth`. | PH10 | [Repo](../_archive/gemini_output/pr_review_market-decoupling-v2-11057596794459553753.md) |
 | **TD-271** | Firms | **Utilization**: RealEstateUtilizationComponent for production bonus. | PH10 | [Repo](../_archive/gemini_output/pr_review_market-decoupling-v2-11057596794459553753.md) |
+| **TD-HYGIENE** | Tests / Infrastructure | **Restoration**: Fixed 618+ test collection errors & 80+ unit/integration failures after major refactor. | PH10.5 | [Handover](../HANDOVER.md) |

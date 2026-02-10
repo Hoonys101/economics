@@ -1,50 +1,36 @@
-# Session Handover: 2026-02-09 (Night Shift)
+# Handover Document: Test Restoration & Architectural Alignment
 
-## 🎯 Primary Objective: Interface Purity & Tooling Refactor
+## Executive Summary
+This document summarizes the successful completion of the "Unit Test Cleanup Campaign." The primary achievement was the complete restoration of the test suite, which had been failing due to significant architectural drift. Key technical debts related to protocol impurity, DTO inconsistency, and fragile mocking have been resolved. Residual risks are primarily concentrated in remaining pockets of legacy code and the need for more robust integration test harnesses.
 
-This session focused on hardening the project's architectural boundaries and transitioning the mission management system to a more developer-friendly format.
+## Detailed Analysis
 
----
+### 1. Key Achievements (Test Restoration)
+- **Status**: ✅ Implemented
+- **Evidence**:
+    - **Complete Test Suite Restoration**: The `pytest` collection and execution process, previously failing due to widespread `ImportError`s, was fully restored. This involved fixing invalid imports, renaming DTOs to avoid accidental test discovery, and patching legacy code references. (`communications/insights/mission_fix_pytest_collection.md`)
+    - **Core Agent Test Refactoring**: Systematically fixed unit and integration tests across all major modules (`decisions`, `finance`, `household`, `market`, `systems`, `government`, `agents`) to align with the new Orchestrator-Engine architecture. This centered on updating agent instantiation to use the standardized `AgentCoreConfigDTO`. (`communications/insights/CoreAgentRefactor.md`, `communications/insights/mod-agents.md`)
+    - **Robust Mocking Strategy**: A centralized `MockFactory` was introduced to create consistent, protocol-aware mocks for agents and their state DTOs. This resolved systemic fragility in AI and decision engine tests, which previously relied on manual and error-prone mock setup. (`communications/insights/MockFactory-AI-Tests.md`)
+    - **Protocol Purity in Tests**: Numerous tests were refactored to respect defined contracts (`IFinancialAgent`, `IPropertyOwner`, `IConfigurable`), moving from fragile attribute patching to verifying method calls on mocks. (`communications/insights/cleanup-mod-systems.md`, `communications/insights/fix_protocol_mismatches.md`, `communications/insights/TD-LIQ-INV.md`)
 
-## 🚀 Key Accomplishments
+### 2. Resolved Tech Debts
+- **Status**: ✅ Implemented
+- **Evidence**:
+    - **DTO Standardization**: Consolidated critical Data Transfer Objects. `StockOrder` was formally deprecated, and the weakly-typed `TransactionDTO = Any` was replaced with a concrete class. The `IFirmStateProvider` protocol was introduced to eliminate fragile `hasattr`-based state scraping. (`communications/insights/TD-DTO-STAB.md`)
+    - **Protocol Enforcement**: Replaced numerous `hasattr` checks throughout the codebase with `isinstance(obj, Protocol)` checks, improving type safety and making architectural contracts explicit. (`communications/insights/cleanup-mod-systems.md`, `communications/insights/TD-LIQ-INV.md`)
+    - **Hardcoded Constant Elimination**: Removed hardcoded `"USD"` currency strings from multiple modules, scripts, and tests, replacing them with the centrally-defined `DEFAULT_CURRENCY`. (`communications/insights/cleanup-mod-infra.md`, `communications/insights/mod-government.md`)
+    - **Legacy Code Cleanup**: Addressed significant "code rot" by updating tests to use new APIs, deleting obsolete tests, and patching dependent systems (e.g., `Registry`) that were still using deprecated agent properties. (`communications/insights/cleanup-mod-household.md`, `communications/insights/mod-government.md`)
 
-### 1. Mission Registry Refactor (JSON → Python)
-- **Problem**: `command_registry.json` was difficult to maintain due to escape characters and lack of comments.
-- **Solution**: Migrated the registry to **`command_registry.py`**.
-- **Impact**:
-  - Supports multi-line strings (native Python triple quotes).
-  - Allows human-readable comments explaining mission context.
-  - Faster loading and dynamic reloading via `importlib`.
-- **Location**: [`_internal/registry/command_registry.py`](file:///c:/coding/economics/_internal/registry/command_registry.py)
+### 3. Residual Risks & Next Steps
+- **Status**: ⚠️ Partial
+- **Evidence**:
+    - **Incomplete Test Coverage**: While test *failures* were resolved, some tests were skipped or deleted because they targeted deprecated logic (e.g., legacy AI tactics). This has created a known gap in test coverage for new `ActionVector`-based decision logic. (`communications/insights/cleanup-mod-household.md`)
+    - **Integration Test Complexity**: Integration tests for orchestrator agents (`Household`, `Firm`) remain complex and brittle. A unified `AgentTestBuilder` or `ScenarioFixture` is needed to ensure consistent and valid test setups. (`communications/insights/cleanup-mod-decisions.md:TD-TEST-INTEGRATION-SETUP`)
+    - **Silent Failures & Obscure Logic**: Some engine behaviors, like `BudgetEngine` returning an empty plan without logging a reason, make debugging difficult. Similarly, "hidden" default logic, like progressive tax brackets overriding explicit config values, complicates testing. (`communications/insights/cleanup-mod-decisions.md:TD-DECISIONS-BUDGET-OBSCURITY`, `communications/insights/mod-government.md:TD-TAX-CONFIG-CONFUSION`)
+    - **Pockets of Legacy Code**:
+        - The `simulation/systems/registry.py` module still contains legacy attribute access patterns and requires a full audit. (`communications/insights/mod-government.md:TD-REGISTRY-LEGACY`)
+        - Fallback logic to support deprecated agent attributes (`.assets`, `.wallet`) still exists in core components, delaying full protocol adherence. (`communications/insights/fix_protocol_mismatches.md`)
+        - The `DecisionUnit` class remains as an ambiguous legacy component alongside the modern `BudgetEngine`. (`communications/insights/cleanup-mod-household.md`)
 
-### 2. Phase 9.2: Interface Purity Finalization
-- **Audit Findings**: A final automated audit identified a lingering SSoT violation in `SettlementSystem.create_settlement()` where `agent.assets` was accessed directly.
-- **Fix**: Replaced direct access with the formal `IFinancialAgent.get_balance(DEFAULT_CURRENCY)` protocol.
-- **Result**: The "Financial SSoT Enforcement" track is now **100% compliant**.
-- **Location**: [`simulation/systems/settlement_system.py`](file:///c:/coding/economics/simulation/systems/settlement_system.py)
-
----
-
-## 🗒️ Technical Debt & Insights
-
-### [TD-274] Settlement System SSoT Violation (RESOLVED)
-The inheritance path was previously bypassing the financial protocol. This has been patched to ensure zero-sum integrity during agent removal.
-
-### [Insight] Python-based Registry Benefits
-Moving configuration to Python code (SCR) allows for a "Configuration as Code" approach, reducing the friction for spec writers and orchestrators.
-
----
-
-## ✅ Verification Status
-
-| Test Suite | Result | Note |
-|---|---|---|
-| `gemini-go registration` | ✅ PASS | Verified via `cmd_ops.py` set-gemini |
-| `purity audit mission` | ✅ PASS | Verified end-to-end mission execution |
-| `trace_leak.py` | ✅ PASS | Zero leak confirmed after SSoT fix |
-
----
-
-## 💡 Next Steps for Future Sessions
-1. **Deeper Crystallization**: Archive the temporary reports generated during this session's audit.
-2. **Phase 10 Extension**: Explore further decoupling of the `Market` system using the new Python-based instructions.
+## Conclusion
+The project has successfully navigated a major phase of technical debt repayment, resulting in a stable and reliable test environment. The codebase is now better aligned with its architectural goals of protocol purity and modularity. The next phase of work should focus on closing the identified test coverage gaps, simplifying integration test setup, and methodically eliminating the final pockets of legacy code.

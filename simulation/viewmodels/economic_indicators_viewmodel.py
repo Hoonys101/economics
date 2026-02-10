@@ -74,8 +74,9 @@ class EconomicIndicatorsViewModel:
                 household_needs[key] = 0.0
 
             for h in households:
-                for key, value in h._bio_state.needs.items():
-                    household_needs[key] += value
+                # Use public .needs accessor for better robustness/mocking
+                for key, value in h.needs.items():
+                    household_needs[key] = household_needs.get(key, 0.0) + value
 
             for key in household_needs:
                 household_needs[key] /= household_count
