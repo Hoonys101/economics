@@ -26,6 +26,9 @@ from simulation.components.engines.finance_engine import FinanceEngine
 from simulation.components.engines.production_engine import ProductionEngine
 from simulation.components.engines.sales_engine import SalesEngine
 from simulation.dtos.context_dtos import PayrollProcessingContext, FinancialTransactionContext, SalesContext
+from simulation.dtos.hr_dtos import HRPayrollContextDTO, TaxPolicyDTO
+from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingContextDTO
+from simulation.dtos.production_dtos import ProductionInputDTO
 
 from simulation.utils.shadow_logger import log_shadow
 from modules.finance.api import InsufficientFundsError, IFinancialEntity, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake
@@ -579,14 +582,9 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         self._inventory[item_id] = total_qty # Implementation
 
     def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
-        brand_snapshot = {
-            "brand_awareness": self.brand_manager.brand_awareness,
-            "perceived_quality": self.brand_manager.perceived_quality,
-            "quality": self.get_quality(item_id),
-        }
+        context = self._build_sales_post_ask_context(item_id, price, quantity, market.id, current_tick)
         return self.sales_engine.post_ask(
-            self.sales_state, self.id, item_id, price, quantity, market.id, current_tick, self.get_quantity(item_id),
-            brand_snapshot=brand_snapshot
+            self.sales_state, context
         )
 
     def calculate_brand_premium(self, market_data: Dict[str, Any]) -> float:
@@ -953,7 +951,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
         elif order.order_type == "FIRE":
             tx = self.hr_engine.create_fire_transaction(
-                self.hr_state, self.id, self.wallet, order.target_agent_id, order.price, current_time
+                self.hr_state, self.id, self.wallet.get_balance(DEFAULT_CURRENCY), order.target_agent_id, order.price, current_time
             )
             if tx:
                 employee = next((e for e in self.hr_state.employees if e.id == order.target_agent_id), None)
@@ -989,6 +987,58 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             details=f"Item={self.specialization}, D={demand:.1f}, S={supply:.1f}, Ratio={excess_demand_ratio:.2f}"
         )
 
+    def _build_payroll_context(self, current_time: int, government: Optional[Any], market_context: MarketContextDTO) -> HRPayrollContextDTO:
+        tax_policy = None
+        # Extract from market_context if available (FiscalContext)
+        fiscal_policy = market_context.get("fiscal_policy")
+        income_tax_rate = fiscal_policy.income_tax_rate if fiscal_policy else 0.0 # Default
+        survival_cost = 10.0 # Default
+
+        gov_id = government.id if government else -1 # Fallback ID
+
+        tax_policy = TaxPolicyDTO(
+            income_tax_rate=income_tax_rate,
+            survival_cost=survival_cost,
+            government_agent_id=gov_id
+        )
+
+        return HRPayrollContextDTO(
+            exchange_rates=market_context.get("exchange_rates", {DEFAULT_CURRENCY: 1.0}),
+            tax_policy=tax_policy,
+            current_time=current_time,
+            firm_id=self.id,
+            wallet_balances=self.wallet.get_all_balances(),
+            labor_market_min_wage=10.0, # Should come from config or market data
+            ticks_per_year=getattr(self.config, "ticks_per_year", 365),
+            severance_pay_weeks=getattr(self.config, "severance_pay_weeks", 2.0)
+        )
+
+    def _build_sales_marketing_context(self, current_time: int, government: Optional[Any]) -> SalesMarketingContextDTO:
+        gov_id = government.id if government else None
+        return SalesMarketingContextDTO(
+            firm_id=self.id,
+            wallet_balance=self.wallet.get_balance(DEFAULT_CURRENCY),
+            government_id=gov_id,
+            current_time=current_time
+        )
+
+    def _build_sales_post_ask_context(self, item_id: str, price: float, quantity: float, market_id: str, current_tick: int) -> SalesPostAskContextDTO:
+        brand_snapshot = {
+            "brand_awareness": self.brand_manager.brand_awareness,
+            "perceived_quality": self.brand_manager.perceived_quality,
+            "quality": self.get_quality(item_id),
+        }
+        return SalesPostAskContextDTO(
+            firm_id=self.id,
+            item_id=item_id,
+            price=price,
+            quantity=quantity,
+            market_id=market_id,
+            current_tick=current_tick,
+            inventory_quantity=self.get_quantity(item_id),
+            brand_snapshot=brand_snapshot
+        )
+
     def generate_transactions(self, government: Optional[Any], market_data: Dict[str, Any], shareholder_registry: IShareholderRegistry, current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
         transactions = []
         gov_id = government.id if government else None
@@ -1000,8 +1050,9 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         tax_rates = {"income_tax": corporate_tax_rate}
 
         # 1. Payroll
+        payroll_context = self._build_payroll_context(current_time, government, market_context)
         tx_payroll = self.hr_engine.process_payroll(
-            self.hr_state, self.id, self.wallet, self.config, current_time, government, market_data, market_context
+            self.hr_state, payroll_context, self.config
         )
         transactions.extend(tx_payroll)
 
@@ -1025,8 +1076,9 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         transactions.extend(tx_finance)
 
         # 3. Marketing
+        marketing_context = self._build_sales_marketing_context(current_time, government)
         tx_marketing = self.sales_engine.generate_marketing_transaction(
-            self.sales_state, self.id, self.wallet.get_balance(DEFAULT_CURRENCY), gov_id, current_time
+            self.sales_state, marketing_context
         )
         if tx_marketing:
             transactions.append(tx_marketing)

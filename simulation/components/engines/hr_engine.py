@@ -5,7 +5,6 @@ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
 from modules.hr.api import IEmployeeDataProvider
 from simulation.models import Transaction
 from simulation.components.state.firm_state_models import HRState
-from modules.finance.wallet.api import IWallet
 
 if TYPE_CHECKING:
     from simulation.dtos.config_dtos import FirmConfigDTO
@@ -129,7 +128,7 @@ class HREngine:
             else:
                 # Insolvent -> Fire
                 # This also needs handle-less refactoring, but for now we pass the balance
-                self._handle_insolvency_transactions(hr_state, firm_id, context, config, employee, wage, current_time, generated_transactions, current_balance)
+                self._handle_insolvency_transactions(hr_state, firm_id, config, employee, wage, current_time, generated_transactions, current_balance)
 
         return generated_transactions
 
@@ -154,7 +153,7 @@ class HREngine:
             extra={"tick": current_time, "agent_id": firm_id, "wage_deficit": wage - current_balance, "total_unpaid": len(hr_state.unpaid_wages[employee.id])}
         )
 
-    def _handle_insolvency_transactions(self, hr_state: HRState, firm_id: int, wallet: Any, config: FirmConfigDTO, employee: IEmployeeDataProvider, wage: float, current_time: int, tx_list: List[Transaction], current_balance: float):
+    def _handle_insolvency_transactions(self, hr_state: HRState, firm_id: int, config: FirmConfigDTO, employee: IEmployeeDataProvider, wage: float, current_time: int, tx_list: List[Transaction], current_balance: float):
         """
         Handles case where firm cannot afford wage.
         Attempts severance pay; if fails, zombie state.
@@ -199,7 +198,7 @@ class HREngine:
         if employee.id in hr_state.employee_wages:
             del hr_state.employee_wages[employee.id]
 
-    def create_fire_transaction(self, hr_state: HRState, firm_id: int, wallet: IWallet, employee_id: int, severance_pay: float, current_time: int) -> Optional[Transaction]:
+    def create_fire_transaction(self, hr_state: HRState, firm_id: int, wallet_balance: float, employee_id: int, severance_pay: float, current_time: int) -> Optional[Transaction]:
         """
         Creates a severance transaction to fire an employee.
         Does NOT execute transfer or remove employee.
@@ -208,9 +207,8 @@ class HREngine:
         if not employee:
             return None
 
-        # Check funds directly on wallet
-        bal = wallet.get_balance(DEFAULT_CURRENCY)
-        if bal < severance_pay:
+        # Check funds directly on wallet balance
+        if wallet_balance < severance_pay:
              logger.warning(f"INTERNAL_EXEC | Firm {firm_id} cannot afford severance to fire {employee_id}.")
              return None
 

@@ -4,6 +4,7 @@ import logging
 import math
 from simulation.models import Order, Transaction
 from simulation.components.state.firm_state_models import SalesState
+from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingContextDTO
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
@@ -20,33 +21,26 @@ class SalesEngine:
     def post_ask(
         self,
         state: SalesState,
-        firm_id: int,
-        item_id: str,
-        price: float,
-        quantity: float,
-        market_id: str,
-        current_tick: int,
-        inventory_quantity: float,
-        brand_snapshot: Optional[Dict[str, Any]] = None
+        context: SalesPostAskContextDTO
     ) -> Order:
         """
         Posts an ask order to the market.
         Validates quantity against inventory.
         """
         # Ensure we don't sell more than we have
-        actual_quantity = min(quantity, inventory_quantity)
+        actual_quantity = min(context.quantity, context.inventory_quantity)
 
         # Log pricing
-        state.last_prices[item_id] = price
+        state.last_prices[context.item_id] = context.price
 
         return Order(
-            agent_id=firm_id,
+            agent_id=context.firm_id,
             side="SELL",
-            item_id=item_id,
+            item_id=context.item_id,
             quantity=actual_quantity,
-            price_limit=price,
-            market_id=market_id,
-            brand_info=brand_snapshot,
+            price_limit=context.price,
+            market_id=context.market_id,
+            brand_info=context.brand_snapshot,
             currency=DEFAULT_CURRENCY
         )
 
@@ -68,25 +62,22 @@ class SalesEngine:
     def generate_marketing_transaction(
         self,
         state: SalesState,
-        firm_id: int,
-        wallet_balance: float, # Primary currency balance
-        government_id: Optional[str],
-        current_time: int
+        context: SalesMarketingContextDTO
     ) -> Optional[Transaction]:
         """
         Generates marketing spend transaction.
         """
         budget = state.marketing_budget
-        if budget > 0 and wallet_balance >= budget and government_id:
+        if budget > 0 and context.wallet_balance >= budget and context.government_id:
             return Transaction(
-                buyer_id=firm_id,
-                seller_id=government_id,
+                buyer_id=context.firm_id,
+                seller_id=context.government_id,
                 item_id="marketing",
                 quantity=1.0,
                 price=budget,
                 market_id="system",
                 transaction_type="marketing",
-                time=current_time,
+                time=context.current_time,
                 currency=DEFAULT_CURRENCY
             )
         return None
