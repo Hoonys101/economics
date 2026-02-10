@@ -189,7 +189,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
                      initial_prices[k] = v["initial_price"]
 
         return LiquidationConfigDTO(
-            haircut=self.config.fire_sale_discount if hasattr(self.config, "fire_sale_discount") else 0.2,
+            haircut=self.config.fire_sale_discount,
             initial_prices=initial_prices,
             default_price=10.0,
             market_prices=self.last_prices.copy()

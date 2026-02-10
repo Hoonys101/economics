@@ -8,6 +8,8 @@ from simulation.firms import Firm
 from simulation.core_agents import Household
 from simulation.dtos.api import SimulationState
 from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.api import LiquidationConfigDTO
+from modules.finance.api import EquityStake
 from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY
 from modules.system.registry import AgentRegistry
 from modules.hr.service import HRService
@@ -19,6 +21,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         self.mock_public_manager = MagicMock(spec=IAssetRecoverySystem)
         self.mock_public_manager.managed_inventory = {}
         self.mock_public_manager.id = 999
+        self.mock_shareholder_registry = MagicMock()
         self.mock_settlement.transfer.return_value = True # Default success
 
         # Use Real Services
@@ -31,6 +34,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
             self.hr_service,
             self.tax_service,
             self.agent_registry,
+            self.mock_shareholder_registry,
             self.mock_public_manager
         )
 
@@ -46,19 +50,49 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         self.firm = MagicMock(spec=Firm)
         self.firm.id = 1
         self.firm.config = self.config
-        self.firm.finance = MagicMock()
-        self.firm.finance.balance = {DEFAULT_CURRENCY: 0.0} # Start with 0 cash
-        self.firm.finance.current_profit = 0.0 # Fix 1
+        self.firm.finance_state = MagicMock()
+        self.firm.finance_state.balance = {DEFAULT_CURRENCY: 0.0}
+        self.firm.finance_state.current_profit = 0.0
+        # Alias for backward compatibility in test setup
+        self.firm.finance = self.firm.finance_state
 
         # Configure liquidate_assets to return current balance
         self.firm.liquidate_assets.side_effect = lambda tick: self.firm.finance.balance
 
+        # Mock Protocol Methods
+        self.firm.get_all_items.side_effect = lambda: self.firm.inventory
+        self.firm.get_liquidation_config.side_effect = lambda: LiquidationConfigDTO(
+            haircut=getattr(self.firm.config, "fire_sale_discount", 0.2),
+            initial_prices={},
+            default_price=10.0,
+            market_prices=self.firm.last_prices
+        )
+
+        def get_all_claims_side_effect(ctx):
+            claims = []
+            if ctx.hr_service:
+                claims.extend(ctx.hr_service.calculate_liquidation_employee_claims(self.firm, ctx.current_tick))
+            if ctx.tax_service:
+                claims.extend(ctx.tax_service.calculate_liquidation_tax_claims(self.firm))
+            if self.firm.total_debt > 0:
+                bank_id = "bank"
+                if self.firm.decision_engine and self.firm.decision_engine.loan_market and self.firm.decision_engine.loan_market.bank:
+                    bank_id = self.firm.decision_engine.loan_market.bank.id
+                claims.append(Claim(creditor_id=bank_id, amount=self.firm.total_debt, tier=2, description="Secured Loan"))
+            return claims
+
+        self.firm.get_all_claims.side_effect = get_all_claims_side_effect
+        self.firm.get_equity_stakes.return_value = []
+        self.firm.clear_inventory.side_effect = lambda: self.firm.inventory.clear()
+
         self.firm.inventory = {}
         self.firm.last_prices = {}
-        self.firm.hr = MagicMock()
-        self.firm.hr.employees = []
-        self.firm.hr.employee_wages = {}
-        self.firm.hr.unpaid_wages = {}
+        self.firm.hr_state = MagicMock()
+        self.firm.hr_state.employees = []
+        self.firm.hr_state.employee_wages = {}
+        self.firm.hr_state.unpaid_wages = {}
+        # Alias for backward compatibility in test setup
+        self.firm.hr = self.firm.hr_state
         self.firm.total_shares = 1000.0
         self.firm.treasury_shares = 0.0
         self.firm.total_debt = 0.0
@@ -184,6 +218,11 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         self.state.agents["bank"] = bank
         self.state.agents[201] = shareholder
 
+        # Override get_equity_stakes for this test
+        self.firm.get_equity_stakes.return_value = [
+             EquityStake(shareholder_id=201, ratio=0.5)
+        ]
+
         # Run
         self.manager.initiate_liquidation(self.firm, self.state)
 
@@ -266,7 +305,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
             self.mock_public_manager,
             self.firm,
             800.0,
-            "Asset Liquidation (Inventory) - Firm 1",
+            "Asset Liquidation (Inventory) - Agent 1",
             currency=DEFAULT_CURRENCY
         )
 
