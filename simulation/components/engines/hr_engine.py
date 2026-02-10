@@ -48,7 +48,7 @@ class HREngine:
         Returns list of Transactions.
         """
         generated_transactions: List[Transaction] = []
-        exchange_rates = market_context['exchange_rates']
+        exchange_rates = market_context.get('exchange_rates', {DEFAULT_CURRENCY: 1.0})
 
         # Calculate survival cost for tax logic
         survival_cost = 10.0 # Default fallback
@@ -197,24 +197,39 @@ class HREngine:
         if employee.id in hr_state.employee_wages:
             del hr_state.employee_wages[employee.id]
 
-    def fire_employee(self, hr_state: HRState, firm_id: int, agent: Any, wallet: IWallet, settlement_system: Any, employee_id: int, severance_pay: float) -> bool:
+    def create_fire_transaction(self, hr_state: HRState, firm_id: int, wallet: IWallet, employee_id: int, severance_pay: float, current_time: int) -> Optional[Transaction]:
         """
-        Fires an employee with severance pay.
-        Returns True if successful.
+        Creates a severance transaction to fire an employee.
+        Does NOT execute transfer or remove employee.
+        """
+        employee = next((e for e in hr_state.employees if e.id == employee_id), None)
+        if not employee:
+            return None
+
+        # Check funds directly on wallet
+        bal = wallet.get_balance(DEFAULT_CURRENCY)
+        if bal < severance_pay:
+             logger.warning(f"INTERNAL_EXEC | Firm {firm_id} cannot afford severance to fire {employee_id}.")
+             return None
+
+        return Transaction(
+            buyer_id=firm_id,
+            seller_id=employee.id,
+            item_id="Severance",
+            quantity=1.0,
+            price=severance_pay,
+            market_id="system", # or labor?
+            transaction_type="severance",
+            time=current_time,
+            currency=DEFAULT_CURRENCY
+        )
+
+    def finalize_firing(self, hr_state: HRState, employee_id: int):
+        """
+        Removes employee from state and triggers quit().
+        Should be called after successful severance payment.
         """
         employee = next((e for e in hr_state.employees if e.id == employee_id), None)
         if employee:
-            # Check funds directly on wallet
-            bal = wallet.get_balance(DEFAULT_CURRENCY)
-
-            if bal >= severance_pay and settlement_system:
-                if settlement_system.transfer(agent, employee, severance_pay, "Severance", currency=DEFAULT_CURRENCY):
-                    employee.quit()
-                    self.remove_employee(hr_state, employee)
-                    logger.info(f"INTERNAL_EXEC | Firm {firm_id} fired employee {employee_id}.")
-                    return True
-                else:
-                    logger.warning(f"INTERNAL_EXEC | Firm {firm_id} failed to fire {employee_id} (transfer failed).")
-            else:
-                logger.warning(f"INTERNAL_EXEC | Firm {firm_id} failed to fire {employee_id} (insufficient funds).")
-        return False
+             employee.quit()
+             self.remove_employee(hr_state, employee)

@@ -25,7 +25,7 @@ class FinancialTransactionHandler(ITransactionHandler):
              success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
 
              if success and isinstance(buyer, Firm):
-                 buyer.finance.record_expense(trade_value)
+                 buyer.record_expense(trade_value, tx.currency)
 
         elif tx_type == "dividend":
              success = context.settlement_system.transfer(seller, buyer, trade_value, "dividend_payment")
@@ -55,7 +55,7 @@ class FinancialTransactionHandler(ITransactionHandler):
                      })
 
                  # WO-116 Fix: Ensure Firms record tax as expense for accounting integrity
-                 if isinstance(buyer, Firm) and hasattr(buyer, 'finance'):
-                     buyer.finance.record_expense(trade_value)
+                 if isinstance(buyer, Firm):
+                     buyer.record_expense(trade_value, tx.currency)
 
         return success is not None

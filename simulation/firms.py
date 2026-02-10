@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import deque
-from typing import List, Dict, Any, Optional, override, TYPE_CHECKING
+from typing import List, Dict, Any, Optional, override, TYPE_CHECKING, Tuple
 import logging
 import copy
 import math
@@ -41,17 +41,17 @@ class RealEstateUtilizationComponent:
     TD-271: Converts firm-owned real estate into a production bonus.
     Applies production cost reduction based on owned space and market conditions.
     """
-    def apply(self, firm: "Firm", current_tick: int, market_data: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    def apply(self, owned_properties: List[int], config: FirmConfigDTO, firm_id: int, current_tick: int, market_data: Optional[Dict[str, Any]] = None) -> Tuple[Optional[Dict[str, Any]], float]:
         # 1. Calculate Owned Space
         # Assuming 1 property = 1 unit of space for now (or configurable)
-        owned_space = len(firm.owned_properties)
+        owned_space = len(owned_properties)
         if owned_space <= 0:
-            return None
+            return None, 0.0
 
         # 2. Get Factors
         # space_utility_factor: How much cost reduction per unit of space?
         # Ideally from config. Assuming default 100.0 if not in config.
-        space_utility_factor = getattr(firm.config, "space_utility_factor", 100.0)
+        space_utility_factor = getattr(config, "space_utility_factor", 100.0)
 
         # regional_rent_index: From market data or default 1.0
         regional_rent_index = 1.0
@@ -64,12 +64,9 @@ class RealEstateUtilizationComponent:
         # 4. Apply Bonus
         # Effectively reduces net cost by increasing revenue/profit internally
         if cost_reduction > 0:
-             # We assume this is a virtual saving.
-             firm.record_revenue(cost_reduction, DEFAULT_CURRENCY)
-
-             return {
+             effect = {
                  "type": "PRODUCTION_COST_REDUCTION",
-                 "agent_id": firm.id,
+                 "agent_id": firm_id,
                  "amount": cost_reduction,
                  "tick": current_tick,
                  "details": {
@@ -77,7 +74,8 @@ class RealEstateUtilizationComponent:
                      "utility_factor": space_utility_factor
                  }
              }
-        return None
+             return effect, cost_reduction
+        return None, 0.0
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -226,15 +224,6 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
     @property
     def wallet(self) -> Wallet:
         return self._wallet
-
-    # --- Legacy/Compatibility ---
-    @property
-    def finance(self) -> "Firm":
-        """
-        Legacy proxy for backward compatibility.
-        Routes `firm.finance.record_expense()` to `firm.record_expense()`.
-        """
-        return self
 
     # --- ICreditFrozen Implementation ---
 
@@ -590,7 +579,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             "quality": self.get_quality(item_id),
         }
         return self.sales_engine.post_ask(
-            self.sales_state, self.id, item_id, price, quantity, market, current_tick, self.get_quantity(item_id),
+            self.sales_state, self.id, item_id, price, quantity, market.id, current_tick, self.get_quantity(item_id),
             brand_snapshot=brand_snapshot
         )
 
@@ -615,6 +604,10 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         self.sales_engine.adjust_marketing_budget(self.sales_state, market_context, total_revenue)
 
     def produce(self, current_time: int, technology_manager: Optional[Any] = None, effects_queue: Optional[List[Dict[str, Any]]] = None) -> None:
+        productivity_multiplier = 1.0
+        if technology_manager:
+            productivity_multiplier = technology_manager.get_productivity_multiplier(self.id)
+
         self.current_production = self.production_engine.produce(
             self.production_state,
             self, # IInventoryHandler
@@ -622,11 +615,19 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             self.config,
             current_time,
             self.id,
-            technology_manager
+            productivity_multiplier
         )
 
         # TD-271: Real Estate Utilization
-        effect = self.real_estate_utilization_component.apply(self, current_time)
+        effect, amount = self.real_estate_utilization_component.apply(
+            self.finance_state.owned_properties,
+            self.config,
+            self.id,
+            current_time
+        )
+        if amount > 0:
+            self.record_revenue(amount, DEFAULT_CURRENCY)
+
         if effect and effects_queue is not None:
             effects_queue.append(effect)
 
@@ -861,9 +862,16 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             pass
 
         elif order.order_type == "FIRE":
-            self.hr_engine.fire_employee(
-                self.hr_state, self.id, self, self.wallet, self.settlement_system, order.target_agent_id, order.price
+            tx = self.hr_engine.create_fire_transaction(
+                self.hr_state, self.id, self.wallet, order.target_agent_id, order.price, current_time
             )
+            if tx:
+                employee = next((e for e in self.hr_state.employees if e.id == order.target_agent_id), None)
+                if employee and self.settlement_system and self.settlement_system.transfer(self, employee, tx.price, "Severance", currency=tx.currency):
+                    self.hr_engine.finalize_firing(self.hr_state, order.target_agent_id)
+                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} fired employee {order.target_agent_id}.")
+                else:
+                    self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed to fire {order.target_agent_id} (transfer failed).")
 
     def _calculate_invisible_hand_price(self, market_snapshot: MarketSnapshotDTO, current_tick: int) -> None:
         if not market_snapshot.market_signals: return
@@ -928,7 +936,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
         # 3. Marketing
         tx_marketing = self.sales_engine.generate_marketing_transaction(
-            self.sales_state, self.id, self.wallet.get_balance(DEFAULT_CURRENCY), government, current_time
+            self.sales_state, self.id, self.wallet.get_balance(DEFAULT_CURRENCY), gov_id, current_time
         )
         if tx_marketing:
             transactions.append(tx_marketing)

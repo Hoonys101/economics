@@ -83,7 +83,7 @@ class PublicManagerTransactionHandler(ITransactionHandler):
              # AccountingSystem: "if isinstance(buyer, Firm): ... buyer.finance.record_expense(amount)"
              # for labor/interest. Not strictly for goods in AccountingSystem, but TP fixed it.
              # We should record expense if it's a purchase.
-             buyer.finance.record_expense(trade_value)
+             buyer.record_expense(trade_value, tx.currency)
 
         return True
 
