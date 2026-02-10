@@ -9,6 +9,7 @@ class TestCircuitBreakerRelaxation:
         config_mock = MagicMock()
         config_mock.CIRCUIT_BREAKER_MIN_HISTORY = 5
         config_mock.MARKET_CIRCUIT_BREAKER_BASE_LIMIT = 0.15
+        config_mock.PRICE_VOLATILITY_WINDOW_TICKS = 20
 
         market = OrderBookMarket(market_id="test_market", config_module=config_mock, logger=MagicMock())
         return market

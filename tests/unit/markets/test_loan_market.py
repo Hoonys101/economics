@@ -80,7 +80,7 @@ class TestLoanMarket:
         # Verify call with new signature
         # borrower_id is converted to str
         mock_bank.grant_loan.assert_called_once_with(
-            borrower_id="1",
+            borrower_id=1,
             amount=100,
             interest_rate=0.05,
             due_tick=51, # current_tick 1 + 50
@@ -115,7 +115,7 @@ class TestLoanMarket:
         loan_market_instance.place_order(order, 1)
 
         mock_bank.grant_loan.assert_called_once_with(
-            borrower_id="1",
+            borrower_id=1,
             amount=100,
             interest_rate=0.05,
             due_tick=51,

@@ -4,6 +4,8 @@ from modules.market.handlers.housing_transaction_handler import HousingTransacti
 from simulation.models import Transaction
 from modules.system.escrow_agent import EscrowAgent
 from simulation.core_agents import Household
+from modules.market.api import IHousingTransactionParticipant
+from modules.common.interfaces import IPropertyOwner
 from modules.system.api import DEFAULT_CURRENCY
 
 @pytest.fixture
@@ -33,12 +35,31 @@ def context():
 
 @pytest.fixture
 def buyer():
-    b = MagicMock(spec=Household)
+    # Use IHousingTransactionParticipant as spec to ensure protocol compliance checks pass
+    b = MagicMock(spec=IHousingTransactionParticipant)
     b.id = 1
 
     # Mock assets property to behave like a dict
     b.assets = {DEFAULT_CURRENCY: 100000.0}
+    b.get_balance.return_value = 100000.0  # Mock IFinancialAgent.get_balance
     b.current_wage = 100.0 # Required for IMortgageBorrower protocol
+
+    # Protocol Compliance for IHousingTransactionParticipant
+    b.owned_properties = []
+    b.add_property = MagicMock()
+    b.remove_property = MagicMock()
+    b.get_all_balances = MagicMock(return_value={DEFAULT_CURRENCY: 100000.0})
+    b.total_wealth = 100000.0
+    b.deposit = MagicMock()
+    b.withdraw = MagicMock()
+    b.get_assets_by_currency = MagicMock(return_value={DEFAULT_CURRENCY: 100000.0})
+    b.add_item = MagicMock()
+    b.remove_item = MagicMock()
+    b.get_quantity = MagicMock()
+    b.get_quality = MagicMock()
+    b.get_all_items = MagicMock()
+    b.clear_inventory = MagicMock()
+    b.get_agent_data = MagicMock()
 
     # Also mock _econ_state for legacy checks if any (though handler checks buyer.assets now)
     b._econ_state = MagicMock()
@@ -52,9 +73,12 @@ def buyer():
 
 @pytest.fixture
 def seller():
-    s = MagicMock()
+    # Use IPropertyOwner as spec to ensure protocol compliance checks pass
+    s = MagicMock(spec=IPropertyOwner)
     s.id = 2
     s.owned_properties = [101]
+    s.remove_property = MagicMock()
+    s.add_property = MagicMock()
     return s
 
 @pytest.fixture
@@ -130,6 +154,7 @@ def test_housing_transaction_insufficient_down_payment(handler, context, buyer, 
     context.real_estate_units = [unit]
     context.agents = {99: escrow_agent}
     buyer.assets = {DEFAULT_CURRENCY: 10.0} # Insufficient
+    buyer.get_balance.return_value = 10.0
 
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
