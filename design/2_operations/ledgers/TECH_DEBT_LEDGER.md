@@ -2,100 +2,20 @@
 
 ## 🔴 Active Technical Debt
 
-
-### [Domain: Agents & Orchestration]
-
-#### [TD-FIRM-GOD-OBJECT] [Open] The `Firm` class is a "God Object" with legacy proxy properties.
-- **Description**: The `Firm` class combines multiple concerns (finance, production, etc.) and uses legacy patterns like the `finance` property returning `self` for backward compatibility. This creates fragile, non-obvious dependencies in orchestration code and increases the risk of state management errors.
-- **Impact**: High. Obscures true component structure, complicates maintenance, and violates Separation of Concerns.
-- **Source**: [Insight Report](../_archive/insights/2026-02-10_Tick_Level_State_Reset_Integrity.md)
-
----
-### [Domain: Systems & Infrastructure]
-
----
-
-### TD-274: Settlement System SSoT Violation (Inheritance Path)
-
-- **Phenomenon**: `SettlementSystem.create_settlement()` was directly accessing `agent.assets` instead of using the `IFinancialAgent.get_balance()` protocol.
-- **Risk**: Creates a bypass of the financial monitoring layers and potential for monetary leaks during agent removal (inheritance/liquidation).
-- **Resolution**: Replaced direct attribute access with the formal `get_balance(DEFAULT_CURRENCY)` protocol method.
-- **Reference**: `Interface Purity Compliance Report` (2026-02-09)
-
----
-
-
-### TD-255: Cockpit's Direct State Injection
-
-- **Phenomenon**: Control functions from `mission_active_cockpit` (`SET_BASE_RATE`, `SET_TAX_RATE`) directly modify the WorldState.
-- **Risk**: Bypasses the event pipeline, potentially causing state inconsistencies as other agents or systems do not react to the change. Conflicts with automated logic (e.g., fiscal stabilizers) can occur.
-- **Resolution**: Refactor commands into traceable "Manual Intervention" events processed through the standard Action Processor.
-- **Related Mission**: `mission_active_cockpit`
-- **Reference**: `2026-02-09_Cockpit_Direct_State_Intervention.md`
-
----
-
-### [Pattern] DTO Contract Instability
-
-- **Phenomenon**: A consumer system (`AnalyticsSystem`) crashed due to an `AttributeError` after a field was renamed in a DTO (`EconStateDTO`).
-- **Cause**: The change in the DTO, which acts as a data contract, was not propagated to all its consumers.
-- **Lesson**: DTOs are a critical API boundary. Any changes must be treated as a breaking change, requiring a full audit of all dependencies. Automated integration or smoke tests are essential for detecting such regressions early.
-- **Reference**: `2026-02-09_DTO_Contract_Stability.md`
-
----
-
-### TD-LIQ-INV: Protocol Purity Violation via `getattr`
-
-- **Phenomenon**: A handler (`InventoryLiquidationHandler`) used `getattr` and `hasattr` to access internal agent attributes (`config`, `last_prices`), creating a tight coupling to a concrete class (`Firm`).
-- **Risk**: Hinders extensibility and makes refactoring fragile. Violates architectural principles of depending on abstractions, not concretions.
-- **Resolution**:
-  1. Define a `LiquidationConfigDTO` for data transfer.
-  2. Define an `IConfigurable` protocol with a `get_liquidation_config()` method.
-  3. Implement the protocol on `Firm` to adapt its internal state into the DTO.
-  4. The handler now checks for the protocol (`isinstance`) and operates on the DTO.
-- **Lesson**:
-  - **Protocols over Concretions**: Logic must depend on abstract protocols, not concrete classes.
-  - **Test with `spec`**: `unittest.mock.MagicMock` must use the `spec` argument to enforce interface compliance in tests.
-- **Reference**: `2026-02-09_Protocol_Purity_and_Mock_Specs.md`
-
----
-
-### [Pattern] Legacy DTO Migration via Adapter
-
-- **Phenomenon**: Multiple, incompatible versions of a DTO exist in the system (e.g., `StockOrder` vs `CanonicalOrderDTO`), causing type errors and increasing maintenance costs.
-- **Cause**: Incomplete or phased refactoring leaves legacy DTOs in the codebase.
-- **Solution**:
-  1. Define a single, canonical DTO as the system standard.
-  2. Implement an **Adapter function** to convert legacy DTOs or dictionaries into the canonical format. Use duck-typing sparingly to avoid circular imports if necessary.
-  3. Enforce that core modules only accept the canonical DTO in their interfaces.
-  4. Trace and refactor all legacy call sites to use the adapter.
-- **Lesson**: The Adapter pattern is an effective, non-disruptive method for incrementally resolving technical debt. Logging within the adapter helps track legacy usage to plan for final removal.
-- **Reference**: `2026-02-09_Adapter_Pattern_for_Legacy_DTOs.md`
-
----
-
-### TD-272: Inconsistent Use of System Constants
-
-- **Phenomenon**: The codebase, particularly the test suite, uses a mix of hardcoded literals (e.g., `'USD'`) and system-defined constants (e.g., `DEFAULT_CURRENCY`).
-- **Risk**: Makes the system brittle. A future change to the default currency would require a manual, error-prone search-and-replace.
-- **Resolution**: Mandate the use of system constants and add a linting rule to detect hardcoded literals where a constant is available.
-- **Reference**: `../_archive/insights/2026-02-09_Review_Integrity_Shield_Fix.md`
-
----
-
-### TD-273: Stringly-Typed Agent Identifiers
-
-- **Phenomenon**: System processes (e.g., welfare transfers) use a mix of object instances, integer IDs, and special string literals (e.g., `"GOVERNMENT"`) to identify agents.
-- **Risk**: Creates fragile logic that must explicitly check for and handle different identifier types, leading to potential errors if a type is missed.
-- **Resolution**: Implement a unified Agent ID type or class that can encapsulate both regular and singleton agents.
-- **Reference**: `../_archive/insights/2026-02-09_System_API_Contract_Preservation.md`
-
----
+| ID | Domain | Description | Impact / Risk | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **TD-INT-CONST** | System | Inconsistent use of System Constants (e.g., hardcoded 'USD'). | **Low**: Logic brittleness (TD-272). | Open |
+| **TD-LIQ-INV** | Liquidation | Protocol Purity violation via `getattr` in handlers. | **Med**: Tight coupling to concrete classes. | Open |
+| **TD-DTO-STAB** | Data/DTO | DTO contract instability causing consumer crashes. | **High**: Runtime reliability risk. | Open |
+| **TD-DTO-LEGACY** | Data/DTO | Multiple incompatible DTO versions needing Adapter pattern. | **Med**: Maintenance overhead. | Open |
 
 ## ✅ Resolved Technical Debt
 
 | ID | Module / Component | Description | Resolution Session | Insight Report |
 | :--- | :--- | :--- | :--- | :--- |
+| **TD-FIRM-GOD-OBJECT** | Agents | **Refactor**: Decomposed Firm into Orchestrator-Engine pattern & removed legacy proxies. | Clean Room Era | [Insight](../_archive/insights/FIRM-RESET-FIX.md) |
+| **TD-255-COCKPIT** | System | **Pipeline**: Replaced direct state injection with Async Event Pipeline. | Clean Room Era | [Spec](../../design/3_work_artifacts/specs/spec_cockpit_events.md) |
+| **TD-273** | System | **Type Safety**: Unified Agent ID system (Object/Int/Str -> AgentID). | Clean Room Era | [Spec](../../design/3_work_artifacts/specs/audit_agent_ids.md) |
 | **TD-255** | Tests / Simulation | Mock Fragility - Internal patching 제거 | PH10.1 | [Insight](file:///c:/coding/economics/communications/insights/TD-255_TD-256_TD-257_Stabilization.md) |
 | **TD-256** | Lifecycle Manager | `FinanceState` 내 dynamic hasattr 체크 제거 | PH10.1 | [Insight](file:///c:/coding/economics/communications/insights/TD-255_TD-256_TD-257_Stabilization.md) |
 | **TD-257** | Finance Engine | 하드코딩된 unit cost(5.0) 설정값으로 이관 | PH10.1 | [Insight](file:///c:/coding/economics/communications/insights/TD-255_TD-256_TD-257_Stabilization.md) |
