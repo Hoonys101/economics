@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import pytest
+import logging
 from tests.utils.factories import create_firm_config_dto, create_household_config_dto
 from unittest.mock import Mock
 
@@ -24,6 +25,7 @@ from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.ai.enums import Tactic
 from simulation.dtos.api import DecisionInputDTO
+from modules.simulation.api import AgentCoreConfigDTO
 from modules.system.api import (
     MarketSnapshotDTO, HousingMarketSnapshotDTO, LoanMarketSnapshotDTO,
     LaborMarketSnapshotDTO, MarketSignalDTO
@@ -68,9 +70,27 @@ def create_mock_snapshot(market_data):
     loan_snapshot = LoanMarketSnapshotDTO(interest_rate=0.05)
     labor_snapshot = LaborMarketSnapshotDTO(avg_wage=0.0)
 
+    market_signals = {}
+    if "goods_market" in market_data:
+        for key, value in market_data["goods_market"].items():
+            if "_current_sell_price" in key:
+                item_id = key.replace("_current_sell_price", "")
+                market_signals[item_id] = MarketSignalDTO(
+                     market_id="goods_market",
+                     item_id=item_id,
+                     best_bid={"amount": value * 0.9, "currency": "USD"},
+                     best_ask={"amount": value, "currency": "USD"},
+                     last_traded_price={"amount": value, "currency": "USD"},
+                     last_trade_tick=market_data.get("time", 0),
+                     price_history_7d=[],
+                     volatility_7d=0.0,
+                     order_book_depth_buy=0,
+                     order_book_depth_sell=0
+                )
+
     return MarketSnapshotDTO(
         tick=market_data.get("time", 0),
-        market_signals={},
+        market_signals=market_signals,
         housing=housing_snapshot,
         loan=loan_snapshot,
         labor=labor_snapshot,
@@ -91,17 +111,26 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
 
     hh_config = create_config_dto(config, HouseholdConfigDTO)
     talent = Talent(base_learning_rate=0.1, max_potential={"strength": 100})
-    household = Household(
+
+    core_config = AgentCoreConfigDTO(
         id=2,
+        value_orientation=value_orientation,
+        initial_needs={"survival": 90.0, "social": 20.0, "improvement": 10.0, "asset": 10.0},
+        name="Household_2",
+        logger=logging.getLogger("test_household"),
+        memory_interface=None
+    )
+
+    household = Household(
+        core_config=core_config,
+        engine=household_decision_engine,
         talent=talent,
         goods_data=goods_data,
-        initial_assets=100.0,
-        initial_needs={"survival": 80.0, "social": 20.0, "improvement": 10.0, "asset": 10.0},
-        value_orientation=value_orientation,
-        decision_engine=household_decision_engine,
         personality=Personality.MISER,
         config_dto=hh_config,
+        initial_assets_record=100.0,
     )
+    household.deposit(100.0, "USD")
 
     market_data = {
         "time": 1,
@@ -152,17 +181,26 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
 
     hh_config = create_config_dto(config, HouseholdConfigDTO)
     talent = Talent(base_learning_rate=0.1, max_potential={"strength": 100})
-    household = Household(
+
+    core_config = AgentCoreConfigDTO(
         id=3,
+        value_orientation=value_orientation,
+        initial_needs={"survival": 10.0, "social": 80.0, "improvement": 10.0, "asset": 10.0},
+        name="Household_3",
+        logger=logging.getLogger("test_household"),
+        memory_interface=None
+    )
+
+    household = Household(
+        core_config=core_config,
+        engine=household_decision_engine,
         talent=talent,
         goods_data=goods_data,
-        initial_assets=1000.0,
-        initial_needs={"survival": 10.0, "social": 80.0, "improvement": 10.0, "asset": 10.0},
-        value_orientation=value_orientation,
-        decision_engine=household_decision_engine,
         personality=Personality.STATUS_SEEKER,
         config_dto=hh_config,
+        initial_assets_record=1000.0,
     )
+    household.deposit(1000.0, "USD")
 
     market_data = {
         "time": 1,

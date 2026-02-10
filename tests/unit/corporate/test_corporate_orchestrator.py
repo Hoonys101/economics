@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
+from dataclasses import replace
 from simulation.decisions.corporate_manager import CorporateManager
 from simulation.schemas import FirmActionVector
 
@@ -21,20 +22,17 @@ def test_orchestration(firm_dto, context_mock):
     manager.system2_planner.project_future.return_value = {}
 
     # Setup state for HR and Sales to produce orders
-    firm_dto.production.production_target = 100
-    firm_dto.production.inventory["food"] = 80 # HR will try to hire
-    firm_dto.hr.employees = []
+    # Use replace for frozen DTO
+    new_prod = replace(firm_dto.production,
+        production_target=200.0,
+        inventory={"food": 100.0}
+    )
+    new_hr = replace(firm_dto.hr, employees=[])
 
-    firm_dto.production.inventory["food"] = 100 # Sales will try to sell (wait, this conflicts with HR need?)
-    # If inventory is high, HR might fire.
-    # HR logic: target=100, inventory=100 -> gap 0. No hiring.
-    # So let's make target 200, inventory 100.
-    firm_dto.production.production_target = 200
-    firm_dto.production.inventory["food"] = 100
-    # Sales: inventory > 0, so it will sell.
+    new_fin = replace(firm_dto.finance, balance=10000.0, revenue_this_turn=1000.0)
 
-    firm_dto.finance.balance = 10000.0
-    firm_dto.finance.revenue_this_turn = 1000.0
+    firm_dto = replace(firm_dto, production=new_prod, hr=new_hr, finance=new_fin)
+    context_mock.state = firm_dto
 
     orders = manager.realize_ceo_actions(firm_dto, context_mock, vector)
 

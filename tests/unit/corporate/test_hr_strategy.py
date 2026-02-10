@@ -1,14 +1,22 @@
 import pytest
+from dataclasses import replace
 from simulation.decisions.firm.hr_strategy import HRStrategy
 
 def test_hiring_logic(firm_dto, context_mock):
     manager = HRStrategy()
-    firm_dto.production.production_target = 100
-    firm_dto.production.inventory["food"] = 80 # Gap 20
-    firm_dto.production.productivity_factor = 10.0 # Need 2 workers (approx)
 
-    # Adjust mock to return empty list of employees so we hire
-    firm_dto.hr.employees = []
+    # Update nested DTOs using replace
+    new_prod = replace(firm_dto.production,
+        production_target=100.0,
+        inventory={"food": 80.0},
+        productivity_factor=10.0
+    )
+    new_hr = replace(firm_dto.hr, employees=[])
+
+    firm_dto = replace(firm_dto, production=new_prod, hr=new_hr)
+
+    # Update context with the new DTO
+    context_mock.state = firm_dto
 
     plan = manager.formulate_plan(context_mock, hiring_aggressiveness=0.5)
 

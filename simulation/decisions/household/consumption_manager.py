@@ -28,6 +28,9 @@ class ConsumptionManager:
         if not isinstance(emergency_threshold, (int, float)):
             emergency_threshold = 0.8
 
+        if logger:
+            logger.info(f"SURVIVAL_CHECK | Need: {survival_need}, Threshold: {emergency_threshold}, Food: {getattr(config, 'primary_survival_good_id', 'food')}")
+
         if survival_need > emergency_threshold:
             food_id = getattr(config, 'primary_survival_good_id', 'food')
             if not isinstance(food_id, str):
@@ -36,7 +39,11 @@ class ConsumptionManager:
             ask_price = None
             if market_snapshot:
                 # Handle both dict (legacy) and DTO (new) for market_signals
-                signals = getattr(market_snapshot, "market_signals", None)
+                if isinstance(market_snapshot, dict):
+                    signals = market_snapshot.get("market_signals")
+                else:
+                    signals = getattr(market_snapshot, "market_signals", None)
+
                 if isinstance(signals, dict):
                     # Try to get signal for the specific item from dict
                     signal = signals.get(food_id)
@@ -53,6 +60,12 @@ class ConsumptionManager:
 
             # If ask_price was found and is valid
             if ask_price is not None:
+                # Handle MoneyDTO (dict or object)
+                if isinstance(ask_price, dict) and "amount" in ask_price:
+                    ask_price = ask_price["amount"]
+                elif hasattr(ask_price, "amount"):
+                    ask_price = ask_price.amount
+
                 # Affordability Check
                 household_assets = household.assets
                 if isinstance(household_assets, dict):
