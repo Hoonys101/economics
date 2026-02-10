@@ -8,7 +8,6 @@ from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
     from simulation.dtos.config_dtos import FirmConfigDTO
-    from simulation.markets.order_book_market import OrderBookMarket
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ class SalesEngine:
         item_id: str,
         price: float,
         quantity: float,
-        market: OrderBookMarket,
+        market_id: str,
         current_tick: int,
         inventory_quantity: float,
         brand_snapshot: Optional[Dict[str, Any]] = None
@@ -46,7 +45,7 @@ class SalesEngine:
             item_id=item_id,
             quantity=actual_quantity,
             price_limit=price,
-            market_id=market.id,
+            market_id=market_id,
             brand_info=brand_snapshot,
             currency=DEFAULT_CURRENCY
         )
@@ -71,17 +70,17 @@ class SalesEngine:
         state: SalesState,
         firm_id: int,
         wallet_balance: float, # Primary currency balance
-        government: Any,
+        government_id: Optional[str],
         current_time: int
     ) -> Optional[Transaction]:
         """
         Generates marketing spend transaction.
         """
         budget = state.marketing_budget
-        if budget > 0 and wallet_balance >= budget:
+        if budget > 0 and wallet_balance >= budget and government_id:
             return Transaction(
                 buyer_id=firm_id,
-                seller_id=government.id,
+                seller_id=government_id,
                 item_id="marketing",
                 quantity=1.0,
                 price=budget,

@@ -133,13 +133,10 @@ class Phase5_PostSequence(IPhaseStrategy):
             if hasattr(f, 'reset'):
                 # WO-4.6: New reset interface
                 f.reset()
-            elif hasattr(f, 'finance') and hasattr(f.finance, 'finalize_tick'):
-                # Legacy: Correctly handles multi-currency reset and capitalization
-                f.finance.finalize_tick(market_context)
             else:
                 logger.warning(
-                    f"FIRM_RESET_SKIPPED | Firm {f.id} skipped finance reset.",
-                    extra={"firm_id": f.id, "has_finance": hasattr(f, 'finance')}
+                    f"FIRM_RESET_SKIPPED | Firm {f.id} missing reset method.",
+                    extra={"firm_id": f.id}
                 )
 
         if self.world_state.generational_wealth_audit and state.time % 100 == 0:

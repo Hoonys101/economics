@@ -27,9 +27,9 @@ class AccountingSystem(IAccountingSystem):
         if isinstance(seller, Firm):
             # Goods, Service, or any sales revenue
             if tx_type in ["goods", "service", "export"]: # Generic sales
-                seller.finance.record_revenue(amount)
+                seller.record_revenue(amount, transaction.currency)
                 if tx_type == "goods":
-                     seller.finance.sales_volume_this_tick += transaction.quantity
+                     seller.finance_state.sales_volume_this_tick += transaction.quantity
 
         elif isinstance(seller, Household):
             if tx_type in ["labor", "research_labor"]:
@@ -44,9 +44,9 @@ class AccountingSystem(IAccountingSystem):
         # 2. Buyer Expenses
         if isinstance(buyer, Firm):
             if tx_type in ["labor", "research_labor"]:
-                buyer.finance.record_expense(amount)
+                buyer.record_expense(amount, transaction.currency)
             elif tx_type == "interest_payment":
-                 buyer.finance.record_expense(amount)
+                 buyer.record_expense(amount, transaction.currency)
             # What about goods (raw materials)?
             # TransactionProcessor didn't explicitly record expense for raw materials in _handle_goods_transaction
             # It only updated inventory.

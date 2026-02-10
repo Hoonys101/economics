@@ -25,7 +25,7 @@ class ProductionEngine:
         config: FirmConfigDTO,
         current_time: int,
         firm_id: int,
-        technology_manager: Optional[Any] = None
+        productivity_multiplier: float = 1.0
     ) -> float:
         """
         Executes production logic.
@@ -62,8 +62,7 @@ class ProductionEngine:
 
             # Technology Multiplier
             tfp = state.productivity_factor
-            if technology_manager:
-                tfp *= technology_manager.get_productivity_multiplier(firm_id)
+            tfp *= productivity_multiplier
 
             # Quality Calculation
             avg_skill = total_labor_skill / len(hr_state.employees) if hr_state.employees else 0.0
