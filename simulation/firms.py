@@ -12,7 +12,8 @@ from simulation.markets.order_book_market import OrderBookMarket
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext, FiscalContext, DecisionInputDTO
 from simulation.dtos.config_dtos import FirmConfigDTO
-from simulation.dtos.firm_state_dto import FirmStateDTO
+from simulation.dtos.firm_state_dto import FirmStateDTO, IFirmStateProvider
+from simulation.dtos.department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from simulation.ai.enums import Personality
 from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO, ICurrencyHolder
 from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, IConfigurable, LiquidationConfigDTO
@@ -88,7 +89,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner):
+class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner, IFirmStateProvider):
     """
     Firm Agent (Orchestrator).
     Manages state and delegates logic to stateless engines.
@@ -691,7 +692,76 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         }
 
     def get_state_dto(self) -> FirmStateDTO:
-        return FirmStateDTO.from_firm(self)
+        # Implementation moved from FirmStateDTO.from_firm to here for Protocol Purity
+
+        # 1. HR State
+        employee_ids = [e.id for e in self.hr_state.employees]
+        employees_data = {}
+        for e in self.hr_state.employees:
+            employees_data[e.id] = {
+                "id": e.id,
+                "wage": self.hr_state.employee_wages.get(e.id, 0.0),
+                "skill": getattr(e, 'labor_skill', 1.0),
+                "age": getattr(e, 'age', 0),
+                "education_level": getattr(e, 'education_level', 0)
+            }
+
+        hr_dto = HRStateDTO(
+            employees=employee_ids,
+            employees_data=employees_data
+        )
+
+        # 2. Finance State
+        finance_dto = FinanceStateDTO(
+            balance=self.wallet.get_balance(DEFAULT_CURRENCY),
+            revenue_this_turn=self.finance_state.revenue_this_turn.get(DEFAULT_CURRENCY, 0.0),
+            expenses_this_tick=self.finance_state.expenses_this_tick.get(DEFAULT_CURRENCY, 0.0),
+            consecutive_loss_turns=self.finance_state.consecutive_loss_turns,
+            profit_history=list(self.finance_state.profit_history),
+            altman_z_score=0.0, # Calculation skipped in DTO to avoid side-effects
+            valuation=self.finance_state.valuation,
+            total_shares=self.finance_state.total_shares,
+            treasury_shares=self.finance_state.treasury_shares,
+            dividend_rate=self.finance_state.dividend_rate,
+            is_publicly_traded=True
+        )
+
+        # 3. Production State
+        production_dto = ProductionStateDTO(
+            current_production=self.production_state.current_production,
+            productivity_factor=self.production_state.productivity_factor,
+            production_target=self.production_state.production_target,
+            capital_stock=self.production_state.capital_stock,
+            base_quality=self.production_state.base_quality,
+            automation_level=self.production_state.automation_level,
+            specialization=self.production_state.specialization,
+            inventory=self._inventory.copy(),
+            input_inventory=self.production_state.input_inventory.copy(),
+            inventory_quality=self.production_state.inventory_quality.copy()
+        )
+
+        # 4. Sales State
+        sales_dto = SalesStateDTO(
+            inventory_last_sale_tick=self.sales_state.inventory_last_sale_tick.copy(),
+            price_history=self.sales_state.last_prices.copy(),
+            brand_awareness=self.brand_manager.brand_awareness,
+            perceived_quality=self.brand_manager.perceived_quality,
+            marketing_budget=self.sales_state.marketing_budget
+        )
+
+        sentiment = 1.0 / (1.0 + self.finance_state.consecutive_loss_turns)
+
+        return FirmStateDTO(
+            id=self.id,
+            is_active=self.is_active,
+            finance=finance_dto,
+            production=production_dto,
+            sales=sales_dto,
+            hr=hr_dto,
+            agent_data=self.get_agent_data(),
+            system2_guidance={},
+            sentiment_index=sentiment
+        )
 
     def get_pre_state_data(self) -> Dict[str, Any]:
         return getattr(self, "pre_state_snapshot", self.get_agent_data())

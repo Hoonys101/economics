@@ -1,7 +1,13 @@
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Protocol, runtime_checkable
 from .department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from modules.system.api import DEFAULT_CURRENCY
+
+@runtime_checkable
+class IFirmStateProvider(Protocol):
+    """Protocol for entities that can provide their state as a FirmStateDTO."""
+    def get_state_dto(self) -> "FirmStateDTO":
+        ...
 
 @dataclass(frozen=True)
 class FirmStateDTO:
@@ -31,6 +37,18 @@ class FirmStateDTO:
         """
         Creates a FirmStateDTO from a Firm-like object (Firm instance or Mock).
         """
+        # Use Protocol if available (Preferred)
+        if isinstance(firm, IFirmStateProvider):
+            # To avoid infinite recursion if the provider calls from_firm (which it shouldn't anymore),
+            # we assume the provider constructs the DTO directly.
+            # However, if the provider is the Firm class itself using the OLD implementation:
+            # def get_state_dto(self): return FirmStateDTO.from_firm(self)
+            # then we have a loop.
+            # But we are updating Firm class in the next step to NOT call from_firm.
+            # So this is safe IF we update Firm class correctly.
+            return firm.get_state_dto()
+
+        # Fallback for Mocks/Legacy Objects
         # --- HR State ---
         employee_ids = []
         employees_data = {}

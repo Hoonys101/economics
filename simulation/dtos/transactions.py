@@ -5,12 +5,11 @@ from dataclasses import dataclass
 # Avoid circular import by using TYPE_CHECKING or just relying on users to import Transaction from models if they need the full class.
 # But for DTO alias, we need the class.
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from simulation.models import Transaction
+from simulation.models import Transaction
 
 # Alias for Spec Compliance
 # At runtime, users should use simulation.models.Transaction
-TransactionDTO = Any
+TransactionDTO = Transaction
 
 @dataclass
 class TransactionResult:

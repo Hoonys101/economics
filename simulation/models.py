@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, List, TYPE_CHECKING
 import uuid
+import warnings
 from modules.market.api import CanonicalOrderDTO
 from modules.finance.api import LienDTO
 from modules.system.api import DEFAULT_CURRENCY
@@ -39,6 +40,9 @@ class StockOrder:
     price: float           # 호가 (주당 가격)
     market_id: str = "stock_market"
     id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
+
+    def __post_init__(self):
+        warnings.warn("StockOrder is deprecated. Use CanonicalOrderDTO instead.", DeprecationWarning, stacklevel=2)
 
 
 @dataclass
