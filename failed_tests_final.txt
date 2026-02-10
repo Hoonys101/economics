@@ -1,23 +1,23 @@
 
-tests/integration/scenarios/diagnosis/test_agent_decision.py::test_household_makes_decision ERROR [  0%]
-tests/integration/scenarios/diagnosis/test_agent_decision.py::test_firm_makes_decision ERROR [  0%]
+tests/integration/scenarios/diagnosis/test_agent_decision.py::test_household_makes_decision PASSED [  0%]
+tests/integration/scenarios/diagnosis/test_agent_decision.py::test_firm_makes_decision PASSED [  0%]
 tests/integration/scenarios/diagnosis/test_api_contract.py::test_api_contract_placeholder PASSED [  0%]
 tests/integration/scenarios/diagnosis/test_dashboard_contract.py::test_dashboard_snapshot_structure 
 -------------------------------- live log call --------------------------------
-ERROR    simulation.orchestration.persistence_bridge:persistence_bridge.py:54 ❌ [Persistence] Failed to save snapshot: Object of type MagicMock is not JSON serializable
-FAILED                                                                   [  0%]
-tests/integration/scenarios/diagnosis/test_indicator_pipeline.py::test_indicator_aggregation ERROR [  0%]
+INFO     simulation.orchestration.persistence_bridge:persistence_bridge.py:46 ✅ [Persistence] Saved local snapshot: snapshot_tick_00042_20260210_195402.json
+PASSED                                                                   [  0%]
+tests/integration/scenarios/diagnosis/test_indicator_pipeline.py::test_indicator_aggregation PASSED [  0%]
 tests/integration/scenarios/diagnosis/test_market_mechanics.py::test_order_book_matching 
 ------------------------------- live log setup --------------------------------
 INFO     Market_basic_food:order_book_market.py:97 OrderBookMarket basic_food initialized.
 -------------------------------- live log call --------------------------------
 INFO     Market_basic_food:order_book_market.py:252 Starting order matching for items: ['basic_food']
 PASSED                                                                   [  0%]
-tests/integration/scenarios/phase21/test_automation.py::test_firm_automation_init ERROR [  1%]
-tests/integration/scenarios/phase21/test_automation.py::test_production_function_with_automation ERROR [  1%]
-tests/integration/scenarios/phase21/test_automation.py::test_system2_planner_guidance ERROR [  1%]
-tests/integration/scenarios/phase21/test_firm_system2.py::test_system2_planner_guidance_automation_preference ERROR [  1%]
-tests/integration/scenarios/phase21/test_firm_system2.py::test_system2_planner_guidance_ma_preference ERROR [  1%]
+tests/integration/scenarios/phase21/test_automation.py::test_firm_automation_init PASSED [  1%]
+tests/integration/scenarios/phase21/test_automation.py::test_production_function_with_automation FAILED [  1%]
+tests/integration/scenarios/phase21/test_automation.py::test_system2_planner_guidance FAILED [  1%]
+tests/integration/scenarios/phase21/test_firm_system2.py::test_system2_planner_guidance_automation_preference FAILED [  1%]
+tests/integration/scenarios/phase21/test_firm_system2.py::test_system2_planner_guidance_ma_preference FAILED [  1%]
 tests/integration/scenarios/test_stress_scenarios.py::TestPhase28StressScenarios::test_hyperinflation_trigger 
 -------------------------------- live log call --------------------------------
 WARNING  simulation.systems.event_system:event_system.py:33 🔥 STRESS_TEST: Activating 'hyperinflation' at Tick 10!
@@ -102,12 +102,18 @@ INFO     Market_labor_market:order_book_market.py:97 OrderBookMarket labor_marke
 -------------------------------- live log call --------------------------------
 INFO     Market_labor_market:order_book_market.py:252 Starting order matching for items: ['labor']
 PASSED                                                                   [  4%]
-tests/integration/test_finance_bailout.py::test_grant_bailout_loan_success_and_covenant_type FAILED [  5%]
-tests/integration/test_finance_bailout.py::test_grant_bailout_loan_insufficient_government_funds FAILED [  5%]
+tests/integration/test_finance_bailout.py::test_grant_bailout_loan_success_and_covenant_type PASSED [  5%]
+tests/integration/test_finance_bailout.py::test_grant_bailout_loan_insufficient_government_funds 
+-------------------------------- live log call --------------------------------
+WARNING  modules.finance.system:system.py:303 BAILOUT_DENIED | Government insufficient funds: 1000000.00 < 2000000.00
+PASSED                                                                   [  5%]
 tests/integration/test_firm_decision_scenarios.py::test_growth_scenario_with_golden_firm 
 -------------------------------- live log call --------------------------------
 INFO     simulation.decisions.ai_driven_firm_engine:ai_driven_firm_engine.py:40 AIDrivenFirmDecisionEngine initialized with CorporateManager.
-FAILED                                                                   [  5%]
+WARNING  simulation.decisions.firm.financial_strategy:financial_strategy.py:112 FINANCE_WARNING | Missing policy/market rate for firm 100. Used default fallback.
+INFO     simulation.decisions.ai_driven_firm_engine:ai_driven_firm_engine.py:124 COST_PLUS_FALLBACK | Firm 100 repricing food from 4.75 to 12.00 (Cost: 10.00)
+INFO     simulation.decisions.ai_driven_firm_engine:ai_driven_firm_engine.py:124 COST_PLUS_FALLBACK | Firm 100 repricing food from 4.75 to 12.00 (Cost: 10.00)
+PASSED                                                                   [  5%]
 tests/integration/test_fiscal_integrity.py::test_infrastructure_investment_generates_transactions_and_issues_bonds 
 -------------------------------- live log call --------------------------------
 INFO     simulation.agents.government:government.py:152 Government 1 initialized with assets: defaultdict(<class 'float'>, {'USD': 1000.0})
@@ -190,7 +196,7 @@ PASSED                                                                   [  9%]
 tests/integration/test_government_tax.py::TestGovernmentTax::test_record_revenue_success 
 ------------------------------- live log setup --------------------------------
 INFO     simulation.agents.government:government.py:152 Government 1 initialized with assets: defaultdict(<class 'float'>, {'USD': 1000.0})
-FAILED                                                                   [  9%]
+PASSED                                                                   [  9%]
 tests/integration/test_government_tax.py::TestGovernmentTax::test_record_revenue_failure 
 ------------------------------- live log setup --------------------------------
 INFO     simulation.agents.government:government.py:152 Government 1 initialized with assets: defaultdict(<class 'float'>, {'USD': 1000.0})
@@ -198,7 +204,7 @@ PASSED                                                                   [  9%]
 tests/integration/test_government_tax.py::TestGovernmentTax::test_collect_tax_legacy 
 ------------------------------- live log setup --------------------------------
 INFO     simulation.agents.government:government.py:152 Government 1 initialized with assets: defaultdict(<class 'float'>, {'USD': 1000.0})
-FAILED                                                                   [  9%]
+PASSED                                                                   [  9%]
 tests/integration/test_government_tax.py::TestGovernmentTax::test_collect_tax_no_settlement_system 
 ------------------------------- live log setup --------------------------------
 INFO     simulation.agents.government:government.py:152 Government 1 initialized with assets: defaultdict(<class 'float'>, {'USD': 1000.0})
@@ -283,20 +289,34 @@ PASSED                                                                   [ 15%]
 tests/integration/test_purity_gate.py::test_household_engine_uses_dto 
 -------------------------------- live log call --------------------------------
 INFO     simulation.decisions.ai_driven_household_engine:ai_driven_household_engine.py:43 AIDrivenHouseholdDecisionEngine initialized (Modularized).
-INFO     simulation.decisions.ai_driven_household_engine:consumption_manager.py:32 SURVIVAL_CHECK | Need: 0, Threshold: 0.8, Food: <MagicMock name='mock.config.primary_survival_good_id' id='2229355182272'>
+INFO     simulation.decisions.ai_driven_household_engine:consumption_manager.py:32 SURVIVAL_CHECK | Need: 0, Threshold: 0.8, Food: <MagicMock name='mock.config.primary_survival_good_id' id='2364347527056'>
 PASSED                                                                   [ 16%]
 tests/integration/test_settlement_system_atomic.py::test_settlement_scenario_1_standard_inheritance 
 ------------------------------- live log setup --------------------------------
 INFO     simulation.agents.government:government.py:152 Government 1 initialized with assets: defaultdict(<class 'float'>, {'USD': 0.0})
-FAILED                                                                   [ 16%]
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:85 SETTLEMENT_CREATED | Escrow account created for Agent 101. Cash: 1000.00. Portfolio items: 1. Heir: 102
+INFO     simulation.systems.settlement_system:settlement_system.py:141 PORTFOLIO_TRANSFER | Transferred portfolio to 102
+INFO     simulation.systems.settlement_system:settlement_system.py:240 SETTLEMENT_CLOSED | Account 101 closed successfully.
+PASSED                                                                   [ 16%]
 tests/integration/test_settlement_system_atomic.py::test_settlement_scenario_2_escheatment 
 ------------------------------- live log setup --------------------------------
 INFO     simulation.agents.government:government.py:152 Government 1 initialized with assets: defaultdict(<class 'float'>, {'USD': 0.0})
-FAILED                                                                   [ 16%]
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:85 SETTLEMENT_CREATED | Escrow account created for Agent 201. Cash: 1000.00. Portfolio items: 1. Heir: NONE (Escheatment)
+INFO     simulation.systems.settlement_system:settlement_system.py:141 PORTFOLIO_TRANSFER | Transferred portfolio to 1
+INFO     simulation.systems.settlement_system:settlement_system.py:240 SETTLEMENT_CLOSED | Account 201 closed successfully.
+PASSED                                                                   [ 16%]
 tests/integration/test_settlement_system_atomic.py::test_settlement_scenario_3_insolvency 
 ------------------------------- live log setup --------------------------------
 INFO     simulation.agents.government:government.py:152 Government 1 initialized with assets: defaultdict(<class 'float'>, {'USD': 0.0})
-FAILED                                                                   [ 16%]
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:85 SETTLEMENT_CREATED | Escrow account created for Agent 301. Cash: 100.00. Portfolio items: 0. Heir: NONE (Escheatment)
+INFO     simulation.systems.settlement_system:settlement_system.py:240 SETTLEMENT_CLOSED | Account 301 closed successfully.
+INFO     simulation.systems.settlement_system:settlement_system.py:85 SETTLEMENT_CREATED | Escrow account created for Agent 301. Cash: 100.00. Portfolio items: 0. Heir: NONE (Escheatment)
+CRITICAL simulation.systems.settlement_system:settlement_system.py:159 SETTLEMENT_OVERDRAFT | Attempted to distribute more than escrow! Escrow: 100.00, Distributed: 0.00, Requested: 101.00
+WARNING  simulation.systems.settlement_system:settlement_system.py:219 SETTLEMENT_LEAK | Account 301 closed with remaining cash: 100.00. Burning it.
+PASSED                                                                   [ 16%]
 tests/integration/test_shareholder_registry.py::test_registry_basic_operations PASSED [ 16%]
 tests/integration/test_shareholder_registry.py::test_stock_market_integration PASSED [ 16%]
 tests/integration/test_td194_integration.py::TestTD194Integration::test_household_make_decision_integrity PASSED [ 16%]
@@ -583,7 +603,7 @@ tests/test_ws.py::test_websocket_endpoint
 INFO     server:server.py:57 Initializing simulation...
 INFO     server:server.py:68 Simulation initialized and running. Server is ready.
 INFO     server:server.py:37 Starting simulation loop...
-ERROR    simulation.orchestration.persistence_bridge:persistence_bridge.py:54 ❌ [Persistence] Failed to save snapshot: Object of type MagicMock is not JSON serializable
+INFO     simulation.orchestration.persistence_bridge:persistence_bridge.py:46 ✅ [Persistence] Saved local snapshot: snapshot_tick_00001_20260210_195403.json
 INFO     server:server.py:77 Shutting down simulation...
 FAILED                                                                   [ 28%]
 tests/unit/agents/test_government.py::test_calculate_income_tax_delegation 
@@ -914,9 +934,9 @@ PASSED                                                                   [ 56%]
 tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_generate_liquidation_orders 
 -------------------------------- live log call --------------------------------
 INFO     PublicManager:public_manager.py:159 Generated liquidation order for 50.0 of apple at 9.0.
-FAILED                                                                   [ 57%]
+PASSED                                                                   [ 57%]
 tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_confirm_sale PASSED [ 57%]
-tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_deposit_revenue FAILED [ 57%]
+tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_deposit_revenue PASSED [ 57%]
 tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_generate_liquidation_orders_no_signal PASSED [ 57%]
 tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_generate_liquidation_orders_resets_metrics PASSED [ 57%]
 tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_implements_financial_entity FAILED [ 57%]
@@ -1321,9 +1341,9 @@ tests/unit/test_firms.py::TestFirmSales::test_post_ask PASSED            [ 81%]
 tests/unit/test_firms.py::TestFirmSales::test_adjust_marketing_budget_increase PASSED [ 81%]
 tests/unit/test_handlers_fix.py::TestHandlerFix::test_goods_handler_uses_record_consumption 
 -------------------------------- live log call --------------------------------
-WARNING  simulation.systems.handlers.goods_handler:goods_handler.py:108 GOODS_HANDLER_WARN | Seller <MagicMock name='mock.id' id='2229358639968'> does not implement IInventoryHandler
-FAILED                                                                   [ 81%]
-tests/unit/test_handlers_fix.py::TestHandlerFix::test_labor_handler_uses_add_labor_income FAILED [ 82%]
+WARNING  simulation.systems.handlers.goods_handler:goods_handler.py:108 GOODS_HANDLER_WARN | Seller <MagicMock name='mock.id' id='2364348383312'> does not implement IInventoryHandler
+PASSED                                                                   [ 81%]
+tests/unit/test_handlers_fix.py::TestHandlerFix::test_labor_handler_uses_add_labor_income PASSED [ 82%]
 tests/unit/test_household_ai.py::test_ai_creates_purchase_order 
 ------------------------------- live log setup --------------------------------
 INFO     Market_goods_market:order_book_market.py:97 OrderBookMarket goods_market initialized.
@@ -1368,7 +1388,7 @@ tests/unit/test_market_adapter.py::TestMarketAdapter::test_convert_dict_canonica
 tests/unit/test_market_adapter.py::TestMarketAdapter::test_invalid_input PASSED [ 86%]
 tests/unit/test_marketing_roi.py::TestMarketingROI::test_budget_decrease_on_low_efficiency SKIPPED [ 86%]
 tests/unit/test_marketing_roi.py::TestMarketingROI::test_budget_increase_on_high_efficiency SKIPPED [ 86%]
-tests/unit/test_marketing_roi.py::TestMarketingROI::test_budget_stable_on_saturation FAILED [ 87%]
+tests/unit/test_marketing_roi.py::TestMarketingROI::test_budget_stable_on_saturation PASSED [ 87%]
 tests/unit/test_marketing_roi.py::TestMarketingROI::test_first_tick_skip SKIPPED [ 87%]
 tests/unit/test_markets_v2.py::TestOrderBookMarketInitialization::test_market_initialization PASSED [ 87%]
 tests/unit/test_markets_v2.py::TestPlaceOrderToBook::test_add_single_buy_order PASSED [ 87%]
@@ -1405,7 +1425,7 @@ tests/unit/test_sensory_purity.py::TestSensoryPurity::test_generate_government_s
 tests/unit/test_sensory_purity.py::TestSensoryPurity::test_logic_with_more_agents PASSED [ 92%]
 tests/unit/test_socio_tech.py::TestSocioTechDynamics::test_appliance_effect FAILED [ 92%]
 tests/unit/test_socio_tech.py::TestSocioTechDynamics::test_scenario_a_dark_ages FAILED [ 92%]
-tests/unit/test_socio_tech.py::TestSocioTechDynamics::test_scenario_b_techno_optimism FAILED [ 93%]
+tests/unit/test_socio_tech.py::TestSocioTechDynamics::test_scenario_b_techno_optimism PASSED [ 93%]
 tests/unit/test_stock_market.py::TestStockMarketInitialization::test_initialization PASSED [ 93%]
 tests/unit/test_stock_market.py::TestStockMarketInitialization::test_update_reference_prices PASSED [ 93%]
 tests/unit/test_stock_market.py::TestStockOrderPlacement::test_place_buy_order PASSED [ 93%]
@@ -1450,62 +1470,34 @@ tests/unit/test_wo157_dynamic_pricing.py::TestWO157DynamicPricing::test_transact
 tests/unit/utils/test_config_factory.py::test_create_config_dto_success PASSED [ 99%]
 tests/unit/utils/test_config_factory.py::test_create_config_dto_missing_field PASSED [100%]
 
-=================================== ERRORS ====================================
-_______________ ERROR at setup of test_household_makes_decision _______________
-E   TypeError: Household.__init__() missing 2 required positional arguments: 'core_config' and 'engine'
-_________________ ERROR at setup of test_firm_makes_decision __________________
-E   TypeError: Firm.__init__() got an unexpected keyword argument 'id'
-________________ ERROR at setup of test_indicator_aggregation _________________
-E   TypeError: Household.__init__() missing 2 required positional arguments: 'core_config' and 'engine'
-_________________ ERROR at setup of test_firm_automation_init _________________
-E   TypeError: Firm.__init__() got an unexpected keyword argument 'id'
-_________ ERROR at setup of test_production_function_with_automation __________
-E   TypeError: Firm.__init__() got an unexpected keyword argument 'id'
-_______________ ERROR at setup of test_system2_planner_guidance _______________
-E   TypeError: Firm.__init__() got an unexpected keyword argument 'id'
-____ ERROR at setup of test_system2_planner_guidance_automation_preference ____
-E   TypeError: Firm.__init__() got an unexpected keyword argument 'id'
-________ ERROR at setup of test_system2_planner_guidance_ma_preference ________
-E   TypeError: Firm.__init__() got an unexpected keyword argument 'id'
 ================================== FAILURES ===================================
-C:\coding\economics\tests\integration\scenarios\diagnosis\test_dashboard_contract.py:55: AssertionError: assert <MagicMock name='mock.world_state.tracker.get_smoothed_values().get()' id='2229332231568'> == 1000.0
-C:\coding\economics\tests\integration\test_finance_bailout.py:66: TypeError: FinanceSystem.grant_bailout_loan() takes 3 positional arguments but 4 were given
-C:\coding\economics\tests\integration\test_finance_bailout.py:102: TypeError: FinanceSystem.grant_bailout_loan() got an unexpected keyword argument 'current_tick'
-C:\coding\economics\simulation\decisions\firm\financial_strategy.py:44: TypeError: '>=' not supported between instances of 'MagicMock' and 'int'
+C:\coding\economics\tests\integration\scenarios\phase21\test_automation.py:51: AttributeError: 'ProductionState' object has no attribute 'production_this_tick'
+C:\coding\economics\tests\integration\scenarios\phase21\test_automation.py:88: AttributeError: 'Firm' object has no attribute 'agent_data'. Did you mean: 'get_agent_data'?
+C:\coding\economics\tests\integration\scenarios\phase21\test_firm_system2.py:41: AttributeError: 'Firm' object has no attribute '_social_state'
+C:\coding\economics\tests\integration\scenarios\phase21\test_firm_system2.py:60: AttributeError: 'Firm' object has no attribute '_social_state'
 C:\coding\economics\simulation\systems\generational_wealth_audit.py:53: TypeError: unsupported format string passed to MagicMock.__format__
 C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:690: AttributeError: Mock object has no attribute 'progressive_tax_brackets'
 C:\coding\economics\modules\government\engines\decision_engine.py:106: TypeError: '>' not supported between instances of 'MagicMock' and 'int'
-C:\coding\economics\tests\integration\test_government_tax.py:39: TypeError: unsupported operand type(s) for +: 'dict' and 'float'
-C:\coding\economics\tests\integration\test_government_tax.py:84: AssertionError: assert {'USD': 50.0} == 50.0
 C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\case.py:744: AssertionError: False is not true : Shareholder should receive 1000 USD
 C:\coding\economics\simulation\core_agents.py:133: TypeError: Random.uniform() missing 2 required positional arguments: 'a' and 'b'
 C:\coding\economics\simulation\ai\system2_planner.py:119: TypeError: '<' not supported between instances of 'MagicMock' and 'int'
 C:\coding\economics\simulation\ai\system2_planner.py:119: TypeError: '<' not supported between instances of 'MagicMock' and 'int'
 C:\coding\economics\simulation\firms.py:153: TypeError: an integer is required
 C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\case.py:900: AssertionError: 0.0 != 150.0
-C:\coding\economics\tests\integration\test_public_manager_integration.py:112: AssertionError: assert {'USD': 0.0} == 1000.0
-C:\coding\economics\simulation\systems\settlement_system.py:59: AttributeError: 'types.SimpleNamespace' object has no attribute 'get_balance'
-C:\coding\economics\simulation\systems\settlement_system.py:59: AttributeError: 'types.SimpleNamespace' object has no attribute 'get_balance'
-C:\coding\economics\simulation\systems\settlement_system.py:59: AttributeError: 'types.SimpleNamespace' object has no attribute 'get_balance'
+C:\coding\economics\tests\integration\test_public_manager_integration.py:118: assert 0.0 == 1000.0
 C:\coding\economics\simulation\orchestration\tick_orchestrator.py:61: AttributeError: 'float' object has no attribute 'get'
-C:\coding\economics\tests\modules\household\test_political_integration.py:36: TypeError: Household.__init__() missing 2 required positional arguments: 'core_config' and 'engine'
+C:\coding\economics\tests\modules\household\test_political_integration.py:56: TypeError: SocialOutputDTO.__init__() got an unexpected keyword argument 'is_active'
 C:\coding\economics\tests\simulation\test_bank_decomposition.py:109: assert 0 > 10
 C:\coding\economics\simulation\initialization\initializer.py:333: AttributeError: 'int' object has no attribute 'get'
 C:\coding\economics\simulation\initialization\initializer.py:333: AttributeError: 'int' object has no attribute 'get'
 C:\coding\economics\tests\test_wo_4_1_protocols.py:89: assert False is True
-C:\coding\economics\tests\test_ws.py:51: assert 'timestamp' in {'finance': {'rates': {'base': 5.0, 'call': "<MagicMock name='create_simulation().world_state.markets.__getitem__().interest_rate.__mul__()' id='2229355169840'>", 'loan': 4.0, 'savings': 2.0}, 'supply': {'m0': "<MagicMock name='create_simulation().world_state.tracker.calculate_monetary_aggregates().__getitem__()' id='2229357570640'>", 'm1': "<MagicMock name='create_simulation().world_state.tracker.calculate_monetary_aggregates().__getitem__()' id='2229357570640'>", 'm2': "<MagicMock name='create_simulation().world_state.tracker.calculate_monetary_aggregates().__getitem__()' id='2229357570640'>", 'velocity': 0.0}}, 'integrity': {'fps': 99.04912836767036, 'm2_leak': 0.0}, 'macro': {'cpi': 1.0, 'gdp': 0.0, 'gini': 0.0, 'unemploy': 5.0}, 'politics': {'approval': {'high': 0.6, 'low': 0.6, 'mid': 0.6, 'total': 0.6}, 'fiscal': {'debt': 0.0, 'revenue': "<MagicMock name='mock.last_revenue' id='2229357572656'>", 'welfare': 0.0}, 'status': {'cohesion': 0.5, 'ruling_party': 'BLUE'}}, ...}
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\case.py:744: AssertionError: False is not true
-C:\coding\economics\tests\unit\modules\system\execution\test_public_manager.py:52: AssertionError: assert 999999 == -1
-C:\coding\economics\tests\unit\modules\system\execution\test_public_manager.py:75: AssertionError: assert {'USD': 100.0} == 100.0
+C:\coding\economics\tests\test_ws.py:72: AssertionError: assert 'timestamp' in {'finance': {'rates': {'base': 5.0, 'call': 0.0, 'loan': 0.0, 'savings': 0.0}, 'supply': {'m0': 100.0, 'm1': 500.0, 'm2': 1000.0, 'velocity': 0.0}}, 'integrity': {'fps': 154.27337241592102, 'm2_leak': 0.0}, 'macro': {'cpi': 1.0, 'gdp': 0.0, 'gini': 0.0, 'unemploy': 5.0}, 'politics': {'approval': {'high': 0.6, 'low': 0.6, 'mid': 0.6, 'total': 0.6}, 'fiscal': {'debt': 0.0, 'revenue': 100.0, 'welfare': 0.0}, 'status': {'cohesion': 0.5, 'ruling_party': 'BLUE'}}, ...}
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\case.py:738: AssertionError: True is not false
 C:\coding\economics\tests\unit\modules\system\execution\test_public_manager_compliance.py:20: assert 999999 == -1
 C:\coding\economics\tests\unit\modules\system\execution\test_public_manager_compliance.py:84: AssertionError: assert 999999 == -1
 C:\coding\economics\tests\unit\systems\test_demographic_manager_newborn.py:144: assert 0 == 1
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:690: AttributeError: Mock object has no attribute 'record_consumption'
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:690: AttributeError: Mock object has no attribute 'needs'
-C:\coding\economics\tests\unit\test_marketing_roi.py:17: TypeError: Firm.__init__() got an unexpected keyword argument 'id'
-C:\coding\economics\tests\unit\test_socio_tech.py:33: TypeError: Household.__init__() missing 2 required positional arguments: 'core_config' and 'engine'
-C:\coding\economics\tests\unit\test_socio_tech.py:33: TypeError: Household.__init__() missing 2 required positional arguments: 'core_config' and 'engine'
-C:\coding\economics\tests\unit\test_socio_tech.py:33: TypeError: Household.__init__() missing 2 required positional arguments: 'core_config' and 'engine'
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\case.py:900: AssertionError: 3.0 != 1.5
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\case.py:900: AssertionError: 0.0 != 8.0
 ============================== warnings summary ===============================
 tests/integration/test_government_fiscal_policy.py::test_tax_collection_and_bailouts
   C:\coding\economics\tests\integration\test_government_fiscal_policy.py:14: DeprecationWarning: Government.collect_tax is deprecated. Use settlement.settle_atomic and government.record_revenue() instead.
@@ -1536,15 +1528,13 @@ tests/unit/test_tax_incidence.py::TestTaxIncidence::test_household_payer_scenari
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 =========================== short test summary info ===========================
-FAILED tests/integration/scenarios/diagnosis/test_dashboard_contract.py::test_dashboard_snapshot_structure
-FAILED tests/integration/test_finance_bailout.py::test_grant_bailout_loan_success_and_covenant_type
-FAILED tests/integration/test_finance_bailout.py::test_grant_bailout_loan_insufficient_government_funds
-FAILED tests/integration/test_firm_decision_scenarios.py::test_growth_scenario_with_golden_firm
+FAILED tests/integration/scenarios/phase21/test_automation.py::test_production_function_with_automation
+FAILED tests/integration/scenarios/phase21/test_automation.py::test_system2_planner_guidance
+FAILED tests/integration/scenarios/phase21/test_firm_system2.py::test_system2_planner_guidance_automation_preference
+FAILED tests/integration/scenarios/phase21/test_firm_system2.py::test_system2_planner_guidance_ma_preference
 FAILED tests/integration/test_generational_wealth_audit.py::TestGenerationalWealthAudit::test_run_audit
 FAILED tests/integration/test_government_fiscal_integration.py::TestGovernmentFiscalIntegration::test_calculate_income_tax_uses_fiscal_policy_manager
 FAILED tests/integration/test_government_fiscal_integration.py::TestGovernmentFiscalIntegration::test_make_policy_decision_updates_fiscal_policy
-FAILED tests/integration/test_government_tax.py::TestGovernmentTax::test_record_revenue_success
-FAILED tests/integration/test_government_tax.py::TestGovernmentTax::test_collect_tax_legacy
 FAILED tests/integration/test_multicurrency_liquidation.py::TestMultiCurrencyLiquidation::test_foreign_currency_distribution_to_shareholders
 FAILED tests/integration/test_phase20_integration.py::TestPhase20Integration::test_immigration_trigger
 FAILED tests/integration/test_phase20_integration.py::TestPhase20Integration::test_system2_housing_cost_renter
@@ -1552,34 +1542,17 @@ FAILED tests/integration/test_phase20_integration.py::TestPhase20Integration::te
 FAILED tests/integration/test_phase23_production.py::TestPhase23Production::test_production_boost_from_fertilizer_tech
 FAILED tests/integration/test_portfolio_integration.py::TestPortfolioIntegration::test_bank_deposit_balance
 FAILED tests/integration/test_public_manager_integration.py::TestPublicManagerIntegration::test_full_liquidation_cycle
-FAILED tests/integration/test_settlement_system_atomic.py::test_settlement_scenario_1_standard_inheritance
-FAILED tests/integration/test_settlement_system_atomic.py::test_settlement_scenario_2_escheatment
-FAILED tests/integration/test_settlement_system_atomic.py::test_settlement_scenario_3_insolvency
 FAILED tests/integration/test_tick_normalization.py::TestTickNormalization::test_run_tick_executes_phases
 FAILED tests/modules/household/test_political_integration.py::test_household_update_political_opinion_integration
 FAILED tests/simulation/test_bank_decomposition.py::test_run_tick_defaults - ...
 FAILED tests/system/test_phase29_depression.py::TestPhase29Depression::test_crisis_monitor_logging
 FAILED tests/system/test_phase29_depression.py::TestPhase29Depression::test_depression_scenario_triggers
 FAILED tests/test_wo_4_1_protocols.py::test_housing_handler_with_protocol_agent
-FAILED tests/test_ws.py::test_websocket_endpoint - assert 'timestamp' in {'fi...
+FAILED tests/test_ws.py::test_websocket_endpoint - AssertionError: assert 'ti...
 FAILED tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_handle_death_above_threshold
-FAILED tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_generate_liquidation_orders
-FAILED tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_deposit_revenue
 FAILED tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_implements_financial_entity
 FAILED tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_liquidation_order_generation_id
 FAILED tests/unit/systems/test_demographic_manager_newborn.py::test_newborn_receives_initial_needs_from_config
-FAILED tests/unit/test_handlers_fix.py::TestHandlerFix::test_goods_handler_uses_record_consumption
-FAILED tests/unit/test_handlers_fix.py::TestHandlerFix::test_labor_handler_uses_add_labor_income
-FAILED tests/unit/test_marketing_roi.py::TestMarketingROI::test_budget_stable_on_saturation
 FAILED tests/unit/test_socio_tech.py::TestSocioTechDynamics::test_appliance_effect
 FAILED tests/unit/test_socio_tech.py::TestSocioTechDynamics::test_scenario_a_dark_ages
-FAILED tests/unit/test_socio_tech.py::TestSocioTechDynamics::test_scenario_b_techno_optimism
-ERROR tests/integration/scenarios/diagnosis/test_agent_decision.py::test_household_makes_decision
-ERROR tests/integration/scenarios/diagnosis/test_agent_decision.py::test_firm_makes_decision
-ERROR tests/integration/scenarios/diagnosis/test_indicator_pipeline.py::test_indicator_aggregation
-ERROR tests/integration/scenarios/phase21/test_automation.py::test_firm_automation_init
-ERROR tests/integration/scenarios/phase21/test_automation.py::test_production_function_with_automation
-ERROR tests/integration/scenarios/phase21/test_automation.py::test_system2_planner_guidance
-ERROR tests/integration/scenarios/phase21/test_firm_system2.py::test_system2_planner_guidance_automation_preference
-ERROR tests/integration/scenarios/phase21/test_firm_system2.py::test_system2_planner_guidance_ma_preference
-======= 38 failed, 568 passed, 4 skipped, 7 warnings, 8 errors in 6.54s =======
+============ 27 failed, 587 passed, 4 skipped, 7 warnings in 3.72s ============
