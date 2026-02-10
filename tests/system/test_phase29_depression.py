@@ -3,7 +3,7 @@ import unittest
 import os
 import shutil
 import csv
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, PropertyMock
 from simulation.initialization.initializer import SimulationInitializer
 from modules.common.config_manager.api import ConfigManager
 from simulation.core_agents import Household
@@ -34,6 +34,8 @@ class TestPhase29Depression(unittest.TestCase):
 
         # Configure Mock using configure_mock to ensure attributes are set correctly
         self.config_module.configure_mock(
+            FISCAL_SENSITIVITY_ALPHA=0.5, # Ensure float
+            AUTO_COUNTER_CYCLICAL_ENABLED=True,
             GOODS={"food": {"initial_price": 10}, "electronics": {"initial_price": 50}},
             INITIAL_BANK_ASSETS=1000000,
             INITIAL_MONEY_SUPPLY=1000000, # Explicitly set here too, but will enforce below
@@ -147,7 +149,51 @@ class TestPhase29Depression(unittest.TestCase):
             h._econ_state.residing_property_id = None
             h._social_state.approval_rating = 1.0
             h._econ_state.assets = {DEFAULT_CURRENCY: 1000.0}
-            h.get_sensory_snapshot.return_value = {"total_wealth": 1000.0, "approval_rating": 1.0, "is_active": True}
+            h._econ_state.wallet = MagicMock()
+            h._econ_state.wallet.get_balance.return_value = 1000.0
+            h.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 1000.0}
+            h.config = self.config_module
+            # For numpy array creation in VectorizedHouseholdPlanner
+            h.current_wage = 10.0
+            h.monthly_income = 1600.0
+            h.children_ids = []
+            h.age = 25.0
+            h.current_wage = 10.0
+
+            # configure_mock with attributes
+            h.configure_mock(monthly_income=1600.0, current_wage=10.0, children_ids=[], age=25.0)
+
+            # Ensure magic methods don't return Mocks for len()
+            # h.__len__ = Mock(return_value=1)
+
+            # configure_mock with attributes
+            h.configure_mock(monthly_income=1600.0, current_wage=10.0, children_ids=[], age=25.0)
+
+            # PropertyMock works on the type, but might conflict if the object spec already has these attributes
+            # Let's remove the problematic code and rely on the fact that we fixed the TypeError by other means,
+            # or simply try configure_mock again without side effects on magic methods.
+
+            # Since numpy array creation from mocks is notoriously tricky,
+            # and we just want to bypass the breeding check, let's stick to mocking the planner call for this test.
+            # It's cleaner and avoids fighting the mock system.
+            pass
+
+            # Configure get_sensory_snapshot to be callable and return dict
+            h.get_sensory_snapshot = MagicMock(return_value={"total_wealth": 1000.0, "approval_rating": 1.0, "is_active": True})
+
+            # Use PropertyMock to force numpy to see the values
+            # This must be done AFTER any other configuration that might reset the mock
+            p_wage = PropertyMock(return_value=10.0)
+            type(h).current_wage = p_wage
+
+            p_income = PropertyMock(return_value=1600.0)
+            type(h).monthly_income = p_income
+
+            p_age = PropertyMock(return_value=25.0)
+            type(h).age = p_age
+
+            p_children = PropertyMock(return_value=[])
+            type(h).children_ids = p_children
 
         self.firms = [MagicMock(spec=Firm) for _ in range(5)]
         for i, f in enumerate(self.firms):
@@ -185,6 +231,7 @@ class TestPhase29Depression(unittest.TestCase):
             f.hr_engine = MagicMock()
             f.config = MagicMock()
             f.config.profit_history_ticks = 10
+            f.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 5000.0}
 
             # Phase 29 Refinement: Mock FinanceDepartment
             f.finance = MagicMock()
@@ -198,6 +245,7 @@ class TestPhase29Depression(unittest.TestCase):
             f.finance.current_profit = 100.0
             f.finance.calculate_altman_z_score.return_value = 3.0
             f.finance.calculate_valuation.return_value = 5000.0
+            f.finance_state.valuation = 5000.0
             f.finance.get_inventory_value.return_value = 0.0
             f.finance.check_cash_crunch.return_value = False
             f.get_sensory_snapshot.return_value = {"total_wealth": 5000.0, "approval_rating": 0.0, "is_active": True}
@@ -215,6 +263,7 @@ class TestPhase29Depression(unittest.TestCase):
         self.repository.runs = MagicMock()
         self.repository.analytics = MagicMock()
         self.repository.agents = MagicMock()
+        self.repository.markets = MagicMock()
         self.repository.runs.save_simulation_run.return_value = "test_run"
         self.ai_trainer = MagicMock(spec=AIEngineRegistry)
 
@@ -235,13 +284,13 @@ class TestPhase29Depression(unittest.TestCase):
         self.sim.run_id = "test_run"
 
         # Fix: Mock GDP for Taylor Rule to return floats
-        if self.sim.government and self.sim.government.sensory_data:
-             self.sim.government.sensory_data.current_gdp = 1000.0
-             self.sim.government.sensory_data.potential_gdp = 1000.0
-        # Alternatively, if sensory_data is None or mock:
+        # Mocking the property access which might be nested
         self.sim.government.sensory_data = MagicMock()
+        # Mock as attributes for direct access if used
         self.sim.government.sensory_data.current_gdp = 1000.0
         self.sim.government.sensory_data.potential_gdp = 1000.0
+        # Ensure that it persists on the government instance
+        self.sim.government.get_sensory_snapshot = MagicMock(return_value=self.sim.government.sensory_data)
 
         # Set Government Revenue
         if self.sim.government:
@@ -258,6 +307,14 @@ class TestPhase29Depression(unittest.TestCase):
         # Manually fix MAManager config issue
         if self.sim.ma_manager:
             self.sim.ma_manager.bankruptcy_loss_threshold = 10
+
+        # Patch VectorizedHouseholdPlanner to avoid numpy/mock issues in breeding logic
+        # We replace the instance used by the lifecycle manager with a mock
+        if self.sim.lifecycle_manager:
+            mock_planner = MagicMock()
+            # decide_breeding_batch returns list of booleans
+            mock_planner.decide_breeding_batch.side_effect = lambda agents: [False] * len(agents)
+            self.sim.lifecycle_manager.breeding_planner = mock_planner
 
         # Ensure Phase 29 Scenario is Active and Configured
         if not self.sim.stress_scenario_config.is_active:

@@ -4,6 +4,7 @@ from simulation.orchestration.tick_orchestrator import TickOrchestrator
 from simulation.models import Transaction
 from simulation.world_state import WorldState
 from simulation.dtos.api import SimulationState
+from modules.system.api import DEFAULT_CURRENCY
 
 class TestTickNormalization:
     @pytest.fixture
@@ -19,6 +20,7 @@ class TestTickNormalization:
 
         # Components
         state.bank = MagicMock()
+        state.bank.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 0.0}
         # Mock run_tick to return a test transaction
         state.bank.run_tick.return_value = [
             Transaction(0, 1, "test_item", 1.0, 10.0, "financial", "test_type", 0)
@@ -33,6 +35,7 @@ class TestTickNormalization:
         state.government.invest_infrastructure.return_value = []
         # Fix: Mock get_monetary_delta to return float
         state.government.get_monetary_delta.return_value = 0.0
+        state.government.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 0.0}
 
         state.tracker = MagicMock()
         state.tracker.get_latest_indicators.return_value = {}
@@ -47,6 +50,7 @@ class TestTickNormalization:
         state.logger = MagicMock()
         state.reflux_system = MagicMock()
         state.central_bank = MagicMock()
+        state.central_bank.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 0.0}
         state.stock_market = None
         state.goods_data = []
         state.next_agent_id = 100
@@ -67,7 +71,7 @@ class TestTickNormalization:
         state.ai_trainer = None
 
         # Fix format issue
-        state.calculate_total_money = MagicMock(return_value=1000.0)
+        state.calculate_total_money = MagicMock(return_value={DEFAULT_CURRENCY: 1000.0})
         state.baseline_money_supply = 1000.0
 
         return state
