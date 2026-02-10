@@ -22,11 +22,8 @@ class TestEconomicIndicatorsViewModel:
                  else [MagicMock() for _ in range(2)])
 
         # Override assets
-        # Households access ._econ_state.assets
         for h, val in zip(households, [10, 20, 100]):
-            if not hasattr(h, '_econ_state'):
-                h._econ_state = MagicMock()
-            h._econ_state.assets = val
+            h.assets = val
 
         # Firms access .assets
         firms[0].assets = 50

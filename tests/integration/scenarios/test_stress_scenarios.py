@@ -30,9 +30,17 @@ class TestPhase28StressScenarios:
         h1._bio_state.needs = {}
 
         h1._social_state = MagicMock()
+        # Set primitive values for serialization safety
+        h1._social_state.conformity = 0.5
+        h1._social_state.social_rank = 0.5
+        h1._social_state.approval_rating = 1.0
+        h1._social_state.optimism = 0.5
+        h1._social_state.ambition = 0.5
 
         # Sync top-level properties (Legacy/Convenience)
         h1.assets = 1000.0
+        h1.wallet = MagicMock()
+        h1.wallet.get_balance.return_value = 1000.0
         h1.inventory = {}
         h1.is_active = True
         h1.is_employed = False
@@ -56,8 +64,16 @@ class TestPhase28StressScenarios:
         h2._bio_state.needs = {}
 
         h2._social_state = MagicMock()
+        # Set primitive values for serialization safety
+        h2._social_state.conformity = 0.5
+        h2._social_state.social_rank = 0.5
+        h2._social_state.approval_rating = 1.0
+        h2._social_state.optimism = 0.5
+        h2._social_state.ambition = 0.5
 
         h2.assets = 5000.0 # Wealthy
+        h2.wallet = MagicMock()
+        h2.wallet.get_balance.return_value = 5000.0
         h2.is_active = True
         h2.consume = MagicMock()
 
@@ -70,6 +86,8 @@ class TestPhase28StressScenarios:
         f1.type = "Farm"
         f1.productivity_factor = 1.0
         f1.assets = 10000.0
+        f1.wallet = MagicMock()
+        f1.wallet.get_balance.return_value = 10000.0
         return [f1]
 
     @pytest.fixture
@@ -262,20 +280,32 @@ class TestPhase28StressScenarios:
         config_dto.reservation_wage_floor = 1.0
         config_dto.household_min_wage_demand = 1.0
         config_dto.panic_selling_asset_threshold = 500.0
+        config_dto.initial_household_age_range = (20, 50)
+        config_dto.initial_aptitude_distribution = (0.5, 0.1)
 
+
+        from modules.system.api import DEFAULT_CURRENCY
+        from modules.simulation.api import AgentCoreConfigDTO
+
+        core_config = AgentCoreConfigDTO(
+            id=1,
+            name="HH_1",
+            initial_needs={},
+            logger=MagicMock(),
+            value_orientation="wealth_and_needs",
+            memory_interface=None
+        )
 
         household = Household(
-            id=1,
+            core_config=core_config,
+            engine=MagicMock(),
             talent=MagicMock(),
             goods_data=[],
-            initial_assets=400.0, # Below threshold
-            initial_needs={},
-            decision_engine=MagicMock(),
-            value_orientation="wealth_and_needs",
+            initial_assets_record=400.0, # Below threshold
             personality=Personality.CONSERVATIVE,
             config_dto=config_dto, # Pass DTO
-            # config_module=config_module # Removed
         )
+        household.deposit(400.0, DEFAULT_CURRENCY)
         household._econ_state.portfolio = MagicMock()
         share_mock = MagicMock(spec=Share)
         share_mock.quantity = 10.0

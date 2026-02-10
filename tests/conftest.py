@@ -7,7 +7,11 @@ for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model"
     try:
         __import__(module_name)
     except ImportError:
-        sys.modules[module_name] = MagicMock()
+        mock = MagicMock()
+        if module_name == "numpy":
+            mock.bool_ = bool
+            mock.float64 = float
+        sys.modules[module_name] = mock
 
 from simulation.agents.government import Government
 from modules.finance.system import FinanceSystem

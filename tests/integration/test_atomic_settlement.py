@@ -1,17 +1,18 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.systems.settlement_system import SettlementSystem
+from modules.system.api import DEFAULT_CURRENCY
 
 class MockAgent:
     def __init__(self, id, assets=100.0):
         self.id = id
         self.assets = assets
 
-    def deposit(self, amount, currency="USD"):
+    def deposit(self, amount: float, currency=DEFAULT_CURRENCY):
         if amount < 0: raise ValueError("Negative deposit")
         self.assets += amount
 
-    def withdraw(self, amount, currency="USD"):
+    def withdraw(self, amount: float, currency=DEFAULT_CURRENCY):
         if amount < 0: raise ValueError("Negative withdraw")
         # SettlementSystem checks assets property manually before calling withdraw,
         # but pure withdraw should also work.
@@ -20,6 +21,9 @@ class MockAgent:
              # but here we just decrement or let it go negative if not checked strictly by method.
              pass
         self.assets -= amount
+
+    def get_balance(self, currency=DEFAULT_CURRENCY) -> float:
+        return self.assets
 
 def test_settle_atomic_success():
     settlement = SettlementSystem()

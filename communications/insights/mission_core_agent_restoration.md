@@ -1,25 +1,30 @@
-# Mission Insights: Core Agent & Protocol Restoration
+# Mission Insight: Core Agent Restoration & Protocol Alignment
 
-## Technical Debt & Insights
+## Mission Context
+Restoration of core agent unit/integration tests following major architectural changes (Orchestrator-Engine, Protocol Hardening, DTO Purity).
 
-### 1. Mock fragility in System Tests
-`tests/system/test_engine.py` uses a mix of real objects (`Firm`, `Simulation`) and Mocks (`Household`, `Transaction`). This hybrid approach causes significant friction when protocols change (e.g., `IFinancialAgent` requiring `get_balance`). The mocks often lack the full behavior required by complex systems like `SettlementSystem` (e.g., side effects for `withdraw` working but state not persisting correctly for rollback logic, or method signature mismatches).
-**Recommendation:** Refactor system tests to use lightweight real implementations of `Household` (stubbed engines) instead of pure Mocks where possible, or use a strictly typed `FakeAgent` that fully implements `IAgent` protocols.
+## Identified Technical Debt & Protocol Drift
 
-### 2. Protocol Adherence
-The shift to `IFinancialAgent` (withdraw/deposit with currency) and `IInventoryHandler` is largely complete in code but tests lag behind. The strict enforcement of `currency` in `withdraw` exposed that many mocks were naive.
-**Recommendation:** Add a linting step or a test utility that verifies Mocks against Protocols (`verify_object=True` or custom checker) to catch signature drifts early.
+### 1. IFinancialAgent Protocol Drift
+- **Issue**: The `IFinancialAgent` protocol has evolved to require `withdraw(amount: float, currency: CurrencyCode = DEFAULT_CURRENCY)` and `deposit(...)`. Many integration tests use `MockAgent` implementations that only accept `amount` or rely on implicit `USD` default without handling `currency` argument correctly when called with keyword arguments by newer system components (e.g., `SettlementSystem`).
+- **Impact**: Integration tests fail with `TypeError` when systems attempt multi-currency transactions.
+- **Remediation**: Updated `MockAgent` in `test_atomic_settlement.py` to fully implement `IFinancialAgent` including `get_balance`.
 
-### 3. State Access Patterns
-Direct access to attributes like `agent.inventory` (dict) or `agent.finance.balance` persists in tests despite the codebase moving to `agent.get_quantity()` and `agent.wallet.get_balance()`.
-**Action Taken:** Fixed several occurrences in `test_engine.py`, but a global audit of test assertions is recommended.
+### 2. Encapsulation Violation in ViewModels
+- **Issue**: `EconomicIndicatorsViewModel` directly accessed private state `agent._econ_state.assets` to calculate wealth distribution. This violated encapsulation and broke when `_econ_state.assets` was refactored to return a dictionary (Wallet balance) instead of a float.
+- **Impact**: ViewModel crashes or returns incorrect data types (dict vs float) for histograms.
+- **Remediation**: Refactored ViewModel to use the public `agent.assets` property (or `agent.total_wealth` / `agent.get_balance(DEFAULT_CURRENCY)`) which guarantees a float return value, respecting the `IFinancialAgent` interface.
 
-### 4. Settlement System Complexity
-The `settle_atomic` failure in `test_process_transactions_labor_trade` (rollback despite valid conditions) suggests a subtle issue with Mock state interactions or `TaxationSystem` configuration in the test environment. The lack of visibility (swallowed logs in tests) made debugging difficult.
-**Recommendation:** Ensure `mock_logger` in tests is configured to print to stderr on failure, or use `caplog` fixture more effectively.
+### 3. MagicMock Serialization Issues (DTO Purity)
+- **Issue**: Tests mocking `Household` agents often mocked `_social_state` as a bare `MagicMock`. When `Household.get_state_dto()` is called (e.g., by `AnalyticsSystem` or logging), it copies fields like `social_state.conformity`. Since these attributes on the mock returned new `MagicMock` objects, the resulting DTO contained Mocks instead of primitives. Attempts to serialize this DTO (e.g., for JSON logs or persistence) caused `TypeError: Object of type MagicMock is not JSON serializable`.
+- **Impact**: Persistence and stress scenario tests failed during logging or state capture.
+- **Remediation**: Explicitly configured `MagicMock` instances in test fixtures to return primitive values (float/int) for all state attributes accessed by DTO factories.
 
-## Protocol Deviations Fixed
-- `Household.__init__`: Updated to use `AgentCoreConfigDTO` and `engine`.
-- `Firm.__init__`: Updated to use `AgentCoreConfigDTO` and `engine`.
-- `MockAgent`: Updated `withdraw`/`deposit` to accept `currency`.
-- `test_api_extensions.py`: Updated to use `_econ_state.assets` structure.
+### 4. Firm State Attribute Rename
+- **Issue**: `Firm` agents moved from direct component access (`firm.hr`, `firm.finance`) to state DTOs (`firm.hr_state`, `firm.finance_state`). Integration tests accessing legacy attributes failed.
+- **Impact**: `AttributeError` in `test_liquidation_services.py`.
+- **Remediation**: Updated tests to use correct state DTO attributes.
+
+## Architectural Recommendations
+1. **Strict Mock Factories**: Future tests should use a centralized `MockFactory` that automatically populates state DTO fields with primitives to avoid serialization issues, rather than ad-hoc `MagicMock` setup in each test file.
+2. **ViewModel decoupling**: ViewModels should depend on `Repository` or `Service` layers returning DTOs, never on Agent instances directly, to avoid coupling to internal agent structure (`_econ_state`).

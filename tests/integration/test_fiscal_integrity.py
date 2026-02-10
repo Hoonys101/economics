@@ -80,8 +80,8 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
     # The SPENDING (5000) is returned as transactions, NOT executed immediately.
     # So Gov assets should be 1000 + 4000 = 5000.
 
-    assert gov.assets['USD'] == 5000.0
-    assert bank.assets['USD'] == 6000.0 # 10000 - 4000
+    assert gov.assets == 5000.0
+    assert bank.assets == 6000.0 # 10000 - 4000
 
     # 2. Transactions
     # TD-177: Transactions now include bond purchase (4000) and infrastructure spending (5000)
@@ -112,7 +112,10 @@ def test_education_spending_generates_transactions_only():
 
     gov = Government(id=1, initial_assets=100.0, config_module=config)
     gov.settlement_system = settlement_system
-    gov.revenue_this_tick = 10000.0 # High revenue to trigger high budget
+    gov.tax_service = MagicMock()
+    gov.tax_service.get_total_collected_this_tick.return_value = 10000.0
+    from modules.system.api import DEFAULT_CURRENCY
+    gov.tax_service.get_revenue_this_tick.return_value = {DEFAULT_CURRENCY: 10000.0}
     # Budget = 10000 * 0.2 = 2000.
 
     bank = Bank(id=2, initial_assets=10000.0, config_manager=config, settlement_system=settlement_system)
@@ -152,8 +155,8 @@ def test_education_spending_generates_transactions_only():
     # Verification
 
     # 1. No Bond Issuance (Assets unchanged)
-    assert gov.assets['USD'] == 100.0
-    assert bank.assets['USD'] == 10000.0
+    assert gov.assets == 100.0
+    assert bank.assets == 10000.0
 
     # 2. Transactions
     # Should be 1 transaction of 500 (Grant)

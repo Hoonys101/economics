@@ -22,10 +22,10 @@ class TestLiquidationServices(unittest.TestCase):
         # Mock Firm
         self.firm = MagicMock(spec=Firm)
         self.firm.config = self.config
-        self.firm.hr = MagicMock()
-        self.firm.finance = MagicMock()
+        self.firm.hr_state = MagicMock()
+        self.firm.finance_state = MagicMock()
         self.firm.id = 1
-        self.firm.finance.current_profit = 0.0
+        self.firm.finance_state.current_profit = 0.0
 
     def test_hr_service_unpaid_wages(self):
         current_tick = 1000
@@ -34,12 +34,12 @@ class TestLiquidationServices(unittest.TestCase):
         # Employee 1: Unpaid wages 500 (tick 950 - OK)
         # Employee 2: Unpaid wages 500 (tick 800 - Too Old)
 
-        self.firm.hr.unpaid_wages = {
+        self.firm.hr_state.unpaid_wages = {
             101: [(950, 500.0)],
             102: [(800, 500.0)]
         }
-        self.firm.hr.employees = []
-        self.firm.hr.employee_wages = {}
+        self.firm.hr_state.employees = []
+        self.firm.hr_state.employee_wages = {}
 
         claims = self.hr_service.calculate_liquidation_employee_claims(self.firm, current_tick)
 
@@ -57,9 +57,9 @@ class TestLiquidationServices(unittest.TestCase):
         emp.id = 101
         emp._econ_state.employment_start_tick = 1270
 
-        self.firm.hr.employees = [emp]
-        self.firm.hr.employee_wages = {101: 100.0}
-        self.firm.hr.unpaid_wages = {}
+        self.firm.hr_state.employees = [emp]
+        self.firm.hr_state.employee_wages = {101: 100.0}
+        self.firm.hr_state.unpaid_wages = {}
 
         # Severance = 2 yrs * 2 weeks/yr * 7.019 ticks/week * 100 wage
         # ticks_per_week = 365/52 = 7.01923
@@ -72,7 +72,7 @@ class TestLiquidationServices(unittest.TestCase):
         self.assertAlmostEqual(claims[0].amount, 2807.69, delta=1.0)
 
     def test_tax_service(self):
-        self.firm.finance.current_profit = 1000.0
+        self.firm.finance_state.current_profit = 1000.0
 
         # Mock Registry to return Government
         gov_agent = MagicMock()
