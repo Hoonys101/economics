@@ -89,53 +89,36 @@ Any task that exceeds the following thresholds MUST be delegated to Jules (Imple
 
 ---
 
-## 🛠️ Phase 2: Operations (The SCR Workflow)
-> **🚨 CRITICAL: PREFER DIRECT REGISTRY EDITING.**
-> Edit **[command_registry.py](file:///_internal/registry/command_registry.py)** directly for complex missions.
+## 🛠️ Phase 2: Operations (The Manifest Workflow)
+> **🚨 CRITICAL: Edit `command_manifest.py`, NOT `command_registry.json`.**
+> Edit **[command_manifest.py](file:///_internal/registry/command_manifest.py)** to define missions. JSON is auto-synced on launch.
 
 ### 🚨 Zero-Error Operations: Agent HARMONY
-Gemini와 Jules는 정합된 파라미터 구조를 공유합니다. 모든 미션 설정 시 **Key**와 **Title(-t)**은 필수입니다.
+Gemini와 Jules는 정합된 파라미터 구조를 공유합니다. `command_manifest.py`의 주석에 모든 필드/타입 레퍼런스가 포함되어 있습니다.
 
-| Agent | command | Key Args | Path Flag |
+| Agent | BAT 명령 | Manifest Section | 자동 동기화 |
 | :--- | :--- | :--- | :--- |
-| **Gemini** | `set-gemini` | `--worker [audit/spec/...]`, **`-t Title`** | `--context` (Multiple files) |
-| **Jules** | `set-jules` | `--command [create/send-message]`, **`-t Title`** | `--file` (Single spec/wo file) |
+| **Gemini** | `gemini-go.bat [key]` | `GEMINI_MISSIONS` | ✅ 실행 시 auto-sync |
+| **Jules** | `jules-go.bat [key]` | `JULES_MISSIONS` | ✅ 실행 시 auto-sync |
+| **Reset** | `reset-go.bat` | — | 🧹 manifest 초기화 |
 
 ### 🆘 Troubleshooting & Support
 - **Git Errors?** (Blocked checkout, commit issues): See **[Troubleshooting: Git](2_operations/protocols/TROUBLESHOOTING_GIT.md)**.
-- **cmd_ops Command Failures?** Check the **[Zero-Error Check List](1_governance/protocols/PROTOCOL_TOOLING.md#🚨-guidelines--anti-patterns-zero-error-check)**.
+- **Manifest Reset**: `reset-go.bat` 실행으로 깨끗한 템플릿 복원.
 
 ---
 
 ### 1. Analysis & Spec (Gemini)
-**Preferred Pattern (Direct Edit)**:
-1. Open [`command_registry.py`](file:///_internal/registry/command_registry.py).
-2. Follow the `# --- CHOICE REFERENCE ---` comments for valid workers.
-3. Add/Modify a mission dictionary entry using Python triple-quotes for multi-line prompts.
-
-**Legacy/Simple Pattern (CLI)**:
-```powershell
-python _internal/scripts/cmd_ops.py set-gemini <key> -t "<title>" --worker <type> -i "<prompt>" --context <file1> <file2>
-```
-- **Pro-Tip**: 여러 참조 파일은 `--context` 뒤에 나열합니다.
+**Manifest 방식 (표준)**:
+1. `command_manifest.py` → `GEMINI_MISSIONS`에 미션 dict 추가.
+2. `gemini-go.bat [key]` 실행 (auto-sync 후 Gemini 작업 시작).
 
 ### 2. Implementation (Jules)
-**Preferred Pattern (Direct Edit)**:
-1. Open [`command_registry.py`](file:///_internal/registry/command_registry.py).
-2. Define a `create` mission for Jules.
-3. Reference an "Integrated Mission Guide" in the `instruction` or `file` field.
+**Manifest 방식 (표준)**:
+1. `command_manifest.py` → `JULES_MISSIONS`에 미션 dict 추가.
+2. `jules-go.bat [key]` 실행 (auto-sync 후 Jules 세션 생성).
+3. 발사 완료 후 manifest에서 해당 항목 삭제.
 
-**Legacy/Simple Pattern (CLI)**:
-```powershell
-# Create Mode (New Mission)
-python _internal/scripts/cmd_ops.py set-jules <key> -t "<title>" --command create -i "<prompt>" --file <spec_path>
-
-# Send Mode (Feedback / Follow-up)
-# Note: session_id는 UI/Orchestrator에서 활성 세션을 검색하여 자동 주입하므로 설정 시 생략 가능합니다.
-python _internal/scripts/cmd_ops.py set-jules <key> -t "<title>" --command send-message -i "<prompt>"
-```
-- **Pro-Tip**: Jules는 `--file` (또는 `-f`)만 지원하며, `--context`는 무시됩니다.
-- **Dynamic ID**: `send-message` 시 서버의 활성 ID를 UI에서 선택하면 레지스트리의 설정값이 해당 세션으로 발송됩니다.
 
 ### 🚨 Jules Delegation Protocol: 맥락 주입 (Context Injection)
 > **"신입사원에게 일을 맡기듯 하지 마라 (Don't Delegate Like a Rookie Manager)."**

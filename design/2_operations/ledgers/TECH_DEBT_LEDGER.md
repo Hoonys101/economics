@@ -5,13 +5,13 @@
 | ID | Domain | Description | Impact / Risk | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **TD-INT-CONST** | System | Inconsistent use of System Constants (e.g., hardcoded 'USD'). | **Low**: Logic brittleness (TD-272). | Open |
-| **TD-DTO-STAB** | Data/DTO | DTO contract instability causing consumer crashes. | **High**: Runtime reliability risk. | Open |
-| **TD-DTO-LEGACY** | Data/DTO | Multiple incompatible DTO versions needing Adapter pattern. | **Med**: Maintenance overhead. | Open |
 
 ## ✅ Resolved Technical Debt
 
 | ID | Module / Component | Description | Resolution Session | Insight Report |
 | :--- | :--- | :--- | :--- | :--- |
+| **TD-DTO-STAB** | Data/DTO | **Standardization**: `CanonicalOrderDTO` enforced & `Transaction` typed. | Clean Room Era | [Insight](../../communications/insights/TD-DTO-STAB.md) |
+| **TD-DTO-LEGACY** | Data/DTO | **Refactor**: `StockOrder` deprecated & `FirmStateDTO` uses `IFirmStateProvider`. | Clean Room Era | [Insight](../../communications/insights/TD-DTO-STAB.md) |
 | **TD-LIQ-INV** | Liquidation | **Protocol**: Enforced `IConfigurable` & removed `getattr` hacks. | Clean Room Era | [Insight](../../communications/insights/TD-LIQ-INV.md) |
 | **TD-FIRM-GOD-OBJECT** | Agents | **Refactor**: Decomposed Firm into Orchestrator-Engine pattern & removed legacy proxies. | Clean Room Era | [Insight](../_archive/insights/FIRM-RESET-FIX.md) |
 | **TD-255-COCKPIT** | System | **Pipeline**: Replaced direct state injection with Async Event Pipeline. | Clean Room Era | [Spec](../../design/3_work_artifacts/specs/spec_cockpit_events.md) |

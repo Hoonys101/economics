@@ -18,6 +18,9 @@ This section contains the fundamental rules, architecture, and long-term plannin
 - **[AI Intelligence Layer](architecture/ARCH_AI_ENGINE.md)**
 - **[System Infrastructure](architecture/ARCH_SYSTEM_DESIGN.md)**
 - **[Observability (ThoughtStream)](architecture/ARCH_OBSERVABILITY_THOUGHTSTREAM.md)**: Agent cognition logging and system-wide tracing.
+## 🧪 Test Architecture
+- **[Unit Test Architecture & Cleanup Reference](architecture/ARCH_TESTS.md)**: Module-to-source mapping, coverage gaps, and restructuring plan.
+
 ## 🧪 Verification Framework
 - **[SPVM Matrix](verification/SPVM_MATRIX.md)**: Maslow-driven social phenomena verification matrix.
 - **[Scenario Cards](verification/SCENARIO_CARDS.md)**: Detailed experiment templates for economic validation.

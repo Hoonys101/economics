@@ -1,11 +1,14 @@
 @echo off
 setlocal
-echo 🧹 Resetting Command Registry to CLEAN state...
-python _internal/scripts/cmd_ops.py reset
+chcp 65001 > nul
+set PYTHONIOENCODING=utf-8
+
+echo 🧹 Resetting Command Manifest to CLEAN template...
+python _internal/scripts/launcher.py reset
 if %ERRORLEVEL% NEQ 0 (
     echo ❌ Reset failed.
     pause
     exit /b %ERRORLEVEL%
 )
-echo ✅ Registry has been reset.
+echo ✅ Manifest and Registry have been reset.
 endlocal
