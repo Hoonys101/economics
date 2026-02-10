@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 from simulation.ai.enums import Tactic
+from tests.unit.mocks.mock_factory import MockFactory
 
 
 @pytest.fixture
@@ -45,28 +46,42 @@ def firm_decision_engine_instance(mock_ai_engine, mock_config):
 
 @pytest.fixture
 def mock_firm(mock_config):
-    firm = Mock()
-    firm.id = 1
-    firm.specialization = "food"
-    firm.inventory = {"food": 100}
-    firm.production_target = 100
-    firm.last_prices = {"food": 10}
-    firm.employees = []
-    firm.profit_history = []
-    firm.productivity_factor = 1.0
-    firm.age = 25 # Add age for solvency checks
-    firm.finance = Mock() # Mock the finance department
-    return firm
+    return MockFactory.create_mock_firm(
+        id=1,
+        specialization="food",
+        inventory={"food": 100},
+        production_target=100,
+        price_history={"food": 10},
+        productivity_factor=1.0,
+        config=mock_config
+    )
 
 
 def test_adjust_price_tactic(firm_decision_engine_instance, mock_firm):
     """Test that the ADJUST_PRICE tactic correctly adjusts the price."""
-    from simulation.dtos import DecisionContext, FirmStateDTO
+    from simulation.dtos import DecisionContext
     from tests.utils.factories import create_firm_config_dto
     from simulation.schemas import FirmActionVector
 
-    mock_firm.inventory["food"] = 200
-    mock_firm.production_target = 100
+    # Update state via MockFactory for specific test case conditions
+    state_dto = MockFactory.create_firm_state_dto(
+        id=1,
+        specialization="food",
+        inventory={"food": 200}, # Overstock
+        production_target=100,
+        price_history={"food": 10},
+        inventory_quality={"food": 1.0},
+        agent_data={"productivity_factor": 1.0},
+        balance=1000.0,
+        altman_z_score=3.0,
+        consecutive_loss_turns=0,
+        is_publicly_traded=True,
+        total_shares=100,
+        treasury_shares=0
+    )
+
+    mock_firm.get_state_dto.return_value = state_dto
+
     firm_decision_engine_instance.ai_engine.decide_action_vector.return_value = FirmActionVector(
         sales_aggressiveness=1.0, # High aggressiveness -> Lower price
         hiring_aggressiveness=0.5,
@@ -75,42 +90,6 @@ def test_adjust_price_tactic(firm_decision_engine_instance, mock_firm):
         dividend_aggressiveness=0.5,
         debt_aggressiveness=0.5
     )
-
-    state_dto = Mock(spec=FirmStateDTO)
-    state_dto.inventory = mock_firm.inventory
-    state_dto.production_target = mock_firm.production_target
-    state_dto.specialization = mock_firm.specialization
-    state_dto.id = mock_firm.id
-    state_dto.last_prices = mock_firm.last_prices
-    state_dto.marketing_budget = 0.0 # Required field
-    state_dto.base_quality = 1.0
-    state_dto.inventory_quality = {mock_firm.specialization: 1.0}
-    state_dto.agent_data = {"productivity_factor": 1.0}
-
-    state_dto.finance = Mock()
-    state_dto.finance.revenue_this_turn = 0.0
-    state_dto.finance.balance = 1000.0
-    state_dto.finance.altman_z_score = 3.0
-    state_dto.finance.consecutive_loss_turns = 0
-    state_dto.finance.is_publicly_traded = True
-    state_dto.finance.treasury_shares = 0
-    state_dto.finance.total_shares = 100
-
-    state_dto.hr = Mock()
-    state_dto.hr.employees_data = {}
-    state_dto.hr.employees = []
-
-    state_dto.production = Mock()
-    state_dto.production.automation_level = 0.0
-    state_dto.production.inventory = mock_firm.inventory
-    state_dto.production.production_target = 100.0
-    state_dto.production.specialization = "food"
-    state_dto.production.capital_stock = 100.0
-    state_dto.production.productivity_factor = 1.0
-
-    state_dto.sales = Mock()
-    state_dto.sales.price_history = mock_firm.last_prices
-    state_dto.sales.marketing_budget = 0.0
 
     market_signals = {
         "food": Mock(

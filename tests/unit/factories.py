@@ -1,8 +1,8 @@
-
 from typing import Dict, Any, Optional
 from simulation.ai.enums import Personality
 from modules.household.dtos import HouseholdStateDTO
 from simulation.dtos.firm_state_dto import FirmStateDTO
+from tests.unit.mocks.mock_factory import MockFactory
 
 def create_household_dto(
     id: int = 1,
@@ -19,31 +19,19 @@ def create_household_dto(
     **kwargs
 ) -> HouseholdStateDTO:
     """Factory for HouseholdStateDTO with sensible defaults."""
-    return HouseholdStateDTO(
+    return MockFactory.create_household_state_dto(
         id=id,
         assets=assets,
-        inventory=inventory or {},
-        needs=needs or {"survival": 0.5, "leisure": 0.5},
-        preference_asset=kwargs.get("preference_asset", 1.0),
-        preference_social=kwargs.get("preference_social", 1.0),
-        preference_growth=kwargs.get("preference_growth", 1.0),
-        personality=personality,
-        durable_assets=durable_assets or [],
-        expected_inflation=kwargs.get("expected_inflation", {}),
+        inventory=inventory,
+        needs=needs,
         is_employed=is_employed,
         current_wage=current_wage,
         wage_modifier=wage_modifier,
-        is_homeless=kwargs.get("is_homeless", False),
-        residing_property_id=kwargs.get("residing_property_id"),
-        owned_properties=kwargs.get("owned_properties", []),
-        portfolio_holdings=kwargs.get("portfolio_holdings", {}),
-        risk_aversion=kwargs.get("risk_aversion", 1.0),
-        agent_data=agent_data or {},
-        perceived_prices=perceived_prices or {},
-        conformity=kwargs.get("conformity", 0.5),
-        social_rank=kwargs.get("social_rank", 0.5),
-        approval_rating=kwargs.get("approval_rating", 1),
-        demand_elasticity=kwargs.get("demand_elasticity", 1.0)
+        durable_assets=durable_assets,
+        perceived_prices=perceived_prices,
+        agent_data=agent_data,
+        personality=personality,
+        **kwargs
     )
 
 def create_firm_dto(
@@ -60,37 +48,16 @@ def create_firm_dto(
     **kwargs
 ) -> FirmStateDTO:
     """Factory for FirmStateDTO with sensible defaults."""
-    return FirmStateDTO(
+    return MockFactory.create_firm_state_dto(
         id=id,
-        assets=assets,
         is_active=is_active,
-        inventory=inventory or {},
-        inventory_quality=kwargs.get("inventory_quality", {}),
-        input_inventory=kwargs.get("input_inventory", {}),
-        inventory_last_sale_tick=kwargs.get("inventory_last_sale_tick", {}),
+        balance=assets, # Map 'assets' (flat) to 'balance' (finance dto)
+        inventory=inventory,
         current_production=current_production,
         productivity_factor=productivity_factor,
         production_target=production_target,
         capital_stock=capital_stock,
-        base_quality=kwargs.get("base_quality", 1.0),
-        automation_level=kwargs.get("automation_level", 0.0),
-        specialization=kwargs.get("specialization", "food"),
-        total_shares=kwargs.get("total_shares", 100.0),
-        treasury_shares=kwargs.get("treasury_shares", 0.0),
-        dividend_rate=kwargs.get("dividend_rate", 0.1),
-        is_publicly_traded=kwargs.get("is_publicly_traded", True),
-        valuation=kwargs.get("valuation", 1000.0),
-        revenue_this_turn=kwargs.get("revenue_this_turn", 0.0),
-        expenses_this_tick=kwargs.get("expenses_this_tick", 0.0),
-        consecutive_loss_turns=kwargs.get("consecutive_loss_turns", 0),
-        altman_z_score=kwargs.get("altman_z_score", 3.0),
-        price_history=price_history or {},
-        profit_history=kwargs.get("profit_history", []),
-        brand_awareness=kwargs.get("brand_awareness", 0.0),
-        perceived_quality=kwargs.get("perceived_quality", 1.0),
-        marketing_budget=kwargs.get("marketing_budget", 0.0),
-        employees=employees or [],
-        employees_data=kwargs.get("employees_data", {}),
-        agent_data=kwargs.get("agent_data", {}),
-        system2_guidance=kwargs.get("system2_guidance", {})
+        employees=employees,
+        price_history=price_history,
+        **kwargs
     )

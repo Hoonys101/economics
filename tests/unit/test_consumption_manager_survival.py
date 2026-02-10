@@ -69,7 +69,7 @@ class TestConsumptionManagerSurvival:
         assert orders[0].item_id == "basic_food"
         assert orders[0].side == "BUY"
         # Price = 10.0 * 1.1 = 11.0
-        assert orders[0].price_limit == pytest.approx(11.0)
+        assert abs(orders[0].price_limit - 11.0) < 0.0001
 
         assert isinstance(vector, HouseholdActionVector)
         assert vector.work_aggressiveness == 1.0

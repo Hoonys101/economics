@@ -11,7 +11,7 @@ from simulation.models import Order
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.schemas import HouseholdActionVector
 from simulation.ai.api import Personality
-from tests.unit.factories import create_household_dto
+from tests.unit.mocks.mock_factory import MockFactory
 
 # Mock Logger
 @pytest.fixture(autouse=True)
@@ -134,7 +134,7 @@ def mock_config():
 @pytest.fixture
 def mock_household_dto():
     """Returns a HouseholdStateDTO with typical test values."""
-    return create_household_dto(
+    return MockFactory.create_household_state_dto(
         id=1,
         assets=100.0,
         needs={"survival": 0.8, "leisure": 0.5},
