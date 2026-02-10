@@ -21,7 +21,7 @@ from modules.finance.api import (
     IFinancialAgent,
     IFinancialEntity
 )
-from modules.simulation.api import IEducated
+from modules.simulation.api import IEducated, AgentID, AnyAgentID
 from modules.finance.managers.loan_manager import LoanManager
 from modules.finance.managers.deposit_manager import DepositManager
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder
@@ -51,7 +51,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     PH9.2: Implements IBank & IFinancialAgent for Protocol Purity.
     """
 
-    def __init__(self, id: int, initial_assets: float, config_manager: ConfigManager,
+    def __init__(self, id: AgentID, initial_assets: float, config_manager: ConfigManager,
                  shareholder_registry: Optional[IShareholderRegistry] = None,
                  settlement_system: Optional["ISettlementSystem"] = None,
                  credit_scoring_service: Optional[ICreditScoringService] = None,
@@ -91,11 +91,11 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         logger.info(f"Bank {self.id} initialized. Assets: {self.wallet.get_all_balances()}")
 
     @property
-    def id(self) -> int:
+    def id(self) -> AgentID:
         return self._id
 
     @id.setter
-    def id(self, value: int):
+    def id(self, value: AgentID):
         self._id = value
 
     @property
@@ -161,21 +161,15 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
     # --- IBank Implementation ---
 
-    def grant_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanInfoDTO, Transaction]]:
+    def grant_loan(self, borrower_id: AgentID, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanInfoDTO, Transaction]]:
         """
         Grants a loan to a borrower.
         Returns LoanInfoDTO and a 'credit_creation' Transaction.
         Implements IBankService.grant_loan.
         """
-        try:
-            bid_int = int(borrower_id)
-        except ValueError:
-            logger.error(f"Bank.grant_loan: Invalid borrower_id {borrower_id}, expected int-convertible string.")
-            return None
-
         # Delegate to LoanManager
         result = self.loan_manager.assess_and_create_loan(
-            borrower_id=bid_int,
+            borrower_id=borrower_id,
             amount=amount,
             interest_rate=interest_rate,
             due_tick=due_tick,
@@ -207,12 +201,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
         return loan_dto, credit_creation_tx
 
-    def stage_loan(self, borrower_id: str, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
-        try:
-            bid_int = int(borrower_id)
-        except ValueError:
-            return None
-
+    def stage_loan(self, borrower_id: AgentID, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
         # Step 1: Credit Assessment
         if self.credit_scoring_service and borrower_profile:
              assessment = self.credit_scoring_service.assess_creditworthiness(borrower_profile, amount)
@@ -234,7 +223,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
              due_tick = start_tick + term_ticks
 
         loan_id = self.loan_manager.create_loan(
-            borrower_id=bid_int,
+            borrower_id=borrower_id,
             amount=amount,
             interest_rate=interest_rate,
             start_tick=start_tick,
@@ -261,24 +250,15 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         # Delegate to LoanManager (Protocol guaranteed)
         return self.loan_manager.repay_loan(loan_id, amount)
 
-    def get_customer_balance(self, agent_id: str) -> float:
+    def get_customer_balance(self, agent_id: AgentID) -> float:
         """
         Retrieves the current balance for a given CUSTOMER account (deposit).
         Renamed from get_balance to avoid conflict with IFinancialAgent.get_balance.
         """
-        try:
-            aid_int = int(agent_id)
-            return self.deposit_manager.get_balance(aid_int)
-        except ValueError:
-            return 0.0
+        return self.deposit_manager.get_balance(agent_id)
 
-    def get_debt_status(self, borrower_id: str) -> DebtStatusDTO:
-        try:
-            bid_int = int(borrower_id)
-        except ValueError:
-            bid_int = -1
-
-        loans_dto = self.loan_manager.get_loans_for_agent(bid_int)
+    def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
+        loans_dto = self.loan_manager.get_loans_for_agent(borrower_id)
         total_debt = sum(l['remaining_principal'] for l in loans_dto if l['remaining_principal'] > 0)
 
         loan_info_list = []
@@ -286,7 +266,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
             if l['remaining_principal'] <= 0: continue
             loan_info_list.append(LoanInfoDTO(
                 loan_id=l['loan_id'],
-                borrower_id=str(l['borrower_id']),
+                borrower_id=l['borrower_id'],
                 original_amount=l['principal'],
                 outstanding_balance=l['remaining_principal'],
                 interest_rate=l['interest_rate'],
@@ -305,7 +285,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
     # --- Legacy / Internal Methods ---
 
-    def deposit_from_customer(self, depositor_id: int, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> Optional[str]:
+    def deposit_from_customer(self, depositor_id: AgentID, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> Optional[str]:
         default_margin = self._get_config("finance.bank_defaults.deposit_margin", 0.02)
         default_spread = self._get_config("finance.bank_defaults.credit_spread_base", 0.02)
         
@@ -315,7 +295,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
         return self.deposit_manager.create_deposit(depositor_id, amount, deposit_rate, currency)
 
-    def withdraw_for_customer(self, depositor_id: int, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> bool:
+    def withdraw_for_customer(self, depositor_id: AgentID, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> bool:
         # Check liquidity first
         try:
             self._wallet.subtract(amount, currency, memo=f"Customer Withdrawal {depositor_id}")
@@ -333,16 +313,16 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
         return True
 
-    def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
+    def get_debt_summary(self, agent_id: AgentID) -> Dict[str, float]:
         loans = self.loan_manager.get_loans_for_agent(agent_id)
         total_principal = sum(l['remaining_principal'] for l in loans)
         daily_interest_burden = sum((l['remaining_principal'] * l['interest_rate']) / self.ticks_per_year for l in loans)
         return {"total_principal": total_principal, "daily_interest_burden": daily_interest_burden}
 
-    def get_deposit_balance(self, agent_id: int) -> float:
+    def get_deposit_balance(self, agent_id: AgentID) -> float:
         return self.deposit_manager.get_balance(agent_id)
 
-    def run_tick(self, agents_dict: Dict[int, Any], current_tick: int = 0) -> List[Transaction]:
+    def run_tick(self, agents_dict: Dict[AgentID, Any], current_tick: int = 0) -> List[Transaction]:
         self.current_tick_tracker = current_tick
         generated_transactions: List[Transaction] = []
 
@@ -354,7 +334,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
         # --- Loan Servicing ---
 
-        def payment_callback(borrower_id: int, amount: float) -> bool:
+        def payment_callback(borrower_id: AgentID, amount: float) -> bool:
             borrower = agents_dict.get(borrower_id)
             if not borrower: return False
 
@@ -474,7 +454,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
         return generated_transactions
 
-    def _handle_default(self, event: Dict[str, Any], agents_dict: Dict[int, Any], current_tick: int) -> List[Transaction]:
+    def _handle_default(self, event: Dict[str, Any], agents_dict: Dict[AgentID, Any], current_tick: int) -> List[Transaction]:
         transactions = []
         borrower_id = event['borrower_id']
         amount_defaulted = event['amount_defaulted']
@@ -561,7 +541,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         principal = loan_dto['principal'] # Or 'original_amount' in LoanInfoDTO? LoanDTO uses principal.
 
         # 1. Reverse Deposit
-        borrower_id = int(loan_dto['borrower_id'])
+        borrower_id = loan_dto['borrower_id']
         deposit_reversed = self.deposit_manager.remove_deposit_match(borrower_id, principal)
 
         if not deposit_reversed:
@@ -586,11 +566,11 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         logger.info(f"LOAN_VOIDED | Loan {loan_id} cancelled and deposit reversed.")
         return tx
 
-    def get_outstanding_loans_for_agent(self, agent_id: int) -> List[Dict]:
+    def get_outstanding_loans_for_agent(self, agent_id: AgentID) -> List[Dict]:
         loans = self.loan_manager.get_loans_for_agent(agent_id)
         return [
             {
-                "borrower_id": int(l['borrower_id']),
+                "borrower_id": l['borrower_id'],
                 "amount": l['remaining_principal'],
                 "interest_rate": l['interest_rate'],
                 "duration": l['term_months']

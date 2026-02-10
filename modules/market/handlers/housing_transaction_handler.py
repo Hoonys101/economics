@@ -8,6 +8,7 @@ from modules.system.escrow_agent import EscrowAgent
 from modules.common.interfaces import IPropertyOwner, IResident, IMortgageBorrower
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.firms import Firm
+from modules.simulation.api import AgentID
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +112,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                 due_tick = context.time + mortgage_term
 
                 grant_result = context.bank.grant_loan(
-                    borrower_id=str(buyer.id),
+                    borrower_id=buyer.id,
                     amount=loan_amount,
                     interest_rate=mortgage_rate,
                     due_tick=due_tick,
@@ -230,7 +231,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
              assets_val = 0.0
 
         return BorrowerProfileDTO(
-            borrower_id=str(buyer.id),
+            borrower_id=AgentID(buyer.id),
             gross_income=gross_income,
             existing_debt_payments=existing_debt * 0.01, # Approx
             collateral_value=trade_value,

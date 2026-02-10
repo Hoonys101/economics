@@ -1,4 +1,5 @@
 from typing import TypedDict, Dict, Optional, List, TypeAlias, Literal
+from modules.simulation.api import AgentID
 
 CurrencyCode: TypeAlias = str
 
@@ -15,14 +16,14 @@ class InvestmentOrderDTO(TypedDict):
     """Defines an internal order for investment (e.g., R&D, Capex)."""
     order_type: str # e.g., "INVEST_RD", "INVEST_AUTOMATION"
     investment: MoneyDTO
-    target_agent_id: Optional[int] # For M&A, etc.
+    target_agent_id: Optional[AgentID] # For M&A, etc.
 
 # --- Bank Decomposition DTOs (TD-274) ---
 
 LoanStatus = Literal["PENDING", "ACTIVE", "PAID", "DEFAULTED"]
 
 class LoanApplicationDTO(TypedDict):
-    applicant_id: int
+    applicant_id: AgentID
     amount: float
     purpose: str
     term_months: int # Or ticks, depending on usage. Assuming ticks based on Bank code.
@@ -30,7 +31,7 @@ class LoanApplicationDTO(TypedDict):
 
 class LoanDTO(TypedDict):
     loan_id: str
-    borrower_id: int
+    borrower_id: AgentID
     principal: float
     interest_rate: float
     term_months: int
@@ -40,6 +41,6 @@ class LoanDTO(TypedDict):
     due_tick: Optional[int]
 
 class DepositDTO(TypedDict):
-    owner_id: int
+    owner_id: AgentID
     balance: float
     interest_rate: float

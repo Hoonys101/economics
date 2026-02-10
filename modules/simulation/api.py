@@ -1,8 +1,13 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Protocol, TypedDict, Any, List, Dict, Optional, TYPE_CHECKING, runtime_checkable
+from typing import Protocol, TypedDict, Any, List, Dict, Optional, TYPE_CHECKING, runtime_checkable, NewType, Literal, Union
 
 import logging
+
+# --- Unified Agent Identifier ---
+AgentID = NewType('AgentID', int)
+SpecialAgentRole = Literal["GOVERNMENT", "CENTRAL_BANK", "BANK"]
+AnyAgentID = Union[AgentID, SpecialAgentRole]
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -18,7 +23,7 @@ if TYPE_CHECKING:
 @dataclass
 class AgentCoreConfigDTO:
     """Defines the immutable, core properties of an agent."""
-    id: int
+    id: AgentID
     value_orientation: str
     initial_needs: Dict[str, float]
     name: str
@@ -127,7 +132,7 @@ class IDecisionEngine(Protocol):
     def make_decision(self, state: AgentStateDTO, world_context: Any) -> DecisionDTO | Any: ...
 
 class IAgent(Protocol):
-    id: int
+    id: AgentID
     is_active: bool
 
 @runtime_checkable
@@ -196,20 +201,20 @@ class IAgentRepository(Protocol):
         ...
 
 class ShareholderData(TypedDict):
-    agent_id: int
-    firm_id: int
+    agent_id: AgentID
+    firm_id: AgentID
     quantity: float
 
 @runtime_checkable
 class IShareholderRegistry(Protocol):
     """Single source of truth for stock ownership."""
-    def register_shares(self, firm_id: int, agent_id: int, quantity: float) -> None:
+    def register_shares(self, firm_id: AgentID, agent_id: AgentID, quantity: float) -> None:
         """Adds/removes shares. Zero quantity removes the registry entry."""
         ...
-    def get_shareholders_of_firm(self, firm_id: int) -> List[ShareholderData]:
+    def get_shareholders_of_firm(self, firm_id: AgentID) -> List[ShareholderData]:
         """Returns list of owners for a firm."""
         ...
-    def get_total_shares(self, firm_id: int) -> float:
+    def get_total_shares(self, firm_id: AgentID) -> float:
         """Returns total outstanding shares."""
         ...
 
@@ -232,7 +237,7 @@ class ISimulationState(Protocol):
     settlement_system: "ISettlementSystem"
     registry: "IRegistry"
     housing_service: "IHousingService"
-    agents: Dict[int, IAgent]
+    agents: Dict[AgentID, IAgent]
     bank: "IBankService"
     markets: Dict[str, "IMarket"]
 

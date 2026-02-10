@@ -5,6 +5,7 @@ from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.models import Order
 from simulation.dtos.decision_dtos import DecisionOutputDTO
 from modules.finance.api import IFinancialEntity
+from modules.simulation.api import AgentID
 
 # Alias for standardization
 OrderDTO = Order
@@ -21,8 +22,8 @@ if TYPE_CHECKING:
 class TransactionData:
     run_id: int
     time: int
-    buyer_id: int
-    seller_id: int
+    buyer_id: AgentID
+    seller_id: AgentID
     item_id: str
     quantity: float
     price: float
@@ -34,12 +35,12 @@ class TransactionData:
 class AgentStateData:
     run_id: int
     time: int
-    agent_id: int
+    agent_id: AgentID
     agent_type: str
     assets: Dict[CurrencyCode, float] # Changed for Phase 33
     is_active: bool
     is_employed: Optional[bool] = None
-    employer_id: Optional[int] = None
+    employer_id: Optional[AgentID] = None
     needs_survival: Optional[float] = None
     needs_labor: Optional[float] = None
     inventory_food: Optional[float] = None
@@ -93,7 +94,7 @@ class MarketHistoryData:
 class AIDecisionData:
     run_id: int
     tick: int
-    agent_id: int
+    agent_id: AgentID
     decision_type: str
     decision_details: Optional[Dict[str, Any]] = None
     predicted_reward: Optional[float] = None
@@ -186,7 +187,7 @@ class DecisionContext:
     stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
 
     # Agent Discovery Registry (WO-138)
-    agent_registry: Dict[str, int] = field(default_factory=dict)
+    agent_registry: Dict[str, AgentID] = field(default_factory=dict)
 
     # Tick-Snapshot Injection
     market_context: Optional[MarketContextDTO] = None
@@ -211,7 +212,7 @@ class SimulationState:
     time: int
     households: List[Household]
     firms: List[Firm]
-    agents: Dict[int, Any]
+    agents: Dict[AgentID, Any]
     markets: Dict[str, Any]
     government: Any  # Government
     bank: Any        # Bank
@@ -233,7 +234,7 @@ class SimulationState:
     transactions: List[Any] = None # List[Transaction]
     inter_tick_queue: List[Any] = None # List[Transaction]
     effects_queue: List[Dict[str, Any]] = None # WO-109: Queue for side-effects
-    inactive_agents: Dict[int, Any] = None # WO-109: Store inactive agents
+    inactive_agents: Dict[AgentID, Any] = None # WO-109: Store inactive agents
     taxation_system: Optional[Any] = None # WO-116: Taxation System
     currency_holders: List[Any] = None # Added for M2 tracking (Phase 33/5)
     stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
@@ -246,15 +247,15 @@ class SimulationState:
 
     # --- NEW TRANSIENT FIELDS ---
     # From Phase 1 (Decisions)
-    firm_pre_states: Dict[int, Any] = None
-    household_pre_states: Dict[int, Any] = None
-    household_time_allocation: Dict[int, float] = None
+    firm_pre_states: Dict[AgentID, Any] = None
+    household_pre_states: Dict[AgentID, Any] = None
+    household_time_allocation: Dict[AgentID, float] = None
 
     # From Commerce System (planned in Phase 1, used in PostSequence)
-    planned_consumption: Optional[Dict[int, Dict[str, Any]]] = None # TD-118
+    planned_consumption: Optional[Dict[AgentID, Dict[str, Any]]] = None # TD-118
 
     # From Lifecycle (used in PostSequence for Learning)
-    household_leisure_effects: Dict[int, float] = None
+    household_leisure_effects: Dict[AgentID, float] = None
 
     # Injection
     injectable_sensory_dto: Optional[Any] = None # GovernmentStateDTO
@@ -305,7 +306,7 @@ class StockMarketHistoryData:
     """주식 시장 틱별 이력 (기업별)"""
     run_id: int
     time: int
-    firm_id: int
+    firm_id: AgentID
     
     # 주가 관련
     stock_price: float              # 현재 주가 (거래가 또는 기준가)
@@ -354,7 +355,7 @@ class HouseholdIncomeData:
     """가계별 소득 원천 추적"""
     run_id: int
     time: int
-    household_id: int
+    household_id: AgentID
     
     labor_income: float             # 노동 소득 (임금)
     dividend_income: float          # 배당 소득
@@ -445,10 +446,10 @@ class TimeBudgetDTO:
 @dataclass
 class FamilyInfoDTO:
     """가계의 가족 관계 정보 (AI 의사결정용 입력)"""
-    agent_id: int
+    agent_id: AgentID
     generation: int
-    parent_id: Optional[int]
-    children_ids: List[int]
+    parent_id: Optional[AgentID]
+    children_ids: List[AgentID]
     children_avg_xp: float = 0.0  # 자녀들의 평균 지능
 
 

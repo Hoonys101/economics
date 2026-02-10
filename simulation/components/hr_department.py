@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
 import logging
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
 from modules.hr.api import IEmployeeDataProvider
+from modules.simulation.api import AgentID
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -18,8 +19,8 @@ class HRDepartment:
     def __init__(self, firm: Firm):
         self.firm = firm
         self.employees: List[IEmployeeDataProvider] = []
-        self.employee_wages: Dict[int, float] = {}  # AgentID -> Wage
-        self.unpaid_wages: Dict[int, List[Tuple[int, float]]] = {} # AgentID -> List[(tick, amount)]
+        self.employee_wages: Dict[AgentID, float] = {}  # AgentID -> Wage
+        self.unpaid_wages: Dict[AgentID, List[Tuple[int, float]]] = {} # AgentID -> List[(tick, amount)]
         self.hires_last_tick: int = 0
 
     def calculate_wage(self, employee: IEmployeeDataProvider, base_wage: float) -> float:
@@ -195,7 +196,7 @@ class HRDepartment:
         if employee.id in self.employee_wages:
             del self.employee_wages[employee.id]
 
-    def fire_employee(self, employee_id: int, severance_pay: float) -> bool:
+    def fire_employee(self, employee_id: AgentID, severance_pay: float) -> bool:
         """
         Fires an employee with severance pay.
         Returns True if successful (found and paid), False otherwise.

@@ -45,6 +45,7 @@ from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCo
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
 from modules.finance.api import IShareholderRegistry
+from modules.simulation.api import AgentID
 
 
 class WorldState:
@@ -70,7 +71,7 @@ class WorldState:
         self.run_id: int = 0
         self.households: List[Household] = []
         self.firms: List[Firm] = []
-        self.agents: Dict[int, Any] = {}
+        self.agents: Dict[AgentID, Any] = {}
         self.next_agent_id: int = 0
         self.markets: Dict[str, Market] = {}
         self.bank: Optional[Bank] = None
@@ -221,16 +222,16 @@ class WorldState:
         # Fallback if no exchange engine: just return the target currency balance
         return all_money.get(target_currency, 0.0)
 
-    def resolve_agent_id(self, role: str) -> Optional[int]:
+    def resolve_agent_id(self, role: str) -> Optional[AgentID]:
         """
         Dynamically resolves specific agent IDs by role (e.g. GOVERNMENT, CENTRAL_BANK).
         Used to eliminate hardcoded ID constants.
         """
         if role == "GOVERNMENT":
             self.logger.warning("Call to deprecated method WorldState.resolve_agent_id('GOVERNMENT')")
-            return self.governments[0].id if self.governments else None
+            return AgentID(self.governments[0].id) if self.governments else None
         elif role == "CENTRAL_BANK":
-            return self.central_bank.id if self.central_bank else None
+            return AgentID(self.central_bank.id) if self.central_bank else None
         return None
 
     def register_currency_holder(self, holder: ICurrencyHolder) -> None:

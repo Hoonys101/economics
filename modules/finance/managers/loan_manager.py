@@ -1,5 +1,6 @@
 from typing import Dict, List, Optional, Tuple, Any, Callable
 from dataclasses import dataclass
+from modules.simulation.api import AgentID
 from modules.finance.api import (
     ILoanManager, LoanDTO, LoanApplicationDTO, LoanNotFoundError,
     IDepositManager, ICreditScoringService, BorrowerProfileDTO,
@@ -16,7 +17,7 @@ _DEFAULT_TICKS_PER_YEAR = 365.0
 @dataclass
 class _Loan:
     loan_id: str
-    borrower_id: int
+    borrower_id: AgentID
     principal: float
     remaining_balance: float
     annual_interest_rate: float
@@ -46,7 +47,7 @@ class LoanManager(ILoanManager):
         else:
             self.ticks_per_year = getattr(config, "TICKS_PER_YEAR", _DEFAULT_TICKS_PER_YEAR) if config else _DEFAULT_TICKS_PER_YEAR
 
-    def create_loan(self, borrower_id: int, amount: float, interest_rate: float,
+    def create_loan(self, borrower_id: AgentID, amount: float, interest_rate: float,
                     start_tick: int, term_ticks: int, created_deposit_id: Optional[str] = None) -> str:
         """
         Creates a new loan and returns its ID.
@@ -72,7 +73,7 @@ class LoanManager(ILoanManager):
 
     def assess_and_create_loan(
         self,
-        borrower_id: int,
+        borrower_id: AgentID,
         amount: float,
         interest_rate: float,
         due_tick: Optional[int],
@@ -165,7 +166,7 @@ class LoanManager(ILoanManager):
 
         dto = LoanInfoDTO(
             loan_id=loan_id,
-            borrower_id=str(borrower_id),
+            borrower_id=borrower_id,
             original_amount=amount,
             outstanding_balance=amount,
             interest_rate=interest_rate,
@@ -187,7 +188,7 @@ class LoanManager(ILoanManager):
     def process_applications(self) -> None:
         pass
 
-    def service_loans(self, current_tick: int, payment_callback: Callable[[int, float], bool]) -> List[Any]:
+    def service_loans(self, current_tick: int, payment_callback: Callable[[AgentID, float], bool]) -> List[Any]:
         """
         Iterates active loans, calculates interest, and attempts to collect via callback.
         Returns a list of event dicts:
@@ -238,10 +239,10 @@ class LoanManager(ILoanManager):
             return None
         return self._map_to_dto(loan)
 
-    def get_loans_for_agent(self, agent_id: int) -> List[LoanDTO]:
+    def get_loans_for_agent(self, agent_id: AgentID) -> List[LoanDTO]:
         return [self._map_to_dto(l) for l in self._loans.values() if l.borrower_id == agent_id]
 
-    def get_debt_status(self, borrower_id: int) -> DebtStatusDTO:
+    def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
         loans_dto = self.get_loans_for_agent(borrower_id)
         total_debt = sum(l['remaining_principal'] for l in loans_dto if l['remaining_principal'] > 0)
 
@@ -250,7 +251,7 @@ class LoanManager(ILoanManager):
             if l['remaining_principal'] <= 0: continue
             loan_info_list.append(LoanInfoDTO(
                 loan_id=l['loan_id'],
-                borrower_id=str(l['borrower_id']),
+                borrower_id=l['borrower_id'],
                 original_amount=l['principal'],
                 outstanding_balance=l['remaining_principal'],
                 interest_rate=l['interest_rate'],
@@ -259,7 +260,7 @@ class LoanManager(ILoanManager):
             ))
 
         return DebtStatusDTO(
-            borrower_id=str(borrower_id),
+            borrower_id=borrower_id,
             total_outstanding_debt=total_debt,
             loans=loan_info_list,
             is_insolvent=False, # Logic for insolvency check can be added if needed
@@ -267,7 +268,7 @@ class LoanManager(ILoanManager):
             next_payment_due_tick=None
         )
 
-    def get_debt_summary(self, agent_id: int) -> Dict[str, float]:
+    def get_debt_summary(self, agent_id: AgentID) -> Dict[str, float]:
         loans = self.get_loans_for_agent(agent_id)
         total_principal = sum(l['remaining_principal'] for l in loans)
         daily_interest_burden = sum((l['remaining_principal'] * l['interest_rate']) / self.ticks_per_year for l in loans)

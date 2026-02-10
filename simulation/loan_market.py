@@ -9,6 +9,7 @@ from modules.housing.dtos import MortgageApprovalDTO
 from modules.market.housing_planner_api import ILoanMarket
 from modules.finance.api import MortgageApplicationDTO
 from modules.finance.api import LoanInfoDTO as LoanDTO
+from modules.simulation.api import AgentID
 
 if TYPE_CHECKING:
     from simulation.bank import Bank # For legacy casting if needed
@@ -150,7 +151,7 @@ class LoanMarket(Market, ILoanMarket):
         principal = application.get('requested_principal', 0.0)
 
         loan_info = self.bank.stage_loan(
-            borrower_id=str(application['applicant_id']),
+            borrower_id=application['applicant_id'],
             amount=principal,
             interest_rate=interest_rate,
             due_tick=None, # Bank defaults using term
@@ -188,7 +189,7 @@ class LoanMarket(Market, ILoanMarket):
              loan = self.bank.loans[staged_loan_id]
              return {
                  "loan_id": staged_loan_id,
-                 "borrower_id": str(loan.borrower_id),
+                 "borrower_id": loan.borrower_id,
                  "original_amount": loan.principal,
                  "outstanding_balance": loan.remaining_balance,
                  "interest_rate": loan.annual_interest_rate,
@@ -225,7 +226,7 @@ class LoanMarket(Market, ILoanMarket):
         due_tick = current_tick + loan_term
 
         grant_result = self.bank.grant_loan(
-            borrower_id=str(applicant_id),
+            borrower_id=applicant_id,
             amount=principal,
             interest_rate=interest_rate,
             due_tick=due_tick
@@ -286,7 +287,7 @@ class LoanMarket(Market, ILoanMarket):
                 borrower_profile = order.metadata["borrower_profile"]
 
             grant_result = self.bank.grant_loan(
-                borrower_id=str(order.agent_id),
+                borrower_id=AgentID(order.agent_id),
                 amount=loan_amount,
                 interest_rate=interest_rate,
                 due_tick=due_tick,
