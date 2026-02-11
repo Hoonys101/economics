@@ -9,10 +9,10 @@ def mock_config():
     config.UNEMPLOYMENT_BENEFIT_RATIO = 0.5
     config.ANNUAL_WEALTH_TAX_RATE = 0.02
     config.TICKS_PER_YEAR = 100
-    config.WEALTH_TAX_THRESHOLD = 1000.0
+    config.WEALTH_TAX_THRESHOLD = 1000.0 # 1000 dollars. Code converts to pennies * 100 -> 100,000 pennies
     config.STIMULUS_TRIGGER_GDP_DROP = -0.1
     config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
-    config.GOODS_INITIAL_PRICE = {"basic_food": 10.0}
+    config.GOODS_INITIAL_PRICE = {"basic_food": 10}
     # Add other attributes accessed by Government.__init__
     config.GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"
     config.INCOME_TAX_RATE = 0.1
@@ -23,7 +23,7 @@ def mock_config():
 
 @pytest.fixture
 def government(mock_config):
-    gov = Government(id=1, initial_assets=100000.0, config_module=mock_config)
+    gov = Government(id=1, initial_assets=100000, config_module=mock_config)
     gov.settlement_system = MagicMock()
     gov.settlement_system.transfer.return_value = True
     return gov
@@ -36,7 +36,11 @@ def test_government_execute_social_policy_tax_and_welfare(government):
     rich_agent.is_active = True
     rich_agent.is_employed = True
     rich_agent.needs = {}
-    rich_agent.assets = {DEFAULT_CURRENCY: 2000.0} # Net worth 2000. Taxable 1000 * 0.0002 = 0.2
+    rich_agent.assets = {DEFAULT_CURRENCY: 2000000} # Net worth 2M pennies.
+    # Mock get_balance to support engines using IFinancialAgent
+    rich_agent.get_balance.return_value = 2000000
+    # Mock get_assets_by_currency for ICurrencyHolder
+    rich_agent.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 2000000}
 
     # 2. Poor Unemployed Agent (Welfare)
     poor_agent = MagicMock()
@@ -44,13 +48,15 @@ def test_government_execute_social_policy_tax_and_welfare(government):
     poor_agent.is_active = True
     poor_agent.is_employed = False
     poor_agent.needs = {}
-    poor_agent.assets = {DEFAULT_CURRENCY: 100.0}
+    poor_agent.assets = {DEFAULT_CURRENCY: 100}
+    poor_agent.get_balance.return_value = 100
+    poor_agent.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 100}
 
     agents = [rich_agent, poor_agent]
 
     market_data = {
-        "goods_market": {"basic_food_current_sell_price": 20.0},
-        "total_production": 1000.0
+        "goods_market": {"basic_food_current_sell_price": 20},
+        "total_production": 1000
     }
 
     # Execution
@@ -58,7 +64,10 @@ def test_government_execute_social_policy_tax_and_welfare(government):
 
     # Verification - Tax
     # Expect transfer from rich_agent to gov
-    # Amount: 0.2
+    # Threshold = 1000.0 * 100 = 100,000 pennies.
+    # Taxable = 2,000,000 - 100,000 = 1,900,000.
+    # Annual Rate = 0.02. Ticks = 100. Tick Rate = 0.0002.
+    # Tax = 1,900,000 * 0.0002 = 380 pennies.
     # Check calls to settlement_system.transfer
 
     transfer_calls = government.settlement_system.transfer.call_args_list
@@ -73,26 +82,12 @@ def test_government_execute_social_policy_tax_and_welfare(government):
 
     assert args0[0].id == rich_agent.id
     assert args0[1].id == government.id
-    assert args0[2] == 0.2
+    assert args0[2] == 380
     assert args0[3] == "wealth_tax"
 
     # Check Welfare Call
-    # Benefit = 20.0 (survival) * 0.5 = 10.0
+    # Benefit = 20 (survival) * 0.5 = 10
     args1, kwargs1 = transfer_calls[1]
-
-    # For Welfare, payer is Government.
-    # Depending on how the call was made, args1[0] might be the government object OR a string/ID if mocked loosely.
-    # But in our code we resolve it to 'self'.
-    # If args1[0] is 'GOVERNMENT', it means the resolution logic failed or mock intercepted early.
-    # The previous failure showed 'AttributeError: 'str' object has no attribute 'id''.
-    # This implies args1[0] is a string "GOVERNMENT".
-    # Wait, TaxService sets PAYEE="GOVERNMENT" for tax.
-    # WelfareManager sets PAYER="GOVERNMENT" for welfare? Let's check WelfareManager.
-    # In `modules/government/welfare/manager.py` (assumed), it likely returns PaymentRequest(payer="GOVERNMENT", ...)
-    # Government.execute_social_policy iterates requests.
-    # It resolves `payer == self.id` -> `payer = self`.
-    # But if `payer` in request is "GOVERNMENT" (string), and `self.id` is int(1), they don't match.
-    # We added resolution for Payee, but did we add it for Payer?
 
     payer_val = args1[0]
     if hasattr(payer_val, 'id'):
@@ -101,12 +96,12 @@ def test_government_execute_social_policy_tax_and_welfare(government):
         assert str(payer_val) == "GOVERNMENT" or str(payer_val) == str(government.id)
 
     assert args1[1].id == poor_agent.id
-    assert args1[2] == 10.0
+    assert args1[2] == 10
     assert args1[3] == "welfare_support_unemployment"
 
     # Check Revenue Recorded
-    assert government.tax_service.get_total_collected_this_tick() == 0.2
+    assert government.tax_service.get_total_collected_this_tick() == 380
 
     # Check Expenditure Recorded
     # finalize_tick not called yet, but Manager tracks it.
-    assert government.welfare_manager.get_spending_this_tick() == 10.0
+    assert government.welfare_manager.get_spending_this_tick() == 10

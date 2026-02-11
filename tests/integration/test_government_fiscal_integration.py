@@ -25,17 +25,17 @@ class TestGovernmentFiscalIntegration:
 
         # Override manager with a mock to verify delegation
         gov.tax_service.fiscal_policy_manager = MagicMock()
-        gov.tax_service.fiscal_policy_manager.calculate_tax_liability.return_value = 123.45
+        gov.tax_service.fiscal_policy_manager.calculate_tax_liability.return_value = 123
 
         # Ensure a policy is set
         gov.fiscal_policy = MagicMock(spec=FiscalPolicyDTO)
 
         # Execute
-        tax = gov.calculate_income_tax(1000.0, 10.0)
+        tax = gov.calculate_income_tax(1000, 10)
 
         # Verify
-        assert tax == 123.45
-        gov.tax_service.fiscal_policy_manager.calculate_tax_liability.assert_called_once_with(gov.fiscal_policy, 1000.0)
+        assert tax == 123
+        gov.tax_service.fiscal_policy_manager.calculate_tax_liability.assert_called_once_with(gov.fiscal_policy, 1000)
 
     def test_make_policy_decision_updates_fiscal_policy(self, mock_config):
         # Setup

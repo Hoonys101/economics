@@ -8,11 +8,11 @@ from modules.finance.api import OMOInstructionDTO
 from modules.system.constants import ID_CENTRAL_BANK
 
 class MockAgent:
-    def __init__(self, agent_id, assets=0.0):
+    def __init__(self, agent_id, assets=0):
         self.id = agent_id
-        self.assets = float(assets)
-        self.total_money_issued = 0.0
-        self.total_money_destroyed = 0.0
+        self.assets = int(assets)
+        self.total_money_issued = 0
+        self.total_money_destroyed = 0
         self._econ_state = MagicMock()
         self._econ_state.assets = self.assets
 
@@ -27,12 +27,15 @@ class MockAgent:
         self.assets -= amount
         self._econ_state.assets = self.assets
 
+    def get_balance(self, currency="USD"):
+        return self.assets
+
 @pytest.fixture
 def omo_setup():
     # SettlementSystem checks for "CENTRAL_BANK" ID or "CentralBank" class name to allow overdraft (Minting)
-    cb_agent = MockAgent(agent_id=ID_CENTRAL_BANK, assets=0.0)
-    gov_agent = MockAgent(agent_id=0, assets=1000.0)
-    household = MockAgent(agent_id=1, assets=500.0)
+    cb_agent = MockAgent(agent_id=ID_CENTRAL_BANK, assets=0)
+    gov_agent = MockAgent(agent_id=0, assets=1000)
+    household = MockAgent(agent_id=1, assets=500)
 
     logger = MagicMock()
     settlement = SettlementSystem(logger=logger)
@@ -71,7 +74,7 @@ def test_execute_omo_purchase_order_creation(omo_setup):
 
     instruction: OMOInstructionDTO = {
         "operation_type": "purchase",
-        "target_amount": 100.0
+        "target_amount": 100
     }
 
     orders = cb_system.execute_open_market_operation(instruction)
@@ -79,7 +82,7 @@ def test_execute_omo_purchase_order_creation(omo_setup):
     assert len(orders) == 1
     assert orders[0].agent_id == cb_system.id
     assert orders[0].order_type == "buy"
-    assert orders[0].quantity == 100.0
+    assert orders[0].quantity == 100
     assert orders[0].price > 0 # High price for purchase
     assert orders[0].market_id == "security_market"
 
@@ -88,7 +91,7 @@ def test_execute_omo_sale_order_creation(omo_setup):
 
     instruction: OMOInstructionDTO = {
         "operation_type": "sale",
-        "target_amount": 50.0
+        "target_amount": 50
     }
 
     orders = cb_system.execute_open_market_operation(instruction)
@@ -96,7 +99,7 @@ def test_execute_omo_sale_order_creation(omo_setup):
     assert len(orders) == 1
     assert orders[0].agent_id == cb_system.id
     assert orders[0].order_type == "sell"
-    assert orders[0].quantity == 50.0
+    assert orders[0].quantity == 50
     assert orders[0].price == 0 # Market order
     assert orders[0].market_id == "security_market"
 
@@ -105,13 +108,13 @@ def test_process_omo_purchase_transaction(omo_setup):
 
     # Household sells bond to CB (OMO Purchase by CB)
     # CB pays Household
-    trade_price = 100.0
+    trade_price = 100
     tx = Transaction(
         buyer_id=cb_agent.id,
         seller_id=household.id,
         item_id="government_bond",
-        quantity=10.0,
-        price=10.0, # Unit price 10.0 * Qty 10.0 = 100.0
+        quantity=10,
+        price=10, # Unit price 10. Total = 100
         market_id="security_market",
         transaction_type="omo_purchase",
         time=1
@@ -134,13 +137,13 @@ def test_process_omo_sale_transaction(omo_setup):
 
     # Household buys bond from CB (OMO Sale by CB)
     # Household pays CB
-    trade_price = 100.0
+    trade_price = 100
     tx = Transaction(
         buyer_id=household.id,
         seller_id=cb_agent.id,
         item_id="government_bond",
-        quantity=5.0,
-        price=20.0, # Unit price 20.0 * Qty 5.0 = 100.0
+        quantity=5,
+        price=20, # Unit price 20. Total = 100
         market_id="security_market",
         transaction_type="omo_sale",
         time=1

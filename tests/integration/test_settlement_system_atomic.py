@@ -15,7 +15,7 @@ def test_settlement_scenario_1_standard_inheritance(settlement_system, golden_ho
 
     # Setup Deceased Agent
     deceased.id = 101
-    deceased.assets = 1000.0
+    deceased.assets = 1000
 
     portfolio_dto = PortfolioDTO(assets=[
         PortfolioAsset(asset_type="stock", asset_id="999", quantity=10.0)
@@ -35,18 +35,18 @@ def test_settlement_scenario_1_standard_inheritance(settlement_system, golden_ho
     deceased.get_heir = MagicMock(return_value=heir.id)
     deceased.withdraw = MagicMock()
     # Mock get_balance for IFinancialAgent compliance
-    deceased.get_balance = MagicMock(return_value=1000.0)
+    deceased.get_balance = MagicMock(return_value=1000)
 
     # Run Create
     account = settlement_system.create_settlement(deceased, tick=100)
 
-    assert account.escrow_cash == 1000.0
+    assert account.escrow_cash == 1000
     assert len(account.escrow_portfolio.assets) == 1
     assert account.heir_id == heir.id
     assert not account.is_escheatment
 
     # Execute
-    distribution_plan = [(heir, 1000.0, "inheritance", "transfer")]
+    distribution_plan = [(heir, 1000, "inheritance", "transfer")]
     settlement_system.execute_settlement(deceased.id, distribution_plan, tick=101)
 
     # Verify
@@ -56,7 +56,7 @@ def test_settlement_scenario_1_standard_inheritance(settlement_system, golden_ho
     assert received_dto.assets[0].asset_id == "999"
     assert received_dto.assets[0].quantity == 10.0
 
-    heir.deposit.assert_called_with(1000.0)
+    heir.deposit.assert_called_with(1000)
 
     # Close
     success = settlement_system.verify_and_close(deceased.id, tick=102)
@@ -70,7 +70,7 @@ def test_settlement_scenario_2_escheatment(settlement_system, golden_households,
 
     deceased = golden_households[0]
     deceased.id = 201
-    deceased.assets = 1000.0
+    deceased.assets = 1000
 
     portfolio_dto = PortfolioDTO(assets=[
         PortfolioAsset(asset_type="stock", asset_id="123", quantity=50.0)
@@ -81,7 +81,7 @@ def test_settlement_scenario_2_escheatment(settlement_system, golden_households,
     deceased.receive_portfolio = MagicMock() # Required for IPortfolioHandler check
     deceased.get_heir = MagicMock(return_value=None) # No heir
     deceased.withdraw = MagicMock()
-    deceased.get_balance = MagicMock(return_value=1000.0)
+    deceased.get_balance = MagicMock(return_value=1000)
 
     # Mock Government behavior (spy/mock)
     # Government fixture is a real object with mocked deps.
@@ -101,7 +101,7 @@ def test_settlement_scenario_2_escheatment(settlement_system, golden_households,
 
     # Execute
     # Gov gets everything
-    distribution_plan = [(government, 1000.0, "escheatment", "transfer")]
+    distribution_plan = [(government, 1000, "escheatment", "transfer")]
     settlement_system.execute_settlement(deceased.id, distribution_plan, tick=201)
 
     # Verify Cash
@@ -125,7 +125,7 @@ def test_settlement_scenario_3_insolvency(settlement_system, golden_households, 
 
     deceased = golden_households[0]
     deceased.id = 301
-    deceased.assets = 100.0 # Only 100 cash
+    deceased.assets = 100 # Only 100 cash
 
     portfolio_dto = PortfolioDTO(assets=[])
 
@@ -134,7 +134,7 @@ def test_settlement_scenario_3_insolvency(settlement_system, golden_households, 
     deceased.receive_portfolio = MagicMock() # Required for IPortfolioHandler check
     deceased.get_heir = MagicMock(return_value=None)
     deceased.withdraw = MagicMock()
-    deceased.get_balance = MagicMock(return_value=100.0)
+    deceased.get_balance = MagicMock(return_value=100)
 
     account = settlement_system.create_settlement(deceased, tick=300)
 
@@ -143,28 +143,28 @@ def test_settlement_scenario_3_insolvency(settlement_system, golden_households, 
     # But here we simulate that the plan is correctly capped at 100.
     # And verifying SettlementSystem processes it cleanly.
 
-    distribution_plan = [(government, 100.0, "tax", "transfer")]
+    distribution_plan = [(government, 100, "tax", "transfer")]
 
     settlement_system.execute_settlement(deceased.id, distribution_plan, tick=301)
 
-    assert account.escrow_cash == 0.0
+    assert account.escrow_cash == 0
     success = settlement_system.verify_and_close(deceased.id, tick=302)
     assert success
 
     # Test Overdraft Protection
     # If we tried to pay 101...
-    deceased.assets = 100.0
+    deceased.assets = 100
     # Reset mock for new call
-    deceased.get_balance = MagicMock(return_value=100.0)
+    deceased.get_balance = MagicMock(return_value=100)
 
     account_fail = settlement_system.create_settlement(deceased, tick=310)
-    plan_fail = [(government, 101.0, "tax", "transfer")]
+    plan_fail = [(government, 101, "tax", "transfer")]
 
     # Capture logs?
     settlement_system.execute_settlement(deceased.id, plan_fail, tick=311)
 
     # Cash should remain 100 because transfer rejected
-    assert account_fail.escrow_cash == 100.0
+    assert account_fail.escrow_cash == 100
 
     # Close fails because cash remains
     success = settlement_system.verify_and_close(deceased.id, tick=312)
