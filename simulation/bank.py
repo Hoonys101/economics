@@ -52,9 +52,10 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         # internal wallet mostly for legacy interface compatibility until fully removed
         initial_balance_dict = {}
         if isinstance(initial_assets, dict):
-            initial_balance_dict = initial_assets.copy()
+            for k, v in initial_assets.items():
+                initial_balance_dict[k] = int(v)
         else:
-            initial_balance_dict[DEFAULT_CURRENCY] = float(initial_assets)
+            initial_balance_dict[DEFAULT_CURRENCY] = int(initial_assets)
         self._wallet = Wallet(self.id, initial_balance_dict)
 
         self.ticks_per_year = self._get_config("finance.ticks_per_year", _DEFAULT_TICKS_PER_YEAR)
@@ -86,21 +87,21 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     # --- IFinancialEntity Implementation ---
 
     @property
-    def assets(self) -> float:
+    def assets(self) -> int:
         return self.get_balance(DEFAULT_CURRENCY)
 
     # --- IFinancialAgent Implementation ---
 
-    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         # Bank's own funds
         if self.finance_system and hasattr(self.finance_system, 'ledger'):
             if self.id in self.finance_system.ledger.banks:
                 reserves = self.finance_system.ledger.banks[self.id].reserves
-                if currency not in reserves: reserves[currency] = 0.0
+                if currency not in reserves: reserves[currency] = 0
                 reserves[currency] += amount
         self._wallet.add(amount, currency, memo="Deposit") # Sync local
 
-    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         if self.finance_system and hasattr(self.finance_system, 'ledger'):
              if self.id in self.finance_system.ledger.banks:
                 reserves = self.finance_system.ledger.banks[self.id].reserves
@@ -109,13 +110,13 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
                 reserves[currency] -= amount
         self._wallet.subtract(amount, currency, memo="Withdraw") # Sync local
 
-    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         if self.finance_system and hasattr(self.finance_system, 'ledger'):
              if self.id in self.finance_system.ledger.banks:
-                 return self.finance_system.ledger.banks[self.id].reserves.get(currency, 0.0)
+                 return self.finance_system.ledger.banks[self.id].reserves.get(currency, 0)
         return self._wallet.get_balance(currency)
 
-    def get_all_balances(self) -> Dict[CurrencyCode, float]:
+    def get_all_balances(self) -> Dict[CurrencyCode, int]:
         if self.finance_system and hasattr(self.finance_system, 'ledger'):
              if self.id in self.finance_system.ledger.banks:
                  return self.finance_system.ledger.banks[self.id].reserves.copy()
@@ -123,14 +124,14 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
     # --- ICurrencyHolder Implementation ---
 
-    def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, int]:
         return self.get_all_balances()
 
     def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self.deposit(amount, currency)
+        self.deposit(int(amount), currency)
 
     def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self.withdraw(amount, currency)
+        self.withdraw(int(amount), currency)
 
     def get_interest_rate(self) -> float:
         return self.base_rate
@@ -146,7 +147,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
     # --- IBank Implementation ---
 
-    def grant_loan(self, borrower_id: AgentID, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanInfoDTO, Transaction]]:
+    def grant_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanInfoDTO, Transaction]]:
         if not self.finance_system:
             logger.error("Bank: FinanceSystem not set. Cannot grant loan.")
             return None
@@ -179,14 +180,14 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
         return loan_dto, credit_tx
 
-    def stage_loan(self, borrower_id: AgentID, amount: float, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
+    def stage_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
         # Implementation of stage_loan (without booking) is harder with pure stateless engines
         # skipping strictly "staging" or implementing as a Dry Run.
         # For now, return None or Mock it.
         logger.warning("Bank.stage_loan not fully supported in stateless mode yet.")
         return None
 
-    def repay_loan(self, loan_id: str, amount: float) -> bool:
+    def repay_loan(self, loan_id: str, amount: int) -> bool:
         # This should be handled by DebtServicingEngine (automatic) or explicit transfer.
         # If this is explicit early repayment:
         # Not yet implemented in DebtServicingEngine API explicitly for external calls
@@ -197,10 +198,10 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         logger.warning("Bank.repay_loan called. Manual repayment not yet implemented in Engine API.")
         return False
 
-    def get_customer_balance(self, agent_id: AgentID) -> float:
+    def get_customer_balance(self, agent_id: AgentID) -> int:
         if self.finance_system and hasattr(self.finance_system, 'get_customer_balance'):
             return self.finance_system.get_customer_balance(self.id, agent_id)
-        return 0.0
+        return 0
 
     def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
         if self.finance_system and hasattr(self.finance_system, 'get_customer_debt_status'):
@@ -214,29 +215,29 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
                  next_payment_due=None,
                  next_payment_due_tick=None
              )
-        return DebtStatusDTO(borrower_id=borrower_id, total_outstanding_debt=0.0, loans=[], is_insolvent=False, next_payment_due=None, next_payment_due_tick=None)
+        return DebtStatusDTO(borrower_id=borrower_id, total_outstanding_debt=0, loans=[], is_insolvent=False, next_payment_due=None, next_payment_due_tick=None)
 
     def terminate_loan(self, loan_id: str) -> Optional["Transaction"]:
         return None
 
-    def withdraw_for_customer(self, agent_id: AgentID, amount: float) -> bool:
+    def withdraw_for_customer(self, agent_id: AgentID, amount: int) -> bool:
         if self.finance_system and hasattr(self.finance_system, 'ledger'):
              if self.id in self.finance_system.ledger.banks:
                  dep_id = f"DEP_{agent_id}_{self.id}"
                  bank_state = self.finance_system.ledger.banks[self.id]
                  if dep_id in bank_state.deposits:
-                     if bank_state.deposits[dep_id].balance >= amount:
-                         bank_state.deposits[dep_id].balance -= amount
+                     if bank_state.deposits[dep_id].balance_pennies >= amount:
+                         bank_state.deposits[dep_id].balance_pennies -= amount
                          return True
         return False
 
-    def get_total_deposits(self) -> float:
+    def get_total_deposits(self) -> int:
         # Sum from Ledger
         if self.finance_system and hasattr(self.finance_system, 'ledger'):
              if self.id in self.finance_system.ledger.banks:
                  deposits = self.finance_system.ledger.banks[self.id].deposits
-                 return sum(d.balance for d in deposits.values())
-        return 0.0
+                 return sum(d.balance_pennies for d in deposits.values())
+        return 0
 
     # --- Agent Lifecycle ---
 
@@ -265,7 +266,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
                  bank_state = self.finance_system.ledger.banks[self.id]
                  from modules.finance.engine_api import DepositStateDTO
                  if dep_id not in bank_state.deposits:
-                     bank_state.deposits[dep_id] = DepositStateDTO(dep_id, depositor_id, 0.0, 0.0, currency)
-                 bank_state.deposits[dep_id].balance += amount
+                     bank_state.deposits[dep_id] = DepositStateDTO(dep_id, depositor_id, 0, 0.0, currency)
+                 bank_state.deposits[dep_id].balance_pennies += int(amount)
                  return dep_id
         return None

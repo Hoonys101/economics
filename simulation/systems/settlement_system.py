@@ -21,9 +21,10 @@ class SettlementSystem(ISettlementSystem):
     """
     Centralized system for handling all financial transfers between entities.
     Enforces atomicity and zero-sum integrity.
+    MIGRATION: Uses integer pennies for all monetary values.
 
     ZERO-SUM PRINCIPLE:
-    Every transfer MUST result in a net change of 0.0 across the system.
+    Every transfer MUST result in a net change of 0 across the system.
     Asset deduction from one agent must exactly equal asset addition to another.
     Money creation/destruction is ONLY allowed via the CentralBank (Minting Authority).
     """
@@ -31,7 +32,7 @@ class SettlementSystem(ISettlementSystem):
     def __init__(self, logger: Optional[logging.Logger] = None, bank: Optional[IBank] = None):
         self.logger = logger if logger else logging.getLogger(__name__)
         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
-        self.total_liquidation_losses: float = 0.0
+        self.total_liquidation_losses: int = 0
         self.settlement_accounts: Dict[int, LegacySettlementAccount] = {} # TD-160
 
     def create_settlement(
@@ -56,7 +57,7 @@ class SettlementSystem(ISettlementSystem):
 
         # 2. Atomic Transfer: Cash
         # IFinancialAgent protocol enforcement (was agent.assets)
-        cash_balance = agent.get_balance(DEFAULT_CURRENCY)
+        cash_balance = agent.get_balance(DEFAULT_CURRENCY) # Returns int pennies
 
         if cash_balance > 0:
             agent.withdraw(cash_balance)
@@ -83,7 +84,7 @@ class SettlementSystem(ISettlementSystem):
         self.settlement_accounts[agent_id] = account
 
         self.logger.info(
-            f"SETTLEMENT_CREATED | Escrow account created for Agent {agent_id}. Cash: {cash_balance:.2f}. Portfolio items: {len(portfolio_dto.assets)}. Heir: {heir_id if heir_id else 'NONE (Escheatment)'}",
+            f"SETTLEMENT_CREATED | Escrow account created for Agent {agent_id}. Cash: {cash_balance}. Portfolio items: {len(portfolio_dto.assets)}. Heir: {heir_id if heir_id else 'NONE (Escheatment)'}",
             extra={"tick": tick, "agent_id": agent_id, "tags": ["settlement", "inheritance", "atomic"]}
         )
         return account
@@ -91,7 +92,7 @@ class SettlementSystem(ISettlementSystem):
     def execute_settlement(
         self,
         account_id: int,
-        distribution_plan: List[Tuple[Any, float, str, str]], # (Recipient, Amount, Memo, TxType)
+        distribution_plan: List[Tuple[Any, int, str, str]], # (Recipient, Amount, Memo, TxType)
         tick: int
     ) -> List[ITransaction]:
         """
@@ -149,16 +150,21 @@ class SettlementSystem(ISettlementSystem):
                 )
 
         # --- 2. Cash Distribution ---
-        total_distributed = 0.0
+        total_distributed = 0
 
         for recipient, amount, memo, tx_type in distribution_plan:
+            if not isinstance(amount, int):
+                 self.logger.critical(f"SETTLEMENT_TYPE_ERROR | Amount must be int, got {type(amount)} in distribution plan.")
+                 continue
+
             if amount <= 0:
                 continue
 
-            if total_distributed + amount > account.escrow_cash + 0.01: # Tolerance
+            # Strict Integer Check
+            if total_distributed + amount > account.escrow_cash:
                  self.logger.critical(
                      f"SETTLEMENT_OVERDRAFT | Attempted to distribute more than escrow! "
-                     f"Escrow: {account.escrow_cash:.2f}, Distributed: {total_distributed:.2f}, Requested: {amount:.2f}",
+                     f"Escrow: {account.escrow_cash}, Distributed: {total_distributed}, Requested: {amount}",
                      extra={"tick": tick, "agent_id": account_id}
                  )
                  continue
@@ -187,17 +193,16 @@ class SettlementSystem(ISettlementSystem):
 
         # Update Account
         account.escrow_cash -= total_distributed
-        if abs(account.escrow_cash) < 0.01:
-            account.escrow_cash = 0.0
+        # No float tolerance needed for int
 
         return transactions
 
-    def get_assets_by_currency(self) -> Dict[str, float]:
+    def get_assets_by_currency(self) -> Dict[str, int]:
         """
         Implements ICurrencyHolder for M2 verification.
         Returns total cash held in escrow accounts.
         """
-        total = 0.0
+        total = 0
         for acc in self.settlement_accounts.values():
             # Count all cash in the system regardless of status, as it is withdrawn from circulation
             total += acc.escrow_cash
@@ -215,12 +220,12 @@ class SettlementSystem(ISettlementSystem):
         has_error = False
 
         # 1. Cash Check
-        if account.escrow_cash > 0.01:
+        if account.escrow_cash != 0:
             self.logger.warning(
-                f"SETTLEMENT_LEAK | Account {account_id} closed with remaining cash: {account.escrow_cash:.2f}. Burning it.",
+                f"SETTLEMENT_LEAK | Account {account_id} closed with remaining cash: {account.escrow_cash}. Burning it.",
                 extra={"tick": tick, "agent_id": account_id}
             )
-            account.escrow_cash = 0.0
+            account.escrow_cash = 0
             has_error = True
 
         # 2. Portfolio Check (TD-160)
@@ -246,9 +251,9 @@ class SettlementSystem(ISettlementSystem):
     def record_liquidation(
         self,
         agent: IFinancialAgent,
-        inventory_value: float,
-        capital_value: float,
-        recovered_cash: float,
+        inventory_value: int,
+        capital_value: int,
+        recovered_cash: int,
         reason: str,
         tick: int,
         government_agent: Optional[IFinancialAgent] = None
@@ -257,18 +262,20 @@ class SettlementSystem(ISettlementSystem):
         Records the value destroyed during a firm's bankruptcy and liquidation.
         This ensures the value is accounted for in the simulation's total wealth.
         If government_agent is provided, transfers residual assets to it (Escheatment).
+        MIGRATION: All inputs are int pennies.
         """
+        # Loss = Book Value (Inventory + Capital) - Recovered Cash
         loss_amount = inventory_value + capital_value - recovered_cash
         if loss_amount < 0:
-            loss_amount = 0.0
+            loss_amount = 0
 
         self.total_liquidation_losses += loss_amount
 
         agent_id = agent.id
         self.logger.info(
             f"LIQUIDATION: Agent {agent_id} liquidated. "
-            f"Inventory: {inventory_value:.2f}, Capital: {capital_value:.2f}, Recovered: {recovered_cash:.2f}. "
-            f"Net Destruction: {loss_amount:.2f}. Total Destroyed: {self.total_liquidation_losses:.2f}. "
+            f"Inventory: {inventory_value}, Capital: {capital_value}, Recovered: {recovered_cash}. "
+            f"Net Destruction: {loss_amount}. Total Destroyed: {self.total_liquidation_losses}. "
             f"Reason: {reason}",
             extra={"tick": tick, "tags": ["liquidation", "bankruptcy", "ledger"]}
         )
@@ -288,7 +295,7 @@ class SettlementSystem(ISettlementSystem):
                     currency=DEFAULT_CURRENCY
                 )
 
-    def _execute_withdrawal(self, agent: IFinancialAgent, amount: float, memo: str, tick: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> bool:
+    def _execute_withdrawal(self, agent: IFinancialAgent, amount: int, memo: str, tick: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> bool:
         """
         Executes withdrawal with checks and seamless payment (Bank) support.
         Returns True on success, False on failure.
@@ -297,6 +304,10 @@ class SettlementSystem(ISettlementSystem):
         if agent is None:
             self.logger.error(f"SETTLEMENT_FAIL | Debit agent is None. Memo: {memo}")
             return False
+
+        if not isinstance(amount, int):
+             self.logger.critical(f"SETTLEMENT_TYPE_ERROR | Amount must be int, got {type(amount)}. Memo: {memo}")
+             return False
 
         is_central_bank = isinstance(agent, ICentralBank) or (agent.id == ID_CENTRAL_BANK)
 
@@ -309,10 +320,7 @@ class SettlementSystem(ISettlementSystem):
                  return False
 
         # 2. Standard Agent Checks (IFinancialAgent Interface)
-        # Using EAFP (Easier to Ask for Forgiveness than Permission) or Look Before You Leap
-        # Spec says: "Direct .cash or .assets access a clear protocol violation"
-
-        current_cash = 0.0
+        current_cash = 0
         if isinstance(agent, IFinancialAgent):
             current_cash = agent.get_balance(currency)
         else:
@@ -320,7 +328,7 @@ class SettlementSystem(ISettlementSystem):
             if currency == DEFAULT_CURRENCY and isinstance(agent, IFinancialEntity):
                 current_cash = agent.assets
             elif isinstance(agent, ICurrencyHolder):
-                current_cash = agent.get_assets_by_currency().get(currency, 0.0)
+                current_cash = agent.get_assets_by_currency().get(currency, 0)
 
         if current_cash < amount:
             # Seamless Check (Only for DEFAULT_CURRENCY for now, assume Bank uses DEFAULT_CURRENCY)
@@ -333,15 +341,15 @@ class SettlementSystem(ISettlementSystem):
                 if (current_cash + bank_balance) < amount:
                     self.logger.error(
                         f"SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for {agent.id}. "
-                        f"Cash: {current_cash:.2f}, Bank: {bank_balance:.2f}, Total: {(current_cash + bank_balance):.2f}. "
-                        f"Required: {amount:.2f}. Memo: {memo}",
+                        f"Cash: {current_cash}, Bank: {bank_balance}, Total: {(current_cash + bank_balance)}. "
+                        f"Required: {amount}. Memo: {memo}",
                         extra={"tags": ["settlement", "insufficient_funds"]}
                     )
                     return False
             else:
                 self.logger.error(
                     f"SETTLEMENT_FAIL | Insufficient cash for {agent.id} AND Bank service is missing/incompatible. "
-                    f"Cash: {current_cash:.2f}, Required: {amount:.2f}. Memo: {memo}",
+                    f"Cash: {current_cash}, Required: {amount}. Memo: {memo}",
                     extra={"tags": ["settlement", "insufficient_funds"]}
                 )
                 return False
@@ -351,7 +359,7 @@ class SettlementSystem(ISettlementSystem):
             if current_cash >= amount:
                 # Use standard withdraw
                 agent.withdraw(amount, currency=currency)
-                self.logger.debug(f"DEBUG_WITHDRAW | Agent {agent.id} withdrew {amount:.4f}. Memo: {memo}")
+                self.logger.debug(f"DEBUG_WITHDRAW | Agent {agent.id} withdrew {amount}. Memo: {memo}")
             else:
                 # Seamless (Only for DEFAULT_CURRENCY)
                 if currency != DEFAULT_CURRENCY:
@@ -370,7 +378,7 @@ class SettlementSystem(ISettlementSystem):
                     raise InsufficientFundsError(f"Bank withdrawal failed for {agent.id} despite check.")
 
                 self.logger.info(
-                    f"SEAMLESS_PAYMENT | Agent {agent.id} paid {amount:.2f} using {current_cash:.2f} cash and {needed_from_bank:.2f} from bank.",
+                    f"SEAMLESS_PAYMENT | Agent {agent.id} paid {amount} using {current_cash} cash and {needed_from_bank} from bank.",
                     extra={"tick": tick, "agent_id": agent.id, "tags": ["settlement", "bank"]}
                 )
             return True
@@ -383,7 +391,7 @@ class SettlementSystem(ISettlementSystem):
 
     def execute_multiparty_settlement(
         self,
-        transfers: List[Tuple[IFinancialAgent, IFinancialAgent, float]],
+        transfers: List[Tuple[IFinancialAgent, IFinancialAgent, int]],
         tick: int
     ) -> bool:
         """
@@ -427,7 +435,7 @@ class SettlementSystem(ISettlementSystem):
     def settle_atomic(
         self,
         debit_agent: IFinancialAgent,
-        credits_list: List[Tuple[IFinancialAgent, float, str]],
+        credits_list: List[Tuple[IFinancialAgent, int, str]],
         tick: int
     ) -> bool:
         """
@@ -441,6 +449,9 @@ class SettlementSystem(ISettlementSystem):
 
         # 0. Validate Credits (No negative transfers allowed in this atomic mode)
         for _, amount, memo in credits_list:
+             if not isinstance(amount, int):
+                 self.logger.error(f"SETTLEMENT_TYPE_ERROR | Amount must be int in atomic batch. Memo: {memo}")
+                 return False
              if amount < 0:
                  self.logger.error(f"SETTLEMENT_FAIL | Negative credit amount {amount} in atomic batch. Memo: {memo}")
                  return False
@@ -490,7 +501,7 @@ class SettlementSystem(ISettlementSystem):
         self,
         debit_agent: IFinancialAgent,
         credit_agent: IFinancialAgent,
-        amount: float,
+        amount: int,
         memo: str,
         debit_context: Optional[Dict[str, Any]] = None,
         credit_context: Optional[Dict[str, Any]] = None,
@@ -501,6 +512,10 @@ class SettlementSystem(ISettlementSystem):
         Executes an atomic transfer from debit_agent to credit_agent.
         Returns a Transaction object (truthy) on success, None (falsy) on failure.
         """
+        if not isinstance(amount, int):
+             self.logger.critical(f"SETTLEMENT_TYPE_ERROR | Amount must be int, got {type(amount)}. Memo: {memo}")
+             return None
+
         if amount <= 0:
             self.logger.warning(f"Transfer of non-positive amount ({amount}) attempted. Memo: {memo}")
             # Consider this a success logic-wise (no-op) but log it.
@@ -537,14 +552,14 @@ class SettlementSystem(ISettlementSystem):
         except Exception as e:
             # ROLLBACK: Credit failed, must reverse debit
             self.logger.error(
-                f"SETTLEMENT_ROLLBACK | Deposit failed for {credit_agent.id}. Rolling back withdrawal of {amount:.2f} from {debit_agent.id}. Error: {e}"
+                f"SETTLEMENT_ROLLBACK | Deposit failed for {credit_agent.id}. Rolling back withdrawal of {amount} from {debit_agent.id}. Error: {e}"
             )
             try:
                 debit_agent.deposit(amount, currency=currency)
-                self.logger.info(f"SETTLEMENT_ROLLBACK_SUCCESS | Rolled back {amount:.2f} to {debit_agent.id}.")
+                self.logger.info(f"SETTLEMENT_ROLLBACK_SUCCESS | Rolled back {amount} to {debit_agent.id}.")
             except Exception as rollback_error:
                 self.logger.critical(
-                    f"SETTLEMENT_FATAL | Rollback failed! Money {amount:.2f} lost from {debit_agent.id}. "
+                    f"SETTLEMENT_FATAL | Rollback failed! Money {amount} lost from {debit_agent.id}. "
                     f"Original Error: {e}. Rollback Error: {rollback_error}",
                     extra={"tags": ["settlement", "fatal", "money_leak"]}
                 )
@@ -552,7 +567,7 @@ class SettlementSystem(ISettlementSystem):
 
         # Success
         self.logger.debug(
-            f"SETTLEMENT_SUCCESS | Transferred {amount:.2f} from {debit_agent.id} to {credit_agent.id}. Memo: {memo}",
+            f"SETTLEMENT_SUCCESS | Transferred {amount} from {debit_agent.id} to {credit_agent.id}. Memo: {memo}",
             extra={"tags": ["settlement"], "tick": tick}
         )
         return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
@@ -561,7 +576,7 @@ class SettlementSystem(ISettlementSystem):
         self,
         source_authority: IFinancialAgent,
         destination: IFinancialAgent,
-        amount: float,
+        amount: int,
         reason: str,
         tick: int,
         currency: CurrencyCode = DEFAULT_CURRENCY
@@ -569,6 +584,10 @@ class SettlementSystem(ISettlementSystem):
         """
         Creates new money (or grants) and transfers it to an agent.
         """
+        if not isinstance(amount, int):
+             self.logger.critical(f"SETTLEMENT_TYPE_ERROR | Amount must be int, got {type(amount)}.")
+             return None
+
         if amount <= 0:
             return None
 
@@ -580,7 +599,7 @@ class SettlementSystem(ISettlementSystem):
                 destination.deposit(amount, currency=currency)
 
                 self.logger.info(
-                    f"MINT_AND_TRANSFER | Created {amount:.2f} {currency} from {source_authority.id} to {destination.id}. Reason: {reason}",
+                    f"MINT_AND_TRANSFER | Created {amount} {currency} from {source_authority.id} to {destination.id}. Reason: {reason}",
                     extra={"tick": tick}
                 )
                 tx = self._create_transaction_record(source_authority.id, destination.id, amount, reason, tick)
@@ -597,7 +616,7 @@ class SettlementSystem(ISettlementSystem):
         self,
         source: IFinancialAgent,
         sink_authority: IFinancialAgent,
-        amount: float,
+        amount: int,
         reason: str,
         tick: int,
         currency: CurrencyCode = DEFAULT_CURRENCY
@@ -605,6 +624,10 @@ class SettlementSystem(ISettlementSystem):
         """
         Transfers money from an agent to an authority to be destroyed.
         """
+        if not isinstance(amount, int):
+             self.logger.critical(f"SETTLEMENT_TYPE_ERROR | Amount must be int, got {type(amount)}.")
+             return None
+
         if amount <= 0:
             return None
 
@@ -615,7 +638,7 @@ class SettlementSystem(ISettlementSystem):
             try:
                 source.withdraw(amount, currency=currency)
                 self.logger.info(
-                    f"TRANSFER_AND_DESTROY | Destroyed {amount:.2f} {currency} from {source.id} to {sink_authority.id}. Reason: {reason}",
+                    f"TRANSFER_AND_DESTROY | Destroyed {amount} {currency} from {source.id} to {sink_authority.id}. Reason: {reason}",
                     extra={"tick": tick}
                 )
                 tx = self._create_transaction_record(source.id, sink_authority.id, amount, reason, tick)
@@ -628,7 +651,7 @@ class SettlementSystem(ISettlementSystem):
             # If not CB, treat as regular transfer (e.g. tax to Gov)
             return self.transfer(source, sink_authority, amount, reason, tick=tick, currency=currency)
 
-    def _create_transaction_record(self, buyer_id: int, seller_id: int, amount: float, memo: str, tick: int) -> Optional[Transaction]:
+    def _create_transaction_record(self, buyer_id: int, seller_id: int, amount: int, memo: str, tick: int) -> Optional[Transaction]:
         if buyer_id is None or seller_id is None:
              self.logger.critical(
                  f"SETTLEMENT_INTEGRITY_FAIL | Attempted to create transaction with NULL ID. "
@@ -641,8 +664,8 @@ class SettlementSystem(ISettlementSystem):
             buyer_id=buyer_id,
             seller_id=seller_id,
             item_id="currency",
-            quantity=amount,
-            price=1.0,
+            quantity=amount, # Int amount as quantity
+            price=1.0, # Nominal price 1.0 for currency transfer
             market_id="settlement",
             transaction_type="transfer",
             time=tick,

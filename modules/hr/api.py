@@ -19,6 +19,7 @@ class IEmployeeDataProvider(IFinancialEntity):
     Protocol for accessing employee data and managing employment lifecycle.
     Decouples HR/Finance departments from the concrete Household agent.
     Inherits IFinancialEntity to support wage/severance payments.
+    MIGRATION: Monetary values are integers (pennies).
     """
     id: int
     employer_id: Optional[int]
@@ -35,13 +36,13 @@ class IEmployeeDataProvider(IFinancialEntity):
         ...
 
     @property
-    def labor_income_this_tick(self) -> float:
-        """Cumulative labor income earned in the current tick."""
+    def labor_income_this_tick(self) -> int:
+        """Cumulative labor income earned in the current tick (pennies)."""
         ...
 
     @labor_income_this_tick.setter
-    def labor_income_this_tick(self, value: float) -> None:
-        """Updates the cumulative labor income."""
+    def labor_income_this_tick(self, value: int) -> None:
+        """Updates the cumulative labor income (pennies)."""
         ...
 
     @property

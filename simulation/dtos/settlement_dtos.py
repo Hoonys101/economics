@@ -7,9 +7,10 @@ class LegacySettlementAccount:
     """
     TD-160: Transient escrow account for atomic inheritance resolution.
     Holds assets of a deceased agent during the settlement process.
+    MIGRATION: Monetary values are integers (pennies).
     """
     deceased_agent_id: int
-    escrow_cash: float
+    escrow_cash: int
     escrow_portfolio: PortfolioDTO  # Structurally holds all non-cash assets
     escrow_real_estate: List[Any]  # List of RealEstateUnit objects
     status: str  # OPEN, PROCESSING, CLOSED, ERROR
@@ -26,5 +27,5 @@ class SettlementResultDTO:
     """
     original_transaction: Any # Transaction
     success: bool
-    amount_settled: float
+    amount_settled: int
     error: Optional[str] = None

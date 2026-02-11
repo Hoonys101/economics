@@ -10,35 +10,36 @@ class WalletOpLogDTO:
     tick: int
     agent_id: int
     currency: CurrencyCode
-    delta: float
+    delta: int
     memo: str
-    resulting_balance: float
+    resulting_balance: int
 
 @runtime_checkable
 class IWallet(Protocol):
     """
     Defines the public interface for a currency wallet.
     It provides methods for atomic balance manipulation and observation.
+    MIGRATION: All monetary values are integers (pennies).
     """
     owner_id: int
 
     @abstractmethod
-    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         """Retrieves the balance for a specific currency."""
         ...
 
     @abstractmethod
-    def get_all_balances(self) -> Dict[CurrencyCode, float]:
+    def get_all_balances(self) -> Dict[CurrencyCode, int]:
         """Returns a copy of all currency balances."""
         ...
 
     @abstractmethod
-    def add(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "", tick: int = -1) -> None:
+    def add(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "", tick: int = -1) -> None:
         """Atomically adds an amount to a currency's balance."""
         ...
 
     @abstractmethod
-    def subtract(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "", tick: int = -1) -> None:
+    def subtract(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "", tick: int = -1) -> None:
         """Atomically subtracts an amount from a currency's balance."""
         ...
 

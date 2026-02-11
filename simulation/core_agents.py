@@ -113,7 +113,7 @@ class Household(
         gender: Optional[str] = None,
         parent_id: Optional[int] = None,
         generation: Optional[int] = None,
-        initial_assets_record: Optional[float] = None,  # WO-124: Explicit record of intended assets
+        initial_assets_record: Optional[int] = None,  # MIGRATION: int pennies
         **kwargs,
     ) -> None:
         self.config = config_dto
@@ -167,12 +167,12 @@ class Household(
             portfolio=Portfolio(core_config.id),
             is_employed=False,
             employer_id=None,
-            current_wage=0.0,
+            current_wage_pennies=0,
             wage_modifier=1.0,
             labor_skill=1.0,
             education_xp=0.0,
             education_level=0,
-            expected_wage=10.0,
+            expected_wage_pennies=1000, # Default 10.00
             talent=talent,
             skills={},
             aptitude=aptitude,
@@ -183,7 +183,7 @@ class Household(
             housing_target_mode="RENT",
             housing_price_history=deque(maxlen=ticks_per_year),
             market_wage_history=deque(maxlen=wage_memory_len),
-            shadow_reservation_wage=0.0,
+            shadow_reservation_wage_pennies=0,
             last_labor_offer_tick=0,
             last_fired_tick=-1,
             job_search_patience=0,
@@ -195,9 +195,9 @@ class Household(
             price_history=defaultdict(lambda: deque(maxlen=price_memory_len)),
             price_memory_length=price_memory_len,
             adaptation_rate=adaptation_rate,
-            labor_income_this_tick=0.0,
-            capital_income_this_tick=0.0,
-            initial_assets_record=initial_assets_record if initial_assets_record is not None else 0.0
+            labor_income_this_tick_pennies=0,
+            capital_income_this_tick_pennies=0,
+            initial_assets_record_pennies=initial_assets_record if initial_assets_record is not None else 0
         )
 
         self._core_config = core_config
@@ -228,11 +228,14 @@ class Household(
         c_min, c_max = conformity_ranges.get(personality.name, conformity_ranges.get(None, (0.3, 0.7)))
         conformity = random.uniform(c_min, c_max)
 
-        mean_assets = self.config.initial_household_assets_mean
-        effective_initial_assets = initial_assets_record if initial_assets_record is not None else 0.0
+        # Scale mean assets for check? Assuming config mean is in dollars, convert to pennies for check?
+        # Or assume config is updated? Config is usually external.
+        # Let's assume config remains float dollars for inputs, we convert to pennies.
+        mean_assets_pennies = int(self.config.initial_household_assets_mean * 100)
+        effective_initial_assets = initial_assets_record if initial_assets_record is not None else 0
 
-        is_wealthy = effective_initial_assets > mean_assets * 1.5
-        is_poor = effective_initial_assets < mean_assets * 0.5
+        is_wealthy = effective_initial_assets > mean_assets_pennies * 1.5
+        is_poor = effective_initial_assets < mean_assets_pennies * 0.5
 
         if personality == Personality.STATUS_SEEKER or is_wealthy:
             min_pref = self.config.quality_pref_snob_min
@@ -302,7 +305,7 @@ class Household(
                 tick=0,
                 agent_id=self.id,
                 event_type="BIRTH",
-                data={"initial_assets": initial_assets_record if initial_assets_record is not None else 0.0}
+                data={"initial_assets": initial_assets_record if initial_assets_record is not None else 0}
             )
             self.memory_v2.add_record(record)
 
@@ -447,20 +450,20 @@ class Household(
         return self._econ_state.talent
 
     @property
-    def labor_income_this_tick(self) -> float:
-        return self._econ_state.labor_income_this_tick
+    def labor_income_this_tick(self) -> int:
+        return self._econ_state.labor_income_this_tick_pennies
 
     @labor_income_this_tick.setter
-    def labor_income_this_tick(self, value: float) -> None:
-        self._econ_state.labor_income_this_tick = value
+    def labor_income_this_tick(self, value: int) -> None:
+        self._econ_state.labor_income_this_tick_pennies = value
 
     @property
-    def capital_income_this_tick(self) -> float:
-        return self._econ_state.capital_income_this_tick
+    def capital_income_this_tick(self) -> int:
+        return self._econ_state.capital_income_this_tick_pennies
 
     @capital_income_this_tick.setter
-    def capital_income_this_tick(self, value: float) -> None:
-        self._econ_state.capital_income_this_tick = value
+    def capital_income_this_tick(self, value: int) -> None:
+        self._econ_state.capital_income_this_tick_pennies = value
 
     @property
     def tick_analytics(self) -> AgentTickAnalyticsDTO:
@@ -468,8 +471,8 @@ class Household(
             run_id=0,
             time=0,
             agent_id=self.id,
-            labor_income_this_tick=self._econ_state.labor_income_this_tick,
-            capital_income_this_tick=self._econ_state.capital_income_this_tick,
+            labor_income_this_tick=self._econ_state.labor_income_this_tick_pennies,
+            capital_income_this_tick=self._econ_state.capital_income_this_tick_pennies,
             consumption_this_tick=self._econ_state.current_consumption,
             utility_this_tick=None,
             savings_rate_this_tick=None
@@ -496,12 +499,12 @@ class Household(
         self._econ_state.education_level = value
 
     @property
-    def expected_wage(self) -> float:
-        return self._econ_state.expected_wage
+    def expected_wage(self) -> int:
+        return self._econ_state.expected_wage_pennies
 
     @expected_wage.setter
-    def expected_wage(self, value: float) -> None:
-        self._econ_state.expected_wage = value
+    def expected_wage(self, value: int) -> None:
+        self._econ_state.expected_wage_pennies = value
 
     # --- Lifecycle & Needs Management ---
 
@@ -649,16 +652,9 @@ class Household(
                 decision_dict = {
                     "decision_type": "INITIATE_PURCHASE",
                     "target_property_id": int(action.property_id),
-                    "offer_price": action.offer_price,
-                    "down_payment_amount": 0.0 # TODO: BudgetEngine didn't calculate down payment?
-                    # HousingPlanner calculated it. But BudgetEngine returned simplified DTO.
-                    # This is a loss of data.
+                    "offer_price": int(action.offer_price), # Ensure int pennies
+                    "down_payment_amount": int(action.down_payment_amount) # Ensure int pennies
                 }
-                # I should update BudgetEngine to return full decision or HousingActionDTO to have down_payment.
-                # Since I am in 'Household', I can fix this by updating BudgetEngine later, or hacking now.
-                # Assuming simple purchase for now.
-                # Update: HousingActionDTO now includes down_payment_amount (Refactor Step)
-                decision_dict["down_payment_amount"] = action.down_payment_amount
                 housing_system.initiate_purchase(decision_dict, buyer_id=self.id)
 
     # --- Other Interface Implementations ---
@@ -702,12 +698,12 @@ class Household(
 
     # IHousingTransactionParticipant Implementation
     @property
-    def current_wage(self) -> float:
-        return self._econ_state.current_wage
+    def current_wage(self) -> int:
+        return self._econ_state.current_wage_pennies
 
     @current_wage.setter
-    def current_wage(self, value: float) -> None:
-        self._econ_state.current_wage = value
+    def current_wage(self, value: int) -> None:
+        self._econ_state.current_wage_pennies = value
 
     @property
     def credit_frozen_until_tick(self) -> int:
@@ -719,40 +715,40 @@ class Household(
 
     @property
     @override
-    def assets(self) -> float:
+    def assets(self) -> int:
         return self._econ_state.wallet.get_balance(DEFAULT_CURRENCY)
 
     @override
-    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         self._econ_state.wallet.add(amount, currency=currency, memo="Deposit")
 
     @override
-    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         self._econ_state.wallet.subtract(amount, currency=currency, memo="Withdraw")
 
-    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         return self._econ_state.wallet.get_balance(currency)
 
     @override
-    def get_all_balances(self) -> Dict[CurrencyCode, float]:
+    def get_all_balances(self) -> Dict[CurrencyCode, int]:
         """Returns a copy of all currency balances."""
         return self._econ_state.wallet.get_all_balances()
 
     @property
-    def total_wealth(self) -> float:
+    def total_wealth(self) -> int:
         """
         Returns the total wealth in default currency estimation.
         TD-270: Standardized multi-currency summation.
         """
         balances = self._econ_state.wallet.get_all_balances()
-        total = 0.0
+        total = 0
         # For now, we assume 1:1 exchange rate as per spec draft for simple conversion.
         for amount in balances.values():
             total += amount
         return total
 
     @override
-    def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, int]:
         return self._econ_state.wallet.get_all_balances()
 
     @override
@@ -804,7 +800,7 @@ class Household(
             "is_active": self.is_active,
             "is_employed": self._econ_state.is_employed,
             "labor_skill": self._econ_state.labor_skill,
-            "current_wage": self._econ_state.current_wage,
+            "current_wage": self._econ_state.current_wage_pennies,
             "social_status": self._social_state.social_status,
             "gender": self.gender,
             "age": self.age,
@@ -854,7 +850,7 @@ class Household(
             durable_assets=self._econ_state.durable_assets,
             expected_inflation=self._econ_state.expected_inflation,
             is_employed=self._econ_state.is_employed,
-            current_wage=self._econ_state.current_wage,
+            current_wage_pennies=self._econ_state.current_wage_pennies,
             wage_modifier=self._econ_state.wage_modifier,
             is_homeless=self._econ_state.is_homeless,
             residing_property_id=self._econ_state.residing_property_id,
@@ -870,7 +866,7 @@ class Household(
             ambition=self._social_state.ambition
         )
 
-    def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "Household":
+    def clone(self, new_id: int, initial_assets_from_parent: int, current_tick: int) -> "Household":
         """
         Creates a clone (child) of this household.
         Used by LifecycleManager/DemographicManager.
@@ -955,7 +951,7 @@ class Household(
 
         # Set Econ State
         new_household._econ_state.skills = new_skills
-        new_household._econ_state.expected_wage = self._econ_state.expected_wage * 0.8
+        new_household._econ_state.expected_wage_pennies = int(self._econ_state.expected_wage_pennies * 0.8)
 
         # Hydrate Assets
         if initial_assets_from_parent > 0:
@@ -1095,9 +1091,9 @@ class Household(
         if is_food:
             self._econ_state.current_food_consumption += amount
 
-    def add_labor_income(self, amount: float) -> None:
+    def add_labor_income(self, amount: int) -> None:
         """Adds to labor income tracker (called by Handlers)."""
-        self._econ_state.labor_income_this_tick += amount
+        self._econ_state.labor_income_this_tick_pennies += amount
 
     def trigger_emergency_liquidation(self) -> List[Order]:
         """

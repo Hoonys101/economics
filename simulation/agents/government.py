@@ -62,9 +62,11 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
 
         initial_balance_dict = {}
         if isinstance(initial_assets, dict):
-            initial_balance_dict = initial_assets.copy()
+            # MIGRATION: Convert dict values to int if needed, assuming input might still be floats from config
+            for k, v in initial_assets.items():
+                initial_balance_dict[k] = int(v)
         else:
-            initial_balance_dict[DEFAULT_CURRENCY] = float(initial_assets)
+            initial_balance_dict[DEFAULT_CURRENCY] = int(initial_assets)
 
         self.wallet = Wallet(self.id, initial_balance_dict)
 
@@ -131,7 +133,7 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
         self.welfare_budget_multiplier: float = 1.0
         self.firm_subsidy_budget_multiplier: float = 1.0
         self.effective_tax_rate: float = self.income_tax_rate
-        self.total_debt: float = 0.0
+        self.total_debt: int = 0
 
         # History buffers
         self.tax_history: List[Dict[str, Any]] = []
@@ -142,7 +144,7 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
         
         ticks_per_year = int(getattr(config_module, "TICKS_PER_YEAR", DEFAULT_TICKS_PER_YEAR))
         self.price_history_shadow: Deque[float] = deque(maxlen=ticks_per_year)
-        self.expenditure_this_tick: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.expenditure_this_tick: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
         self.average_approval_rating = 0.5
 
         self.sensory_data: Optional[GovernmentSensoryDTO] = None
@@ -159,16 +161,17 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
         return {
             "is_active": True,
             "approval_rating": self.approval_rating,
-            "total_wealth": self.assets
+            "total_wealth": self.assets # int
         }
 
     # --- IFinancialEntity Implementation ---
     @property
-    def assets(self) -> float:
+    def assets(self) -> int:
         return self.wallet.get_balance(DEFAULT_CURRENCY)
 
     @property
     def total_collected_tax(self) -> Dict[CurrencyCode, float]:
+        # Legacy compat, ideally int. TaxService might still return float.
         return self.tax_service.get_total_collected_tax()
 
     @property
@@ -179,14 +182,14 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
     def tax_revenue(self) -> Dict[str, float]:
         return self.tax_service.get_tax_revenue()
 
-    def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, int]:
         return self.wallet.get_all_balances()
 
     def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self.wallet.add(amount, currency, memo="Internal Add")
+        self.wallet.add(int(amount), currency, memo="Internal Add")
 
     def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self.wallet.subtract(amount, currency, memo="Internal Sub")
+        self.wallet.subtract(int(amount), currency, memo="Internal Sub")
 
     def update_sensory_data(self, dto: GovernmentSensoryDTO):
         self.sensory_data = dto
@@ -208,7 +211,7 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
         self.tax_service.reset_tick_flow()
         self.welfare_manager.reset_tick_flow()
         self.monetary_ledger.reset_tick_flow()
-        self.expenditure_this_tick = {DEFAULT_CURRENCY: 0.0}
+        self.expenditure_this_tick = {DEFAULT_CURRENCY: 0}
 
     def record_gdp(self, gdp: float) -> None:
         self.gdp_history.append(gdp)
@@ -218,7 +221,7 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
     def process_monetary_transactions(self, transactions: List[Transaction]):
         self.monetary_ledger.process_transactions(transactions)
 
-    def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> "TaxCollectionResult":
+    def collect_tax(self, amount: int, tax_type: str, payer: Any, current_tick: int) -> "TaxCollectionResult":
         warnings.warn(
             "Government.collect_tax is deprecated. Use settlement.settle_atomic and government.record_revenue() instead.",
             DeprecationWarning,
@@ -229,7 +232,7 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
             logger.error("Government has no SettlementSystem linked. Cannot collect tax.")
             return {
                 "success": False,
-                "amount_collected": 0.0,
+                "amount_collected": 0,
                 "tax_type": tax_type,
                 "payer_id": payer_id,
                 "payee_id": self.id,
@@ -238,7 +241,7 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
         success = self.settlement_system.transfer(payer, self, amount, f"{tax_type} collection")
         result = {
             "success": bool(success),
-            "amount_collected": amount if success else 0.0,
+            "amount_collected": amount if success else 0,
             "tax_type": tax_type,
             "payer_id": payer_id,
             "payee_id": self.id,
@@ -440,7 +443,7 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
         if self.policy_lockout_manager.is_locked(PolicyActionTag.KEYNESIAN_FISCAL, current_tick):
             return []
 
-        effective_amount = amount * self.welfare_budget_multiplier
+        effective_amount = int(amount * self.welfare_budget_multiplier)
         if effective_amount <= 0:
             return []
 
@@ -470,7 +473,7 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
              )]
         return []
 
-    def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:
+    def provide_firm_bailout(self, firm: Any, amount: int, current_tick: int) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:
         """Provides a bailout loan to a firm if it's eligible. Returns (LoanDTO, Transactions)."""
 
         # 1. Create Request DTO
@@ -485,8 +488,8 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
              is_solvent = self.finance_system.evaluate_solvency(firm, current_tick)
 
         financials: FirmFinancialsDTO = {
-            "assets": firm.assets if hasattr(firm, 'assets') else 0.0,
-            "profit": 0.0, # Not easily available without deep inspection
+            "assets": int(firm.assets) if hasattr(firm, 'assets') else 0,
+            "profit": 0, # Not easily available without deep inspection
             "is_solvent": is_solvent
         }
 
@@ -532,7 +535,7 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
 
                 # Track expenditure
                 cur = DEFAULT_CURRENCY
-                if cur not in self.expenditure_this_tick: self.expenditure_this_tick[cur] = 0.0
+                if cur not in self.expenditure_this_tick: self.expenditure_this_tick[cur] = 0
                 self.expenditure_this_tick[cur] += grant["amount"]
 
                 return loan, txs
@@ -603,13 +606,13 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
                 payee = self
 
             if self.settlement_system:
-                success = self.settlement_system.transfer(payer, payee, req.amount, req.memo, currency=req.currency)
+                success = self.settlement_system.transfer(payer, payee, int(req.amount), req.memo, currency=req.currency)
 
                 if success:
                     if payee == self: # Tax
                          self.record_revenue({
                              "success": True,
-                             "amount_collected": req.amount,
+                             "amount_collected": int(req.amount),
                              "tax_type": "wealth_tax",
                              "currency": req.currency,
                              "payer_id": payer.id if hasattr(payer, 'id') else payer,
@@ -623,8 +626,8 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
         welfare_spending = self.welfare_manager.get_spending_this_tick()
 
         if DEFAULT_CURRENCY not in self.expenditure_this_tick:
-            self.expenditure_this_tick[DEFAULT_CURRENCY] = 0.0
-        self.expenditure_this_tick[DEFAULT_CURRENCY] += welfare_spending
+            self.expenditure_this_tick[DEFAULT_CURRENCY] = 0
+        self.expenditure_this_tick[DEFAULT_CURRENCY] += int(welfare_spending)
 
         revenue_snapshot = self.tax_service.get_revenue_breakdown_this_tick()
         revenue_snapshot["tick"] = current_tick
@@ -637,7 +640,7 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
              if current_balance < 0:
                  self.total_debt = abs(current_balance)
              else:
-                 self.total_debt = 0.0
+                 self.total_debt = 0
 
         self.tax_history.append(revenue_snapshot)
         if len(self.tax_history) > self.history_window_size:
@@ -673,20 +676,20 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
     def get_debt_to_gdp_ratio(self) -> float:
         if not self.sensory_data or self.sensory_data.current_gdp == 0:
             return 0.0
-        debt = max(0.0, -self.assets)
+        debt = max(0.0, float(-self.assets))
         return debt / self.sensory_data.current_gdp
 
-    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         if amount <= 0:
             raise ValueError("Deposit amount must be positive.")
         self.wallet.add(amount, currency)
 
-    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         if amount <= 0:
             raise ValueError("Withdrawal amount must be positive.")
         self.wallet.subtract(amount, currency)
 
-    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         return self.wallet.get_balance(currency)
 
     def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int) -> List[Transaction]:

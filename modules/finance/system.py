@@ -31,6 +31,7 @@ class FinanceSystem(IFinanceSystem):
     """
     Manages sovereign debt, corporate bailouts, and solvency checks.
     Refactored to use Stateless Engines and FinancialLedgerDTO.
+    MIGRATION: Uses integer pennies.
     """
 
     def __init__(self, government: 'Government', central_bank: 'CentralBank', bank: 'Bank', config_module: Any, settlement_system: Any = None):
@@ -59,7 +60,7 @@ class FinanceSystem(IFinanceSystem):
                 bank.id: BankStateDTO(
                     bank_id=bank.id,
                     base_rate=getattr(bank, 'base_rate', 0.03),
-                    reserves={DEFAULT_CURRENCY: 0.0} # Will be synced dynamically if needed
+                    reserves={DEFAULT_CURRENCY: 0}
                 )
             }
         )
@@ -78,7 +79,7 @@ class FinanceSystem(IFinanceSystem):
     def process_loan_application(
         self,
         borrower_id: AgentID,
-        amount: float,
+        amount: int,
         borrower_profile: Dict,
         current_tick: int
     ) -> Tuple[Optional[LoanInfoDTO], List[Transaction]]:
@@ -95,7 +96,7 @@ class FinanceSystem(IFinanceSystem):
         app_dto = LoanApplicationDTO(
             borrower_id=borrower_id,
             lender_id=lender_id,
-            amount=amount,
+            amount_pennies=amount,
             borrower_profile=borrower_profile
         )
 
@@ -113,11 +114,6 @@ class FinanceSystem(IFinanceSystem):
         self.ledger = result.updated_ledger
 
         # 6. Return Result
-        # Find the loan we just created (simplification: assume last one or extract from result transactions)
-        # The result doesn't explicitly return the created loan ID in a friendly way,
-        # but we can infer it or update BookingEngine to return it.
-        # For now, let's scan the generated transaction for "credit_creation_LOANID"
-
         loan_id = None
         for tx in result.generated_transactions:
             if tx.item_id.startswith("credit_creation_"):
@@ -129,8 +125,6 @@ class FinanceSystem(IFinanceSystem):
             return None, result.generated_transactions
 
         # Construct LoanInfoDTO for the caller
-        # Find the loan in the ledger
-        # Assuming we used the first bank or the one in profile
         lender_id = app_dto.borrower_profile.get("preferred_lender_id")
         if not lender_id and self.ledger.banks:
              lender_id = next(iter(self.ledger.banks.keys()))
@@ -143,8 +137,8 @@ class FinanceSystem(IFinanceSystem):
         info_dto = LoanInfoDTO(
             loan_id=loan_state.loan_id,
             borrower_id=loan_state.borrower_id,
-            original_amount=loan_state.principal,
-            outstanding_balance=loan_state.remaining_principal,
+            original_amount=loan_state.principal_pennies,
+            outstanding_balance=loan_state.remaining_principal_pennies,
             interest_rate=loan_state.interest_rate,
             origination_tick=loan_state.origination_tick,
             due_tick=loan_state.due_tick
@@ -152,25 +146,25 @@ class FinanceSystem(IFinanceSystem):
 
         return info_dto, result.generated_transactions
 
-    def get_customer_balance(self, bank_id: AgentID, customer_id: AgentID) -> float:
+    def get_customer_balance(self, bank_id: AgentID, customer_id: AgentID) -> int:
         """Query the ledger for deposit balance."""
         if bank_id in self.ledger.banks:
             deposit_id = f"DEP_{customer_id}_{bank_id}"
             if deposit_id in self.ledger.banks[bank_id].deposits:
-                return self.ledger.banks[bank_id].deposits[deposit_id].balance
-        return 0.0
+                return self.ledger.banks[bank_id].deposits[deposit_id].balance_pennies
+        return 0
 
     def get_customer_debt_status(self, bank_id: AgentID, customer_id: AgentID) -> List[LoanInfoDTO]:
         """Query the ledger for loans."""
         loans = []
         if bank_id in self.ledger.banks:
             for loan in self.ledger.banks[bank_id].loans.values():
-                if loan.borrower_id == customer_id and loan.remaining_principal > 0:
+                if loan.borrower_id == customer_id and loan.remaining_principal_pennies > 0:
                     loans.append(LoanInfoDTO(
                         loan_id=loan.loan_id,
                         borrower_id=loan.borrower_id,
-                        original_amount=loan.principal,
-                        outstanding_balance=loan.remaining_principal,
+                        original_amount=loan.principal_pennies,
+                        outstanding_balance=loan.remaining_principal_pennies,
                         interest_rate=loan.interest_rate,
                         origination_tick=loan.origination_tick,
                         due_tick=loan.due_tick
@@ -185,36 +179,44 @@ class FinanceSystem(IFinanceSystem):
         z_score_threshold = self.config_module.get("economy_params.ALTMAN_Z_SCORE_THRESHOLD", 1.81)
 
         if firm.age < startup_grace_period:
-            # Runway Check for startups
-            # Check for HR service existence before calling
-            if hasattr(firm, 'hr'):
-                monthly_wage_bill = firm.hr.get_total_wage_bill() * 4  # Approximate monthly
+            if hasattr(firm, 'hr_state'):
+                # Re-implement using state
+                total_wages = sum(firm.hr_state.employee_wages.values())
+                monthly_wage_bill = total_wages * 4
                 required_runway = monthly_wage_bill * 3
-                return firm.cash_reserve >= required_runway
-            return True # Assume solvent if no HR (e.g. test dummy)
+                return firm.assets >= required_runway
+            return True
         else:
             # Altman Z-Score for established firms
-            total_assets = firm.assets + firm.capital_stock + firm.get_inventory_value()
-            working_capital = firm.assets - getattr(firm, 'total_debt', 0.0)
+            # All inputs should be int pennies. Ratios will be same.
+            # inventory_value: Firm.get_inventory_value() calculates qty * price. Price is float. So value is float dollars.
+            # We need to convert inventory value to pennies.
+            inventory_value = sum(firm.get_quantity(i) * firm.last_prices.get(i, 10.0) for i in firm.get_all_items())
+            inventory_value_pennies = int(inventory_value * 100)
 
-            retained_earnings = 0.0
-            if hasattr(firm, 'finance'):
-                retained_earnings = firm.finance.retained_earnings
+            capital_stock_pennies = int(firm.capital_stock * 100)
+
+            total_assets = firm.assets + capital_stock_pennies + inventory_value_pennies
+            working_capital = firm.assets - getattr(firm, 'total_debt', 0)
+
+            retained_earnings = 0
+            if hasattr(firm, 'finance_state'):
+                retained_earnings = firm.finance_state.retained_earnings_pennies
 
             # Safe calculation of average profit
-            average_profit = 0.0
-            if hasattr(firm, 'finance') and firm.finance.profit_history:
-                average_profit = sum(firm.finance.profit_history) / len(firm.finance.profit_history)
+            average_profit = 0
+            if hasattr(firm, 'finance_state') and firm.finance_state.profit_history:
+                average_profit = sum(firm.finance_state.profit_history) / len(firm.finance_state.profit_history)
 
             z_score = AltmanZScoreCalculator.calculate(
-                total_assets=total_assets,
-                working_capital=working_capital,
-                retained_earnings=retained_earnings,
-                average_profit=average_profit
+                total_assets=float(total_assets),
+                working_capital=float(working_capital),
+                retained_earnings=float(retained_earnings),
+                average_profit=float(average_profit)
             )
             return z_score > z_score_threshold
 
-    def issue_treasury_bonds(self, amount: float, current_tick: int) -> Tuple[List[BondDTO], List[Transaction]]:
+    def issue_treasury_bonds(self, amount: int, current_tick: int) -> Tuple[List[BondDTO], List[Transaction]]:
         """
         Issues new treasury bonds using the new Ledger system (partially).
         """
@@ -224,19 +226,18 @@ class FinanceSystem(IFinanceSystem):
         if self.ledger.banks:
             base_rate = next(iter(self.ledger.banks.values())).base_rate
 
-        yield_rate = base_rate + 0.01 # Simplified risk premium for now
+        yield_rate = base_rate + 0.01
         bond_maturity = 400
 
         bond_id = f"BOND_{current_tick}_{len(self.ledger.treasury.bonds)}"
 
         # Decide Buyer (Bank)
-        # For now, simplistic assignment to the first bank
         buyer_id = self.bank.id
 
         # Check bank funds in Ledger
-        bank_reserves = 0.0
+        bank_reserves = 0
         if buyer_id in self.ledger.banks:
-            bank_reserves = self.ledger.banks[buyer_id].reserves.get(DEFAULT_CURRENCY, 0.0)
+            bank_reserves = self.ledger.banks[buyer_id].reserves.get(DEFAULT_CURRENCY, 0)
 
         if bank_reserves < amount:
             return [], []
@@ -245,7 +246,7 @@ class FinanceSystem(IFinanceSystem):
         bond_state = BondStateDTO(
             bond_id=bond_id,
             owner_id=buyer_id,
-            face_value=amount,
+            face_value_pennies=amount,
             yield_rate=yield_rate,
             issue_tick=current_tick,
             maturity_tick=current_tick + bond_maturity
@@ -259,7 +260,7 @@ class FinanceSystem(IFinanceSystem):
 
         # Add to Treasury Balance
         if DEFAULT_CURRENCY not in self.ledger.treasury.balance:
-            self.ledger.treasury.balance[DEFAULT_CURRENCY] = 0.0
+            self.ledger.treasury.balance[DEFAULT_CURRENCY] = 0
         self.ledger.treasury.balance[DEFAULT_CURRENCY] += amount
 
         # Generate Transaction
@@ -285,21 +286,21 @@ class FinanceSystem(IFinanceSystem):
 
         return [bond_dto], [tx]
 
-    def issue_treasury_bonds_synchronous(self, issuer: Any, amount_to_raise: float, current_tick: int) -> Tuple[bool, List[Transaction]]:
+    def issue_treasury_bonds_synchronous(self, issuer: Any, amount_to_raise: int, current_tick: int) -> Tuple[bool, List[Transaction]]:
         # Map to internal logic
         bonds, txs = self.issue_treasury_bonds(amount_to_raise, current_tick)
         return (len(bonds) > 0, txs)
 
-    def collect_corporate_tax(self, firm: IFinancialEntity, tax_amount: float) -> bool:
+    def collect_corporate_tax(self, firm: IFinancialEntity, tax_amount: int) -> bool:
         logger.warning("FinanceSystem.collect_corporate_tax called. Should be using Transaction Generation.")
         return False
 
-    def request_bailout_loan(self, firm: 'Firm', amount: float) -> Optional[GrantBailoutCommand]:
+    def request_bailout_loan(self, firm: 'Firm', amount: int) -> Optional[GrantBailoutCommand]:
         # Enforce Government Budget Constraint (Check Ledger)
-        gov_bal = self.ledger.treasury.balance.get(DEFAULT_CURRENCY, 0.0)
+        gov_bal = self.ledger.treasury.balance.get(DEFAULT_CURRENCY, 0)
 
         if gov_bal < amount:
-            logger.warning(f"BAILOUT_DENIED | Government insufficient funds: {gov_bal:.2f} < {amount:.2f}")
+            logger.warning(f"BAILOUT_DENIED | Government insufficient funds: {gov_bal} < {amount}")
             return None
 
         base_rate = 0.03 # Default

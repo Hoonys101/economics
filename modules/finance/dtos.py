@@ -4,13 +4,16 @@ from modules.simulation.api import AgentID
 CurrencyCode: TypeAlias = str
 
 class MoneyDTO(TypedDict):
-    """Represents a monetary value with its associated currency."""
-    amount: float
+    """
+    Represents a monetary value with its associated currency.
+    MIGRATION NOTE: Used to be float 'amount'. Now 'amount_pennies' (int).
+    """
+    amount_pennies: int
     currency: CurrencyCode
 
 class MultiCurrencyWalletDTO(TypedDict):
     """Represents a complete portfolio of assets, keyed by currency."""
-    balances: Dict[CurrencyCode, float]
+    balances: Dict[CurrencyCode, int] # Pennies
 
 class InvestmentOrderDTO(TypedDict):
     """Defines an internal order for investment (e.g., R&D, Capex)."""
@@ -24,7 +27,7 @@ LoanStatus = Literal["PENDING", "ACTIVE", "PAID", "DEFAULTED"]
 
 class LoanApplicationDTO(TypedDict):
     applicant_id: AgentID
-    amount: float
+    amount_pennies: int
     purpose: str
     term_months: int # Or ticks, depending on usage. Assuming ticks based on Bank code.
     # Spec says term_months, but Bank code uses term_ticks. I'll stick to spec name but note usage.
@@ -32,15 +35,15 @@ class LoanApplicationDTO(TypedDict):
 class LoanDTO(TypedDict):
     loan_id: str
     borrower_id: AgentID
-    principal: float
+    principal_pennies: int
     interest_rate: float
     term_months: int
-    remaining_principal: float
+    remaining_principal_pennies: int
     status: LoanStatus
     origination_tick: int
     due_tick: Optional[int]
 
 class DepositDTO(TypedDict):
     owner_id: AgentID
-    balance: float
+    balance_pennies: int
     interest_rate: float

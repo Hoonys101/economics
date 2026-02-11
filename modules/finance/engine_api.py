@@ -15,8 +15,8 @@ class LoanStateDTO:
     loan_id: str
     borrower_id: AgentID
     lender_id: AgentID # e.g., Bank ID
-    principal: float
-    remaining_principal: float
+    principal_pennies: int
+    remaining_principal_pennies: int
     interest_rate: float
     origination_tick: int
     due_tick: int
@@ -27,7 +27,7 @@ class LoanStateDTO:
 class DepositStateDTO:
     deposit_id: str
     customer_id: AgentID
-    balance: float
+    balance_pennies: int
     interest_rate: float
     currency: CurrencyCode = DEFAULT_CURRENCY
 
@@ -36,7 +36,7 @@ class DepositStateDTO:
 class BondStateDTO:
     bond_id: str
     owner_id: AgentID # Who holds the bond (e.g., Bank, CentralBank)
-    face_value: float
+    face_value_pennies: int
     yield_rate: float
     issue_tick: int
     maturity_tick: int
@@ -45,9 +45,9 @@ class BondStateDTO:
 @dataclass
 class BankStateDTO:
     bank_id: AgentID
-    reserves: Dict[CurrencyCode, float] = field(default_factory=dict)
+    reserves: Dict[CurrencyCode, int] = field(default_factory=dict) # Pennies
     base_rate: float = 0.03
-    retained_earnings: float = 0.0 # Tracks internal equity/profits
+    retained_earnings_pennies: int = 0 # Tracks internal equity/profits
     loans: Dict[str, LoanStateDTO] = field(default_factory=dict) # Key: loan_id
     deposits: Dict[str, DepositStateDTO] = field(default_factory=dict) # Key: deposit_id
 
@@ -55,7 +55,7 @@ class BankStateDTO:
 @dataclass
 class TreasuryStateDTO:
     government_id: AgentID
-    balance: Dict[CurrencyCode, float] = field(default_factory=dict)
+    balance: Dict[CurrencyCode, int] = field(default_factory=dict) # Pennies
     bonds: Dict[str, BondStateDTO] = field(default_factory=dict) # Key: bond_id
 
 # The central, unified ledger for all financial state
@@ -82,7 +82,7 @@ class EngineOutputDTO:
 class LoanApplicationDTO:
     borrower_id: AgentID
     lender_id: AgentID # Specific bank targeted
-    amount: float
+    amount_pennies: int
     # Borrower financial profile, credit score, etc.
     # To be defined, but let's assume it's a dict for now
     borrower_profile: Dict
@@ -98,9 +98,9 @@ class LoanDecisionDTO:
 @dataclass
 class LiquidationRequestDTO:
     firm_id: AgentID
-    inventory_value: float
-    capital_value: float
-    outstanding_debt: float # Total debt to be settled
+    inventory_value_pennies: int
+    capital_value_pennies: int
+    outstanding_debt_pennies: int # Total debt to be settled
 
 # =================================================================
 # 3. STATELESS ENGINE INTERFACES (Protocols)

@@ -11,6 +11,7 @@ from simulation.models import Transaction
 class LoanBookingEngine(ILoanBookingEngine):
     """
     Stateless engine to book approved loans.
+    MIGRATION: Uses integer pennies.
     """
 
     def grant_loan(
@@ -23,17 +24,14 @@ class LoanBookingEngine(ILoanBookingEngine):
         if not decision.is_approved:
             return EngineOutputDTO(updated_ledger=ledger, generated_transactions=[])
 
-        # We need a lender. LoanApplicationDTO now explicitly has lender_id.
         lender_id = application.lender_id
 
         if not lender_id:
-             # Fallback if not set (though it should be)
              lender_id = application.borrower_profile.get("preferred_lender_id")
              if not lender_id and ledger.banks:
                  lender_id = next(iter(ledger.banks.keys()))
 
         if not lender_id or lender_id not in ledger.banks:
-             # Fail gracefully if no lender found
              return EngineOutputDTO(updated_ledger=ledger, generated_transactions=[])
 
         bank_state = ledger.banks[lender_id]
@@ -44,25 +42,24 @@ class LoanBookingEngine(ILoanBookingEngine):
             loan_id=loan_id,
             borrower_id=application.borrower_id,
             lender_id=lender_id,
-            principal=application.amount,
-            remaining_principal=application.amount,
+            principal_pennies=application.amount_pennies,
+            remaining_principal_pennies=application.amount_pennies,
             interest_rate=decision.interest_rate,
             origination_tick=ledger.current_tick,
             due_tick=ledger.current_tick + 50 # Default term
         )
 
         # 2. Create/Update Deposit (Money Creation)
-        # Does the borrower already have a deposit account at this bank?
         deposit_id = f"DEP_{application.borrower_id}_{lender_id}" # Simplified ID
 
         if deposit_id in bank_state.deposits:
             deposit = bank_state.deposits[deposit_id]
-            deposit.balance += application.amount
+            deposit.balance_pennies += application.amount_pennies
         else:
             deposit = DepositStateDTO(
                 deposit_id=deposit_id,
                 customer_id=application.borrower_id,
-                balance=application.amount,
+                balance_pennies=application.amount_pennies,
                 interest_rate=0.0 # Default
             )
             bank_state.deposits[deposit_id] = deposit
@@ -72,16 +69,10 @@ class LoanBookingEngine(ILoanBookingEngine):
         # 3. Generate Transaction
         tx = Transaction(
             buyer_id=lender_id,
-            seller_id="GOVERNMENT", # Or Abstract? Credit creation usually has no seller.
-            # Wait, credit creation: Bank swaps IOUs.
-            # Bank gets Loan Asset (from Borrower). Borrower gets Deposit (from Bank).
-            # The "Transaction" object in this system usually records the flow for analysis.
-            # Transaction(buyer=Borrower, seller=Bank, item=Loan, price=Amount)?
-            # Or buyer=Bank, seller=Borrower?
-            # Existing Bank code: buyer_id=self.id, seller_id=government/nobody, item="credit_creation..."
+            seller_id="GOVERNMENT",
             item_id=f"credit_creation_{loan_id}",
-            quantity=1,
-            price=application.amount,
+            quantity=application.amount_pennies, # Int quantity
+            price=1.0,
             market_id="monetary_policy",
             transaction_type="credit_creation",
             time=ledger.current_tick

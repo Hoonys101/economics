@@ -18,6 +18,7 @@ class FinanceEngine:
     """
     Stateless Engine for Finance operations.
     Manages asset tracking, transaction generation, and financial health metrics.
+    MIGRATION: Uses integer pennies for transactions and state.
     """
 
     def generate_financial_transactions(
@@ -28,7 +29,7 @@ class FinanceEngine:
         config: FirmConfigDTO,
         current_time: int,
         context: FinancialTransactionContext,
-        inventory_value: float # Passed from orchestrator
+        inventory_value: float # Float dollars passed from orchestrator
     ) -> List[Transaction]:
         """
         Consolidates all financial outflow generation logic.
@@ -37,16 +38,20 @@ class FinanceEngine:
         gov_id = context.government_id
 
         # 1. Holding Cost
-        holding_cost = inventory_value * config.inventory_holding_cost_rate
-        if holding_cost > 0 and gov_id is not None:
-            self._record_expense(state, holding_cost, DEFAULT_CURRENCY)
+        # Inventory value is float dollars. Rate is float. Cost is float dollars.
+        # Convert to pennies.
+        holding_cost_float = inventory_value * config.inventory_holding_cost_rate
+        holding_cost_pennies = int(holding_cost_float * 100)
+
+        if holding_cost_pennies > 0 and gov_id is not None:
+            self._record_expense(state, holding_cost_pennies, DEFAULT_CURRENCY)
             transactions.append(
                 Transaction(
                     buyer_id=firm_id,
                     seller_id=gov_id,
                     item_id="holding_cost",
                     quantity=1.0,
-                    price=holding_cost,
+                    price=holding_cost_pennies,
                     market_id="system",
                     transaction_type="holding_cost",
                     time=current_time,
@@ -55,9 +60,11 @@ class FinanceEngine:
             )
 
         # 2. Maintenance Fee
-        fee = config.firm_maintenance_fee
+        fee_float = config.firm_maintenance_fee
+        fee_pennies = int(fee_float * 100)
+
         current_balance = wallet.get_balance(DEFAULT_CURRENCY)
-        payment = min(current_balance, fee)
+        payment = min(current_balance, fee_pennies)
 
         if payment > 0 and gov_id is not None:
             self._record_expense(state, payment, DEFAULT_CURRENCY)
@@ -83,11 +90,11 @@ class FinanceEngine:
 
         return transactions
 
-    def _record_expense(self, state: FinanceState, amount: float, currency: CurrencyCode):
+    def _record_expense(self, state: FinanceState, amount: int, currency: CurrencyCode):
         if currency not in state.cost_this_turn:
-            state.cost_this_turn[currency] = 0.0
-            state.expenses_this_tick[currency] = 0.0
-            state.current_profit[currency] = 0.0
+            state.cost_this_turn[currency] = 0
+            state.expenses_this_tick[currency] = 0
+            state.current_profit[currency] = 0
 
         state.cost_this_turn[currency] += amount
         state.expenses_this_tick[currency] += amount
@@ -108,51 +115,52 @@ class FinanceEngine:
         registry = context.shareholder_registry
 
         # Helper
-        def convert(amt, cur):
+        def convert(amt: int, cur: str) -> int:
             if cur == DEFAULT_CURRENCY: return amt
-            rate = exchange_rates.get(cur, 0.0)
-            return amt * rate
+            rate = exchange_rates.get(cur, 1.0)
+            return int(amt * rate)
 
         # 1. Update Profit History
-        total_profit_primary = 0.0
+        total_profit_primary = 0
         for cur, profit in state.current_profit.items():
             total_profit_primary += convert(profit, cur)
 
         state.profit_history.append(total_profit_primary)
 
         # 2. Bailout Repayment
-        usd_profit = state.current_profit.get(DEFAULT_CURRENCY, 0.0)
+        usd_profit = state.current_profit.get(DEFAULT_CURRENCY, 0)
         if state.has_bailout_loan and usd_profit > 0 and gov_id is not None:
             repayment_ratio = config.bailout_repayment_ratio
-            repayment = usd_profit * repayment_ratio
+            repayment = int(usd_profit * repayment_ratio)
 
-            transactions.append(
-                Transaction(
-                    buyer_id=firm_id,
-                    seller_id=gov_id,
-                    item_id="bailout_repayment",
-                    quantity=1.0,
-                    price=repayment,
-                    market_id="system",
-                    transaction_type="repayment",
-                    time=current_time,
-                    currency=DEFAULT_CURRENCY
+            if repayment > 0:
+                transactions.append(
+                    Transaction(
+                        buyer_id=firm_id,
+                        seller_id=gov_id,
+                        item_id="bailout_repayment",
+                        quantity=1.0,
+                        price=repayment,
+                        market_id="system",
+                        transaction_type="repayment",
+                        time=current_time,
+                        currency=DEFAULT_CURRENCY
+                    )
                 )
-            )
 
-            state.total_debt -= repayment
-            state.current_profit[DEFAULT_CURRENCY] -= repayment
-            if state.total_debt <= 0:
-                state.has_bailout_loan = False
+                state.total_debt_pennies -= repayment
+                state.current_profit[DEFAULT_CURRENCY] -= repayment
+                if state.total_debt_pennies <= 0:
+                    state.has_bailout_loan = False
 
         # 3. Dividends
-        state.dividends_paid_last_tick = 0.0
+        state.dividends_paid_last_tick_pennies = 0
         shareholders = registry.get_shareholders_of_firm(firm_id) if registry else []
 
         for cur, profit in state.current_profit.items():
-            distributable_profit = max(0, profit * state.dividend_rate)
+            distributable_profit = max(0, int(profit * state.dividend_rate))
             if distributable_profit > 0 and state.total_shares > 0 and shareholders:
-                state.dividends_paid_last_tick += convert(distributable_profit, cur)
+                state.dividends_paid_last_tick_pennies += convert(distributable_profit, cur)
 
                 for shareholder in shareholders:
                     shares = shareholder['quantity']
@@ -161,7 +169,8 @@ class FinanceEngine:
                     if agent_id == firm_id: continue # Treasury shares
 
                     if shares > 0:
-                        dividend_amount = distributable_profit * (shares / state.total_shares)
+                        # Share ratio is float. Result is pennies.
+                        dividend_amount = int(distributable_profit * (shares / state.total_shares))
                         transactions.append(
                             Transaction(
                                 buyer_id=firm_id,
@@ -177,21 +186,21 @@ class FinanceEngine:
                         )
 
         # 4. Reset Period Counters
-        total_revenue_primary = 0.0
+        total_revenue_primary = 0
         for cur, amount in state.revenue_this_turn.items():
             total_revenue_primary += convert(amount, cur)
-        state.last_revenue = total_revenue_primary
+        state.last_revenue_pennies = total_revenue_primary
 
         for cur in list(state.current_profit.keys()):
-             state.current_profit[cur] = 0.0
-             state.revenue_this_turn[cur] = 0.0
-             state.cost_this_turn[cur] = 0.0
+             state.current_profit[cur] = 0
+             state.revenue_this_turn[cur] = 0
+             state.cost_this_turn[cur] = 0
 
         return transactions
 
     def check_bankruptcy(self, state: FinanceState, config: FirmConfigDTO):
         """Checks bankruptcy condition based on consecutive losses."""
-        primary_profit = state.current_profit.get(DEFAULT_CURRENCY, 0.0)
+        primary_profit = state.current_profit.get(DEFAULT_CURRENCY, 0)
 
         if primary_profit < 0:
             state.consecutive_loss_turns += 1
@@ -210,26 +219,30 @@ class FinanceEngine:
         inventory_value: float,
         capital_stock: float,
         context: Optional[FinancialTransactionContext]
-    ) -> float:
+    ) -> int:
         """
-        Calculates firm valuation.
+        Calculates firm valuation in pennies.
         """
         exchange_rates = context.market_context.get('exchange_rates', {}) if context else {DEFAULT_CURRENCY: 1.0}
 
-        def convert(amt, cur):
+        def convert(amt: int, cur: str) -> int:
             rate = exchange_rates.get(cur, 1.0) if cur != DEFAULT_CURRENCY else 1.0
-            return amt * rate
+            return int(amt * rate)
 
-        total_assets_val = 0.0
+        total_assets_val = 0
         for cur, amount in wallet.get_all_balances().items():
              total_assets_val += convert(amount, cur)
 
-        total_assets_val += inventory_value + capital_stock
+        # Add Inventory & Capital (convert from float dollars to pennies)
+        total_assets_val += int(inventory_value * 100)
+        total_assets_val += int(capital_stock * 100)
 
+        # Profit is int pennies
         avg_profit = sum(state.profit_history) / len(state.profit_history) if state.profit_history else 0.0
-        valuation = total_assets_val + max(0.0, avg_profit) * config.valuation_per_multiplier
 
-        state.valuation = valuation
+        valuation = total_assets_val + int(max(0.0, avg_profit) * config.valuation_per_multiplier)
+
+        state.valuation_pennies = valuation
         return valuation
 
     def invest_in_automation(
@@ -237,7 +250,7 @@ class FinanceEngine:
         state: FinanceState,
         firm_id: int,
         wallet: IWallet,
-        amount: float,
+        amount: int,
         context: FinancialTransactionContext,
         current_time: int
     ) -> Optional[Transaction]:
@@ -268,7 +281,7 @@ class FinanceEngine:
         state: FinanceState,
         firm_id: int,
         wallet: IWallet,
-        amount: float,
+        amount: int,
         context: FinancialTransactionContext,
         current_time: int
     ) -> Optional[Transaction]:
@@ -299,7 +312,7 @@ class FinanceEngine:
         state: FinanceState,
         firm_id: int,
         wallet: IWallet,
-        amount: float,
+        amount: int,
         context: FinancialTransactionContext,
         current_time: int
     ) -> Optional[Transaction]:
@@ -330,7 +343,7 @@ class FinanceEngine:
         state: FinanceState,
         firm_id: int,
         wallet: IWallet,
-        amount: float,
+        amount: int,
         currency: CurrencyCode,
         reason: str,
         context: FinancialTransactionContext,
@@ -358,14 +371,13 @@ class FinanceEngine:
             currency=currency
         )
 
-    def record_expense(self, state: FinanceState, amount: float, currency: CurrencyCode):
+    def record_expense(self, state: FinanceState, amount: int, currency: CurrencyCode):
         """Public method to record expense (e.g. after successful transaction execution)."""
         self._record_expense(state, amount, currency)
 
     def get_estimated_unit_cost(self, state: FinanceState, item_id: str, config: FirmConfigDTO) -> float:
         """
-        Estimates unit cost for pricing floors.
-        Uses a heuristic based on total expenses and production, or a configured base cost.
+        Estimates unit cost for pricing floors (Returns float dollars).
         """
         # 1. Try Config Base Cost
         goods_config = config.goods.get(item_id, {})
@@ -374,6 +386,4 @@ class FinanceEngine:
             return base_cost
 
         # 2. Heuristic: Total Expenses / Total Production (if available)
-        # Note: Production data is in ProductionState, not FinanceState.
-        # So we rely on a simplified heuristic or default.
         return config.default_unit_cost

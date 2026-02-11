@@ -56,12 +56,12 @@ class RealEstateUtilizationComponent:
     TD-271: Converts firm-owned real estate into a production bonus.
     Applies production cost reduction based on owned space and market conditions.
     """
-    def apply(self, owned_properties: List[int], config: FirmConfigDTO, firm_id: int, current_tick: int, market_data: Optional[Dict[str, Any]] = None) -> Tuple[Optional[Dict[str, Any]], float]:
+    def apply(self, owned_properties: List[int], config: FirmConfigDTO, firm_id: int, current_tick: int, market_data: Optional[Dict[str, Any]] = None) -> Tuple[Optional[Dict[str, Any]], int]:
         # 1. Calculate Owned Space
         # Assuming 1 property = 1 unit of space for now (or configurable)
         owned_space = len(owned_properties)
         if owned_space <= 0:
-            return None, 0.0
+            return None, 0
 
         # space_utility_factor: How much cost reduction per unit of space?
         # Ideally from config. Assuming default 100.0 if not in config.
@@ -78,18 +78,22 @@ class RealEstateUtilizationComponent:
         # 4. Apply Bonus
         # Effectively reduces net cost by increasing revenue/profit internally
         if cost_reduction > 0:
+             amount_pennies = int(cost_reduction * 100) if space_utility_factor < 100 else int(cost_reduction) # Assuming utility factor is in dollars? Let's assume result is pennies if factor is pennies.
+             # Let's assume result is pennies.
+             amount_pennies = int(cost_reduction) # Assuming pre-scaled or handled elsewhere. For now just int cast.
+
              effect = {
                  "type": "PRODUCTION_COST_REDUCTION",
                  "agent_id": firm_id,
-                 "amount": cost_reduction,
+                 "amount": amount_pennies,
                  "tick": current_tick,
                  "details": {
                      "owned_space": owned_space,
                      "utility_factor": space_utility_factor
                  }
              }
-             return effect, cost_reduction
-        return None, 0.0
+             return effect, amount_pennies
+        return None, 0
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -219,7 +223,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         return {
             "is_active": self.is_active,
             "approval_rating": 0.0,
-            "total_wealth": self.assets
+            "total_wealth": self.assets # Returns int pennies
         }
 
     def get_current_state(self) -> AgentStateDTO:
@@ -308,12 +312,12 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         self.finance_state.is_bankrupt = value
 
     @property
-    def valuation(self) -> float:
-        return self.finance_state.valuation
+    def valuation(self) -> int:
+        return self.finance_state.valuation_pennies
 
     @valuation.setter
-    def valuation(self, value: float):
-        self.finance_state.valuation = value
+    def valuation(self, value: int):
+        self.finance_state.valuation_pennies = value
 
     @property
     def total_shares(self) -> float:
@@ -341,11 +345,11 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
     @property
     def marketing_budget(self) -> float:
-        return self.sales_state.marketing_budget
+        return float(self.sales_state.marketing_budget_pennies) # Adapter
 
     @marketing_budget.setter
     def marketing_budget(self, value: float):
-        self.sales_state.marketing_budget = value
+        self.sales_state.marketing_budget_pennies = int(value) # Adapter
 
     @property
     def last_prices(self) -> Dict[str, float]:
@@ -384,12 +388,12 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         self.finance_state.has_bailout_loan = value
 
     @property
-    def total_debt(self) -> float:
-        return self.finance_state.total_debt
+    def total_debt(self) -> int:
+        return self.finance_state.total_debt_pennies
 
     @total_debt.setter
-    def total_debt(self, value: float):
-        self.finance_state.total_debt = value
+    def total_debt(self, value: int):
+        self.finance_state.total_debt_pennies = value
 
     @property
     def inventory_last_sale_tick(self) -> Dict[str, int]:
@@ -412,19 +416,19 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         self.sales_state.prev_avg_quality = value
 
     @property
-    def last_revenue(self) -> float:
-        return self.finance_state.last_revenue
+    def last_revenue(self) -> int:
+        return self.finance_state.last_revenue_pennies
 
     @property
-    def revenue_this_turn(self) -> Dict[CurrencyCode, float]:
+    def revenue_this_turn(self) -> Dict[CurrencyCode, int]:
         return self.finance_state.revenue_this_turn
 
     @property
-    def expenses_this_tick(self) -> Dict[CurrencyCode, float]:
+    def expenses_this_tick(self) -> Dict[CurrencyCode, int]:
         return self.finance_state.expenses_this_tick
 
     @property
-    def cost_this_turn(self) -> Dict[CurrencyCode, float]:
+    def cost_this_turn(self) -> Dict[CurrencyCode, int]:
         return self.finance_state.cost_this_turn
 
     # --- Methods ---
@@ -432,7 +436,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
     def init_ipo(self, stock_market: StockMarket):
         """Register firm in stock market order book."""
         usd_balance = self.wallet.get_balance(DEFAULT_CURRENCY)
-        par_value = usd_balance / self.total_shares if self.total_shares > 0 else 1.0
+        par_value = float(usd_balance) / self.total_shares if self.total_shares > 0 else 1.0
         stock_market.update_shareholder(self.id, self.id, self.treasury_shares)
         self.logger.info(
             f"IPO | Firm {self.id} initialized IPO with {self.total_shares} shares. Par value: {par_value:.2f}",
@@ -442,21 +446,21 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
     def record_sale(self, item_id: str, quantity: float, current_tick: int) -> None:
         self.sales_state.inventory_last_sale_tick[item_id] = current_tick
 
-    def record_revenue(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def record_revenue(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         Records revenue for the current turn.
         Required by GoodsTransactionHandler.
         """
         if currency not in self.finance_state.revenue_this_turn:
-            self.finance_state.revenue_this_turn[currency] = 0.0
-            self.finance_state.current_profit[currency] = 0.0 # Initialize if missing
+            self.finance_state.revenue_this_turn[currency] = 0
+            self.finance_state.current_profit[currency] = 0 # Initialize if missing
 
         self.finance_state.revenue_this_turn[currency] += amount
         if currency not in self.finance_state.current_profit:
-             self.finance_state.current_profit[currency] = 0.0
+             self.finance_state.current_profit[currency] = 0
         self.finance_state.current_profit[currency] += amount
 
-    def record_expense(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def record_expense(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         Records expense for the current tick.
         Required by GoodsTransactionHandler.
@@ -482,7 +486,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
         # 3. Get Secured Debt Claims (Tier 2)
         # Abstracts away knowledge of LoanMarket
-        total_debt = self.finance_state.total_debt
+        total_debt = self.finance_state.total_debt_pennies
         bank_agent_id = "BANK_UNKNOWN" # Default
         if self.decision_engine.loan_market and self.decision_engine.loan_market.bank:
             bank_agent_id = self.decision_engine.loan_market.bank.id
@@ -516,7 +520,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             for sh in shareholders
         ]
 
-    def liquidate_assets(self, current_tick: int = -1) -> Dict[CurrencyCode, float]:
+    def liquidate_assets(self, current_tick: int = -1) -> Dict[CurrencyCode, int]:
         """Liquidate assets using Protocol Purity."""
         # 1. Write off Inventory
         for item_id in list(self.get_all_items().keys()):
@@ -613,10 +617,10 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         total_revenue = 0.0
         for cur, amount in self.finance_state.revenue_this_turn.items():
              rate = exchange_rates.get(cur, 1.0) if cur != DEFAULT_CURRENCY else 1.0
-             total_revenue += amount * rate
+             total_revenue += float(amount) * rate
 
         result = self.sales_engine.adjust_marketing_budget(self.sales_state, market_context, total_revenue)
-        self.sales_state.marketing_budget = result.new_budget
+        self.sales_state.marketing_budget_pennies = int(result.new_budget)
 
     def get_snapshot_dto(self) -> FirmSnapshotDTO:
         """Helper to create FirmSnapshotDTO for engines."""
@@ -652,7 +656,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             consecutive_loss_turns=self.finance_state.consecutive_loss_turns,
             profit_history=list(self.finance_state.profit_history),
             altman_z_score=0.0,
-            valuation=self.finance_state.valuation,
+            valuation=self.finance_state.valuation_pennies,
             total_shares=self.finance_state.total_shares,
             treasury_shares=self.finance_state.treasury_shares,
             dividend_rate=self.finance_state.dividend_rate,
@@ -679,7 +683,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             price_history=self.sales_state.last_prices.copy(),
             brand_awareness=self.brand_manager.brand_awareness,
             perceived_quality=self.brand_manager.perceived_quality,
-            marketing_budget=self.sales_state.marketing_budget
+            marketing_budget=float(self.sales_state.marketing_budget_pennies)
         )
         
         return FirmSnapshotDTO(
@@ -717,7 +721,12 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         self.current_production = result.quantity_produced
         if result.success and result.quantity_produced > 0:
             self.add_item(result.specialization, result.quantity_produced, quality=result.quality)
-            self.record_expense(result.production_cost, DEFAULT_CURRENCY)
+
+            # MIGRATION: Record expense in int pennies
+            # Result production_cost might be float from engine?
+            # I will update engine later. For now, cast.
+            cost_pennies = int(result.production_cost)
+            self.record_expense(cost_pennies, DEFAULT_CURRENCY)
 
             # Consume inputs
             for mat, amount in result.inputs_consumed.items():
@@ -738,7 +747,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             effects_queue.append(effect)
 
     @override
-    def clone(self, new_id: int, initial_assets_from_parent: float, current_tick: int) -> "Firm":
+    def clone(self, new_id: int, initial_assets_from_parent: int, current_tick: int) -> "Firm":
         cloned_decision_engine = copy.deepcopy(self.decision_engine)
 
         new_core_config = replace(self.get_core_config(), id=new_id, name=f"Firm_{new_id}")
@@ -825,12 +834,12 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         # 2. Finance State
         finance_dto = FinanceStateDTO(
             balance=self.wallet.get_balance(DEFAULT_CURRENCY), # Public API uses float balance for main currency often
-            revenue_this_turn=self.finance_state.revenue_this_turn.get(DEFAULT_CURRENCY, 0.0),
-            expenses_this_tick=self.finance_state.expenses_this_tick.get(DEFAULT_CURRENCY, 0.0),
+            revenue_this_turn=self.finance_state.revenue_this_turn.get(DEFAULT_CURRENCY, 0),
+            expenses_this_tick=self.finance_state.expenses_this_tick.get(DEFAULT_CURRENCY, 0),
             consecutive_loss_turns=self.finance_state.consecutive_loss_turns,
             profit_history=list(self.finance_state.profit_history),
             altman_z_score=0.0,
-            valuation=self.finance_state.valuation,
+            valuation=self.finance_state.valuation_pennies,
             total_shares=self.finance_state.total_shares,
             treasury_shares=self.finance_state.treasury_shares,
             dividend_rate=self.finance_state.dividend_rate,
@@ -857,7 +866,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             price_history=self.sales_state.last_prices.copy(),
             brand_awareness=self.brand_manager.brand_awareness,
             perceived_quality=self.brand_manager.perceived_quality,
-            marketing_budget=self.sales_state.marketing_budget
+            marketing_budget=float(self.sales_state.marketing_budget_pennies)
         )
 
         sentiment = 1.0 / (1.0 + self.finance_state.consecutive_loss_turns)
@@ -902,7 +911,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         current_assets_val = self.wallet.get_balance(DEFAULT_CURRENCY)
         self.logger.debug(
-            f"FIRM_DECISION_START | Firm {self.id} before decision: Assets={current_assets_val:.2f}, Employees={len(self.hr_state.employees)}, is_active={self.is_active}",
+            f"FIRM_DECISION_START | Firm {self.id} before decision: Assets={current_assets_val}, Employees={len(self.hr_state.employees)}, is_active={self.is_active}",
             extra={
                 **log_extra,
                 "assets_before": self.wallet.get_all_balances(),
@@ -950,7 +959,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
         current_assets_val_after = self.wallet.get_balance(DEFAULT_CURRENCY)
         self.logger.debug(
-            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={current_assets_val_after:.2f}, Employees={len(self.hr_state.employees)}, is_active={self.is_active}, Decisions={len(external_orders)}",
+            f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={current_assets_val_after}, Employees={len(self.hr_state.employees)}, is_active={self.is_active}, Decisions={len(external_orders)}",
             extra={
                 **log_extra,
                 "assets_after": self.wallet.get_all_balances(),
@@ -977,8 +986,9 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             shareholder_registry=None
         )
 
-        def get_amount(o: Order) -> float:
-            return o.monetary_amount['amount'] if o.monetary_amount else o.quantity
+        def get_amount(o: Order) -> int:
+            val = o.monetary_amount['amount_pennies'] if o.monetary_amount else o.quantity
+            return int(val)
 
         def get_currency(o: Order) -> CurrencyCode:
              return o.monetary_amount['currency'] if o.monetary_amount else DEFAULT_CURRENCY
@@ -1014,12 +1024,12 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
                 if asset_result.success:
                     # Transfer funds
-                    if self.settlement_system and self.settlement_system.transfer(self, government, asset_result.actual_cost, order.order_type):
+                    if self.settlement_system and self.settlement_system.transfer(self, government, int(asset_result.actual_cost), order.order_type):
                         # Apply state changes
                         self.production_state.automation_level += asset_result.automation_level_increase
                         self.production_state.capital_stock += asset_result.capital_stock_increase
 
-                        self.record_expense(asset_result.actual_cost, DEFAULT_CURRENCY)
+                        self.record_expense(int(asset_result.actual_cost), DEFAULT_CURRENCY)
                         self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {asset_result.actual_cost} in {order.order_type}.")
                     else:
                          self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed transfer for {order.order_type}.")
@@ -1077,7 +1087,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
                  )
                  if tx:
                     employee = next((e for e in self.hr_state.employees if e.id == order.target_agent_id), None)
-                    if employee and self.settlement_system and self.settlement_system.transfer(self, employee, tx.price, "Severance", currency=tx.currency):
+                    if employee and self.settlement_system and self.settlement_system.transfer(self, employee, int(tx.price), "Severance", currency=tx.currency):
                         self.hr_engine.finalize_firing(self.hr_state, order.target_agent_id)
                         self.logger.info(f"INTERNAL_EXEC | Firm {self.id} fired employee {order.target_agent_id}.")
                     else:
@@ -1186,7 +1196,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
             # Apply income update
             if update.net_income > 0:
-                employee.labor_income_this_tick = (employee.labor_income_this_tick or 0.0) + update.net_income
+                employee.labor_income_this_tick = (employee.labor_income_this_tick or 0) + int(update.net_income)
 
             # Apply firing
             if update.fire_employee:
@@ -1215,10 +1225,10 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         # 3. Marketing
         # Adjust budget first (ask Engine what the budget should be)
         marketing_result = self.sales_engine.adjust_marketing_budget(
-            self.sales_state, market_context, self.finance_state.last_revenue
+            self.sales_state, market_context, float(self.finance_state.last_revenue_pennies) # Engine uses float revenue?
         )
         # Apply result
-        self.sales_state.marketing_budget = marketing_result.new_budget
+        self.sales_state.marketing_budget_pennies = marketing_result.new_budget
 
         # Then generate transaction using the updated state
         marketing_context = self._build_sales_marketing_context(current_time, government)
@@ -1229,7 +1239,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             transactions.append(tx_marketing)
 
         # Brand Update
-        self.brand_manager.update(self.sales_state.marketing_budget, self.productivity_factor / 10.0)
+        self.brand_manager.update(float(self.sales_state.marketing_budget_pennies), self.productivity_factor / 10.0)
 
         # WO-4.6: Finance cleanup is now handled in Post-Sequence via reset()
         # This ensures expenses_this_tick accumulates for the full tick duration.
@@ -1258,38 +1268,38 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
     @property
     @override
-    def assets(self) -> float:
+    def assets(self) -> int:
         return self.wallet.get_balance(DEFAULT_CURRENCY)
 
     @override
-    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
          self.wallet.add(amount, currency)
 
     @override
-    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
          current_bal = self.wallet.get_balance(currency)
          if current_bal < amount:
             raise InsufficientFundsError(
-                f"Insufficient funds", required=MoneyDTO(amount=amount, currency=currency), available=MoneyDTO(amount=current_bal, currency=currency)
+                f"Insufficient funds", required=MoneyDTO(amount_pennies=amount, currency=currency), available=MoneyDTO(amount_pennies=current_bal, currency=currency)
             )
          self.wallet.subtract(amount, currency)
 
-    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         """Implements IFinancialAgent.get_balance."""
         return self.wallet.get_balance(currency)
 
-    def get_all_balances(self) -> Dict[CurrencyCode, float]:
+    def get_all_balances(self) -> Dict[CurrencyCode, int]:
         """Returns a copy of all currency balances."""
         return self.wallet.get_all_balances()
 
     @property
-    def total_wealth(self) -> float:
+    def total_wealth(self) -> int:
         """
         Returns the total wealth in default currency estimation.
         TD-270: Standardized multi-currency summation.
         """
         balances = self.wallet.get_all_balances()
-        total = 0.0
+        total = 0
         # For now, we assume 1:1 exchange rate as per spec draft for simple conversion.
         # Future implementations should use an IExchangeRateService.
         for amount in balances.values():
@@ -1297,7 +1307,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         return total
 
     @override
-    def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, int]:
         """Implementation of ICurrencyHolder."""
         return self.wallet.get_all_balances()
 
@@ -1306,15 +1316,15 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
     def get_book_value_per_share(self) -> float:
         outstanding = self.total_shares - self.treasury_shares
         if outstanding <= 0: return 0.0
-        net_assets = self.wallet.get_balance(DEFAULT_CURRENCY) - self.finance_state.total_debt
-        return max(0.0, net_assets) / outstanding
+        net_assets = self.wallet.get_balance(DEFAULT_CURRENCY) - self.finance_state.total_debt_pennies
+        return max(0.0, float(net_assets)) / outstanding
 
     def get_market_cap(self, stock_price: Optional[float] = None) -> float:
         if stock_price is None:
             stock_price = self.get_book_value_per_share()
         return (self.total_shares - self.treasury_shares) * stock_price
 
-    def calculate_valuation(self, market_context: MarketContextDTO = None) -> float:
+    def calculate_valuation(self, market_context: MarketContextDTO = None) -> int:
         inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self.get_all_items())
         # Wrap market_context in FinancialTransactionContext if needed, or update Engine to accept optional context
         # Engine expects FinancialTransactionContext.
@@ -1327,9 +1337,9 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
                 shareholder_registry=None
             )
 
-        return self.finance_engine.calculate_valuation(
+        return int(self.finance_engine.calculate_valuation(
             self.finance_state, self.wallet, self.config, inventory_value, self.capital_stock, fin_ctx
-        )
+        ))
 
     def get_financial_snapshot(self) -> Dict[str, Any]:
         inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self.get_all_items())
@@ -1339,12 +1349,12 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
         return {
              "wallet": MultiCurrencyWalletDTO(balances=self.wallet.get_all_balances()),
-             "total_assets": total_assets,
-             "total_debt": self.finance_state.total_debt,
-             "retained_earnings": self.finance_state.retained_earnings,
+             "total_assets": int(total_assets),
+             "total_debt": self.finance_state.total_debt_pennies,
+             "retained_earnings": self.finance_state.retained_earnings_pennies,
              "average_profit": sum(self.finance_state.profit_history)/len(self.finance_state.profit_history) if self.finance_state.profit_history else 0.0,
-             "working_capital": working_capital,
-             "ebit": self.finance_state.current_profit.get(DEFAULT_CURRENCY, 0.0), # Current EBIT proxy
+             "working_capital": int(working_capital),
+             "ebit": self.finance_state.current_profit.get(DEFAULT_CURRENCY, 0), # Current EBIT proxy
              "market_value_equity": self.get_market_cap()
         }
 

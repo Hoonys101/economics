@@ -27,8 +27,8 @@ class PrioritizedNeed:
 @dataclass
 class BudgetPlan:
     """A concrete allocation of funds for the current tick."""
-    allocations: Dict[str, float]  # e.g., {"food": 100, "housing": 500, "savings": 50}
-    discretionary_spending: float
+    allocations: Dict[str, int]  # MIGRATION: int pennies. e.g., {"food": 10000}
+    discretionary_spending: int # MIGRATION: int pennies.
     orders: List[Order] = field(default_factory=list) # Orders approved by budget
 
 @dataclass
@@ -39,8 +39,8 @@ class HousingActionDTO:
     """
     action_type: str  # "INITIATE_PURCHASE", "MAKE_RENTAL_OFFER", "STAY"
     property_id: Optional[str] = None
-    offer_price: float = 0.0
-    down_payment_amount: float = 0.0
+    offer_price: int = 0
+    down_payment_amount: int = 0
     buyer_id: Optional[int] = None
 
 # --- Engine Input DTOs ---

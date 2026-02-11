@@ -39,7 +39,10 @@ class BioStateDTO:
 
 @dataclass
 class EconStateDTO:
-    """Internal state for EconComponent."""
+    """
+    Internal state for EconComponent.
+    MIGRATION: Monetary values are integers (pennies).
+    """
     # Assets & Inventory
     wallet: IWallet # Changed for WO-4.2A Wallet Abstraction
     # assets: Dict[CurrencyCode, float] # DEPRECATED, access via wallet
@@ -51,12 +54,12 @@ class EconStateDTO:
     # Labor
     is_employed: bool
     employer_id: Optional[int]
-    current_wage: float
+    current_wage_pennies: int
     wage_modifier: float
     labor_skill: float
     education_xp: float
     education_level: int
-    expected_wage: float
+    expected_wage_pennies: int
     talent: Talent # Assuming immutable or shared reference ok
     skills: Dict[str, Skill]
     aptitude: float
@@ -71,7 +74,7 @@ class EconStateDTO:
     # History & Memory
     housing_price_history: deque
     market_wage_history: deque
-    shadow_reservation_wage: float
+    shadow_reservation_wage_pennies: int
     last_labor_offer_tick: int
     last_fired_tick: int
     job_search_patience: int
@@ -87,15 +90,15 @@ class EconStateDTO:
     adaptation_rate: float
 
     # Income Tracking (Transient per tick)
-    labor_income_this_tick: float
-    capital_income_this_tick: float
+    labor_income_this_tick_pennies: int
+    capital_income_this_tick_pennies: int
 
     # Legacy / Compatibility
     credit_frozen_until_tick: int = 0
-    initial_assets_record: float = 0.0
+    initial_assets_record_pennies: int = 0
 
     @property
-    def assets(self) -> Dict[CurrencyCode, float]:
+    def assets(self) -> Dict[CurrencyCode, int]:
         """Legacy compatibility accessor."""
         return self.wallet.get_all_balances()
 
@@ -185,8 +188,8 @@ class HouseholdSnapshotDTO:
     bio_state: BioStateDTO
     econ_state: EconStateDTO
     social_state: SocialStateDTO
-    monthly_income: float = 0.0 # Added for precision in financial decisions (TD-206)
-    monthly_debt_payments: float = 0.0 # Added for precision in financial decisions (TD-206)
+    monthly_income_pennies: int = 0 # Added for precision in financial decisions (TD-206)
+    monthly_debt_payments_pennies: int = 0 # Added for precision in financial decisions (TD-206)
 
 @dataclass
 class HouseholdStateDTO:
@@ -194,9 +197,10 @@ class HouseholdStateDTO:
     [DEPRECATED] Use HouseholdSnapshotDTO instead.
     A read-only DTO containing the state of a Household agent.
     Used by the DecisionEngine to make decisions without direct dependency on the Household class.
+    MIGRATION: Monetary values are integers (pennies).
     """
     id: int
-    assets: Dict[CurrencyCode, float] # Changed for Phase 33
+    assets: Dict[CurrencyCode, int] # Changed for Phase 33
     inventory: Dict[str, float]
     needs: Dict[str, float]
     preference_asset: float
@@ -206,7 +210,7 @@ class HouseholdStateDTO:
     durable_assets: List[Dict[str, Any]]
     expected_inflation: Dict[str, float]
     is_employed: bool
-    current_wage: float
+    current_wage_pennies: int
     wage_modifier: float
     is_homeless: bool
     residing_property_id: Optional[int]
@@ -231,14 +235,14 @@ class HouseholdStateDTO:
     demand_elasticity: float = 1.0
 
     # TD-206: Financial Precision (Parity with Snapshot)
-    monthly_income: float = 0.0
-    monthly_debt_payments: float = 0.0
+    monthly_income_pennies: int = 0
+    monthly_debt_payments_pennies: int = 0
 
 @dataclass
 class CloningRequestDTO:
     """Data required to clone a household."""
     new_id: int
-    initial_assets_from_parent: Dict[CurrencyCode, float] # Changed for Phase 33
+    initial_assets_from_parent: Dict[CurrencyCode, int] # Changed for Phase 33
     current_tick: int
 
 @dataclass

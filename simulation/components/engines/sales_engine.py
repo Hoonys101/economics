@@ -16,6 +16,7 @@ class SalesEngine:
     """
     Stateless Engine for Sales operations.
     Handles pricing, marketing, and order generation.
+    MIGRATION: Uses integer pennies.
     """
 
     def post_ask(
@@ -48,19 +49,26 @@ class SalesEngine:
         self,
         state: SalesState,
         market_context: MarketContextDTO,
-        revenue_this_turn: float # Total revenue in primary currency
+        revenue_this_turn: float # MIGRATION: Input is float dollars (from Firm calculation), or int pennies?
+        # Firm.py calls it with `total_revenue = ... float(amount) * rate`.
+        # Firm.py: `for cur, amount in self.finance_state.revenue_this_turn.items(): ... total_revenue += float(amount) * rate`
+        # So input is float pennies (because amount is int pennies, cast to float).
+        # Wait, if amount is pennies (e.g. 10000), total_revenue is 10000.0.
+        # This is fine. We calculate budget in pennies.
     ) -> MarketingAdjustmentResultDTO:
         """
         Adjusts marketing budget based on ROI or simple heuristic.
-        Returns the calculated new budget in a DTO.
+        Returns the calculated new budget in a DTO (pennies).
         """
         # Simple heuristic: % of revenue
+        # revenue_this_turn is pennies (float).
         target_budget = revenue_this_turn * state.marketing_budget_rate
 
         # Smoothing
-        new_budget = (state.marketing_budget * 0.8) + (target_budget * 0.2)
+        # marketing_budget_pennies is int.
+        new_budget = (state.marketing_budget_pennies * 0.8) + (target_budget * 0.2)
 
-        return MarketingAdjustmentResultDTO(new_budget=new_budget)
+        return MarketingAdjustmentResultDTO(new_budget=int(new_budget))
 
     def generate_marketing_transaction(
         self,
@@ -70,14 +78,14 @@ class SalesEngine:
         """
         Generates marketing spend transaction.
         """
-        budget = state.marketing_budget
+        budget = state.marketing_budget_pennies
         if budget > 0 and context.wallet_balance >= budget and context.government_id:
             return Transaction(
                 buyer_id=context.firm_id,
                 seller_id=context.government_id,
                 item_id="marketing",
                 quantity=1.0,
-                price=budget,
+                price=budget, # Int pennies
                 market_id="system",
                 transaction_type="marketing",
                 time=context.current_time,
