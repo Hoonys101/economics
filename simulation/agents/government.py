@@ -606,18 +606,26 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
                 payee = self
 
             if self.settlement_system:
-                success = self.settlement_system.transfer(payer, payee, int(req.amount), req.memo, currency=req.currency)
+                if payee == self:
+                    # Atomic Tax Collection via TaxAgency (TD-110)
+                    tax_result = self.tax_agency.collect_tax(
+                        payer=payer,
+                        payee=payee,
+                        amount=req.amount,
+                        tax_type="wealth_tax", # Inferred from context; executed social policy tax is primarily wealth tax
+                        settlement_system=self.settlement_system,
+                        current_tick=current_tick,
+                        currency=req.currency
+                    )
 
-                if success:
-                    if payee == self: # Tax
-                         self.record_revenue({
-                             "success": True,
-                             "amount_collected": int(req.amount),
-                             "tax_type": "wealth_tax",
-                             "currency": req.currency,
-                             "payer_id": payer.id if hasattr(payer, 'id') else payer,
-                             "payee_id": self.id
-                         })
+                    if tax_result["success"]:
+                        # Record revenue (TaxAgency logs success)
+                        self.record_revenue(tax_result)
+
+                else:
+                    # Regular Transfer (Welfare, Subsidies)
+                    success = self.settlement_system.transfer(payer, payee, int(req.amount), req.memo, currency=req.currency)
+                    # No record_revenue for outbound transfers
 
     def invest_infrastructure(self, current_tick: int, households: List[Any] = None) -> List[Transaction]:
         return self.infrastructure_manager.invest_infrastructure(current_tick, households)

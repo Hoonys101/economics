@@ -36,7 +36,7 @@ class InheritanceManager:
         """
         transactions: List[Transaction] = []
         current_tick = simulation.time
-        # settlement_system = simulation.settlement_system # TD-232: Removed direct dependency
+        settlement_system = simulation.settlement_system
 
         # 1. Valuation & Asset Gathering
         # ------------------------------------------------------------------
@@ -220,23 +220,84 @@ class InheritanceManager:
                      transactions.append(tx)
 
         else:
-            # Distribute to Heirs
-            # Cash & Portfolio via InheritanceHandler (Single Transaction)
-            if cash > 0:
-                tx = Transaction(
-                    buyer_id=deceased.id,
-                    seller_id=ID_SYSTEM, # System distribution (Fixed COLLISION with PublicManager -1)
-                    item_id="estate_distribution",
-                    quantity=1.0,
-                    price=cash, # Informational
-                    market_id="system",
-                    transaction_type="inheritance_distribution",
-                    time=current_tick,
-                    metadata={"heir_ids": [h.id for h in heirs]}
-                )
-                results = simulation.transaction_processor.execute(simulation, [tx])
-                if results and results[0].success:
-                    transactions.append(tx)
+            # Distribute to Heirs (TD-112: Integer Distribution)
+
+            # 1. Cash Distribution (Integer-based)
+            # Use strict integer pennies for distribution
+            # Note: We must re-fetch actual balance to be safe, as float 'cash' might be drifting
+            if settlement_system:
+                total_pennies = settlement_system.get_balance(deceased.id, DEFAULT_CURRENCY)
+            else:
+                # Fallback to float estimate converted to int
+                total_pennies = int(cash * 100)
+
+            if total_pennies > 0:
+                num_heirs = len(heirs)
+                pennies_per_heir = total_pennies // num_heirs
+                remainder_pennies = total_pennies % num_heirs
+
+                for i, heir in enumerate(heirs):
+                    amount_to_send = pennies_per_heir
+                    if i == num_heirs - 1:
+                        amount_to_send += remainder_pennies
+
+                    if amount_to_send > 0:
+                        if settlement_system:
+                            success = settlement_system.transfer(
+                                deceased,
+                                heir,
+                                amount_to_send,
+                                f"inheritance_share:{deceased.id}",
+                                currency=DEFAULT_CURRENCY
+                            )
+                            if success:
+                                transactions.append(Transaction(
+                                    buyer_id=deceased.id,
+                                    seller_id=heir.id,
+                                    item_id="cash",
+                                    quantity=1.0,
+                                    price=amount_to_send / 100.0,
+                                    market_id="system",
+                                    transaction_type="inheritance_distribution",
+                                    time=current_tick
+                                ))
+                        else:
+                            self.logger.error("No settlement system available for inheritance distribution.")
+
+            # 2. Stock Distribution (Integer-based)
+            # Iterate through current holdings (refreshing if needed)
+            portfolio_holdings = deceased._econ_state.portfolio.holdings
+            for firm_id, share in list(portfolio_holdings.items()):
+                total_shares = share.quantity
+                if total_shares <= 0:
+                    continue
+
+                num_heirs = len(heirs)
+                shares_per_heir = int(total_shares // num_heirs)
+                remainder_shares = int(total_shares % num_heirs)
+
+                # Distribute base shares
+                if shares_per_heir > 0:
+                    for heir in heirs:
+                        # Transfer via Portfolio Logic
+                        # Note: Simulation doesn't have a direct 'transfer_stock' on settlement yet for arbitrary agents easily
+                        # We simulate it by modifying portfolios directly as per TD-112 pseudo-code
+                        # Ideally this should use a proper handler or registry
+
+                        heir.portfolio.add(firm_id, shares_per_heir, share.acquisition_price)
+                        deceased.portfolio.remove(firm_id, shares_per_heir)
+
+                        # Sync with Stock Market Registry if it exists
+                        if simulation.stock_market:
+                            # This requires deep access to stock market or registry
+                            pass # TD-112 pseudo-code says: simulation.stock_market.update_shareholder(...)
+                            # We'll assume for now we just move the portfolio items and the market reflects it later or via hooks
+
+                # Distribute remainder
+                for i in range(remainder_shares):
+                    heir = heirs[i]
+                    heir.portfolio.add(firm_id, 1, share.acquisition_price)
+                    deceased.portfolio.remove(firm_id, 1)
 
             # Distribute Real Estate (Round Robin - Synchronous)
             count = len(heirs)

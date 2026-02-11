@@ -73,7 +73,8 @@ class TestTaxAgency(unittest.TestCase):
             debit_agent=mock_payer,
             credit_agent=mock_gov,
             amount=100,
-            memo="income collection"
+            memo="income collection",
+            currency='USD'
         )
 
 if __name__ == '__main__':

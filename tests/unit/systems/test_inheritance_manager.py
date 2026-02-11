@@ -4,6 +4,7 @@ from simulation.systems.inheritance_manager import InheritanceManager
 from simulation.core_agents import Household
 from simulation.portfolio import Portfolio
 from simulation.models import Transaction
+from modules.system.api import DEFAULT_CURRENCY
 
 class TestInheritanceManager:
     @pytest.fixture
@@ -18,9 +19,11 @@ class TestInheritanceManager:
     def mocks(self):
         simulation = MagicMock()
         simulation.settlement_system = MagicMock()
+        simulation.settlement_system.transfer.return_value = True # Default success
         simulation.stock_market = MagicMock()
         simulation.stock_market.get_daily_avg_price.return_value = 10.0
         simulation.government = MagicMock()
+        simulation.government.id = 888888
         simulation.real_estate_units = []
 
         # TD-232: Mock TransactionProcessor
@@ -54,31 +57,24 @@ class TestInheritanceManager:
 
         mocks.agents = {2: heir1, 3: heir2}
 
-        # Mock Settlement System Receipts
-        mocks.settlement_system.execute_settlement.return_value = [
-            {
-                "buyer_id": 1, "seller_id": 2, "item_id": "inheritance_distribution",
-                "quantity": 1.0, "price": 5000.0, "market_id": "system",
-                "transaction_type": "inheritance_distribution", "time": 0, "metadata": {"heir_ids": [2, 3]}
-            },
-            {
-                "buyer_id": 1, "seller_id": 3, "item_id": "inheritance_distribution",
-                "quantity": 1.0, "price": 5000.0, "market_id": "system",
-                "transaction_type": "inheritance_distribution", "time": 0, "metadata": {"heir_ids": [2, 3]}
-            }
-        ]
+        # Configure get_balance to return integer pennies
+        mocks.settlement_system.get_balance.side_effect = lambda agent_id, currency: int(10000.0 * 100) if agent_id == 1 else 0
 
         txs = setup_manager.process_death(deceased, mocks.government, mocks)
 
-        # Check for distribution tx
-        dist_tx = next((t for t in txs if t.transaction_type == "inheritance_distribution"), None)
-        assert dist_tx is not None
-        assert dist_tx.buyer_id == 1
-        assert set(dist_tx.metadata["heir_ids"]) == {2, 3}
-        assert dist_tx.market_id == "system"
+        # Check for distribution txs
+        dist_txs = [t for t in txs if t.transaction_type == "inheritance_distribution"]
+        assert len(dist_txs) == 2 # 2 heirs = 2 transactions now
+
+        recipients = sorted([t.seller_id for t in dist_txs])
+        assert recipients == [2, 3]
+
+        # Check amounts (5000.0 each)
+        for tx in dist_txs:
+            assert tx.price == 5000.0
 
     def test_multiple_heirs_metadata(self, setup_manager, mocks):
-        """Test Case 2: Verify metadata for multiple heirs."""
+        """Test Case 2: Verify distribution for multiple heirs (uneven split)."""
         deceased = self.create_household(1, assets=100.00)
 
         heir1 = self.create_household(2)
@@ -87,25 +83,32 @@ class TestInheritanceManager:
         deceased._bio_state.children_ids = [2, 3, 4]
         mocks.agents = {2: heir1, 3: heir2, 4: heir3}
 
-        # Mock Settlement System Receipts
-        mocks.settlement_system.execute_settlement.return_value = [
-            {
-                "buyer_id": 1, "seller_id": 2, "item_id": "inheritance_distribution",
-                "quantity": 1.0, "price": 33.33, "market_id": "system",
-                "transaction_type": "inheritance_distribution", "time": 0, "metadata": {"heir_ids": [2, 3, 4]}
-            }
-        ]
+        # 100.00 -> 10000 pennies
+        mocks.settlement_system.get_balance.side_effect = lambda agent_id, currency: 10000 if agent_id == 1 else 0
 
         txs = setup_manager.process_death(deceased, mocks.government, mocks)
 
-        dist_tx = next((t for t in txs if t.transaction_type == "inheritance_distribution"), None)
-        assert dist_tx is not None
-        assert set(dist_tx.metadata["heir_ids"]) == {2, 3, 4}
+        dist_txs = [t for t in txs if t.transaction_type == "inheritance_distribution"]
+        assert len(dist_txs) == 3
+
+        # 10000 / 3 = 3333 r 1
+        # Heirs get: 33.33, 33.33, 33.34
+        prices = sorted([t.price for t in dist_txs])
+        assert prices[0] == 33.33
+        assert prices[1] == 33.33
+        assert prices[2] == 33.34
 
     def test_escheatment_when_no_heirs(self, setup_manager, mocks):
         """Test Case 3: Verify escheatment transaction when no heirs exist."""
         deceased = self.create_household(1, assets=1000.0)
         deceased._bio_state.children_ids = [] # No children
+
+        # Logic uses cash < tax checks which use float assets first, then settlement system if heirs exist.
+        # But for escheatment, the code uses `if cash > 0`.
+        # The logic for escheatment is still largely legacy based on 'cash' float variable unless updated.
+        # Let's check process_death implementation again.
+
+        # It uses 'cash' (float) for escheatment condition.
 
         txs = setup_manager.process_death(deceased, mocks.government, mocks)
 
@@ -121,6 +124,8 @@ class TestInheritanceManager:
         heir1 = self.create_household(2)
         deceased._bio_state.children_ids = [2]
         mocks.agents = {2: heir1}
+
+        mocks.settlement_system.get_balance.return_value = 0
 
         txs = setup_manager.process_death(deceased, mocks.government, mocks)
 
@@ -139,14 +144,8 @@ class TestInheritanceManager:
         deceased._bio_state.children_ids = [2]
         mocks.agents = {2: heir1}
 
-        # Mock Settlement System Receipts
-        mocks.settlement_system.execute_settlement.return_value = [
-            {
-                "buyer_id": 1, "seller_id": mocks.government.id, "item_id": "inheritance_tax",
-                "quantity": 1.0, "price": 500.0, "market_id": "system",
-                "transaction_type": "tax", "time": 0, "metadata": {}
-            }
-        ]
+        # Mock balance after tax deduction (1000 - 500 = 500)
+        mocks.settlement_system.get_balance.return_value = 50000
 
         txs = setup_manager.process_death(deceased, mocks.government, mocks)
 

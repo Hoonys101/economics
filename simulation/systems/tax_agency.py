@@ -1,6 +1,7 @@
 import logging
-from typing import Any
+from typing import Any, Union
 from modules.finance.api import TaxCollectionResult
+from modules.system.api import DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
 
@@ -68,10 +69,11 @@ class TaxAgency:
         self,
         payer: Any,
         payee: Any,
-        amount: float,
+        amount: Union[float, int],
         tax_type: str,
         settlement_system: Any,
-        current_tick: int
+        current_tick: int,
+        currency: str = DEFAULT_CURRENCY
     ) -> TaxCollectionResult:
         """
         [NEW & UNIFIED] Atomically collects tax by executing a transfer and only
@@ -85,6 +87,7 @@ class TaxAgency:
             tax_type: The type of tax (e.g., 'wealth_tax', 'corporate_tax').
             settlement_system: The system responsible for executing the fund transfer.
             current_tick: The current simulation tick.
+            currency: The currency of the tax.
 
         Returns:
             A TaxCollectionResult DTO with the outcome of the transaction.
@@ -92,10 +95,12 @@ class TaxAgency:
         payer_id = payer.id if hasattr(payer, 'id') else str(payer)
         payee_id = payee.id if hasattr(payee, 'id') else str(payee)
 
-        if amount <= 0:
+        amount_int = int(amount)
+
+        if amount_int <= 0:
             return TaxCollectionResult(
                 success=True,
-                amount_collected=0.0,
+                amount_collected=0,
                 tax_type=tax_type,
                 payer_id=payer_id,
                 payee_id=payee_id,
@@ -106,7 +111,7 @@ class TaxAgency:
              logger.error("TAX_COLLECTION_ERROR | No SettlementSystem provided.")
              return TaxCollectionResult(
                 success=False,
-                amount_collected=0.0,
+                amount_collected=0,
                 tax_type=tax_type,
                 payer_id=payer_id,
                 payee_id=payee_id,
@@ -114,22 +119,33 @@ class TaxAgency:
             )
 
         # 1. Attempt the fund transfer via the injected settlement system.
-        transfer_success = settlement_system.transfer(
-            debit_agent=payer,
-            credit_agent=payee,
-            amount=amount,
-            memo=f"{tax_type} collection"
-        )
+        # Check if settlement_system.transfer supports currency arg (it should)
+        try:
+            transfer_success = settlement_system.transfer(
+                debit_agent=payer,
+                credit_agent=payee,
+                amount=amount_int,
+                memo=f"{tax_type} collection",
+                currency=currency
+            )
+        except TypeError:
+             # Fallback if transfer doesn't accept currency (backward compat)
+             transfer_success = settlement_system.transfer(
+                debit_agent=payer,
+                credit_agent=payee,
+                amount=amount_int,
+                memo=f"{tax_type} collection"
+            )
 
         # 2. Verify the outcome.
         if not transfer_success:
             logger.warning(
-                f"TAX_COLLECTION_FAILED | Tick {current_tick} | Failed to collect {amount:.2f} of {tax_type} from {payer_id} to {payee_id}",
-                extra={"tick": current_tick, "payer_id": payer_id, "amount": amount, "tax_type": tax_type}
+                f"TAX_COLLECTION_FAILED | Tick {current_tick} | Failed to collect {amount_int} (pennies) of {tax_type} from {payer_id} to {payee_id}",
+                extra={"tick": current_tick, "payer_id": payer_id, "amount": amount_int, "tax_type": tax_type}
             )
             return TaxCollectionResult(
                 success=False,
-                amount_collected=0.0,
+                amount_collected=0,
                 tax_type=tax_type,
                 payer_id=payer_id,
                 payee_id=payee_id,
@@ -138,11 +154,11 @@ class TaxAgency:
 
         # 3. On success, return a result DTO with the collected amount.
         logger.info(
-            f"TAX_COLLECTION_SUCCESS | Tick {current_tick} | Collected {amount:.2f} of {tax_type} from {payer_id}",
+            f"TAX_COLLECTION_SUCCESS | Tick {current_tick} | Collected {amount_int} (pennies) of {tax_type} from {payer_id}",
             extra={
                 "tick": current_tick,
                 "agent_id": payee_id,
-                "amount": amount,
+                "amount": amount_int,
                 "tax_type": tax_type,
                 "source_id": payer_id,
                 "tags": ["tax", "revenue"]
@@ -150,7 +166,7 @@ class TaxAgency:
         )
         return TaxCollectionResult(
             success=True,
-            amount_collected=amount,
+            amount_collected=amount_int,
             tax_type=tax_type,
             payer_id=payer_id,
             payee_id=payee_id,
