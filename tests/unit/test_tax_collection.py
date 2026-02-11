@@ -66,20 +66,22 @@ def test_atomic_wealth_tax_collection_success():
     # Household with assets > threshold (1000)
     # Assets = 2000. Taxable = 1000.
     # Rate per tick = 0.02 / 100 = 0.0002
-    # Tax = 1000 * 0.0002 = 0.2
-    household = MockAgent(id="HH1", assets=2000.0)
+    # Tax = 1000 * 0.0002 = 0.2 dollars = 20 pennies
+    # Assets = 2000.00 -> 200000 pennies
+    household = MockAgent(id="HH1", assets=200000)
 
     market_data = {"goods_market": {"basic_food_current_sell_price": 10.0}}
 
     txs = gov.run_welfare_check([household], market_data, current_tick=1)
 
     # Check assets transferred
-    assert household.assets == 2000.0 - 0.2
-    assert gov.assets == 0.2
+    # 200000 - 20 = 199980
+    assert household.assets == 199980
+    assert gov.assets == 20
 
     # Check stats
-    assert gov.total_collected_tax[DEFAULT_CURRENCY] == 0.2
-    assert gov.tax_revenue["wealth_tax"] == 0.2
+    assert gov.total_collected_tax[DEFAULT_CURRENCY] == 20
+    assert gov.tax_revenue["wealth_tax"] == 20
 
     # Check transactions: NO transaction objects for tax should be returned
     tax_txs = [t for t in txs if t.transaction_type == "tax"]
@@ -94,7 +96,7 @@ def test_atomic_wealth_tax_collection_insufficient_funds():
     # This scenario is hard to hit because logic is min(tax, assets).
     # So let's force a situation where transfer fails by mocking settlement to fail
 
-    household = MockAgent(id="HH1", assets=2000.0)
+    household = MockAgent(id="HH1", assets=200000)
 
     # Override settlement to always fail
     settlement.transfer = MagicMock(return_value=False)
@@ -104,7 +106,7 @@ def test_atomic_wealth_tax_collection_insufficient_funds():
     gov.run_welfare_check([household], market_data, current_tick=1)
 
     # Assets unchanged
-    assert household.assets == 2000.0
+    assert household.assets == 200000
     assert gov.assets == 0.0
 
     # Stats unchanged
@@ -117,17 +119,17 @@ def test_government_collect_tax_adapter_success():
     settlement = MockSettlementSystem()
     gov.settlement_system = settlement
 
-    payer = MockAgent(id="PAYER", assets=100.0)
-    amount = 10.0
+    payer = MockAgent(id="PAYER", assets=10000)
+    amount = 1000
 
     collected = gov.collect_tax(amount, "test_tax", payer, current_tick=1)
 
-    assert collected['amount_collected'] == 10.0
+    assert collected['amount_collected'] == 1000
     assert collected['success'] is True
-    assert payer.assets == 90.0
-    assert gov.assets == 10.0
-    assert gov.total_collected_tax[DEFAULT_CURRENCY] == 10.0
-    assert gov.tax_revenue["test_tax"] == 10.0
+    assert payer.assets == 9000
+    assert gov.assets == 1000
+    assert gov.total_collected_tax[DEFAULT_CURRENCY] == 1000
+    assert gov.tax_revenue["test_tax"] == 1000
 
 def test_government_collect_tax_adapter_failure():
     config = MockConfig()
@@ -135,14 +137,14 @@ def test_government_collect_tax_adapter_failure():
     settlement = MockSettlementSystem()
     gov.settlement_system = settlement
 
-    payer = MockAgent(id="PAYER", assets=5.0) # Less than 10
-    amount = 10.0
+    payer = MockAgent(id="PAYER", assets=500) # Less than 1000
+    amount = 1000
 
     collected = gov.collect_tax(amount, "test_tax", payer, current_tick=1)
 
     assert collected['amount_collected'] == 0.0
     assert collected['success'] is False
-    assert payer.assets == 5.0
+    assert payer.assets == 500
     assert gov.assets == 0.0
     assert gov.total_collected_tax[DEFAULT_CURRENCY] == 0.0
     assert "test_tax" not in gov.tax_revenue

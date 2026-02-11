@@ -13,8 +13,8 @@ class HouseholdSnapshotAssembler:
     @staticmethod
     def assemble(
         household: "Household",
-        monthly_income: float = 0.0,
-        monthly_debt_payments: float = 0.0
+        monthly_income_pennies: int = 0,
+        monthly_debt_payments_pennies: int = 0
     ) -> HouseholdSnapshotDTO:
         """
         Creates a snapshot DTO from a household agent instance.
@@ -33,6 +33,6 @@ class HouseholdSnapshotAssembler:
             bio_state=bio_state_copy,
             econ_state=econ_state_copy,
             social_state=social_state_copy,
-            monthly_income=monthly_income,
-            monthly_debt_payments=monthly_debt_payments
+            monthly_income_pennies=monthly_income_pennies,
+            monthly_debt_payments_pennies=monthly_debt_payments_pennies
         )

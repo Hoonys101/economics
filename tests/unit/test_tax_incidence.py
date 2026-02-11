@@ -63,7 +63,7 @@ class TestTaxIncidence(unittest.TestCase):
         )
         # Manually deposit initial assets as per new Household behavior
         if assets > 0:
-            h.deposit(assets, DEFAULT_CURRENCY)
+            h.deposit(int(assets * 100), DEFAULT_CURRENCY)
         return h
 
     def _create_firm(self, id: int, assets: float):
@@ -86,7 +86,7 @@ class TestTaxIncidence(unittest.TestCase):
             personality=Personality.BALANCED
         )
         if assets > 0:
-            f.deposit(assets, DEFAULT_CURRENCY)
+            f.deposit(int(assets * 100), DEFAULT_CURRENCY)
         return f
 
     def _setup_simulation(self, h, f):
@@ -149,16 +149,16 @@ class TestTaxIncidence(unittest.TestCase):
         f = self._create_firm(101, 5000.0)
         sim = self._setup_simulation(h, f)
         
-        # 100원 매칭 (노동 거래)
+        # 100원 매칭 (노동 거래). Price 10000 pennies (100.00 dollars)
         from simulation.models import Transaction
-        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=100.0, market_id="labor", transaction_type="labor", time=1)
+        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=10000, market_id="labor", transaction_type="labor", time=1)
         sim._process_transactions([tx])
         
-        # 가계: 1000 + (100 - 16.25) = 1083.75 (Progressive Tax)
-        # 기업: 5000 - 100 = 4900
-        self.assertEqual(h.assets, 1083.75)
-        self.assertEqual(f.assets, 4900.0)
-        self.assertEqual(sim.government.assets, 16.25)
+        # 가계: 100000 + (10000 - 1625) = 108375
+        # 기업: 500000 - 10000 = 490000
+        self.assertEqual(h.assets, 108375)
+        self.assertEqual(f.assets, 490000)
+        self.assertEqual(sim.government.assets, 1625)
         print("✓ Household Payer (Withholding): Agent Assets Correct")
 
     def test_firm_payer_scenario(self):
@@ -168,16 +168,16 @@ class TestTaxIncidence(unittest.TestCase):
         f = self._create_firm(101, 5000.0)
         sim = self._setup_simulation(h, f)
         
-        # 100원 매칭 (노동 거래)
+        # 100원 매칭 (노동 거래). Price 10000 pennies
         from simulation.models import Transaction
-        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=100.0, market_id="labor", transaction_type="labor", time=1)
+        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=10000, market_id="labor", transaction_type="labor", time=1)
         sim._process_transactions([tx])
         
-        # 가계: 1000 + 100 = 1100
-        # 기업: 5000 - (100 + 16.25) = 4883.75
-        self.assertEqual(h.assets, 1100.0)
-        self.assertEqual(f.assets, 4883.75)
-        self.assertEqual(sim.government.assets, 16.25)
+        # 가계: 100000 + 10000 = 110000
+        # 기업: 500000 - (10000 + 1625) = 488375
+        self.assertEqual(h.assets, 110000)
+        self.assertEqual(f.assets, 488375)
+        self.assertEqual(sim.government.assets, 1625)
         print("✓ Firm Payer (Extra Tax): Agent Assets Correct")
 
 if __name__ == "__main__":

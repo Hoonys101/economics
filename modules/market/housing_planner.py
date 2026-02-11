@@ -51,7 +51,8 @@ class HousingPlanner(IHousingPlanner):
         # 2. Evaluate "Rent" Option
         best_rent_option = None
         if market.units_for_rent:
-             income = household.econ_state.current_wage
+             income_pennies = getattr(household.econ_state, 'current_wage_pennies', 0)
+             income = income_pennies / 100.0
              max_rent = income * 0.3
              affordable_rentals = [u for u in market.units_for_rent if (u.rent_price or 0) <= max_rent]
 

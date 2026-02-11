@@ -12,6 +12,7 @@ from simulation.dtos.api import SimulationState
 from simulation.models import Transaction
 from simulation.core_agents import Household
 from simulation.firms import Firm
+from modules.finance.utils.currency_math import round_to_pennies
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +96,7 @@ class TransactionManager(SystemInterface):
             if not buyer and not seller:
                 continue
 
-            trade_value = tx.quantity * tx.price
+            trade_value = round_to_pennies(tx.quantity * tx.price)
             tax_amount = 0.0
             success = False
 
@@ -249,7 +250,9 @@ class TransactionManager(SystemInterface):
 
                 # Calculate Tax (Standardized method call on Gov)
                 # Note: calculate_income_tax is on Government agent.
-                tax_amount = government.calculate_income_tax(trade_value, survival_cost)
+                # TaxService logic likely expects dollars (float)
+                tax_amount_float = government.calculate_income_tax(trade_value / 100.0, survival_cost)
+                tax_amount = round_to_pennies(tax_amount_float * 100)
 
                 if tax_payer == "FIRM":
                     # Firm pays Wage to Household
