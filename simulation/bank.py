@@ -463,18 +463,20 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         loan_id = event['loan_id']
 
         # 1. Credit Destruction (Monetary Policy)
-        # This remains the Bank's responsibility as it's a balance sheet write-off.
-        if amount_defaulted > 0:
-            transactions.append(Transaction(
-                buyer_id=self.government.id if self.government else -1,
-                seller_id=self.id,
-                item_id=f"credit_destruction_default_{borrower_id}",
-                quantity=1,
-                price=amount_defaulted,
-                market_id="monetary_policy",
-                transaction_type="credit_destruction",
-                time=current_tick
-            ))
+        # REMOVED: Loan default is a balance sheet write-off for the Bank (Equity loss),
+        # but the Deposit (M2) created by the loan REMAINS in circulation (held by borrower or spent).
+        # Destroying M2 here creates a leak (Actual M2 > Authorized M2).
+        # if amount_defaulted > 0:
+        #     transactions.append(Transaction(
+        #         buyer_id=self.government.id if self.government else -1,
+        #         seller_id=self.id,
+        #         item_id=f"credit_destruction_default_{borrower_id}",
+        #         quantity=1,
+        #         price=amount_defaulted,
+        #         market_id="monetary_policy",
+        #         transaction_type="credit_destruction",
+        #         time=current_tick
+        #     ))
 
         # 2. Publish Default Event (Consequences & Recovery delegated to JudicialSystem)
         if self.event_bus:

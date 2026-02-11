@@ -292,3 +292,20 @@ class TestBank:
         assert event["agent_id"] == borrower_id
         assert event["defaulted_amount"] > 0
         assert event["creditor_id"] == bank_instance.id
+
+    def test_loan_default_no_credit_destruction_transaction(self, bank_instance, mock_event_bus):
+        # Regression Test: Ensure default does NOT destroy M2 (credit_destruction)
+        borrower_id = 101
+        profile = BorrowerProfileDTO(borrower_id=borrower_id, gross_income=1000.0, existing_debt_payments=0.0, collateral_value=0.0, existing_assets=0.0)
+        bank_instance.grant_loan(borrower_id, 1000.0, 0.05, borrower_profile=profile)
+
+        mock_borrower = MagicMock(spec=IFinancialAgent)
+        mock_borrower.id = borrower_id
+        mock_borrower.get_balance.return_value = 0.0 # Force default
+
+        agents = {borrower_id: mock_borrower}
+        transactions = bank_instance.run_tick(agents, current_tick=10)
+
+        # Assert no credit_destruction tx
+        destruction_txs = [tx for tx in transactions if tx.transaction_type == "credit_destruction"]
+        assert len(destruction_txs) == 0, "Loan default should not trigger M2 destruction (credit_destruction transaction)."
