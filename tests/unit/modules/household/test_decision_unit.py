@@ -22,7 +22,7 @@ class TestDecisionUnit:
     @pytest.fixture
     def econ_state(self):
         wallet = Wallet(1, {})
-        wallet.add(1000.0)
+        wallet.add(1000)
         return EconStateDTO(
             wallet=wallet,
             inventory={},
@@ -31,12 +31,12 @@ class TestDecisionUnit:
             portfolio=Portfolio(1),
             is_employed=False,
             employer_id=None,
-            current_wage=0.0,
+            current_wage_pennies=0,
             wage_modifier=1.0,
             labor_skill=1.0,
             education_xp=0.0,
             education_level=0,
-            expected_wage=10.0,
+            expected_wage_pennies=10,
             talent=Talent(base_learning_rate=0.5, max_potential={"general": 1.0}),
             skills={},
             aptitude=0.5,
@@ -47,7 +47,7 @@ class TestDecisionUnit:
             housing_target_mode="RENT",
             housing_price_history=deque([100.0, 110.0]),
             market_wage_history=deque(),
-            shadow_reservation_wage=10.0,
+            shadow_reservation_wage_pennies=10,
             last_labor_offer_tick=0,
             last_fired_tick=-1,
             job_search_patience=0,
@@ -59,8 +59,8 @@ class TestDecisionUnit:
             price_history=defaultdict(lambda: deque(maxlen=10)),
             price_memory_length=10,
             adaptation_rate=0.1,
-            labor_income_this_tick=0.0,
-            capital_income_this_tick=0.0
+            labor_income_this_tick_pennies=0,
+            capital_income_this_tick_pennies=0
         )
 
     def test_orchestrate_housing_buy(self, econ_state, mock_config):
@@ -76,7 +76,7 @@ class TestDecisionUnit:
         }
 
         # Setup state for BUY decision
-        econ_state.wallet.add(4000.0) # 1000 + 4000 = 5000
+        econ_state.wallet.add(4000) # 1000 + 4000 = 5000
         econ_state.is_homeless = True
 
         # Construct DTOs
@@ -128,7 +128,7 @@ class TestDecisionUnit:
 
         # Setup state
         econ_state.is_employed = False
-        econ_state.shadow_reservation_wage = 10.0
+        econ_state.shadow_reservation_wage_pennies = 1000
 
         # Construct DTOs
         # Housing doesn't matter for this test
@@ -164,8 +164,8 @@ class TestDecisionUnit:
 
         # Verify Shadow Wage Logic
         # Not employed -> shadow wage decay
-        # 10.0 * (1.0 - 0.02) = 9.8
-        assert new_state.shadow_reservation_wage == 9.8
+        # 1000 * (1.0 - 0.02) = 980
+        assert new_state.shadow_reservation_wage_pennies == 980
         # Check market wage history update
         assert len(new_state.market_wage_history) == 1
         assert new_state.market_wage_history[0] == 12.0

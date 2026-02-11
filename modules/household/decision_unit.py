@@ -90,17 +90,18 @@ class DecisionUnit(IDecisionUnit):
         if avg_market_wage > 0:
             new_state.market_wage_history.append(avg_market_wage)
 
-        if new_state.shadow_reservation_wage <= 0.0:
-            new_state.shadow_reservation_wage = new_state.current_wage if new_state.is_employed else new_state.expected_wage
+        if new_state.shadow_reservation_wage_pennies <= 0:
+            new_state.shadow_reservation_wage_pennies = new_state.current_wage_pennies if new_state.is_employed else new_state.expected_wage_pennies
 
         if new_state.is_employed:
-            target = max(new_state.current_wage, new_state.shadow_reservation_wage)
-            new_state.shadow_reservation_wage = (new_state.shadow_reservation_wage * 0.95) + (target * 0.05)
+            target = max(new_state.current_wage_pennies, new_state.shadow_reservation_wage_pennies)
+            new_state.shadow_reservation_wage_pennies = int((new_state.shadow_reservation_wage_pennies * 0.95) + (target * 0.05))
         else:
-            new_state.shadow_reservation_wage *= (1.0 - 0.02)
-            min_wage = config.household_min_wage_demand
-            if new_state.shadow_reservation_wage < min_wage:
-                new_state.shadow_reservation_wage = min_wage
+            new_state.shadow_reservation_wage_pennies = int(new_state.shadow_reservation_wage_pennies * 0.98) # 1 - 0.02
+            # Heuristic: If config is float dollars, convert to pennies.
+            min_wage_pennies = int(config.household_min_wage_demand * 100) if config.household_min_wage_demand < 100 else int(config.household_min_wage_demand)
+            if new_state.shadow_reservation_wage_pennies < min_wage_pennies:
+                new_state.shadow_reservation_wage_pennies = min_wage_pennies
 
         # 4. Panic Selling
         if stress_scenario_config and stress_scenario_config.is_active and stress_scenario_config.scenario_name == 'deflation':
