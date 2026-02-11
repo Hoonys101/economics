@@ -125,7 +125,7 @@ def mock_agents(mock_config_module):
     f1.specialization = "food"
     f1.decision_engine = Mock()
     f1.inventory = {"food": 10}
-    f1.input_inventory = {}
+    f1.get_quantity.return_value = 0.0
     f1.needs = {"liquidity_need": 100.0}
     f1.hr = Mock()
     f1.hr.employees = []

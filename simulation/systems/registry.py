@@ -116,22 +116,8 @@ class Registry(IRegistry):
                 buyer.consume(tx.item_id, tx.quantity, current_time)
         else:
             # Physical Goods: Update Inventory via Protocol
-            # Try Protocol-based Seller Removal
-            if isinstance(seller, IInventoryHandler):
-                seller.remove_item(tx.item_id, tx.quantity)
-            elif seller:
-                 self.logger.warning(f"REGISTRY_WARN | Seller {seller.id} does not implement IInventoryHandler")
-
-            # Buyer Inventory
-            is_raw_material = tx.item_id in getattr(config, "RAW_MATERIAL_SECTORS", [])
-            tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
-
-            if is_raw_material and isinstance(buyer, Firm):
-                buyer.input_inventory[tx.item_id] = buyer.input_inventory.get(tx.item_id, 0.0) + tx.quantity
-            elif isinstance(buyer, IInventoryHandler):
-                 buyer.add_item(tx.item_id, tx.quantity, quality=tx_quality)
-            else:
-                 self.logger.warning(f"REGISTRY_WARN | Buyer {buyer.id} does not implement IInventoryHandler")
+            # Migrated to GoodsTransactionHandler to prevent double-counting
+            pass
 
         # 2. Household Consumption Counters (Used for Utility/Stats)
         if isinstance(buyer, Household):

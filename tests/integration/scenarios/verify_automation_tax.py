@@ -22,7 +22,8 @@ class TestAutomationTax(unittest.TestCase):
         firm.id = 1
         firm.automation_level = 0.5
         firm.finance.balance = 10000.0
-        firm.input_inventory = {}
+        firm.production = MagicMock()
+        firm.production.input_inventory = {}
         firm.inventory = {}
         firm.specialization = "food"
         firm.production_target = 100.0

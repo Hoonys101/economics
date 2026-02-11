@@ -16,7 +16,7 @@ from simulation.dtos.firm_state_dto import FirmStateDTO, IFirmStateProvider
 from simulation.dtos.department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from simulation.ai.enums import Personality
 from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO, ICurrencyHolder
-from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, IConfigurable, LiquidationConfigDTO
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, IConfigurable, LiquidationConfigDTO, InventorySlot
 from dataclasses import replace
 
 # Orchestrator-Engine Refactor
@@ -142,6 +142,8 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         # Wallet & Inventory
         self._wallet = Wallet(self.id, {})
         self._inventory: Dict[str, float] = {} # Direct dict for IInventoryHandler
+        self._input_inventory: Dict[str, float] = {} # New INPUT inventory
+        self._input_inventory_quality: Dict[str, float] = {}
 
         self.is_active = True
 
@@ -365,7 +367,8 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
     @property
     def input_inventory(self) -> Dict[str, float]:
-        return self.production_state.input_inventory
+        """Facade property for backward compatibility during transition."""
+        return self.get_all_items(slot=InventorySlot.INPUT)
 
     @property
     def base_quality(self) -> float:
@@ -523,8 +526,10 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
     def liquidate_assets(self, current_tick: int = -1) -> Dict[CurrencyCode, int]:
         """Liquidate assets using Protocol Purity."""
         # 1. Write off Inventory
-        for item_id in list(self.get_all_items().keys()):
-            self.remove_item(item_id, self.get_quantity(item_id))
+        for item_id in list(self.get_all_items(slot=InventorySlot.MAIN).keys()):
+            self.remove_item(item_id, self.get_quantity(item_id, slot=InventorySlot.MAIN), slot=InventorySlot.MAIN)
+        for item_id in list(self.get_all_items(slot=InventorySlot.INPUT).keys()):
+            self.remove_item(item_id, self.get_quantity(item_id, slot=InventorySlot.INPUT), slot=InventorySlot.INPUT)
         
         # 2. Write off Capital Stock
         self.capital_stock = 0.0
@@ -551,49 +556,81 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
     # --- IInventoryHandler Overrides ---
 
     @override
-    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0) -> bool:
-        self._add_inventory_internal(item_id, quantity, quality)
+    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0, slot: InventorySlot = InventorySlot.MAIN) -> bool:
+        self._add_inventory_internal(item_id, quantity, quality, slot)
         return True
 
     @override
-    def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool:
+    def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, slot: InventorySlot = InventorySlot.MAIN) -> bool:
         if quantity < 0: return False
-        current = self._inventory.get(item_id, 0.0)
+
+        if slot == InventorySlot.MAIN:
+            inventory = self._inventory
+        elif slot == InventorySlot.INPUT:
+            inventory = self._input_inventory
+        else:
+            return False
+
+        current = inventory.get(item_id, 0.0)
         if current < quantity: return False
-        self._inventory[item_id] = current - quantity
-        if self._inventory[item_id] <= 1e-9:
-             del self._inventory[item_id]
+        inventory[item_id] = current - quantity
+        if inventory[item_id] <= 1e-9:
+             del inventory[item_id]
         return True
 
     @override
-    def get_quantity(self, item_id: str) -> float:
-        return self._inventory.get(item_id, 0.0)
+    def get_quantity(self, item_id: str, slot: InventorySlot = InventorySlot.MAIN) -> float:
+        if slot == InventorySlot.MAIN:
+            return self._inventory.get(item_id, 0.0)
+        elif slot == InventorySlot.INPUT:
+            return self._input_inventory.get(item_id, 0.0)
+        return 0.0
 
     @override
-    def get_quality(self, item_id: str) -> float:
-        return self.inventory_quality.get(item_id, 1.0)
+    def get_quality(self, item_id: str, slot: InventorySlot = InventorySlot.MAIN) -> float:
+        if slot == InventorySlot.MAIN:
+            return self.inventory_quality.get(item_id, 1.0)
+        elif slot == InventorySlot.INPUT:
+            return self._input_inventory_quality.get(item_id, 1.0)
+        return 1.0
 
     @override
-    def get_all_items(self) -> Dict[str, float]:
+    def get_all_items(self, slot: InventorySlot = InventorySlot.MAIN) -> Dict[str, float]:
         """Returns a copy of the inventory."""
-        return self._inventory.copy()
+        if slot == InventorySlot.MAIN:
+            return self._inventory.copy()
+        elif slot == InventorySlot.INPUT:
+            return self._input_inventory.copy()
+        return {}
 
     @override
-    def clear_inventory(self) -> None:
+    def clear_inventory(self, slot: InventorySlot = InventorySlot.MAIN) -> None:
         """Clears the inventory."""
-        self._inventory.clear()
-        self.inventory_quality.clear()
+        if slot == InventorySlot.MAIN:
+            self._inventory.clear()
+            self.inventory_quality.clear()
+        elif slot == InventorySlot.INPUT:
+            self._input_inventory.clear()
+            self._input_inventory_quality.clear()
 
-    def _add_inventory_internal(self, item_id: str, quantity: float, quality: float):
-        current_inventory = self.get_quantity(item_id)
-        current_quality = self.get_quality(item_id)
+    def _add_inventory_internal(self, item_id: str, quantity: float, quality: float, slot: InventorySlot):
+        current_inventory = self.get_quantity(item_id, slot)
+        current_quality = self.get_quality(item_id, slot)
 
         total_qty = current_inventory + quantity
+
+        if slot == InventorySlot.MAIN:
+            quality_ref = self.inventory_quality
+            inventory_ref = self._inventory
+        else:
+            quality_ref = self._input_inventory_quality
+            inventory_ref = self._input_inventory
+
         if total_qty > 0:
             new_avg_quality = ((current_inventory * current_quality) + (quantity * quality)) / total_qty
-            self.inventory_quality[item_id] = new_avg_quality
+            quality_ref[item_id] = new_avg_quality
 
-        self._inventory[item_id] = total_qty # Implementation
+        inventory_ref[item_id] = total_qty # Implementation
 
     def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
         context = self._build_sales_post_ask_context(item_id, price, quantity, market.id, current_tick)
@@ -673,7 +710,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             automation_level=self.production_state.automation_level,
             specialization=self.production_state.specialization,
             inventory=self._inventory.copy(),
-            input_inventory=self.production_state.input_inventory.copy(),
+            input_inventory=self._input_inventory.copy(),
             inventory_quality=self.production_state.inventory_quality.copy()
         )
 
@@ -730,8 +767,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
             # Consume inputs
             for mat, amount in result.inputs_consumed.items():
-                current_input = self.production_state.input_inventory.get(mat, 0.0)
-                self.production_state.input_inventory[mat] = max(0.0, current_input - amount)
+                self.remove_item(mat, amount, slot=InventorySlot.INPUT)
 
         # TD-271: Real Estate Utilization
         effect, amount = self.real_estate_utilization_component.apply(
@@ -770,6 +806,8 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             is_active=True
         )
         new_firm.load_state(initial_state)
+        new_firm._input_inventory = copy.deepcopy(self._input_inventory)
+        new_firm._input_inventory_quality = copy.deepcopy(self._input_inventory_quality)
 
         new_firm.logger.info(
             f"Firm {self.id} was cloned to new Firm {new_id}",
@@ -788,7 +826,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             "assets": MultiCurrencyWalletDTO(balances=self.wallet.get_all_balances()),
             "needs": self.needs.copy(),
             "inventory": self.get_all_items(),
-            "input_inventory": self.input_inventory.copy(),
+            "input_inventory": self._input_inventory.copy(),
             "employees": [emp.id for emp in self.hr_state.employees],
             "is_active": self.is_active,
             "current_production": self.current_production,
@@ -856,7 +894,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             automation_level=self.production_state.automation_level,
             specialization=self.production_state.specialization,
             inventory=self._inventory.copy(),
-            input_inventory=self.production_state.input_inventory.copy(),
+            input_inventory=self._input_inventory.copy(),
             inventory_quality=self.production_state.inventory_quality.copy()
         )
 

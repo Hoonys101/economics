@@ -19,7 +19,7 @@ from simulation.dtos import DecisionContext, FiscalContext, MacroFinancialContex
 
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.portfolio import Portfolio
-from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, InventorySlot
 
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
@@ -752,7 +752,8 @@ class Household(
         return self._econ_state.wallet.get_all_balances()
 
     @override
-    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0) -> bool:
+    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0, slot: InventorySlot = InventorySlot.MAIN) -> bool:
+        if slot != InventorySlot.MAIN: return False
         if quantity < 0: return False
         current = self._econ_state.inventory.get(item_id, 0.0)
         self._econ_state.inventory[item_id] = current + quantity
@@ -765,7 +766,8 @@ class Household(
         return True
 
     @override
-    def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool:
+    def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, slot: InventorySlot = InventorySlot.MAIN) -> bool:
+        if slot != InventorySlot.MAIN: return False
         if quantity < 0: return False
         current = self._econ_state.inventory.get(item_id, 0.0)
         if current < quantity: return False
@@ -775,19 +777,23 @@ class Household(
         return True
 
     @override
-    def get_quantity(self, item_id: str) -> float:
+    def get_quantity(self, item_id: str, slot: InventorySlot = InventorySlot.MAIN) -> float:
+        if slot != InventorySlot.MAIN: return 0.0
         return self._econ_state.inventory.get(item_id, 0.0)
 
     @override
-    def get_quality(self, item_id: str) -> float:
+    def get_quality(self, item_id: str, slot: InventorySlot = InventorySlot.MAIN) -> float:
+        if slot != InventorySlot.MAIN: return 0.0
         return self._econ_state.inventory_quality.get(item_id, 1.0)
 
     @override
-    def get_all_items(self) -> Dict[str, float]:
+    def get_all_items(self, slot: InventorySlot = InventorySlot.MAIN) -> Dict[str, float]:
+        if slot != InventorySlot.MAIN: return {}
         return self._econ_state.inventory.copy()
 
     @override
-    def clear_inventory(self) -> None:
+    def clear_inventory(self, slot: InventorySlot = InventorySlot.MAIN) -> None:
+        if slot != InventorySlot.MAIN: return
         self._econ_state.inventory.clear()
         self._econ_state.inventory_quality.clear()
 

@@ -169,16 +169,17 @@ def test_produce_orchestration(firm):
     )
 
     # Set initial state
+    from modules.simulation.api import InventorySlot
     firm.production_state.capital_stock = 100.0
     firm.production_state.automation_level = 0.5
-    firm.production_state.input_inventory = {"RAW": 10.0}
+    firm.add_item("RAW", 10.0, slot=InventorySlot.INPUT)
 
     firm.produce(current_time=0)
 
     # Verify state updates
     assert firm.production_state.capital_stock == 95.0 # 100 - 5
     assert firm.production_state.automation_level == 0.49 # 0.5 - 0.01
-    assert firm.production_state.input_inventory["RAW"] == 5.0 # 10 - 5
+    assert firm.get_quantity("RAW", slot=InventorySlot.INPUT) == 5.0 # 10 - 5
     assert firm.current_production == 10.0
     assert firm.get_quantity("FOOD") == 10.0
 

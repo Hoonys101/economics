@@ -5,7 +5,7 @@ from simulation.models import Transaction
 from simulation.core_agents import Household
 from simulation.firms import Firm
 from modules.system.api import DEFAULT_CURRENCY
-from modules.simulation.api import IInventoryHandler
+from modules.simulation.api import IInventoryHandler, InventorySlot
 from modules.finance.api import IFinancialAgent
 from modules.finance.utils.currency_math import round_to_pennies
 
@@ -115,10 +115,9 @@ class GoodsTransactionHandler(ITransactionHandler):
             is_raw_material = tx.item_id in getattr(config, "RAW_MATERIAL_SECTORS", [])
             tx_quality = tx.quality if hasattr(tx, 'quality') else 1.0
 
-            if is_raw_material and isinstance(buyer, Firm):
-                buyer.input_inventory[tx.item_id] = buyer.input_inventory.get(tx.item_id, 0.0) + tx.quantity
-            elif isinstance(buyer, IInventoryHandler):
-                buyer.add_item(tx.item_id, tx.quantity, quality=tx_quality)
+            if isinstance(buyer, IInventoryHandler):
+                slot = InventorySlot.INPUT if is_raw_material and isinstance(buyer, Firm) else InventorySlot.MAIN
+                buyer.add_item(tx.item_id, tx.quantity, quality=tx_quality, slot=slot)
             else:
                 logger.warning(f"GOODS_HANDLER_WARN | Buyer {buyer.id} does not implement IInventoryHandler")
 

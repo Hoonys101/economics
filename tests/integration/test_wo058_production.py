@@ -137,6 +137,7 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer, mock_co
     Bootstrapper.force_assign_workers(sim.firms, sim.households)
 
     # Assert Assets >= 2000
+    from modules.simulation.api import InventorySlot
     for firm in sim.firms:
         assert firm.wallet.get_balance("USD") >= 2000.0, f"Firm {firm.id} undercapitalized"
 
@@ -144,7 +145,7 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer, mock_co
         if "inputs" in mock_config.GOODS[firm.specialization]:
             inputs = mock_config.GOODS[firm.specialization]["inputs"]
             for mat in inputs:
-                assert firm.input_inventory.get(mat, 0) > 0, f"Firm {firm.id} missing input {mat}"
+                assert firm.get_quantity(mat, slot=InventorySlot.INPUT) > 0, f"Firm {firm.id} missing input {mat}"
 
 def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer, mock_config_manager):
     """Tests that the economy starts and production is non-zero after bootstrapping."""
@@ -183,11 +184,12 @@ def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer, mock_conf
     Bootstrapper.force_assign_workers(sim.firms, sim.households)
 
     # We will manually trigger production to verify the bootstrapper's effect.
+    from modules.simulation.api import InventorySlot
     firm = sim.firms[0]
     # To make produce work, we need to ensure the firm has employees
     mock_employee = households[0]
     firm.hr_state.employees = [mock_employee]
-    firm.input_inventory['wood'] = 100.0
+    firm.add_item('wood', 100.0, slot=InventorySlot.INPUT)
     firm.productivity_factor = 1.0
 
     firm.produce(0) # Tick 0

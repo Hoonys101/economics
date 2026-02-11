@@ -1,6 +1,7 @@
 from typing import List, Any, TYPE_CHECKING, Dict
 import logging
 from modules.system.api import DEFAULT_CURRENCY
+from modules.simulation.api import InventorySlot
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -83,9 +84,9 @@ class Bootstrapper:
                         needed = qty_per_unit * firm.production_target * BUFFER_DAYS
 
                         # Update Inventory
-                        current = firm.input_inventory.get(mat, 0.0)
+                        current = firm.get_quantity(mat, slot=InventorySlot.INPUT)
                         if current < needed:
-                            firm.input_inventory[mat] = needed
+                            firm.add_item(mat, needed - current, slot=InventorySlot.INPUT)
                             injected_count += 1
 
                 # After existing logic, add:

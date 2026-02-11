@@ -4,7 +4,7 @@ from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction
 from simulation.core_agents import Household
 from simulation.firms import Firm
-from modules.simulation.api import IInventoryHandler
+from modules.simulation.api import IInventoryHandler, InventorySlot
 from modules.common.interfaces import IInvestor, IPropertyOwner
 
 logger = logging.getLogger(__name__)
@@ -105,10 +105,9 @@ class PublicManagerTransactionHandler(ITransactionHandler):
                     buyer.consume(tx.item_id, tx.quantity, context.time)
             else:
                 is_raw_material = tx.item_id in getattr(config, "RAW_MATERIAL_SECTORS", [])
-                if is_raw_material and isinstance(buyer, Firm):
-                    buyer.input_inventory[tx.item_id] = buyer.input_inventory.get(tx.item_id, 0.0) + tx.quantity
-                elif isinstance(buyer, IInventoryHandler):
-                     buyer.add_item(tx.item_id, tx.quantity, quality=1.0)
+                if isinstance(buyer, IInventoryHandler):
+                     slot = InventorySlot.INPUT if is_raw_material and isinstance(buyer, Firm) else InventorySlot.MAIN
+                     buyer.add_item(tx.item_id, tx.quantity, quality=1.0, slot=slot)
                 else:
                      logger.warning(f"PUBLIC_MANAGER_WARN | Buyer {buyer.id} does not implement IInventoryHandler")
 

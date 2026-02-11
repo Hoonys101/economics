@@ -41,7 +41,6 @@ class TestMultiCurrencyLiquidation(unittest.TestCase):
         self.firm.config.goods_initial_price = {}
         self.firm.inventory = {}
         self.firm.last_prices = {}
-        self.firm.input_inventory = {}
         self.firm.capital_stock = 0.0
         self.firm.finance = MagicMock()
         self.firm.finance.current_profit = 0.0

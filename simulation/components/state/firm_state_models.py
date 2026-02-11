@@ -75,9 +75,6 @@ class ProductionState:
     base_quality: float = 1.0
     inventory_quality: Dict[str, float] = field(default_factory=dict)
 
-    # Raw Materials (WO-030)
-    input_inventory: Dict[str, float] = field(default_factory=dict)
-
     # Research
     research_history: Dict[str, Any] = field(default_factory=lambda: {
         "total_spent": 0.0,
