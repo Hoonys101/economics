@@ -7,6 +7,7 @@ from simulation.firms import Firm
 from modules.system.api import DEFAULT_CURRENCY
 from modules.simulation.api import IInventoryHandler
 from modules.finance.api import IFinancialAgent
+from modules.finance.utils.currency_math import round_to_pennies
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +22,9 @@ class GoodsTransactionHandler(ITransactionHandler):
             logger.warning(f"Transaction failed: Buyer ({tx.buyer_id}) or Seller ({tx.seller_id}) not found.")
             return False
 
-        # Integer Precision: Calculate trade value in pennies
-        trade_value = int(tx.quantity * tx.price)
+        # Convert to integer pennies using Banker's Rounding
+        trade_value = round_to_pennies(tx.quantity * tx.price)
+
 
         # 1. Prepare Settlement (Calculate tax intents)
         # Assuming taxation_system is available in context
@@ -38,14 +40,15 @@ class GoodsTransactionHandler(ITransactionHandler):
         total_cost = trade_value
 
         for intent in intents:
-            # Tax amounts should be int from TaxationSystem
+            # Tax amounts are already rounded by TaxationSystem and are ints
             amount_int = int(intent.amount)
             credits.append((context.government, amount_int, intent.reason))
+
             if intent.payer_id == buyer.id:
                 total_cost += amount_int
 
-        # Ensure total_cost is clean
-        total_cost = int(total_cost)
+        # Total cost is already clean int sum
+
 
         # Solvency Check (Legacy compatibility)
         if hasattr(buyer, 'check_solvency'):
@@ -57,9 +60,9 @@ class GoodsTransactionHandler(ITransactionHandler):
                 current_assets = buyer.assets
                 # TD-024: Handle multi-currency assets safely
                 if isinstance(current_assets, dict):
-                     check_val = current_assets.get(tx_currency, 0.0)
+                     check_val = current_assets.get(tx_currency, 0)
                 else:
-                     check_val = float(current_assets)
+                     check_val = int(current_assets)
 
             if check_val < total_cost:
                 buyer.check_solvency(context.government)
@@ -86,7 +89,7 @@ class GoodsTransactionHandler(ITransactionHandler):
 
         return settlement_success
 
-    def _apply_goods_effects(self, tx: Transaction, buyer: Any, seller: Any, trade_value: float, buyer_total_cost: float, context: TransactionContext):
+    def _apply_goods_effects(self, tx: Transaction, buyer: Any, seller: Any, trade_value: int, buyer_total_cost: int, context: TransactionContext):
         """
         Applies non-financial side effects after successful settlement.
         """

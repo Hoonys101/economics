@@ -18,8 +18,9 @@ class Bootstrapper:
     MIN_CAPITAL = 10_000_000  # 100,000.00 USD -> 10,000,000 pennies
     INITIAL_INVENTORY = 50.0  # Quantity is still float
 
+
     @staticmethod
-    def distribute_initial_wealth(central_bank: Any, target_agent: Any, amount: float, settlement_system: Any) -> None:
+    def distribute_initial_wealth(central_bank: Any, target_agent: Any, amount: int, settlement_system: Any) -> None:
         """
         Transfers initial wealth from Central Bank to target agent.
         Ensures zero-sum integrity via SettlementSystem.

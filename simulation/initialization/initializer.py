@@ -265,7 +265,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             strategy=sim.strategy
         )
         # Genesis Step 1: Fiat Lux (Minting M0)
-        sim.central_bank.deposit(self.config.INITIAL_MONEY_SUPPLY)
+        sim.central_bank.deposit(int(self.config.INITIAL_MONEY_SUPPLY))
         self.logger.info(f"GENESIS | Central Bank minted M0: {self.config.INITIAL_MONEY_SUPPLY:,.2f}")
 
         sim.households = self.households
@@ -285,10 +285,10 @@ class SimulationInitializer(SimulationInitializerInterface):
         # WO-078: Initialize CreditScoringService
         credit_scoring_service = CreditScoringService(config_module=self.config)
 
-        # WO-124: Initialize Bank with 0.0 assets
+        # WO-124: Initialize Bank with 0 assets
         sim.bank = Bank(
             id=sim.next_agent_id,
-            initial_assets=0.0, # Will be funded via Genesis Grant
+            initial_assets=0, # Will be funded via Genesis Grant
             config_manager=self.config_manager,
             settlement_system=sim.settlement_system,
             credit_scoring_service=credit_scoring_service,
@@ -392,7 +392,7 @@ class SimulationInitializer(SimulationInitializerInterface):
                 Bootstrapper.distribute_initial_wealth(
                     central_bank=sim.central_bank,
                     target_agent=sim.agents[agent_id],
-                    amount=amount,
+                    amount=int(amount),
                     settlement_system=sim.settlement_system
                 )
                 distributed_count += 1
