@@ -5,13 +5,10 @@ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO
 from modules.hr.api import IEmployeeDataProvider
 from simulation.models import Transaction
 from simulation.components.state.firm_state_models import HRState
+from simulation.dtos.hr_dtos import HRPayrollContextDTO, HRPayrollResultDTO, EmployeeUpdateDTO
 
 if TYPE_CHECKING:
     from simulation.dtos.config_dtos import FirmConfigDTO
-
-logger = logging.getLogger(__name__)
-
-from simulation.dtos.hr_dtos import HRPayrollContextDTO
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +36,14 @@ class HREngine:
         hr_state: HRState,
         context: HRPayrollContextDTO,
         config: FirmConfigDTO,
-    ) -> List[Transaction]:
+    ) -> HRPayrollResultDTO:
         """
-        Pays wages to employees. Handles insolvency firing if assets are insufficient.
-        Returns list of Transactions.
+        Processes payroll and returns a DTO with transactions and employee updates.
+        This method MUST NOT have external side-effects.
         """
-        generated_transactions: List[Transaction] = []
+        transactions: List[Transaction] = []
+        employee_updates: List[EmployeeUpdateDTO] = []
+
         exchange_rates = context.exchange_rates
         firm_id = context.firm_id
         current_time = context.current_time
@@ -54,7 +53,9 @@ class HREngine:
         if context.tax_policy:
             survival_cost = context.tax_policy.survival_cost
 
-        # Iterate over copy to allow modification of hr_state.employees
+        # Iterate over copy to allow modification of hr_state.employees (if we were removing them,
+        # though now we defer removal for firing cases)
+        # Note: Validation removal still happens immediately as it's state cleanup.
         for employee in list(hr_state.employees):
             # Validate employee
             if employee.employer_id != firm_id or not employee.is_employed:
@@ -82,10 +83,6 @@ class HREngine:
                 # Calculate Tax
                 income_tax = 0.0
                 if context.tax_policy:
-                    # Calculation logic: previously government.calculate_income_tax
-                    # For now, we assume the DTO provides the rate or we implement a standard logic
-                    # If the government logic is complex, we should have a standalone TaxEngine.
-                    # For this refactor, we apply a simple rate provided in the policy.
                     income_tax = wage * context.tax_policy.income_tax_rate if wage > survival_cost else 0.0
 
                 net_wage = wage - income_tax
@@ -101,7 +98,7 @@ class HREngine:
                     transaction_type="wage",
                     time=current_time
                 )
-                generated_transactions.append(tx_wage)
+                transactions.append(tx_wage)
 
                 # Transaction 2: Income Tax (Firm -> Government) [Withholding]
                 if income_tax > 0 and context.tax_policy:
@@ -115,22 +112,27 @@ class HREngine:
                         transaction_type="tax",
                         time=current_time
                     )
-                    generated_transactions.append(tx_tax)
+                    transactions.append(tx_tax)
 
-                # Track Labor Income (Side Effect on Employee)
-                # Note: This is an Abstraction Leak (direct mutation of agent).
-                # Future Task: Return this in a DTO for the Orchestrator to apply.
-                employee.labor_income_this_tick = (employee.labor_income_this_tick or 0.0) + net_wage
+                # Schedule Employee Update (Income)
+                employee_updates.append(
+                    EmployeeUpdateDTO(employee_id=employee.id, net_income=net_wage)
+                )
+
+                # Decrement virtual balance for next iteration check (local simulation of balance)
+                context.wallet_balances[DEFAULT_CURRENCY] = current_balance - wage # Simplify: assume all in default currency
 
             elif total_liquid_assets >= wage:
                 # Solvent but Illiquid -> Zombie
                 self._record_zombie_wage(hr_state, firm_id, employee, wage, current_time, current_balance, config)
             else:
                 # Insolvent -> Fire
-                # This also needs handle-less refactoring, but for now we pass the balance
-                self._handle_insolvency_transactions(hr_state, firm_id, config, employee, wage, current_time, generated_transactions, current_balance)
+                self._handle_insolvency_transactions(
+                    hr_state, firm_id, config, employee, wage, current_time,
+                    transactions, employee_updates, current_balance
+                )
 
-        return generated_transactions
+        return HRPayrollResultDTO(transactions=transactions, employee_updates=employee_updates)
 
     def _record_zombie_wage(self, hr_state: HRState, firm_id: int, employee: IEmployeeDataProvider, wage: float, current_time: int, current_balance: float, config: FirmConfigDTO) -> None:
         """Records an unpaid wage without firing the employee."""
@@ -153,7 +155,18 @@ class HREngine:
             extra={"tick": current_time, "agent_id": firm_id, "wage_deficit": wage - current_balance, "total_unpaid": len(hr_state.unpaid_wages[employee.id])}
         )
 
-    def _handle_insolvency_transactions(self, hr_state: HRState, firm_id: int, config: FirmConfigDTO, employee: IEmployeeDataProvider, wage: float, current_time: int, tx_list: List[Transaction], current_balance: float):
+    def _handle_insolvency_transactions(
+        self,
+        hr_state: HRState,
+        firm_id: int,
+        config: FirmConfigDTO,
+        employee: IEmployeeDataProvider,
+        wage: float,
+        current_time: int,
+        tx_list: List[Transaction],
+        updates_list: List[EmployeeUpdateDTO],
+        current_balance: float
+    ):
         """
         Handles case where firm cannot afford wage.
         Attempts severance pay; if fails, zombie state.
@@ -176,12 +189,14 @@ class HREngine:
             tx_list.append(tx)
 
             logger.info(
-                f"SEVERANCE | Firm {firm_id} paid severance {severance_pay:.2f} to Household {employee.id}. Firing due to insolvency.",
+                f"SEVERANCE | Firm {firm_id} paying severance {severance_pay:.2f} to Household {employee.id}. Scheduled for firing.",
                 extra={"tick": current_time, "agent_id": firm_id, "severance_pay": severance_pay}
             )
 
-            employee.quit()
-            self.remove_employee(hr_state, employee)
+            # Schedule Firing
+            updates_list.append(
+                EmployeeUpdateDTO(employee_id=employee.id, fire_employee=True, severance_pay=severance_pay)
+            )
         else:
             # Fallback to Zombie
             self._record_zombie_wage(hr_state, firm_id, employee, wage, current_time, current_balance, config)
@@ -226,10 +241,10 @@ class HREngine:
 
     def finalize_firing(self, hr_state: HRState, employee_id: int):
         """
-        Removes employee from state and triggers quit().
-        Should be called after successful severance payment.
+        Removes employee from state.
+        Should be called after successful severance payment and employee.quit().
         """
         employee = next((e for e in hr_state.employees if e.id == employee_id), None)
         if employee:
-             employee.quit()
+             # employee.quit() is now handled by the Orchestrator
              self.remove_employee(hr_state, employee)
