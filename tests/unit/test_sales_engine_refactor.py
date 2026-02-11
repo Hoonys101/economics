@@ -12,7 +12,7 @@ def sales_engine():
 @pytest.fixture
 def sales_state():
     state = SalesState()
-    state.marketing_budget = 100.0
+    state.marketing_budget_pennies = 100 # Int Pennies
     state.marketing_budget_rate = 0.1
     return state
 
@@ -25,19 +25,19 @@ def market_context():
 
 def test_adjust_marketing_budget(sales_engine, sales_state, market_context):
     """Test standard marketing budget adjustment."""
-    revenue_this_turn = 2000.0
+    revenue_this_turn = 2000.0 # Pennies as float (from Firm logic)
 
     # Target budget = 2000 * 0.1 = 200.0
-    # Old budget = 100.0
+    # Old budget = 100
     # New budget = (100 * 0.8) + (200 * 0.2) = 80 + 40 = 120.0
 
     result = sales_engine.adjust_marketing_budget(sales_state, market_context, revenue_this_turn)
 
     assert isinstance(result, MarketingAdjustmentResultDTO)
-    assert result.new_budget == 120.0
+    assert result.new_budget == 120
 
     # Verify NO side effects on state
-    assert sales_state.marketing_budget == 100.0 # Should remain unchanged, Orchestrator updates it
+    assert sales_state.marketing_budget_pennies == 100 # Should remain unchanged, Orchestrator updates it
 
 def test_adjust_marketing_budget_zero_revenue(sales_engine, sales_state, market_context):
     """Test budget adjustment with zero revenue."""
@@ -48,5 +48,5 @@ def test_adjust_marketing_budget_zero_revenue(sales_engine, sales_state, market_
 
     result = sales_engine.adjust_marketing_budget(sales_state, market_context, revenue_this_turn)
 
-    assert result.new_budget == 80.0
-    assert sales_state.marketing_budget == 100.0
+    assert result.new_budget == 80
+    assert sales_state.marketing_budget_pennies == 100

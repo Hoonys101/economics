@@ -291,6 +291,37 @@ class FinanceSystem(IFinanceSystem):
         bonds, txs = self.issue_treasury_bonds(amount_to_raise, current_tick)
         return (len(bonds) > 0, txs)
 
+    def grant_bailout_loan(self, firm: 'Firm', amount: int, current_tick: int) -> Tuple[Optional[LoanInfoDTO], List[Transaction]]:
+        """
+        Deprecated: Use request_bailout_loan.
+        Provided for compatibility with legacy execution engines.
+        """
+        logger.warning("FinanceSystem.grant_bailout_loan is deprecated. Use request_bailout_loan.")
+
+        command = self.request_bailout_loan(firm, amount)
+        if not command:
+            return None, []
+
+        # Execute Command Logic (Simulated here since Orchestrator usually handles commands)
+        # But we need to return the loan result.
+
+        # 1. Create Loan Application
+        borrower_profile = {
+            "credit_score": 850, # Set max score to bypass standard risk checks for bailout
+            "is_bailout": True,
+            "preferred_lender_id": self.bank.id # Assuming single bank
+        }
+
+        # 2. Process Application
+        loan_dto, txs = self.process_loan_application(
+            borrower_id=firm.id,
+            amount=amount,
+            borrower_profile=borrower_profile,
+            current_tick=current_tick
+        )
+
+        return loan_dto, txs
+
     def collect_corporate_tax(self, firm: IFinancialEntity, tax_amount: int) -> bool:
         logger.warning("FinanceSystem.collect_corporate_tax called. Should be using Transaction Generation.")
         return False

@@ -6,6 +6,7 @@ from simulation.dtos.department_dtos import FinanceStateDTO, ProductionStateDTO,
 from modules.household.dtos import HouseholdStateDTO
 from simulation.ai.enums import Personality
 from tests.utils.factories import create_firm_config_dto, create_household_config_dto
+from modules.system.api import DEFAULT_CURRENCY
 
 class MockFactory:
     """Factory for creating structured Mocks and DTOs for testing."""
@@ -171,7 +172,7 @@ class MockFactory:
         """Creates a HouseholdStateDTO with sensible defaults."""
         return HouseholdStateDTO(
             id=id,
-            assets=assets,
+            assets={DEFAULT_CURRENCY: int(assets)},
             inventory=inventory or {},
             needs=needs or {"survival": 0.5, "leisure": 0.5},
             preference_asset=kwargs.get("preference_asset", 1.0),
@@ -181,7 +182,7 @@ class MockFactory:
             durable_assets=durable_assets or [],
             expected_inflation=kwargs.get("expected_inflation", {}),
             is_employed=is_employed,
-            current_wage=current_wage,
+            current_wage_pennies=int(current_wage),
             wage_modifier=wage_modifier,
             is_homeless=kwargs.get("is_homeless", False),
             residing_property_id=kwargs.get("residing_property_id"),
@@ -194,8 +195,8 @@ class MockFactory:
             social_rank=kwargs.get("social_rank", 0.5),
             approval_rating=kwargs.get("approval_rating", 1),
             demand_elasticity=kwargs.get("demand_elasticity", 1.0),
-            monthly_income=kwargs.get("monthly_income", 0.0),
-            monthly_debt_payments=kwargs.get("monthly_debt_payments", 0.0)
+            monthly_income_pennies=int(kwargs.get("monthly_income", 0.0)),
+            monthly_debt_payments_pennies=int(kwargs.get("monthly_debt_payments", 0.0))
         )
 
     @staticmethod

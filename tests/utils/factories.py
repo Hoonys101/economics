@@ -6,6 +6,7 @@ from simulation.models import Talent
 from simulation.ai.api import Personality
 from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine
 from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
+from modules.system.api import DEFAULT_CURRENCY
 
 def create_household_config_dto(**kwargs) -> HouseholdConfigDTO:
     defaults = {
@@ -204,6 +205,9 @@ def create_household(
     goods_data = kwargs.pop('goods_data', [{"id": "food", "initial_price": 10.0}])
     personality = kwargs.pop('personality', Personality.CONSERVATIVE)
 
+    # Cast assets to int for consistency
+    assets_pennies = int(assets)
+
     household = Household(
         core_config=core_config,
         engine=engine,
@@ -211,11 +215,11 @@ def create_household(
         goods_data=goods_data,
         personality=personality,
         config_dto=config_dto,
-        initial_assets_record=assets,
+        initial_assets_record=assets_pennies,
         **kwargs
     )
-    if assets > 0:
-        household.deposit(assets)
+    if assets_pennies > 0:
+        household.deposit(assets_pennies, DEFAULT_CURRENCY)
     return household
 
 def create_firm(
@@ -260,7 +264,8 @@ def create_firm(
         personality=kwargs.get("personality")
     )
 
-    if assets > 0:
-        firm.deposit(assets)
+    assets_pennies = int(assets)
+    if assets_pennies > 0:
+        firm.deposit(assets_pennies, DEFAULT_CURRENCY)
 
     return firm

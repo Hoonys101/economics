@@ -30,7 +30,7 @@ def simple_household(mock_config_module):
         config_dto=create_household_config_dto(),
         id=1,
         engine=mock_engine,
-        assets=100.0,
+        assets=10000, # 100.00 pennies
         initial_needs={"survival": 50.0},
         goods_data=[],
         personality=Personality.MISER,
@@ -45,7 +45,7 @@ def simple_firm(mock_config_module):
         config_dto=create_firm_config_dto(),
         id=101,
         engine=mock_engine,
-        assets=1000.0,
+        assets=100000, # 1000.00 pennies
         specialization="basic_food",
         productivity_factor=1.0,
         value_orientation="wealth_and_needs",

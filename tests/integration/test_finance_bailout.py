@@ -1,8 +1,9 @@
 import pytest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, PropertyMock
 
 from modules.finance.api import BailoutCovenant, BailoutLoanDTO, GrantBailoutCommand, InsufficientFundsError
 from modules.finance.system import FinanceSystem
+from modules.system.api import DEFAULT_CURRENCY
 
 # A simple stub class for config attributes
 class MockConfig:
@@ -18,23 +19,21 @@ def finance_test_environment():
     """Sets up a test environment with mocked financial entities."""
     mock_government = Mock()
     mock_government.id = "GOVERNMENT_MOCK"
-    mock_government._assets = 1_000_000.0  # Starting with 1M in assets
-    # Mock 'assets' property to return the float value
-    type(mock_government).assets = PropertyMock(return_value=1_000_000.0)
+    # Mock wallet for FinanceSystem init sync
+    mock_government.wallet.get_balance.return_value = 100000000 # 1M pennies
 
     mock_central_bank = Mock()
     mock_central_bank.get_base_rate.return_value = 0.02
 
     mock_bank = Mock()
+    mock_bank.id = "BANK_MOCK"
+    # Mock wallet for bank init sync
+    mock_bank.wallet.get_balance.return_value = 1000000000
+    mock_bank.base_rate = 0.03 # Set base rate as float
 
     # Mock the Firm and its departments
     mock_firm = Mock()
     mock_firm.id = "FIRM_MOCK"
-    mock_firm._assets = 100_000.0
-    mock_firm.total_debt = 0.0
-    mock_firm.has_bailout_loan = False
-
-    # Mock the finance department
     mock_firm.finance = Mock()
 
     config = MockConfig()
@@ -44,8 +43,6 @@ def finance_test_environment():
 
     return finance_system, mock_government, mock_firm
 
-from unittest.mock import PropertyMock
-
 def test_grant_bailout_loan_success_and_covenant_type(finance_test_environment):
     """
     Tests that a bailout loan request generates a valid GrantBailoutCommand.
@@ -54,10 +51,10 @@ def test_grant_bailout_loan_success_and_covenant_type(finance_test_environment):
     """
     finance_system, mock_government, mock_firm = finance_test_environment
 
-    # Setup dynamic asset property for government to support check in request_bailout_loan
-    type(mock_government).assets = PropertyMock(return_value=1_000_000.0)
+    loan_amount = 5000000 # 50,000.00 pennies
 
-    loan_amount = 50_000.0
+    # Update ledger directly as FinanceSystem uses it
+    finance_system.ledger.treasury.balance[DEFAULT_CURRENCY] = 100000000 # 1M pennies
 
     # Act
     # Use request_bailout_loan instead of deprecated grant_bailout_loan
@@ -80,9 +77,10 @@ def test_grant_bailout_loan_insufficient_government_funds(finance_test_environme
     finance_system, mock_government, mock_firm = finance_test_environment
 
     # Arrange: Government has less money than the loan amount
-    loan_amount = 2_000_000.0
-    # Set assets lower than loan amount
-    type(mock_government).assets = PropertyMock(return_value=1_000_000.0)
+    loan_amount = 200000000 # 2M pennies
+
+    # Update ledger
+    finance_system.ledger.treasury.balance[DEFAULT_CURRENCY] = 100000000 # 1M pennies
 
     # Act
     command = finance_system.request_bailout_loan(mock_firm, loan_amount)
