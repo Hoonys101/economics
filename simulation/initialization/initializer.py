@@ -322,6 +322,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             settlement_system=sim.settlement_system
         )
         sim.government.finance_system = sim.finance_system
+        sim.bank.set_finance_system(sim.finance_system)
 
         sim.real_estate_units: List[RealEstateUnit] = [
             RealEstateUnit(id=i, estimated_value=self.config.INITIAL_PROPERTY_VALUE,

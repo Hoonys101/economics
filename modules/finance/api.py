@@ -451,8 +451,26 @@ class IFinanceSystem(Protocol):
         """
         ...
 
-    def service_debt(self, current_tick: int) -> None:
+    def service_debt(self, current_tick: int) -> List["Transaction"]:
         """Manages the servicing of outstanding government debt."""
+        ...
+
+    def process_loan_application(
+        self,
+        borrower_id: AgentID,
+        amount: float,
+        borrower_profile: Dict,
+        current_tick: int
+    ) -> Tuple[Optional[LoanInfoDTO], List["Transaction"]]:
+        """Orchestrates the loan application process."""
+        ...
+
+    def get_customer_balance(self, bank_id: AgentID, customer_id: AgentID) -> float:
+        """Query the ledger for deposit balance."""
+        ...
+
+    def get_customer_debt_status(self, bank_id: AgentID, customer_id: AgentID) -> List[LoanInfoDTO]:
+        """Query the ledger for loans."""
         ...
 
 
