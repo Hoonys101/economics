@@ -49,6 +49,15 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
     finance_system = FinanceSystem(gov, central_bank, bank, config, settlement_system)
     gov.finance_system = finance_system
 
+    # Setup Registry for SettlementSystem lookup
+    registry = MagicMock()
+    def get_agent_side_effect(aid):
+        if aid == gov.id: return gov
+        if aid == bank.id: return bank
+        return None
+    registry.get_agent.side_effect = get_agent_side_effect
+    settlement_system.agent_registry = registry
+
     # Mock Sensory Data for FinanceSystem (GDP needed for bond issuance check)
     gov.sensory_data = MagicMock()
     gov.sensory_data.current_gdp = 10000.0
@@ -80,8 +89,8 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
     # The SPENDING (5000) is returned as transactions, NOT executed immediately.
     # So Gov assets should be 1000 + 4000 = 5000.
 
-    assert gov.assets == 5000.0
-    assert bank.assets == 6000.0 # 10000 - 4000
+    assert settlement_system.get_balance(gov.id) == 5000.0
+    assert settlement_system.get_balance(bank.id) == 6000.0 # 10000 - 4000
 
     # 2. Transactions
     # TD-177: Transactions now include bond purchase (4000) and infrastructure spending (5000)
@@ -127,6 +136,15 @@ def test_education_spending_generates_transactions_only():
     finance_system = FinanceSystem(gov, central_bank, bank, config, settlement_system)
     gov.finance_system = finance_system
 
+    # Setup Registry for SettlementSystem lookup
+    registry = MagicMock()
+    def get_agent_side_effect(aid):
+        if aid == gov.id: return gov
+        if aid == bank.id: return bank
+        return None
+    registry.get_agent.side_effect = get_agent_side_effect
+    settlement_system.agent_registry = registry
+
     # Setup Household
     household = MagicMock() # spec=Household removed to avoid AttributeError on private attrs
     household.id = 10
@@ -155,8 +173,8 @@ def test_education_spending_generates_transactions_only():
     # Verification
 
     # 1. No Bond Issuance (Assets unchanged)
-    assert gov.assets == 100.0
-    assert bank.assets == 10000.0
+    assert settlement_system.get_balance(gov.id) == 100.0
+    assert settlement_system.get_balance(bank.id) == 10000.0
 
     # 2. Transactions
     # Should be 1 transaction of 500 (Grant)

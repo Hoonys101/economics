@@ -1,17 +1,23 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.systems.settlement_system import SettlementSystem
-from modules.finance.api import PortfolioDTO, PortfolioAsset
+from modules.finance.api import (
+    PortfolioDTO, PortfolioAsset, IFinancialAgent, IPortfolioHandler,
+    IHeirProvider, IFinancialEntity
+)
 from simulation.core_agents import Household
 from simulation.agents.government import Government
+
+class MockSettlementAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider, IFinancialEntity):
+    pass
 
 # Scenario 1: Standard Inheritance (Cash + Portfolio)
 def test_settlement_scenario_1_standard_inheritance(settlement_system, golden_households, government):
     if not golden_households:
         pytest.skip("No golden households found. Please generate fixtures.")
 
-    deceased = golden_households[0]
-    heir = golden_households[1] if len(golden_households) > 1 else golden_households[0]
+    deceased = MagicMock(spec=MockSettlementAgent)
+    heir = MagicMock(spec=MockSettlementAgent)
 
     # Setup Deceased Agent
     deceased.id = 101
@@ -23,17 +29,19 @@ def test_settlement_scenario_1_standard_inheritance(settlement_system, golden_ho
 
     # Setup Heir
     heir.id = 102
-    heir.get_portfolio = MagicMock() # Required for IPortfolioHandler check
-    heir.clear_portfolio = MagicMock() # Required for IPortfolioHandler check
+    heir.get_portfolio = MagicMock()
+    heir.clear_portfolio = MagicMock()
     heir.receive_portfolio = MagicMock()
     heir.deposit = MagicMock()
+    heir._deposit = MagicMock() # For IFinancialAgent
 
     # Patch Deceased
     deceased.get_portfolio = MagicMock(return_value=portfolio_dto)
     deceased.clear_portfolio = MagicMock()
-    deceased.receive_portfolio = MagicMock() # Required for IPortfolioHandler check
+    deceased.receive_portfolio = MagicMock()
     deceased.get_heir = MagicMock(return_value=heir.id)
     deceased.withdraw = MagicMock()
+    deceased._withdraw = MagicMock() # For IFinancialAgent
     # Mock get_balance for IFinancialAgent compliance
     deceased.get_balance = MagicMock(return_value=1000)
 
@@ -56,7 +64,11 @@ def test_settlement_scenario_1_standard_inheritance(settlement_system, golden_ho
     assert received_dto.assets[0].asset_id == "999"
     assert received_dto.assets[0].quantity == 10.0
 
-    heir.deposit.assert_called_with(1000)
+    # Check _deposit (IFinancialAgent) or deposit (fallback)
+    if heir._deposit.called:
+        heir._deposit.assert_called_with(1000)
+    else:
+        heir.deposit.assert_called_with(1000)
 
     # Close
     success = settlement_system.verify_and_close(deceased.id, tick=102)
@@ -68,7 +80,7 @@ def test_settlement_scenario_2_escheatment(settlement_system, golden_households,
     if not golden_households:
         pytest.skip("No golden households found")
 
-    deceased = golden_households[0]
+    deceased = MagicMock(spec=MockSettlementAgent)
     deceased.id = 201
     deceased.assets = 1000
 
@@ -78,9 +90,10 @@ def test_settlement_scenario_2_escheatment(settlement_system, golden_households,
 
     deceased.get_portfolio = MagicMock(return_value=portfolio_dto)
     deceased.clear_portfolio = MagicMock()
-    deceased.receive_portfolio = MagicMock() # Required for IPortfolioHandler check
-    deceased.get_heir = MagicMock(return_value=None) # No heir
+    deceased.receive_portfolio = MagicMock()
+    deceased.get_heir = MagicMock(return_value=None)
     deceased.withdraw = MagicMock()
+    deceased._withdraw = MagicMock()
     deceased.get_balance = MagicMock(return_value=1000)
 
     # Mock Government behavior (spy/mock)
@@ -92,6 +105,13 @@ def test_settlement_scenario_2_escheatment(settlement_system, golden_households,
     government.id = 1
     # Clear gov portfolio first
     government.portfolio.holdings.clear()
+
+    # Setup Registry for SettlementSystem
+    registry = MagicMock()
+    registry.get_agent.side_effect = lambda aid: government if aid == government.id else None
+    settlement_system.agent_registry = registry
+
+    initial_balance = settlement_system.get_balance(government.id)
 
     # Run Create
     account = settlement_system.create_settlement(deceased, tick=200)
@@ -114,6 +134,9 @@ def test_settlement_scenario_2_escheatment(settlement_system, golden_households,
     assert 123 in government.portfolio.holdings
     assert government.portfolio.holdings[123].quantity == 50.0
 
+    # Verify Cash via SettlementSystem (SSoT)
+    assert settlement_system.get_balance(government.id) == initial_balance + 1000
+
     # Close
     success = settlement_system.verify_and_close(deceased.id, tick=202)
     assert success
@@ -123,17 +146,18 @@ def test_settlement_scenario_3_insolvency(settlement_system, golden_households, 
     if not golden_households:
         pytest.skip("No golden households found")
 
-    deceased = golden_households[0]
+    deceased = MagicMock(spec=MockSettlementAgent)
     deceased.id = 301
-    deceased.assets = 100 # Only 100 cash
+    deceased.assets = 100
 
     portfolio_dto = PortfolioDTO(assets=[])
 
     deceased.get_portfolio = MagicMock(return_value=portfolio_dto)
     deceased.clear_portfolio = MagicMock()
-    deceased.receive_portfolio = MagicMock() # Required for IPortfolioHandler check
+    deceased.receive_portfolio = MagicMock()
     deceased.get_heir = MagicMock(return_value=None)
     deceased.withdraw = MagicMock()
+    deceased._withdraw = MagicMock()
     deceased.get_balance = MagicMock(return_value=100)
 
     account = settlement_system.create_settlement(deceased, tick=300)
@@ -156,6 +180,7 @@ def test_settlement_scenario_3_insolvency(settlement_system, golden_households, 
     deceased.assets = 100
     # Reset mock for new call
     deceased.get_balance = MagicMock(return_value=100)
+    deceased._withdraw = MagicMock()
 
     account_fail = settlement_system.create_settlement(deceased, tick=310)
     plan_fail = [(government, 101, "tax", "transfer")]

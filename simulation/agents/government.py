@@ -692,6 +692,20 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         return self.wallet.get_balance(currency)
 
+    # --- IFinancialAgent Implementation ---
+    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self.wallet.add(amount, currency, memo="Deposit")
+
+    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self.wallet.subtract(amount, currency, memo="Withdraw")
+
+    def get_all_balances(self) -> Dict[CurrencyCode, int]:
+        return self.wallet.get_all_balances()
+
+    @property
+    def total_wealth(self) -> int:
+        return self.wallet.get_balance(DEFAULT_CURRENCY)
+
     def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int) -> List[Transaction]:
         households = [a for a in agents if hasattr(a, '_econ_state')]
         return self.ministry_of_education.run_public_education(households, self, current_tick)
