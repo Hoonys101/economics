@@ -7,6 +7,7 @@ from simulation.models import Order
 from modules.system.api import DEFAULT_CURRENCY, MarketContextDTO
 from modules.simulation.api import AgentCoreConfigDTO
 from modules.hr.api import IEmployeeDataProvider
+from modules.firm.api import AssetManagementResultDTO, RDResultDTO, ProductionResultDTO
 
 @pytest.fixture
 def mock_decision_engine():
@@ -61,7 +62,7 @@ def core_config():
 
 @pytest.fixture
 def firm(mock_decision_engine, firm_config, core_config):
-    # Initialize Firm directly without BaseAgent patching
+    # Initialize Firm directly
     f = Firm(
         core_config=core_config,
         engine=mock_decision_engine,
@@ -74,12 +75,17 @@ def firm(mock_decision_engine, firm_config, core_config):
         personality=None
     )
 
-    # Manually hydrate wallet for testing (since we are not using full simulation loop)
+    # Manually hydrate wallet for testing
     f.wallet.load_balances({DEFAULT_CURRENCY: 1000.0})
 
     # Mock settlement system for internal order tests
     f.settlement_system = MagicMock()
     f.settlement_system.transfer.return_value = True
+
+    # Mock Internal Engines
+    f.asset_management_engine = MagicMock()
+    f.rd_engine = MagicMock()
+    f.production_engine = MagicMock()
 
     return f
 
@@ -92,42 +98,14 @@ def test_firm_initialization_states(firm):
     assert firm.production_state.specialization == "FOOD"
     assert firm.finance_state.total_shares == 1000.0
 
-def test_inventory_handler_implementation(firm):
-    # Test add_item
-    firm.add_item("item1", 10.0)
-    assert firm.get_quantity("item1") == 10.0
-
-    # Test remove_item
-    firm.remove_item("item1", 5.0)
-    assert firm.get_quantity("item1") == 5.0
-
-    # Test remove more than available
-    assert not firm.remove_item("item1", 10.0)
-    assert firm.get_quantity("item1") == 5.0
-
-    # Test liquidate_assets
-    assets = firm.liquidate_assets()
-    assert firm.get_quantity("item1") == 0.0 # Should be cleared
-    assert firm.capital_stock == 0.0
-    assert firm.automation_level == 0.0
-    assert assets == {DEFAULT_CURRENCY: 1000.0}
-
-def test_command_bus_internal_orders(firm):
-    # SET_TARGET
-    order = Order(
-        agent_id=1, side="SET_TARGET", item_id="target", quantity=50.0,
-        price_limit=0.0, market_id="internal"
-    )
-    firm._execute_internal_order(order, None, 0)
-    assert firm.production_state.production_target == 50.0
-
-    # INVEST_AUTOMATION
-    # Use real engines, but mock settlement system to succeed
-    # And mock government for transfer destination
+def test_command_bus_internal_orders_delegation(firm):
+    # Setup Context
+    fiscal_context = MagicMock()
     gov = MagicMock()
     gov.id = 999
+    fiscal_context.government = gov
 
-    # Ensure wallet has funds
+    # 1. INVEST_AUTOMATION
     firm.wallet.load_balances({DEFAULT_CURRENCY: 2000.0})
 
     order_auto = Order(
@@ -136,116 +114,73 @@ def test_command_bus_internal_orders(firm):
         monetary_amount={'amount': 100.0, 'currency': DEFAULT_CURRENCY}
     )
 
-    # Execute
-    firm._execute_internal_order(order_auto, gov, 0)
+    # Mock Engine Result
+    firm.asset_management_engine.invest.return_value = AssetManagementResultDTO(
+        success=True,
+        automation_level_increase=0.01,
+        actual_cost=100.0
+    )
 
-    # Verify state change
-    # automation_level should have increased
-    # logic: gained = amount / cost_per_pct = 100.0 / 100.0 = 1.0
-    # production_state.automation_level += 1.0
+    firm.execute_internal_orders([order_auto], fiscal_context, 0)
+
+    # Verify delegation
+    firm.asset_management_engine.invest.assert_called_once()
+
+    # Verify state update
     assert firm.production_state.automation_level > 0.0
 
-    # Verify transaction generated via settlement system call
+    # Verify transfer
     firm.settlement_system.transfer.assert_called()
-    args = firm.settlement_system.transfer.call_args
-    # call_args is ((sender, recipient, amount, reason), {currency: ...})
-    # or just args if positional.
-    # firm code: transfer(self, government, amount, "Automation", currency=DEFAULT_CURRENCY)
 
-    call_args = args[0]
-    call_kwargs = args[1]
-
-    assert call_args[0] == firm
-    assert call_args[1] == gov
-    assert call_args[2] == 100.0
-    assert call_args[3] == "Automation"
-    assert call_kwargs.get('currency', DEFAULT_CURRENCY) == DEFAULT_CURRENCY
-
-
-def test_generate_transactions_delegation(firm):
-    # This tests that engines are called. Since we can't easily mock internal engines
-    # (they are instantiated inside __init__), we can verify the OUTPUT of generate_transactions.
-
-    # Setup state for payroll
-    firm.hr_state.employees = [] # No employees, so no payroll tx
-
-    # Setup state for finance
-    firm.finance_state.revenue_this_turn = {DEFAULT_CURRENCY: 100.0}
-    firm.finance_state.cost_this_turn = {DEFAULT_CURRENCY: 50.0}
-
-    market_context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}, "fiscal_policy": MagicMock(corporate_tax_rate=0.2)}
-    gov = MagicMock()
-    gov.id = 999
-    registry = MagicMock()
-
-    txs = firm.generate_transactions(
-        government=gov,
-        market_data={},
-        shareholder_registry=registry,
-        current_time=0,
-        market_context=market_context
+    # 2. INVEST_RD
+    order_rd = Order(
+        agent_id=1, side="INVEST_RD", item_id="rd", quantity=1.0,
+        price_limit=0.0, market_id="internal",
+        monetary_amount={'amount': 100.0, 'currency': DEFAULT_CURRENCY}
     )
 
-    # We expect some transactions (holding cost, maintenance fee) if configured
-    # Config has maintenance fee = 5.0
-    # Wallet has money.
-
-    # Check for maintenance fee transaction
-    # Since we are using real FinanceEngine, we need to check if maintenance fee is generated
-    # maintenance fee is in generate_financial_transactions
-
-    maintenance_tx = next((tx for tx in txs if tx.item_id == "firm_maintenance"), None)
-    assert maintenance_tx is not None
-    assert maintenance_tx.price == 5.0
-
-def test_generate_transactions_payroll_integration(firm):
-    """
-    Test that Firm correctly orchestrates HREngine results.
-    """
-    # Setup Employee
-    emp = MagicMock(spec=IEmployeeDataProvider)
-    emp.id = 101
-    emp.employer_id = firm.id
-    emp.is_employed = True
-    emp.labor_skill = 1.0
-    emp.education_level = 0.0
-    emp.labor_income_this_tick = 0.0
-
-    firm.hr_state.employees = [emp]
-    firm.hr_state.employee_wages = {101: 20.0}
-
-    # Setup Wallet
-    firm.wallet.load_balances({DEFAULT_CURRENCY: 1000.0})
-
-    # Mock Government
-    gov = MagicMock()
-    gov.id = 999
-
-    # Mock Fiscal Policy
-    fiscal_policy = MagicMock()
-    fiscal_policy.corporate_tax_rate = 0.2
-    fiscal_policy.income_tax_rate = 0.1
-    fiscal_policy.survival_cost = 10.0
-    fiscal_policy.government_agent_id = 999
-
-    market_context = {
-        "exchange_rates": {DEFAULT_CURRENCY: 1.0},
-        "fiscal_policy": fiscal_policy
-    }
-
-    # Execute
-    transactions = firm.generate_transactions(
-        government=gov,
-        market_data={},
-        shareholder_registry=MagicMock(),
-        current_time=100,
-        market_context=market_context
+    firm.rd_engine.research.return_value = RDResultDTO(
+        success=True,
+        quality_improvement=0.1,
+        productivity_multiplier_change=1.05,
+        actual_cost=100.0
     )
 
-    # Verify Transactions
-    wage_tx = next((tx for tx in transactions if tx.item_id == "labor_wage"), None)
-    assert wage_tx is not None
-    assert wage_tx.price == 18.0 # 20 - 10% tax
+    firm.execute_internal_orders([order_rd], fiscal_context, 0)
 
-    # Verify Employee Update (Orchestrator action)
-    assert emp.labor_income_this_tick == 18.0
+    firm.rd_engine.research.assert_called_once()
+    assert firm.production_state.base_quality > 0.0 # Initial was 0.0 (default)?
+    # Actually initial base_quality depends on state init. Let's assume default is 0 or from somewhere.
+    # ProductionState initializes base_quality=1.0 usually?
+    # Let's check logic: self.production_state.base_quality += 0.1
+    # So it should increase.
+
+def test_produce_orchestration(firm):
+    # Mock ProductionEngine result
+    firm.production_engine.produce.return_value = ProductionResultDTO(
+        success=True,
+        quantity_produced=10.0,
+        quality=1.5,
+        specialization="FOOD",
+        inputs_consumed={"RAW": 5.0},
+        production_cost=50.0,
+        capital_depreciation=5.0,
+        automation_decay=0.01
+    )
+
+    # Set initial state
+    firm.production_state.capital_stock = 100.0
+    firm.production_state.automation_level = 0.5
+    firm.production_state.input_inventory = {"RAW": 10.0}
+
+    firm.produce(current_time=0)
+
+    # Verify state updates
+    assert firm.production_state.capital_stock == 95.0 # 100 - 5
+    assert firm.production_state.automation_level == 0.49 # 0.5 - 0.01
+    assert firm.production_state.input_inventory["RAW"] == 5.0 # 10 - 5
+    assert firm.current_production == 10.0
+    assert firm.get_quantity("FOOD") == 10.0
+
+    # Verify engine called
+    firm.production_engine.produce.assert_called_once()

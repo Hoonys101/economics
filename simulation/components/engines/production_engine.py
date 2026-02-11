@@ -1,81 +1,94 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any, Dict, Optional
 import logging
 import math
-import random
-from simulation.components.state.firm_state_models import ProductionState, HRState
-from modules.inventory.api import IInventoryHandler
-
-if TYPE_CHECKING:
-    from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.firm.api import IProductionEngine, ProductionInputDTO, ProductionResultDTO
 
 logger = logging.getLogger(__name__)
 
-from simulation.dtos.production_dtos import ProductionInputDTO, ProductionResultDTO
-
-logger = logging.getLogger(__name__)
-
-class ProductionEngine:
+class ProductionEngine(IProductionEngine):
     """
     Stateless Engine for Production operations.
     Handles Cobb-Douglas production, automation decay, and R&D.
+    Implements IProductionEngine.
     """
 
     def produce(
         self,
-        state: ProductionState,
-        inputs: ProductionInputDTO,
-        config: FirmConfigDTO,
+        input_dto: ProductionInputDTO
     ) -> ProductionResultDTO:
         """
         Executes production logic.
-        Updates state (capital stock, automation) and returns a DTO with produced quantities.
-        The Orchestrator is responsible for updating inventory.
+        Calculates production output based on labor, capital, and technology.
+        Returns a DTO describing the result of the production cycle.
         """
-        try:
-            # [EARLY EXIT]
-            if inputs.total_labor_skill <= 0:
-                return ProductionResultDTO(quantity=0.0, quality=0.0, specialization=state.specialization)
+        firm_snapshot = input_dto.firm_snapshot
+        config = firm_snapshot.config
+        production_state = firm_snapshot.production
+        hr_state = firm_snapshot.hr
 
-            # 1. Depreciation & Decay
-            depreciation_rate = config.capital_depreciation_rate
-            state.capital_stock *= (1.0 - depreciation_rate)
+        try:
+            # 1. Depreciation & Decay (Calculation, NO mutation)
+            capital_depreciation_rate = config.capital_depreciation_rate
+            capital_depreciation = production_state.capital_stock * capital_depreciation_rate
+            effective_capital = max(production_state.capital_stock - capital_depreciation, 0.01)
 
             # Automation Decay
-            state.automation_level *= 0.995
-            if state.automation_level < 0.001: state.automation_level = 0.0
+            # Original: state.automation_level *= 0.995
+            # So decay is (1 - 0.995) = 0.005
+            automation_decay_rate = 0.005 # Hardcoded in original logic
+            automation_decay = production_state.automation_level * automation_decay_rate
+            effective_automation = production_state.automation_level - automation_decay
 
-            # 2. Labor & Capital Inputs
-            total_labor_skill = inputs.total_labor_skill
+            if effective_automation < 0.001:
+                # If it drops below threshold, we lose the rest
+                automation_decay += effective_automation
+                effective_automation = 0.0
 
+            # 2. Gather Inputs from HR State
+            employees_data = hr_state.employees_data
+            num_employees = len(employees_data)
+            total_labor_skill = sum(emp.get("skill", 1.0) for emp in employees_data.values())
+            avg_skill = total_labor_skill / num_employees if num_employees > 0 else 0.0
+
+            # [EARLY EXIT]
+            if total_labor_skill <= 0:
+                return ProductionResultDTO(
+                    success=True,
+                    quantity_produced=0.0,
+                    quality=0.0,
+                    specialization=production_state.specialization,
+                    capital_depreciation=capital_depreciation,
+                    automation_decay=automation_decay
+                )
+
+            # 3. Production Parameters
             # Cobb-Douglas Parameters
             base_alpha = config.labor_alpha
             automation_reduction = config.automation_labor_reduction
 
             # Alpha Adjusted
-            alpha_raw = base_alpha * (1.0 - (state.automation_level * automation_reduction))
+            alpha_raw = base_alpha * (1.0 - (effective_automation * automation_reduction))
             alpha_adjusted = max(config.labor_elasticity_min, alpha_raw)
             beta_adjusted = 1.0 - alpha_adjusted
 
-            # Effective Inputs
-            capital = max(state.capital_stock, 0.01)
-
             # Technology Multiplier
-            tfp = state.productivity_factor
-            tfp *= inputs.productivity_multiplier
+            tfp = production_state.productivity_factor
+            tfp *= input_dto.productivity_multiplier
 
             # Quality Calculation
-            avg_skill = inputs.avg_skill
-            item_config = config.goods.get(state.specialization, {})
+            item_config = config.goods.get(production_state.specialization, {})
             quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
-            actual_quality = state.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
+            # Use base_quality from state
+            actual_quality = production_state.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
 
             produced_quantity = 0.0
-            if total_labor_skill > 0 and capital > 0:
-                produced_quantity = tfp * (total_labor_skill ** alpha_adjusted) * (capital ** beta_adjusted)
+            if total_labor_skill > 0 and effective_capital > 0:
+                produced_quantity = tfp * (total_labor_skill ** alpha_adjusted) * (effective_capital ** beta_adjusted)
 
             actual_produced = 0.0
             consumed_inputs = {}
+
+            production_cost = 0.0
 
             if produced_quantity > 0:
                 # Input Constraints
@@ -83,8 +96,10 @@ class ProductionEngine:
 
                 if input_config:
                     max_by_inputs = float('inf')
+                    input_inventory = production_state.input_inventory
+
                     for mat, req_per_unit in input_config.items():
-                        available = inputs.input_inventory.get(mat, 0.0)
+                        available = input_inventory.get(mat, 0.0)
                         if req_per_unit > 0:
                             max_by_inputs = min(max_by_inputs, available / req_per_unit)
 
@@ -93,91 +108,26 @@ class ProductionEngine:
                     # Calculate consumed inputs
                     for mat, req_per_unit in input_config.items():
                         consumed_inputs[mat] = actual_produced * req_per_unit
-                        # Note: State update of input_inventory happens in the Orchestrator?
-                        # Or do we update it here if state is passed?
-                        # The implementation plan says "return a ProductionResultDTO containing quantity, quality, and input_consumption".
-                        # However, since ProductionState is passed, we COULD update it here.
-                        # But for true Abstraction Purity, we should probably treat ProductionState as something the engine CAN mutate,
-                        # but inventory (the wallet/container) is external.
-                        state.input_inventory[mat] = max(0.0, state.input_inventory.get(mat, 0.0) - consumed_inputs[mat])
                 else:
                     actual_produced = produced_quantity
 
             return ProductionResultDTO(
-                quantity=actual_produced,
+                success=True,
+                quantity_produced=actual_produced,
                 quality=actual_quality,
-                specialization=state.specialization,
-                consumed_inputs=consumed_inputs
+                specialization=production_state.specialization,
+                inputs_consumed=consumed_inputs,
+                production_cost=production_cost,
+                capital_depreciation=capital_depreciation,
+                automation_decay=automation_decay
             )
 
         except Exception as e:
-            logger.error(f'PRODUCTION_ERROR | Firm {inputs.firm_id}: {e}')
+            logger.error(f'PRODUCTION_ERROR | Firm {firm_snapshot.id}: {e}')
             return ProductionResultDTO(
-                quantity=0.0, 
-                quality=0.0, 
-                specialization=state.specialization,
                 success=False,
+                quantity_produced=0.0,
+                quality=0.0,
+                specialization=production_state.specialization,
                 error_message=str(e)
             )
-
-    def invest_in_automation(
-        self,
-        state: ProductionState,
-        amount: float,
-        cost_per_pct: float
-    ) -> float:
-        """
-        Updates automation level based on investment.
-        Payment is handled by Finance (Orchestrator).
-        Returns the gained automation level.
-        """
-        if cost_per_pct > 0:
-            gained_a = (amount / cost_per_pct) / 100.0
-            state.automation_level = max(0.0, min(1.0, state.automation_level + gained_a))
-            return gained_a
-        return 0.0
-
-    def invest_in_capex(
-        self,
-        state: ProductionState,
-        amount: float,
-        capital_to_output_ratio: float
-    ) -> float:
-        """
-        Updates capital stock.
-        """
-        efficiency = 1.0 / capital_to_output_ratio
-        added_capital = amount * efficiency
-        state.capital_stock += added_capital
-        return added_capital
-
-    def execute_rd_outcome(
-        self,
-        state: ProductionState,
-        hr_state: HRState,
-        revenue: float,
-        budget: float,
-        current_time: int
-    ) -> bool:
-        """
-        Executes probabilistic R&D outcome.
-        Updates state.base_quality and productivity_factor.
-        """
-        state.research_history["total_spent"] += budget
-
-        denominator = max(revenue * 0.2, 100.0)
-        base_chance = min(1.0, budget / denominator)
-
-        avg_skill = 1.0
-        if hr_state.employees:
-            avg_skill = sum(emp.labor_skill or 0.0 for emp in hr_state.employees) / len(hr_state.employees)
-
-        success_chance = base_chance * avg_skill
-
-        if random.random() < success_chance:
-            state.research_history["success_count"] += 1
-            state.research_history["last_success_tick"] = current_time
-            state.base_quality += 0.05
-            state.productivity_factor *= 1.05
-            return True
-        return False

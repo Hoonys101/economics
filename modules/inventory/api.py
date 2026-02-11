@@ -1,23 +1,30 @@
-from typing import Protocol, Any, Optional
+from typing import Protocol, Dict, Optional, Any
 
 class IInventoryHandler(Protocol):
-    """Interface for managing the state of physical or digital assets."""
-    def lock_asset(self, asset_id: Any, lock_owner_id: Any) -> bool:
-        """Atomically places a lock on an asset, returns False if already locked."""
+    """
+    CANONICAL DEFINITION: Interface for managing an agent's inventory of consumable
+    or sellable goods. Reflects the de-facto implementation across the codebase.
+    """
+    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0) -> bool:
+        """Adds a specified quantity of an item to the inventory."""
         ...
 
-    def release_asset(self, asset_id: Any, lock_owner_id: Any) -> bool:
-        """Releases a lock, returns False if not owned by the lock_owner_id."""
+    def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool:
+        """Removes a specified quantity of an item from the inventory. Returns False on failure."""
         ...
 
-    def transfer_asset(self, asset_id: Any, new_owner_id: Any) -> bool:
-        """Transfers ownership of the asset."""
+    def get_quantity(self, item_id: str) -> float:
+        """Gets the current quantity of a specified item."""
         ...
 
-    def add_lien(self, asset_id: Any, lien_details: Any) -> Optional[str]:
-        """Adds a lien to a property, returns lien_id on success."""
+    def get_quality(self, item_id: str) -> float:
+        """Gets the average quality of a specified item."""
         ...
 
-    def remove_lien(self, asset_id: Any, lien_id: str) -> bool:
-        """Removes a lien from a property."""
+    def get_all_items(self) -> Dict[str, float]:
+        """Returns a copy of the entire inventory (item_id -> quantity)."""
+        ...
+
+    def clear_inventory(self) -> None:
+        """Removes all items from the inventory."""
         ...

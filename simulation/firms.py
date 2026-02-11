@@ -25,10 +25,21 @@ from simulation.components.engines.hr_engine import HREngine
 from simulation.components.engines.finance_engine import FinanceEngine
 from simulation.components.engines.production_engine import ProductionEngine
 from simulation.components.engines.sales_engine import SalesEngine
+from simulation.components.engines.asset_management_engine import AssetManagementEngine
+from simulation.components.engines.rd_engine import RDEngine
+
 from simulation.dtos.context_dtos import PayrollProcessingContext, FinancialTransactionContext, SalesContext
 from simulation.dtos.hr_dtos import HRPayrollContextDTO, TaxPolicyDTO
 from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingContextDTO
-from simulation.dtos.production_dtos import ProductionInputDTO
+
+# New API Imports
+from modules.firm.api import (
+    FirmSnapshotDTO,
+    ProductionInputDTO, ProductionResultDTO,
+    AssetManagementInputDTO, AssetManagementResultDTO,
+    RDInputDTO, RDResultDTO,
+    IProductionEngine, IAssetManagementEngine, IRDEngine
+)
 
 from simulation.utils.shadow_logger import log_shadow
 from modules.finance.api import InsufficientFundsError, IFinancialEntity, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake
@@ -141,8 +152,10 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         # Engine Initialization (Stateless)
         self.hr_engine = HREngine()
         self.finance_engine = FinanceEngine()
-        self.production_engine = ProductionEngine()
+        self.production_engine: IProductionEngine = ProductionEngine()
         self.sales_engine = SalesEngine()
+        self.asset_management_engine: IAssetManagementEngine = AssetManagementEngine()
+        self.rd_engine: IRDEngine = RDEngine()
 
         # Initialize core attributes in State
         self.production_state.specialization = specialization
@@ -176,9 +189,6 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         
         # Tracking variables
         self.age = 0
-
-        # Legacy/Compatibility attributes (mapped to State where possible or kept if transient)
-        # These properties route to State
 
     # --- IConfigurable Implementation ---
 
@@ -608,35 +618,111 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         result = self.sales_engine.adjust_marketing_budget(self.sales_state, market_context, total_revenue)
         self.sales_state.marketing_budget = result.new_budget
 
-    def produce(self, current_time: int, technology_manager: Optional[Any] = None, effects_queue: Optional[List[Dict[str, Any]]] = None) -> None:
-        productivity_multiplier = 1.0
-        if technology_manager:
-            productivity_multiplier = technology_manager.get_productivity_multiplier(self.id)
+    def get_snapshot_dto(self) -> FirmSnapshotDTO:
+        """Helper to create FirmSnapshotDTO for engines."""
+        # Note: We are creating fresh state DTOs here to ensure purity.
+        # Ideally, state DTOs should be cached or updated, but here we construct them on the fly
+        # effectively snapshotting the current mutable state.
 
-        # 1. Prepare Input DTO (Abstraction Purity: Gathering data from internal states)
-        total_labor_skill = sum(emp.labor_skill or 0.0 for emp in self.hr_state.employees)
-        avg_skill = total_labor_skill / len(self.hr_state.employees) if self.hr_state.employees else 0.0
+        # We reuse get_state_dto logic but split it into component parts if needed.
+        # But FirmSnapshotDTO takes separate State DTOs.
+
+        # 1. HR State
+        employee_ids = [e.id for e in self.hr_state.employees]
+        employees_data = {}
+        for e in self.hr_state.employees:
+            employees_data[e.id] = {
+                "id": e.id,
+                "wage": self.hr_state.employee_wages.get(e.id, 0.0),
+                "skill": getattr(e, 'labor_skill', 1.0),
+                "age": getattr(e, 'age', 0),
+                "education_level": getattr(e, 'education_level', 0)
+            }
+
+        hr_dto = HRStateDTO(
+            employees=employee_ids,
+            employees_data=employees_data
+        )
+
+        # 2. Finance State
+        finance_dto = FinanceStateDTO(
+            balance=self.wallet.get_all_balances(),
+            revenue_this_turn=self.finance_state.revenue_this_turn.copy(),
+            expenses_this_tick=self.finance_state.expenses_this_tick.copy(),
+            consecutive_loss_turns=self.finance_state.consecutive_loss_turns,
+            profit_history=list(self.finance_state.profit_history),
+            altman_z_score=0.0,
+            valuation=self.finance_state.valuation,
+            total_shares=self.finance_state.total_shares,
+            treasury_shares=self.finance_state.treasury_shares,
+            dividend_rate=self.finance_state.dividend_rate,
+            is_publicly_traded=True
+        )
+
+        # 3. Production State
+        production_dto = ProductionStateDTO(
+            current_production=self.production_state.current_production,
+            productivity_factor=self.production_state.productivity_factor,
+            production_target=self.production_state.production_target,
+            capital_stock=self.production_state.capital_stock,
+            base_quality=self.production_state.base_quality,
+            automation_level=self.production_state.automation_level,
+            specialization=self.production_state.specialization,
+            inventory=self._inventory.copy(),
+            input_inventory=self.production_state.input_inventory.copy(),
+            inventory_quality=self.production_state.inventory_quality.copy()
+        )
+
+        # 4. Sales State
+        sales_dto = SalesStateDTO(
+            inventory_last_sale_tick=self.sales_state.inventory_last_sale_tick.copy(),
+            price_history=self.sales_state.last_prices.copy(),
+            brand_awareness=self.brand_manager.brand_awareness,
+            perceived_quality=self.brand_manager.perceived_quality,
+            marketing_budget=self.sales_state.marketing_budget
+        )
         
-        production_inputs = ProductionInputDTO(
-            total_labor_skill=total_labor_skill,
-            avg_skill=avg_skill,
-            input_inventory=self.production_state.input_inventory, # Still passing state ref, but it's a DTO field now
-            productivity_multiplier=productivity_multiplier,
-            firm_id=self.id,
-            current_time=current_time
+        return FirmSnapshotDTO(
+            id=self.id,
+            is_active=self.is_active,
+            config=self.config,
+            finance=finance_dto,
+            production=production_dto,
+            sales=sales_dto,
+            hr=hr_dto
         )
 
-        # 2. Call Stateless Engine
-        result = self.production_engine.produce(
-            self.production_state,
-            production_inputs,
-            self.config
+    def produce(self, current_time: int, technology_manager: Optional[Any] = None, effects_queue: Optional[List[Dict[str, Any]]] = None) -> None:
+        # 1. ASSEMBLE snapshot and input DTO
+        snapshot = self.get_snapshot_dto()
+        productivity_multiplier = technology_manager.get_productivity_multiplier(self.id) if technology_manager else 1.0
+
+        input_dto = ProductionInputDTO(
+            firm_snapshot=snapshot,
+            productivity_multiplier=productivity_multiplier
         )
 
-        # 3. Apply Results (Orchestrator Responsibility)
-        self.current_production = result.quantity
-        if result.success and result.quantity > 0:
-            self.add_item(result.specialization, result.quantity, quality=result.quality)
+        # 2. DELEGATE to stateless engine
+        result: ProductionResultDTO = self.production_engine.produce(input_dto)
+
+        # 3. APPLY result to state (Orchestrator responsibility)
+        # Apply depreciation/decay (new mechanism)
+        if result.capital_depreciation > 0:
+            self.production_state.capital_stock = max(0.0, self.production_state.capital_stock - result.capital_depreciation)
+
+        if result.automation_decay > 0:
+            self.production_state.automation_level = max(0.0, self.production_state.automation_level - result.automation_decay)
+
+        # Update production
+        self.current_production = result.quantity_produced
+        if result.success and result.quantity_produced > 0:
+            self.add_item(result.specialization, result.quantity_produced, quality=result.quality)
+            self.record_expense(result.production_cost, DEFAULT_CURRENCY)
+
+            # Consume inputs
+            for mat, amount in result.inputs_consumed.items():
+                current_input = self.production_state.input_inventory.get(mat, 0.0)
+                self.production_state.input_inventory[mat] = max(0.0, current_input - amount)
 
         # TD-271: Real Estate Utilization
         effect, amount = self.real_estate_utilization_component.apply(
@@ -713,6 +799,11 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
     def get_state_dto(self) -> FirmStateDTO:
         # Implementation moved from FirmStateDTO.from_firm to here for Protocol Purity
+        # Note: This is duplicative with get_snapshot_dto but serves the public API AgentStateDTO (different purpose)
+        # get_snapshot_dto is for Engines (all state components). get_state_dto is for DecisionEngine/Output.
+
+        # Reuse logic where possible or keep separate.
+        # For now, keeping as is to avoid breaking existing public API.
 
         # 1. HR State
         employee_ids = [e.id for e in self.hr_state.employees]
@@ -733,12 +824,12 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
         # 2. Finance State
         finance_dto = FinanceStateDTO(
-            balance=self.wallet.get_balance(DEFAULT_CURRENCY),
+            balance=self.wallet.get_balance(DEFAULT_CURRENCY), # Public API uses float balance for main currency often
             revenue_this_turn=self.finance_state.revenue_this_turn.get(DEFAULT_CURRENCY, 0.0),
             expenses_this_tick=self.finance_state.expenses_this_tick.get(DEFAULT_CURRENCY, 0.0),
             consecutive_loss_turns=self.finance_state.consecutive_loss_turns,
             profit_history=list(self.finance_state.profit_history),
-            altman_z_score=0.0, # Calculation skipped in DTO to avoid side-effects
+            altman_z_score=0.0,
             valuation=self.finance_state.valuation,
             total_shares=self.finance_state.total_shares,
             treasury_shares=self.finance_state.treasury_shares,
@@ -843,13 +934,10 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             decisions, tactic = decision_output
 
         # Command Bus execution
-        external_orders = []
-        for order in decisions:
-            if order.market_id == "internal":
-                gov_proxy = fiscal_context.government if fiscal_context else None
-                self._execute_internal_order(order, gov_proxy, current_time)
-            else:
-                external_orders.append(order)
+        self.execute_internal_orders(decisions, fiscal_context, current_time, market_context)
+
+        # Filter external orders for further processing
+        external_orders = [o for o in decisions if o.market_id != "internal"]
 
         self.sales_engine.check_and_apply_dynamic_pricing(
             self.sales_state, external_orders, current_time,
@@ -873,16 +961,13 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         )
         return external_orders, tactic
 
-    def _execute_internal_order(self, order: Order, government: Optional[Any], current_time: int, market_context: Optional[MarketContextDTO] = None) -> None:
+    def execute_internal_orders(self, orders: List[Order], fiscal_context: FiscalContext, current_time: int, market_context: Optional[MarketContextDTO] = None) -> None:
         """
-        Command Bus: Routes internal orders to the correct engine.
+        Orchestrates internal orders by delegating to specialized engines.
+        Replaces _execute_internal_order.
         """
-        def get_amount(o: Order) -> float:
-            return o.monetary_amount['amount'] if o.monetary_amount else o.quantity
-
-        def get_currency(o: Order) -> CurrencyCode:
-             return o.monetary_amount['currency'] if o.monetary_amount else DEFAULT_CURRENCY
-
+        snapshot = self.get_snapshot_dto()
+        government = fiscal_context.government if fiscal_context else None
         gov_id = government.id if government else None
 
         fin_ctx = FinancialTransactionContext(
@@ -892,75 +977,111 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             shareholder_registry=None
         )
 
-        if order.order_type == "SET_TARGET":
-            self.production_state.production_target = order.quantity
-            self.logger.info(f"INTERNAL_EXEC | Firm {self.id} set production target to {order.quantity:.1f}")
+        def get_amount(o: Order) -> float:
+            return o.monetary_amount['amount'] if o.monetary_amount else o.quantity
 
-        elif order.order_type == "INVEST_AUTOMATION":
+        def get_currency(o: Order) -> CurrencyCode:
+             return o.monetary_amount['currency'] if o.monetary_amount else DEFAULT_CURRENCY
+
+        for order in orders:
+            if order.market_id != "internal":
+                continue
+
             amount = get_amount(order)
-            tx = self.finance_engine.invest_in_automation(
-                self.finance_state, self.id, self.wallet, amount, fin_ctx, current_time
-            )
-            if tx:
-                if self.settlement_system and self.settlement_system.transfer(self, government, amount, "Automation", currency=tx.currency):
-                    gained = self.production_engine.invest_in_automation(
-                        self.production_state, amount, self.config.automation_cost_per_pct
-                    )
-                    self.finance_engine.record_expense(self.finance_state, amount, tx.currency)
-                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {amount:.1f} in automation (+{gained:.4f}).")
 
-        elif order.order_type == "PAY_TAX":
-            amount = get_amount(order)
-            currency = get_currency(order)
-            reason = order.item_id
+            # --- Delegate to AssetManagementEngine ---
+            if order.order_type in ["INVEST_AUTOMATION", "INVEST_CAPEX"]:
+                investment_type = "AUTOMATION" if order.order_type == "INVEST_AUTOMATION" else "CAPEX"
 
-            tx = self.finance_engine.pay_ad_hoc_tax(
-                self.finance_state, self.id, self.wallet, amount, currency, reason, fin_ctx, current_time
-            )
-            if tx:
-                if self.settlement_system and self.settlement_system.transfer(self, government, amount, reason, currency=currency):
-                    self.finance_engine.record_expense(self.finance_state, amount, currency)
+                # Check funds first via FinanceEngine simulation or just check wallet
+                # The engine doesn't check funds in wallet, it checks logical possibility.
+                # But we should check if we can pay.
+                # Old code used self.finance_engine.invest_in_automation which checked funds/created tx.
+                # Now we want to separate logic.
 
-        elif order.order_type == "INVEST_RD":
-            amount = get_amount(order)
-            tx = self.finance_engine.invest_in_rd(
-                self.finance_state, self.id, self.wallet, amount, fin_ctx, current_time
-            )
-            if tx:
-                if self.settlement_system and self.settlement_system.transfer(self, government, amount, "R&D", currency=tx.currency):
-                    self.finance_engine.record_expense(self.finance_state, amount, tx.currency)
-                    revenue = self.finance_state.last_revenue
-                    if self.production_engine.execute_rd_outcome(self.production_state, self.hr_state, revenue, amount, current_time):
-                        self.logger.info(f"INTERNAL_EXEC | Firm {self.id} R&D SUCCESS (Budget: {amount:.1f})")
+                # Payment flow:
+                # 1. Check if we have funds.
+                if self.wallet.get_balance(DEFAULT_CURRENCY) < amount:
+                    self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed to invest {amount} (Insufficient Funds).")
+                    continue
 
-        elif order.order_type == "INVEST_CAPEX":
-            amount = get_amount(order)
-            tx = self.finance_engine.invest_in_capex(
-                self.finance_state, self.id, self.wallet, amount, fin_ctx, current_time
-            )
-            if tx:
-                if self.settlement_system and self.settlement_system.transfer(self, government, amount, "CAPEX", currency=tx.currency):
-                    self.production_engine.invest_in_capex(self.production_state, amount, self.config.capital_to_output_ratio)
-                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {amount:.1f} in CAPEX.")
+                asset_input = AssetManagementInputDTO(
+                    firm_snapshot=snapshot,
+                    investment_type=investment_type,
+                    investment_amount=amount
+                )
+                asset_result: AssetManagementResultDTO = self.asset_management_engine.invest(asset_input)
 
-        elif order.order_type == "SET_DIVIDEND":
-            self.finance_state.dividend_rate = order.quantity
+                if asset_result.success:
+                    # Transfer funds
+                    if self.settlement_system and self.settlement_system.transfer(self, government, asset_result.actual_cost, order.order_type):
+                        # Apply state changes
+                        self.production_state.automation_level += asset_result.automation_level_increase
+                        self.production_state.capital_stock += asset_result.capital_stock_increase
 
-        elif order.order_type == "SET_PRICE":
-            # Just logs logic, actual pricing happens in post_ask
-            pass
-
-        elif order.order_type == "FIRE":
-            tx = self.hr_engine.create_fire_transaction(
-                self.hr_state, self.id, self.wallet.get_balance(DEFAULT_CURRENCY), order.target_agent_id, order.price, current_time
-            )
-            if tx:
-                employee = next((e for e in self.hr_state.employees if e.id == order.target_agent_id), None)
-                if employee and self.settlement_system and self.settlement_system.transfer(self, employee, tx.price, "Severance", currency=tx.currency):
-                    self.hr_engine.finalize_firing(self.hr_state, order.target_agent_id)
-                    self.logger.info(f"INTERNAL_EXEC | Firm {self.id} fired employee {order.target_agent_id}.")
+                        self.record_expense(asset_result.actual_cost, DEFAULT_CURRENCY)
+                        self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {asset_result.actual_cost} in {order.order_type}.")
+                    else:
+                         self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed transfer for {order.order_type}.")
                 else:
-                    self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed to fire {order.target_agent_id} (transfer failed).")
+                    self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed {order.order_type}: {asset_result.message}")
+
+            # --- Delegate to RDEngine ---
+            elif order.order_type == "INVEST_RD":
+                # Check funds
+                if self.wallet.get_balance(DEFAULT_CURRENCY) < amount:
+                    self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed to invest R&D {amount} (Insufficient Funds).")
+                    continue
+
+                rd_input = RDInputDTO(firm_snapshot=snapshot, investment_amount=amount, current_time=current_time)
+                rd_result: RDResultDTO = self.rd_engine.research(rd_input)
+
+                if self.settlement_system and self.settlement_system.transfer(self, government, amount, "R&D"):
+                    self.record_expense(amount, DEFAULT_CURRENCY)
+
+                    if rd_result.success:
+                         self.production_state.base_quality += rd_result.quality_improvement
+                         self.production_state.productivity_factor *= rd_result.productivity_multiplier_change
+                         self.production_state.research_history["success_count"] += 1
+                         self.production_state.research_history["last_success_tick"] = current_time
+                         self.logger.info(f"INTERNAL_EXEC | Firm {self.id} R&D SUCCESS (Budget: {amount:.1f})")
+
+                    self.production_state.research_history["total_spent"] += amount
+
+            # --- Existing Handlers (HR, Finance) ---
+            elif order.order_type == "SET_TARGET":
+                self.production_state.production_target = order.quantity
+                self.logger.info(f"INTERNAL_EXEC | Firm {self.id} set production target to {order.quantity:.1f}")
+
+            elif order.order_type == "PAY_TAX":
+                amount = get_amount(order)
+                currency = get_currency(order)
+                reason = order.item_id
+
+                tx = self.finance_engine.pay_ad_hoc_tax(
+                    self.finance_state, self.id, self.wallet, amount, currency, reason, fin_ctx, current_time
+                )
+                if tx:
+                    if self.settlement_system and self.settlement_system.transfer(self, government, amount, reason, currency=currency):
+                        self.finance_engine.record_expense(self.finance_state, amount, currency)
+
+            elif order.order_type == "SET_DIVIDEND":
+                self.finance_state.dividend_rate = order.quantity
+
+            elif order.order_type == "SET_PRICE":
+                pass
+
+            elif order.order_type == "FIRE":
+                 tx = self.hr_engine.create_fire_transaction(
+                    self.hr_state, self.id, self.wallet.get_balance(DEFAULT_CURRENCY), order.target_agent_id, order.price, current_time
+                 )
+                 if tx:
+                    employee = next((e for e in self.hr_state.employees if e.id == order.target_agent_id), None)
+                    if employee and self.settlement_system and self.settlement_system.transfer(self, employee, tx.price, "Severance", currency=tx.currency):
+                        self.hr_engine.finalize_firing(self.hr_state, order.target_agent_id)
+                        self.logger.info(f"INTERNAL_EXEC | Firm {self.id} fired employee {order.target_agent_id}.")
+                    else:
+                        self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed to fire {order.target_agent_id} (transfer failed).")
 
     def _calculate_invisible_hand_price(self, market_snapshot: MarketSnapshotDTO, current_tick: int) -> None:
         if not market_snapshot.market_signals: return
