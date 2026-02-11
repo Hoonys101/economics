@@ -63,7 +63,7 @@ class TestTaxIncidence(unittest.TestCase):
         )
         # Manually deposit initial assets as per new Household behavior
         if assets > 0:
-            h.deposit(int(assets * 100), DEFAULT_CURRENCY)
+            h.deposit(int(assets), DEFAULT_CURRENCY)
         return h
 
     def _create_firm(self, id: int, assets: float):
@@ -86,7 +86,7 @@ class TestTaxIncidence(unittest.TestCase):
             personality=Personality.BALANCED
         )
         if assets > 0:
-            f.deposit(int(assets * 100), DEFAULT_CURRENCY)
+            f.deposit(int(assets), DEFAULT_CURRENCY)
         return f
 
     def _setup_simulation(self, h, f):

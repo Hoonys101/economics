@@ -29,17 +29,8 @@ Run this audit on the provided context files and output the result.'...
 📖 Attached context: design\1_governance\architecture\ARCH_TRANSACTIONS.md
 🚀 [GeminiWorker] Running task with manual: reporter.md
 
-✅ Report Saved: C:\coding\economics\reports\temp\report_20260209_082220_Domain_Auditor.md
+✅ Report Saved: C:\coding\economics\reports\temp\report_20260211_204414_Domain_Auditor.md
 ============================================================
-# ⚖️ Domain Auditor: Finance & Monetary Integrity
+#
 
-### 🚥 Domain Grade: WARNING
-
-### ❌ Violations
-| File | Line | Violation | Severity |
-| :--- | :--- | :--- | :--- |
-| `simulation/systems/settlement_system.py` | 370-372 | Direct access to `debit_agent.assets` and `credit_agent.assets`. | Medium |
-| `simulation/systems/settlement_system.py` | 311 | Direct access to `agent.assets` for balance check. | Medium |
-| `simulation/systems/settlement_system.py` | 61 | Direct access to `agent.assets` durin
-...
 ============================================================

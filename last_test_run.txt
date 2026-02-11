@@ -1,138 +1,55 @@
 
-=================================== ERRORS ====================================
-__________ ERROR collecting tests/system/test_phase29_depression.py ___________
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\python.py:498: in importtestmodule
-    mod = import_path(
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\pathlib.py:587: in import_path
-    importlib.import_module(module_name)
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-<frozen importlib._bootstrap>:1387: in _gcd_import
-    ???
-<frozen importlib._bootstrap>:1360: in _find_and_load
-    ???
-<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
-    ???
-<frozen importlib._bootstrap>:935: in _load_unlocked
-    ???
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
-    exec(co, module.__dict__)
-tests\system\test_phase29_depression.py:7: in <module>
-    from simulation.initialization.initializer import SimulationInitializer
-simulation\initialization\initializer.py:57: in <module>
-    from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
-E     File "C:\coding\economics\simulation\systems\handlers\goods_handler.py", line 25
-E       <<<<<<< HEAD
-E       ^^
-E   SyntaxError: invalid syntax
-______________________ ERROR collecting tests/test_ws.py ______________________
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\python.py:498: in importtestmodule
-    mod = import_path(
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\pathlib.py:587: in import_path
-    importlib.import_module(module_name)
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-<frozen importlib._bootstrap>:1387: in _gcd_import
-    ???
-<frozen importlib._bootstrap>:1360: in _find_and_load
-    ???
-<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
-    ???
-<frozen importlib._bootstrap>:935: in _load_unlocked
-    ???
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
-    exec(co, module.__dict__)
-tests\test_ws.py:9: in <module>
-    from server import app
-server.py:10: in <module>
-    from utils.simulation_builder import create_simulation
-utils\simulation_builder.py:29: in <module>
-    from simulation.initialization.initializer import SimulationInitializer
-simulation\initialization\initializer.py:57: in <module>
-    from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
-E     File "C:\coding\economics\simulation\systems\handlers\goods_handler.py", line 25
-E       <<<<<<< HEAD
-E       ^^
-E   SyntaxError: invalid syntax
-______________ ERROR collecting tests/unit/test_handlers_fix.py _______________
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\python.py:498: in importtestmodule
-    mod = import_path(
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\pathlib.py:587: in import_path
-    importlib.import_module(module_name)
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-<frozen importlib._bootstrap>:1387: in _gcd_import
-    ???
-<frozen importlib._bootstrap>:1360: in _find_and_load
-    ???
-<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
-    ???
-<frozen importlib._bootstrap>:935: in _load_unlocked
-    ???
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
-    exec(co, module.__dict__)
-tests\unit\test_handlers_fix.py:9: in <module>
-    from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
-E     File "C:\coding\economics\simulation\systems\handlers\goods_handler.py", line 25
-E       <<<<<<< HEAD
-E       ^^
-E   SyntaxError: invalid syntax
-__________ ERROR collecting tests/unit/test_transaction_processor.py __________
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\python.py:498: in importtestmodule
-    mod = import_path(
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\pathlib.py:587: in import_path
-    importlib.import_module(module_name)
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-<frozen importlib._bootstrap>:1387: in _gcd_import
-    ???
-<frozen importlib._bootstrap>:1360: in _find_and_load
-    ???
-<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
-    ???
-<frozen importlib._bootstrap>:935: in _load_unlocked
-    ???
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
-    exec(co, module.__dict__)
-tests\unit\test_transaction_processor.py:4: in <module>
-    from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
-E     File "C:\coding\economics\simulation\systems\handlers\goods_handler.py", line 25
-E       <<<<<<< HEAD
-E       ^^
-E   SyntaxError: invalid syntax
-__________ ERROR collecting tests/unit/test_wo157_dynamic_pricing.py __________
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\python.py:498: in importtestmodule
-    mod = import_path(
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\pathlib.py:587: in import_path
-    importlib.import_module(module_name)
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-<frozen importlib._bootstrap>:1387: in _gcd_import
-    ???
-<frozen importlib._bootstrap>:1360: in _find_and_load
-    ???
-<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
-    ???
-<frozen importlib._bootstrap>:935: in _load_unlocked
-    ???
-C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
-    exec(co, module.__dict__)
-tests\unit\test_wo157_dynamic_pricing.py:8: in <module>
-    from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
-E     File "C:\coding\economics\simulation\systems\handlers\goods_handler.py", line 25
-E       <<<<<<< HEAD
-E       ^^
-E   SyntaxError: invalid syntax
-=========================== short test summary info ===========================
-ERROR tests/system/test_phase29_depression.py
-ERROR tests/test_ws.py
-ERROR tests/unit/test_handlers_fix.py
-ERROR tests/unit/test_transaction_processor.py
-ERROR tests/unit/test_wo157_dynamic_pricing.py
-!!!!!!!!!!!!!!!!!!! Interrupted: 5 errors during collection !!!!!!!!!!!!!!!!!!!
-============================== 5 errors in 1.91s ==============================
+tests/modules/government/test_government_integration.py::test_execute_social_policy_integration 
+-------------------------------- live log call --------------------------------
+INFO     simulation.agents.government:government.py:155 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 1000000})
+PASSED                                                                   [  8%]
+tests/modules/government/test_government_integration.py::test_execute_social_policy_tax_and_welfare 
+-------------------------------- live log call --------------------------------
+INFO     simulation.agents.government:government.py:155 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 1000000})
+PASSED                                                                   [ 16%]
+tests/modules/government/test_government_integration.py::test_make_policy_decision_integration 
+-------------------------------- live log call --------------------------------
+INFO     simulation.agents.government:government.py:155 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 10000})
+INFO     simulation.utils.shadow_logger:shadow_logger.py:36 ShadowLogger initialized at logs/shadow_hand_stage1.csv
+PASSED                                                                   [ 25%]
+tests/unit/decisions/test_household_engine_refactor.py::test_engine_execution_parity_smoke PASSED [ 33%]
+tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_determine_fiscal_stance_calculates_survival_cost_correctly PASSED [ 41%]
+tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_determine_fiscal_stance_defaults_if_no_config PASSED [ 50%]
+tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_calculate_tax_liability_progressive PASSED [ 58%]
+tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_calculate_tax_liability_zero_or_negative PASSED [ 66%]
+tests/unit/test_household_ai.py::test_ai_creates_purchase_order 
+------------------------------- live log setup --------------------------------
+INFO     Market_goods_market:order_book_market.py:97 OrderBookMarket goods_market initialized.
+INFO     Market_labor_market:order_book_market.py:97 OrderBookMarket labor_market initialized.
+-------------------------------- live log call --------------------------------
+INFO     simulation.ai.model_wrapper:model_wrapper.py:150 No existing model found for wealth_and_needs.
+INFO     simulation.decisions.ai_driven_household_engine:ai_driven_household_engine.py:43 AIDrivenHouseholdDecisionEngine initialized (Modularized).
+PASSED                                                                   [ 75%]
+tests/unit/test_household_ai.py::test_ai_evaluates_consumption_options 
+------------------------------- live log setup --------------------------------
+INFO     Market_goods_market:order_book_market.py:97 OrderBookMarket goods_market initialized.
+INFO     Market_labor_market:order_book_market.py:97 OrderBookMarket labor_market initialized.
+-------------------------------- live log call --------------------------------
+INFO     simulation.ai.model_wrapper:model_wrapper.py:150 No existing model found for needs_and_social_status.
+INFO     simulation.decisions.ai_driven_household_engine:ai_driven_household_engine.py:43 AIDrivenHouseholdDecisionEngine initialized (Modularized).
+PASSED                                                                   [ 83%]
+tests/unit/test_tax_incidence.py::TestTaxIncidence::test_firm_payer_scenario 
+-------------------------------- live log call --------------------------------
+INFO     simulation.agents.government:government.py:155 Government 999 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+PASSED                                                                   [ 91%]
+tests/unit/test_tax_incidence.py::TestTaxIncidence::test_household_payer_scenario 
+-------------------------------- live log call --------------------------------
+INFO     simulation.agents.government:government.py:155 Government 999 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+PASSED                                                                   [100%]
+
+============================== warnings summary ===============================
+tests/unit/test_tax_incidence.py::TestTaxIncidence::test_firm_payer_scenario
+  C:\coding\economics\simulation\systems\transaction_manager.py:266: DeprecationWarning: Government.collect_tax is deprecated. Use settlement.settle_atomic and government.record_revenue() instead.
+    government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)
+
+tests/unit/test_tax_incidence.py::TestTaxIncidence::test_household_payer_scenario
+  C:\coding\economics\simulation\systems\transaction_manager.py:273: DeprecationWarning: Government.collect_tax is deprecated. Use settlement.settle_atomic and government.record_revenue() instead.
+    government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 12 passed, 2 warnings in 0.73s ========================

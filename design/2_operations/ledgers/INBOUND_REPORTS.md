@@ -3458,3 +3458,7 @@
 - **mission_unit_test_hardening.md** (from `fix-unit-tests-mocking-10138789661756819849`) -> `unit-tests-mocking-10138789661756819849_mission_unit_test_hardening.md`
 - **AUDIT_ECONOMIC_INTEGRITY.md** (from `economic-integrity-audit-fixes-12427536905677583878`) -> `economic-integrity-audit-fixes-124275369_AUDIT_ECONOMIC_INTEGRITY.md`
 - **AUDIT_STRUCTURAL.md** (from `audit-structural-1219713572139269319`) -> `structural-1219713572139269319_AUDIT_STRUCTURAL.md`
+
+## Harvested on 2026-02-12 06:21:48
+- **PROJECT_PARITY_AUDIT_REPORT_20260212.md** (from `audit-parity-20260212-15861868014210103016`) -> `parity-20260212-15861868014210103016_PROJECT_PARITY_AUDIT_REPORT_20260212.md`
+- **STRUCTURAL_AUDIT_REPORT.md** (from `audit-structural-report-11271788461061706431`) -> `structural-report-11271788461061706431_STRUCTURAL_AUDIT_REPORT.md`

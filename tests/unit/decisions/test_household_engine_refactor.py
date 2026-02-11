@@ -134,8 +134,9 @@ def test_engine_execution_parity_smoke():
 
     # Flat DTO fields (New Engine)
     household.inventory = {"basic_food": 2.0}
-    household.assets = 1000.0
-    household.current_wage = 20.0
+    household.assets = 100000.0 # $1000 in pennies
+    household.current_wage = 2000.0 # $20 in pennies
+    household.current_wage_pennies = 2000 # Integer pennies
     household.is_employed = True
     household.wage_modifier = 1.0
     household.needs = {"survival": 50.0, "social": 20.0}

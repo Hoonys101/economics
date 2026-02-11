@@ -13,20 +13,24 @@ This is the definitive entry point for all contributors. **Read this first.**
 | **The Hands** | Jules (jules-go) | Implementation, Debugging, Execution |
 | **The Team Lead** | Antigravity | Orchestration, Context Management, Delegation |
 
-### 2. The Team Lead's Three Pillars (Antigravity)
-> **"The Team Lead is the Bottleneck and the Single Source of Truth (SSoT) for Design. If the Lead codes, the Project stalls."**
+### 3. Antigravity's Decision Engine (The 7-Step Protocol)
+**"팀장은 직접 코딩하는 자리가 아니라, 정보를 집계하여 최선의 판단을 내리고 명령하는 자리입니다."**
 
-| **1. 기획 고도화 준비** | 코드의 현실(형이하학)을 해석하여 수석과의 논의 준비. 구현 가능성, 사이드 이펙트 제공. | 브리핑 자료, ADR 초안 |
-| **2. 관심사 분리(SoC) 설계** | 일을 쪼개고 각 조각에 필요한 컨텍스트 정의. Jules/Gemini의 몰입 범위 확정. | 세션 프롬프트 및 컨텍스트 패키지 |
-| **3. 지식 결정화 (Knowledge SSoT)** | 발견된 인사이트(Wisdom)를 선별하여 영구 자산화. | `ECONOMIC_INSIGHTS.md`, `_archive/insights/` |
-| **4. 일목요연한 문서화** | 결정 사항(ADR), 논의 경과, 작업 진행 상황을 관리하고 전파. (디자인의 최종 진실성 유지) | TECH_DEBT_LEDGER, Handover |
+| 단계 | 행동 | 주체 | 도구 |
+| :--- | :--- | :--- | :--- |
+| **1. 정보 수집** | 관련도/중요도에 따른 컨텍스트 선별 | **Lead (Command)** | `gemini-go` |
+| **2. 분석** | 수집된 정보의 기술적 분석 및 요약 | Agent (Analysis) | `gemini-go` |
+| **3. 추측** | 분석 결과를 바탕으로 파급력 및 결과 추측 | **Lead (Judgement)** | (Brain) |
+| **4. 결단** | 최종 실행 여부 및 방향성 확정 | **Lead (Decision)** | (Decision) |
+| **5. 계획수립/전략** | 업무량에 따른 모듈 분할 및 구현 방식 결정 | **Lead (Strategy)** | (Brain) |
+| **5.5. 명세서 작성** | 결정된 전략에 따른 세부 구현 명세(Spec) 문서화 | Agent (Drafting) | `gemini-go` |
+| **6. 명령** | 매니페스토(`command_manifest.py`) 등록 | **Lead (Command)** | (Registry) |
+| **7. 실행** | 명세 기반의 실제 코드 구현/수정 | Agent (Execution) | `jules-go` |
 
-### 3. Antigravity's Code Authority & Productivity Loss
-- **Direct Coding = Interference (방해)**: 실무 도구(Jules, Gemini-CLI)는 대체 가능하지만, 팀장의 설계 및 중재 역할은 **대체 불가능(Irreplaceable)** 합니다.
-- **Productivity Quantification**: 팀장이 직접 코드 1줄을 수정하는 시간은 곧 **명세서(Spec) 5개를 작성할 기회를 날리는 것**입니다. 이는 전체 프로젝트 생산성을 **20% 수준으로 급락**시킵니다.
-- **Spec 수정/전면 재작성**: ✅ (Antigravity의 주권)
-- **코드 수정**: ⚠️ (최후의 수단. 오직 확신이 있을 때만 수정하며, 디버깅은 금지)
-- **디버깅**: 🚫 **NEVER.** (병목 현상의 주범. 반드시 Jules에게 위임)
+### 3.5. GIGO Guard (Strict Context Selection)
+- **GIGO (Garbage In, Garbage Out)**: Gemini 3는 정보수집 및 컨텍스트 정제에서 취약점을 보일 수 있습니다.
+- **Lead의 핵심 의무**: 수만 줄의 코드 중 **무엇이 중요하고 관련 있는지**를 필터링하여 Gemini에게 '강제'로 주입하는 것이 팀장의 가장 중요한 실력입니다.
+- **Fail-Safe**: 분석 결과가 만족스럽지 않다면, Gemini의 능력을 탓하기 전에 **"내가 준 컨텍스트가 쓰레기(Garbage)가 아니었나?"**를 먼저 자문하십시오.
 
 ### 3.5. Architectural Threshold Rules (The "Stop" Rule)
 Any task that exceeds the following thresholds MUST be delegated to Jules (Implementation) or Gemini-Go (Analysis/Spec). **Antigravity must stop direct action immediately.**
@@ -34,7 +38,7 @@ Any task that exceeds the following thresholds MUST be delegated to Jules (Imple
 - **Reading Threshold**: If the task requires referencing more than **5** code documents/files.
 - **Modification Threshold**: If the task requires modifying more than **3** files.
 - **Complexity Guard**: Even if the fix is "only 2-4 lines", if it touches more than 3 files or requires deep context from 5+ files, it's an architectural change, not a quick fix.
-- **Action**: Halt implementation, draft the Integrated Mission Guide in `design/3_work_artifacts/specs/`, and add a mission entry in `command_manifest.py`.
+- **Action**: Halt implementation, draft the Integrated Mission Guide in `design/3_work_artifacts/specs/`, and arm the mission in **[command_manifest.py](file:///_internal/registry/command_manifest.py)**.
 
 ### 4. The Confidence-Driven Coding Rule (Antigravity's Exception)
 **Antigravity가 코드를 직접 수정할 경우, 반드시 다음 절차를 엄수합니다.**
@@ -91,7 +95,7 @@ Any task that exceeds the following thresholds MUST be delegated to Jules (Imple
 
 ## 🛠️ Phase 2: Operations (The Manifest Workflow)
 > **🚨 CRITICAL: Edit `command_manifest.py`, NOT `command_registry.json`.**
-> Edit **[command_manifest.py](file:///_internal/registry/command_manifest.py)** to define missions. JSON is auto-synced on launch.
+> Edit **[_internal/registry/command_manifest.py](file:///_internal/registry/command_manifest.py)** to define missions. JSON is auto-synced on launch.
 
 ### 🚨 Zero-Error Operations: Agent HARMONY
 Gemini와 Jules는 정합된 파라미터 구조를 공유합니다. `command_manifest.py`의 주석에 모든 필드/타입 레퍼런스가 포함되어 있습니다.
@@ -115,9 +119,9 @@ Gemini와 Jules는 정합된 파라미터 구조를 공유합니다. `command_ma
 
 ### 2. Implementation (Jules)
 **Manifest 방식 (표준)**:
-1. `command_manifest.py` → `JULES_MISSIONS`에 미션 dict 추가.
+1. `_internal/registry/command_manifest.py` -> `JULES_MISSIONS`에 미션 dict 추가.
 2. `jules-go.bat [key]` 실행 (auto-sync 후 Jules 세션 생성).
-3. 발사 완료 후 manifest에서 해당 항목 삭제.
+3. 작업 및 발사 완료 후 manifest에서 해당 항목 삭제. (Antigravity의 일상 업무)
 
 
 ### 🚨 Jules Delegation Protocol: 맥락 주입 (Context Injection)
@@ -139,6 +143,7 @@ Jules에게 미션을 위임할 때, "장부(Ledger)"나 "단일 명세서(Singl
 | **여러 개의 명세서 병렬 참조** | 어떤 것이 우선인지 불명확. 충돌 해석 부담이 Jules에게 전가됨. |
 
 #### 💡 통합 가이드 템플릿 (Integrated Mission Guide Template)
+> **GIGO 방지 원칙**: 인스트럭션에 모든 것을 쓰지 마십시오. 대신 **[Reference Context]** 섹션에 가장 연관성 높은 파일들(High-Relevance)과 아키텍처 규칙을 선별하여 링크하십시오.
 ```markdown
 # Mission Guide: [Mission Title]
 

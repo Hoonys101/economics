@@ -119,7 +119,7 @@ def test_ai_creates_purchase_order(setup_test_environment, ai_engine_setup):
         initial_needs={"survival": 90.0, "social": 20.0, "improvement": 10.0, "asset": 10.0},
         name="Household_2",
         personality=Personality.MISER,
-        assets=100.0,
+        assets=10000, # $100 in pennies
         engine=household_decision_engine,
         talent=talent,
         goods_data=goods_data
@@ -183,7 +183,7 @@ def test_ai_evaluates_consumption_options(setup_test_environment, ai_engine_setu
         initial_needs={"survival": 10.0, "social": 80.0, "improvement": 10.0, "asset": 10.0},
         name="Household_3",
         personality=Personality.STATUS_SEEKER,
-        assets=1000.0,
+        assets=100000, # $1000 in pennies
         engine=household_decision_engine,
         talent=talent,
         goods_data=goods_data

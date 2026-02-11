@@ -29,17 +29,14 @@ Run this audit on the provided context files and output the result.'...
 📖 Attached context: design\1_governance\architecture\ARCH_AGENTS.md
 🚀 [GeminiWorker] Running task with manual: reporter.md
 
-✅ Report Saved: C:\coding\economics\reports\temp\report_20260209_082138_Domain_Auditor.md
+✅ Report Saved: C:\coding\economics\reports\temp\report_20260211_204325_Domain_Auditor.md
 ============================================================
-# ⚖️ Domain Auditor Report: Agents & Populations
-
 ### 🚥 Domain Grade: WARNING
-
 ### ❌ Violations
-
 | File | Line | Violation | Severity |
 | :--- | :--- | :--- | :--- |
-| `design/1_governance/architecture/ARCH_AGENTS.md` | 53-81 | **Architectural Documentation Mismatch**: The document describes a "parent pointer" stateful component pattern for the `Firm` agent, but the implementation uses stateless engines that receive state DTOs. The documentation is incorrect. | High |
-| `simulation/core_agents.p
+| `simulation/core_agents.py` | 1001-1008 | `IInventoryHandler.add_item` directly manipulates a nested dictionary (`self._econ_state.inventory`) within a state DTO, bypassing stricter encapsulation. | Low |
+| `simulation/core_agents.py` | 1011-1017 | `IInventoryHandler.remove_item` directly manipulates the nested `inventory` dictionary. | Low |
+| `simulation/firms.py` | 741-748 | `II
 ...
 ============================================================

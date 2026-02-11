@@ -1,11 +1,20 @@
-[Output for brevity]
+# Technical Debt Ledger (TECH_DEBT_LEDGER.md)
 
-ss (TD-272). | Open |
+| ID | Module / Component | Description | Priority / Impact | Status |
+| :--- | :--- | :--- | :--- | :--- |
 | **WO-101** | Test | Core logic-protocol changes (e.g., wallet) break test mocks. | **High**: Logic brittleness/Drift. | Partially Mitigated |
 | **TD-LEG-TRANS** | System | Legacy `TransactionManager` contains redundant/conflicting logic. | **Low**: Confusion & code bloat. | Pending Deletion |
 | **TD-PRECISION** | Financials | Use of `float` for currency leads to precision dust/leaks over long runs. | **Medium**: Marginal zero-sum drift. | Identified (Next Priority) |
 | **TD-CONFIG-MUT** | System | Scenarios directly mutate global config via `setattr`. | **Medium**: State pollution risk. | Identified (Next Priority) |
-| **TDL-031** | Finance System | QE Bond Issuance Logic Missing Post-Refactor. | **High**: Feature Regression. | Open |
+| **TD-DRIFT-SOC** | Architecture | **SoC Violation**: Direct mutation of `input_inventory`, `_wallet`, and `_assets` bypassing SSoTs. | **CRITICAL**: Systemic leak risk & Ghost money. | Identified (Liquidation Armed) |
+| **TD-COCKPIT-FE** | Simulation | **Ghost Implementation**: FE missing sliders/HUD for Cockpit (Phase 11) despite BE readiness. | **Medium**: Logic usability gap. | Identified |
+| **TD-STR-GOD-DECOMP** | Architecture | **Residual God Classes**: `Firm` (1276 lines) and `Household` (1042 lines) exceed 800-line limit. | **Medium**: Maintenance friction. | Open |
+| **TD-ARCH-LEAK-CONTEXT** | Finance | **Abstraction Leak**: `LiquidationContext` passes agent interfaces instead of pure DTO snapshots. | **Low**: Future coupling risk. | Identified |
+| **TD-DOC-PARITY** | Documentation | **Missing Manual**: `AUDIT_PARITY.md` missing from operations manuals. | **Low**: Knowledge loss. | Identified |
+| **TD-ENFORCE-NONE** | System | **Protocol Enforcement**: Lack of static/runtime guards for architectural rules. | **High**: Regression risk. | Open (Phase 15) |
+| **TD-CONFIG-LEAK** | Architecture | **Encapsulation**: Direct access to `agent.config` in internal systems. | **Medium**: Coupling risk. | Open |
+| **TD-QE-MISSING** | Financials | **Logic Gap**: QE Bond Issuance logic lost during refactor. | **High**: Feature Regression. | Open |
+| **TD-LIF-RESET** | Lifecycle | **Late-Reset Violation**: Household counters are never cleared at tick-end. | **High**: Corrupt analytics/learning. | Identified (Liquidation Armed) |
 
 ## ✅ Resolved Technical Debt
 
@@ -81,3 +90,83 @@ ss (TD-272). | Open |
 - **Reporter**: Jules (via PR #FP-INT-MIGRATION-02)
 - **Status**: Open
 ---
+### ID: TD-FIN-001
+### Title: Impure Financial Engines (State Mutation)
+- **Symptom**: `DebtServicingEngine`, `LiquidationEngine`, `LoanBookingEngine` directly mutate input DTOs.
+- **Risk**: Breaks functional purity, creates race conditions, and complicates zero-sum verification.
+- **Solution**: Refactor to `State_In -> State_Out` pattern using DTO copies.
+---
+### ID: TD-FIN-002
+### Title: Monetary Unit Mismatch (Pennies vs Dollars)
+- **Symptom**: Configs and Tax/Fiscal modules still use float dollars, requiring adapters in `TransactionManager`.
+- **Risk**: Implicit unit conversions are high-friction and prone to 100x scaling errors.
+- **Solution**: Complete the "Penny Standard" migration across all configurations and government modules.
+---
+### ID: TD-FIN-003
+### Title: Bank Agent Residual State (SSoT Violation)
+- **Symptom**: `Bank` agent maintains a `_wallet` separate from the `FinanceSystem` ledger.
+- **Risk**: Desync between agent wallet and central ledger.
+- **Solution**: Remove `self._wallet` and delegate all state access to `FinanceSystem`.
+---
+### ID: TD-FIN-004
+### Title: Missing Sovereign Risk Premium Logic
+- **Symptom**: `issue_treasury_bonds` uses fixed spreads regardless of debt levels.
+- **Risk**: Inability to model fiscal sustainability crises.
+- **Solution**: Integrate `debt_to_gdp` based feedback loops into bond yield calculations.
+---
+---
+### ID: TD-INV-SLOT
+### Title: Inventory Slot Protocol Violation (input_inventory)
+- **Symptom**: `input_inventory` for raw materials is mutated directly by `GoodsHandler`, `Registry`, and `Bootstrapper` using raw dict access.
+- **Risk**: Quality-averaging logic is bypassed, leading to data drift. SRP violation by multiple modules owning the mutation logic.
+- **Solution**: Extend `IInventoryHandler` with `InventorySlot` support and refactor all call sites to use protocol methods.
+- **Reported**: `audit_inventory_purity_20260211.md`
+
+---
+### ID: TD-LIF-RESET
+### Title: Missing Tick-Level State Reset (Household Agent)
+- **Symptom**: `Household` agents lack a `reset()` method. `labor_income_this_tick`, `current_consumption`, etc., are never cleared.
+- **Risk**: Violates "Late-Reset Principle". Analytics and AI training receive cumulative instead of marginal (per-tick) data, corrupting long-run dynamics.
+- **Solution**: Implement `Household.reset_tick_state()` and orchestrate via `AgentLifecycleManager`.
+- **Reported**: `audit_lifecycle_hygiene_20260211.md`
+
+---
+### ID: TD-FIN-FORT
+### Title: Financial Fortress Protocol Violation (Direct Wallet Mutation)
+- **Symptom**: `Household.deposit/withdraw` and `Firm.load_state` allow direct mutation of `_wallet` bypassing `SettlementSystem`.
+- **Risk**: "Ghost Money" creation during agent cloning/instantiation. Breaks Double-Entry integrity.
+- **FinanceSystem Schizophrenia**: Parallel ledger in `FinanceSystem` drifts from agent wallets.
+- **Solution**: Remove direct mutation APIs. Force all transfers through `SettlementOrder` commands via `SettlementSystem`.
+- **Reported**: `audit_finance_integrity_20260211.md`
+
+---
+### ID: TD-COCKPIT-FE
+### Title: Simulation Cockpit Frontend Ghost Implementations
+- **Symptom**: `PROJECT_STATUS.md` marks Phase 11 (Cockpit) as completed, but `frontend/src` lacks Base Rate/Tax sliders, Command Stream Intervention UI, and "M2 Leak" header stats.
+- **Risk**: Backend capabilities (WebSocket endpoints, DTOs) are unusable by the end-user. Disconnect between project metrics and actual UX.
+- **Solution**: Implement missing React components in `GovernmentTab.tsx`, `FinanceTab.tsx`, and Header HUD.
+- **Reported**: `PROJECT_PARITY_AUDIT_REPORT_20260212.md`
+
+---
+### ID: TD-STR-GOD-DECOMP
+### Title: Residual Orchestrator Bloat (Firm & Household)
+- **Symptom**: `Firm` (1276 lines) and `Household` (1042 lines) remain over the 800-line limit despite engine delegation.
+- **Root Cause**: Extensive property delegation, interface implementation, and legacy mixin methods.
+- **Solution**: Further extract non-core orchestrator logic (e.g., `BrandManager` in Firms, `Legacy Mixins` in Households) into dedicated service components.
+- **Reported**: `STRUCTURAL_AUDIT_REPORT.md` (2026-02-12)
+
+---
+### ID: TD-ARCH-LEAK-CONTEXT
+### Title: Interface-based Abstraction Leaks in Contexts
+- **Symptom**: `LiquidationContext` and `FiscalContext` pass `IFinancialEntity` (Agent) instead of raw DTOs or Snapshots.
+- **Risk**: Agents are technically "passed around" the simulation, increasing coupling and bypass risks.
+- **Solution**: Refactor these contexts to accept only Pydantic/Dataclass DTOs or specialized Services.
+- **Reported**: `STRUCTURAL_AUDIT_REPORT.md` (2026-02-12)
+
+---
+### ID: TD-DOC-PARITY
+### Title: Missing Operations Manual for Parity Audits
+- **Symptom**: `PROJECT_PARITY_AUDIT_REPORT_20260212.md` identified that the standard reference manual `design/2_operations/manuals/AUDIT_PARITY.md` is missing.
+- **Risk**: Inconsistency in future parity audits due to lack of defined methodology.
+- **Solution**: Restore or recreate the `AUDIT_PARITY.md` manual.
+- **Reported**: `PROJECT_PARITY_AUDIT_REPORT_20260212.md`

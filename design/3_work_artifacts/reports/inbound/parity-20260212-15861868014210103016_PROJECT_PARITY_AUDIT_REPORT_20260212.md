@@ -1,0 +1,71 @@
+# Product Parity Audit Report (2026-02-12)
+
+**Audit Subject**: `PROJECT_STATUS.md` "Completed" Items vs. Codebase Implementation
+**Auditor**: Jules
+**Date**: 2026-02-12
+**Reference**: `design/3_work_artifacts/specs/AUDIT_SPEC_PARITY.md` (Methodology)
+
+## 1. Executive Summary
+
+A comprehensive product parity audit was conducted to verify the "Completed" status of items listed in `PROJECT_STATUS.md`. The audit focused on recent major phases: Phase 14 (Agent Decomposition), Phase 13 (Test Suite), Phase 10 (Market Decoupling), and Phase 11 (Simulation Cockpit).
+
+**Overall Status**: **PASS with Minor Discrepancies**
+- **Core Architecture**: The structural refactoring of Agents (Household/Firm) and Finance System is **confirmed complete** and strictly adheres to the new architecture.
+- **Protocols**: Interface purity (`IInventoryHandler`, `ICollateralizableAsset`) is **verified**.
+- **Market Decoupling**: The stateless matching engine is **implemented**.
+- **Cockpit (Phase 11)**: Backend infrastructure is solid, but Frontend UI controls (Policy Deck sliders, Command Stream) appear to be **Ghost Implementations** or missing from the current `frontend/src` codebase.
+
+---
+
+## 2. Detailed Findings
+
+### ✅ Verified Completed Items (PASS)
+
+#### Phase 14: The Great Agent Decomposition
+- **Household Decomposition**:
+  - `modules/household/engines` contains `lifecycle.py`, `needs.py`, `budget.py`, `consumption.py`.
+  - `Household` agent properly delegates logic to these engines.
+- **Firm Decomposition**:
+  - `simulation/components/engines` contains `production_engine.py`, `asset_management_engine.py`, `rd_engine.py`, etc.
+  - `Firm` agent properly initializes and uses these engines.
+- **Finance Refactoring**:
+  - `FinancialLedgerDTO` and related DTOs are defined in `modules/finance/engine_api.py`.
+  - Stateless engines (`LoanBookingEngine`, `DebtServicingEngine`) exist in `modules/finance/engines`.
+- **Protocol Alignment**:
+  - `IInventoryHandler` is defined in `modules/inventory/api.py`.
+  - `ICollateralizableAsset` is defined in `modules/firm/api.py`.
+  - `Firm` implements `IInventoryHandler` explicitly.
+
+#### Phase 10: Market Decoupling
+- **Matching Engine**: `OrderBookMatchingEngine` is implemented in `simulation/markets/matching_engine.py` and used by `OrderBookMarket`.
+- **Market Decoupling**: `OrderBookMarket` delegates matching logic to the stateless engine.
+
+#### Phase 13: Total Test Suite Restoration
+- **Singleton Reset**: `test_demographic_manager_newborn.py` explicitly resets `DemographicManager._instance`, confirming the fix for singleton leakage.
+- **Mock Purity**: Verified usage of explicit return values in mocked config (e.g., `mock_dto.NEWBORN_INITIAL_NEEDS`) to prevent MagicMock leakage.
+
+### ⚠️ Discrepancies & Ghost Implementations (WARNING)
+
+#### Phase 11: The Simulation Cockpit (Observability)
+The following items marked as "Completed" in `PROJECT_STATUS.md` were found to be **partially implemented** or **missing from the Frontend UI**:
+
+1.  **"Policy Deck: Implemented Base Rate and Tax sliders via WebSocket"**
+    -   **Backend**: ✅ Implemented. `CockpitCommand` and payloads (`SetBaseRatePayload`, `SetTaxRatePayload`) exist in `modules/governance/cockpit/api.py`. Server endpoint `/ws/command` is ready.
+    -   **Frontend**: ❌ **Missing**. `frontend/src/components/dashboard/GovernmentTab.tsx` and `FinanceTab.tsx` display charts and stats but lack interactive sliders or inputs for these values.
+
+2.  **"Command Stream: Decoupled BE/FE contract for safe runtime intervention"**
+    -   **Backend**: ✅ Implemented. The contract is defined via `CockpitCommand` DTOs.
+    -   **Frontend**: ⚠️ **Partial/Hidden**. No visible UI component in `App.tsx` or tabs allows sending these commands.
+
+3.  **"Integrity HUD: Real-time M2 Leak and FPS monitoring integrated"**
+    -   **Backend**: ✅ `DashboardService` serves `WatchtowerSnapshotDTO` via `/ws/live`.
+    -   **Frontend**: ❌ **Missing**. `App.tsx` displays "Survival Rate", "Employment", "GDP", etc., but "M2 Leak" (a critical integrity metric mentioned) is not displayed in the header HUD.
+
+## 3. Recommendations
+
+1.  **Frontend Parity Catch-up**: Prioritize the implementation of the UI components (Sliders, Command Buttons) in the `frontend` to match the Backend capabilities and `PROJECT_STATUS.md` claims.
+2.  **Update Project Status**: If the UI implementation is scheduled for a later sub-phase, update `PROJECT_STATUS.md` to reflect that only the Backend portion of Phase 11 is "Completed".
+3.  **Restore Missing Manual**: Restore the missing `design/2_operations/manuals/AUDIT_PARITY.md` file to ensure future audits have the correct reference procedure.
+
+---
+*End of Report*

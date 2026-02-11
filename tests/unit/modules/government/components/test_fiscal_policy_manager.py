@@ -22,31 +22,31 @@ class TestFiscalPolicyManager:
 
     def test_determine_fiscal_stance_calculates_survival_cost_correctly(self, manager, mock_config):
         # Setup
-        market_data = {'goods_market': {'basic_food_current_sell_price': 10.0}}
+        market_data = {'goods_market': {'basic_food_current_sell_price': 1000.0}} # $10
         snapshot = MarketSnapshotDTO(tick=1, market_signals={}, market_data=market_data)
 
         # Execute
         policy = manager.determine_fiscal_stance(snapshot)
 
         # Verify
-        # Survival cost = 10.0 * 1.0 = 10.0
-        # Bracket 1: Ceiling = 1.0 * 10.0 = 10.0
-        # Bracket 2: Ceiling = 3.0 * 10.0 = 30.0
+        # Survival cost = 1000.0 * 1.0 = 1000
+        # Bracket 1: Ceiling = 1.0 * 1000 = 1000
+        # Bracket 2: Ceiling = 3.0 * 1000 = 3000
 
         assert len(policy.progressive_tax_brackets) == 3
 
         b1 = policy.progressive_tax_brackets[0]
         assert b1.floor == 0.0
-        assert b1.ceiling == 10.0
+        assert b1.ceiling == 1000.0
         assert b1.rate == 0.0
 
         b2 = policy.progressive_tax_brackets[1]
-        assert b2.floor == 10.0
-        assert b2.ceiling == 30.0
+        assert b2.floor == 1000.0
+        assert b2.ceiling == 3000.0
         assert b2.rate == 0.10
 
         b3 = policy.progressive_tax_brackets[2]
-        assert b3.floor == 30.0
+        assert b3.floor == 3000.0
         assert b3.ceiling is None
         assert b3.rate == 0.20
 
@@ -57,7 +57,7 @@ class TestFiscalPolicyManager:
         config.TAX_BRACKETS = []
         manager = FiscalPolicyManager(config)
 
-        market_data = {'goods_market': {'basic_food_current_sell_price': 10.0}}
+        market_data = {'goods_market': {'basic_food_current_sell_price': 1000.0}}
         snapshot = MarketSnapshotDTO(tick=1, market_signals={}, market_data=market_data)
 
         policy = manager.determine_fiscal_stance(snapshot)
