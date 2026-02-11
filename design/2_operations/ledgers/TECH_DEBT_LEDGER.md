@@ -6,10 +6,9 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **TD-INT-CONST** | System | Inconsistent use of System Constants (e.g., hardcoded 'USD'). | **Low**: Logic brittleness (TD-272). | Open |
 | **WO-101** | Test | Core logic-protocol changes (e.g., wallet) break test mocks. | **High**: Logic brittleness/Drift. | Partially Mitigated |
-| **TD-STR-GOD** | Architecture | God Classes: `Firm` (1164 LOC) and `Household` (1121 LOC) exceed maintainability thresholds. | **High**: High maintenance cost & circular dependencies. | Mitigating (Firm) |
-| **TD-STR-LEAK** | Architecture | Abstraction Leaks: Raw agents passed to stateless engines (Production, HR, Gov, Policy). | **Medium**: Tight coupling, hard to test in isolation. | Mitigating (HR/Sales) |
 | **TD-LEG-TRANS** | System | Legacy `TransactionManager` contains redundant/conflicting logic. | **Low**: Confusion & code bloat. | Pending Deletion |
-| **TD-XXX** | Architecture | Firm God Class and Orchestration Bottleneck. `Firm` handles too many responsibilities (Production, Finance, HR, Sales, Decision Making). | **High**: Orchestration bottleneck, difficult testing/maintenance. | Identified (Partially Mitigated by HR/Sales Refactor) |
+| **TD-PRECISION** | Financials | Use of `float` for currency leads to precision dust/leaks over long runs. | **Medium**: Marginal zero-sum drift. | Identified (Next Priority) |
+| **TD-CONFIG-MUT** | System | Scenarios directly mutate global config via `setattr`. | **Medium**: State pollution risk. | Identified (Next Priority) |
 
 ## ✅ Resolved Technical Debt
 
@@ -52,6 +51,9 @@
 | **TD-CM-001** | Common | **Fix**: Patched `yaml.safe_load` for ConfigManager unit tests. | Clean Room Era | [Insight](../../design/3_work_artifacts/reports/inbound/unit-tests-mocking-10138789661756819849_mission_unit_test_hardening.md) |
 | **TD-TM-001** | Systems | **Fix**: Implemented `FakeNumpy` for TechnologyManager unit tests. | Clean Room Era | [Insight](../../design/3_work_artifacts/reports/inbound/unit-tests-mocking-10138789661756819849_mission_unit_test_hardening.md) |
 | **TD-ECO-INH** | Simulation | **Fix**: Resolved inheritance leaks via fallback Escheatment & Final Sweep. | Clean Room Era | [Audit Report](../../design/3_work_artifacts/reports/inbound/economic-integrity-audit-fixes-124275369_AUDIT_ECONOMIC_INTEGRITY.md) |
+| **TD-STR-GOD** | Architecture | **Refactor**: Decomposed `Firm` and `Household` into Orchestrator-Engine pattern. | Refactoring Era | [Firm Insight](./firm_decomposition.md), [HH Insight](./HH_Engine_Refactor_Insights.md) |
+| **TD-STR-LEAK** | Architecture | **Purification**: Removed raw agent handles from engines (Finance, HH, Firm). | Refactoring Era | [Audit Report](../../communications/insights/REFACTORING_COMPLIANCE_AUDIT.md) |
+| **TD-FIN-ZERO** | Finance | **Fix**: Double-entry integrity in stateless finance engines (Retained Earnings). | Refactoring Era | [Finance Insight](../../communications/insights/TECH_DEBT_LEDGER.md) |
 
 ## 📓 Implementation Lessons & Detailed Debt
 
