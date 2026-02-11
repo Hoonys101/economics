@@ -279,7 +279,7 @@ class TestPhase28StressScenarios:
         config_dto.wage_decay_rate = 0.01
         config_dto.reservation_wage_floor = 1.0
         config_dto.household_min_wage_demand = 1.0
-        config_dto.panic_selling_asset_threshold = 500.0
+        config_dto.panic_selling_asset_threshold = 50000
         config_dto.initial_household_age_range = (20, 50)
         config_dto.initial_aptitude_distribution = (0.5, 0.1)
 
@@ -301,11 +301,11 @@ class TestPhase28StressScenarios:
             engine=MagicMock(),
             talent=MagicMock(),
             goods_data=[],
-            initial_assets_record=400.0, # Below threshold
+            initial_assets_record=40000, # Below threshold
             personality=Personality.CONSERVATIVE,
             config_dto=config_dto, # Pass DTO
         )
-        household.deposit(400.0, DEFAULT_CURRENCY)
+        household.deposit(40000, DEFAULT_CURRENCY)
         household._econ_state.portfolio = MagicMock()
         share_mock = MagicMock(spec=Share)
         share_mock.quantity = 10.0

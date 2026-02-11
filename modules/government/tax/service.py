@@ -48,7 +48,7 @@ class TaxService(ITaxService):
         """Determines the current fiscal policy based on market conditions."""
         return self.fiscal_policy_manager.determine_fiscal_stance(snapshot)
 
-    def calculate_tax_liability(self, policy: FiscalPolicyDTO, income: float) -> int:
+    def calculate_tax_liability(self, policy: FiscalPolicyDTO, income: float) -> float:
         """Calculates the tax amount for a given income and fiscal policy."""
         # Income is likely float from legacy or int pennies from new system.
         # Policy rate is float.
@@ -60,9 +60,9 @@ class TaxService(ITaxService):
         # Legacy manager might return float dollars. We need to handle this.
         # If `FiscalPolicyManager` is untouched, it just does `income * rate`.
         # int * float = float.
-        # We just round it.
+        # We return float to maintain precision (e.g. 16.25 dollars), allowing caller to round.
         raw_liability = self.fiscal_policy_manager.calculate_tax_liability(policy, income)
-        return int(raw_liability) # round_to_pennies handles Decimal but here it's simple mul.
+        return raw_liability
 
     def calculate_corporate_tax(self, profit: float, rate: float) -> int:
         """Calculates corporate tax based on profit and a flat rate."""

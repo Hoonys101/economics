@@ -63,7 +63,7 @@ class TestTaxIncidence(unittest.TestCase):
         )
         # Manually deposit initial assets as per new Household behavior
         if assets > 0:
-            h.deposit(assets, DEFAULT_CURRENCY)
+            h.deposit(int(assets * 100), DEFAULT_CURRENCY)
         return h
 
     def _create_firm(self, id: int, assets: float):
@@ -86,7 +86,7 @@ class TestTaxIncidence(unittest.TestCase):
             personality=Personality.BALANCED
         )
         if assets > 0:
-            f.deposit(assets, DEFAULT_CURRENCY)
+            f.deposit(int(assets * 100), DEFAULT_CURRENCY)
         return f
 
     def _setup_simulation(self, h, f):
@@ -149,7 +149,7 @@ class TestTaxIncidence(unittest.TestCase):
         f = self._create_firm(101, 500000)
         sim = self._setup_simulation(h, f)
         
-        # 100원 매칭 (노동 거래) -> 10000 pennies
+        # 100원 매칭 (노동 거래). Price 10000 pennies (100.00 dollars)
         from simulation.models import Transaction
         tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=10000, market_id="labor", transaction_type="labor", time=1)
         sim._process_transactions([tx])
@@ -168,7 +168,7 @@ class TestTaxIncidence(unittest.TestCase):
         f = self._create_firm(101, 500000)
         sim = self._setup_simulation(h, f)
         
-        # 100원 매칭 (노동 거래) -> 10000 pennies
+        # 100원 매칭 (노동 거래). Price 10000 pennies
         from simulation.models import Transaction
         tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=10000, market_id="labor", transaction_type="labor", time=1)
         sim._process_transactions([tx])

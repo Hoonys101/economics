@@ -12,6 +12,7 @@ from simulation.dtos.api import SimulationState
 from simulation.models import Transaction
 from simulation.core_agents import Household
 from simulation.firms import Firm
+from modules.finance.utils.currency_math import round_to_pennies
 
 logger = logging.getLogger(__name__)
 

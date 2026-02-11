@@ -66,7 +66,8 @@ def test_atomic_wealth_tax_collection_success():
     # Household with assets > threshold (1000 dollars = 100,000 pennies)
     # Assets = 200,000 pennies ($2000). Taxable = 100,000.
     # Rate per tick = 0.02 / 100 = 0.0002
-    # Tax = 100,000 * 0.0002 = 20 pennies
+    # Tax = 1000 * 0.0002 = 0.2 dollars = 20 pennies
+    # Assets = 2000.00 -> 200000 pennies
     household = MockAgent(id="HH1", assets=200000)
 
     market_data = {"goods_market": {"basic_food_current_sell_price": 10.0}}
@@ -117,17 +118,17 @@ def test_government_collect_tax_adapter_success():
     settlement = MockSettlementSystem()
     gov.settlement_system = settlement
 
-    payer = MockAgent(id="PAYER", assets=100)
-    amount = 10
+    payer = MockAgent(id="PAYER", assets=10000)
+    amount = 1000
 
     collected = gov.collect_tax(amount, "test_tax", payer, current_tick=1)
 
-    assert collected['amount_collected'] == 10
+    assert collected['amount_collected'] == 1000
     assert collected['success'] is True
-    assert payer.assets == 90
-    assert gov.assets == 10
-    assert gov.total_collected_tax[DEFAULT_CURRENCY] == 10
-    assert gov.tax_revenue["test_tax"] == 10
+    assert payer.assets == 9000
+    assert gov.assets == 1000
+    assert gov.total_collected_tax[DEFAULT_CURRENCY] == 1000
+    assert gov.tax_revenue["test_tax"] == 1000
 
 def test_government_collect_tax_adapter_failure():
     config = MockConfig()
@@ -135,14 +136,14 @@ def test_government_collect_tax_adapter_failure():
     settlement = MockSettlementSystem()
     gov.settlement_system = settlement
 
-    payer = MockAgent(id="PAYER", assets=5) # Less than 10
-    amount = 10
+    payer = MockAgent(id="PAYER", assets=500) # Less than 1000
+    amount = 1000
 
     collected = gov.collect_tax(amount, "test_tax", payer, current_tick=1)
 
     assert collected['amount_collected'] == 0
     assert collected['success'] is False
-    assert payer.assets == 5
+    assert payer.assets == 500
     assert gov.assets == 0
     assert gov.total_collected_tax[DEFAULT_CURRENCY] == 0
     assert "test_tax" not in gov.tax_revenue

@@ -17,7 +17,7 @@ class TestHouseholdSnapshotAssembler:
             gender="F",
             generation=1,
             initial_needs={"survival": 50},
-            assets=1000.0,
+            assets=100000,
             personality=Personality.CONSERVATIVE,
         )
         # Customize state for specific test requirements
@@ -26,7 +26,7 @@ class TestHouseholdSnapshotAssembler:
         household._econ_state.inventory = {"food": 10}
         household._econ_state.is_employed = True
         household._econ_state.employer_id = 5
-        household._econ_state.current_wage = 100
+        household._econ_state.current_wage_pennies = 10000
         # ... other econ state overrides if needed for specific assertions
 
         return household
@@ -42,18 +42,18 @@ class TestHouseholdSnapshotAssembler:
         # Verify Content Matches
         assert snapshot.bio_state.age == 30
         from modules.system.api import DEFAULT_CURRENCY
-        assert snapshot.econ_state.wallet.get_balance(DEFAULT_CURRENCY) == 1000.0
+        assert snapshot.econ_state.wallet.get_balance(DEFAULT_CURRENCY) == 100000
         assert snapshot.social_state.personality == Personality.CONSERVATIVE
 
         # Verify Independence (Copy Check)
         # Modify the original household state
         mock_household._bio_state.age = 31
-        mock_household.deposit(1000.0) # 1000 + 1000 = 2000
+        mock_household.deposit(100000) # 1000 + 1000 = 2000 (represented as pennies)
         mock_household._bio_state.children_ids.append(3)
 
         # Snapshot should remain unchanged
         assert snapshot.bio_state.age == 30
-        assert snapshot.econ_state.wallet.get_balance(DEFAULT_CURRENCY) == 1000.0
+        assert snapshot.econ_state.wallet.get_balance(DEFAULT_CURRENCY) == 100000
         assert len(snapshot.bio_state.children_ids) == 2
 
     def test_assemble_nested_structures(self, mock_household):

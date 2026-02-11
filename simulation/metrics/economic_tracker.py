@@ -354,11 +354,13 @@ class EconomicIndicatorTracker:
 
         # --- WO-043: Comprehensive Metrics ---
         # 1. Labor Share
-        total_labor_income = sum(
-            h._econ_state.labor_income_this_tick
+        # Sum labor income (pennies) and convert to dollars for reporting parity
+        total_labor_income_pennies = sum(
+            h._econ_state.labor_income_this_tick_pennies
             for h in households
             if h._bio_state.is_active
         )
+        total_labor_income = total_labor_income_pennies / 100.0
         record["total_labor_income"] = total_labor_income
 
         # Sales Volume

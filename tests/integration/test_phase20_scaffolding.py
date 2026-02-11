@@ -35,7 +35,7 @@ class TestPhase20Scaffolding(unittest.TestCase):
             config_dto=create_household_config_dto(),
             loan_market=self.mock_loan_market
         )
-        h.deposit(initial_assets)
+        h.deposit(int(initial_assets * 100))
         return h
 
     def test_household_attributes_initialization(self):

@@ -38,12 +38,16 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
     @patch('simulation.systems.demographic_manager.create_config_dto')
     def test_birth_gift_rounding(self, mock_create_config, mock_household_cls, mock_household_factory_cls):
         """
-        Verify that birth gift is rounded to 2 decimal places.
+        Verify that birth gift is calculated in pennies (integer).
         """
         # Setup Mock Factory
         mock_factory_instance = mock_household_factory_cls.return_value
 
         dm = DemographicManager(config_module=self.config)
+
+        # Inject mock factory into the instance if needed, or rely on patch
+        # Since dm.__init__ instantiates HouseholdFactory, we mock the class before init or patch it.
+        # Here we patched the class, so dm.household_factory will be a Mock.
         dm.settlement_system = self.settlement_system
         dm.logger = self.logger
 
@@ -55,20 +59,20 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
         simulation.goods_data = {}
         simulation.agents = {}
 
-        # Mock Household Instance
+        # Mock Child creation
         mock_child = MagicMock()
         mock_child.id = 100
         mock_child.gender = "Female"
         mock_household_cls.return_value = mock_child
         mock_factory_instance.create_newborn.return_value = mock_child
 
-        # Parent with fractional assets
+        # Parent with integer assets (10000 pennies = 100.00 dollars)
         parent = MagicMock()
         parent.id = 10
         parent.age = 30
-        parent.assets = 100.005 # Fractional
+        parent.assets = 10000
         parent.wallet = MagicMock()
-        parent.wallet.get_balance.return_value = 100.005
+        parent.wallet.get_balance.return_value = 10000
         parent.talent = MagicMock()
         parent.personality = MagicMock()
         parent.value_orientation = "NEUTRAL"
@@ -81,28 +85,27 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
         # Execute
         dm.process_births(simulation, birth_requests)
 
-        # Expected Gift: 10% of 100.005 = 10.0005 -> Rounded to 10.00
-
+        # Expected Gift: 10% of 10000 = 1000 pennies
         args = self.settlement_system.transfer.call_args
         if args:
             # args[0] are positional args: (debit, credit, amount, memo)
             amount = args[0][2]
-            self.assertAlmostEqual(amount, 10.00, places=2)
-            self.assertNotEqual(amount, 10.0005, "Birth gift should be rounded")
+            self.assertEqual(amount, 1000)
+            self.assertIsInstance(amount, int)
         else:
             self.fail("No transfer call detected")
 
-    def test_inheritance_dust_sweep(self):
+    def test_inheritance_distribution(self):
         """
-        Verify that inheritance distribution sweeps dust to government.
+        Verify that inheritance distribution transfers full amount to heir (no dust sweep).
         """
         handler = InheritanceHandler()
 
         deceased = MagicMock()
         deceased.id = 99
-        deceased.assets = 100.005 # Fractional assets (100.00 + 0.005 dust)
+        deceased.assets = 10005 # 100.05 dollars
         deceased.wallet = MagicMock()
-        deceased.wallet.get_balance.return_value = 100.005
+        deceased.wallet.get_balance.return_value = 10005
 
         heir = MagicMock()
         heir.id = 101
@@ -112,7 +115,7 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
             seller_id=-1,
             item_id="estate_distribution",
             quantity=1.0,
-            price=100.00,
+            price=10000,
             market_id="system",
             transaction_type="inheritance_distribution",
             time=0,
@@ -152,18 +155,16 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
         credits = call_args[0][1]
 
         # Expect:
-        # 1. Heir gets 100.00
-        # 2. Government gets 0.005 (dust)
+        # 1. Heir gets 10005 (Full amount)
+        # 2. No dust sweep to government
 
         heir_credit = next((c for c in credits if c[0] == heir), None)
         gov_credit = next((c for c in credits if c[0] == self.government), None)
 
         self.assertIsNotNone(heir_credit)
-        self.assertAlmostEqual(heir_credit[1], 100.00)
+        self.assertEqual(heir_credit[1], 10005)
 
-        self.assertIsNotNone(gov_credit)
-        self.assertAlmostEqual(gov_credit[1], 0.005)
-        self.assertEqual(gov_credit[2], "inheritance_dust_sweep")
+        self.assertIsNone(gov_credit, "No dust sweep expected for single heir")
 
     def test_public_manager_tax_atomicity(self):
         """
@@ -182,7 +183,7 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
             seller_id=pm.id,
             item_id="basic_food",
             quantity=10,
-            price=5.0, # Total 50.0
+            price=500, # Total 5000 pennies
             market_id="system",
             transaction_type="goods", # Taxable
             time=0
@@ -208,7 +209,7 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
 
         # Setup tax calculation
         mock_intent = MagicMock()
-        mock_intent.amount = 2.5 # 5% of 50
+        mock_intent.amount = 250 # 5% of 5000
         mock_intent.reason = "sales_tax"
         mock_intent.payer_id = buyer.id
         self.taxation_system.calculate_tax_intents.return_value = [mock_intent]
@@ -227,10 +228,10 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
         gov_credit = next((c for c in credits if c[0] == self.government), None)
 
         self.assertIsNotNone(pm_credit)
-        self.assertEqual(pm_credit[1], 50.0)
+        self.assertEqual(pm_credit[1], 5000)
 
         self.assertIsNotNone(gov_credit)
-        self.assertEqual(gov_credit[1], 2.5)
+        self.assertEqual(gov_credit[1], 250)
 
 if __name__ == '__main__':
     unittest.main()

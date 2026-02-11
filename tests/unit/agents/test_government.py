@@ -162,12 +162,12 @@ def test_deficit_spending_allowed_within_limit(deficit_government_setup):
     # Asset is 1000. Request 500. No bonds needed.
     # We want to force bonds.
     # Set assets (Wallet) to low.
-    government.wallet._balances[DEFAULT_CURRENCY] = 100.0
+    government.wallet._balances[DEFAULT_CURRENCY] = 10000
 
     mock_finance = government.finance_system
 
     def issue_bonds_side_effect(amount, tick):
-        government.wallet.add(amount, DEFAULT_CURRENCY)
+        government.wallet.add(int(amount), DEFAULT_CURRENCY)
         return (["bond"], [Mock(transaction_type='bond_issuance')])
 
     mock_finance.issue_treasury_bonds.side_effect = issue_bonds_side_effect
@@ -175,13 +175,13 @@ def test_deficit_spending_allowed_within_limit(deficit_government_setup):
     target_agent = Mock()
     target_agent.id = "target_1"
 
-    txs = government.provide_household_support(target_agent, 500, current_tick=1)
+    txs = government.provide_household_support(target_agent, 50000, current_tick=1)
 
     # Needed 400. Bonds issued.
     # Should have welfare tx (500) and bond txs.
     assert len(txs) >= 1
     welfare_tx = [tx for tx in txs if tx.transaction_type == 'welfare'][0]
-    assert welfare_tx.price == 500
+    assert welfare_tx.price == 50000
 
     # Verify bond issuance requested
     mock_finance.issue_treasury_bonds.assert_called()

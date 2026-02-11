@@ -22,16 +22,16 @@ def mock_config():
 @pytest.fixture
 def econ_state():
     wallet = MagicMock()
-    wallet.get_balance.return_value = 100.0
+    wallet.get_balance.return_value = 10000 # 100.00
     wallet.owner_id = 1
 
     state = MagicMock(spec=EconStateDTO)
     state.wallet = wallet
     state.is_employed = False
-    state.shadow_reservation_wage = 10.0
+    state.shadow_reservation_wage_pennies = 1000
     state.market_wage_history = []
     state.is_homeless = True
-    state.current_wage = 0.0
+    state.current_wage_pennies = 0
     state.residing_property_id = None
     state.copy.return_value = state
     return state
@@ -58,7 +58,7 @@ def test_allocate_budget_creates_orders_for_needs(budget_engine, econ_state, moc
     output = budget_engine.allocate_budget(input_dto)
 
     assert "food" in output.budget_plan.allocations
-    assert output.budget_plan.allocations["food"] == 50.0
+    assert output.budget_plan.allocations["food"] == 5000 # 50.00
 
     # Verify Order creation
     assert len(output.budget_plan.orders) == 1

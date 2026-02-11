@@ -25,20 +25,16 @@ class InheritanceHandler(ITransactionHandler):
 
         heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
 
-        # Round total cash to 2 decimals to prevent floating point dust propagation.
-        assets_val = 0.0
+        # Assets are in pennies (integer)
+        assets_val = 0
         if hasattr(deceased_agent, 'wallet'):
             assets_val = deceased_agent.wallet.get_balance(DEFAULT_CURRENCY)
         elif hasattr(deceased_agent, 'assets') and isinstance(deceased_agent.assets, dict):
-            assets_val = deceased_agent.assets.get(DEFAULT_CURRENCY, 0.0)
+            assets_val = int(deceased_agent.assets.get(DEFAULT_CURRENCY, 0))
         elif hasattr(deceased_agent, 'assets'):
-            assets_val = float(deceased_agent.assets)
+            assets_val = int(deceased_agent.assets)
 
-        # TD-233: Use floor to ensure we don't distribute non-existent rounded-up cents
-        total_cash = math.floor(assets_val * 100) / 100.0
-        dust = assets_val - total_cash
-
-        if total_cash <= 0 and dust <= 1e-9:
+        if assets_val <= 0:
             context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no assets ({assets_val}).")
             return True
 
@@ -49,11 +45,11 @@ class InheritanceHandler(ITransactionHandler):
              return True
 
         count = len(heir_ids)
-        # Calculate amount per heir, avoiding float precision issues (floor to cent)
-        base_amount = math.floor((total_cash / count) * 100) / 100.0
+        # Calculate amount per heir (integer division)
+        base_amount = assets_val // count
 
-        credits: List[Tuple[Any, float, str]] = []
-        distributed_sum = 0.0
+        credits: List[Tuple[Any, int, str]] = []
+        distributed_sum = 0
 
         agents = context.agents # SimulationState has agents dict
 
@@ -65,25 +61,21 @@ class InheritanceHandler(ITransactionHandler):
                 credits.append((heir, base_amount, "inheritance_distribution"))
                 distributed_sum += base_amount
 
-        # Last heir gets the remainder to ensure zero-sum of the rounded total
+        # Last heir gets the remainder to ensure zero-sum
         last_heir_id = heir_ids[-1]
         last_heir = agents.get(last_heir_id)
         if last_heir:
-            remaining_amount = round(total_cash - distributed_sum, 2)
-            # Ensure we don't transfer negative amounts or dust if something went wrong
+            remaining_amount = assets_val - distributed_sum
+            # Ensure we don't transfer negative amounts
             if remaining_amount > 0:
                 credits.append((last_heir, remaining_amount, "inheritance_distribution_final"))
-
-        # TD-233: Sweep fractional dust to Government to ensure Zero Leak (Agent balance -> 0.0)
-        if dust > 1e-9 and context.government:
-             credits.append((context.government, dust, "inheritance_dust_sweep"))
 
         # Atomic Settlement
         if credits:
             success = context.settlement_system.settle_atomic(deceased_agent, credits, context.time)
 
             if success:
-                 context.logger.info(f"INHERITANCE_SUCCESS | Distributed {total_cash} from {deceased_agent.id} to {count} heirs. Swept {dust:.4f} dust.")
+                 context.logger.info(f"INHERITANCE_SUCCESS | Distributed {assets_val} from {deceased_agent.id} to {count} heirs.")
             else:
                  context.logger.error(f"INHERITANCE_FAIL | Atomic settlement failed for {deceased_agent.id}.")
 
