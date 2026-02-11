@@ -3,6 +3,7 @@ import sys
 import os
 sys.path.append(os.getcwd())
 import logging
+from modules.system.api import DEFAULT_CURRENCY
 from main import create_simulation
 
 # Disable most logging to see clean output
@@ -12,26 +13,33 @@ def hunt_leak():
     sim = create_simulation()
     state = sim.world_state
     
+    def get_val(assets):
+        if isinstance(assets, dict):
+            return assets.get(DEFAULT_CURRENCY, 0.0)
+        return assets
+
     def get_snapshot():
         snapshot = {}
         for h in state.households:
-            snapshot[f"H_{h.id}"] = h._econ_state.assets
+            snapshot[f"H_{h.id}"] = get_val(h._econ_state.assets)
         for f in state.firms:
-            snapshot[f"F_{f.id}"] = f.assets
+            snapshot[f"F_{f.id}"] = get_val(f.assets)
         if state.bank:
-            snapshot["BANK"] = state.bank.assets
-        if state.government:
-            snapshot["GOVT"] = state.government.assets
+            snapshot["BANK"] = get_val(state.bank.assets)
+        if state.central_bank:
+            snapshot["CB"] = get_val(state.central_bank.assets)
+        if state.governments:
+            snapshot["GOVT"] = get_val(state.governments[0].assets)
         return snapshot
 
     print("--- LEAK HUNT START ---")
     snap0 = get_snapshot()
-    money0 = state.calculate_total_money()
+    money0 = state.get_total_system_money_for_diagnostics()
     
     sim.run_tick()
     
     snap1 = get_snapshot()
-    money1 = state.calculate_total_money()
+    money1 = state.get_total_system_money_for_diagnostics()
     
     delta = money1 - money0
     auth_delta = state.government.get_monetary_delta() if state.government else 0.0

@@ -41,13 +41,8 @@ class TestGovernmentFiscalIntegration:
         # Setup
         gov = Government(id=1, config_module=mock_config)
 
-        # Mock manager
-        gov.decision_engine.fiscal_policy_manager = MagicMock() # Decision engine uses its own or shared?
-        # Government.make_policy_decision calls decision_engine.decide -> ...
-        # Actually make_policy_decision orchestrates.
-
-        # In make_policy_decision:
-        # self.fiscal_policy = self.tax_service.determine_fiscal_stance(snapshot)
+        # Mock the tax service's fiscal policy manager
+        # Government.make_policy_decision orchestrates fiscal_engine and tax_service
 
         gov.tax_service.fiscal_policy_manager = MagicMock()
         expected_policy = FiscalPolicyDTO(progressive_tax_brackets=[])

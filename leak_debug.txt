@@ -1,0 +1,20 @@
+DEBUG | Importing create_simulation...
+DEBUG | Import complete.
+--- TRACE START ---
+DEBUG | Initializing simulation...
+DEBUG | Simulation initialized.
+Tick 0 (START) Total Money: 499,646.58
+Firm 120: Assets=100,000.00, Active=True
+Firm 121: Assets=100,000.00, Active=True
+Firm 122: Assets=100,000.00, Active=True
+Firm 123: Assets=100,000.00, Active=True
+DEBUG | Running Tick 1...
+DEBUG | Tick 1 complete.
+
+Tick 1 (END) Total Money: 499,646.58
+Firm 120: Assets=99,493.15, Active=True
+Firm 121: Assets=75,400.00, Active=True
+Firm 122: Assets=99,900.00, Active=True
+Firm 123: Assets=75,551.25, Active=True
+
+All Active Agent IDs: [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 27, 28, 29, 30, 120, 121, 122, 123]

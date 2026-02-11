@@ -63,7 +63,8 @@ class TestHREngine:
             severance_pay_weeks=2.0
         )
 
-        transactions = engine.process_payroll(hr_state, context, config)
+        result = engine.process_payroll(hr_state, context, config)
+        transactions = result.transactions
 
         assert len(transactions) >= 1
         # Expect Wage + Tax

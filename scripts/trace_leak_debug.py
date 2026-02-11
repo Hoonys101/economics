@@ -16,7 +16,7 @@ def trace():
     sim = create_simulation()
     print("DEBUG | Simulation initialized.")
     
-    print(f"Tick 0 (START) Total Money: {sim.world_state.calculate_total_money():,.2f}")
+    print(f"Tick 0 (START) Total Money: {sim.world_state.get_total_system_money_for_diagnostics():,.2f}")
     for f in sim.world_state.firms:
         print(f"Firm {f.id}: Assets={f.assets:,.2f}, Active={f.is_active}")
     
@@ -24,7 +24,7 @@ def trace():
     sim.run_tick()
     print("DEBUG | Tick 1 complete.")
     
-    print(f"\nTick 1 (END) Total Money: {sim.world_state.calculate_total_money():,.2f}")
+    print(f"\nTick 1 (END) Total Money: {sim.world_state.get_total_system_money_for_diagnostics():,.2f}")
     for f in sim.world_state.firms:
         print(f"Firm {f.id}: Assets={f.assets:,.2f}, Active={f.is_active}")
         

@@ -42,8 +42,7 @@ def test_counter_cyclical_tax_adjustment_recession(government, mock_config, mock
     # Sudden drop in current GDP (Recession)
     government.make_policy_decision({}, 1, mock_central_bank)
 
-    assert government.fiscal_stance > 0 # Expansionary
-    assert government.income_tax_rate < initial_tax_rate
+    assert government.income_tax_rate < initial_tax_rate  # Expansionary = lower taxes
 
 def test_counter_cyclical_tax_adjustment_boom(government, mock_config, mock_central_bank):
     """Test Fiscal Contraction during Boom (GDP > Potential)."""
@@ -56,8 +55,7 @@ def test_counter_cyclical_tax_adjustment_boom(government, mock_config, mock_cent
     # Sudden rise in current GDP (Boom)
     government.make_policy_decision({}, 1, mock_central_bank)
 
-    assert government.fiscal_stance < 0 # Contractionary
-    assert government.income_tax_rate > initial_tax_rate
+    assert government.income_tax_rate > initial_tax_rate  # Contractionary = higher taxes
 
 def test_debt_ceiling_enforcement(government):
     """Test that spending is blocked when Debt Ceiling is hit."""

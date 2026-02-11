@@ -128,7 +128,7 @@ def trace():
 
     if cb_bond_buys > 0:
         print(f"Detected Untracked CB Bond Purchases (Should be in Ledger): {cb_bond_buys:,.2f}")
-        # authorized_delta += cb_bond_buys # Ledger tracks this now
+        authorized_delta += cb_bond_buys # Account for bond creation in diagnostic script
 
     if comm_bank_bond_buys > 0:
         print(f"Detected Commercial Bank Bond Purchases (M2 Creation) (Should be in Ledger): {comm_bank_bond_buys:,.2f}")
