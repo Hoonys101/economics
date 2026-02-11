@@ -15,34 +15,35 @@ class LaborTransactionHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        trade_value = tx.quantity * tx.price
+        trade_value = int(tx.quantity * tx.price)
 
         # 1. Prepare Settlement (Calculate tax intents)
         # Note: TransactionProcessor used market_data.get("goods_market")?
         # But TaxationSystem.calculate_tax_intents signature expects 'market_data'.
         intents = context.taxation_system.calculate_tax_intents(tx, buyer, seller, context.government, context.market_data)
 
-        credits: List[Tuple[Any, float, str]] = []
+        credits: List[Tuple[Any, int, str]] = []
         seller_net_amount = trade_value
         buyer_total_cost = trade_value
 
         # Variables for logging or tracking
-        seller_tax_paid = 0.0
-        buyer_tax_paid = 0.0
+        seller_tax_paid = 0
+        buyer_tax_paid = 0
 
         for intent in intents:
-            credits.append((context.government, intent.amount, intent.reason))
+            amount_int = int(intent.amount)
+            credits.append((context.government, amount_int, intent.reason))
             if intent.payer_id == seller.id:
                 # If Seller (Worker) pays, deduct from their receipt (Withholding)
-                seller_net_amount -= intent.amount
-                seller_tax_paid += intent.amount
+                seller_net_amount -= amount_int
+                seller_tax_paid += amount_int
             elif intent.payer_id == buyer.id:
                 # If Buyer (Firm) pays, it's extra cost
-                buyer_total_cost += intent.amount
-                buyer_tax_paid += intent.amount
+                buyer_total_cost += amount_int
+                buyer_tax_paid += amount_int
 
         # Add Net Wage Credit to Seller
-        credits.append((seller, seller_net_amount, f"labor_wage:{tx.transaction_type}"))
+        credits.append((seller, int(seller_net_amount), f"labor_wage:{tx.transaction_type}"))
 
         # 2. Execute Settlement (Atomic)
         # Buyer pays Total Cost (Gross + Buyer Tax) implicitly by covering all credits
@@ -86,23 +87,23 @@ class LaborTransactionHandler(ITransactionHandler):
 
             seller.is_employed = True
             seller.employer_id = buyer.id
-            seller.current_wage = tx.price
+            seller.current_wage_pennies = int(tx.price)
             seller.needs["labor_need"] = 0.0
 
             # Net Income Tracking
             if hasattr(seller, "add_labor_income"):
-                seller.add_labor_income(seller_net_income)
+                seller.add_labor_income(int(seller_net_income))
 
         # 2. Firm Logic (Buyer)
         if isinstance(buyer, Firm):
             # HR Update
             if seller not in buyer.hr_state.employees:
-                buyer.hr_engine.hire(buyer.hr_state, seller, tx.price, context.time)
+                buyer.hr_engine.hire(buyer.hr_state, seller, int(tx.price), context.time)
             else:
-                 buyer.hr_state.employee_wages[seller.id] = tx.price
+                 buyer.hr_state.employee_wages[seller.id] = int(tx.price)
 
             # Finance Update
-            buyer.finance_engine.record_expense(buyer.finance_state, buyer_total_cost, DEFAULT_CURRENCY)
+            buyer.finance_engine.record_expense(buyer.finance_state, int(buyer_total_cost), DEFAULT_CURRENCY)
 
             # Research Labor Productivity Boost
             if tx.transaction_type == "research_labor" and isinstance(seller, Household):

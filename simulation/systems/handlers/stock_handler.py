@@ -14,7 +14,7 @@ class StockTransactionHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        trade_value = tx.quantity * tx.price
+        trade_value = int(tx.quantity * tx.price)
 
         # 1. Execute Settlement (Direct Transfer)
         # Stock trades typically don't have sales tax in this simulation model yet.

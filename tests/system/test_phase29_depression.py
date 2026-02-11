@@ -294,7 +294,7 @@ class TestPhase29Depression(unittest.TestCase):
 
         # Set Government Revenue
         if self.sim.government:
-            self.sim.government.deposit(10000.0)
+            self.sim.government.deposit(10000)
 
         # Mock TechnologyManager to avoid config dependency issues
         self.sim.technology_manager = MagicMock()

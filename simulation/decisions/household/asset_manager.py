@@ -113,7 +113,11 @@ class AssetManager:
     def get_debt_penalty(self, household: Any, market_data: Dict[str, Any], config: Any) -> float:
         debt_data = market_data.get("debt_data", {}).get(household.id, {})
         daily_interest_burden = debt_data.get("daily_interest_burden", 0.0)
-        income_proxy = max(household.current_wage, self._get_assets_value(household) * 0.01)
+
+        # Use current_wage_pennies if available (legacy support)
+        wage = getattr(household, 'current_wage_pennies', getattr(household, 'current_wage', 0))
+
+        income_proxy = max(wage, self._get_assets_value(household) * 0.01)
         dsr = daily_interest_burden / (income_proxy + 1e-9)
 
         debt_penalty = 1.0

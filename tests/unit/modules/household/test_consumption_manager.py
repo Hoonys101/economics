@@ -21,7 +21,7 @@ class TestConsumptionManager:
     @pytest.fixture
     def econ_state(self):
         wallet = Wallet(1, {})
-        wallet.add(1000.0)
+        wallet.add(1000)
         return EconStateDTO(
             wallet=wallet,
             inventory={"food": 10.0, "water": 5.0},
@@ -30,12 +30,12 @@ class TestConsumptionManager:
             portfolio=Portfolio(1),
             is_employed=False,
             employer_id=None,
-            current_wage=0.0,
+            current_wage_pennies=0,
             wage_modifier=1.0,
             labor_skill=1.0,
             education_xp=0.0,
             education_level=0,
-            expected_wage=10.0,
+            expected_wage_pennies=1000,
             talent=Talent(base_learning_rate=0.5, max_potential=1.0),
             skills={},
             aptitude=0.5,
@@ -46,7 +46,7 @@ class TestConsumptionManager:
             housing_target_mode="RENT",
             housing_price_history=deque(),
             market_wage_history=deque(),
-            shadow_reservation_wage=10.0,
+            shadow_reservation_wage_pennies=1000,
             last_labor_offer_tick=0,
             last_fired_tick=-1,
             job_search_patience=0,
@@ -58,8 +58,8 @@ class TestConsumptionManager:
             price_history=defaultdict(lambda: deque(maxlen=10)),
             price_memory_length=10,
             adaptation_rate=0.1,
-            labor_income_this_tick=0.0,
-            capital_income_this_tick=0.0
+            labor_income_this_tick_pennies=0,
+            capital_income_this_tick_pennies=0
         )
 
     def test_consume_basic(self, econ_state, mock_config):

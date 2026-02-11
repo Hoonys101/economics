@@ -17,7 +17,7 @@ class FinancialTransactionHandler(ITransactionHandler):
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
         tx_type = tx.transaction_type
-        trade_value = tx.quantity * tx.price
+        trade_value = int(tx.quantity * tx.price)
 
         success = False
 
@@ -25,13 +25,14 @@ class FinancialTransactionHandler(ITransactionHandler):
              success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
 
              if success and isinstance(buyer, Firm):
-                 buyer.record_expense(trade_value, tx.currency)
+                 buyer.record_expense(int(trade_value), tx.currency)
 
         elif tx_type == "dividend":
              success = context.settlement_system.transfer(seller, buyer, trade_value, "dividend_payment")
 
              if success and isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
-                 buyer.capital_income_this_tick += trade_value
+                 # capital_income_this_tick is int in EconStateDTO
+                 buyer.capital_income_this_tick += int(trade_value)
 
         elif tx_type == "tax":
             # Atomic Settlement to Government
@@ -40,14 +41,14 @@ class FinancialTransactionHandler(ITransactionHandler):
             # TransactionProcessor logic: settle_atomic(buyer, [(gov, amount, item_id)])
 
             gov = context.government
-            credits = [(gov, trade_value, tx.item_id)]
+            credits = [(gov, int(trade_value), tx.item_id)]
 
             success = context.settlement_system.settle_atomic(buyer, credits, context.time)
 
             if success:
                  gov.record_revenue({
                          "success": True,
-                         "amount_collected": trade_value,
+                         "amount_collected": int(trade_value),
                          "tax_type": tx.item_id,
                          "payer_id": buyer.id,
                          "payee_id": gov.id,
@@ -56,6 +57,6 @@ class FinancialTransactionHandler(ITransactionHandler):
 
                  # WO-116 Fix: Ensure Firms record tax as expense for accounting integrity
                  if isinstance(buyer, Firm):
-                     buyer.record_expense(trade_value, tx.currency)
+                     buyer.record_expense(int(trade_value), tx.currency)
 
         return success is not None
