@@ -103,16 +103,16 @@ class DemographicManager:
             simulation.next_agent_id += 1
 
             # Asset Transfer calculation
-            parent_assets = 0.0
+            parent_assets = 0
             if hasattr(parent, 'wallet'):
                 parent_assets = parent.wallet.get_balance(DEFAULT_CURRENCY)
             elif hasattr(parent, 'assets') and isinstance(parent.assets, dict):
-                parent_assets = parent.assets.get(DEFAULT_CURRENCY, 0.0)
+                parent_assets = int(parent.assets.get(DEFAULT_CURRENCY, 0))
             elif hasattr(parent, 'assets'):
-                parent_assets = float(parent.assets)
+                parent_assets = int(parent.assets)
 
-            # TD-233: Round to 2 decimals to prevent floating point leaks
-            initial_gift = round(max(0.0, min(parent_assets * 0.1, parent_assets)), 2)
+            # TD-233: Calculate gift in pennies (10%)
+            initial_gift_pennies = int(max(0, min(parent_assets * 0.1, parent_assets)))
 
             try:
                 # Use Factory for creation
@@ -123,18 +123,18 @@ class DemographicManager:
                 new_children.append(child)
 
                 # WO-124: Transfer Birth Gift via SettlementSystem
-                if initial_gift > 0:
+                if initial_gift_pennies > 0:
                     # Prefer injected settlement_system, fallback to simulation object for compatibility
                     settlement = self.settlement_system or getattr(simulation, "settlement_system", None)
 
                     if settlement:
-                         settlement.transfer(parent, child, initial_gift, "BIRTH_GIFT")
+                         settlement.transfer(parent, child, initial_gift_pennies, "BIRTH_GIFT")
                     else:
                          self.logger.error("BIRTH_ERROR | SettlementSystem not found. Cannot transfer birth gift.")
 
                 self.logger.info(
                     f"BIRTH | Parent {parent.id} ({parent.age:.1f}y) -> Child {child.id}. "
-                    f"Assets: {initial_gift:.2f}",
+                    f"Assets: {initial_gift_pennies}",
                     extra={"parent_id": parent.id, "child_id": child.id, "tick": simulation.time}
                 )
             except Exception as e:
@@ -174,16 +174,18 @@ class DemographicManager:
             return
 
         # Calculate Tax
+        # Assets are in pennies if they came from wallet
+        total_assets_pennies = int(total_assets)
         tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.0)
-        tax_amount = total_assets * tax_rate
-        net_estate = total_assets - tax_amount
+        tax_amount_pennies = int(total_assets_pennies * tax_rate)
+        net_estate_pennies = total_assets_pennies - tax_amount_pennies
 
         # Transfer Tax
-        if tax_amount > 0:
+        if tax_amount_pennies > 0:
             simulation.settlement_system.transfer(
                 deceased_agent,
                 simulation.government,
-                tax_amount,
+                tax_amount_pennies,
                 "inheritance_tax",
                 tick=simulation.time
             )
@@ -193,10 +195,9 @@ class DemographicManager:
 
         if heirs:
             # FIX: Use integer arithmetic (cents) to prevent floating point rounding errors and leaks
-            net_estate_cents = int(round(net_estate * 100))
             num_heirs = len(heirs)
-            share_cents = net_estate_cents // num_heirs
-            remainder_cents = net_estate_cents % num_heirs
+            share_cents = net_estate_pennies // num_heirs
+            remainder_cents = net_estate_pennies % num_heirs
 
             # Distribute shares
             for i, heir in enumerate(heirs):
@@ -205,27 +206,25 @@ class DemographicManager:
                 if i == num_heirs - 1:
                     amount_cents += remainder_cents
 
-                amount_to_send = amount_cents / 100.0
-
-                if amount_to_send > 0:
+                if amount_cents > 0:
                     simulation.settlement_system.transfer(
                         deceased_agent,
                         heir,
-                        amount_to_send,
+                        amount_cents,
                         "inheritance_distribution",
                         tick=simulation.time
                     )
 
                     self.logger.info(
-                        f"INHERITANCE | Heir {heir.id} received {amount_to_send:.2f} from {deceased_agent.id}.",
-                        extra={"heir_id": heir.id, "deceased_id": deceased_agent.id, "amount": amount_to_send}
+                        f"INHERITANCE | Heir {heir.id} received {amount_cents} from {deceased_agent.id}.",
+                        extra={"heir_id": heir.id, "deceased_id": deceased_agent.id, "amount": amount_cents}
                     )
         else:
             # No heirs: Escheatment to State
             simulation.settlement_system.transfer(
                 deceased_agent,
                 simulation.government,
-                net_estate,
+                net_estate_pennies,
                 "escheatment",
                 tick=simulation.time
             )
