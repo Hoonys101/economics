@@ -111,7 +111,7 @@ def test_command_bus_internal_orders_delegation(firm):
     order_auto = Order(
         agent_id=1, side="INVEST_AUTOMATION", item_id="automation", quantity=1.0,
         price_limit=0.0, market_id="internal",
-        monetary_amount={'amount': 100.0, 'currency': DEFAULT_CURRENCY}
+        monetary_amount={'amount_pennies': 100, 'currency': DEFAULT_CURRENCY}
     )
 
     # Mock Engine Result
@@ -136,7 +136,7 @@ def test_command_bus_internal_orders_delegation(firm):
     order_rd = Order(
         agent_id=1, side="INVEST_RD", item_id="rd", quantity=1.0,
         price_limit=0.0, market_id="internal",
-        monetary_amount={'amount': 100.0, 'currency': DEFAULT_CURRENCY}
+        monetary_amount={'amount_pennies': 100, 'currency': DEFAULT_CURRENCY}
     )
 
     firm.rd_engine.research.return_value = RDResultDTO(
