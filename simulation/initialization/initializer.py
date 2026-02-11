@@ -93,6 +93,10 @@ from modules.finance.shareholder_registry import ShareholderRegistry
 from modules.system.event_bus.event_bus import EventBus
 from modules.governance.judicial.system import JudicialSystem
 from modules.system.registry import AgentRegistry
+from modules.household.api import HouseholdFactoryContext
+from modules.household.factory import HouseholdFactory
+from simulation.utils.config_factory import create_config_dto
+from simulation.dtos.config_dtos import HouseholdConfigDTO
 
 
 class SimulationInitializer(SimulationInitializerInterface):
@@ -526,6 +530,22 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.transaction_processor.register_public_manager_handler(PublicManagerTransactionHandler())
 
 
+        # Create HouseholdFactory Context and Instance
+        hh_config_dto = create_config_dto(self.config, HouseholdConfigDTO)
+
+        hh_factory_context = HouseholdFactoryContext(
+            core_config_module=self.config,
+            household_config_dto=hh_config_dto,
+            goods_data=self.goods_data,
+            loan_market=sim.markets.get("loan_market"),
+            ai_training_manager=sim.ai_training_manager,
+            settlement_system=sim.settlement_system,
+            markets=sim.markets,
+            memory_system=sim.persistence_manager
+        )
+
+        household_factory = HouseholdFactory(hh_factory_context)
+
         # AgentLifecycleManager is created here and injected into the simulation
         sim.lifecycle_manager = AgentLifecycleManager(
             config_module=self.config,
@@ -535,7 +555,8 @@ class SimulationInitializer(SimulationInitializerInterface):
             settlement_system=sim.settlement_system,
             public_manager=sim.public_manager,
             logger=self.logger,
-            shareholder_registry=sim.shareholder_registry
+            shareholder_registry=sim.shareholder_registry,
+            household_factory=household_factory
         )
 
         # Initialize New Systems (Social, Event, Sensory, Commerce, Labor)

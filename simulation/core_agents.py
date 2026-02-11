@@ -1120,3 +1120,17 @@ class Household(
                 # Assuming can sell goods
                 pass
         return orders
+
+    def reset_tick_state(self) -> None:
+        """
+        Resets tick-level financial accumulators to zero.
+        Adheres to the "Late-Reset Principle".
+        """
+        self._econ_state.labor_income_this_tick_pennies = 0
+        self._econ_state.capital_income_this_tick_pennies = 0
+        self._econ_state.current_consumption = 0.0
+        self._econ_state.current_food_consumption = 0.0
+        self.logger.debug(
+            f"TICK_RESET | Agent {self.id} tick state has been reset.",
+            extra={"agent_id": self.id, "tags": ["lifecycle", "reset"]}
+        )

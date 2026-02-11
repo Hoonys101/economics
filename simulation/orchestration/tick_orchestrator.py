@@ -194,6 +194,10 @@ class TickOrchestrator:
         # Persistence has already happened in Phase 5.
         state.transactions.clear()
 
+        # LIFECYCLE_PULSE: Reset tick-level counters for all agents
+        if state.lifecycle_manager and hasattr(state.lifecycle_manager, "reset_agents_tick_state"):
+            state.lifecycle_manager.reset_agents_tick_state(state)
+
         # Money Supply Verification (Post-Tick) & M2 Leak Calculation
         m2_leak_delta = 0.0
         if state.time >= 1:

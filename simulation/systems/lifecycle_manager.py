@@ -1,11 +1,12 @@
 from __future__ import annotations
-from typing import List, TYPE_CHECKING, Any
+from typing import List, TYPE_CHECKING, Any, Optional
 import logging
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household
     from simulation.dtos.api import SimulationState
     from simulation.models import Transaction
+    from modules.household.api import IHouseholdFactory
 
 from simulation.systems.api import AgentLifecycleManagerInterface
 from simulation.systems.demographic_manager import DemographicManager
@@ -31,7 +32,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
     def __init__(self, config_module: Any, demographic_manager: DemographicManager,
                  inheritance_manager: InheritanceManager, firm_system: FirmSystem,
                  settlement_system: ISettlementSystem, public_manager: IAssetRecoverySystem, logger: logging.Logger,
-                 shareholder_registry: IShareholderRegistry = None):
+                 shareholder_registry: IShareholderRegistry = None,
+                 household_factory: Optional[IHouseholdFactory] = None):
         self.config = config_module
         self.demographic_manager = demographic_manager
         self.inheritance_manager = inheritance_manager
@@ -40,6 +42,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         self.public_manager = public_manager
         self.immigration_manager = ImmigrationManager(config_module=config_module, settlement_system=settlement_system)
         self.shareholder_registry = shareholder_registry
+        self.household_factory = household_factory
 
         # Dependencies for LiquidationManager
         self.agent_registry = AgentRegistry()
@@ -58,6 +61,19 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
         self.breeding_planner = VectorizedHouseholdPlanner(config_module)
         self.logger = logger
+
+    def reset_agents_tick_state(self, state: SimulationState) -> None:
+        """
+        Calls the reset method on all active agents at the end of a tick.
+        """
+        self.logger.debug("LIFECYCLE_PULSE | Resetting tick-level state for all agents.")
+        for household in state.households:
+            if household.is_active:
+                household.reset_tick_state()
+
+        for firm in state.firms:
+            if firm.is_active and hasattr(firm, 'reset'):
+                firm.reset()
 
     def execute(self, state: SimulationState) -> List[Transaction]:
         """
@@ -225,17 +241,74 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 household.distress_tick_counter = 0
 
     def _process_births(self, state: SimulationState) -> List[Household]:
-        birth_requests = []
-        active_households = [h for h in state.households if h._bio_state.is_active]
-        if not active_households:
-            return []
+        if self.household_factory:
+            # New Logic using Factory
+            birth_requests = []
+            active_households = [h for h in state.households if h._bio_state.is_active]
+            if not active_households:
+                return []
 
-        decisions = self.breeding_planner.decide_breeding_batch(active_households)
-        for h, decision in zip(active_households, decisions):
-            if decision:
-                birth_requests.append(h)
+            decisions = self.breeding_planner.decide_breeding_batch(active_households)
+            for h, decision in zip(active_households, decisions):
+                if decision:
+                    birth_requests.append(h)
 
-        return self.demographic_manager.process_births(state, birth_requests)
+            created_children = []
+            for parent_agent in birth_requests:
+                # Re-verify biological capability (sanity check)
+                if not (self.config.REPRODUCTION_AGE_START <= parent_agent.age <= self.config.REPRODUCTION_AGE_END):
+                    continue
+
+                new_id = state.next_agent_id
+                state.next_agent_id += 1
+
+                # Asset Transfer Calculation
+                parent_assets = 0
+                if hasattr(parent_agent, 'wallet'):
+                    parent_assets = parent_agent.wallet.get_balance(DEFAULT_CURRENCY)
+                elif hasattr(parent_agent, 'assets') and isinstance(parent_agent.assets, dict):
+                    parent_assets = int(parent_agent.assets.get(DEFAULT_CURRENCY, 0))
+                elif hasattr(parent_agent, 'assets'): # Fallback
+                     parent_assets = int(parent_agent.assets)
+
+                initial_gift_pennies = int(max(0, min(parent_assets * 0.1, parent_assets)))
+
+                try:
+                    child = self.household_factory.create_newborn(
+                        parent=parent_agent,
+                        new_id=new_id,
+                        initial_assets=initial_gift_pennies,
+                        current_tick=state.time
+                    )
+
+                    parent_agent.children_ids.append(new_id)
+                    created_children.append(child)
+
+                    self.logger.info(
+                        f"BIRTH | Parent {parent_agent.id} ({parent_agent.age:.1f}y) -> Child {child.id}. "
+                        f"Assets: {initial_gift_pennies}",
+                        extra={"parent_id": parent_agent.id, "child_id": child.id, "tick": state.time}
+                    )
+                except Exception as e:
+                    self.logger.error(
+                        f"BIRTH_FAILED | Failed to create child for parent {parent_agent.id}. Error: {e}",
+                        extra={"parent_id": parent_agent.id, "error": str(e)}
+                    )
+                    continue
+            return created_children
+        else:
+            # Fallback to legacy
+            birth_requests = []
+            active_households = [h for h in state.households if h._bio_state.is_active]
+            if not active_households:
+                return []
+
+            decisions = self.breeding_planner.decide_breeding_batch(active_households)
+            for h, decision in zip(active_households, decisions):
+                if decision:
+                    birth_requests.append(h)
+
+            return self.demographic_manager.process_births(state, birth_requests)
 
     def _register_new_agents(self, state: SimulationState, new_agents: List[Household]):
         for agent in new_agents:

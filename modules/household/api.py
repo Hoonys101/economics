@@ -208,3 +208,52 @@ class IEconComponent(Protocol):
         parent_skills: Dict[str, Any],
         config: HouseholdConfigDTO
     ) -> Dict[str, Any]: ...
+
+
+# --- Household Factory Interfaces ---
+
+@dataclass
+class HouseholdFactoryContext:
+    """DTO to provide all necessary dependencies for household creation."""
+    # Configs
+    core_config_module: Any
+    household_config_dto: HouseholdConfigDTO
+    goods_data: List[Dict[str, Any]]
+    # Systems & Global State
+    loan_market: Optional[Any] # Avoiding circular import with LoanMarket
+    # Required for AI engine instantiation
+    ai_training_manager: Any
+    # Required for dependency injection post-creation
+    settlement_system: Any
+    markets: Dict[str, Any]
+    memory_system: Optional[Any] = None
+
+
+class IHouseholdFactory(Protocol):
+    """Interface for creating Household agents."""
+
+    def create_newborn(
+        self,
+        parent: Any, # Household
+        new_id: int,
+        initial_assets: int,
+        current_tick: int
+    ) -> Any: # Household
+        """Creates a new household as a child of an existing one."""
+        ...
+
+    def create_immigrant(
+        self,
+        new_id: int,
+        current_tick: int,
+        initial_assets: int
+    ) -> Any: # Household
+        """Creates a new household representing an immigrant."""
+        ...
+
+    def create_initial_population(
+        self,
+        num_agents: int
+    ) -> List[Any]: # List[Household]
+        """Creates the initial population of households for the simulation."""
+        ...
