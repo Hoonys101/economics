@@ -64,7 +64,7 @@ class TransactionManager(SystemInterface):
                 if not buyer:
                     continue
 
-                trade_value = tx.quantity * tx.price
+                trade_value = int(tx.quantity * tx.price)
 
                 # Debit Buyer & Credit Public Manager
                 try:
@@ -95,8 +95,8 @@ class TransactionManager(SystemInterface):
             if not buyer and not seller:
                 continue
 
-            trade_value = tx.quantity * tx.price
-            tax_amount = 0.0
+            trade_value = int(tx.quantity * tx.price)
+            tax_amount = 0
             success = False
 
             # ==================================================================
@@ -158,8 +158,8 @@ class TransactionManager(SystemInterface):
             elif tx.transaction_type == "goods":
                 # Sales Tax Logic
                 sales_tax_rate = getattr(self.config, "SALES_TAX_RATE", 0.05)
-                tax_amount = trade_value * sales_tax_rate
-                total_cost = trade_value + tax_amount
+                tax_amount = int(trade_value * sales_tax_rate)
+                total_cost = int(trade_value + tax_amount)
 
                 # Solvency Check (Legacy compatibility)
                 if hasattr(buyer, 'check_solvency'):
@@ -245,11 +245,17 @@ class TransactionManager(SystemInterface):
                     avg_food_price = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
 
                 daily_food_need = getattr(self.config, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
-                survival_cost = max(avg_food_price * daily_food_need, 10.0)
+
+                # Assume avg_food_price might be dollars (float) from legacy or int pennies.
+                # Safety check: if small float (< 100), treat as dollars -> convert to pennies.
+                if isinstance(avg_food_price, float) and avg_food_price < 1000.0:
+                     avg_food_price = avg_food_price * 100
+
+                survival_cost = int(max(avg_food_price * daily_food_need, 1000.0)) # 1000 pennies = $10 min survival cost?
 
                 # Calculate Tax (Standardized method call on Gov)
                 # Note: calculate_income_tax is on Government agent.
-                tax_amount = government.calculate_income_tax(trade_value, survival_cost)
+                tax_amount = int(government.calculate_income_tax(trade_value, survival_cost))
 
                 if tax_payer == "FIRM":
                     # Firm pays Wage to Household

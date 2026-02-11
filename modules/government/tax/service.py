@@ -79,15 +79,22 @@ class TaxService(ITaxService):
              ticks_per_year = 100
 
         wealth_tax_rate_tick = wealth_tax_rate_annual / ticks_per_year
-        # Threshold is likely in dollars in config. Convert to pennies.
-        wealth_threshold_float = getattr(self.config_module, "WEALTH_TAX_THRESHOLD", DEFAULT_WEALTH_TAX_THRESHOLD)
-        wealth_threshold = int(wealth_threshold_float * 100)
+
+        # Threshold handling:
+        # Check if WEALTH_TAX_THRESHOLD is already in pennies (large int) or dollars (float/small int).
+        # Heuristic: If threshold > 1,000,000, assume pennies?
+        # But wait, $10,000 threshold = 1,000,000 pennies.
+        # DEFAULT_WEALTH_TAX_THRESHOLD is usually float dollars in config.
+        # Let's assume input config is dollars unless explicitly typed otherwise.
+
+        wealth_threshold_raw = getattr(self.config_module, "WEALTH_TAX_THRESHOLD", DEFAULT_WEALTH_TAX_THRESHOLD)
+        wealth_threshold = int(wealth_threshold_raw * 100)
 
         if net_worth <= wealth_threshold:
             return 0
 
         tax_amount = round_to_pennies(Decimal(net_worth - wealth_threshold) * Decimal(wealth_tax_rate_tick))
-        return max(0, min(tax_amount, net_worth))
+        return int(max(0, min(tax_amount, net_worth)))
 
     def collect_wealth_tax(self, agents: List[IAgent]) -> TaxCollectionResultDTO:
         """
@@ -105,8 +112,11 @@ class TaxService(ITaxService):
                 net_worth = 0
                 assets = getattr(agent, "assets", 0)
                 if isinstance(assets, dict):
-                     net_worth = int(assets.get(DEFAULT_CURRENCY, 0))
+                     # Handle float values in dict if legacy
+                     val = assets.get(DEFAULT_CURRENCY, 0)
+                     net_worth = int(val)
                 else:
+                     # Handle float assets if legacy
                      net_worth = int(assets)
 
                 tax_amount = self.calculate_wealth_tax(net_worth)
@@ -123,7 +133,7 @@ class TaxService(ITaxService):
 
         return TaxCollectionResultDTO(
             payment_requests=requests,
-            total_collected=total_projected,
+            total_collected=int(total_projected),
             tax_type="wealth_tax"
         )
 

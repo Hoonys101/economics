@@ -27,11 +27,12 @@ def mock_agent():
 
 def test_collect_wealth_tax(tax_service, mock_agent):
     # Setup
-    # Net worth 2000. Threshold 1000. Taxable 1000.
+    # Net worth 2000. Threshold 1000 (dollars) -> 100000 pennies.
+    # Assets 200,000 pennies. Taxable 100,000.
     # Rate per tick = 0.02 / 100 = 0.0002
-    # Tax = 1000 * 0.0002 = 0.2
+    # Tax = 100,000 * 0.0002 = 20 pennies.
 
-    mock_agent.assets = {DEFAULT_CURRENCY: 2000.0}
+    mock_agent.assets = {DEFAULT_CURRENCY: 200000}
     agents = [mock_agent]
 
     # Execution
@@ -42,11 +43,11 @@ def test_collect_wealth_tax(tax_service, mock_agent):
     assert len(result.payment_requests) == 1
     req = result.payment_requests[0]
     assert req.payer == mock_agent
-    assert req.amount == 0.2
+    assert req.amount == 20
     assert req.memo == "wealth_tax"
 
 def test_collect_wealth_tax_below_threshold(tax_service, mock_agent):
-    mock_agent.assets = {DEFAULT_CURRENCY: 500.0}
+    mock_agent.assets = {DEFAULT_CURRENCY: 50000}
     agents = [mock_agent]
 
     result = tax_service.collect_wealth_tax(agents)

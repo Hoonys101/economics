@@ -145,39 +145,39 @@ class TestTaxIncidence(unittest.TestCase):
     def test_household_payer_scenario(self):
         """가계가 세금을 납부하는 경우 (원천징수)"""
         cfg.INCOME_TAX_PAYER = "HOUSEHOLD"
-        h = self._create_household(1, 1000.0)
-        f = self._create_firm(101, 5000.0)
+        h = self._create_household(1, 100000)
+        f = self._create_firm(101, 500000)
         sim = self._setup_simulation(h, f)
         
-        # 100원 매칭 (노동 거래)
+        # 100원 매칭 (노동 거래) -> 10000 pennies
         from simulation.models import Transaction
-        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=100.0, market_id="labor", transaction_type="labor", time=1)
+        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=10000, market_id="labor", transaction_type="labor", time=1)
         sim._process_transactions([tx])
         
-        # 가계: 1000 + (100 - 16.25) = 1083.75 (Progressive Tax)
-        # 기업: 5000 - 100 = 4900
-        self.assertEqual(h.assets, 1083.75)
-        self.assertEqual(f.assets, 4900.0)
-        self.assertEqual(sim.government.assets, 16.25)
+        # 가계: 100000 + (10000 - 1625) = 108375 (Progressive Tax)
+        # 기업: 500000 - 10000 = 490000
+        self.assertEqual(h.assets, 108375)
+        self.assertEqual(f.assets, 490000)
+        self.assertEqual(sim.government.assets, 1625)
         print("✓ Household Payer (Withholding): Agent Assets Correct")
 
     def test_firm_payer_scenario(self):
         """기업이 세금을 납부하는 경우 (추가 납부)"""
         cfg.INCOME_TAX_PAYER = "FIRM"
-        h = self._create_household(1, 1000.0)
-        f = self._create_firm(101, 5000.0)
+        h = self._create_household(1, 100000)
+        f = self._create_firm(101, 500000)
         sim = self._setup_simulation(h, f)
         
-        # 100원 매칭 (노동 거래)
+        # 100원 매칭 (노동 거래) -> 10000 pennies
         from simulation.models import Transaction
-        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=100.0, market_id="labor", transaction_type="labor", time=1)
+        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=10000, market_id="labor", transaction_type="labor", time=1)
         sim._process_transactions([tx])
         
-        # 가계: 1000 + 100 = 1100
-        # 기업: 5000 - (100 + 16.25) = 4883.75
-        self.assertEqual(h.assets, 1100.0)
-        self.assertEqual(f.assets, 4883.75)
-        self.assertEqual(sim.government.assets, 16.25)
+        # 가계: 100000 + 10000 = 110000
+        # 기업: 500000 - (10000 + 1625) = 488375
+        self.assertEqual(h.assets, 110000)
+        self.assertEqual(f.assets, 488375)
+        self.assertEqual(sim.government.assets, 1625)
         print("✓ Firm Payer (Extra Tax): Agent Assets Correct")
 
 if __name__ == "__main__":

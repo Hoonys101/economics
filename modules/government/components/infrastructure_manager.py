@@ -33,9 +33,11 @@ class InfrastructureManager:
 
         # Synchronous Financing (WO-117)
         current_assets_raw = self.government.assets
-        current_assets = current_assets_raw
+        current_assets = 0
         if isinstance(current_assets_raw, dict):
-            current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
+            current_assets = int(current_assets_raw.get(DEFAULT_CURRENCY, 0))
+        else:
+            current_assets = int(current_assets_raw)
 
         if current_assets < effective_cost:
             needed = int(effective_cost - current_assets)
@@ -43,14 +45,14 @@ class InfrastructureManager:
             if hasattr(self.government.finance_system, 'issue_treasury_bonds_synchronous'):
                 success, bond_txs = self.government.finance_system.issue_treasury_bonds_synchronous(self.government, needed, current_tick)
                 if not success:
-                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
+                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed} for infrastructure.")
                      return []
                 transactions.extend(bond_txs)
             else:
                 # Fallback to old behavior (should not happen if system is updated)
                 bonds, txs = self.government.finance_system.issue_treasury_bonds(needed, current_tick)
                 if not bonds:
-                    logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed:.2f} for infrastructure.")
+                    logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed} for infrastructure.")
                     return []
                 transactions.extend(txs)
 

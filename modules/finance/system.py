@@ -222,6 +222,7 @@ class FinanceSystem(IFinanceSystem):
     def issue_treasury_bonds(self, amount: int, current_tick: int) -> Tuple[List[BondDTO], List[Transaction]]:
         """
         Issues new treasury bonds using the new Ledger system (partially).
+        NOW SYNCHRONOUS: Executes transfer via SettlementSystem to ensure Agent Wallets are updated.
         """
         # Updates self.ledger.treasury.bonds
 
@@ -244,6 +245,26 @@ class FinanceSystem(IFinanceSystem):
 
         if bank_reserves < amount:
             return [], []
+
+        # Execute Transfer via SettlementSystem (Synchronous Update of Agent Wallets)
+        if self.settlement_system:
+            # We must use the agent objects, not just IDs
+            buyer_agent = self.bank
+            seller_agent = self.government
+
+            success = self.settlement_system.transfer(
+                buyer_agent,
+                seller_agent,
+                amount,
+                memo=f"bond_purchase_{bond_id}",
+                currency=DEFAULT_CURRENCY
+            )
+
+            if not success:
+                logger.warning(f"BOND_ISSUANCE_FAILED | Settlement transfer failed for amount {amount}")
+                return [], []
+        else:
+             logger.warning("BOND_ISSUANCE_WARNING | No SettlementSystem attached. Wallet updates skipped.")
 
         # Create Bond State
         bond_state = BondStateDTO(

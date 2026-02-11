@@ -48,13 +48,20 @@ class FiscalPolicyManager(IFiscalPolicyManager):
                      basic_food_price = 5.0
 
         daily_consumption = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
-        survival_cost = float(basic_food_price) * float(daily_consumption)
+
+        # Convert to pennies if float dollars (heuristic < 1000) or force int.
+        # Assuming input price might be float dollars.
+        raw_price = float(basic_food_price)
+        if raw_price < 1000.0:
+             raw_price *= 100.0
+
+        survival_cost = int(raw_price * float(daily_consumption))
 
         # Ensure non-zero survival cost to prevent issues
         if survival_cost <= 0:
             # Fallback to config default or hardcoded safe value
             default_price = getattr(self.config_module, "DEFAULT_FALLBACK_PRICE", 5.0)
-            survival_cost = default_price
+            survival_cost = int(default_price * 100) # Convert default dollars to pennies
 
         # 2. Get Tax Brackets Configuration
         # Format: List of (multiple_of_survival_cost, tax_rate)

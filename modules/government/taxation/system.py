@@ -48,30 +48,31 @@ class TaxationSystem:
         Calculates income tax based on the provided parameters.
         Logic moved from TaxAgency.
         """
-        if income <= 0:
+        income_val = int(income)
+        if income_val <= 0:
             return 0
 
         raw_tax = 0.0
 
         if tax_mode == "FLAT":
-            raw_tax = income * current_income_tax_rate
+            raw_tax = income_val * current_income_tax_rate
         else:
             tax_brackets = getattr(self.config_module, "TAX_BRACKETS", [])
             if not tax_brackets:
-                taxable = max(0.0, income - survival_cost)
+                taxable = max(0.0, income_val - survival_cost)
                 raw_tax = taxable * current_income_tax_rate
             else:
                 previous_limit_abs = 0.0
                 for multiple, rate in tax_brackets:
                     limit_abs = multiple * survival_cost
-                    upper_bound = min(income, limit_abs)
+                    upper_bound = min(income_val, limit_abs)
                     lower_bound = max(0.0, previous_limit_abs)
                     taxable_amount = max(0.0, upper_bound - lower_bound)
 
                     if taxable_amount > 0:
                         raw_tax += taxable_amount * rate
 
-                    if income <= limit_abs:
+                    if income_val <= limit_abs:
                         break
                     previous_limit_abs = limit_abs
 
@@ -101,7 +102,7 @@ class TaxationSystem:
         Does NOT execute any transfer.
         """
         intents: List[TaxIntent] = []
-        trade_value = transaction.quantity * transaction.price
+        trade_value = int(transaction.quantity * transaction.price)
 
         # 1. Sales Tax (Goods)
         if transaction.transaction_type == "goods":
@@ -130,7 +131,13 @@ class TaxationSystem:
                     avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
 
             daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
-            survival_cost = max(avg_food_price * daily_food_need, 10.0)
+
+            # Assume strict int system. avg_food_price might be dollars (float) from legacy or int pennies.
+            # Safety check: if small float (< 100), treat as dollars -> convert to pennies.
+            if isinstance(avg_food_price, float) and avg_food_price < 1000.0:
+                 avg_food_price = avg_food_price * 100
+
+            survival_cost = int(max(avg_food_price * daily_food_need, 1000.0)) # 1000 pennies = $10 min survival cost?
 
             # Get Tax Rate from Government
             # Assuming government object has income_tax_rate attribute
@@ -193,13 +200,13 @@ class TaxationSystem:
                 continue
 
             # Determine Profit Base (Net Profit = Revenue - Costs)
-            profit = 0.0
+            profit = 0
             if hasattr(firm, 'finance'):
                 rev = firm.finance.revenue_this_turn
                 cost = firm.finance.cost_this_turn
 
-                rev_val = rev.get(DEFAULT_CURRENCY, 0.0) if isinstance(rev, dict) else float(rev)
-                cost_val = cost.get(DEFAULT_CURRENCY, 0.0) if isinstance(cost, dict) else float(cost)
+                rev_val = int(rev.get(DEFAULT_CURRENCY, 0)) if isinstance(rev, dict) else int(rev)
+                cost_val = int(cost.get(DEFAULT_CURRENCY, 0)) if isinstance(cost, dict) else int(cost)
 
                 profit = rev_val - cost_val
 
