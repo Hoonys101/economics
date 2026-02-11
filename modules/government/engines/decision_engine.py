@@ -8,13 +8,17 @@ from modules.government.policies.adaptive_gov_brain import AdaptiveGovBrain
 
 logger = logging.getLogger(__name__)
 
+import warnings
+
 class GovernmentDecisionEngine(IGovernmentDecisionEngine):
     """
-    Stateless engine that decides on government policy actions.
+    [DEPRECATED] Stateless engine that decides on government policy actions.
+    Replaced by FiscalEngine for Fiscal Policy.
     It delegates the specific logic to a strategy (e.g., Taylor Rule, AI).
     """
 
     def __init__(self, config_module: Any, strategy_mode: str = "TAYLOR_RULE"):
+        warnings.warn("GovernmentDecisionEngine is deprecated. Use FiscalEngine instead.", DeprecationWarning, stacklevel=2)
         self.config = config_module
         self.strategy_mode = strategy_mode
         self.brain = AdaptiveGovBrain(config_module)

@@ -15,6 +15,12 @@ def mock_config():
     config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
     config.GOODS_INITIAL_PRICE = {"basic_food": 10.0}
     config.STIMULUS_TRIGGER_GDP_DROP = -0.1
+    # Fiscal Engine Configs
+    config.INCOME_TAX_RATE = 0.1
+    config.CORPORATE_TAX_RATE = 0.2
+    config.AUTO_COUNTER_CYCLICAL_ENABLED = True
+    config.FISCAL_SENSITIVITY_ALPHA = 0.5
+    config.CB_INFLATION_TARGET = 0.02
     return config
 
 def test_execute_social_policy_integration(mock_config):
@@ -122,3 +128,37 @@ def test_execute_social_policy_tax_and_welfare(mock_config):
             assert args[3] == "welfare_support_unemployment"
             welfare_found = True
     assert welfare_found
+
+def test_make_policy_decision_integration(mock_config):
+    # Setup
+    gov = Government(id=1, initial_assets=10000.0, config_module=mock_config)
+
+    # Mock Sensory Data
+    gov.sensory_data = MagicMock()
+    gov.sensory_data.inflation_sma = 0.02
+    gov.sensory_data.gdp_growth_sma = 0.02 # Add growth
+    gov.sensory_data.current_gdp = 1000.0
+    gov.potential_gdp = 1000.0 # Match GDP
+
+    # Market Data
+    market_data = {
+        "total_production": 1000.0
+    }
+
+    central_bank = MagicMock() # Mock central bank
+
+    # Execution
+    # Initial tax rate from config (mocked)
+    gov.income_tax_rate = 0.1
+    gov.corporate_tax_rate = 0.2
+
+    # Run with recession data
+    market_data["total_production"] = 900.0 # GDP < Potential -> Expansionary
+    gov.sensory_data.current_gdp = 900.0 # Ensure consistency for logic that might use sensory data
+
+    gov.make_policy_decision(market_data, current_tick=200, central_bank=central_bank)
+
+    # Verification
+    # Should lower tax rates
+    assert gov.income_tax_rate < 0.1
+    assert gov.corporate_tax_rate < 0.2

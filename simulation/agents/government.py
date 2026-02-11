@@ -39,8 +39,9 @@ from modules.finance.wallet.api import IWallet
 from modules.simulation.api import ISensoryDataProvider, AgentSensorySnapshotDTO
 
 # New Engines
-from modules.government.engines.decision_engine import GovernmentDecisionEngine
 from modules.government.engines.execution_engine import PolicyExecutionEngine
+from modules.government.engines.fiscal_engine import FiscalEngine
+from modules.government.engines.api import FiscalStateDTO, FiscalRequestDTO, FirmBailoutRequestDTO, FirmFinancialsDTO
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -82,7 +83,7 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
 
         # Initialize engines
         policy_mode = getattr(config_module, "GOVERNMENT_POLICY_MODE", "TAYLOR_RULE")
-        self.decision_engine = GovernmentDecisionEngine(config_module, strategy_mode=policy_mode)
+        self.fiscal_engine = FiscalEngine(config_module)
         self.execution_engine = PolicyExecutionEngine()
 
         # Initialize default fiscal policy
@@ -296,38 +297,54 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
             self.fiscal_policy.corporate_tax_rate = self.corporate_tax_rate
             self.fiscal_policy.income_tax_rate = self.income_tax_rate
 
+        # Update Potential GDP (Agent Logic)
+        current_gdp = market_data.get("total_production", 0.0)
+        if current_gdp == 0.0 and self.sensory_data:
+             current_gdp = self.sensory_data.current_gdp
+
+        if self.potential_gdp == 0.0:
+            self.potential_gdp = current_gdp
+        else:
+            alpha = 0.01
+            self.potential_gdp = (alpha * current_gdp) + ((1-alpha) * self.potential_gdp)
+
         # 1. Gather State into DTO
-        current_state_dto = self._get_state_dto(current_tick)
+        fiscal_state: FiscalStateDTO = {
+            "tick": current_tick,
+            "assets": self.wallet.get_all_balances(),
+            "total_debt": self.total_debt,
+            "income_tax_rate": self.income_tax_rate,
+            "corporate_tax_rate": self.corporate_tax_rate,
+            "approval_rating": self.approval_rating,
+            "welfare_budget_multiplier": self.welfare_budget_multiplier,
+            "potential_gdp": self.potential_gdp
+        }
 
-        market_snapshot = MarketSnapshotDTO(
-            tick=current_tick,
-            market_signals={},
-            market_data=market_data
+        # Prepare Market Snapshot DTO (TypedDict for Engines)
+        # Note: existing MarketSnapshotDTO is dataclass. We need dictionary for TypedDict?
+        # Or implementation handles it. The engine expects TypedDict.
+        # I'll construct the dict as expected by engine.
+        engine_market_snapshot = {
+            "tick": current_tick,
+            "inflation_rate_annual": self.sensory_data.inflation_sma if self.sensory_data else 0.0,
+            "current_gdp": current_gdp
+        }
+
+        # 2. Call Fiscal Engine
+        decision = self.fiscal_engine.decide(fiscal_state, engine_market_snapshot, [])
+
+        # 3. Apply Changes
+        if decision["new_income_tax_rate"] is not None:
+            self.income_tax_rate = decision["new_income_tax_rate"]
+        if decision["new_corporate_tax_rate"] is not None:
+            self.corporate_tax_rate = decision["new_corporate_tax_rate"]
+        if decision["new_welfare_budget_multiplier"] is not None:
+            self.welfare_budget_multiplier = decision["new_welfare_budget_multiplier"]
+
+        logger.debug(
+            f"FISCAL_POLICY_EXECUTED | Tick: {current_tick} | IncomeTax: {self.income_tax_rate:.2f} | CorpTax: {self.corporate_tax_rate:.2f}",
+            extra={"tick": current_tick, "agent_id": self.id}
         )
-
-        # 2. Call Decision Engine
-        policy_decision = self.decision_engine.decide(current_state_dto, market_snapshot, central_bank)
-
-        # 3. Prepare Execution Context
-        exec_context = self._get_execution_context()
-
-        # 4. Call Execution Engine
-        execution_result = self.execution_engine.execute(
-            policy_decision,
-            current_state_dto,
-            [], # No agents list available here
-            market_data,
-            exec_context
-        )
-
-        # 5. Process Results (State Updates)
-        self._apply_state_updates(execution_result.state_updates)
-        
-        if policy_decision.status == "EXECUTED":
-             logger.debug(
-                f"POLICY_EXECUTED | Tick: {current_tick} | Action: {policy_decision.action_tag}",
-                extra={"tick": current_tick, "agent_id": self.id}
-            )
 
         # Legacy Shadow Logging (Keep for verification parity)
         self._log_shadow_metrics(market_data, current_tick, central_bank)
@@ -455,36 +472,70 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
 
     def provide_firm_bailout(self, firm: Any, amount: float, current_tick: int) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:
         """Provides a bailout loan to a firm if it's eligible. Returns (LoanDTO, Transactions)."""
-        decision = PolicyDecisionDTO(
-            action_tag=PolicyActionTag.FIRM_BAILOUT,
-            parameters={"firm_id": firm.id, "amount": amount},
-            status="EXECUTED"
-        )
 
-        current_state_dto = self._get_state_dto(current_tick)
-        context = self._get_execution_context()
+        # 1. Create Request DTO
+        # Check solvency locally or via WelfareManager helper if needed, but Engine needs FinancialsDTO.
+        # Assuming we can get is_solvent from FinanceSystem or WelfareManager logic.
+        # For now, using WelfareManager logic if possible, or FinanceSystem.
+        # WelfareManager.provide_firm_bailout used 'is_solvent' passed in.
+        # Legacy code called: is_solvent = context.finance_system.evaluate_solvency(firm, state.tick)
 
-        result = self.execution_engine.execute(
-            decision, current_state_dto, [firm], {}, context
-        )
+        is_solvent = False
+        if self.finance_system:
+             is_solvent = self.finance_system.evaluate_solvency(firm, current_tick)
 
-        # Refactored: Use executed loans/transactions from Engine result
-        if result.bailout_results:
-            loans = result.executed_loans
-            txs = result.transactions
+        financials: FirmFinancialsDTO = {
+            "assets": firm.assets if hasattr(firm, 'assets') else 0.0,
+            "profit": 0.0, # Not easily available without deep inspection
+            "is_solvent": is_solvent
+        }
 
-            # Process expenditures for statistics
-            for loan in loans:
-                # Assuming loan has 'amount' or we infer from request.
-                # The engine called grant_bailout_loan(firm, amount...)
-                # We can use the 'amount' from the decision parameters
-                amt = decision.parameters.get("amount", 0.0)
-                cur = getattr(loan, 'currency', DEFAULT_CURRENCY)
+        bailout_req: FirmBailoutRequestDTO = {
+            "firm_id": firm.id,
+            "requested_amount": amount,
+            "firm_financials": financials
+        }
+
+        request: FiscalRequestDTO = {"bailout_request": bailout_req}
+
+        # 2. Call Engine
+        # Need state and market dummy
+        fiscal_state: FiscalStateDTO = {
+            "tick": current_tick,
+            "assets": self.wallet.get_all_balances(),
+            "total_debt": self.total_debt,
+            "income_tax_rate": self.income_tax_rate,
+            "corporate_tax_rate": self.corporate_tax_rate,
+            "approval_rating": self.approval_rating,
+            "welfare_budget_multiplier": self.welfare_budget_multiplier,
+            "potential_gdp": self.potential_gdp
+        }
+        market_snapshot = {
+            "tick": current_tick,
+            "inflation_rate_annual": 0.0, # Not needed for bailout check usually
+            "current_gdp": 0.0
+        }
+
+        decision = self.fiscal_engine.decide(fiscal_state, market_snapshot, [request])
+
+        # 3. Execute Decision
+        if decision["bailouts_to_grant"]:
+            grant = decision["bailouts_to_grant"][0]
+
+            # Execute loan via FinanceSystem
+            # Reusing WelfareManager logic or direct FinanceSystem call?
+            # Legacy used WelfareManager.provide_firm_bailout to get DTO, then FinanceSystem to grant.
+            # Now we have grant details.
+
+            if self.finance_system:
+                loan, txs = self.finance_system.grant_bailout_loan(firm, grant["amount"], current_tick)
+
+                # Track expenditure
+                cur = DEFAULT_CURRENCY
                 if cur not in self.expenditure_this_tick: self.expenditure_this_tick[cur] = 0.0
-                self.expenditure_this_tick[cur] += amt
+                self.expenditure_this_tick[cur] += grant["amount"]
 
-            # Return first loan and all txs (Legacy Signature limitation)
-            return (loans[0] if loans else None), txs
+                return loan, txs
 
         return None, []
 

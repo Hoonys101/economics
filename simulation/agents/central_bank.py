@@ -6,6 +6,8 @@ from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
 from modules.system.api import ICurrencyHolder, CurrencyCode, DEFAULT_CURRENCY
 from modules.system.constants import ID_CENTRAL_BANK
+from modules.finance.engines.monetary_engine import MonetaryEngine
+from modules.finance.engines.api import MonetaryStateDTO, MarketSnapshotDTO
 
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
@@ -45,6 +47,8 @@ class CentralBank(ICurrencyHolder):
         # GDP Potential Tracking (EMA)
         self.potential_gdp = 0.0
         self.gdp_ema_alpha = 0.05 # Smoothing factor for Potential GDP (slow moving)
+
+        self.monetary_engine = MonetaryEngine(config_module)
 
         logger.info(
             f"CENTRAL_BANK_INIT | Rate: {self.base_rate:.2%}, Target Infl: {self.inflation_target:.2%}",
@@ -108,82 +112,54 @@ class CentralBank(ICurrencyHolder):
 
     def calculate_rate(self, current_tick: int, current_gdp: float):
         """
-        Implements Taylor Rule:
-        i_t = r* + pi_t + alpha * (pi_t - pi*) + beta * y_t
-
-        Where:
-        - r*: Real neutral rate (assumed 2% or 0.02)
-        - pi_t: Current inflation rate
-        - pi*: Inflation target
-        - y_t: Output gap ((GDP - Potential) / Potential)
+        Calculates interest rate using MonetaryEngine (Taylor Rule).
         """
         # A. Calculate Inflation
-        # We need inflation rate. Tracker usually has 'avg_goods_price'.
-        # Calculate % change from history.
         price_history = self.tracker.metrics.get("avg_goods_price", [])
-
-        # Use simple period-over-period inflation (since last update)
-        # Check price 'update_interval' ticks ago.
         inflation_rate = 0.0
         if len(price_history) > self.update_interval:
             p_current = price_history[-1]
             p_prev = price_history[-self.update_interval]
             if p_prev > 0:
-                # Annualize it?
-                # Taylor rule usually uses annual inflation.
-                # If interval is 10 ticks and year is 100 ticks, this is 0.1 year.
-                # inflation_period = (p_current - p_prev) / p_prev
-                # inflation_annual = inflation_period * (TICKS_PER_YEAR / update_interval)
-                # Let's keep it simple: just period change for now, or annualize.
-                # Standard Taylor Rule uses annual rates.
-
                 ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100)
                 period_inflation = (p_current - p_prev) / p_prev
                 inflation_rate = period_inflation * (ticks_per_year / self.update_interval)
 
-        # B. Calculate Output Gap
+        # B. Prepare Strategy Overrides
+        override_target_rate = None
+        rate_multiplier = None
+        if self.strategy and self.strategy.is_active:
+             override_target_rate = self.strategy.monetary_shock_target_rate
+             rate_multiplier = self.strategy.base_interest_rate_multiplier
+
+        # C. Construct DTOs
+        state: MonetaryStateDTO = {
+            "tick": current_tick,
+            "current_base_rate": self.base_rate,
+            "potential_gdp": self.potential_gdp,
+            "inflation_target": self.inflation_target,
+            "override_target_rate": override_target_rate,
+            "rate_multiplier": rate_multiplier
+        }
+
+        snapshot: MarketSnapshotDTO = {
+            "tick": current_tick,
+            "inflation_rate_annual": inflation_rate,
+            "current_gdp": current_gdp
+        }
+
+        # D. Call Engine
+        decision = self.monetary_engine.calculate_rate(state, snapshot)
+
+        # E. Apply Decision
+        old_rate = self.base_rate
+        self.base_rate = decision["new_base_rate"]
+
+        # Logging (retained for consistency)
+        # Re-calc output gap for logging only
         output_gap = 0.0
         if self.potential_gdp > 0:
             output_gap = (current_gdp - self.potential_gdp) / self.potential_gdp
-
-        # C. Taylor Rule
-        # Assumed Neutral Real Rate (r*) = 0.02 (2%)
-        neutral_rate = 0.02
-
-        # Taylor Rule Formula
-        # i = r* + pi + alpha(pi - pi*) + beta(y)
-        # Wait, standard formula: i = pi + r* + alpha(pi - pi*) + beta(y)
-        # Rearranged: i = r* + pi(1 + alpha) - alpha*pi* + beta*y
-        # Using alpha=0.5 (standard) means 1.5 response to inflation.
-        # My config has ALPHA=1.5. I should assume config ALPHA is the coefficient for (pi - pi*).
-        # Formula: i = neutral_rate + inflation_rate + alpha * (inflation_rate - target) + beta * output_gap
-
-        taylor_rate = neutral_rate + inflation_rate + \
-                      self.alpha * (inflation_rate - self.inflation_target) + \
-                      self.beta * output_gap
-
-        # D. Apply Strategy Overrides (WO-136)
-        if self.strategy and self.strategy.is_active:
-             # Scenario 4: Fixed Target Rate
-             if self.strategy.monetary_shock_target_rate is not None:
-                 taylor_rate = self.strategy.monetary_shock_target_rate
-
-             # Multiplier
-             if self.strategy.base_interest_rate_multiplier is not None:
-                 taylor_rate *= self.strategy.base_interest_rate_multiplier
-
-        # E. Zero Lower Bound (ZLB) and Smoothing
-        # ZLB
-        target_rate = max(0.0, taylor_rate)
-
-        # Smoothing (Limit max change to 0.25% per update)
-        max_change = 0.0025
-        delta = target_rate - self.base_rate
-        if abs(delta) > max_change:
-            target_rate = self.base_rate + (max_change * (1 if delta > 0 else -1))
-
-        old_rate = self.base_rate
-        self.base_rate = target_rate
 
         old_rate_val = old_rate if isinstance(old_rate, (int, float)) else 0.0
         new_rate_val = self.base_rate if isinstance(self.base_rate, (int, float)) else 0.0
