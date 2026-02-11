@@ -26,7 +26,7 @@ class InfrastructureManager:
         else:
             cost = DEFAULT_INFRASTRUCTURE_INVESTMENT_COST
 
-        effective_cost = cost
+        effective_cost = int(cost)
 
         if self.government.firm_subsidy_budget_multiplier < 0.8:
             return []
@@ -38,7 +38,7 @@ class InfrastructureManager:
             current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
 
         if current_assets < effective_cost:
-            needed = effective_cost - current_assets
+            needed = int(effective_cost - current_assets)
             # Use new synchronous method
             if hasattr(self.government.finance_system, 'issue_treasury_bonds_synchronous'):
                 success, bond_txs = self.government.finance_system.issue_treasury_bonds_synchronous(self.government, needed, current_tick)
@@ -64,7 +64,7 @@ class InfrastructureManager:
         if not active_households:
              return transactions
 
-        amount_per_hh = effective_cost / len(active_households)
+        amount_per_hh = int(effective_cost / len(active_households))
 
         recipient_ids = sorted([h.id for h in active_households])
         logger.debug(f"INFRA_DEBUG | Active HH: {len(active_households)}, Cost: {effective_cost}, AmountPerHH: {amount_per_hh}")

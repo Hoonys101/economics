@@ -364,3 +364,20 @@ class FinanceSystem(IFinanceSystem):
         result = self.debt_servicing_engine.service_all_debt(self.ledger)
         self.ledger = result.updated_ledger
         return result.generated_transactions
+
+    @property
+    def outstanding_bonds(self) -> List[BondDTO]:
+        """
+        Legacy compatibility property.
+        Returns a list of BondDTOs derived from the ledger state.
+        """
+        bonds = []
+        for bond_id, bond_state in self.ledger.treasury.bonds.items():
+            bonds.append(BondDTO(
+                id=bond_id,
+                issuer="GOVERNMENT",
+                face_value=bond_state.face_value_pennies,
+                yield_rate=bond_state.yield_rate,
+                maturity_date=bond_state.maturity_tick
+            ))
+        return bonds

@@ -102,7 +102,9 @@ def finance_system(mock_central_bank, mock_bank, mock_config):
     system = FinanceSystem(mock_gov_shell, mock_central_bank, mock_bank, mock_config)
     # Spy on the real methods so we can assert calls if needed
     system.issue_treasury_bonds = MagicMock(wraps=system.issue_treasury_bonds)
-    system.grant_bailout_loan = MagicMock(wraps=system.grant_bailout_loan)
+    # system.grant_bailout_loan is deprecated and might cause AttributeError if not present
+    if hasattr(system, 'grant_bailout_loan'):
+        system.grant_bailout_loan = MagicMock(wraps=system.grant_bailout_loan)
     system.evaluate_solvency = MagicMock(wraps=system.evaluate_solvency)
     return system
 

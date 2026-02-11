@@ -33,7 +33,7 @@ class HouseholdFactory:
         simulation: Any,
         initial_age: float,
         gender: str,
-        initial_assets: float = 0.0,
+        initial_assets: int = 0,
         generation: int = 0,
         parent_id: Optional[int] = None,
         spouse_id: Optional[int] = None,
@@ -90,12 +90,12 @@ class HouseholdFactory:
             gender=gender,
             parent_id=parent_id,
             generation=generation,
-            initial_assets_record=initial_assets
+            initial_assets_record=int(initial_assets)
         )
 
         # 5. Hydrate State (Assets)
         initial_state = AgentStateDTO(
-            assets={DEFAULT_CURRENCY: initial_assets},
+            assets={DEFAULT_CURRENCY: int(initial_assets)},
             inventory={},
             is_active=True
         )
@@ -134,7 +134,7 @@ class HouseholdFactory:
         new_decision_engine = self._create_decision_engine_for_newborn(parent, simulation, new_id)
 
         # 4. Initial Assets (Zero - Gift transfer happens externally via SettlementSystem)
-        initial_assets = 0.0
+        initial_assets = 0
 
         # 5. Config
         initial_needs = getattr(self.config_module, "NEWBORN_INITIAL_NEEDS", None)

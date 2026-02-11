@@ -21,14 +21,14 @@ class GoodsTransactionHandler(ITransactionHandler):
             logger.warning(f"Transaction failed: Buyer ({tx.buyer_id}) or Seller ({tx.seller_id}) not found.")
             return False
 
-        # Prevent floating point pollution by rounding to 2 decimal places (cents)
-        trade_value = round(tx.quantity * tx.price, 2)
+        # Integer Precision: Calculate trade value in pennies
+        trade_value = int(tx.quantity * tx.price)
 
         # 1. Prepare Settlement (Calculate tax intents)
         # Assuming taxation_system is available in context
         intents = context.taxation_system.calculate_tax_intents(tx, buyer, seller, context.government, context.market_data)
 
-        credits: List[Tuple[Any, float, str]] = []
+        credits: List[Tuple[Any, int, str]] = []
 
         # 1a. Main Trade Credit (Seller)
         credits.append((seller, trade_value, f"goods_trade:{tx.item_id}"))
@@ -38,13 +38,14 @@ class GoodsTransactionHandler(ITransactionHandler):
         total_cost = trade_value
 
         for intent in intents:
-            # Tax amounts are already rounded by TaxationSystem
-            credits.append((context.government, intent.amount, intent.reason))
+            # Tax amounts should be int from TaxationSystem
+            amount_int = int(intent.amount)
+            credits.append((context.government, amount_int, intent.reason))
             if intent.payer_id == buyer.id:
-                total_cost += intent.amount
+                total_cost += amount_int
 
-        # Ensure total_cost is clean (though sum of rounded values should be okay, float sum can drift)
-        total_cost = round(total_cost, 2)
+        # Ensure total_cost is clean
+        total_cost = int(total_cost)
 
         # Solvency Check (Legacy compatibility)
         if hasattr(buyer, 'check_solvency'):

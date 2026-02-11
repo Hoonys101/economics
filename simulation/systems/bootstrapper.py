@@ -15,8 +15,8 @@ class Bootstrapper:
 
     Ref: WO-058 Economic CPR
     """
-    MIN_CAPITAL = 100_000.0  # Increased from 2000
-    INITIAL_INVENTORY = 50.0  # New constant
+    MIN_CAPITAL = 10_000_000  # 100,000.00 USD -> 10,000,000 pennies
+    INITIAL_INVENTORY = 50.0  # Quantity is still float
 
     @staticmethod
     def distribute_initial_wealth(central_bank: Any, target_agent: Any, amount: float, settlement_system: Any) -> None:
@@ -24,14 +24,15 @@ class Bootstrapper:
         Transfers initial wealth from Central Bank to target agent.
         Ensures zero-sum integrity via SettlementSystem.
         """
-        if amount > 0:
-             settlement_system.transfer(central_bank, target_agent, amount, "GENESIS_GRANT")
-             logger.debug(f"GENESIS_GRANT | Transferred {amount:.2f} to Agent {target_agent.id}")
+        amount_pennies = int(amount)
+        if amount_pennies > 0:
+             settlement_system.transfer(central_bank, target_agent, amount_pennies, "GENESIS_GRANT")
+             logger.debug(f"GENESIS_GRANT | Transferred {amount_pennies} to Agent {target_agent.id}")
 
     @staticmethod
     def force_assign_workers(firms: List['Firm'], households: List['Household']) -> int:
         MAX_FORCED_WORKERS = 5
-        DEFAULT_WAGE = 50.0
+        DEFAULT_WAGE = 5000 # 50.00 USD
         assigned_count = 0
         unemployed = [h for h in households if h._econ_state.employer_id is None and h._bio_state.is_active]
 
@@ -45,7 +46,7 @@ class Bootstrapper:
                         break
                     worker = unemployed.pop(0)
                     worker.employer_id = firm.id
-                    worker.wage = DEFAULT_WAGE
+                    worker.current_wage = DEFAULT_WAGE
                     # Use HR Engine directly
                     firm.hr_engine.hire(firm.hr_state, worker, DEFAULT_WAGE, 0) # Genesis Tick
                     assigned_count += 1
@@ -98,13 +99,13 @@ class Bootstrapper:
             # Refactor: Use wallet directly
             current_balance = firm.wallet.get_balance(DEFAULT_CURRENCY)
             if current_balance < Bootstrapper.MIN_CAPITAL:
-                diff = Bootstrapper.MIN_CAPITAL - current_balance
+                diff = int(Bootstrapper.MIN_CAPITAL - current_balance)
                 if settlement_system and central_bank:
                     settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
-                    logger.info(f"BOOTSTRAPPER | Injected {diff:.2f} capital to Firm {firm.id} via Settlement.")
+                    logger.info(f"BOOTSTRAPPER | Injected {diff} capital to Firm {firm.id} via Settlement.")
                 else:
                     # Fallback (Should not be used in Genesis mode, but keeps compatibility)
                     firm.deposit(diff, DEFAULT_CURRENCY)
-                    logger.warning(f"BOOTSTRAPPER | Legacy injection of {diff:.2f} to Firm {firm.id} (No SettlementSystem).")
+                    logger.warning(f"BOOTSTRAPPER | Legacy injection of {diff} to Firm {firm.id} (No SettlementSystem).")
 
         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")

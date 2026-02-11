@@ -35,7 +35,7 @@ class TestConsumptionManager:
             labor_skill=1.0,
             education_xp=0.0,
             education_level=0,
-            expected_wage_pennies=10,
+            expected_wage_pennies=1000,
             talent=Talent(base_learning_rate=0.5, max_potential=1.0),
             skills={},
             aptitude=0.5,
@@ -46,7 +46,8 @@ class TestConsumptionManager:
             housing_target_mode="RENT",
             housing_price_history=deque(),
             market_wage_history=deque(),
-            shadow_reservation_wage_pennies=10,
+            shadow_reservation_wage_pennies=1000,
+
             last_labor_offer_tick=0,
             last_fired_tick=-1,
             job_search_patience=0,
