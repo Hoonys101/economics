@@ -53,6 +53,9 @@ class HREngine:
         if context.tax_policy:
             survival_cost = context.tax_policy.survival_cost
 
+        # Create a local copy of wallet balances to simulate spending without mutating the input DTO
+        simulated_balances = context.wallet_balances.copy()
+
         # Iterate over copy to allow modification of hr_state.employees (if we were removing them,
         # though now we defer removal for firing cases)
         # Note: Validation removal still happens immediately as it's state cleanup.
@@ -74,10 +77,10 @@ class HREngine:
                 rate = exchange_rates.get(cur, 0.0)
                 return amt * rate
 
-            for cur, amount in context.wallet_balances.items():
+            for cur, amount in simulated_balances.items():
                 total_liquid_assets += convert(amount, cur)
 
-            current_balance = context.wallet_balances.get(DEFAULT_CURRENCY, 0.0)
+            current_balance = simulated_balances.get(DEFAULT_CURRENCY, 0.0)
 
             if current_balance >= wage:
                 # Calculate Tax
@@ -120,7 +123,7 @@ class HREngine:
                 )
 
                 # Decrement virtual balance for next iteration check (local simulation of balance)
-                context.wallet_balances[DEFAULT_CURRENCY] = current_balance - wage # Simplify: assume all in default currency
+                simulated_balances[DEFAULT_CURRENCY] = current_balance - wage # Simplify: assume all in default currency
 
             elif total_liquid_assets >= wage:
                 # Solvent but Illiquid -> Zombie

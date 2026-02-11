@@ -166,3 +166,13 @@ def test_process_payroll_zombie(hr_engine, hr_state, config, context, mock_emplo
     assert mock_employee.id in hr_state.unpaid_wages
     assert len(hr_state.unpaid_wages[mock_employee.id]) == 1
     assert hr_state.unpaid_wages[mock_employee.id][0] == (100, 20.0)
+
+def test_process_payroll_context_immutability(hr_engine, hr_state, config, context, mock_employee):
+    """Verify that process_payroll does NOT mutate context.wallet_balances."""
+    initial_balance = context.wallet_balances[DEFAULT_CURRENCY]
+
+    # Run payroll
+    hr_engine.process_payroll(hr_state, context, config)
+
+    # Check balance - should be unchanged in the DTO
+    assert context.wallet_balances[DEFAULT_CURRENCY] == initial_balance

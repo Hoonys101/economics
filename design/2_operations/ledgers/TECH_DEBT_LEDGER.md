@@ -9,6 +9,7 @@
 | **TD-STR-GOD** | Architecture | God Classes: `Firm` (1164 LOC) and `Household` (1121 LOC) exceed maintainability thresholds. | **High**: High maintenance cost & circular dependencies. | Identified |
 | **TD-STR-LEAK** | Architecture | Abstraction Leaks: Raw agents passed to stateless engines (Production, HR, Gov, Policy). | **Medium**: Tight coupling, hard to test in isolation. | Identified |
 | **TD-LEG-TRANS** | System | Legacy `TransactionManager` contains redundant/conflicting logic. | **Low**: Confusion & code bloat. | Pending Deletion |
+| **TD-XXX** | Architecture | Firm God Class and Orchestration Bottleneck. `Firm` handles too many responsibilities (Production, Finance, HR, Sales, Decision Making). | **High**: Orchestration bottleneck, difficult testing/maintenance. | Identified (Partially Mitigated by HR/Sales Refactor) |
 
 ## ✅ Resolved Technical Debt
 
