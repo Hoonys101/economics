@@ -37,6 +37,13 @@ def mock_dependencies():
         return default
     config_module.get.side_effect = get_config
 
+    # Setup Settlement System get_balance side effect
+    def get_balance_side_effect(agent_id, currency):
+        if agent_id == government.id:
+            return government.wallet.get_balance()
+        return 0
+    settlement_system.get_balance.side_effect = get_balance_side_effect
+
     return {
         "government": government,
         "central_bank": central_bank,

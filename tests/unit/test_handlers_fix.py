@@ -24,7 +24,7 @@ class TestHandlerFix(unittest.TestCase):
         self.mock_household.needs = {}
 
         # Setup add_item side effect to update inventory
-        def add_item_side_effect(item_id, quantity, transaction_id=None, quality=1.0):
+        def add_item_side_effect(item_id, quantity, transaction_id=None, quality=1.0, slot=None):
             self.mock_household.inventory[item_id] = self.mock_household.inventory.get(item_id, 0.0) + quantity
             return True
         self.mock_household.add_item.side_effect = add_item_side_effect
