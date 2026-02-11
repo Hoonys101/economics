@@ -290,7 +290,7 @@ class TestAIDrivenHouseholdDecisionEngine:
         )
 
         # Set DTO wage
-        mock_household_dto.current_wage = 0.0
+        mock_household_dto.current_wage_pennies = 0
         mock_household_dto.wage_modifier = 0.9 # Lower than 1.0 to trigger participation
 
         # Inject market data for avg wage
@@ -328,7 +328,7 @@ class TestAIDrivenHouseholdDecisionEngine:
              work_aggressiveness=0.1
         )
 
-        mock_household_dto.current_wage = 0.0
+        mock_household_dto.current_wage_pennies = 0
         mock_household_dto.wage_modifier = 1.0
 
         # Inject high avg wage so reservation wage calc results in high value
