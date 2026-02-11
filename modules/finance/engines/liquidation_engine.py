@@ -51,6 +51,15 @@ class LiquidationEngine(ILiquidationEngine):
             repayment = min(remaining_proceeds, loan.remaining_principal)
             if repayment > 0:
                 loan.remaining_principal -= repayment
+                # [Double-Entry] Credit Bank Reserves (Cash Receipt)
+                # Asset (Loan) Down, Asset (Reserves) Up.
+                if bank_id in ledger.banks:
+                    # Assuming default currency for now
+                    from modules.system.api import DEFAULT_CURRENCY
+                    reserves = ledger.banks[bank_id].reserves
+                    if DEFAULT_CURRENCY not in reserves: reserves[DEFAULT_CURRENCY] = 0.0
+                    reserves[DEFAULT_CURRENCY] += repayment
+
                 remaining_proceeds -= repayment
 
                 txs.append(Transaction(
@@ -68,10 +77,12 @@ class LiquidationEngine(ILiquidationEngine):
                 # Default the rest
                 loan.is_defaulted = True
                 default_amount = loan.remaining_principal
-                loan.remaining_principal = 0 # Write off from active balance?
-                # Or keep it as defaulted? LoanStateDTO has is_defaulted.
-                # Usually write-off means removing from assets.
-                # Let's mark as defaulted for now.
+
+                # [Double-Entry] Write-off: Asset (Loan) Down, Equity (Retained Earnings) Down
+                if bank_id in ledger.banks:
+                     ledger.banks[bank_id].retained_earnings -= default_amount
+
+                loan.remaining_principal = 0 # Write off from active balance
 
                 txs.append(Transaction(
                     buyer_id=request.firm_id, # Or Bank?

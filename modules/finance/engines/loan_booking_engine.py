@@ -23,22 +23,14 @@ class LoanBookingEngine(ILoanBookingEngine):
         if not decision.is_approved:
             return EngineOutputDTO(updated_ledger=ledger, generated_transactions=[])
 
-        # We need a lender. Since LoanApplicationDTO doesn't have it,
-        # we must assume the caller (FinanceSystem) handles lender selection
-        # or we pick one from ledger.
-        # ISSUE: LoanBookingEngine needs to know WHO is lending.
-        # I should update LoanApplicationDTO to include lender_id.
-        # But I can't modify engine_api.py right now easily without going back.
-        # I'll check if I can infer it or if I should patch the DTO.
-        # For now, let's assume the first bank in the ledger is the lender
-        # OR the logic is run *by* a specific bank context.
-        # But the engine is stateless and receives the whole ledger.
-        # I will assume lender_id is passed in borrower_profile for now as a workaround,
-        # or I'll pick the bank with most reserves.
+        # We need a lender. LoanApplicationDTO now explicitly has lender_id.
+        lender_id = application.lender_id
 
-        lender_id = application.borrower_profile.get("preferred_lender_id")
-        if not lender_id and ledger.banks:
-            lender_id = next(iter(ledger.banks.keys()))
+        if not lender_id:
+             # Fallback if not set (though it should be)
+             lender_id = application.borrower_profile.get("preferred_lender_id")
+             if not lender_id and ledger.banks:
+                 lender_id = next(iter(ledger.banks.keys()))
 
         if not lender_id or lender_id not in ledger.banks:
              # Fail gracefully if no lender found

@@ -17,13 +17,14 @@ def empty_ledger():
         current_tick=0,
         treasury=TreasuryStateDTO(government_id="GOV"),
         banks={
-            "BANK1": BankStateDTO(bank_id="BANK1", reserves={DEFAULT_CURRENCY: 10000.0}, base_rate=0.03)
+            # Initial Reserves (10000) must be matched by Equity (Retained Earnings)
+            "BANK1": BankStateDTO(bank_id="BANK1", reserves={DEFAULT_CURRENCY: 10000.0}, base_rate=0.03, retained_earnings=10000.0)
         }
     )
 
 def test_loan_risk_engine_assess_approved(empty_ledger):
     engine = LoanRiskEngine()
-    app = LoanApplicationDTO(borrower_id="FIRM1", amount=1000.0, borrower_profile={"credit_score": 700, "income": 5000})
+    app = LoanApplicationDTO(borrower_id="FIRM1", lender_id="BANK1", amount=1000.0, borrower_profile={"credit_score": 700, "income": 5000})
 
     decision = engine.assess(app, empty_ledger)
     assert decision.is_approved
@@ -31,7 +32,7 @@ def test_loan_risk_engine_assess_approved(empty_ledger):
 
 def test_loan_risk_engine_assess_denied(empty_ledger):
     engine = LoanRiskEngine()
-    app = LoanApplicationDTO(borrower_id="FIRM2", amount=1000.0, borrower_profile={"credit_score": 200})
+    app = LoanApplicationDTO(borrower_id="FIRM2", lender_id="BANK1", amount=1000.0, borrower_profile={"credit_score": 200})
 
     decision = engine.assess(app, empty_ledger)
     assert not decision.is_approved
@@ -39,7 +40,7 @@ def test_loan_risk_engine_assess_denied(empty_ledger):
 
 def test_loan_booking_engine_grant_loan(empty_ledger):
     engine = LoanBookingEngine()
-    app = LoanApplicationDTO(borrower_id="FIRM1", amount=1000.0, borrower_profile={"preferred_lender_id": "BANK1"})
+    app = LoanApplicationDTO(borrower_id="FIRM1", lender_id="BANK1", amount=1000.0, borrower_profile={"preferred_lender_id": "BANK1"})
     decision = LoanDecisionDTO(is_approved=True, interest_rate=0.05)
 
     output = engine.grant_loan(app, decision, empty_ledger)
@@ -63,11 +64,18 @@ def test_loan_booking_engine_grant_loan(empty_ledger):
     assert tx.transaction_type == "credit_creation"
     assert tx.price == 1000.0
 
+    # Integrity Check
+    assert ZeroSumVerifier.verify_ledger_integrity(output.updated_ledger)
+
 def test_liquidation_engine_liquidate(empty_ledger):
     # Setup Firm Loan
     bank = empty_ledger.banks["BANK1"]
     loan = LoanStateDTO("L1", "FIRM1", "BANK1", 1000.0, 1000.0, 0.05, 0, 10)
     bank.loans["L1"] = loan
+    # Balance the ledger: Loan created from Reserves
+    bank.reserves[DEFAULT_CURRENCY] -= 1000.0
+
+    initial_retained_earnings = bank.retained_earnings
 
     engine = LiquidationEngine()
     req = LiquidationRequestDTO("FIRM1", inventory_value=500.0, capital_value=0.0, outstanding_debt=1000.0)
@@ -78,26 +86,22 @@ def test_liquidation_engine_liquidate(empty_ledger):
     updated_bank = output.updated_ledger.banks["BANK1"]
     updated_loan = updated_bank.loans["L1"]
 
-    # Inventory sold for 50% -> 250.0
-    # Loan reduced by 250.0 -> 750.0 remaining
-    # And then defaulted?
-    # LiquidationEngine logic:
-    # 1. Sell Inventory -> 250.0
-    # 2. Pay Loan -> 250.0 (Remaining 750.0)
-    # 3. Default Remaining -> 750.0
-
-    # Wait, my logic for LiquidationEngine sets `loan.is_defaulted = True` if remaining > 0.
-    # And keeps remaining principal? Or writes it off?
-    # Logic: `loan.remaining_principal = 0` (Write-off) but generate `loan_default` transaction.
-
+    # Inventory sold for 50% -> 250.0. Loan reduced by 250.0. Remaining 750.0 written off.
     assert updated_loan.is_defaulted
     assert updated_loan.remaining_principal == 0.0 # Wrote off
+
+    # Check Retained Earnings Reduction (Write-off)
+    expected_writeoff = 750.0
+    assert updated_bank.retained_earnings == initial_retained_earnings - expected_writeoff
 
     # Check Transactions
     tx_types = [tx.transaction_type for tx in output.generated_transactions]
     assert "liquidation_sale" in tx_types
     assert "loan_repayment_liquidation" in tx_types
     assert "loan_default" in tx_types
+
+    # Integrity Check
+    assert ZeroSumVerifier.verify_ledger_integrity(output.updated_ledger)
 
 def test_debt_servicing_engine(empty_ledger):
     bank = empty_ledger.banks["BANK1"]
@@ -109,23 +113,39 @@ def test_debt_servicing_engine(empty_ledger):
     deposit = DepositStateDTO(dep_id, "FIRM1", 100.0, 0.0, DEFAULT_CURRENCY)
     bank.deposits[dep_id] = deposit
 
+    # Balance the ledger manually for test setup
+    # Assets: Reserves (10000) + Loan (1000) = 11000
+    # Liabilities: Deposit (100)
+    # Equity: 10000
+    # Discrepancy: 11000 - 10100 = 900.
+    # Assume 900 reserves were withdrawn.
+    bank.reserves[DEFAULT_CURRENCY] -= 900.0
+
+    initial_retained = bank.retained_earnings
+
     engine = DebtServicingEngine()
     empty_ledger.current_tick = 1
 
     output = engine.service_all_debt(empty_ledger)
 
     # Check Interest Payment
-    # Interest = 1000 * 0.05 / 365 = 0.137
     expected_interest = 1000.0 * 0.05 / 365.0
 
-    updated_deposit = output.updated_ledger.banks["BANK1"].deposits[dep_id]
+    updated_bank = output.updated_ledger.banks["BANK1"]
+    updated_deposit = updated_bank.deposits[dep_id]
     assert updated_deposit.balance < 100.0
     assert updated_deposit.balance == pytest.approx(100.0 - expected_interest)
+
+    # Verify Double Entry: Interest credited to Retained Earnings
+    assert updated_bank.retained_earnings == pytest.approx(initial_retained + expected_interest)
 
     # Check Transaction
     tx = output.generated_transactions[0]
     assert tx.transaction_type == "loan_interest"
     assert tx.price == pytest.approx(expected_interest)
+
+    # Integrity Check
+    assert ZeroSumVerifier.verify_ledger_integrity(output.updated_ledger)
 
 def test_zero_sum_verifier(empty_ledger):
     # Valid State

@@ -32,6 +32,10 @@ class DebtServicingEngine(IDebtServicingEngine):
 
                 if deposit and deposit.balance >= interest:
                     deposit.balance -= interest
+                    # [Double-Entry] Credit Bank Equity (Retained Earnings)
+                    # Liability (Deposit) decreases, Equity increases. Assets unchanged.
+                    bank.retained_earnings += interest
+
                     payment_made = interest
 
                     txs.append(Transaction(
@@ -109,6 +113,10 @@ class DebtServicingEngine(IDebtServicingEngine):
                 curr = "USD" # Default
                 if curr not in bank.reserves: bank.reserves[curr] = 0.0
                 bank.reserves[curr] += interest
+
+                # [Double-Entry] Credit Equity (Interest Income)
+                # Asset (Reserves) Up, Equity (Retained Earnings) Up
+                bank.retained_earnings += interest
 
                 # Treasury pays
                 if curr not in treasury.balance: treasury.balance[curr] = 0.0

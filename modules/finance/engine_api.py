@@ -47,6 +47,7 @@ class BankStateDTO:
     bank_id: AgentID
     reserves: Dict[CurrencyCode, float] = field(default_factory=dict)
     base_rate: float = 0.03
+    retained_earnings: float = 0.0 # Tracks internal equity/profits
     loans: Dict[str, LoanStateDTO] = field(default_factory=dict) # Key: loan_id
     deposits: Dict[str, DepositStateDTO] = field(default_factory=dict) # Key: deposit_id
 
@@ -80,6 +81,7 @@ class EngineOutputDTO:
 @dataclass
 class LoanApplicationDTO:
     borrower_id: AgentID
+    lender_id: AgentID # Specific bank targeted
     amount: float
     # Borrower financial profile, credit score, etc.
     # To be defined, but let's assume it's a dict for now

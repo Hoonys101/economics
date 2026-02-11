@@ -89,8 +89,12 @@ class FinanceSystem(IFinanceSystem):
         self.ledger.current_tick = current_tick
 
         # 2. Construct Application DTO
+        # Determine lender (Default to self.bank for now as simpler orchestrator)
+        lender_id = borrower_profile.get("preferred_lender_id", self.bank.id)
+
         app_dto = LoanApplicationDTO(
             borrower_id=borrower_id,
+            lender_id=lender_id,
             amount=amount,
             borrower_profile=borrower_profile
         )

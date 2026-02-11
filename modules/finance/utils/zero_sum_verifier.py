@@ -43,6 +43,21 @@ class ZeroSumVerifier:
                     logger.error(f"INTEGRITY_FAIL | Deposit {deposit_id} has negative balance: {deposit.balance}")
                     is_valid = False
 
+            # STRICT ACCOUNTING IDENTITY CHECK: Assets = Liabilities + Equity
+            # Assets = Reserves + Loan Principal
+            total_assets = sum(bank_state.reserves.values()) + sum(l.remaining_principal for l in bank_state.loans.values())
+            # Liabilities = Deposits
+            total_liabilities = sum(d.balance for d in bank_state.deposits.values())
+            # Equity = Retained Earnings
+            equity = bank_state.retained_earnings
+
+            # Identity: Assets - (Liabilities + Equity) == 0
+            discrepancy = total_assets - (total_liabilities + equity)
+
+            if abs(discrepancy) > 0.01:
+                 logger.error(f"INTEGRITY_FAIL | Bank {bank_id} Balance Sheet Mismatch. Assets: {total_assets:.2f}, Liab: {total_liabilities:.2f}, Equity: {equity:.2f}. Discrepancy: {discrepancy:.2f}")
+                 is_valid = False
+
         # 2. Check Treasury
         for curr, amount in ledger.treasury.balance.items():
              # Treasury *can* technically run a deficit if we allow it, but usually debt is issued.
