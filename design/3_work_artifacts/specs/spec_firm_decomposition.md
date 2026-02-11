@@ -1,447 +1,345 @@
-# Design Document: Firm Orchestrator-Engine Refactor
+# `modules/firm/api.py`
+
+```python
+from __future__ in annotations
+from typing import Protocol, Any, Optional, Dict, List, Literal
+from dataclasses import dataclass, field
+
+from modules.finance.dtos import MoneyDTO
+from simulation.dtos.config_dtos import FirmConfigDTO
+from simulation.dtos.firm_state_dto import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
+
+# ==============================================================================
+# 1. ARCHITECTURAL RESOLUTION: INVENTORY & ASSET PROTOCOLS
+# ==============================================================================
+
+class IInventoryHandler(Protocol):
+    """
+    CANONICAL DEFINITION: Interface for managing an agent's inventory of consumable
+    or sellable goods. Reflects the de-facto implementation across the codebase.
+    This protocol supersedes the previous conflicting definition.
+    """
+    def add_item(self, item_id: str, quantity: float, quality: float = 1.0) -> bool:
+        """Adds a specified quantity of an item to the inventory."""
+        ...
+
+    def remove_item(self, item_id: str, quantity: float) -> bool:
+        """Removes a specified quantity of an item from the inventory. Returns False on failure."""
+        ...
+
+    def get_quantity(self, item_id: str) -> float:
+        """Gets the current quantity of a specified item."""
+        ...
+
+    def get_quality(self, item_id: str) -> float:
+        """Gets the average quality of a specified item."""
+        ...
+
+    def get_all_items(self) -> Dict[str, float]:
+        """Returns a copy of the entire inventory (item_id -> quantity)."""
+        ...
+
+    def clear_inventory(self) -> None:
+        """Removes all items from the inventory."""
+        ...
+
+
+class ICollateralizableAsset(Protocol):
+    """
+    NEW DEFINITION: Interface for assets that can be locked, have liens placed
+    against them, or be transferred as a whole unit (e.g., real estate).
+    This isolates functionality from the original, aspirational IInventoryHandler.
+    """
+    def lock_asset(self, asset_id: Any, lock_owner_id: Any) -> bool:
+        """Atomically places a lock on an asset, returns False if already locked."""
+        ...
+
+    def release_asset(self, asset_id: Any, lock_owner_id: Any) -> bool:
+        """Releases a lock, returns False if not owned by the lock_owner_id."""
+        ...
+
+    def transfer_asset(self, asset_id: Any, new_owner_id: Any) -> bool:
+        """Transfers ownership of the asset."""
+        ...
+
+    def add_lien(self, asset_id: Any, lien_details: Any) -> Optional[str]:
+        """Adds a lien to a property, returns lien_id on success."""
+        ...
+
+    def remove_lien(self, asset_id: Any, lien_id: str) -> bool:
+        """Removes a lien from a property."""
+        ...
+
+# ==============================================================================
+# 2. DTO DEFINITIONS
+# ==============================================================================
+
+@dataclass(frozen=True)
+class FirmSnapshotDTO:
+    """
+    Immutable snapshot of a Firm's state, used as input for stateless engines.
+    """
+    id: int
+    is_active: bool
+    config: FirmConfigDTO
+    finance: FinanceStateDTO
+    production: ProductionStateDTO
+    sales: SalesStateDTO
+    hr: HRStateDTO
+
+# --- Production Engine DTOs ---
+
+@dataclass(frozen=True)
+class ProductionInputDTO:
+    """Input for the ProductionEngine."""
+    firm_snapshot: FirmSnapshotDTO
+    productivity_multiplier: float # From external factors like technology
+
+@dataclass(frozen=True)
+class ProductionResultDTO:
+    """Result from the ProductionEngine."""
+    success: bool
+    quantity_produced: float
+    quality: float
+    inputs_consumed: Dict[str, float] = field(default_factory=dict)
+    production_cost: float = 0.0
+
+# --- Asset Management Engine DTOs ---
+
+@dataclass(frozen=True)
+class AssetManagementInputDTO:
+    """Input for the AssetManagementEngine."""
+    firm_snapshot: FirmSnapshotDTO
+    investment_type: Literal["CAPEX", "AUTOMATION"]
+    investment_amount: float
+
+@dataclass(frozen=True)
+class AssetManagementResultDTO:
+    """Result from the AssetManagementEngine."""
+    success: bool
+    capital_stock_increase: float = 0.0
+    automation_level_increase: float = 0.0
+    actual_cost: float = 0.0
+
+# --- R&D Engine DTOs ---
+
+@dataclass(frozen=True)
+class RDInputDTO:
+    """Input for the R&D Engine."""
+    firm_snapshot: FirmSnapshotDTO
+    investment_amount: float
+
+@dataclass(frozen=True)
+class RDResultDTO:
+    """Result from the R&D Engine."""
+    success: bool
+    quality_improvement: float = 0.0
+    actual_cost: float = 0.0
+
+# ==============================================================================
+# 3. ENGINE PROTOCOLS
+# ==============================================================================
+
+class IProductionEngine(Protocol):
+    """
+    Stateless engine for handling the firm's production process.
+    """
+    def produce(self, input_dto: ProductionInputDTO) -> ProductionResultDTO:
+        """
+        Calculates production output based on labor, capital, and technology.
+        Returns a DTO describing the result of the production cycle.
+        """
+        ...
+
+
+class IAssetManagementEngine(Protocol):
+    """
+    Stateless engine for handling investments in capital and automation.
+    """
+    def invest(self, input_dto: AssetManagementInputDTO) -> AssetManagementResultDTO:
+        """
+        Calculates the outcome of an investment in CAPEX or Automation.
+        Returns a DTO describing the resulting state changes.
+        """
+        ...
+
+
+class IRDEngine(Protocol):
+    """
+    Stateless engine for handling investments in Research and Development.
+    """
+    def research(self, input_dto: RDInputDTO) -> RDResultDTO:
+        """
+        Calculates the outcome of R&D spending.
+        Returns a DTO describing improvements to quality or technology.
+        """
+        ...
+```
+
+# `design/3_work_artifacts/specs/firm_engine_refactor_spec.md`
+
+```markdown
+# Spec: Firm Agent Refactoring into Specialized Engines
+
+**Version**: 1.0
+**Author**: Scribe (Gemini)
+**Status**: Proposed
 
 ## 1. Introduction
 
-- **Purpose**: This document outlines the specification for refactoring the `Firm` agent to a pure Orchestrator-Engine pattern.
-- **Scope**: This refactor focuses on the `Firm` class (`simulation/firms.py`), its state management, and the delegation of business logic to stateless engines.
-- **Goals**:
-    - Decouple business logic from state management.
-    - Eliminate the "God Object" and "parent pointer" anti-patterns.
-    - Improve testability by creating stateless, isolated engines.
-    - Remove legacy proxies (`firm.finance`) for a clearer API.
-    - Formalize the `Firm` class's role as a pure state orchestrator.
+This document outlines the specification for refactoring the `Firm` agent class (`simulation/firms.py`). The current implementation is a God Class that violates the Single Responsibility Principle and architectural guardrails by mixing state, orchestration, and direct business logic execution.
 
-## 2. System Architecture (High-Level)
+The goal is to extract business logic into three new, strictly stateless engines, with the `Firm` class acting as a pure orchestrator. This will improve modularity, testability, and adherence to the project's core architectural principles.
 
-The current `Firm` architecture is a monolithic class with stateful components that hold back-references to the main agent. This creates tight coupling and hidden dependencies.
+- **`ProductionEngine`**: Manages the core production process.
+- **`AssetManagementEngine`**: Manages investments in CAPEX and automation.
+- **`RDEngine`**: Manages investments in Research & Development.
 
-The new architecture will be:
+This refactoring directly addresses the critical risks identified in the **Pre-flight Audit**.
 
-- **`Firm` (Orchestrator)**: A stateful class responsible *only* for:
-    1.  Holding the complete state of the firm via dedicated state DTOs (e.g., `HRState`, `FinanceState`, `ProductionState`, `SalesState`).
-    2.  Calling the appropriate stateless engines in sequence, passing the necessary state DTOs and context.
-    3.  Receiving updated state DTOs from the engines and replacing its current state.
-    4.  Implementing core, non-business logic interfaces (e.g., `IOrchestratorAgent`).
+## 2. Architectural Resolution (Prerequisites)
 
-- **Stateless Engines** (`HREngine`, `FinanceEngine`, etc.):
-    1.  Stateless Python classes containing pure business logic.
-    2.  Methods will be pure functions of the form: `def process(state: InputStateDTO, config: ConfigDTO, context: ContextDTO) -> OutputStateDTO:`.
-    3.  They will **not** hold any state themselves and will **not** hold any reference to the `Firm` instance.
+This refactoring is contingent on first resolving a critical architectural inconsistency.
 
+### 2.1. Canonical `IInventoryHandler` Protocol
 
+- **Problem**: The formal protocol at `modules/inventory/api.py` defines methods for asset locking and liens, while the de-facto implementations in `Firm`, `Household`, and `InventoryManager` use a different set of methods for item management (`add_item`, `remove_item`).
+- **Resolution**:
+    1. The `IInventoryHandler` protocol in `modules/inventory/api.py` **MUST** be overwritten to reflect its actual usage across the codebase. See the proposed `modules/firm/api.py` for the canonical definition.
+    2. A new protocol, `ICollateralizableAsset`, will be created in `modules/firm/api.py` to house the aspirational methods (`lock_asset`, `add_lien`, etc.).
+    3. All relevant agents (`Firm`, `Household`) and components (`InventoryManager`) must be updated to explicitly implement the new, correct `IInventoryHandler`.
 
-## 3. Detailed Design
+**This is a blocking prerequisite.** Proceeding without this alignment will propagate technical debt.
 
-### 3.1. Component: `Firm` Orchestrator
+## 3. New Engine and DTO Design
 
-The `Firm` class will be stripped of all business logic. Its primary methods will be `make_decision` and `generate_transactions`, which will act as the main orchestration entry points.
+All new engines will be stateless and located in `simulation/components/engines/`. They will operate exclusively on immutable DTOs defined in `modules/firm/api.py`.
 
-**Pseudo-code for `Firm.make_decision`:**
+### 3.1. DTOs
 
+- **`FirmSnapshotDTO`**: An immutable dataclass containing the complete state of the firm required for any decision. This is the primary input for all engines.
+- **`ProductionResultDTO`**: Output from `ProductionEngine` detailing goods produced, quality, and costs.
+- **`AssetManagementResultDTO`**: Output from `AssetManagementEngine` detailing increases in capital/automation and the associated cost.
+- **`RDResultDTO`**: Output from `RDEngine` detailing quality improvements from research and the associated cost.
+
+### 3.2. Engine Interfaces
+
+- **`IProductionEngine`**: Defines a `produce` method that takes a `ProductionInputDTO` and returns a `ProductionResultDTO`.
+- **`IAssetManagementEngine`**: Defines an `invest` method that takes an `AssetManagementInputDTO` and returns an `AssetManagementResultDTO`.
+- **`IRDEngine`**: Defines a `research` method that takes an `RDInputDTO` and returns an `RDResultDTO`.
+
+*(For full definitions, see the accompanying `modules/firm/api.py` file.)*
+
+## 4. Refactoring Logic & Orchestration
+
+The `Firm` class will be refactored from a monolith into a pure orchestrator.
+
+### 4.1. Decommissioning God Methods
+
+- **`Firm._execute_internal_order()`**: This method **will be deleted**. Its entire logic for handling `INVEST_AUTOMATION`, `INVEST_RD`, and `INVEST_CAPEX` will be moved into the `AssetManagementEngine` and `RDEngine`.
+- **`Firm.produce()`**: The logic within this method will be moved to the `ProductionEngine`.
+
+### 4.2. New Orchestration Flow
+
+The `Firm` agent will now follow a strict "Assemble -> Delegate -> Apply" pattern.
+
+#### `Firm.produce()` (New Logic)
 ```python
-# In Firm class
-def make_decision(self, input_dto: DecisionInputDTO) -> ...:
-    # 1. Gather all necessary state and context
-    state_dto = self.get_state_dto() # Gathers all sub-states
-    context = DecisionContext(...)
-
-    # 2. Call the AI Decision Engine to get an abstract plan
-    # The decision engine itself is a component, but it should operate on state DTOs
-    decision_output = self.decision_engine.make_decisions(context)
-    
-    # 3. Execute internal orders from the plan by orchestrating engines
-    for order in decision_output.orders:
-        if order.market_id == "internal":
-            self._execute_internal_order(order, ...)
-    
-    # ... more orchestration ...
-
-    # The Firm class does NOT contain the logic for 'INVEST_AUTOMATION' itself.
-    # It calls the responsible engines.
-```
-
-**Pseudo-code for `Firm._execute_internal_order`:**
-```python
-# In Firm class
-def _execute_internal_order(self, order: Order, ...):
-    if order.order_type == "INVEST_AUTOMATION":
-        # Call FinanceEngine to process payment
-        fin_result = self.finance_engine.invest_in_automation(
-            self.finance_state, self.wallet, order.amount, ...
-        )
-        if fin_result.is_success:
-            # Update wallet state
-            self.wallet = fin_result.updated_wallet
-            # Call ProductionEngine to apply the investment
-            prod_result = self.production_engine.invest_in_automation(
-                self.production_state, order.amount, self.config
-            )
-            # Update production state
-            self.production_state = prod_result.updated_state
-```
-
-### 3.2. Component: Stateless Engines
-
-All business logic from `Firm.py` will be moved to new or existing stateless engines defined in `modules/firm/engines/`.
-
-| Method in `Firm` | Target Engine | New Signature (Illustrative) |
-|---|---|---|
-| `liquidate_assets` | `FinanceEngine` | `liquidate(state: FinanceState, wallet: Wallet) -> LiquidationResultDTO` |
-| `record_revenue` | `FinanceEngine` | `record_revenue(state: FinanceState, amount: float) -> FinanceState` |
-| `produce` | `ProductionEngine`| `produce(state: ProductionState, hr_state: HRState, config: FirmConfigDTO) -> ProductionResultDTO` |
-| `calculate_valuation` | `FinanceEngine`| `calculate_valuation(state: FinanceState, wallet: Wallet, inventory_value: float) -> float` |
-| `_add_inventory_internal` | `InventoryEngine` | `add_item(inv_state: InventoryState, item_id: str, qty: float) -> InventoryState` |
-
-The `RealEstateUtilizationComponent` will be refactored to be stateless:
-- **Old**: `apply(self, firm: "Firm", ...)`
-- **New**: `apply(owned_properties: List[int], config: FirmConfigDTO, ...)`
-
-### 3.3. Refactoring Step-by-Step Plan
-
-1.  **Create/Update State DTOs**: Solidify the state DTOs in `simulation.components.state.firm_state_models` to ensure they contain all necessary fields currently stored directly on the `Firm` instance.
-2.  **Create Stateless Engines**: Create new files like `modules/firm/engines/finance_engine.py`, `production_engine.py`, etc.
-3.  **Migrate Logic**: Methodically move business logic from `Firm.py` to the corresponding engine. Each moved method must be converted into a pure function that accepts state DTOs and returns new state DTOs.
-4.  **Refactor `Firm` Orchestrator**: Rewrite the methods in `Firm.py` to be simple orchestrators that call the new engines. The `Firm` class will now only manage its internal state DTOs.
-5.  **Eliminate `firm.finance` Proxy**:
-    - **Action**: Perform a project-wide search for the regex `\.finance\.`.
-    - **Refactoring**: Replace all calls like `firm.finance.record_expense(...)` with a direct call to the new engine, orchestrated by the `Firm` instance (e.g., `firm.process_expense(...)` which in turn calls `self.finance_engine.record_expense(...)`).
-6.  **Decouple Components**: Refactor components like `RealEstateUtilizationComponent` to remove the `firm` parent pointer, passing only the required data.
-7.  **Refactor Test Suite**: This is a major step. Tests must be rewritten to target the stateless engines in isolation.
-    - **Old Test**: Create a full `Firm` object, call `firm.produce()`, assert changes on the `firm` object.
-    - **New Test**: Create a `ProductionState` DTO, call `production_engine.produce(state, ...)`, and assert on the returned `ProductionResultDTO`.
-
-## 4. Technical Considerations
-
-- **Technology Stack**: Python 3.13.
-- **Performance**: Passing DTOs may have a minor performance overhead compared to direct object access, but the improvement in code clarity, testability, and reduction of side effects outweighs this.
-- **Error Handling**: Engines should raise specific exceptions (e.g., `InsufficientFundsError`). The `Firm` orchestrator will be responsible for catching these exceptions if necessary, though most will be handled by the transaction settlement system.
-
-## 5. Design Checklist & Risk Mitigation
-
-- **[X] Functional Requirements**: All existing `Firm` functionalities will be preserved, just relocated to engines.
-- **[X] Modularity**: This refactor is the definition of improving modularity.
-- **[X] Testability**: Massively improved, as engines can be tested in isolation.
-- **[X] API Definitions**: `api.py` will define the new engine interfaces.
-- **[X] Risk & Impact Audit (Addressing Pre-flight Check)**:
-    1.  **God Class & Hidden Dependencies**: **Mitigated**. The core of this spec is to eliminate the "parent pointer" pattern. Engines will be stateless and receive only DTOs.
-    2.  **Legacy `firm.finance` Proxy**: **Mitigated**. The refactoring plan includes a dedicated step (Step 5) to find and eliminate all usages of this proxy, treating it as a critical breaking change.
-    3.  **Violation of SRP**: **Mitigated**. The `Firm` class will be reduced to a pure orchestrator, and all business logic will be moved to engines, directly enforcing SRP.
-    4.  **Test Suite Fragility**: **Acknowledged & Planned**. The spec explicitly calls out that a significant test refactoring effort is required (Step 7). This is a cost of the refactor, not an unforeseen risk.
-    5.  **State Lifecycle Integrity**: **Mitigated**. The new architecture enforces this. Engines are pure functions, and the `Firm` orchestrator is the sole authority on state changes and the `reset()` lifecycle.
-
-## 6. Verification Plan
-
-1.  **Unit Tests**: All new stateless engines will have 100% unit test coverage, verifying their logic in isolation.
-2.  **Integration Tests**: A smaller set of integration tests will verify the `Firm` orchestrator correctly calls the engines and manages state transitions.
-3.  **System Tests**: Run the full simulation for at least 100 ticks.
-4.  **Zero-Sum Audit**: Run `scripts/audit_zero_sum.py` after the simulation run to ensure no money or goods were created or destroyed, verifying the integrity of the refactored transaction and production logic.
-5.  **Comparison**: Compare key macroeconomic outputs (GDP, inflation, unemployment) before and after the refactor to ensure no unintended behavioral changes were introduced.
-
-## 7. Mandatory Reporting Verification
-
-All insights, challenges, and discovered technical debt during this refactoring process will be documented in `communications/insights/firm_orchestrator_refactor.md`. This refactor is complex, and transparently recording the process is critical. The completion of this report is a mandatory deliverable for this mission.
-
----
-`modules/firm/api.py` will be created to define the new interfaces. I will now create that file.
-I have finished the `spec.md` file. I will now create the `api.py` file.
-```python
-from __future__ import annotations
-from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
-
-# Forward declarations for type hints
-if TYPE_CHECKING:
-    from simulation.components.state.firm_state_models import (
-        FirmStateDTO, HRState, FinanceState, ProductionState, SalesState
+# In class Firm:
+def produce(self, current_time: int, technology_manager: Optional[Any] = None, effects_queue: Optional[List[Dict[str, Any]]] = None) -> None:
+    # 1. ASSEMBLE snapshot and input DTO
+    snapshot = self.get_snapshot_dto() # New helper to create FirmSnapshotDTO
+    productivity_multiplier = technology_manager.get_productivity_multiplier(self.id) if technology_manager else 1.0
+    input_dto = ProductionInputDTO(
+        firm_snapshot=snapshot,
+        productivity_multiplier=productivity_multiplier
     )
-    from simulation.dtos.config_dtos import FirmConfigDTO
-    from modules.finance.wallet.wallet import Wallet
-    from simulation.models import Order
-    from modules.system.api import CurrencyCode
-    from simulation.dtos.context_dtos import FinancialTransactionContext, SalesContext
 
-# --- Data Transfer Objects for Engine Results ---
+    # 2. DELEGATE to stateless engine
+    result: ProductionResultDTO = self.production_engine.produce(input_dto)
 
-class EngineResult(ABC):
-    """Base class for engine results."""
-    is_success: bool
-    error_message: Optional[str] = None
+    # 3. APPLY result to state (Orchestrator responsibility)
+    if result.success and result.quantity_produced > 0:
+        self.add_item(snapshot.production.specialization, result.quantity_produced, quality=result.quality)
+        self.record_expense(result.production_cost, DEFAULT_CURRENCY) # Using internal helper
 
-@dataclass
-class StateUpdateResult(EngineResult):
-    """Result DTO for an engine that updates a state object."""
-    updated_state: Any # e.g., FinanceState, ProductionState
-
-@dataclass
-class TransactionResult(EngineResult):
-    """Result DTO for an engine that may generate a transaction."""
-    transaction: Optional[Dict[str, Any]] = None
-    updated_wallet: Optional[Wallet] = None
-
-
-# --- Stateless Engine Interfaces ---
-
-class IFinanceEngine(ABC):
-    """
-    Interface for a stateless engine handling all financial calculations.
-    """
-    @abstractmethod
-    def calculate_valuation(
-        self,
-        state: FinanceState,
-        wallet: Wallet,
-        config: FirmConfigDTO,
-        inventory_value: float,
-        capital_stock: float,
-        ctx: Optional[FinancialTransactionContext]
-    ) -> float:
-        """Calculates the firm's valuation."""
-        ...
-
-    @abstractmethod
-    def record_expense(
-        self, state: FinanceState, amount: float, currency: CurrencyCode
-    ) -> FinanceState:
-        """Records an expense and returns the updated state."""
-        ...
-
-    @abstractmethod
-    def invest_in_automation(
-        self,
-        state: FinanceState,
-        agent_id: int,
-        wallet: Wallet,
-        amount: float,
-        ctx: FinancialTransactionContext,
-        current_time: int
-    ) -> TransactionResult:
-        """Processes an automation investment payment."""
-        ...
-    
-    # ... other financial methods like pay_tax, invest_rd, etc. ...
-
-
-class IProductionEngine(ABC):
-    """
-    Interface for a stateless engine handling production and R&D logic.
-    """
-    @abstractmethod
-    def produce(
-        self,
-        state: ProductionState,
-        hr_state: HRState,
-        inventory_handler: "IInventoryHandler", # Can be the Firm itself, but an interface is better
-        config: FirmConfigDTO,
-        current_time: int
-    ) -> StateUpdateResult:
-        """
-        Calculates and executes production for the tick.
-        Returns the updated ProductionState.
-        """
-        ...
-
-    @abstractmethod
-    def invest_in_automation(
-        self,
-        state: ProductionState,
-        investment_amount: float,
-        config: FirmConfigDTO
-    ) -> StateUpdateResult:
-        """Applies automation investment to the production state."""
-        ...
-
-
-class ISalesEngine(ABC):
-    """
-    Interface for a stateless engine handling sales, pricing, and marketing.
-    """
-    @abstractmethod
-    def post_ask(
-        self,
-        state: SalesState,
-        agent_id: int,
-        item_id: str,
-        price: float,
-        quantity: float,
-        market: "OrderBookMarket",
-        current_tick: int,
-        available_inventory: float,
-        brand_snapshot: Dict[str, Any]
-    ) -> Order:
-        """Creates an ask order."""
-        ...
-
-    @abstractmethod
-    def adjust_marketing_budget(
-        self,
-        state: SalesState,
-        market_context: "MarketContextDTO",
-        total_revenue: float
-    ) -> SalesState:
-        """Adjusts marketing budget based on revenue and market conditions."""
-        ...
-
-# It is assumed that HREngine already exists and is stateless.
-# If not, an IHREngine would be defined here as well.
-```
-I have drafted the `spec.md` for the refactoring and an accompanying `api.py` to define the new stateless engine interfaces. These files lay out the complete plan to decouple the `Firm` agent's logic, address the architectural risks, and improve the overall structure and testability of the code.
-
-I will now create the files.
-I will create `design/3_work_artifacts/specs/firm_orchestrator_refactor_spec.md`.
-Then I will create `modules/firm/api.py`.
-
-The user asked me to draft a spec, so I'm creating the spec file.
-I will create a new file `design/3_work_artifacts/specs/firm_orchestrator_refactor_spec.md` and write the content of the spec to it.
-Then, I will create `modules/firm/api.py` and write the content of the api definition to it.
-I am now finished with the request.
-I am creating the directory `design/3_work_artifacts/specs` first, because it may not exist.
-Then I'll write the spec file.
-Then I'll create the directory `modules/firm`, because it may not exist.
-Then I'll write the api file.
-The user wants me to draft a spec and an api file. I have done that.
-The request is complete.
-I will create the directories first, then the files.
-`design/3_work_artifacts` already exists. I'll create `specs` under it.
-`modules` already exists. I'll create `firm` under it.I will create a new directory `design/3_work_artifacts/specs/`. This command creates a new directory for storing specification documents.
-# Design Document: Firm Orchestrator-Engine Refactor
-
-## 1. Introduction
-
-- **Purpose**: This document outlines the specification for refactoring the `Firm` agent to a pure Orchestrator-Engine pattern.
-- **Scope**: This refactor focuses on the `Firm` class (`simulation/firms.py`), its state management, and the delegation of business logic to stateless engines.
-- **Goals**:
-    - Decouple business logic from state management.
-    - Eliminate the "God Object" and "parent pointer" anti-patterns.
-    - Improve testability by creating stateless, isolated engines.
-    - Remove legacy proxies (`firm.finance`) for a clearer API.
-    - Formalize the `Firm` class's role as a pure state orchestrator.
-
-## 2. System Architecture (High-Level)
-
-The current `Firm` architecture is a monolithic class with stateful components that hold back-references to the main agent. This creates tight coupling and hidden dependencies.
-
-The new architecture will be:
-
-- **`Firm` (Orchestrator)**: A stateful class responsible *only* for:
-    1.  Holding the complete state of the firm via dedicated state DTOs (e.g., `HRState`, `FinanceState`, `ProductionState`, `SalesState`).
-    2.  Calling the appropriate stateless engines in sequence, passing the necessary state DTOs and context.
-    3.  Receiving updated state DTOs from the engines and replacing its current state.
-    4.  Implementing core, non-business logic interfaces (e.g., `IOrchestratorAgent`).
-
-- **Stateless Engines** (`HREngine`, `FinanceEngine`, etc.):
-    1.  Stateless Python classes containing pure business logic.
-    2.  Methods will be pure functions of the form: `def process(state: InputStateDTO, config: ConfigDTO, context: ContextDTO) -> OutputStateDTO:`.
-    3.  They will **not** hold any state themselves and will **not** hold any reference to the `Firm` instance.
-
-
-
-## 3. Detailed Design
-
-### 3.1. Component: `Firm` Orchestrator
-
-The `Firm` class will be stripped of all business logic. Its primary methods will be `make_decision` and `generate_transactions`, which will act as the main orchestration entry points.
-
-**Pseudo-code for `Firm.make_decision`:**
-
-```python
-# In Firm class
-def make_decision(self, input_dto: DecisionInputDTO) -> ...:
-    # 1. Gather all necessary state and context
-    state_dto = self.get_state_dto() # Gathers all sub-states
-    context = DecisionContext(...)
-
-    # 2. Call the AI Decision Engine to get an abstract plan
-    # The decision engine itself is a component, but it should operate on state DTOs
-    decision_output = self.decision_engine.make_decisions(context)
-    
-    # 3. Execute internal orders from the plan by orchestrating engines
-    for order in decision_output.orders:
-        if order.market_id == "internal":
-            self._execute_internal_order(order, ...)
-    
-    # ... more orchestration ...
-
-    # The Firm class does NOT contain the logic for 'INVEST_AUTOMATION' itself.
-    # It calls the responsible engines.
+    # ... existing real estate utilization logic remains here for now ...
 ```
 
-**Pseudo-code for `Firm._execute_internal_order`:**
+#### Post-`make_decision` Orchestration (Replaces `_execute_internal_order`)
 ```python
-# In Firm class
-def _execute_internal_order(self, order: Order, ...):
-    if order.order_type == "INVEST_AUTOMATION":
-        # Call FinanceEngine to process payment
-        fin_result = self.finance_engine.invest_in_automation(
-            self.finance_state, self.wallet, order.amount, ...
-        )
-        if fin_result.is_success:
-            # Update wallet state
-            self.wallet = fin_result.updated_wallet
-            # Call ProductionEngine to apply the investment
-            prod_result = self.production_engine.invest_in_automation(
-                self.production_state, order.amount, self.config
+# In class Firm, after make_decision() returns orders:
+def execute_internal_orders(self, orders: List[Order], fiscal_context: FiscalContext, current_time: int) -> None:
+    # This new method replaces the logic of _execute_internal_order
+
+    snapshot = self.get_snapshot_dto()
+    gov_proxy = fiscal_context.government if fiscal_context else None
+
+    for order in orders:
+        if order.market_id != "internal":
+            continue
+
+        amount = order.monetary_amount['amount'] if order.monetary_amount else order.quantity
+
+        # --- Delegate to AssetManagementEngine ---
+        if order.order_type in ["INVEST_AUTOMATION", "INVEST_CAPEX"]:
+            asset_input = AssetManagementInputDTO(
+                firm_snapshot=snapshot,
+                investment_type=order.order_type.replace("INVEST_", ""), # "AUTOMATION" or "CAPEX"
+                investment_amount=amount
             )
-            # Update production state
-            self.production_state = prod_result.updated_state
+            asset_result: AssetManagementResultDTO = self.asset_management_engine.invest(asset_input)
+
+            if asset_result.success and self.settlement_system.transfer(self, gov_proxy, asset_result.actual_cost, order.order_type):
+                # Apply state changes
+                self.production_state.automation_level += asset_result.automation_level_increase
+                self.production_state.capital_stock += asset_result.capital_stock_increase
+                self.record_expense(asset_result.actual_cost, DEFAULT_CURRENCY)
+                self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {asset_result.actual_cost} in {order.order_type}.")
+
+        # --- Delegate to RDEngine ---
+        elif order.order_type == "INVEST_RD":
+            rd_input = RDInputDTO(firm_snapshot=snapshot, investment_amount=amount)
+            rd_result: RDResultDTO = self.rd_engine.research(rd_input)
+
+            if rd_result.success and self.settlement_system.transfer(self, gov_proxy, rd_result.actual_cost, "R&D"):
+                # Apply state changes
+                self.production_state.base_quality += rd_result.quality_improvement
+                # (Further logic for updating research history can be added)
+                self.record_expense(rd_result.actual_cost, DEFAULT_CURRENCY)
+                self.logger.info(f"INTERNAL_EXEC | Firm {self.id} R&D SUCCESS (Budget: {rd_result.actual_cost})")
+
+        # ... other internal order types (SET_TARGET, PAY_TAX, etc.) ...
 ```
 
-### 3.2. Component: Stateless Engines
+## 5. Verification & Testing Strategy
 
-All business logic from `Firm.py` will be moved to new or existing stateless engines defined in `modules/firm/engines/`.
+This refactoring carries a high risk of breaking existing functionality. A rigorous testing strategy is non-negotiable.
 
-| Method in `Firm` | Target Engine | New Signature (Illustrative) |
-|---|---|---|
-| `liquidate_assets` | `FinanceEngine` | `liquidate(state: FinanceState, wallet: Wallet) -> LiquidationResultDTO` |
-| `record_revenue` | `FinanceEngine` | `record_revenue(state: FinanceState, amount: float) -> FinanceState` |
-| `produce` | `ProductionEngine`| `produce(state: ProductionState, hr_state: HRState, config: FirmConfigDTO) -> ProductionResultDTO` |
-| `calculate_valuation` | `FinanceEngine`| `calculate_valuation(state: FinanceState, wallet: Wallet, inventory_value: float) -> float` |
-| `_add_inventory_internal` | `InventoryEngine` | `add_item(inv_state: InventoryState, item_id: str, qty: float) -> InventoryState` |
+- **New Unit Tests**: Each new engine (`ProductionEngine`, `AssetManagementEngine`, `RDEngine`) **MUST** be accompanied by a dedicated test file with 100% logic coverage. Tests must be pure, only checking that a given input DTO produces the expected output DTO.
+- **Test Migration Plan**:
+    - Existing integration tests relying on `Firm.make_decision()` are now considered **legacy** and **will break**.
+    - These tests **MUST** be migrated. The new tests should focus on the `Firm`'s role as an orchestrator.
+    - **Example Migrated Test**:
+        1.  `GIVEN` a Firm instance.
+        2.  `WHEN` `make_decision` is called and returns an `INVEST_CAPEX` order.
+        3.  `MOCK` the `AssetManagementEngine` to return a specific `AssetManagementResultDTO`.
+        4.  `THEN` assert that `AssetManagementEngine.invest` was called with the correct `AssetManagementInputDTO`.
+        5.  `AND` assert that the `Firm`'s state (`capital_stock`, `wallet`) was correctly updated based on the mocked `AssetManagementResultDTO`.
+- **Integration Check**: After refactoring, the `scripts/audit_zero_sum.py` script and a full, multi-tick simulation scenario must be run to ensure no financial leakages or deadlocks were introduced.
 
-The `RealEstateUtilizationComponent` will be refactored to be stateless:
-- **Old**: `apply(self, firm: "Firm", ...)`
-- **New**: `apply(owned_properties: List[int], config: FirmConfigDTO, ...)`
+## 6. Risk & Impact Mitigation
 
-### 3.3. Refactoring Step-by-Step Plan
+This specification directly mitigates the risks identified by the Pre-flight Audit.
 
-1.  **Create/Update State DTOs**: Solidify the state DTOs in `simulation.components.state.firm_state_models` to ensure they contain all necessary fields currently stored directly on the `Firm` instance.
-2.  **Create Stateless Engines**: Create new files like `modules/firm/engines/finance_engine.py`, `production_engine.py`, etc.
-3.  **Migrate Logic**: Methodically move business logic from `Firm.py` to the corresponding engine. Each moved method must be converted into a pure function that accepts state DTOs and returns new state DTOs.
-4.  **Refactor `Firm` Orchestrator**: Rewrite the methods in `Firm.py` to be simple orchestrators that call the new engines. The `Firm` class will now only manage its internal state DTOs.
-5.  **Eliminate `firm.finance` Proxy**:
-    - **Action**: Perform a project-wide search for the regex `\.finance\.`.
-    - **Refactoring**: Replace all calls like `firm.finance.record_expense(...)` with a direct call to the new engine, orchestrated by the `Firm` instance (e.g., `firm.process_expense(...)` which in turn calls `self.finance_engine.record_expense(...)`).
-6.  **Decouple Components**: Refactor components like `RealEstateUtilizationComponent` to remove the `firm` parent pointer, passing only the required data.
-7.  **Refactor Test Suite**: This is a major step. Tests must be rewritten to target the stateless engines in isolation.
-    - **Old Test**: Create a full `Firm` object, call `firm.produce()`, assert changes on the `firm` object.
-    - **New Test**: Create a `ProductionState` DTO, call `production_engine.produce(state, ...)`, and assert on the returned `ProductionResultDTO`.
-
-## 4. Technical Considerations
-
-- **Technology Stack**: Python 3.13.
-- **Performance**: Passing DTOs may have a minor performance overhead compared to direct object access, but the improvement in code clarity, testability, and reduction of side effects outweighs this.
-- **Error Handling**: Engines should raise specific exceptions (e.g., `InsufficientFundsError`). The `Firm` orchestrator will be responsible for catching these exceptions if necessary, though most will be handled by the transaction settlement system.
-
-## 5. Design Checklist & Risk Mitigation
-
-- **[X] Functional Requirements**: All existing `Firm` functionalities will be preserved, just relocated to engines.
-- **[X] Modularity**: This refactor is the definition of improving modularity.
-- **[X] Testability**: Massively improved, as engines can be tested in isolation.
-- **[X] API Definitions**: `api.py` will define the new engine interfaces.
-- **[X] Risk & Impact Audit (Addressing Pre-flight Check)**:
-    1.  **God Class & Hidden Dependencies**: **Mitigated**. The core of this spec is to eliminate the "parent pointer" pattern. Engines will be stateless and receive only DTOs.
-    2.  **Legacy `firm.finance` Proxy**: **Mitigated**. The refactoring plan includes a dedicated step (Step 5) to find and eliminate all usages of this proxy, treating it as a critical breaking change.
-    3.  **Violation of SRP**: **Mitigated**. The `Firm` class will be reduced to a pure orchestrator, and all business logic will be moved to engines, directly enforcing SRP.
-    4.  **Test Suite Fragility**: **Acknowledged & Planned**. The spec explicitly calls out that a significant test refactoring effort is required (Step 7). This is a cost of the refactor, not an unforeseen risk.
-    5.  **State Lifecycle Integrity**: **Mitigated**. The new architecture enforces this. Engines are pure functions, and the `Firm` orchestrator is the sole authority on state changes and the `reset()` lifecycle.
-
-## 6. Verification Plan
-
-1.  **Unit Tests**: All new stateless engines will have 100% unit test coverage, verifying their logic in isolation.
-2.  **Integration Tests**: A smaller set of integration tests will verify the `Firm` orchestrator correctly calls the engines and manages state transitions.
-3.  **System Tests**: Run the full simulation for at least 100 ticks.
-4.  **Zero-Sum Audit**: Run `scripts/audit_zero_sum.py` after the simulation run to ensure no money or goods were created or destroyed, verifying the integrity of the refactored transaction and production logic.
-5.  **Comparison**: Compare key macroeconomic outputs (GDP, inflation, unemployment) before and after the refactor to ensure no unintended behavioral changes were introduced.
+- **Risk: God Method Refactoring**: By deleting `_execute_internal_order` and replacing it with a clean orchestration flow delegating to new engines, we dismantle the god method. The test migration plan explicitly addresses the high blast radius.
+- **Risk: Architectural Inconsistency (`IInventoryHandler`)**: Section 2 of this spec makes resolving the protocol conflict a mandatory prerequisite, preventing the propagation of technical debt.
+- **Risk: Circular Dependencies**:
+    - New engine files will be placed in `simulation/components/engines/`.
+    - New DTOs will be placed in `modules/firm/api.py` or a new `simulation/dtos/firm_dtos.py` file to be accessible by both engines and agents without creating import loops.
+    - A manual review of `TYPE_CHECKING` blocks will be a required step in the final code review to ensure correctness.
 
 ## 7. Mandatory Reporting Verification
 
-All insights, challenges, and discovered technical debt during this refactoring process will be documented in `communications/insights/firm_orchestrator_refactor.md`. This refactor is complex, and transparently recording the process is critical. The completion of this report is a mandatory deliverable for this mission.
+All insights, unforeseen challenges, or newly identified technical debt encountered during the implementation of this specification will be documented in a new file under `communications/insights/firm_engine_refactor_YYYYMMDD.md`. This report is a mandatory deliverable for the completion of this task.
+```
