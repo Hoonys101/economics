@@ -6,6 +6,7 @@ from collections import deque, defaultdict
 import random
 import copy
 import math
+import warnings
 
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.models import Order, Skill, Talent
@@ -873,7 +874,11 @@ class Household(
         """
         Creates a clone (child) of this household.
         Used by LifecycleManager/DemographicManager.
+
+        @deprecated: Use HouseholdFactory.create_newborn instead.
         """
+        warnings.warn("Household.clone() is deprecated. Use HouseholdFactory.create_newborn() instead.", DeprecationWarning, stacklevel=2)
+
         # 1. Get Offspring Demographics from Lifecycle Engine
         offspring_demo = self.lifecycle_engine.create_offspring_demographics(
             self._bio_state, new_id, current_tick

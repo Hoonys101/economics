@@ -7,6 +7,7 @@ from modules.household.dtos import EconStateDTO, HouseholdSnapshotDTO
 from modules.market.housing_planner import HousingPlanner
 from modules.housing.dtos import HousingDecisionRequestDTO
 from modules.system.api import DEFAULT_CURRENCY
+from simulation.models import Order
 
 logger = logging.getLogger(__name__)
 
@@ -124,45 +125,67 @@ class BudgetEngine(IBudgetEngine):
         needs: List[PrioritizedNeed],
         abstract_plan: List[Any],
         market_snapshot: Any,
-        config: Any = None # Optional for backward compatibility in internal calls, but should be passed
+        config: Any = None
     ) -> BudgetPlan:
         # Simple Budgeting:
         # 1. Total Wealth = Cash
         total_cash = state.wallet.get_balance(DEFAULT_CURRENCY)
-
         allocations = {}
         spent = 0.0
+        final_orders: List[Order] = []
 
         # 2. Allocate for Needs (Survival first)
         for need in needs:
             # Estimate cost.
-            # E.g. Survival -> Food.
             if need.need_id == "survival":
                 # Estimate food cost.
                 food_price = config.default_food_price_estimate if config else DEFAULT_FOOD_PRICE_ESTIMATE
                 goods_market = getattr(market_snapshot, "goods", {})
 
                 # Check different keys for food
-                m = goods_market.get("basic_food") or goods_market.get("food")
+                target_item = "basic_food"
+                m = goods_market.get("basic_food")
+                if not m:
+                     m = goods_market.get("food")
+                     target_item = "food" if m else "basic_food"
+
                 if m:
                     # MarketSnapshotDTO uses GoodsMarketUnitDTO which has avg_price
                     food_price = getattr(m, "avg_price", food_price) or getattr(m, "current_price", food_price)
 
                 # Quantity: Place enough for buffer?
-                # Placeholder: Allocate fixed amount
+                # Placeholder: Allocate fixed amount based on config
                 amount_to_allocate = config.survival_budget_allocation if config else DEFAULT_SURVIVAL_BUDGET
-                if total_cash - spent >= amount_to_allocate:
-                    allocations["food"] = amount_to_allocate
-                    spent += amount_to_allocate
-                else:
-                    allocations["food"] = max(0.0, total_cash - spent)
-                    spent = total_cash
+                allocated_cash = 0.0
 
-            # Other needs...
+                if total_cash - spent >= amount_to_allocate:
+                    allocated_cash = amount_to_allocate
+                else:
+                    allocated_cash = max(0.0, total_cash - spent)
+
+                allocations["food"] = allocated_cash
+                spent += allocated_cash
+
+                # Create Order for Food
+                if allocated_cash > 0 and food_price > 0:
+                    qty = allocated_cash / food_price
+                    # Use wallet.owner_id if available, assuming standard Wallet implementation
+                    agent_id = getattr(state.wallet, "owner_id", None)
+                    if agent_id:
+                        order = Order(
+                            agent_id=agent_id,
+                            side="BUY",
+                            item_id=target_item,
+                            quantity=qty,
+                            price_limit=food_price * 1.1, # 10% buffer
+                            market_id="goods_market"
+                        )
+                        final_orders.append(order)
+
+            # Other needs can be added here...
 
         # 3. Allocate for Abstract Plan (AI Orders)
         # If AI says "Buy Stock", allocate.
-        approved_orders = []
         for order in abstract_plan:
             if order.side == "BUY":
                 cost = order.quantity * order.price_limit
@@ -170,12 +193,12 @@ class BudgetEngine(IBudgetEngine):
                     item_type = "investment" if "stock" in order.item_id else "goods"
                     allocations[item_type] = allocations.get(item_type, 0.0) + cost
                     spent += cost
-                    approved_orders.append(order)
+                    final_orders.append(order)
             elif order.side == "SELL":
-                approved_orders.append(order)
+                final_orders.append(order)
 
         return BudgetPlan(
             allocations=allocations,
             discretionary_spending=max(0.0, total_cash - spent),
-            orders=approved_orders
+            orders=final_orders
         )
