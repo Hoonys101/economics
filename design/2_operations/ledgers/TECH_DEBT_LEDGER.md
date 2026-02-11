@@ -6,8 +6,8 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **TD-INT-CONST** | System | Inconsistent use of System Constants (e.g., hardcoded 'USD'). | **Low**: Logic brittleness (TD-272). | Open |
 | **WO-101** | Test | Core logic-protocol changes (e.g., wallet) break test mocks. | **High**: Logic brittleness/Drift. | Partially Mitigated |
-| **TD-STR-GOD** | Architecture | God Classes: `Firm` (1164 LOC) and `Household` (1121 LOC) exceed maintainability thresholds. | **High**: High maintenance cost & circular dependencies. | Identified |
-| **TD-STR-LEAK** | Architecture | Abstraction Leaks: Raw agents passed to stateless engines (Production, HR, Gov, Policy). | **Medium**: Tight coupling, hard to test in isolation. | Identified |
+| **TD-STR-GOD** | Architecture | God Classes: `Firm` (1164 LOC) and `Household` (1121 LOC) exceed maintainability thresholds. | **High**: High maintenance cost & circular dependencies. | Mitigating (Firm) |
+| **TD-STR-LEAK** | Architecture | Abstraction Leaks: Raw agents passed to stateless engines (Production, HR, Gov, Policy). | **Medium**: Tight coupling, hard to test in isolation. | Mitigating (HR/Sales) |
 | **TD-LEG-TRANS** | System | Legacy `TransactionManager` contains redundant/conflicting logic. | **Low**: Confusion & code bloat. | Pending Deletion |
 
 ## ✅ Resolved Technical Debt
@@ -51,3 +51,23 @@
 | **TD-CM-001** | Common | **Fix**: Patched `yaml.safe_load` for ConfigManager unit tests. | Clean Room Era | [Insight](../../design/3_work_artifacts/reports/inbound/unit-tests-mocking-10138789661756819849_mission_unit_test_hardening.md) |
 | **TD-TM-001** | Systems | **Fix**: Implemented `FakeNumpy` for TechnologyManager unit tests. | Clean Room Era | [Insight](../../design/3_work_artifacts/reports/inbound/unit-tests-mocking-10138789661756819849_mission_unit_test_hardening.md) |
 | **TD-ECO-INH** | Simulation | **Fix**: Resolved inheritance leaks via fallback Escheatment & Final Sweep. | Clean Room Era | [Audit Report](../../design/3_work_artifacts/reports/inbound/economic-integrity-audit-fixes-124275369_AUDIT_ECONOMIC_INTEGRITY.md) |
+
+## 📓 Implementation Lessons & Detailed Debt
+
+---
+### ID: TD-TEST-003
+### Title: Brittle Global Mocks vs. Robust Local Fakes
+- **Symptom**: Unit tests fail in lean environments (e.g., without `numpy`, `yaml`) because global mocks in `conftest.py` cannot adequately simulate complex library behaviors (e.g., matrix operations).
+- **Root Cause**: Over-reliance on generic, globally-scoped mocks for dependencies that require nuanced behavior.
+- **Solution**: For complex dependencies, create dedicated "Fake" or "Stub" objects (e.g., a `FakeNumpy` class) at the test-suite level. Use `unittest.mock.patch` to inject these fakes locally, ensuring tests are fully isolated and do not depend on the presence of heavy external libraries.
+- **Lesson Learned**: Unit tests should verify logic flow and state changes. When a dependency's *behavior* is complex, it is better to create a simplified, predictable fake implementation for the unit test rather than fighting with complex `MagicMock` configurations. The verification of the *actual implementation* should be delegated to integration tests that run with the real dependencies.
+- **Resolved in**: `fix-unit-tests-mocking-10138789661756819849`
+
+---
+### ID: TD-STR-GOD-FIRM
+### Title: Firm God Class and Orchestration Bottleneck
+- **현상**: `Firm` 클래스가 생산, 재무, HR, 영업 등 지나치게 많은 책임을 가지는 God Class가 되어 오케스트레이션의 병목 지점이 되고 있음.
+- **원인**: 관련된 로직들이 각자의 엔진으로 분리되지 않고 `Firm` 클래스 내에 직접 구현되었었음.
+- **해결/완화**: HR/Sales 엔진을 상태 비저장으로 분리하고 `Firm`을 오케스트레이터로 만드는 리팩토링을 통해 일부 책임이 분산됨. (Branch: `refactor-hr-sales-engines-stateless-10517561335784044124`)
+- **교훈**: 복잡한 에이전트는 단일 책임 원칙에 따라 여러 개의 작은 오케스트레이터와 상태 비저장 엔진의 조합으로 분해되어야 테스트와 유지보수성이 향상됨. `FinanceEngine` 등 다른 영역에도 동일한 패턴 적용이 필요함.
+---
