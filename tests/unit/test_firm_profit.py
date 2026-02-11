@@ -38,7 +38,8 @@ def mock_firm():
     )
 
     # Hydrate wallet
-    firm.wallet.add(1000.0, DEFAULT_CURRENCY)
+    firm.wallet.add(1000, DEFAULT_CURRENCY)
+
     firm.production_target = 100.0
 
     return firm
@@ -56,51 +57,53 @@ def test_firm_profit_history_update(mock_firm):
     market_context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}}
     current_time = 1
 
-    # Tick 1: Profit 10.0
-    mock_firm.record_revenue(10.0, DEFAULT_CURRENCY)
+    # Tick 1: Profit 10
+    mock_firm.record_revenue(10, DEFAULT_CURRENCY)
     mock_firm.generate_transactions(government, market_data, shareholder_registry, current_time, market_context)
     mock_firm.reset_finance()
 
-    # Tick 2: Profit 20.0
-    mock_firm.record_revenue(20.0, DEFAULT_CURRENCY)
+    # Tick 2: Profit 20
+    mock_firm.record_revenue(20, DEFAULT_CURRENCY)
     mock_firm.generate_transactions(government, market_data, shareholder_registry, current_time + 1, market_context)
     mock_firm.reset_finance()
 
-    # Tick 3: Profit 30.0
-    mock_firm.record_revenue(30.0, DEFAULT_CURRENCY)
+    # Tick 3: Profit 30
+    mock_firm.record_revenue(30, DEFAULT_CURRENCY)
     mock_firm.generate_transactions(government, market_data, shareholder_registry, current_time + 2, market_context)
     mock_firm.reset_finance()
 
     history = list(mock_firm.finance_state.profit_history)
-    assert history == [10.0, 20.0, 30.0]
+    assert history == [10, 20, 30]
     assert len(history) == 3
 
-    # Tick 4: Profit 40.0 (Should push out 10.0)
-    mock_firm.record_revenue(40.0, DEFAULT_CURRENCY)
+    # Tick 4: Profit 40 (Should push out 10)
+    mock_firm.record_revenue(40, DEFAULT_CURRENCY)
     mock_firm.generate_transactions(government, market_data, shareholder_registry, current_time + 3, market_context)
     mock_firm.reset_finance()
 
     history = list(mock_firm.finance_state.profit_history)
-    assert history == [20.0, 30.0, 40.0]
+    assert history == [20, 30, 40]
     assert len(history) == 3
+
 
 
 def test_firm_revenue_expenses_reset(mock_firm):
     """Firm's revenue and expenses reset after tick."""
-    mock_firm.record_revenue(100.0, DEFAULT_CURRENCY)
-    mock_firm.record_expense(50.0, DEFAULT_CURRENCY)
+    mock_firm.record_revenue(100, DEFAULT_CURRENCY)
+    mock_firm.record_expense(50, DEFAULT_CURRENCY)
 
-    assert mock_firm.finance_state.revenue_this_turn[DEFAULT_CURRENCY] == 100.0
-    assert mock_firm.finance_state.expenses_this_tick[DEFAULT_CURRENCY] == 50.0
+    assert mock_firm.finance_state.revenue_this_turn[DEFAULT_CURRENCY] == 100
+    assert mock_firm.finance_state.expenses_this_tick[DEFAULT_CURRENCY] == 50
 
     # Reset Tick Counters
     mock_firm.reset_finance()
 
-    assert mock_firm.finance_state.revenue_this_tick[DEFAULT_CURRENCY] == 0.0
-    assert mock_firm.finance_state.expenses_this_tick[DEFAULT_CURRENCY] == 0.0
+    assert mock_firm.finance_state.revenue_this_tick[DEFAULT_CURRENCY] == 0
+    assert mock_firm.finance_state.expenses_this_tick[DEFAULT_CURRENCY] == 0
+
 
     # Verify revenue_this_turn reset (happens in generate_transactions)
-    mock_firm.record_revenue(100.0, DEFAULT_CURRENCY)
+    mock_firm.record_revenue(100, DEFAULT_CURRENCY)
 
     government = Mock()
     government.id = 999
@@ -111,4 +114,5 @@ def test_firm_revenue_expenses_reset(mock_firm):
 
     mock_firm.generate_transactions(government, market_data, shareholder_registry, 1, market_context)
 
-    assert mock_firm.finance_state.revenue_this_turn[DEFAULT_CURRENCY] == 0.0
+    assert mock_firm.finance_state.revenue_this_turn[DEFAULT_CURRENCY] == 0
+

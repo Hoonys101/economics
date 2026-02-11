@@ -1,0 +1,138 @@
+
+=================================== ERRORS ====================================
+__________ ERROR collecting tests/system/test_phase29_depression.py ___________
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\system\test_phase29_depression.py:7: in <module>
+    from simulation.initialization.initializer import SimulationInitializer
+simulation\initialization\initializer.py:57: in <module>
+    from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
+E     File "C:\coding\economics\simulation\systems\handlers\goods_handler.py", line 25
+E       <<<<<<< HEAD
+E       ^^
+E   SyntaxError: invalid syntax
+______________________ ERROR collecting tests/test_ws.py ______________________
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\test_ws.py:9: in <module>
+    from server import app
+server.py:10: in <module>
+    from utils.simulation_builder import create_simulation
+utils\simulation_builder.py:29: in <module>
+    from simulation.initialization.initializer import SimulationInitializer
+simulation\initialization\initializer.py:57: in <module>
+    from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
+E     File "C:\coding\economics\simulation\systems\handlers\goods_handler.py", line 25
+E       <<<<<<< HEAD
+E       ^^
+E   SyntaxError: invalid syntax
+______________ ERROR collecting tests/unit/test_handlers_fix.py _______________
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\unit\test_handlers_fix.py:9: in <module>
+    from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
+E     File "C:\coding\economics\simulation\systems\handlers\goods_handler.py", line 25
+E       <<<<<<< HEAD
+E       ^^
+E   SyntaxError: invalid syntax
+__________ ERROR collecting tests/unit/test_transaction_processor.py __________
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\unit\test_transaction_processor.py:4: in <module>
+    from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
+E     File "C:\coding\economics\simulation\systems\handlers\goods_handler.py", line 25
+E       <<<<<<< HEAD
+E       ^^
+E   SyntaxError: invalid syntax
+__________ ERROR collecting tests/unit/test_wo157_dynamic_pricing.py __________
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\assertion\rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests\unit\test_wo157_dynamic_pricing.py:8: in <module>
+    from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
+E     File "C:\coding\economics\simulation\systems\handlers\goods_handler.py", line 25
+E       <<<<<<< HEAD
+E       ^^
+E   SyntaxError: invalid syntax
+=========================== short test summary info ===========================
+ERROR tests/system/test_phase29_depression.py
+ERROR tests/test_ws.py
+ERROR tests/unit/test_handlers_fix.py
+ERROR tests/unit/test_transaction_processor.py
+ERROR tests/unit/test_wo157_dynamic_pricing.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 5 errors during collection !!!!!!!!!!!!!!!!!!!
+============================== 5 errors in 1.91s ==============================
