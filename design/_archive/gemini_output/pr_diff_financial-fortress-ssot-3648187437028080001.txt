@@ -1,0 +1,989 @@
+diff --git a/communications/insights/implement_fortress_finance.md b/communications/insights/implement_fortress_finance.md
+new file mode 100644
+index 00000000..acc411e7
+--- /dev/null
++++ b/communications/insights/implement_fortress_finance.md
+@@ -0,0 +1,39 @@
++# Insight: Implementing Financial Fortress (SSoT)
++
++## 1. Overview
++The "Financial Fortress" mission aimed to enforce the SettlementSystem as the Single Source of Truth (SSoT) for all monetary assets in the simulation. This involved removing direct wallet mutations (`deposit`/`withdraw`) from Agents (`Household`, `Firm`) and refactoring the `FinanceSystem` to eliminate its parallel ledger of reserves/balances.
++
++## 2. Key Architectural Changes
++
++### 2.1. Agent Wallet Lockdown
++- **Deprecated:** Public `deposit(amount)` and `withdraw(amount)` methods on `Household`, `Firm`, and `Bank` now raise `NotImplementedError`.
++- **Internalized:** Renamed to `_deposit(amount)` and `_withdraw(amount)`. These are strictly for internal use by the `SettlementSystem`.
++- **Load State Safety:** The `load_state` method no longer hydrates financial assets directly from DTOs. This prevents "magic money" injection during restoration or instantiation.
++
++### 2.2. SettlementSystem as SSoT
++- **Interface Update:** `ISettlementSystem` now includes `get_balance(agent_id, currency)` and `transfer(...)`.
++- **Dependency Injection:** `SettlementSystem` now requires `AgentRegistry` to look up agents for balance checks (resolving `AgentID` -> `Agent` instance). This was injected via `SimulationInitializer`.
++- **Mocking:** A `MockSettlementSystem` was introduced to facilitate robust unit testing without spinning up the full engine.
++
++### 2.3. FinanceSystem Refactoring
++- **Stateless Orchestrator:** The `FinanceSystem` no longer maintains persistent state for Bank Reserves or Government Treasury Balance in its `self.ledger`.
++- **Sync-on-Demand:** A new helper `_sync_ledger_balances()` pulls real-time balances from `SettlementSystem` at the start of critical methods (`issue_treasury_bonds`, `request_bailout_loan`).
++- **Dual-Write Elimination:** Manual updates to `ledger.banks[].reserves` inside transaction methods were removed. The system now relies on `settlement_system.transfer` to move funds, and the subsequent sync reflects this reality.
++
++### 2.4. Agent Factory & Bootstrapper
++- **Genesis & Immigration:** `HouseholdFactory` and `Bootstrapper` were updated to use `SettlementSystem` (specifically `create_and_transfer` or `transfer`) to fund new agents, ensuring zero-sum integrity from the very first tick.
++- **Direct Injection Removed:** The fallback logic that used `firm.deposit` was removed.
++
++## 3. Technical Debt & Risks
++
++### 3.1. `IFinancialEntity` Deprecation
++The protocol `IFinancialEntity` still defines `deposit`/`withdraw`. Since we updated agents to raise errors on these, strict adherence to this protocol is technically broken for consumers who expect it to work. We rely on consumers updating to `IFinancialAgent` or `SettlementSystem`. Ideally, `IFinancialEntity` should be fully removed in a future cleanup.
++
++### 3.2. Mocking Complexity
++The widespread changes required significant updates to mocks (`MockAgent`, `MockBank`). Future changes to `SettlementSystem` will require careful maintenance of these mocks to ensure tests remain valid.
++
++### 3.3. Dependency Injection Timing
++Injecting `AgentRegistry` into `SettlementSystem` happens post-init in `SimulationInitializer` due to circular dependency/creation order. A cleaner DI container or phase-based initialization would be more robust.
++
++## 4. Conclusion
++The implementation successfully centralizes financial authority. Agents are no longer "banks of themselves," and the `FinanceSystem` is now a true orchestrator rather than a parallel state holder. This significantly improves the auditability and integrity of the economic simulation.
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 11bb0f1e..8a647685 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -118,6 +118,15 @@ class GrantBailoutCommand:
+     interest_rate: float
+     covenants: BailoutCovenant
+ 
++class SettlementOrder(TypedDict):
++    """A command to execute a monetary transfer via the SettlementSystem."""
++    sender_id: AgentID
++    receiver_id: AgentID
++    amount_pennies: int
++    currency: CurrencyCode
++    memo: str
++    transaction_type: str # e.g., 'WAGE', 'TAX', 'PURCHASE', 'ASSET_ENDOWMENT'
++
+ # --- Portfolio DTOs (TD-160) ---
+ 
+ @dataclass
+@@ -334,14 +343,15 @@ class IFinancialAgent(Protocol):
+     """
+     id: AgentID
+ 
+-    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+-        """Deposits a specific amount of a given currency."""
++    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        """Deposits a specific amount of a given currency. Internal use only."""
+         ...
+ 
+-    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         """
+         Withdraws a specific amount of a given currency.
+         Raises InsufficientFundsError if funds are insufficient.
++        Internal use only.
+         """
+         ...
+ 
+@@ -423,6 +433,22 @@ class IFiscalMonitor(Protocol):
+     """Interface for the fiscal health analysis component."""
+     def get_debt_to_gdp_ratio(self, government: "IGovernment", indicators: "EconomicIndicatorsDTO") -> float: ...
+ 
++class ISettlementSystem(Protocol):
++    """
++    Interface for the centralized settlement system.
++    """
++
++    def transfer(self, sender: IFinancialAgent, receiver: IFinancialAgent, amount_pennies: int, memo: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> Optional[ITransaction]:
++        """Executes an immediate, single transfer. Returns transaction or None."""
++        ...
++
++    def get_balance(self, agent_id: AgentID, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        """
++        Queries the Single Source of Truth for an agent's current balance.
++        This is the ONLY permissible way to check another agent's funds.
++        """
++        ...
++
+ class IFinanceSystem(Protocol):
+     """Interface for the sovereign debt and corporate bailout system."""
+ 
+diff --git a/modules/finance/system.py b/modules/finance/system.py
+index 4ebb3684..51ec3aa0 100644
+--- a/modules/finance/system.py
++++ b/modules/finance/system.py
+@@ -68,14 +68,23 @@ class FinanceSystem(IFinanceSystem):
+             }
+         )
+ 
+-        # Sync Initial State (Optimistic)
+-        if hasattr(bank, 'wallet'):
+-            bal = bank.wallet.get_balance(DEFAULT_CURRENCY)
+-            self.ledger.banks[bank.id].reserves[DEFAULT_CURRENCY] = bal
++        # Sync Initial State (Optimistic) - REMOVED
++        # We rely on SSoT (SettlementSystem) and sync on demand.
+ 
+-        if hasattr(government, 'wallet'):
+-             bal = government.wallet.get_balance(DEFAULT_CURRENCY)
+-             self.ledger.treasury.balance[DEFAULT_CURRENCY] = bal
++    def _sync_ledger_balances(self) -> None:
++        """Syncs ledger reserves and treasury balance from SettlementSystem (SSoT)."""
++        if not self.settlement_system:
++            return
++
++        # Sync Bank Reserves
++        for bank_id, bank_state in self.ledger.banks.items():
++            balance = self.settlement_system.get_balance(bank_id, DEFAULT_CURRENCY)
++            bank_state.reserves[DEFAULT_CURRENCY] = balance
++
++        # Sync Treasury
++        gov_id = self.ledger.treasury.government_id
++        gov_balance = self.settlement_system.get_balance(gov_id, DEFAULT_CURRENCY)
++        self.ledger.treasury.balance[DEFAULT_CURRENCY] = gov_balance
+ 
+     # --- ORCHESTRATOR METHODS ---
+ 
+@@ -89,6 +98,9 @@ class FinanceSystem(IFinanceSystem):
+         """
+         Orchestrates the loan application process using Risk and Booking engines.
+         """
++        # Sync SSoT
++        self._sync_ledger_balances()
++
+         # 1. Update Ledger Context
+         self.ledger.current_tick = current_tick
+ 
+@@ -224,6 +236,9 @@ class FinanceSystem(IFinanceSystem):
+         Issues new treasury bonds using the new Ledger system (partially).
+         NOW SYNCHRONOUS: Executes transfer via SettlementSystem to ensure Agent Wallets are updated.
+         """
++        # Sync SSoT
++        self._sync_ledger_balances()
++
+         # Updates self.ledger.treasury.bonds
+ 
+         base_rate = 0.03
+@@ -279,13 +294,8 @@ class FinanceSystem(IFinanceSystem):
+         # Update Ledger
+         self.ledger.treasury.bonds[bond_id] = bond_state
+ 
+-        # Deduct reserves (Payment)
+-        self.ledger.banks[buyer_id].reserves[DEFAULT_CURRENCY] -= amount
+-
+-        # Add to Treasury Balance
+-        if DEFAULT_CURRENCY not in self.ledger.treasury.balance:
+-            self.ledger.treasury.balance[DEFAULT_CURRENCY] = 0
+-        self.ledger.treasury.balance[DEFAULT_CURRENCY] += amount
++        # Manual ledger updates for reserves/treasury removed (Dual Write Elimination).
++        # Balances are synced from SettlementSystem at start of next operation.
+ 
+         # Generate Transaction
+         tx = Transaction(
+@@ -351,6 +361,9 @@ class FinanceSystem(IFinanceSystem):
+         return False
+ 
+     def request_bailout_loan(self, firm: 'Firm', amount: int) -> Optional[GrantBailoutCommand]:
++        # Sync SSoT
++        self._sync_ledger_balances()
++
+         # Enforce Government Budget Constraint (Check Ledger)
+         gov_bal = self.ledger.treasury.balance.get(DEFAULT_CURRENCY, 0)
+ 
+@@ -381,6 +394,9 @@ class FinanceSystem(IFinanceSystem):
+         """
+         Manages the servicing of outstanding government debt using DebtServicingEngine.
+         """
++        # Sync SSoT
++        self._sync_ledger_balances()
++
+         self.ledger.current_tick = current_tick
+         result = self.debt_servicing_engine.service_all_debt(self.ledger)
+         self.ledger = result.updated_ledger
+diff --git a/modules/household/api.py b/modules/household/api.py
+index 84c80e00..9718d7d2 100644
+--- a/modules/household/api.py
++++ b/modules/household/api.py
+@@ -227,6 +227,7 @@ class HouseholdFactoryContext:
+     settlement_system: Any
+     markets: Dict[str, Any]
+     memory_system: Optional[Any] = None
++    central_bank: Optional[Any] = None
+ 
+ 
+ class IHouseholdFactory(Protocol):
+diff --git a/modules/household/factory.py b/modules/household/factory.py
+index 4df8339f..81e8ba63 100644
+--- a/modules/household/factory.py
++++ b/modules/household/factory.py
+@@ -89,8 +89,10 @@ class HouseholdFactory:
+         )
+ 
+         # 5. Hydrate State (Assets)
++        # Note: Assets are not loaded directly via load_state to ensure SSoT integrity.
++        # Transfers must be handled by the caller (create_newborn, create_immigrant, etc.)
+         initial_state = AgentStateDTO(
+-            assets={DEFAULT_CURRENCY: int(initial_assets)},
++            assets={DEFAULT_CURRENCY: 0},
+             inventory={},
+             is_active=True
+         )
+@@ -196,9 +198,24 @@ class HouseholdFactory:
+             agent_id=new_id,
+             initial_age=initial_age,
+             gender=gender,
+-            initial_assets=initial_assets, # External injection
++            initial_assets=initial_assets, # Record only
+             decision_engine=engine
+         )
++
++        # Transfer Assets (Minting / Import)
++        if initial_assets > 0:
++            if self.context.central_bank:
++                self.context.settlement_system.create_and_transfer(
++                    source_authority=self.context.central_bank,
++                    destination=immigrant,
++                    amount=int(initial_assets),
++                    reason="IMMIGRATION_GRANT",
++                    tick=current_tick
++                )
++            else:
++                logger.warning(f"CentralBank not found for immigrant {new_id}. Using direct deposit fallback.")
++                immigrant._deposit(int(initial_assets))
++
+         return immigrant
+ 
+     def create_initial_population(
+@@ -228,6 +245,21 @@ class HouseholdFactory:
+                 initial_assets=assets,
+                 decision_engine=engine
+             )
++
++            # Genesis Funding
++            if assets > 0:
++                if self.context.central_bank:
++                    self.context.settlement_system.create_and_transfer(
++                        source_authority=self.context.central_bank,
++                        destination=agent,
++                        amount=assets,
++                        reason="GENESIS_POPULATION",
++                        tick=0
++                    )
++                else:
++                    # Fallback for genesis if CB missing (unlikely in proper setup)
++                    agent._deposit(assets)
++
+             agents.append(agent)
+ 
+         return agents
+diff --git a/simulation/bank.py b/simulation/bank.py
+index a80ddff7..46ad1538 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -93,33 +93,23 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+     # --- IFinancialAgent Implementation ---
+ 
+     def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+-        # Bank's own funds
+-        if self.finance_system and hasattr(self.finance_system, 'ledger'):
+-            if self.id in self.finance_system.ledger.banks:
+-                reserves = self.finance_system.ledger.banks[self.id].reserves
+-                if currency not in reserves: reserves[currency] = 0
+-                reserves[currency] += amount
+-        self._wallet.add(amount, currency, memo="Deposit") # Sync local
++        raise NotImplementedError("Direct deposit is deprecated. Use SettlementSystem.transfer.")
+ 
+     def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+-        if self.finance_system and hasattr(self.finance_system, 'ledger'):
+-             if self.id in self.finance_system.ledger.banks:
+-                reserves = self.finance_system.ledger.banks[self.id].reserves
+-                if currency not in reserves or reserves[currency] < amount:
+-                    raise ValueError("Insufficient funds")
+-                reserves[currency] -= amount
+-        self._wallet.subtract(amount, currency, memo="Withdraw") # Sync local
++        raise NotImplementedError("Direct withdraw is deprecated. Use SettlementSystem.transfer.")
++
++    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        # Bank's own funds
++        self._wallet.add(amount, currency, memo="Deposit")
++
++    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        self._wallet.subtract(amount, currency, memo="Withdraw")
+ 
+     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+-        if self.finance_system and hasattr(self.finance_system, 'ledger'):
+-             if self.id in self.finance_system.ledger.banks:
+-                 return self.finance_system.ledger.banks[self.id].reserves.get(currency, 0)
++        # SSoT is the Wallet
+         return self._wallet.get_balance(currency)
+ 
+     def get_all_balances(self) -> Dict[CurrencyCode, int]:
+-        if self.finance_system and hasattr(self.finance_system, 'ledger'):
+-             if self.id in self.finance_system.ledger.banks:
+-                 return self.finance_system.ledger.banks[self.id].reserves.copy()
+         return self._wallet.get_all_balances()
+ 
+     # --- ICurrencyHolder Implementation ---
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index 1fdca8c4..73e06840 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -344,7 +344,9 @@ class Household(
+         )
+ 
+     def load_state(self, state: AgentStateDTO) -> None:
+-        self._econ_state.wallet.load_balances(state.assets)
++        if state.assets and any(v > 0 for v in state.assets.values()):
++             self.logger.warning(f"Agent {self.id}: load_state called with assets, but direct loading is disabled for integrity. Assets ignored: {state.assets}")
++
+         self._econ_state.inventory.clear()
+         self._econ_state.inventory.update(state.inventory)
+         self.is_active = state.is_active
+@@ -720,10 +722,16 @@ class Household(
+ 
+     @override
+     def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+-        self._econ_state.wallet.add(amount, currency=currency, memo="Deposit")
++        raise NotImplementedError("Direct deposit is deprecated. Use SettlementSystem.transfer.")
+ 
+     @override
+     def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        raise NotImplementedError("Direct withdraw is deprecated. Use SettlementSystem.transfer.")
++
++    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        self._econ_state.wallet.add(amount, currency=currency, memo="Deposit")
++
++    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         self._econ_state.wallet.subtract(amount, currency=currency, memo="Withdraw")
+ 
+     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 3af6b23a..eaccfb46 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -236,7 +236,9 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
+         )
+ 
+     def load_state(self, state: AgentStateDTO) -> None:
+-        self._wallet.load_balances(state.assets)
++        if state.assets and any(v > 0 for v in state.assets.values()):
++             self.logger.warning(f"Agent {self.id}: load_state called with assets, but direct loading is disabled for integrity. Assets ignored: {state.assets}")
++
+         self._inventory.clear()
+         self._inventory.update(state.inventory)
+         self.is_active = state.is_active
+@@ -1311,10 +1313,16 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
+ 
+     @override
+     def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+-         self.wallet.add(amount, currency)
++         raise NotImplementedError("Direct deposit is deprecated. Use SettlementSystem.transfer.")
+ 
+     @override
+     def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++         raise NotImplementedError("Direct withdraw is deprecated. Use SettlementSystem.transfer.")
++
++    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++         self.wallet.add(amount, currency)
++
++    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+          current_bal = self.wallet.get_balance(currency)
+          if current_bal < amount:
+             raise InsufficientFundsError(
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index ab7b0f63..8a410cfb 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -541,7 +541,8 @@ class SimulationInitializer(SimulationInitializerInterface):
+             ai_training_manager=sim.ai_training_manager,
+             settlement_system=sim.settlement_system,
+             markets=sim.markets,
+-            memory_system=sim.persistence_manager
++            memory_system=sim.persistence_manager,
++            central_bank=sim.central_bank
+         )
+ 
+         household_factory = HouseholdFactory(hh_factory_context)
+@@ -609,6 +610,14 @@ class SimulationInitializer(SimulationInitializerInterface):
+         # Finalize AgentRegistry state
+         sim.agent_registry.set_state(sim.world_state)
+ 
++        # Inject AgentRegistry into SettlementSystem for SSoT resolution (get_balance)
++        if hasattr(sim.settlement_system, 'agent_registry'):
++            # It's dynamically assigned but let's be explicit
++            sim.settlement_system.agent_registry = sim.agent_registry
++        else:
++            # If attribute doesn't exist (e.g. not defined in __init__), set it
++            setattr(sim.settlement_system, 'agent_registry', sim.agent_registry)
++
+         self.logger.info(f"Simulation fully initialized with run_id: {sim.run_id}")
+ 
+         return sim
+diff --git a/simulation/systems/bootstrapper.py b/simulation/systems/bootstrapper.py
+index 9979d851..9b841f2e 100644
+--- a/simulation/systems/bootstrapper.py
++++ b/simulation/systems/bootstrapper.py
+@@ -106,8 +106,8 @@ class Bootstrapper:
+                     settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
+                     logger.info(f"BOOTSTRAPPER | Injected {diff} capital to Firm {firm.id} via Settlement.")
+                 else:
+-                    # Fallback (Should not be used in Genesis mode, but keeps compatibility)
+-                    firm.deposit(diff, DEFAULT_CURRENCY)
+-                    logger.warning(f"BOOTSTRAPPER | Legacy injection of {diff} to Firm {firm.id} (No SettlementSystem).")
++                    msg = f"BOOTSTRAPPER | Failed to inject {diff} to Firm {firm.id}. SettlementSystem or CentralBank missing."
++                    logger.critical(msg)
++                    raise RuntimeError(msg)
+ 
+         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index 3ee27a2a..7930382d 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -5,7 +5,7 @@ from uuid import UUID
+ from simulation.finance.api import ISettlementSystem, ITransaction
+ from modules.finance.api import (
+     IFinancialEntity, IFinancialAgent, IBank, InsufficientFundsError,
+-    IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO
++    IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID
+ )
+ from simulation.dtos.settlement_dtos import LegacySettlementAccount
+ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder
+@@ -34,6 +34,23 @@ class SettlementSystem(ISettlementSystem):
+         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
+         self.total_liquidation_losses: int = 0
+         self.settlement_accounts: Dict[int, LegacySettlementAccount] = {} # TD-160
++        self.agent_registry: Optional[Any] = None # Injected by SimulationInitializer
++
++    def get_balance(self, agent_id: AgentID, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        """
++        Queries the Single Source of Truth for an agent's current balance.
++        This is the ONLY permissible way to check another agent's funds.
++        """
++        if self.agent_registry:
++            agent = self.agent_registry.get_agent(agent_id)
++            if agent:
++                if isinstance(agent, IFinancialAgent):
++                    return agent.get_balance(currency)
++                elif isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
++                    return agent.assets
++
++        self.logger.warning(f"get_balance: Agent {agent_id} not found or Registry not linked.")
++        return 0
+ 
+     def create_settlement(
+         self,
+@@ -57,10 +74,17 @@ class SettlementSystem(ISettlementSystem):
+ 
+         # 2. Atomic Transfer: Cash
+         # IFinancialAgent protocol enforcement (was agent.assets)
+-        cash_balance = agent.get_balance(DEFAULT_CURRENCY) # Returns int pennies
++        cash_balance = 0
++        if isinstance(agent, IFinancialAgent):
++            cash_balance = agent.get_balance(DEFAULT_CURRENCY)
++        elif isinstance(agent, IFinancialEntity):
++            cash_balance = agent.assets
+ 
+         if cash_balance > 0:
+-            agent.withdraw(cash_balance)
++            if isinstance(agent, IFinancialAgent):
++                agent._withdraw(cash_balance)
++            elif isinstance(agent, IFinancialEntity):
++                agent.withdraw(cash_balance)
+ 
+         # 3. Determine Heir / Escheatment
+         heir_id = None
+@@ -171,7 +195,13 @@ class SettlementSystem(ISettlementSystem):
+ 
+             try:
+                 # Direct Deposit (Source is Void/Escrow)
+-                recipient.deposit(amount)
++                if isinstance(recipient, IFinancialAgent):
++                    recipient._deposit(amount)
++                elif isinstance(recipient, IFinancialEntity):
++                    recipient.deposit(amount)
++                else:
++                     raise TypeError(f"Recipient {recipient.id} is not a valid financial agent.")
++
+                 total_distributed += amount
+ 
+                 # Create Receipt
+@@ -313,7 +343,12 @@ class SettlementSystem(ISettlementSystem):
+ 
+         if is_central_bank:
+              try:
+-                 agent.withdraw(amount, currency=currency)
++                 # Central Bank might still use withdraw if it tracks money supply?
++                 # Usually CB has infinite money, so withdraw should just work or be a no-op on validation but decrement M0.
++                 if isinstance(agent, IFinancialAgent):
++                    agent._withdraw(amount, currency=currency)
++                 else:
++                    agent.withdraw(amount, currency=currency)
+                  return True
+              except Exception as e:
+                  self.logger.error(f"SETTLEMENT_FAIL | Central Bank withdrawal failed. {e}")
+@@ -358,7 +393,10 @@ class SettlementSystem(ISettlementSystem):
+         try:
+             if current_cash >= amount:
+                 # Use standard withdraw
+-                agent.withdraw(amount, currency=currency)
++                if isinstance(agent, IFinancialAgent):
++                    agent._withdraw(amount, currency=currency)
++                elif isinstance(agent, IFinancialEntity):
++                    agent.withdraw(amount)
+                 self.logger.debug(f"DEBUG_WITHDRAW | Agent {agent.id} withdrew {amount}. Memo: {memo}")
+             else:
+                 # Seamless (Only for DEFAULT_CURRENCY)
+@@ -368,13 +406,19 @@ class SettlementSystem(ISettlementSystem):
+ 
+                 needed_from_bank = amount - current_cash
+                 if current_cash > 0:
+-                    agent.withdraw(current_cash, currency=currency)
++                    if isinstance(agent, IFinancialAgent):
++                        agent._withdraw(current_cash, currency=currency)
++                    elif isinstance(agent, IFinancialEntity):
++                        agent.withdraw(current_cash)
+ 
+                 success = self.bank.withdraw_for_customer(int(agent.id), needed_from_bank)
+                 if not success:
+                     # Rollback cash
+                     if current_cash > 0:
+-                         agent.deposit(current_cash, currency=currency)
++                         if isinstance(agent, IFinancialAgent):
++                            agent._deposit(current_cash, currency=currency)
++                         elif isinstance(agent, IFinancialEntity):
++                            agent.deposit(current_cash)
+                     raise InsufficientFundsError(f"Bank withdrawal failed for {agent.id} despite check.")
+ 
+                 self.logger.info(
+@@ -473,7 +517,10 @@ class SettlementSystem(ISettlementSystem):
+             if amount <= 0:
+                 continue
+             try:
+-                credit_agent.deposit(amount)
++                if isinstance(credit_agent, IFinancialAgent):
++                    credit_agent._deposit(amount)
++                elif isinstance(credit_agent, IFinancialEntity):
++                    credit_agent.deposit(amount)
+                 completed_credits.append((credit_agent, amount))
+             except Exception as e:
+                 self.logger.error(
+@@ -483,13 +530,19 @@ class SettlementSystem(ISettlementSystem):
+                 # 1. Reverse completed credits
+                 for ca, amt in completed_credits:
+                     try:
+-                        ca.withdraw(amt)
++                        if isinstance(ca, IFinancialAgent):
++                            ca._withdraw(amt)
++                        elif isinstance(ca, IFinancialEntity):
++                            ca.withdraw(amt)
+                     except Exception as rb_err:
+                         self.logger.critical(f"SETTLEMENT_FATAL | Credit Rollback failed for {ca.id}. {rb_err}")
+ 
+                 # 2. Refund debit agent
+                 try:
+-                    debit_agent.deposit(total_debit)
++                    if isinstance(debit_agent, IFinancialAgent):
++                        debit_agent._deposit(total_debit)
++                    elif isinstance(debit_agent, IFinancialEntity):
++                        debit_agent.deposit(total_debit)
+                 except Exception as rb_err:
+                     self.logger.critical(f"SETTLEMENT_FATAL | Debit Refund failed for {debit_agent.id}. {rb_err}")
+ 
+@@ -548,14 +601,20 @@ class SettlementSystem(ISettlementSystem):
+             return None
+ 
+         try:
+-            credit_agent.deposit(amount, currency=currency)
++            if isinstance(credit_agent, IFinancialAgent):
++                credit_agent._deposit(amount, currency=currency)
++            elif isinstance(credit_agent, IFinancialEntity):
++                credit_agent.deposit(amount)
+         except Exception as e:
+             # ROLLBACK: Credit failed, must reverse debit
+             self.logger.error(
+                 f"SETTLEMENT_ROLLBACK | Deposit failed for {credit_agent.id}. Rolling back withdrawal of {amount} from {debit_agent.id}. Error: {e}"
+             )
+             try:
+-                debit_agent.deposit(amount, currency=currency)
++                if isinstance(debit_agent, IFinancialAgent):
++                    debit_agent._deposit(amount, currency=currency)
++                elif isinstance(debit_agent, IFinancialEntity):
++                    debit_agent.deposit(amount)
+                 self.logger.info(f"SETTLEMENT_ROLLBACK_SUCCESS | Rolled back {amount} to {debit_agent.id}.")
+             except Exception as rollback_error:
+                 self.logger.critical(
+@@ -596,7 +655,10 @@ class SettlementSystem(ISettlementSystem):
+         if is_central_bank:
+             # Minting logic: Just credit destination. Source (CB) is assumed to have infinite capacity.
+             try:
+-                destination.deposit(amount, currency=currency)
++                if isinstance(destination, IFinancialAgent):
++                    destination._deposit(amount, currency=currency)
++                elif isinstance(destination, IFinancialEntity):
++                    destination.deposit(amount)
+ 
+                 self.logger.info(
+                     f"MINT_AND_TRANSFER | Created {amount} {currency} from {source_authority.id} to {destination.id}. Reason: {reason}",
+@@ -636,7 +698,11 @@ class SettlementSystem(ISettlementSystem):
+         if is_central_bank:
+             # Burning logic: Just debit source. Sink (CB) absorbs it (removed from circulation).
+             try:
+-                source.withdraw(amount, currency=currency)
++                if isinstance(source, IFinancialAgent):
++                    source._withdraw(amount, currency=currency)
++                elif isinstance(source, IFinancialEntity):
++                    source.withdraw(amount)
++
+                 self.logger.info(
+                     f"TRANSFER_AND_DESTROY | Destroyed {amount} {currency} from {source.id} to {sink_authority.id}. Reason: {reason}",
+                     extra={"tick": tick}
+diff --git a/tests/mocks/mock_settlement_system.py b/tests/mocks/mock_settlement_system.py
+new file mode 100644
+index 00000000..371697d6
+--- /dev/null
++++ b/tests/mocks/mock_settlement_system.py
+@@ -0,0 +1,69 @@
++from typing import Optional, Dict, List, Any
++from modules.finance.api import ISettlementSystem, IFinancialAgent, SettlementOrder, AgentID, CurrencyCode, DEFAULT_CURRENCY
++from simulation.models import Transaction
++
++class MockSettlementSystem(ISettlementSystem):
++    def __init__(self):
++        self.recorded_transfers: List[SettlementOrder] = []
++        self.balances: Dict[AgentID, Dict[CurrencyCode, int]] = {}
++
++    def setup_balance(self, agent_id: AgentID, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY):
++        if agent_id not in self.balances:
++            self.balances[agent_id] = {}
++        self.balances[agent_id][currency] = amount_pennies
++
++    def get_balance(self, agent_id: AgentID, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        return self.balances.get(agent_id, {}).get(currency, 0)
++
++    def transfer(self, sender: IFinancialAgent, receiver: IFinancialAgent, amount_pennies: int, memo: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> Optional[Transaction]:
++        # Record the transfer attempt
++        order = SettlementOrder(
++            sender_id=sender.id,
++            receiver_id=receiver.id,
++            amount_pennies=amount_pennies,
++            currency=currency,
++            memo=memo,
++            transaction_type="MOCK_TRANSFER"
++        )
++        self.recorded_transfers.append(order)
++
++        # Update mock balances (simulate transfer success)
++        # In mock, we assume success unless we want to test failure
++        # But we should respect balance constraints if we want realistic mock
++        sender_bal = self.get_balance(sender.id, currency)
++
++        # For simplicity in mock, allow overdrafts unless explicitly configured not to?
++        # Real system blocks overdrafts.
++        # Let's enforce it to catch bugs in tests.
++        if sender_bal >= amount_pennies:
++            self.setup_balance(sender.id, sender_bal - amount_pennies, currency)
++            receiver_bal = self.get_balance(receiver.id, currency)
++            self.setup_balance(receiver.id, receiver_bal + amount_pennies, currency)
++
++            # Also update agents using _deposit/_withdraw if available, to emulate real system side effects
++            if hasattr(sender, '_withdraw'):
++                try:
++                    sender._withdraw(amount_pennies, currency)
++                except Exception:
++                    pass # Ignore if mock agent doesn't support it
++            if hasattr(receiver, '_deposit'):
++                try:
++                    receiver._deposit(amount_pennies, currency)
++                except Exception:
++                    pass
++
++            return Transaction(
++                buyer_id=sender.id,
++                seller_id=receiver.id,
++                item_id="currency",
++                quantity=amount_pennies,
++                price=1.0,
++                market_id="mock",
++                transaction_type="transfer",
++                time=0
++            )
++        else:
++            return None
++
++    def get_recorded_transfers(self) -> List[SettlementOrder]:
++        return self.recorded_transfers
+diff --git a/tests/unit/household/test_snapshot_assembler.py b/tests/unit/household/test_snapshot_assembler.py
+index aa41738b..1b136fe9 100644
+--- a/tests/unit/household/test_snapshot_assembler.py
++++ b/tests/unit/household/test_snapshot_assembler.py
+@@ -48,7 +48,7 @@ class TestHouseholdSnapshotAssembler:
+         # Verify Independence (Copy Check)
+         # Modify the original household state
+         mock_household._bio_state.age = 31
+-        mock_household.deposit(100000) # 1000 + 1000 = 2000 (represented as pennies)
++        mock_household._deposit(100000) # 1000 + 1000 = 2000 (represented as pennies)
+         mock_household._bio_state.children_ids.append(3)
+ 
+         # Snapshot should remain unchanged
+diff --git a/tests/unit/modules/finance/test_double_entry.py b/tests/unit/modules/finance/test_double_entry.py
+index bb7c5fc2..4bf49e69 100644
+--- a/tests/unit/modules/finance/test_double_entry.py
++++ b/tests/unit/modules/finance/test_double_entry.py
+@@ -6,6 +6,7 @@ from modules.finance.system import FinanceSystem
+ from modules.finance.api import InsufficientFundsError, GrantBailoutCommand
+ from simulation.models import Transaction
+ from modules.system.api import DEFAULT_CURRENCY
++from tests.mocks.mock_settlement_system import MockSettlementSystem
+ 
+ # Mock objects that will be passed to FinanceSystem
+ class MockGovernment:
+@@ -22,8 +23,10 @@ class MockGovernment:
+     def get_debt_to_gdp_ratio(self):
+         return 0.5
+     # Deprecated methods for Phase 3 but kept for interface compliance
+-    def deposit(self, amount): self._assets += amount
+-    def withdraw(self, amount): self._assets -= amount
++    def _deposit(self, amount, currency=DEFAULT_CURRENCY): self._assets += amount
++    def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self._assets -= amount
++    def deposit(self, amount): self._deposit(amount)
++    def withdraw(self, amount): self._withdraw(amount)
+ 
+ class MockCentralBank:
+     def __init__(self, initial_cash):
+@@ -36,12 +39,14 @@ class MockCentralBank:
+     def add_bond_to_portfolio(self, bond):
+         self.assets["bonds"].append(bond)
+     # Mocking IFinancialEntity behavior loosely
+-    def deposit(self, amount): self.assets['cash'] += amount
+-    def withdraw(self, amount): self.assets['cash'] -= amount
++    def _deposit(self, amount, currency=DEFAULT_CURRENCY): self.assets['cash'] += amount
++    def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self.assets['cash'] -= amount
++    def deposit(self, amount): self._deposit(amount)
++    def withdraw(self, amount): self._withdraw(amount)
+ 
+ class MockBank:
+-    def __init__(self, initial_assets):
+-        self.id = 1
++    def __init__(self, initial_assets, id=1):
++        self.id = id
+         self._assets = initial_assets
+         # Mock wallet for FinanceSystem init sync
+         self.wallet = MagicMock()
+@@ -50,8 +55,10 @@ class MockBank:
+ 
+     @property
+     def assets(self): return self._assets
+-    def deposit(self, amount): self._assets += amount
+-    def withdraw(self, amount): self._assets -= amount
++    def _deposit(self, amount, currency=DEFAULT_CURRENCY): self._assets += amount
++    def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self._assets -= amount
++    def deposit(self, amount): self._deposit(amount)
++    def withdraw(self, amount): self._withdraw(amount)
+ 
+ class MockFirm:
+     def __init__(self, id, initial_cash_reserve):
+@@ -63,8 +70,10 @@ class MockFirm:
+         self.age = 100
+     @property
+     def assets(self): return self.cash_reserve
+-    def deposit(self, amount): self.cash_reserve += amount
+-    def withdraw(self, amount): self.cash_reserve -= amount
++    def _deposit(self, amount, currency=DEFAULT_CURRENCY): self.cash_reserve += amount
++    def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self.cash_reserve -= amount
++    def deposit(self, amount): self._deposit(amount)
++    def withdraw(self, amount): self._withdraw(amount)
+ 
+ class MockConfig:
+     QE_INTERVENTION_YIELD_THRESHOLD = 0.05
+@@ -102,11 +111,23 @@ class TestDoubleEntry(unittest.TestCase):
+         self.mock_bank = MockBank(initial_assets=20000)
+         self.mock_firm = MockFirm(id=1, initial_cash_reserve=100)
+ 
++        self.mock_settlement = MockSettlementSystem()
++        self.mock_settlement.setup_balance(self.mock_gov.id, 10000)
++        self.mock_settlement.setup_balance(self.mock_cb.id, 5000)
++        self.mock_settlement.setup_balance(self.mock_bank.id, 20000)
++        # Note: MockFirm ID is 1, Bank ID is 1. Conflict?
++        # MockBank ID is 1 in definition. MockFirm ID is passed as 1.
++        # This might cause issue in get_balance if IDs clash.
++        # I'll update MockFirm ID to 101 to avoid clash.
++        self.mock_firm = MockFirm(id=101, initial_cash_reserve=100)
++        self.mock_settlement.setup_balance(self.mock_firm.id, 100)
++
+         self.finance_system = FinanceSystem(
+             government=self.mock_gov,
+             central_bank=self.mock_cb,
+             bank=self.mock_bank,
+-            config_module=self.mock_config
++            config_module=self.mock_config,
++            settlement_system=self.mock_settlement
+         )
+ 
+         # Mock FiscalMonitor to redirect to Gov mock method
+@@ -177,8 +198,9 @@ class TestDoubleEntry(unittest.TestCase):
+         bonds, txs = self.finance_system.issue_treasury_bonds(bond_amount, current_tick=1)
+ 
+         # Assertions
+-        self.assertEqual(self.mock_gov.assets, initial_gov_assets)
+-        self.assertEqual(self.mock_bank.assets, initial_bank_assets)
++        # Expect assets to change because transfer is synchronous now
++        self.assertEqual(self.mock_gov.assets, initial_gov_assets + bond_amount)
++        self.assertEqual(self.mock_bank.assets, initial_bank_assets - bond_amount)
+ 
+         self.assertEqual(len(txs), 1)
+         tx = txs[0]
+diff --git a/tests/unit/modules/finance/test_sovereign_debt.py b/tests/unit/modules/finance/test_sovereign_debt.py
+index d1cae743..422c766e 100644
+--- a/tests/unit/modules/finance/test_sovereign_debt.py
++++ b/tests/unit/modules/finance/test_sovereign_debt.py
+@@ -38,6 +38,7 @@ class TestSovereignDebt:
+ 
+         self.settlement_system = MagicMock()
+         self.settlement_system.transfer.return_value = True
++        self.settlement_system.get_balance.return_value = 10000
+ 
+         self.finance_system = FinanceSystem(
+             government=self.govt,
+@@ -99,8 +100,8 @@ class TestSovereignDebt:
+         fs.central_bank.get_base_rate.return_value = 0.05
+         fs.bank.assets = 0 # Bank has no money
+ 
+-        # Update ledger to reflect 0 reserves because setup_system initialized it with 10000
+-        fs.ledger.banks[fs.bank.id].reserves[DEFAULT_CURRENCY] = 0
++        # Update SettlementSystem mock to return 0
++        fs.settlement_system.get_balance.return_value = 0
+ 
+         bonds, txs = fs.issue_treasury_bonds(100, 1)
+ 
+diff --git a/tests/unit/systems/test_settlement_system.py b/tests/unit/systems/test_settlement_system.py
+index 14c69f37..3bdd1d86 100644
+--- a/tests/unit/systems/test_settlement_system.py
++++ b/tests/unit/systems/test_settlement_system.py
+@@ -31,14 +31,14 @@ class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
+     def assets(self):
+         return self._assets
+ 
+-    def withdraw(self, amount, currency=DEFAULT_CURRENCY):
++    def _withdraw(self, amount, currency=DEFAULT_CURRENCY):
+         if currency != DEFAULT_CURRENCY:
+              raise ValueError(f"MockAgent only supports {DEFAULT_CURRENCY}")
+         if self._assets < amount:
+             raise InsufficientFundsError("Insufficient funds")
+         self._assets -= int(amount)
+ 
+-    def deposit(self, amount, currency=DEFAULT_CURRENCY):
++    def _deposit(self, amount, currency=DEFAULT_CURRENCY):
+         if currency != DEFAULT_CURRENCY:
+              # Just ignore other currencies for simple tests or store them if needed
+              pass
+@@ -51,10 +51,10 @@ class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
+         return 0
+ 
+     def _add_assets(self, amount):
+-        self.deposit(amount)
++        self._deposit(amount)
+ 
+     def _sub_assets(self, amount):
+-        self.withdraw(amount)
++        self._withdraw(amount)
+ 
+     def get_portfolio(self) -> PortfolioDTO:
+         return self.portfolio
+@@ -70,7 +70,7 @@ class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
+ 
+ class MockCentralBank(MockAgent):
+     # Central Bank can withdraw infinitely (negative assets allowed for tracking)
+-    def withdraw(self, amount, currency=DEFAULT_CURRENCY):
++    def _withdraw(self, amount, currency=DEFAULT_CURRENCY):
+         self._assets -= int(amount)
+ 
+ class MockBank(IBank):
+@@ -80,11 +80,11 @@ class MockBank(IBank):
+         self.own_assets = 10000
+ 
+     # IFinancialAgent impl
+-    def deposit(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
++    def _deposit(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
+         if currency == DEFAULT_CURRENCY:
+             self.own_assets += int(amount)
+ 
+-    def withdraw(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
++    def _withdraw(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
+         if currency == DEFAULT_CURRENCY:
+             self.own_assets -= int(amount)
+ 
+@@ -214,7 +214,7 @@ def test_record_liquidation_escheatment(settlement_system):
+ 
+ def test_transfer_rollback(settlement_system):
+     class FaultyAgent(MockAgent):
+-        def deposit(self, amount, currency=DEFAULT_CURRENCY):
++        def _deposit(self, amount, currency=DEFAULT_CURRENCY):
+             raise Exception("Deposit Failed")
+ 
+     sender = MockAgent(1, 100)
+@@ -390,7 +390,7 @@ def test_settle_atomic_rollback(settlement_system):
+ def test_settle_atomic_credit_fail_rollback(settlement_system):
+     # A pays Faulty 50. A has 100.
+     class FaultyAgent(MockAgent):
+-        def deposit(self, amount, currency=DEFAULT_CURRENCY):
++        def _deposit(self, amount, currency=DEFAULT_CURRENCY):
+             raise Exception("Deposit Fail")
+ 
+     agent_a = MockAgent("A", 100)
+diff --git a/tests/unit/test_bank.py b/tests/unit/test_bank.py
+index cbdeba4f..96fd2797 100644
+--- a/tests/unit/test_bank.py
++++ b/tests/unit/test_bank.py
+@@ -42,21 +42,27 @@ def bank(mock_finance_system):
+     return bank
+ 
+ def test_bank_assets_delegation(bank, mock_finance_system):
+-    # Should get from Ledger
++    # Should get from Wallet (SSoT)
+     assert bank.assets == 100000
+ 
+-    # Modify Ledger
++    # Modify Ledger - Should NOT affect Bank assets directly (Bank uses Wallet)
+     mock_finance_system.ledger.banks[1].reserves[DEFAULT_CURRENCY] = 200000
+-    assert bank.assets == 200000
++    assert bank.assets == 100000
++
++    # Modify Wallet
++    bank._deposit(50000)
++    assert bank.assets == 150000
+ 
+ def test_bank_deposit_delegation(bank, mock_finance_system):
+-    # Deposit adds to reserves in Ledger
+-    bank.deposit(50000) # 500.00
+-    assert mock_finance_system.ledger.banks[1].reserves[DEFAULT_CURRENCY] == 150000
++    # Use _deposit
++    bank._deposit(50000)
++    assert bank.assets == 150000
++    # Ledger is NOT updated automatically by Bank.deposit anymore.
++    # FinanceSystem would sync it.
+ 
+ def test_bank_withdraw_delegation(bank, mock_finance_system):
+-    bank.withdraw(20000) # 200.00
+-    assert mock_finance_system.ledger.banks[1].reserves[DEFAULT_CURRENCY] == 80000
++    bank._withdraw(20000)
++    assert bank.assets == 80000
+ 
+ def test_grant_loan_delegation(bank, mock_finance_system):
+     # Setup Mock Return
+diff --git a/tests/utils/factories.py b/tests/utils/factories.py
+index 8c5e437d..eeba22eb 100644
+--- a/tests/utils/factories.py
++++ b/tests/utils/factories.py
+@@ -219,7 +219,7 @@ def create_household(
+         **kwargs
+     )
+     if assets_pennies > 0:
+-        household.deposit(assets_pennies, DEFAULT_CURRENCY)
++        household._deposit(assets_pennies, DEFAULT_CURRENCY)
+     return household
+ 
+ def create_firm(
+@@ -266,6 +266,6 @@ def create_firm(
+ 
+     assets_pennies = int(assets)
+     if assets_pennies > 0:
+-        firm.deposit(assets_pennies, DEFAULT_CURRENCY)
++        firm._deposit(assets_pennies, DEFAULT_CURRENCY)
+ 
+     return firm

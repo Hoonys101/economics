@@ -6,15 +6,16 @@
 | **TD-LEG-TRANS** | System | Legacy `TransactionManager` contains redundant/conflicting logic. | **Low**: Confusion & code bloat. | Pending Deletion |
 | **TD-PRECISION** | Financials | Use of `float` for currency leads to precision dust/leaks over long runs. | **Medium**: Marginal zero-sum drift. | Identified (Next Priority) |
 | **TD-CONFIG-MUT** | System | Scenarios directly mutate global config via `setattr`. | **Medium**: State pollution risk. | Identified (Next Priority) |
-| **TD-DRIFT-SOC** | Architecture | **SoC Violation**: Direct mutation of `input_inventory`, `_wallet`, and `_assets` bypassing SSoTs. | **CRITICAL**: Systemic leak risk & Ghost money. | Identified (Liquidation Armed) |
 | **TD-COCKPIT-FE** | Simulation | **Ghost Implementation**: FE missing sliders/HUD for Cockpit (Phase 11) despite BE readiness. | **Medium**: Logic usability gap. | Identified |
 | **TD-STR-GOD-DECOMP** | Architecture | **Residual God Classes**: `Firm` (1276 lines) and `Household` (1042 lines) exceed 800-line limit. | **Medium**: Maintenance friction. | Open |
 | **TD-ARCH-LEAK-CONTEXT** | Finance | **Abstraction Leak**: `LiquidationContext` passes agent interfaces instead of pure DTO snapshots. | **Low**: Future coupling risk. | Identified |
+| **TD-AGENT-STATE-INVFIRM** | Data/DTO | **Serialization Gap**: `AgentStateDTO` (save/load) does not support multi-slot inventories (e.g., `_input_inventory`). | **High**: Data loss on reload. | Open |
+| **TD-ARCH-LEAK-PROTI** | Architecture | **Interface Drift**: `IFinancialEntity` still defines `deposit/withdraw` which now raise errors. | **Medium**: Type safety friction. | Open |
+| **TD-ARCH-DI-SETTLE** | Architecture | **DI Timing**: `AgentRegistry` injection into `SettlementSystem` happens post-initialization. | **Low**: Initialization fragility. | Open |
 | **TD-DOC-PARITY** | Documentation | **Missing Manual**: `AUDIT_PARITY.md` missing from operations manuals. | **Low**: Knowledge loss. | Identified |
 | **TD-ENFORCE-NONE** | System | **Protocol Enforcement**: Lack of static/runtime guards for architectural rules. | **High**: Regression risk. | Open (Phase 15) |
 | **TD-CONFIG-LEAK** | Architecture | **Encapsulation**: Direct access to `agent.config` in internal systems. | **Medium**: Coupling risk. | Open |
 | **TD-QE-MISSING** | Financials | **Logic Gap**: QE Bond Issuance logic lost during refactor. | **High**: Feature Regression. | Open |
-| **TD-LIF-RESET** | Lifecycle | **Late-Reset Violation**: Household counters are never cleared at tick-end. | **High**: Corrupt analytics/learning. | Identified (Liquidation Armed) |
 
 ## ✅ Resolved Technical Debt
 
@@ -30,6 +31,10 @@
 | **TD-256** | Lifecycle Manager | `FinanceState` 내 dynamic hasattr 체크 제거 | PH10.1 | [Insight](file:///c:/coding/economics/communications/insights/TD-255_TD-256_TD-257_Stabilization.md) |
 | **TD-257** | Finance Engine | 하드코딩된 unit cost(5.0) 설정값으로 이관 | PH10.1 | [Insight](file:///c:/coding/economics/communications/insights/TD-255_TD-256_TD-257_Stabilization.md) |
 | **TD-258** | Command Bus | Orchestrator-Engine 시그니처 정규화 | PH10.1 | [Insight](file:///c:/coding/economics/communications/insights/TD-255_TD-256_TD-257_Stabilization.md) |
+| **TD-LIF-RESET** | Lifecycle | **Pulse**: Implemented `reset_tick_state` & `HouseholdFactory`. | PH15 | [Insight](../../communications/insights/implement-lifecycle-pulse) |
+| **TD-INV-SLOT** | Inventory | **Protocol**: `InventorySlot` support & removed Registry duplication. | PH15 | [Insight](../../communications/insights/implement-inventory-slot) |
+| **TD-FIN-FORT** | Finance | **SSoT**: `SettlementSystem` authority & removed parallel ledger. | PH15 | [Insight](../../communications/insights/implement_fortress_finance.md) |
+| **TD-FIN-003** | Finance | **SSoT**: Removed Bank `_wallet` and synchronized with Finance ledger. | PH15 | [Insight](../../communications/insights/implement_fortress_finance.md) |
 | **TD-PH10** | Core Agents | `BaseAgent.py` 완전 퇴역 및 삭제 | PH10 | [Insight](file:///c:/coding/economics/communications/insights/PH9.3-STRUCTURAL-PURITY.md) |
 | **TD-PROX** | Firms | `HRProxy`, `FinanceProxy` 삭제 | PH10 | [Insight](file:///c:/coding/economics/communications/insights/PH9.2_Firm_Core_Protocol_Enforcement.md) |
 | **TD-DTO** | Orders | `OrderDTO` 인터페이스 표준화 | PH9.3 | [Insight](file:///c:/coding/economics/communications/insights/hr_finance_decouple_insight.md) |
@@ -137,7 +142,33 @@
 - **Risk**: "Ghost Money" creation during agent cloning/instantiation. Breaks Double-Entry integrity.
 - **FinanceSystem Schizophrenia**: Parallel ledger in `FinanceSystem` drifts from agent wallets.
 - **Solution**: Remove direct mutation APIs. Force all transfers through `SettlementOrder` commands via `SettlementSystem`.
-- **Reported**: `audit_finance_integrity_20260211.md`
+- **Solution**: Remove direct mutation APIs. Force all transfers through `SettlementOrder` commands via `SettlementSystem`.
+- **Lesson Learned**: SSoT must be absolute. Dual-writes always drift.
+- **Resolved in**: `refactor/financial-fortress-ssot`
+
+---
+### ID: TD-AGENT-STATE-INVFIRM
+### Title: Serialization Gap in AgentStateDTO
+- **Symptom**: `AgentStateDTO` (save/load) does not support multi-slot inventories (e.g., `_input_inventory`).
+- **Risk**: Saving and loading a simulation results in loss of all non-`MAIN` inventory data for firms.
+- **Solution**: Update `AgentStateDTO` to support a map of slots to inventories.
+- **Reported**: `review_backup_20260212_073151_Analyze_this_PR.md`
+
+---
+### ID: TD-ARCH-LEAK-PROTI
+### Title: Residual Interface Drift (IFinancialEntity)
+- **Symptom**: `IFinancialEntity` still defines `deposit/withdraw` which now raise `NotImplementedError`.
+- **Risk**: Breaks type safety assumptions for consumers.
+- **Solution**: Fully retire `IFinancialEntity` in favor of `IFinancialAgent` or direct `SettlementSystem` usage.
+- **Reported**: `review_backup_20260212_081300_Analyze_this_PR.md`
+
+---
+### ID: TD-ARCH-DI-SETTLE
+### Title: Dependency Injection Fragility in Settlement System
+- **Symptom**: `AgentRegistry` is injected into `SettlementSystem` post-initialization.
+- **Risk**: Circular dependency risks during startup; fragile initialization order.
+- **Solution**: Implement a proper DI container or split initialization into distinct registration phases.
+- **Reported**: `review_backup_20260212_081300_Analyze_this_PR.md`
 
 ---
 ### ID: TD-COCKPIT-FE
