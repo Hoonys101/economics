@@ -106,7 +106,8 @@ class Bootstrapper:
                     settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
                     logger.info(f"BOOTSTRAPPER | Injected {diff} capital to Firm {firm.id} via Settlement.")
                 else:
-                    logger.critical(f"BOOTSTRAPPER | Failed to inject {diff} to Firm {firm.id}. SettlementSystem or CentralBank missing.")
-                    # Direct deposit is removed. We cannot proceed with injection.
+                    msg = f"BOOTSTRAPPER | Failed to inject {diff} to Firm {firm.id}. SettlementSystem or CentralBank missing."
+                    logger.critical(msg)
+                    raise RuntimeError(msg)
 
         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")

@@ -45,8 +45,8 @@ class MockCentralBank:
     def withdraw(self, amount): self._withdraw(amount)
 
 class MockBank:
-    def __init__(self, initial_assets):
-        self.id = 1
+    def __init__(self, initial_assets, id=1):
+        self.id = id
         self._assets = initial_assets
         # Mock wallet for FinanceSystem init sync
         self.wallet = MagicMock()

@@ -1,0 +1,122 @@
+
+tests/unit/modules/finance/central_bank/test_cb_service.py::test_set_policy_rate_valid PASSED [  2%]
+tests/unit/modules/finance/central_bank/test_cb_service.py::test_set_policy_rate_invalid PASSED [  4%]
+tests/unit/modules/finance/central_bank/test_cb_service.py::test_conduct_omo_purchase_success PASSED [  6%]
+tests/unit/modules/finance/central_bank/test_cb_service.py::test_conduct_omo_sale_success PASSED [  8%]
+tests/unit/modules/finance/central_bank/test_cb_service.py::test_conduct_omo_failure PASSED [ 10%]
+tests/unit/modules/finance/test_corporate_finance.py::TestAltmanZScoreCalculator::test_calculate_safe_zone PASSED [ 12%]
+tests/unit/modules/finance/test_corporate_finance.py::TestAltmanZScoreCalculator::test_calculate_distress_zone PASSED [ 14%]
+tests/unit/modules/finance/test_corporate_finance.py::TestAltmanZScoreCalculator::test_calculate_zero_assets PASSED [ 16%]
+tests/unit/modules/finance/test_corporate_finance.py::TestAltmanZScoreCalculator::test_calculate_negative_values PASSED [ 18%]
+tests/unit/modules/finance/test_double_entry.py::TestDoubleEntry::test_bailout_loan_generates_command PASSED [ 20%]
+tests/unit/modules/finance/test_double_entry.py::TestDoubleEntry::test_market_bond_issuance_generates_transaction PASSED [ 22%]
+tests/unit/modules/finance/test_double_entry.py::TestDoubleEntry::test_qe_bond_issuance_generates_transaction XFAIL [ 24%]
+tests/unit/modules/finance/test_sovereign_debt.py::TestSovereignDebt::test_issue_treasury_bonds_calls_settlement_system PASSED [ 26%]
+tests/unit/modules/finance/test_sovereign_debt.py::TestSovereignDebt::test_collect_corporate_tax_calls_settlement_system
+-------------------------------- live log call ---------------------------------
+WARNING  modules.finance.system:system.py:360 FinanceSystem.collect_corporate_tax called. Should be using Transaction Generation.
+PASSED                                                                   [ 28%]
+tests/unit/modules/finance/test_sovereign_debt.py::TestSovereignDebt::test_risk_premium_calculation PASSED [ 30%]
+tests/unit/modules/finance/test_sovereign_debt.py::TestSovereignDebt::test_insufficient_funds_fails_issuance PASSED [ 32%]
+tests/unit/modules/finance/test_system.py::test_evaluate_solvency_startup_pass PASSED [ 34%]
+tests/unit/modules/finance/test_system.py::test_evaluate_solvency_startup_fail PASSED [ 36%]
+tests/unit/modules/finance/test_system.py::test_evaluate_solvency_established_pass PASSED [ 38%]
+tests/unit/modules/finance/test_system.py::test_evaluate_solvency_established_fail PASSED [ 40%]
+tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_market
+-------------------------------- live log call ---------------------------------
+WARNING  modules.finance.system:system.py:282 BOND_ISSUANCE_WARNING | No SettlementSystem attached. Wallet updates skipped.
+PASSED                                                                   [ 42%]
+tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_qe PASSED [ 44%]
+tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_fail PASSED [ 46%]
+tests/unit/modules/finance/test_system.py::test_bailout_fails_with_insufficient_government_funds
+-------------------------------- live log call ---------------------------------
+WARNING  modules.finance.system:system.py:371 BAILOUT_DENIED | Government insufficient funds: 10000 < 50000
+PASSED                                                                   [ 48%]
+tests/unit/modules/finance/test_system.py::test_grant_bailout_loan PASSED [ 51%]
+tests/unit/modules/finance/test_system.py::test_service_debt_central_bank_repayment
+-------------------------------- live log call ---------------------------------
+WARNING  modules.finance.system:system.py:282 BOND_ISSUANCE_WARNING | No SettlementSystem attached. Wallet updates skipped.
+PASSED                                                                   [ 53%]
+tests/unit/household/test_snapshot_assembler.py::TestHouseholdSnapshotAssembler::test_assemble_snapshot_copies_state PASSED [ 55%]
+tests/unit/household/test_snapshot_assembler.py::TestHouseholdSnapshotAssembler::test_assemble_nested_structures PASSED [ 57%]
+tests/unit/systems/test_settlement_system.py::test_transfer_success PASSED [ 59%]
+tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_funds
+-------------------------------- live log call ---------------------------------
+ERROR    simulation.systems.settlement_system:settlement_system.py:377 SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 1. Cash: 10, Bank: 0, Total: 10. Required: 20. Memo: Test Fail
+PASSED                                                                   [ 61%]
+tests/unit/systems/test_settlement_system.py::test_create_and_transfer_minting
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:663 MINT_AND_TRANSFER | Created 100 USD from 0 to 1. Reason: Minting
+PASSED                                                                   [ 63%]
+tests/unit/systems/test_settlement_system.py::test_create_and_transfer_government_grant PASSED [ 65%]
+tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_burning
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:706 TRANSFER_AND_DESTROY | Destroyed 50 USD from 1 to 0. Reason: Burning
+PASSED                                                                   [ 67%]
+tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_tax PASSED [ 69%]
+tests/unit/systems/test_settlement_system.py::test_record_liquidation
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:305 LIQUIDATION: Agent 1 liquidated. Inventory: 100, Capital: 50, Recovered: 20. Net Destruction: 130. Total Destroyed: 130. Reason: Bankruptcy
+INFO     simulation.systems.settlement_system:settlement_system.py:305 LIQUIDATION: Agent 1 liquidated. Inventory: 10, Capital: 0, Recovered: 0. Net Destruction: 10. Total Destroyed: 140. Reason: More Loss
+PASSED                                                                   [ 71%]
+tests/unit/systems/test_settlement_system.py::test_record_liquidation_escheatment
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:305 LIQUIDATION: Agent 1 liquidated. Inventory: 10, Capital: 10, Recovered: 0. Net Destruction: 20. Total Destroyed: 20. Reason: Escheatment Test
+PASSED                                                                   [ 73%]
+tests/unit/systems/test_settlement_system.py::test_transfer_rollback
+-------------------------------- live log call ---------------------------------
+ERROR    simulation.systems.settlement_system:settlement_system.py:610 SETTLEMENT_ROLLBACK | Deposit failed for 2. Rolling back withdrawal of 20 from 1. Error: Deposit Failed
+INFO     simulation.systems.settlement_system:settlement_system.py:618 SETTLEMENT_ROLLBACK_SUCCESS | Rolled back 20 to 1.
+PASSED                                                                   [ 75%]
+tests/unit/systems/test_settlement_system.py::test_atomic_settlement_success
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:110 SETTLEMENT_CREATED | Escrow account created for Agent 101. Cash: 500. Portfolio items: 0. Heir: NONE (Escheatment)
+INFO     simulation.systems.settlement_system:settlement_system.py:275 SETTLEMENT_CLOSED | Account 101 closed successfully.
+PASSED                                                                   [ 77%]
+tests/unit/systems/test_settlement_system.py::test_atomic_settlement_leak_prevention
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:110 SETTLEMENT_CREATED | Escrow account created for Agent 102. Cash: 100. Portfolio items: 0. Heir: NONE (Escheatment)
+WARNING  simulation.systems.settlement_system:settlement_system.py:254 SETTLEMENT_LEAK | Account 102 closed with remaining cash: 10. Burning it.
+PASSED                                                                   [ 79%]
+tests/unit/systems/test_settlement_system.py::test_atomic_settlement_overdraft_protection
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:110 SETTLEMENT_CREATED | Escrow account created for Agent 103. Cash: 100. Portfolio items: 0. Heir: NONE (Escheatment)
+CRITICAL simulation.systems.settlement_system:settlement_system.py:189 SETTLEMENT_OVERDRAFT | Attempted to distribute more than escrow! Escrow: 100, Distributed: 0, Requested: 150
+PASSED                                                                   [ 81%]
+tests/unit/systems/test_settlement_system.py::test_transfer_seamless_success
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:424 SEAMLESS_PAYMENT | Agent 1 paid 50 using 10 cash and 40 from bank.
+PASSED                                                                   [ 83%]
+tests/unit/systems/test_settlement_system.py::test_transfer_seamless_fail_bank
+-------------------------------- live log call ---------------------------------
+ERROR    simulation.systems.settlement_system:settlement_system.py:377 SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 1. Cash: 10, Bank: 10, Total: 20. Required: 50. Memo: Seamless Fail
+PASSED                                                                   [ 85%]
+tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_success PASSED [ 87%]
+tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_rollback
+-------------------------------- live log call ---------------------------------
+ERROR    simulation.systems.settlement_system:settlement_system.py:377 SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for B. Cash: 150, Bank: 0, Total: 150. Required: 200. Memo: multiparty_seq_1
+WARNING  simulation.systems.settlement_system:settlement_system.py:461 MULTIPARTY_FAIL | Transfer 1 failed (B -> C). Rolling back 1 previous transfers.
+PASSED                                                                   [ 89%]
+tests/unit/systems/test_settlement_system.py::test_settle_atomic_success PASSED [ 91%]
+tests/unit/systems/test_settlement_system.py::test_settle_atomic_rollback
+-------------------------------- live log call ---------------------------------
+ERROR    simulation.systems.settlement_system:settlement_system.py:377 SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for A. Cash: 90, Bank: 0, Total: 90. Required: 100. Memo: atomic_batch_2_txs
+PASSED                                                                   [ 93%]
+tests/unit/systems/test_settlement_system.py::test_settle_atomic_credit_fail_rollback
+-------------------------------- live log call ---------------------------------
+ERROR    simulation.systems.settlement_system:settlement_system.py:526 SETTLEMENT_ROLLBACK | Deposit failed for B. Rolling back atomic batch. Error: Deposit Fail
+PASSED                                                                   [ 95%]
+tests/unit/systems/test_settlement_system.py::test_inheritance_portfolio_transfer
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:110 SETTLEMENT_CREATED | Escrow account created for Agent 100. Cash: 0. Portfolio items: 1. Heir: 900
+INFO     simulation.systems.settlement_system:settlement_system.py:166 PORTFOLIO_TRANSFER | Transferred portfolio to 900
+PASSED                                                                   [ 97%]
+tests/unit/systems/test_settlement_system.py::test_escheatment_portfolio_transfer
+-------------------------------- live log call ---------------------------------
+INFO     simulation.systems.settlement_system:settlement_system.py:110 SETTLEMENT_CREATED | Escrow account created for Agent 100. Cash: 0. Portfolio items: 1. Heir: NONE (Escheatment)
+INFO     simulation.systems.settlement_system:settlement_system.py:166 PORTFOLIO_TRANSFER | Transferred portfolio to GOVERNMENT
+PASSED                                                                   [100%]
+
+=========================== short test summary info ============================
+XFAIL tests/unit/modules/finance/test_double_entry.py::TestDoubleEntry::test_qe_bond_issuance_generates_transaction - QE buyer logic is not implemented in FinanceSystem refactor
+======================== 48 passed, 1 xfailed in 0.48s =========================
