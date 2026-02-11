@@ -27,6 +27,9 @@ from simulation.firms import Firm
 
 logger = logging.getLogger(__name__)
 
+# Constants
+BAILOUT_CREDIT_SCORE = 850
+
 class FinanceSystem(IFinanceSystem):
     """
     Manages sovereign debt, corporate bailouts, and solvency checks.
@@ -307,7 +310,7 @@ class FinanceSystem(IFinanceSystem):
 
         # 1. Create Loan Application
         borrower_profile = {
-            "credit_score": 850, # Set max score to bypass standard risk checks for bailout
+            "credit_score": BAILOUT_CREDIT_SCORE, # Set max score to bypass standard risk checks for bailout
             "is_bailout": True,
             "preferred_lender_id": self.bank.id # Assuming single bank
         }
