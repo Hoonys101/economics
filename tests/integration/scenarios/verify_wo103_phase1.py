@@ -74,10 +74,10 @@ class TestWO103Phase1(unittest.TestCase):
 
     def test_transactional_methods(self):
         print("\nTest Transactional Methods (Deposit/Withdraw)...")
-        self.firm.deposit(100.0)
+        self.firm._deposit(100.0)
         self.assertEqual(self.firm.finance.balance, 1100.0)
 
-        self.firm.withdraw(100.0)
+        self.firm._withdraw(100.0)
         self.assertEqual(self.firm.finance.balance, 1000.0)
         print("Transactional Methods Passed.")
 

@@ -38,7 +38,7 @@ class TestTD194Integration:
             personality=Personality.BALANCED,
             config_dto=config
         )
-        household.deposit(100000)
+        household._deposit(100000)
 
         # 2. Setup Input DTO
         market_snapshot = MarketSnapshotDTO(
@@ -91,7 +91,7 @@ class TestTD194Integration:
             productivity_factor=1.0,
             config_dto=config
         )
-        firm.deposit(1000000)
+        firm._deposit(1000000)
 
         # 2. Setup Input DTO
         signals = {
