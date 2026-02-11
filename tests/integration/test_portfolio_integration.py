@@ -58,19 +58,38 @@ class TestPortfolioIntegration(unittest.TestCase):
         config_manager.get.return_value = 0.05
         bank = Bank(1, 100000.0, config_manager=config_manager)
 
+        # Mock FinanceSystem and Ledger
+        mock_finance_system = MagicMock()
+        mock_ledger = MagicMock()
+        mock_bank_state = MagicMock()
+        mock_bank_state.deposits = {}
+        mock_ledger.banks = {1: mock_bank_state}
+        mock_finance_system.ledger = mock_ledger
+
+        # Mock get_customer_balance to read from deposits dict
+        def get_customer_balance_side_effect(bank_id, agent_id):
+            dep_id = f"DEP_{agent_id}_{bank_id}"
+            if dep_id in mock_bank_state.deposits:
+                return mock_bank_state.deposits[dep_id].balance_pennies
+            return 0
+
+        mock_finance_system.get_customer_balance.side_effect = get_customer_balance_side_effect
+
+        bank.set_finance_system(mock_finance_system)
+
         # Use public API to populate deposits
         bank.deposit_from_customer(1, 100.0, DEFAULT_CURRENCY)
         bank.deposit_from_customer(2, 200.0, DEFAULT_CURRENCY)
         bank.deposit_from_customer(1, 50.0, DEFAULT_CURRENCY)
 
-        balance = bank.get_deposit_balance(1)
-        self.assertEqual(balance, 150.0)
+        balance = bank.get_customer_balance(1)
+        self.assertEqual(balance, 150)
 
-        balance_2 = bank.get_deposit_balance(2)
-        self.assertEqual(balance_2, 200.0)
+        balance_2 = bank.get_customer_balance(2)
+        self.assertEqual(balance_2, 200)
 
-        balance_3 = bank.get_deposit_balance(3)
-        self.assertEqual(balance_3, 0.0)
+        balance_3 = bank.get_customer_balance(3)
+        self.assertEqual(balance_3, 0)
 
 if __name__ == '__main__':
     unittest.main()

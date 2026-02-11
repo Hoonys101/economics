@@ -104,7 +104,7 @@ class TestSalesEngine:
     def test_generate_marketing_transaction(self):
         engine = SalesEngine()
         state = SalesState()
-        state.marketing_budget = 50.0
+        state.marketing_budget_pennies = 50
 
         # Sufficient funds
         context = SalesMarketingContextDTO(

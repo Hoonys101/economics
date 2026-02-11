@@ -33,12 +33,16 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
         self.government = MagicMock()
         self.government.id = 1
 
+    @patch('simulation.factories.agent_factory.HouseholdFactory')
     @patch('simulation.systems.demographic_manager.Household')
     @patch('simulation.systems.demographic_manager.create_config_dto')
-    def test_birth_gift_rounding(self, mock_create_config, mock_household_cls):
+    def test_birth_gift_rounding(self, mock_create_config, mock_household_cls, mock_household_factory_cls):
         """
         Verify that birth gift is rounded to 2 decimal places.
         """
+        # Setup Mock Factory
+        mock_factory_instance = mock_household_factory_cls.return_value
+
         dm = DemographicManager(config_module=self.config)
         dm.settlement_system = self.settlement_system
         dm.logger = self.logger
@@ -56,6 +60,7 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
         mock_child.id = 100
         mock_child.gender = "Female"
         mock_household_cls.return_value = mock_child
+        mock_factory_instance.create_newborn.return_value = mock_child
 
         # Parent with fractional assets
         parent = MagicMock()
