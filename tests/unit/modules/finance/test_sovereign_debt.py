@@ -38,6 +38,7 @@ class TestSovereignDebt:
 
         self.settlement_system = MagicMock()
         self.settlement_system.transfer.return_value = True
+        self.settlement_system.get_balance.return_value = 10000
 
         self.finance_system = FinanceSystem(
             government=self.govt,
@@ -99,8 +100,8 @@ class TestSovereignDebt:
         fs.central_bank.get_base_rate.return_value = 0.05
         fs.bank.assets = 0 # Bank has no money
 
-        # Update ledger to reflect 0 reserves because setup_system initialized it with 10000
-        fs.ledger.banks[fs.bank.id].reserves[DEFAULT_CURRENCY] = 0
+        # Update SettlementSystem mock to return 0
+        fs.settlement_system.get_balance.return_value = 0
 
         bonds, txs = fs.issue_treasury_bonds(100, 1)
 

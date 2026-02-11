@@ -89,8 +89,10 @@ class HouseholdFactory:
         )
 
         # 5. Hydrate State (Assets)
+        # Note: Assets are not loaded directly via load_state to ensure SSoT integrity.
+        # Transfers must be handled by the caller (create_newborn, create_immigrant, etc.)
         initial_state = AgentStateDTO(
-            assets={DEFAULT_CURRENCY: int(initial_assets)},
+            assets={DEFAULT_CURRENCY: 0},
             inventory={},
             is_active=True
         )
@@ -196,9 +198,24 @@ class HouseholdFactory:
             agent_id=new_id,
             initial_age=initial_age,
             gender=gender,
-            initial_assets=initial_assets, # External injection
+            initial_assets=initial_assets, # Record only
             decision_engine=engine
         )
+
+        # Transfer Assets (Minting / Import)
+        if initial_assets > 0:
+            if self.context.central_bank:
+                self.context.settlement_system.create_and_transfer(
+                    source_authority=self.context.central_bank,
+                    destination=immigrant,
+                    amount=int(initial_assets),
+                    reason="IMMIGRATION_GRANT",
+                    tick=current_tick
+                )
+            else:
+                logger.warning(f"CentralBank not found for immigrant {new_id}. Using direct deposit fallback.")
+                immigrant._deposit(int(initial_assets))
+
         return immigrant
 
     def create_initial_population(
@@ -228,6 +245,21 @@ class HouseholdFactory:
                 initial_assets=assets,
                 decision_engine=engine
             )
+
+            # Genesis Funding
+            if assets > 0:
+                if self.context.central_bank:
+                    self.context.settlement_system.create_and_transfer(
+                        source_authority=self.context.central_bank,
+                        destination=agent,
+                        amount=assets,
+                        reason="GENESIS_POPULATION",
+                        tick=0
+                    )
+                else:
+                    # Fallback for genesis if CB missing (unlikely in proper setup)
+                    agent._deposit(assets)
+
             agents.append(agent)
 
         return agents

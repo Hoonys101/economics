@@ -236,7 +236,9 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         )
 
     def load_state(self, state: AgentStateDTO) -> None:
-        self._wallet.load_balances(state.assets)
+        if state.assets and any(v > 0 for v in state.assets.values()):
+             self.logger.warning(f"Agent {self.id}: load_state called with assets, but direct loading is disabled for integrity. Assets ignored: {state.assets}")
+
         self._inventory.clear()
         self._inventory.update(state.inventory)
         self.is_active = state.is_active
@@ -1311,10 +1313,16 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
     @override
     def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-         self.wallet.add(amount, currency)
+         raise NotImplementedError("Direct deposit is deprecated. Use SettlementSystem.transfer.")
 
     @override
     def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         raise NotImplementedError("Direct withdraw is deprecated. Use SettlementSystem.transfer.")
+
+    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         self.wallet.add(amount, currency)
+
+    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
          current_bal = self.wallet.get_balance(currency)
          if current_bal < amount:
             raise InsufficientFundsError(

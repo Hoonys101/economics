@@ -344,7 +344,9 @@ class Household(
         )
 
     def load_state(self, state: AgentStateDTO) -> None:
-        self._econ_state.wallet.load_balances(state.assets)
+        if state.assets and any(v > 0 for v in state.assets.values()):
+             self.logger.warning(f"Agent {self.id}: load_state called with assets, but direct loading is disabled for integrity. Assets ignored: {state.assets}")
+
         self._econ_state.inventory.clear()
         self._econ_state.inventory.update(state.inventory)
         self.is_active = state.is_active
@@ -720,10 +722,16 @@ class Household(
 
     @override
     def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self._econ_state.wallet.add(amount, currency=currency, memo="Deposit")
+        raise NotImplementedError("Direct deposit is deprecated. Use SettlementSystem.transfer.")
 
     @override
     def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        raise NotImplementedError("Direct withdraw is deprecated. Use SettlementSystem.transfer.")
+
+    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._econ_state.wallet.add(amount, currency=currency, memo="Deposit")
+
+    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         self._econ_state.wallet.subtract(amount, currency=currency, memo="Withdraw")
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:

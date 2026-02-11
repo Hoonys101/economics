@@ -6,6 +6,7 @@ from modules.finance.system import FinanceSystem
 from modules.finance.api import InsufficientFundsError, GrantBailoutCommand
 from simulation.models import Transaction
 from modules.system.api import DEFAULT_CURRENCY
+from tests.mocks.mock_settlement_system import MockSettlementSystem
 
 # Mock objects that will be passed to FinanceSystem
 class MockGovernment:
@@ -22,8 +23,10 @@ class MockGovernment:
     def get_debt_to_gdp_ratio(self):
         return 0.5
     # Deprecated methods for Phase 3 but kept for interface compliance
-    def deposit(self, amount): self._assets += amount
-    def withdraw(self, amount): self._assets -= amount
+    def _deposit(self, amount, currency=DEFAULT_CURRENCY): self._assets += amount
+    def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self._assets -= amount
+    def deposit(self, amount): self._deposit(amount)
+    def withdraw(self, amount): self._withdraw(amount)
 
 class MockCentralBank:
     def __init__(self, initial_cash):
@@ -36,8 +39,10 @@ class MockCentralBank:
     def add_bond_to_portfolio(self, bond):
         self.assets["bonds"].append(bond)
     # Mocking IFinancialEntity behavior loosely
-    def deposit(self, amount): self.assets['cash'] += amount
-    def withdraw(self, amount): self.assets['cash'] -= amount
+    def _deposit(self, amount, currency=DEFAULT_CURRENCY): self.assets['cash'] += amount
+    def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self.assets['cash'] -= amount
+    def deposit(self, amount): self._deposit(amount)
+    def withdraw(self, amount): self._withdraw(amount)
 
 class MockBank:
     def __init__(self, initial_assets):
@@ -50,8 +55,10 @@ class MockBank:
 
     @property
     def assets(self): return self._assets
-    def deposit(self, amount): self._assets += amount
-    def withdraw(self, amount): self._assets -= amount
+    def _deposit(self, amount, currency=DEFAULT_CURRENCY): self._assets += amount
+    def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self._assets -= amount
+    def deposit(self, amount): self._deposit(amount)
+    def withdraw(self, amount): self._withdraw(amount)
 
 class MockFirm:
     def __init__(self, id, initial_cash_reserve):
@@ -63,8 +70,10 @@ class MockFirm:
         self.age = 100
     @property
     def assets(self): return self.cash_reserve
-    def deposit(self, amount): self.cash_reserve += amount
-    def withdraw(self, amount): self.cash_reserve -= amount
+    def _deposit(self, amount, currency=DEFAULT_CURRENCY): self.cash_reserve += amount
+    def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self.cash_reserve -= amount
+    def deposit(self, amount): self._deposit(amount)
+    def withdraw(self, amount): self._withdraw(amount)
 
 class MockConfig:
     QE_INTERVENTION_YIELD_THRESHOLD = 0.05
@@ -102,11 +111,23 @@ class TestDoubleEntry(unittest.TestCase):
         self.mock_bank = MockBank(initial_assets=20000)
         self.mock_firm = MockFirm(id=1, initial_cash_reserve=100)
 
+        self.mock_settlement = MockSettlementSystem()
+        self.mock_settlement.setup_balance(self.mock_gov.id, 10000)
+        self.mock_settlement.setup_balance(self.mock_cb.id, 5000)
+        self.mock_settlement.setup_balance(self.mock_bank.id, 20000)
+        # Note: MockFirm ID is 1, Bank ID is 1. Conflict?
+        # MockBank ID is 1 in definition. MockFirm ID is passed as 1.
+        # This might cause issue in get_balance if IDs clash.
+        # I'll update MockFirm ID to 101 to avoid clash.
+        self.mock_firm = MockFirm(id=101, initial_cash_reserve=100)
+        self.mock_settlement.setup_balance(self.mock_firm.id, 100)
+
         self.finance_system = FinanceSystem(
             government=self.mock_gov,
             central_bank=self.mock_cb,
             bank=self.mock_bank,
-            config_module=self.mock_config
+            config_module=self.mock_config,
+            settlement_system=self.mock_settlement
         )
 
         # Mock FiscalMonitor to redirect to Gov mock method
@@ -177,8 +198,9 @@ class TestDoubleEntry(unittest.TestCase):
         bonds, txs = self.finance_system.issue_treasury_bonds(bond_amount, current_tick=1)
 
         # Assertions
-        self.assertEqual(self.mock_gov.assets, initial_gov_assets)
-        self.assertEqual(self.mock_bank.assets, initial_bank_assets)
+        # Expect assets to change because transfer is synchronous now
+        self.assertEqual(self.mock_gov.assets, initial_gov_assets + bond_amount)
+        self.assertEqual(self.mock_bank.assets, initial_bank_assets - bond_amount)
 
         self.assertEqual(len(txs), 1)
         tx = txs[0]

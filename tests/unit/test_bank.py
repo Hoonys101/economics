@@ -42,21 +42,27 @@ def bank(mock_finance_system):
     return bank
 
 def test_bank_assets_delegation(bank, mock_finance_system):
-    # Should get from Ledger
+    # Should get from Wallet (SSoT)
     assert bank.assets == 100000
 
-    # Modify Ledger
+    # Modify Ledger - Should NOT affect Bank assets directly (Bank uses Wallet)
     mock_finance_system.ledger.banks[1].reserves[DEFAULT_CURRENCY] = 200000
-    assert bank.assets == 200000
+    assert bank.assets == 100000
+
+    # Modify Wallet
+    bank._deposit(50000)
+    assert bank.assets == 150000
 
 def test_bank_deposit_delegation(bank, mock_finance_system):
-    # Deposit adds to reserves in Ledger
-    bank.deposit(50000) # 500.00
-    assert mock_finance_system.ledger.banks[1].reserves[DEFAULT_CURRENCY] == 150000
+    # Use _deposit
+    bank._deposit(50000)
+    assert bank.assets == 150000
+    # Ledger is NOT updated automatically by Bank.deposit anymore.
+    # FinanceSystem would sync it.
 
 def test_bank_withdraw_delegation(bank, mock_finance_system):
-    bank.withdraw(20000) # 200.00
-    assert mock_finance_system.ledger.banks[1].reserves[DEFAULT_CURRENCY] == 80000
+    bank._withdraw(20000)
+    assert bank.assets == 80000
 
 def test_grant_loan_delegation(bank, mock_finance_system):
     # Setup Mock Return

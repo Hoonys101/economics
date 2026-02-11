@@ -68,14 +68,23 @@ class FinanceSystem(IFinanceSystem):
             }
         )
 
-        # Sync Initial State (Optimistic)
-        if hasattr(bank, 'wallet'):
-            bal = bank.wallet.get_balance(DEFAULT_CURRENCY)
-            self.ledger.banks[bank.id].reserves[DEFAULT_CURRENCY] = bal
+        # Sync Initial State (Optimistic) - REMOVED
+        # We rely on SSoT (SettlementSystem) and sync on demand.
 
-        if hasattr(government, 'wallet'):
-             bal = government.wallet.get_balance(DEFAULT_CURRENCY)
-             self.ledger.treasury.balance[DEFAULT_CURRENCY] = bal
+    def _sync_ledger_balances(self) -> None:
+        """Syncs ledger reserves and treasury balance from SettlementSystem (SSoT)."""
+        if not self.settlement_system:
+            return
+
+        # Sync Bank Reserves
+        for bank_id, bank_state in self.ledger.banks.items():
+            balance = self.settlement_system.get_balance(bank_id, DEFAULT_CURRENCY)
+            bank_state.reserves[DEFAULT_CURRENCY] = balance
+
+        # Sync Treasury
+        gov_id = self.ledger.treasury.government_id
+        gov_balance = self.settlement_system.get_balance(gov_id, DEFAULT_CURRENCY)
+        self.ledger.treasury.balance[DEFAULT_CURRENCY] = gov_balance
 
     # --- ORCHESTRATOR METHODS ---
 
@@ -89,6 +98,9 @@ class FinanceSystem(IFinanceSystem):
         """
         Orchestrates the loan application process using Risk and Booking engines.
         """
+        # Sync SSoT
+        self._sync_ledger_balances()
+
         # 1. Update Ledger Context
         self.ledger.current_tick = current_tick
 
@@ -224,6 +236,9 @@ class FinanceSystem(IFinanceSystem):
         Issues new treasury bonds using the new Ledger system (partially).
         NOW SYNCHRONOUS: Executes transfer via SettlementSystem to ensure Agent Wallets are updated.
         """
+        # Sync SSoT
+        self._sync_ledger_balances()
+
         # Updates self.ledger.treasury.bonds
 
         base_rate = 0.03
@@ -279,13 +294,8 @@ class FinanceSystem(IFinanceSystem):
         # Update Ledger
         self.ledger.treasury.bonds[bond_id] = bond_state
 
-        # Deduct reserves (Payment)
-        self.ledger.banks[buyer_id].reserves[DEFAULT_CURRENCY] -= amount
-
-        # Add to Treasury Balance
-        if DEFAULT_CURRENCY not in self.ledger.treasury.balance:
-            self.ledger.treasury.balance[DEFAULT_CURRENCY] = 0
-        self.ledger.treasury.balance[DEFAULT_CURRENCY] += amount
+        # Manual ledger updates for reserves/treasury removed (Dual Write Elimination).
+        # Balances are synced from SettlementSystem at start of next operation.
 
         # Generate Transaction
         tx = Transaction(
@@ -351,6 +361,9 @@ class FinanceSystem(IFinanceSystem):
         return False
 
     def request_bailout_loan(self, firm: 'Firm', amount: int) -> Optional[GrantBailoutCommand]:
+        # Sync SSoT
+        self._sync_ledger_balances()
+
         # Enforce Government Budget Constraint (Check Ledger)
         gov_bal = self.ledger.treasury.balance.get(DEFAULT_CURRENCY, 0)
 
@@ -381,6 +394,9 @@ class FinanceSystem(IFinanceSystem):
         """
         Manages the servicing of outstanding government debt using DebtServicingEngine.
         """
+        # Sync SSoT
+        self._sync_ledger_balances()
+
         self.ledger.current_tick = current_tick
         result = self.debt_servicing_engine.service_all_debt(self.ledger)
         self.ledger = result.updated_ledger

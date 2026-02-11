@@ -48,7 +48,7 @@ class TestHouseholdSnapshotAssembler:
         # Verify Independence (Copy Check)
         # Modify the original household state
         mock_household._bio_state.age = 31
-        mock_household.deposit(100000) # 1000 + 1000 = 2000 (represented as pennies)
+        mock_household._deposit(100000) # 1000 + 1000 = 2000 (represented as pennies)
         mock_household._bio_state.children_ids.append(3)
 
         # Snapshot should remain unchanged

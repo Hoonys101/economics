@@ -541,7 +541,8 @@ class SimulationInitializer(SimulationInitializerInterface):
             ai_training_manager=sim.ai_training_manager,
             settlement_system=sim.settlement_system,
             markets=sim.markets,
-            memory_system=sim.persistence_manager
+            memory_system=sim.persistence_manager,
+            central_bank=sim.central_bank
         )
 
         household_factory = HouseholdFactory(hh_factory_context)
@@ -608,6 +609,14 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         # Finalize AgentRegistry state
         sim.agent_registry.set_state(sim.world_state)
+
+        # Inject AgentRegistry into SettlementSystem for SSoT resolution (get_balance)
+        if hasattr(sim.settlement_system, 'agent_registry'):
+            # It's dynamically assigned but let's be explicit
+            sim.settlement_system.agent_registry = sim.agent_registry
+        else:
+            # If attribute doesn't exist (e.g. not defined in __init__), set it
+            setattr(sim.settlement_system, 'agent_registry', sim.agent_registry)
 
         self.logger.info(f"Simulation fully initialized with run_id: {sim.run_id}")
 

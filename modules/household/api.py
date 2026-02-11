@@ -227,6 +227,7 @@ class HouseholdFactoryContext:
     settlement_system: Any
     markets: Dict[str, Any]
     memory_system: Optional[Any] = None
+    central_bank: Optional[Any] = None
 
 
 class IHouseholdFactory(Protocol):

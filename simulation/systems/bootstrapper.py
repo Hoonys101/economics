@@ -106,8 +106,7 @@ class Bootstrapper:
                     settlement_system.transfer(central_bank, firm, diff, "BOOTSTRAP_INJECTION")
                     logger.info(f"BOOTSTRAPPER | Injected {diff} capital to Firm {firm.id} via Settlement.")
                 else:
-                    # Fallback (Should not be used in Genesis mode, but keeps compatibility)
-                    firm.deposit(diff, DEFAULT_CURRENCY)
-                    logger.warning(f"BOOTSTRAPPER | Legacy injection of {diff} to Firm {firm.id} (No SettlementSystem).")
+                    logger.critical(f"BOOTSTRAPPER | Failed to inject {diff} to Firm {firm.id}. SettlementSystem or CentralBank missing.")
+                    # Direct deposit is removed. We cannot proceed with injection.
 
         logger.info(f"BOOTSTRAPPER | Injected resources into {injected_count} firms.")

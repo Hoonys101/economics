@@ -31,14 +31,14 @@ class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
     def assets(self):
         return self._assets
 
-    def withdraw(self, amount, currency=DEFAULT_CURRENCY):
+    def _withdraw(self, amount, currency=DEFAULT_CURRENCY):
         if currency != DEFAULT_CURRENCY:
              raise ValueError(f"MockAgent only supports {DEFAULT_CURRENCY}")
         if self._assets < amount:
             raise InsufficientFundsError("Insufficient funds")
         self._assets -= int(amount)
 
-    def deposit(self, amount, currency=DEFAULT_CURRENCY):
+    def _deposit(self, amount, currency=DEFAULT_CURRENCY):
         if currency != DEFAULT_CURRENCY:
              # Just ignore other currencies for simple tests or store them if needed
              pass
@@ -51,10 +51,10 @@ class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
         return 0
 
     def _add_assets(self, amount):
-        self.deposit(amount)
+        self._deposit(amount)
 
     def _sub_assets(self, amount):
-        self.withdraw(amount)
+        self._withdraw(amount)
 
     def get_portfolio(self) -> PortfolioDTO:
         return self.portfolio
@@ -70,7 +70,7 @@ class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
 
 class MockCentralBank(MockAgent):
     # Central Bank can withdraw infinitely (negative assets allowed for tracking)
-    def withdraw(self, amount, currency=DEFAULT_CURRENCY):
+    def _withdraw(self, amount, currency=DEFAULT_CURRENCY):
         self._assets -= int(amount)
 
 class MockBank(IBank):
@@ -80,11 +80,11 @@ class MockBank(IBank):
         self.own_assets = 10000
 
     # IFinancialAgent impl
-    def deposit(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
+    def _deposit(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
         if currency == DEFAULT_CURRENCY:
             self.own_assets += int(amount)
 
-    def withdraw(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
+    def _withdraw(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
         if currency == DEFAULT_CURRENCY:
             self.own_assets -= int(amount)
 
@@ -214,7 +214,7 @@ def test_record_liquidation_escheatment(settlement_system):
 
 def test_transfer_rollback(settlement_system):
     class FaultyAgent(MockAgent):
-        def deposit(self, amount, currency=DEFAULT_CURRENCY):
+        def _deposit(self, amount, currency=DEFAULT_CURRENCY):
             raise Exception("Deposit Failed")
 
     sender = MockAgent(1, 100)
@@ -390,7 +390,7 @@ def test_settle_atomic_rollback(settlement_system):
 def test_settle_atomic_credit_fail_rollback(settlement_system):
     # A pays Faulty 50. A has 100.
     class FaultyAgent(MockAgent):
-        def deposit(self, amount, currency=DEFAULT_CURRENCY):
+        def _deposit(self, amount, currency=DEFAULT_CURRENCY):
             raise Exception("Deposit Fail")
 
     agent_a = MockAgent("A", 100)

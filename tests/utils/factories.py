@@ -219,7 +219,7 @@ def create_household(
         **kwargs
     )
     if assets_pennies > 0:
-        household.deposit(assets_pennies, DEFAULT_CURRENCY)
+        household._deposit(assets_pennies, DEFAULT_CURRENCY)
     return household
 
 def create_firm(
@@ -266,6 +266,6 @@ def create_firm(
 
     assets_pennies = int(assets)
     if assets_pennies > 0:
-        firm.deposit(assets_pennies, DEFAULT_CURRENCY)
+        firm._deposit(assets_pennies, DEFAULT_CURRENCY)
 
     return firm

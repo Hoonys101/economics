@@ -93,33 +93,23 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     # --- IFinancialAgent Implementation ---
 
     def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        # Bank's own funds
-        if self.finance_system and hasattr(self.finance_system, 'ledger'):
-            if self.id in self.finance_system.ledger.banks:
-                reserves = self.finance_system.ledger.banks[self.id].reserves
-                if currency not in reserves: reserves[currency] = 0
-                reserves[currency] += amount
-        self._wallet.add(amount, currency, memo="Deposit") # Sync local
+        raise NotImplementedError("Direct deposit is deprecated. Use SettlementSystem.transfer.")
 
     def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        if self.finance_system and hasattr(self.finance_system, 'ledger'):
-             if self.id in self.finance_system.ledger.banks:
-                reserves = self.finance_system.ledger.banks[self.id].reserves
-                if currency not in reserves or reserves[currency] < amount:
-                    raise ValueError("Insufficient funds")
-                reserves[currency] -= amount
-        self._wallet.subtract(amount, currency, memo="Withdraw") # Sync local
+        raise NotImplementedError("Direct withdraw is deprecated. Use SettlementSystem.transfer.")
+
+    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        # Bank's own funds
+        self._wallet.add(amount, currency, memo="Deposit")
+
+    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._wallet.subtract(amount, currency, memo="Withdraw")
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
-        if self.finance_system and hasattr(self.finance_system, 'ledger'):
-             if self.id in self.finance_system.ledger.banks:
-                 return self.finance_system.ledger.banks[self.id].reserves.get(currency, 0)
+        # SSoT is the Wallet
         return self._wallet.get_balance(currency)
 
     def get_all_balances(self) -> Dict[CurrencyCode, int]:
-        if self.finance_system and hasattr(self.finance_system, 'ledger'):
-             if self.id in self.finance_system.ledger.banks:
-                 return self.finance_system.ledger.banks[self.id].reserves.copy()
         return self._wallet.get_all_balances()
 
     # --- ICurrencyHolder Implementation ---

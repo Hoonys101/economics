@@ -118,6 +118,15 @@ class GrantBailoutCommand:
     interest_rate: float
     covenants: BailoutCovenant
 
+class SettlementOrder(TypedDict):
+    """A command to execute a monetary transfer via the SettlementSystem."""
+    sender_id: AgentID
+    receiver_id: AgentID
+    amount_pennies: int
+    currency: CurrencyCode
+    memo: str
+    transaction_type: str # e.g., 'WAGE', 'TAX', 'PURCHASE', 'ASSET_ENDOWMENT'
+
 # --- Portfolio DTOs (TD-160) ---
 
 @dataclass
@@ -334,14 +343,15 @@ class IFinancialAgent(Protocol):
     """
     id: AgentID
 
-    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        """Deposits a specific amount of a given currency."""
+    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Deposits a specific amount of a given currency. Internal use only."""
         ...
 
-    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         Withdraws a specific amount of a given currency.
         Raises InsufficientFundsError if funds are insufficient.
+        Internal use only.
         """
         ...
 
@@ -422,6 +432,22 @@ IBankService = IBank
 class IFiscalMonitor(Protocol):
     """Interface for the fiscal health analysis component."""
     def get_debt_to_gdp_ratio(self, government: "IGovernment", indicators: "EconomicIndicatorsDTO") -> float: ...
+
+class ISettlementSystem(Protocol):
+    """
+    Interface for the centralized settlement system.
+    """
+
+    def transfer(self, sender: IFinancialAgent, receiver: IFinancialAgent, amount_pennies: int, memo: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> Optional[ITransaction]:
+        """Executes an immediate, single transfer. Returns transaction or None."""
+        ...
+
+    def get_balance(self, agent_id: AgentID, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """
+        Queries the Single Source of Truth for an agent's current balance.
+        This is the ONLY permissible way to check another agent's funds.
+        """
+        ...
 
 class IFinanceSystem(Protocol):
     """Interface for the sovereign debt and corporate bailout system."""
