@@ -44,15 +44,28 @@ This pattern, particularly in the `Firm` agent, has evolved from its original "s
   - **Coupling**: This "parent pointer" pattern creates tight coupling, as components have unrestricted access to the `Firm`'s entire state and its other components (e.g., `self.parent.finance`).
 
 #### Architectural Reality & Trade-offs
+### 4.2 Stateless Engine & Orchestrator Pattern (New Standard)
 
-- **Deviation from Vision**: The initial design goal was for stateless components that would receive data, process it, and return a result, promoting portability and isolation. The current implementation deviates from this significantly.
-- **Pragmatic Choice**: This stateful pattern was adopted for implementation convenience and performance, avoiding the complexity of passing large state DTOs between components. It is now deeply embedded in the `Firm`'s core logic.
-- **Consequences (Risks)**:
-  - **Hidden Dependencies**: Components can interact implicitly through the shared `Firm` instance, creating a non-obvious and complex call graph. This violates encapsulation and the Single Responsibility Principle.
-  - **Reduced Testability**: Components are difficult to test in isolation, as they require a fully instantiated `Firm` object as their context.
-  - **Circular Import Hazard**: The parent pointer creates an inherent risk of circular imports. This is mitigated using `if TYPE_CHECKING:` blocks for parent type hints, a critical pattern that **must be maintained**.
+To eliminate technical debt, circular dependencies, and hidden side effects, all agents (Household, Firm, Government) MUST follow the **Stateless Engine & Orchestrator Pattern**.
 
-- **Governing Principle**: For the purpose of current development and analysis, the `Firm` and its `Department` components must be treated as a single, inseparable unit. Any attempt to enforce the original stateless vision would constitute a major, system-breaking refactor and is outside the scope of incremental changes. Future work should document this pattern, not fight it.
+- **Orchestrator (The Agent Class)**: 
+  - Acts as the sole **State Owner** and coordinator. 
+  - Holds private DTOs (`bio_state`, `econ_state`, etc.).
+  - Orchestrates the sequence of calls to various engines.
+  - Applies state updates based on engine returns.
+- **Stateless Engines (Pure Logic Components)**:
+  - MUST NOT hold any internal state.
+  - MUST NOT have references to the parent Agent instance.
+  - MUST be pure functions: `(StateDTO, ContextDTO) -> ResultDTO`.
+  - Input DTOs are treated as immutable within the engine.
+
+#### Mandatory Design Rules (Guardrails):
+1. **No Agent Handles**: Never pass `self` (the agent instance) to an engine. Pass only the data (DTO) the engine needs.
+2. **Side-Effect Isolation**: Engines calculate; Orchestrators execute. An engine returns a `DecisionDTO` or `ActionDTO`; it never directly calls `market.place_order()` or `wallet.withdraw()`.
+3. **Snapshot-Based Decisions**: All decision engines MUST use `HouseholdSnapshotDTO` or equivalent as the single source of truth for the agent's current state.
+4. **Zero-Sum Enforcement**: Every fiscal/monetary transaction result must be balanced to zero.
+
+This pattern is the non-negotiable standard for all refactoring sprints.
 
 ## 6. 핵심 원칙 및 교훈 (Economic Principles & Lessons)
 
