@@ -109,7 +109,7 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer, mock_co
     def create_household(i, assets):
         core = AgentCoreConfigDTO(id=i, name=f"HH_{i}", value_orientation="test", initial_needs={'survival': 0}, logger=Mock(), memory_interface=None)
         h = Household(core_config=core, engine=Mock(spec=AIDrivenHouseholdDecisionEngine), talent=talent, goods_data=[], personality=Personality.MISER, config_dto=hh_config_dto)
-        h.deposit(assets)
+        h._deposit(assets)
         return h
 
     households = [create_household(i, 1000) for i in range(1)]
@@ -117,7 +117,7 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer, mock_co
     def create_firm(i, assets, spec, prod):
         core = AgentCoreConfigDTO(id=i, name=f"Firm_{i}", value_orientation="Profit", initial_needs={'liquidity_need': 100}, logger=Mock(), memory_interface=None)
         f = Firm(core_config=core, engine=Mock(spec=AIDrivenFirmDecisionEngine), specialization=spec, productivity_factor=prod, config_dto=firm_config_dto)
-        f.deposit(assets)
+        f._deposit(assets)
         return f
 
     firms = [
@@ -133,7 +133,15 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer, mock_co
     sim.world_state.goods_data = []
     sim.world_state.tracker = EconomicIndicatorTracker(config_module=mock_config)
 
-    Bootstrapper.inject_initial_liquidity(sim.firms, mock_config)
+    # Mock Settlement System for Bootstrapper
+    settlement_system = Mock()
+    def transfer_side_effect(debit, credit, amount, memo):
+        credit._deposit(amount)
+        return True
+    settlement_system.transfer.side_effect = transfer_side_effect
+    central_bank = Mock()
+
+    Bootstrapper.inject_initial_liquidity(sim.firms, mock_config, settlement_system, central_bank)
     Bootstrapper.force_assign_workers(sim.firms, sim.households)
 
     # Assert Assets >= 2000
@@ -157,7 +165,7 @@ def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer, mock_conf
     def create_household(i, assets):
         core = AgentCoreConfigDTO(id=i, name=f"HH_{i}", value_orientation="test", initial_needs={'survival': 0}, logger=Mock(), memory_interface=None)
         h = Household(core_config=core, engine=Mock(spec=AIDrivenHouseholdDecisionEngine), talent=talent, goods_data=[], personality=Personality.MISER, config_dto=hh_config_dto)
-        h.deposit(assets)
+        h._deposit(assets)
         return h
 
     households = [create_household(i, 1000) for i in range(1)]
@@ -165,7 +173,7 @@ def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer, mock_conf
     def create_firm(i, assets, spec, prod):
         core = AgentCoreConfigDTO(id=i, name=f"Firm_{i}", value_orientation="Profit", initial_needs={'liquidity_need': 100}, logger=Mock(), memory_interface=None)
         f = Firm(core_config=core, engine=Mock(spec=AIDrivenFirmDecisionEngine), specialization=spec, productivity_factor=prod, config_dto=firm_config_dto)
-        f.deposit(assets)
+        f._deposit(assets)
         return f
 
     firms = [
@@ -180,7 +188,15 @@ def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer, mock_conf
     sim.world_state.goods_data = []
     sim.world_state.tracker = EconomicIndicatorTracker(config_module=mock_config)
 
-    Bootstrapper.inject_initial_liquidity(sim.firms, mock_config)
+    # Mock Settlement System for Bootstrapper
+    settlement_system = Mock()
+    def transfer_side_effect(debit, credit, amount, memo):
+        credit._deposit(amount)
+        return True
+    settlement_system.transfer.side_effect = transfer_side_effect
+    central_bank = Mock()
+
+    Bootstrapper.inject_initial_liquidity(sim.firms, mock_config, settlement_system, central_bank)
     Bootstrapper.force_assign_workers(sim.firms, sim.households)
 
     # We will manually trigger production to verify the bootstrapper's effect.

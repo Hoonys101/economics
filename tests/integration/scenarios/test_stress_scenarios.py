@@ -305,7 +305,7 @@ class TestPhase28StressScenarios:
             personality=Personality.CONSERVATIVE,
             config_dto=config_dto, # Pass DTO
         )
-        household.deposit(40000, DEFAULT_CURRENCY)
+        household._deposit(40000, DEFAULT_CURRENCY)
         household._econ_state.portfolio = MagicMock()
         share_mock = MagicMock(spec=Share)
         share_mock.quantity = 10.0

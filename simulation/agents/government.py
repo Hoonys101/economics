@@ -689,6 +689,14 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
             raise ValueError("Withdrawal amount must be positive.")
         self.wallet.subtract(amount, currency)
 
+    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Internal deposit method for IFinancialAgent."""
+        self.wallet.add(amount, currency)
+
+    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Internal withdraw method for IFinancialAgent."""
+        self.wallet.subtract(amount, currency)
+
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         return self.wallet.get_balance(currency)
 

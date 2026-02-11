@@ -137,7 +137,7 @@ def mock_config_module():
 
 # Fixtures for common dependencies
 @pytest.fixture
-def mock_households(mock_config_module):
+def mock_households(mock_config_module, mock_logger):
     # Setup initial needs with 'survival' and other keys to avoid KeyError in update_needs
     initial_needs = {
         "survival": 50.0, "survival_need": 50.0,
@@ -146,121 +146,40 @@ def mock_households(mock_config_module):
         "improvement": 10.0
     }
 
-    hh1 = Mock(spec=Household)
-    hh1.id = 1
+    # Helper to create real Household objects for testing
+    def _create_household(id: int, assets: float, value_orientation: str):
+        mock_de = MagicMock(spec=AIDrivenHouseholdDecisionEngine)
+        core_config = AgentCoreConfigDTO(
+            id=id,
+            name=f"Household_{id}",
+            value_orientation=value_orientation,
+            initial_needs=initial_needs.copy(),
+            logger=mock_logger,
+            memory_interface=None
+        )
+        h = Household(
+            core_config=core_config,
+            engine=mock_de,
+            talent=Talent(1.0, {}),
+            goods_data=[],
+            personality=Personality.MISER,
+            config_dto=create_household_config_dto(),
+            initial_assets_record=assets
+        )
+        if assets > 0:
+            h._deposit(int(assets), DEFAULT_CURRENCY)
 
-    # TD-Mock-Household: Explicitly mock sub-states
-    hh1._bio_state = Mock()
-    hh1._bio_state.is_active = True
-    hh1._econ_state = Mock()
-    hh1._econ_state.assets = {DEFAULT_CURRENCY: 100.0}
-    hh1._social_state = Mock()
+        # Manually inject some test state that might be expected by tests relying on mocks
+        h.is_active = True
+        inventory_dict = {"food": 10, "basic_food": 10} if id == 1 else {"food": 5, "basic_food": 5}
+        for item, qty in inventory_dict.items():
+            h.add_item(item, qty)
 
-    hh1._assets = 100.0
-    hh1.assets = 100.0 # WO-124: Explicitly set assets for property access
-    hh1.is_active = True
-    hh1.value_orientation = "wealth_and_needs"
-    hh1.decision_engine = Mock()
-    hh1.needs = initial_needs.copy()
-    hh1.inventory = {"food": 10, "basic_food": 10}
-    hh1.current_consumption = 0.0
-    hh1.current_food_consumption = 0.0
-    hh1.labor_income_this_tick = 0.0
-    hh1.capital_income_this_tick = 0.0
-    hh1.is_employed = False
-    hh1.employer_id = None
-    hh1.skills = {}
-    # hh1.config_module = mock_config_module # Attach config - removed as not standard
-    # Mock update_needs to avoid key error if called during simulation init
-    hh1.update_needs = Mock()
-    hh1.talent = Mock(spec=Talent)
-    hh1.talent.base_learning_rate = 0.1
-    hh1.inventory_quality = {}
+        # Override decision engine markets if needed later
+        return h
 
-    def withdraw_side_effect_hh1(amount, currency=DEFAULT_CURRENCY):
-        hh1.assets -= amount
-    hh1.withdraw = Mock(side_effect=withdraw_side_effect_hh1)
-
-    def deposit_side_effect_hh1(amount, currency=DEFAULT_CURRENCY):
-        hh1.assets += amount
-    hh1.deposit = Mock(side_effect=deposit_side_effect_hh1)
-
-    hh1.get_balance = Mock(side_effect=lambda currency=DEFAULT_CURRENCY: hh1.assets)
-
-    def record_consumption_side_effect_hh1(quantity, is_food=False):
-        hh1.current_consumption += quantity
-        if is_food:
-            hh1.current_food_consumption += quantity
-    hh1.record_consumption = Mock(side_effect=record_consumption_side_effect_hh1)
-
-    def add_item_side_effect_hh1(item_id, quantity, transaction_id=None, quality=1.0):
-        hh1.inventory[item_id] = hh1.inventory.get(item_id, 0.0) + quantity
-        return True
-    hh1.add_item = Mock(side_effect=add_item_side_effect_hh1)
-
-    def remove_item_side_effect_hh1(item_id, quantity, transaction_id=None):
-        if hh1.inventory.get(item_id, 0.0) >= quantity:
-            hh1.inventory[item_id] -= quantity
-            return True
-        return False
-    hh1.remove_item = Mock(side_effect=remove_item_side_effect_hh1)
-
-    hh2 = Mock(spec=Household)
-    hh2.id = 2
-
-    # TD-Mock-Household: Explicitly mock sub-states
-    hh2._bio_state = Mock()
-    hh2._bio_state.is_active = True
-    hh2._econ_state = Mock()
-    hh2._econ_state.assets = {DEFAULT_CURRENCY: 150.0}
-    hh2._social_state = Mock()
-
-    hh2._assets = 150.0
-    hh2.assets = 150.0 # WO-124: Explicitly set assets for property access
-    hh2.is_active = True
-    hh2.value_orientation = "needs_and_growth"
-    hh2.decision_engine = Mock()
-    hh2.needs = initial_needs.copy()
-    hh2.inventory = {"food": 5, "basic_food": 5}
-    hh2.current_consumption = 0.0
-    hh2.current_food_consumption = 0.0
-    hh2.labor_income_this_tick = 0.0
-    hh2.capital_income_this_tick = 0.0
-    hh2.is_employed = False
-    hh2.employer_id = None
-    # hh2.config_module = mock_config_module
-    hh2.update_needs = Mock()
-    hh2.talent = Mock(spec=Talent)
-    hh2.talent.base_learning_rate = 0.1
-    hh2.inventory_quality = {}
-
-    def withdraw_side_effect_hh2(amount, currency=DEFAULT_CURRENCY):
-        hh2.assets -= amount
-    hh2.withdraw = Mock(side_effect=withdraw_side_effect_hh2)
-
-    def deposit_side_effect_hh2(amount, currency=DEFAULT_CURRENCY):
-        hh2.assets += amount
-    hh2.deposit = Mock(side_effect=deposit_side_effect_hh2)
-
-    hh2.get_balance = Mock(side_effect=lambda currency=DEFAULT_CURRENCY: hh2.assets)
-
-    def record_consumption_side_effect_hh2(quantity, is_food=False):
-        hh2.current_consumption += quantity
-        if is_food:
-            hh2.current_food_consumption += quantity
-    hh2.record_consumption = Mock(side_effect=record_consumption_side_effect_hh2)
-
-    def add_item_side_effect_hh2(item_id, quantity, transaction_id=None, quality=1.0):
-        hh2.inventory[item_id] = hh2.inventory.get(item_id, 0.0) + quantity
-        return True
-    hh2.add_item = Mock(side_effect=add_item_side_effect_hh2)
-
-    def remove_item_side_effect_hh2(item_id, quantity, transaction_id=None):
-        if hh2.inventory.get(item_id, 0.0) >= quantity:
-            hh2.inventory[item_id] -= quantity
-            return True
-        return False
-    hh2.remove_item = Mock(side_effect=remove_item_side_effect_hh2)
+    hh1 = _create_household(1, 100.0, "wealth_and_needs")
+    hh2 = _create_household(2, 150.0, "needs_and_growth")
 
     return [hh1, hh2]
 
@@ -283,7 +202,7 @@ def mock_firms(mock_config_module, mock_logger):
         config_dto=create_firm_config_dto(),
         initial_inventory={"basic_food": 50},
     )
-    f1.deposit(1000, DEFAULT_CURRENCY)
+    f1._deposit(1000, DEFAULT_CURRENCY)
     f1.is_active = True
     f1.total_shares = 1000.0
     f1.treasury_shares = 0.0
@@ -305,7 +224,7 @@ def mock_firms(mock_config_module, mock_logger):
         config_dto=create_firm_config_dto(),
         initial_inventory={"luxury_food": 60},
     )
-    f2.deposit(1200, DEFAULT_CURRENCY)
+    f2._deposit(1200, DEFAULT_CURRENCY)
     f2.is_active = False  # Inactive firm
     f2.total_shares = 1000.0
     f2.treasury_shares = 0.0
@@ -528,10 +447,10 @@ class TestSimulation:
             == initial_seller_inventory - tx.quantity
         )
         assert buyer_hh.inventory["basic_food"] == initial_buyer_inventory + tx.quantity
-        assert buyer_hh.current_consumption == tx.quantity
+        assert buyer_hh._econ_state.current_consumption == tx.quantity
         # This assertion might need adjustment depending on how consumption of different food types is tracked
         # For now, assuming any food purchase contributes to current_food_consumption
-        assert buyer_hh.current_food_consumption == tx.quantity
+        assert buyer_hh._econ_state.current_food_consumption == tx.quantity
         assert seller_firm.revenue_this_turn.get(DEFAULT_CURRENCY, 0.0) == (tx.quantity * tx.price)
 
     def test_process_transactions_labor_trade(
@@ -725,7 +644,7 @@ def setup_simulation_for_lifecycle(
     # I don't see wallet.add() in Household.__init__ for initial assets.
     # The clone method does: "if initial_assets_from_parent > 0: new_household.deposit(...)"
     # So I should probably deposit manually to be safe.
-    household_active.deposit(100, DEFAULT_CURRENCY)
+    household_active._deposit(100, DEFAULT_CURRENCY)
 
     household_active.is_active = True
     household_active.is_employed = True
@@ -740,7 +659,7 @@ def setup_simulation_for_lifecycle(
         config_dto=create_household_config_dto(),
         initial_assets_record=50,
     )
-    household_inactive.deposit(50, DEFAULT_CURRENCY)
+    household_inactive._deposit(50, DEFAULT_CURRENCY)
     household_inactive.is_active = False
 
     household_employed_by_inactive_firm = Household(
@@ -752,7 +671,7 @@ def setup_simulation_for_lifecycle(
         config_dto=create_household_config_dto(),
         initial_assets_record=70,
     )
-    household_employed_by_inactive_firm.deposit(70, DEFAULT_CURRENCY)
+    household_employed_by_inactive_firm._deposit(70, DEFAULT_CURRENCY)
     household_employed_by_inactive_firm.is_active = True
     household_employed_by_inactive_firm.is_employed = True
     household_employed_by_inactive_firm.employer_id = 102
@@ -772,7 +691,7 @@ def setup_simulation_for_lifecycle(
         productivity_factor=1.0,
         config_dto=create_firm_config_dto(),
     )
-    firm_active.deposit(1000, DEFAULT_CURRENCY)
+    firm_active._deposit(1000, DEFAULT_CURRENCY)
     firm_active.is_active = True
     firm_active.total_shares = 1000.0
     firm_active.treasury_shares = 0.0
@@ -785,7 +704,7 @@ def setup_simulation_for_lifecycle(
         productivity_factor=1.0,
         config_dto=create_firm_config_dto(),
     )
-    firm_inactive.deposit(500, DEFAULT_CURRENCY)
+    firm_inactive._deposit(500, DEFAULT_CURRENCY)
     firm_inactive.is_active = False
     firm_inactive.total_shares = 1000.0
     firm_inactive.treasury_shares = 0.0
