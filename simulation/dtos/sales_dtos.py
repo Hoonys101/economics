@@ -26,3 +26,8 @@ class SalesMarketingContextDTO:
     wallet_balance: float
     government_id: Optional[Union[int, str]]
     current_time: int
+
+@dataclass(frozen=True)
+class MarketingAdjustmentResultDTO:
+    """Result from a marketing budget calculation."""
+    new_budget: float

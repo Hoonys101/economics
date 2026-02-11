@@ -605,7 +605,8 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
              rate = exchange_rates.get(cur, 1.0) if cur != DEFAULT_CURRENCY else 1.0
              total_revenue += amount * rate
 
-        self.sales_engine.adjust_marketing_budget(self.sales_state, market_context, total_revenue)
+        result = self.sales_engine.adjust_marketing_budget(self.sales_state, market_context, total_revenue)
+        self.sales_state.marketing_budget = result.new_budget
 
     def produce(self, current_time: int, technology_manager: Optional[Any] = None, effects_queue: Optional[List[Dict[str, Any]]] = None) -> None:
         productivity_multiplier = 1.0
@@ -1051,10 +1052,25 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
         # 1. Payroll
         payroll_context = self._build_payroll_context(current_time, government, market_context)
-        tx_payroll = self.hr_engine.process_payroll(
+        payroll_result = self.hr_engine.process_payroll(
             self.hr_state, payroll_context, self.config
         )
-        transactions.extend(tx_payroll)
+        transactions.extend(payroll_result.transactions)
+
+        # Apply employee updates
+        for update in payroll_result.employee_updates:
+            # Find the actual agent instance in our state list
+            employee = next((e for e in self.hr_state.employees if e.id == update.employee_id), None)
+            if not employee: continue
+
+            # Apply income update
+            if update.net_income > 0:
+                employee.labor_income_this_tick = (employee.labor_income_this_tick or 0.0) + update.net_income
+
+            # Apply firing
+            if update.fire_employee:
+                employee.quit()
+                self.hr_engine.finalize_firing(self.hr_state, update.employee_id)
 
         # 2. Finance
         # Calculate inventory value for holding cost
@@ -1076,6 +1092,14 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         transactions.extend(tx_finance)
 
         # 3. Marketing
+        # Adjust budget first (ask Engine what the budget should be)
+        marketing_result = self.sales_engine.adjust_marketing_budget(
+            self.sales_state, market_context, self.finance_state.last_revenue
+        )
+        # Apply result
+        self.sales_state.marketing_budget = marketing_result.new_budget
+
+        # Then generate transaction using the updated state
         marketing_context = self._build_sales_marketing_context(current_time, government)
         tx_marketing = self.sales_engine.generate_marketing_transaction(
             self.sales_state, marketing_context
@@ -1085,7 +1109,6 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
         # Brand Update
         self.brand_manager.update(self.sales_state.marketing_budget, self.productivity_factor / 10.0)
-        self.sales_engine.adjust_marketing_budget(self.sales_state, market_context, self.finance_state.last_revenue)
 
         # WO-4.6: Finance cleanup is now handled in Post-Sequence via reset()
         # This ensures expenses_this_tick accumulates for the full tick duration.

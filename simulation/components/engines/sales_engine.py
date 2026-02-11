@@ -4,7 +4,7 @@ import logging
 import math
 from simulation.models import Order, Transaction
 from simulation.components.state.firm_state_models import SalesState
-from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingContextDTO
+from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingContextDTO, MarketingAdjustmentResultDTO
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
@@ -49,15 +49,18 @@ class SalesEngine:
         state: SalesState,
         market_context: MarketContextDTO,
         revenue_this_turn: float # Total revenue in primary currency
-    ) -> None:
+    ) -> MarketingAdjustmentResultDTO:
         """
         Adjusts marketing budget based on ROI or simple heuristic.
+        Returns the calculated new budget in a DTO.
         """
         # Simple heuristic: % of revenue
         target_budget = revenue_this_turn * state.marketing_budget_rate
 
         # Smoothing
-        state.marketing_budget = (state.marketing_budget * 0.8) + (target_budget * 0.2)
+        new_budget = (state.marketing_budget * 0.8) + (target_budget * 0.2)
+
+        return MarketingAdjustmentResultDTO(new_budget=new_budget)
 
     def generate_marketing_transaction(
         self,

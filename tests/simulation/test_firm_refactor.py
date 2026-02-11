@@ -6,6 +6,7 @@ from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.models import Order
 from modules.system.api import DEFAULT_CURRENCY, MarketContextDTO
 from modules.simulation.api import AgentCoreConfigDTO
+from modules.hr.api import IEmployeeDataProvider
 
 @pytest.fixture
 def mock_decision_engine():
@@ -41,6 +42,10 @@ def firm_config():
     config.marketing_budget_rate_min = 0.01
     config.marketing_budget_rate_max = 0.1
     config.profit_history_ticks = 10
+    config.ticks_per_year = 365
+    config.severance_pay_weeks = 2.0
+    config.sale_timeout_ticks = 10
+    config.dynamic_price_reduction_factor = 0.9
     return config
 
 @pytest.fixture
@@ -186,22 +191,61 @@ def test_generate_transactions_delegation(firm):
     # Wallet has money.
 
     # Check for maintenance fee transaction
+    # Since we are using real FinanceEngine, we need to check if maintenance fee is generated
+    # maintenance fee is in generate_financial_transactions
+
     maintenance_tx = next((tx for tx in txs if tx.item_id == "firm_maintenance"), None)
     assert maintenance_tx is not None
     assert maintenance_tx.price == 5.0
 
-def test_produce_delegation(firm):
-    # Test produce calls production engine.
-    # We can check if production increases.
+def test_generate_transactions_payroll_integration(firm):
+    """
+    Test that Firm correctly orchestrates HREngine results.
+    """
+    # Setup Employee
+    emp = MagicMock(spec=IEmployeeDataProvider)
+    emp.id = 101
+    emp.employer_id = firm.id
+    emp.is_employed = True
+    emp.labor_skill = 1.0
+    emp.education_level = 0.0
+    emp.labor_income_this_tick = 0.0
 
-    # Setup
-    firm.production_state.productivity_factor = 2.0
-    firm.hr_state.employees = [MagicMock(productivity=1.0)] # Add an employee if needed by engine?
+    firm.hr_state.employees = [emp]
+    firm.hr_state.employee_wages = {101: 20.0}
 
-    firm.production_engine = MagicMock()
-    firm.production_engine.produce.return_value = 10.0
+    # Setup Wallet
+    firm.wallet.load_balances({DEFAULT_CURRENCY: 1000.0})
 
-    firm.produce(current_time=0)
+    # Mock Government
+    gov = MagicMock()
+    gov.id = 999
 
-    firm.production_engine.produce.assert_called_once()
-    assert firm.current_production == 10.0
+    # Mock Fiscal Policy
+    fiscal_policy = MagicMock()
+    fiscal_policy.corporate_tax_rate = 0.2
+    fiscal_policy.income_tax_rate = 0.1
+    fiscal_policy.survival_cost = 10.0
+    fiscal_policy.government_agent_id = 999
+
+    market_context = {
+        "exchange_rates": {DEFAULT_CURRENCY: 1.0},
+        "fiscal_policy": fiscal_policy
+    }
+
+    # Execute
+    transactions = firm.generate_transactions(
+        government=gov,
+        market_data={},
+        shareholder_registry=MagicMock(),
+        current_time=100,
+        market_context=market_context
+    )
+
+    # Verify Transactions
+    wage_tx = next((tx for tx in transactions if tx.item_id == "labor_wage"), None)
+    assert wage_tx is not None
+    assert wage_tx.price == 18.0 # 20 - 10% tax
+
+    # Verify Employee Update (Orchestrator action)
+    assert emp.labor_income_this_tick == 18.0
