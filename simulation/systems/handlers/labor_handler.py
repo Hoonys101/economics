@@ -5,6 +5,7 @@ from simulation.models import Transaction
 from simulation.core_agents import Household, Skill
 from simulation.firms import Firm
 from modules.system.api import DEFAULT_CURRENCY
+from modules.finance.utils.currency_math import round_to_pennies
 
 logger = logging.getLogger(__name__)
 
@@ -15,20 +16,20 @@ class LaborTransactionHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        trade_value = tx.quantity * tx.price
+        trade_value = round_to_pennies(tx.quantity * tx.price)
 
         # 1. Prepare Settlement (Calculate tax intents)
         # Note: TransactionProcessor used market_data.get("goods_market")?
         # But TaxationSystem.calculate_tax_intents signature expects 'market_data'.
         intents = context.taxation_system.calculate_tax_intents(tx, buyer, seller, context.government, context.market_data)
 
-        credits: List[Tuple[Any, float, str]] = []
+        credits: List[Tuple[Any, int, str]] = []
         seller_net_amount = trade_value
         buyer_total_cost = trade_value
 
         # Variables for logging or tracking
-        seller_tax_paid = 0.0
-        buyer_tax_paid = 0.0
+        seller_tax_paid = 0
+        buyer_tax_paid = 0
 
         for intent in intents:
             credits.append((context.government, intent.amount, intent.reason))
@@ -72,7 +73,7 @@ class LaborTransactionHandler(ITransactionHandler):
 
         return settlement_success
 
-    def _apply_labor_effects(self, tx: Transaction, buyer: Any, seller: Any, seller_net_income: float, buyer_total_cost: float, context: TransactionContext):
+    def _apply_labor_effects(self, tx: Transaction, buyer: Any, seller: Any, seller_net_income: int, buyer_total_cost: int, context: TransactionContext):
         """
         Applies employment updates and productivity effects.
         """

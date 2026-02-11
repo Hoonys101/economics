@@ -283,7 +283,7 @@ def mock_firms(mock_config_module, mock_logger):
         config_dto=create_firm_config_dto(),
         initial_inventory={"basic_food": 50},
     )
-    f1.deposit(1000.0, DEFAULT_CURRENCY)
+    f1.deposit(1000, DEFAULT_CURRENCY)
     f1.is_active = True
     f1.total_shares = 1000.0
     f1.treasury_shares = 0.0
@@ -305,7 +305,7 @@ def mock_firms(mock_config_module, mock_logger):
         config_dto=create_firm_config_dto(),
         initial_inventory={"luxury_food": 60},
     )
-    f2.deposit(1200.0, DEFAULT_CURRENCY)
+    f2.deposit(1200, DEFAULT_CURRENCY)
     f2.is_active = False  # Inactive firm
     f2.total_shares = 1000.0
     f2.treasury_shares = 0.0
@@ -519,7 +519,8 @@ class TestSimulation:
 
         # Assets include tax considerations
         trade_value = tx.quantity * tx.price
-        tax = trade_value * simulation_instance.config_module.SALES_TAX_RATE
+        from modules.finance.utils.currency_math import round_to_pennies
+        tax = round_to_pennies(trade_value * simulation_instance.config_module.SALES_TAX_RATE)
         assert buyer_hh.assets == initial_buyer_assets - (trade_value + tax)
         assert seller_firm.wallet.get_balance(DEFAULT_CURRENCY) == initial_seller_assets + trade_value
         assert (
@@ -724,7 +725,7 @@ def setup_simulation_for_lifecycle(
     # I don't see wallet.add() in Household.__init__ for initial assets.
     # The clone method does: "if initial_assets_from_parent > 0: new_household.deposit(...)"
     # So I should probably deposit manually to be safe.
-    household_active.deposit(100.0, DEFAULT_CURRENCY)
+    household_active.deposit(100, DEFAULT_CURRENCY)
 
     household_active.is_active = True
     household_active.is_employed = True
@@ -739,7 +740,7 @@ def setup_simulation_for_lifecycle(
         config_dto=create_household_config_dto(),
         initial_assets_record=50,
     )
-    household_inactive.deposit(50.0, DEFAULT_CURRENCY)
+    household_inactive.deposit(50, DEFAULT_CURRENCY)
     household_inactive.is_active = False
 
     household_employed_by_inactive_firm = Household(
@@ -751,7 +752,7 @@ def setup_simulation_for_lifecycle(
         config_dto=create_household_config_dto(),
         initial_assets_record=70,
     )
-    household_employed_by_inactive_firm.deposit(70.0, DEFAULT_CURRENCY)
+    household_employed_by_inactive_firm.deposit(70, DEFAULT_CURRENCY)
     household_employed_by_inactive_firm.is_active = True
     household_employed_by_inactive_firm.is_employed = True
     household_employed_by_inactive_firm.employer_id = 102
@@ -771,7 +772,7 @@ def setup_simulation_for_lifecycle(
         productivity_factor=1.0,
         config_dto=create_firm_config_dto(),
     )
-    firm_active.deposit(1000.0, DEFAULT_CURRENCY)
+    firm_active.deposit(1000, DEFAULT_CURRENCY)
     firm_active.is_active = True
     firm_active.total_shares = 1000.0
     firm_active.treasury_shares = 0.0
@@ -784,7 +785,7 @@ def setup_simulation_for_lifecycle(
         productivity_factor=1.0,
         config_dto=create_firm_config_dto(),
     )
-    firm_inactive.deposit(500.0, DEFAULT_CURRENCY)
+    firm_inactive.deposit(500, DEFAULT_CURRENCY)
     firm_inactive.is_active = False
     firm_inactive.total_shares = 1000.0
     firm_inactive.treasury_shares = 0.0

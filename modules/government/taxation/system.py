@@ -5,6 +5,7 @@ from modules.finance.api import IFinancialEntity
 from modules.simulation.api import IGovernment
 from simulation.models import Transaction
 from modules.system.api import DEFAULT_CURRENCY
+from modules.finance.utils.currency_math import round_to_pennies
 
 if TYPE_CHECKING:
     from simulation.dtos.transactions import TransactionDTO
@@ -27,7 +28,7 @@ class ITaxConfig(Protocol):
 class TaxIntent:
     payer_id: int
     payee_id: int # Usually Government ID
-    amount: float
+    amount: int
     reason: str
 
 class TaxationSystem:
@@ -38,17 +39,17 @@ class TaxationSystem:
     def __init__(self, config_module: Any): # Keeping Any for broad config, but internally using attributes of ITaxConfig
         self.config_module = config_module
 
-    def _round_currency(self, amount: float) -> float:
-        """Rounds amount to 2 decimal places to prevent floating point pollution."""
-        return round(amount, 2)
+    def _round_currency(self, amount: float) -> int:
+        """Rounds amount to integer pennies to prevent floating point pollution."""
+        return round_to_pennies(amount)
 
-    def calculate_income_tax(self, income: float, survival_cost: float, current_income_tax_rate: float, tax_mode: str = 'PROGRESSIVE') -> float:
+    def calculate_income_tax(self, income: float, survival_cost: float, current_income_tax_rate: float, tax_mode: str = 'PROGRESSIVE') -> int:
         """
         Calculates income tax based on the provided parameters.
         Logic moved from TaxAgency.
         """
         if income <= 0:
-            return 0.0
+            return 0
 
         raw_tax = 0.0
 
@@ -57,14 +58,14 @@ class TaxationSystem:
         else:
             tax_brackets = getattr(self.config_module, "TAX_BRACKETS", [])
             if not tax_brackets:
-                taxable = max(0, income - survival_cost)
+                taxable = max(0.0, income - survival_cost)
                 raw_tax = taxable * current_income_tax_rate
             else:
                 previous_limit_abs = 0.0
                 for multiple, rate in tax_brackets:
                     limit_abs = multiple * survival_cost
                     upper_bound = min(income, limit_abs)
-                    lower_bound = max(0, previous_limit_abs)
+                    lower_bound = max(0.0, previous_limit_abs)
                     taxable_amount = max(0.0, upper_bound - lower_bound)
 
                     if taxable_amount > 0:
@@ -81,10 +82,10 @@ class TaxationSystem:
 
         return self._round_currency(raw_tax)
 
-    def calculate_corporate_tax(self, profit: float, current_corporate_tax_rate: float) -> float:
+    def calculate_corporate_tax(self, profit: float, current_corporate_tax_rate: float) -> int:
         """Calculates corporate tax."""
         if profit <= 0:
-            return 0.0
+            return 0
         return self._round_currency(profit * current_corporate_tax_rate)
 
     def calculate_tax_intents(
