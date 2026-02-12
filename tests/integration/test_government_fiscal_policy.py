@@ -8,7 +8,7 @@ def test_tax_collection_and_bailouts(government):
     Tests that the government can collect taxes and provide bailouts,
     updating its assets correctly.
     """
-    initial_gov_assets = government.assets
+    initial_gov_assets = government.total_wealth
 
     # 1. Manual Tax Collection Test (Legacy direct call)
     government.collect_tax(100, "test_tax", 1, 1)
@@ -16,8 +16,8 @@ def test_tax_collection_and_bailouts(government):
     # 2. Bailout Test (now a loan, returns transactions)
     mock_firm = Mock()
     mock_firm.id = 101
-    mock_firm.assets = 1000
-    initial_firm_assets = mock_firm.finance.balance
+    mock_firm.total_wealth = 1000
+    initial_firm_assets = mock_firm.total_wealth
 
     # Mock the finance system to approve the bailout
     government.finance_system.evaluate_solvency.return_value = True
@@ -54,7 +54,7 @@ def test_infrastructure_investment():
 
     gov.firm_subsidy_budget_multiplier = 1.0
 
-    initial_assets = gov.assets
+    initial_assets = gov.total_wealth
     initial_level = gov.infrastructure_level
 
     # Fix for TD-105: Provide required dependencies for zero-sum execution

@@ -136,8 +136,6 @@ class TestPhase29Depression(unittest.TestCase):
             h.children_ids = []
             h._bio_state.needs = {"survival": 0.5}
             h._assets = 1000
-            h.assets = 1000.0
-            h._econ_state.assets = 1000 # Explicitly set property for sorting
             h.decision_engine = MagicMock()
             h.decision_engine.ai_engine = MagicMock()
             # make_decision must return (orders, action_vector)
@@ -148,9 +146,11 @@ class TestPhase29Depression(unittest.TestCase):
             h._econ_state.owned_properties = []
             h._econ_state.residing_property_id = None
             h._social_state.approval_rating = 1.0
-            h._econ_state.assets = {DEFAULT_CURRENCY: 1000.0}
             h._econ_state.wallet = MagicMock()
             h._econ_state.wallet.get_balance.return_value = 1000.0
+            h._econ_state.wallet.get_all_balances.return_value = {DEFAULT_CURRENCY: 1000.0}
+            h.get_balance.return_value = 1000.0
+            h.get_all_balances.return_value = {DEFAULT_CURRENCY: 1000.0}
             h.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 1000.0}
             h.config = self.config_module
             # For numpy array creation in VectorizedHouseholdPlanner
@@ -204,7 +204,6 @@ class TestPhase29Depression(unittest.TestCase):
             f.is_active = True
             f.age = 0
             f._assets = 5000
-            f.assets = 5000 # Explicitly set property
             f.current_profit = 100
             f.consecutive_loss_turns = 0
             f.valuation = 5000.0
@@ -232,6 +231,8 @@ class TestPhase29Depression(unittest.TestCase):
             f.config = MagicMock()
             f.config.profit_history_ticks = 10
             f.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 5000.0}
+            f.get_balance.return_value = 5000.0
+            f.get_all_balances.return_value = {DEFAULT_CURRENCY: 5000.0}
 
             # Phase 29 Refinement: Mock FinanceDepartment
             f.finance = MagicMock()
@@ -294,7 +295,7 @@ class TestPhase29Depression(unittest.TestCase):
 
         # Set Government Revenue
         if self.sim.government:
-            self.sim.government.deposit(10000)
+            self.sim.government._deposit(10000)
 
         # Mock TechnologyManager to avoid config dependency issues
         self.sim.technology_manager = MagicMock()

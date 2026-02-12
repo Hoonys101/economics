@@ -335,7 +335,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         ]
 
         top_20_count = len(sim.households) // 5
-        top_households = sorted(sim.households, key=lambda h: h._econ_state.assets.get(DEFAULT_CURRENCY, 0.0), reverse=True)[:top_20_count]
+        top_households = sorted(sim.households, key=lambda h: h.get_balance(DEFAULT_CURRENCY), reverse=True)[:top_20_count]
 
         for i, hh in enumerate(top_households):
             if i < len(sim.real_estate_units):

@@ -16,6 +16,7 @@ from modules.system.api import DEFAULT_CURRENCY
 
 class TestEconomicIntegrityAudit(unittest.TestCase):
     def setUp(self):
+        DemographicManager._instance = None # Reset Singleton
         self.config = MagicMock()
         self.config.TICKS_PER_YEAR = 100
         self.config.REPRODUCTION_AGE_START = 18
@@ -70,9 +71,9 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
         parent = MagicMock()
         parent.id = 10
         parent.age = 30
-        parent.assets = 10000
         parent.wallet = MagicMock()
         parent.wallet.get_balance.return_value = 10000
+        parent.get_balance.return_value = 10000
         parent.talent = MagicMock()
         parent.personality = MagicMock()
         parent.value_orientation = "NEUTRAL"
@@ -81,6 +82,10 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
         parent.children_ids = []
 
         birth_requests = [parent]
+
+        # Debug print
+        print(f"DEBUG: parent.age={parent.age}, type={type(parent.age)}")
+        print(f"DEBUG: config.REPRODUCTION_AGE_START={self.config.REPRODUCTION_AGE_START}, type={type(self.config.REPRODUCTION_AGE_START)}")
 
         # Execute
         dm.process_births(simulation, birth_requests)
@@ -103,9 +108,9 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
 
         deceased = MagicMock()
         deceased.id = 99
-        deceased.assets = 10005 # 100.05 dollars
         deceased.wallet = MagicMock()
         deceased.wallet.get_balance.return_value = 10005
+        deceased.get_balance.return_value = 10005
 
         heir = MagicMock()
         heir.id = 101

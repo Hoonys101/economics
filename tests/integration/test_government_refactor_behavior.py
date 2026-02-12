@@ -145,7 +145,6 @@ class TestGovernmentRefactor:
         rich_agent.is_active = True
         rich_agent.is_employed = True
         rich_agent.needs = {}
-        rich_agent.assets = {DEFAULT_CURRENCY: 2000000} # Taxable 2M
         rich_agent.get_balance.return_value = 2000000
         rich_agent.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 2000000}
 

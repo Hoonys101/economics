@@ -121,10 +121,9 @@ class TestPublicManagerIntegration:
 
         # 6. Verify Outcome
         # Buyer assets should decrease: 10 * 100 = 1000
-        assert buyer.assets == 4000.0
+        assert buyer.get_balance(DEFAULT_CURRENCY) == 4000.0
 
         # PublicManager treasury should increase
-        from modules.system.api import DEFAULT_CURRENCY
         assert pm.system_treasury[DEFAULT_CURRENCY] == 1000.0
 
         # PublicManager inventory should decrease (via confirm_sale)
