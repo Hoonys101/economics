@@ -6,6 +6,7 @@ from modules.simulation.api import IGovernment
 from simulation.models import Transaction
 from modules.system.api import DEFAULT_CURRENCY
 from modules.finance.utils.currency_math import round_to_pennies
+from modules.government.constants import DEFAULT_BASIC_FOOD_PRICE, DEFAULT_HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK
 
 if TYPE_CHECKING:
     from simulation.dtos.transactions import TransactionDTO
@@ -43,12 +44,13 @@ class TaxationSystem:
         """Rounds amount to integer pennies to prevent floating point pollution."""
         return round_to_pennies(amount)
 
-    def calculate_income_tax(self, income: float, survival_cost: float, current_income_tax_rate: float, tax_mode: str = 'PROGRESSIVE') -> int:
+    def calculate_income_tax(self, income: int, survival_cost: int, current_income_tax_rate: float, tax_mode: str = 'PROGRESSIVE') -> int:
         """
         Calculates income tax based on the provided parameters.
         Logic moved from TaxAgency.
+        income and survival_cost are in pennies.
         """
-        income_val = int(income)
+        income_val = income
         if income_val <= 0:
             return 0
 
@@ -64,6 +66,7 @@ class TaxationSystem:
             else:
                 previous_limit_abs = 0.0
                 for multiple, rate in tax_brackets:
+                    # Brackets are defined as multiples of survival_cost
                     limit_abs = multiple * survival_cost
                     upper_bound = min(income_val, limit_abs)
                     lower_bound = max(0.0, previous_limit_abs)
@@ -83,7 +86,7 @@ class TaxationSystem:
 
         return self._round_currency(raw_tax)
 
-    def calculate_corporate_tax(self, profit: float, current_corporate_tax_rate: float) -> int:
+    def calculate_corporate_tax(self, profit: int, current_corporate_tax_rate: float) -> int:
         """Calculates corporate tax."""
         if profit <= 0:
             return 0
@@ -121,23 +124,41 @@ class TaxationSystem:
         # 2. Income Tax (Labor)
         elif transaction.transaction_type in ["labor", "research_labor"]:
             # Determine Survival Cost
-            avg_food_price = 5.0 # Default
+            # MIGRATION: DEFAULT_BASIC_FOOD_PRICE is now pennies (500)
+            avg_food_price_pennies = DEFAULT_BASIC_FOOD_PRICE
+
             if market_data:
                 goods_market = market_data.get("goods_market", {})
                 if "basic_food_current_sell_price" in goods_market:
-                    avg_food_price = goods_market["basic_food_current_sell_price"]
+                    price_raw = goods_market["basic_food_current_sell_price"]
+                    # Assume market data prices are FLOAT DOLLARS.
+                    # Convert to pennies safely.
+                    avg_food_price_pennies = round_to_pennies(price_raw * 100)
                 else:
-                    # Fallback to config initial price
-                    avg_food_price = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
+                    # Fallback to config. Config might be updated to pennies or not?
+                    # Since we updated constants.py to pennies, let's check if config overrides it.
+                    # Ideally, config should be consistent.
+                    # But if config provides dollars (legacy), we might have issues.
+                    # However, "hardening the source" implies we assume the system is migrating to pennies.
+                    # But wait, `GOODS_INITIAL_PRICE` is likely float dollars in config.json files.
+                    # So we should convert it if it looks like dollars?
+                    # Or assume we updated Config loading logic?
+                    # The safest bet for "Config" values loaded from external JSONs (legacy) is that they are dollars.
+                    # BUT `DEFAULT_BASIC_FOOD_PRICE` is pennies now.
+                    # I will assume that IF it comes from `goods_market` (live data), it is dollars (float).
+                    # IF it comes from Config, I'll convert it assuming it's dollars unless it's huge.
+                    # OR, better: always use `round_to_pennies` if it is float.
+                    val = getattr(self.config_module, "GOODS_INITIAL_PRICE", {}).get("basic_food", DEFAULT_BASIC_FOOD_PRICE)
+                    if isinstance(val, float):
+                        avg_food_price_pennies = round_to_pennies(val * 100)
+                    else:
+                        avg_food_price_pennies = int(val)
 
-            daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
+            daily_food_need = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", DEFAULT_HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK)
 
-            # Assume strict int system. avg_food_price might be dollars (float) from legacy or int pennies.
-            # Safety check: if small float (< 100), treat as dollars -> convert to pennies.
-            if isinstance(avg_food_price, float) and avg_food_price < 1000.0:
-                 avg_food_price = avg_food_price * 100
-
-            survival_cost = int(max(avg_food_price * daily_food_need, 1000.0)) # 1000 pennies = $10 min survival cost?
+            # survival_cost in pennies
+            # daily_food_need is float quantity.
+            survival_cost = int(max(avg_food_price_pennies * daily_food_need, 1000)) # Min 1000 pennies ($10)
 
             # Get Tax Rate from Government
             # Assuming government object has income_tax_rate attribute
@@ -235,7 +256,7 @@ class TaxationSystem:
         Records the outcome of tax payments.
         """
         success_count = 0
-        total_revenue = 0.0
+        total_revenue = 0
 
         for res in results:
             if not res.success:
@@ -243,7 +264,7 @@ class TaxationSystem:
 
             if getattr(res.original_transaction, 'transaction_type', '') == 'tax':
                 success_count += 1
-                total_revenue += res.amount_settled
+                total_revenue += int(res.amount_settled)
 
         if success_count > 0:
-            logger.info(f"TAXATION_RECORD | Recorded {total_revenue:.2f} revenue from {success_count} transactions.")
+            logger.info(f"TAXATION_RECORD | Recorded {total_revenue} revenue from {success_count} transactions.")

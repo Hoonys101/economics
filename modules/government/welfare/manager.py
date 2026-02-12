@@ -18,28 +18,42 @@ from modules.government.constants import (
     DEFAULT_BASIC_FOOD_PRICE
 )
 from modules.finance.api import BailoutCovenant
+from modules.finance.utils.currency_math import round_to_pennies
 
 logger = logging.getLogger(__name__)
 
 class WelfareManager(IWelfareManager):
     def __init__(self, config_module: Any):
         self.config = config_module
-        self.spending_this_tick: float = 0.0
+        self.spending_this_tick: int = 0
 
-    def get_survival_cost(self, market_data: MarketSnapshotDTO) -> float:
-        """ Calculates current survival cost based on food prices. """
-        avg_food_price = 0.0
+    def get_survival_cost(self, market_data: MarketSnapshotDTO) -> int:
+        """ Calculates current survival cost based on food prices. Returns pennies. """
+        avg_food_price_pennies = 0
 
         raw_data = market_data.market_data
         goods_market = raw_data.get("goods_market", {})
 
         if "basic_food_current_sell_price" in goods_market:
-            avg_food_price = goods_market["basic_food_current_sell_price"]
+            val = goods_market["basic_food_current_sell_price"]
+            # Assume market data is float dollars
+            if isinstance(val, float):
+                avg_food_price_pennies = round_to_pennies(val * 100)
+            else:
+                avg_food_price_pennies = int(val)
         else:
-            avg_food_price = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("basic_food", DEFAULT_BASIC_FOOD_PRICE)
+            # Fallback to config or constant (which is pennies)
+            val = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("basic_food", DEFAULT_BASIC_FOOD_PRICE)
+            if isinstance(val, float):
+                 avg_food_price_pennies = round_to_pennies(val * 100)
+            else:
+                 avg_food_price_pennies = int(val)
 
         daily_food_need = getattr(self.config, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", DEFAULT_HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK)
-        return max(avg_food_price * daily_food_need, 10.0)
+
+        # Calculation in pennies
+        # daily_food_need is float quantity.
+        return int(max(avg_food_price_pennies * daily_food_need, 1000)) # Min 1000 pennies ($10)
 
     def run_welfare_check(self, agents: List[IAgent], market_data: MarketSnapshotDTO, current_tick: int, gdp_history: List[float], welfare_budget_multiplier: float = 1.0) -> WelfareResultDTO:
         """
@@ -47,7 +61,7 @@ class WelfareManager(IWelfareManager):
         welfare payment requests.
         """
         payment_requests = []
-        total_paid = 0.0
+        total_paid = 0
 
         # Filter for eligible welfare recipients (Safe filtering for mixed lists)
         welfare_recipients = [a for a in agents if isinstance(a, IWelfareRecipient)]
@@ -60,7 +74,7 @@ class WelfareManager(IWelfareManager):
         benefit_amount = survival_cost * unemployment_ratio
 
         # Apply multiplier
-        effective_benefit_amount = benefit_amount * welfare_budget_multiplier
+        effective_benefit_amount = round_to_pennies(benefit_amount * welfare_budget_multiplier)
 
         if effective_benefit_amount > 0:
             for agent in welfare_recipients:
@@ -93,7 +107,7 @@ class WelfareManager(IWelfareManager):
 
         if should_stimulus:
              base_stimulus_amount = survival_cost * 5.0
-             effective_stimulus_amount = base_stimulus_amount * welfare_budget_multiplier
+             effective_stimulus_amount = round_to_pennies(base_stimulus_amount * welfare_budget_multiplier)
 
              active_households = [a for a in welfare_recipients if a.is_active]
 
@@ -120,7 +134,7 @@ class WelfareManager(IWelfareManager):
             total_paid=total_paid
         )
 
-    def provide_firm_bailout(self, firm: IAgent, amount: float, current_tick: int, is_solvent: bool) -> Optional[BailoutResultDTO]:
+    def provide_firm_bailout(self, firm: IAgent, amount: int, current_tick: int, is_solvent: bool) -> Optional[BailoutResultDTO]:
         """
         Evaluates bailout eligibility and returns a DTO.
         """
@@ -158,8 +172,8 @@ class WelfareManager(IWelfareManager):
 
         return None
 
-    def get_spending_this_tick(self) -> float:
+    def get_spending_this_tick(self) -> int:
         return self.spending_this_tick
 
     def reset_tick_flow(self) -> None:
-        self.spending_this_tick = 0.0
+        self.spending_this_tick = 0
