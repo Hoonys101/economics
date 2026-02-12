@@ -414,7 +414,13 @@ class SimulationInitializer(SimulationInitializerInterface):
         # TD-115: Establish baseline money supply AFTER all liquidity injection
         # but BEFORE any agent-level activities (hiring, update_needs) begin.
         sim.world_state.central_bank = sim.central_bank # Ensure WorldState has CB ref
-        sim.world_state.baseline_money_supply = sim.world_state.calculate_total_money().get(DEFAULT_CURRENCY, 0.0)
+
+        total_money = sim.world_state.calculate_total_money()
+        if isinstance(total_money, dict):
+            sim.world_state.baseline_money_supply = total_money.get(DEFAULT_CURRENCY, 0.0)
+        else:
+            sim.world_state.baseline_money_supply = float(total_money)
+
         self.logger.info(f"Initial baseline money supply established: {sim.world_state.baseline_money_supply:,.2f}")
 
         Bootstrapper.force_assign_workers(sim.firms, sim.households)

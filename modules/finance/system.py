@@ -291,7 +291,7 @@ class FinanceSystem(IFinanceSystem):
             success = self.settlement_system.transfer(
                 buyer_agent,
                 seller_agent,
-                amount,
+                int(amount),
                 memo=f"bond_purchase_{bond_id}",
                 currency=DEFAULT_CURRENCY
             )

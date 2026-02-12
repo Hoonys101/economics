@@ -127,9 +127,12 @@ class Household(
         # --- Initialize Internal State DTOs ---
 
         # 1. Bio State
+        age_range = getattr(self.config, 'initial_household_age_range', (20, 60))
+        if not age_range: age_range = (20, 60)
+
         self._bio_state = BioStateDTO(
             id=core_config.id,
-            age=initial_age if initial_age is not None else random.uniform(*self.config.initial_household_age_range),
+            age=initial_age if initial_age is not None else random.uniform(*age_range),
             gender=gender if gender is not None else random.choice(["M", "F"]),
             generation=generation if generation is not None else 0,
             is_active=True,

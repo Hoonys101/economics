@@ -42,7 +42,7 @@ class MonetaryTransactionHandler(ITransactionHandler):
             # So simple transfer from CB works for minting.
 
             success = context.settlement_system.transfer(
-                buyer, seller, trade_value, "lender_of_last_resort"
+                buyer, seller, int(trade_value), "lender_of_last_resort"
             )
             if success and hasattr(buyer, "total_money_issued"):
                 buyer.total_money_issued += trade_value
@@ -50,7 +50,7 @@ class MonetaryTransactionHandler(ITransactionHandler):
         elif tx_type == "asset_liquidation":
             # Minting: Gov/CB (Buyer) -> Agent (Seller)
             success = context.settlement_system.transfer(
-                buyer, seller, trade_value, "asset_liquidation"
+                buyer, seller, int(trade_value), "asset_liquidation"
             )
             if success:
                 if hasattr(buyer, "total_money_issued"):
@@ -62,7 +62,7 @@ class MonetaryTransactionHandler(ITransactionHandler):
         elif tx_type in ["bond_purchase", "omo_purchase"]:
             # QE: CB (Buyer) -> Gov/Agent (Seller)
             success = context.settlement_system.transfer(
-                buyer, seller, trade_value, tx_type
+                buyer, seller, int(trade_value), tx_type
             )
             if success and context.central_bank and buyer.id == context.central_bank.id:
                  if hasattr(context.government, "total_money_issued"):
@@ -76,7 +76,7 @@ class MonetaryTransactionHandler(ITransactionHandler):
             # QT: Agent (Buyer) -> CB (Seller)
             # Burning: Money goes to CB and disappears.
             success = context.settlement_system.transfer(
-                buyer, seller, trade_value, tx_type
+                buyer, seller, int(trade_value), tx_type
             )
 
         return success is not None
