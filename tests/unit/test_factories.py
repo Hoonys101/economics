@@ -4,9 +4,10 @@ from simulation.orchestration.factories import MarketSignalFactory, DecisionInpu
 from simulation.markets.order_book_market import OrderBookMarket
 from modules.system.api import (
     MarketSignalDTO, MarketSnapshotDTO, HousingMarketSnapshotDTO,
-    LoanMarketSnapshotDTO, LaborMarketSnapshotDTO
+    LoanMarketSnapshotDTO, LaborMarketSnapshotDTO, HousingMarketUnitDTO
 )
-from simulation.dtos.api import SimulationState, DecisionInputDTO
+from simulation.dtos.api import SimulationState, DecisionInputDTO, Order
+from simulation.models import RealEstateUnit
 
 class TestMarketSignalFactory:
     def test_create_market_signals(self):
@@ -68,6 +69,48 @@ class TestMarketSnapshotFactory:
 
         assert isinstance(snapshot.labor, LaborMarketSnapshotDTO)
         assert snapshot.labor.avg_wage == 20.0
+
+    def test_create_snapshot_with_housing_quality(self):
+        factory = MarketSnapshotFactory()
+
+        # 1. Setup Mock State
+        state = MagicMock(spec=SimulationState)
+        state.time = 1
+        state.market_data = {}
+
+        # 2. Setup Housing Market with Sell Orders
+        mock_housing_market = MagicMock()
+        unit_id = 123
+        item_id = f"unit_{unit_id}"
+
+        sell_order = Order(
+            agent_id=1,
+            item_id=item_id,
+            price_limit=25000.0,
+            quantity=1.0,
+            market_id="housing",
+            side="SELL"
+        )
+
+        mock_housing_market.sell_orders = {item_id: [sell_order]}
+        state.markets = {"housing": mock_housing_market}
+
+        # 3. Setup Unit Registry with a unit having specific quality
+        unit = RealEstateUnit(id=unit_id, condition=0.85, rent_price=120.0)
+        state.real_estate_units = [unit]
+
+        # 4. Create Snapshot
+        snapshot = factory.create_snapshot(state)
+
+        # 5. Assertions
+        assert isinstance(snapshot.housing, HousingMarketSnapshotDTO)
+        assert len(snapshot.housing.for_sale_units) == 1
+        unit_dto = snapshot.housing.for_sale_units[0]
+        assert isinstance(unit_dto, HousingMarketUnitDTO)
+        assert unit_dto.unit_id == item_id
+        assert unit_dto.price == 25000.0
+        assert unit_dto.quality == 0.85
+        assert unit_dto.rent_price == 120.0
 
 class TestDecisionInputFactory:
     def test_create_decision_input(self):

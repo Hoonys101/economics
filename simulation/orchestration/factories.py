@@ -99,19 +99,36 @@ class MarketSnapshotFactory:
         housing_market = state.markets.get("housing")
         housing_data = state.market_data.get("housing_market", {})
 
+        # Create a lookup map for units if registry is available
+        unit_map = {}
+        if hasattr(state, 'real_estate_units') and state.real_estate_units:
+            unit_map = {getattr(u, 'id'): u for u in state.real_estate_units}
+
         for_sale_units = []
         if housing_market and hasattr(housing_market, "sell_orders"):
              for item_id, sell_orders in housing_market.sell_orders.items():
                 if item_id.startswith("unit_") and sell_orders:
                     # Taking the best price (lowest ask)
                     order = sell_orders[0]
-                    # Quality is not on OrderDTO, assume default 1.0 or TODO: fetch from unit registry
+
+                    # Fetch quality (condition) and rent_price from unit registry
                     quality = 1.0
+                    rent_price = None
+                    try:
+                        unit_id_str = item_id.split("_")[1]
+                        unit_id = int(unit_id_str)
+                        unit = unit_map.get(unit_id)
+                        if unit:
+                            quality = getattr(unit, 'condition', 1.0)
+                            rent_price = getattr(unit, 'rent_price', None)
+                    except (IndexError, ValueError):
+                        pass
 
                     for_sale_units.append(HousingMarketUnitDTO(
                         unit_id=item_id,
                         price=order.price,
-                        quality=quality
+                        quality=quality,
+                        rent_price=rent_price
                     ))
 
         return HousingMarketSnapshotDTO(
