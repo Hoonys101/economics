@@ -19,7 +19,7 @@ from simulation.dtos import DecisionContext, FiscalContext, MacroFinancialContex
 
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from simulation.portfolio import Portfolio
-from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, InventorySlot
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, InventorySlot, ItemDTO, InventorySlotDTO, AgentStateDTO
 
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
@@ -337,10 +337,20 @@ class Household(
         }
 
     def get_current_state(self) -> AgentStateDTO:
+        main_items = [
+            ItemDTO(name=k, quantity=v, quality=self.get_quality(k, InventorySlot.MAIN))
+            for k, v in self._econ_state.inventory.items()
+        ]
+
+        inventories = {
+            InventorySlot.MAIN.name: InventorySlotDTO(items=main_items)
+        }
+
         return AgentStateDTO(
             assets=self._econ_state.wallet.get_all_balances(),
-            inventory=self._econ_state.inventory.copy(),
-            is_active=self.is_active
+            is_active=self.is_active,
+            inventories=inventories,
+            inventory=None
         )
 
     def load_state(self, state: AgentStateDTO) -> None:
@@ -348,8 +358,20 @@ class Household(
              self.logger.warning(f"Agent {self.id}: load_state called with assets, but direct loading is disabled for integrity. Assets ignored: {state.assets}")
 
         self._econ_state.inventory.clear()
-        self._econ_state.inventory.update(state.inventory)
+        self._econ_state.inventory_quality.clear()
         self.is_active = state.is_active
+
+        # Restore from inventories
+        if state.inventories:
+            main_slot = state.inventories.get(InventorySlot.MAIN.name)
+            if main_slot:
+                for item in main_slot.items:
+                    self._econ_state.inventory[item.name] = item.quantity
+                    self._econ_state.inventory_quality[item.name] = item.quality
+
+        # Fallback for legacy
+        elif state.inventory:
+            self._econ_state.inventory.update(state.inventory)
 
     @property
     def is_active(self) -> bool:

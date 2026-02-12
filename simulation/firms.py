@@ -16,7 +16,7 @@ from simulation.dtos.firm_state_dto import FirmStateDTO, IFirmStateProvider
 from simulation.dtos.department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from simulation.ai.enums import Personality
 from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO, ICurrencyHolder
-from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, IConfigurable, LiquidationConfigDTO, InventorySlot
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, IConfigurable, LiquidationConfigDTO, InventorySlot, ItemDTO, InventorySlotDTO
 from dataclasses import replace
 
 # Orchestrator-Engine Refactor
@@ -229,10 +229,26 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         }
 
     def get_current_state(self) -> AgentStateDTO:
+        # Convert inventories to DTOs
+        main_items = [
+            ItemDTO(name=k, quantity=v, quality=self.get_quality(k, InventorySlot.MAIN))
+            for k, v in self._inventory.items()
+        ]
+        input_items = [
+            ItemDTO(name=k, quantity=v, quality=self.get_quality(k, InventorySlot.INPUT))
+            for k, v in self._input_inventory.items()
+        ]
+
+        inventories = {
+            InventorySlot.MAIN.name: InventorySlotDTO(items=main_items),
+            InventorySlot.INPUT.name: InventorySlotDTO(items=input_items)
+        }
+
         return AgentStateDTO(
             assets=self._wallet.get_all_balances(),
-            inventory=self._inventory.copy(),
-            is_active=self.is_active
+            is_active=self.is_active,
+            inventories=inventories,
+            inventory=None
         )
 
     def load_state(self, state: AgentStateDTO) -> None:
@@ -240,8 +256,32 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
              self.logger.warning(f"Agent {self.id}: load_state called with assets, but direct loading is disabled for integrity. Assets ignored: {state.assets}")
 
         self._inventory.clear()
-        self._inventory.update(state.inventory)
+        self.inventory_quality.clear()
+        self._input_inventory.clear()
+        self._input_inventory_quality.clear()
         self.is_active = state.is_active
+
+        # Restore from inventories
+        if state.inventories:
+            for slot_name, slot_dto in state.inventories.items():
+                slot = InventorySlot[slot_name] if slot_name in InventorySlot.__members__ else None
+                if slot == InventorySlot.MAIN:
+                    target_inv = self._inventory
+                    target_qual = self.inventory_quality
+                elif slot == InventorySlot.INPUT:
+                    target_inv = self._input_inventory
+                    target_qual = self._input_inventory_quality
+                else:
+                    self.logger.warning(f"Unknown inventory slot in load_state: {slot_name}")
+                    continue
+
+                for item in slot_dto.items:
+                    target_inv[item.name] = item.quantity
+                    target_qual[item.name] = item.quality
+
+        # Fallback for legacy state
+        elif state.inventory:
+             self._inventory.update(state.inventory)
 
     @property
     def wallet(self) -> Wallet:

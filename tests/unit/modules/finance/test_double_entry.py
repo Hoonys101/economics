@@ -20,6 +20,11 @@ class MockGovernment:
 
     @property
     def assets(self): return self._assets
+    @property
+    def total_debt(self): return getattr(self, '_total_debt', 0)
+    @total_debt.setter
+    def total_debt(self, value): self._total_debt = value
+
     def get_debt_to_gdp_ratio(self):
         return 0.5
     # Deprecated methods for Phase 3 but kept for interface compliance
@@ -157,13 +162,14 @@ class TestDoubleEntry(unittest.TestCase):
         self.assertEqual(cmd.amount, bailout_amount)
 
 
-    @pytest.mark.xfail(reason="QE buyer logic is not implemented in FinanceSystem refactor")
     def test_qe_bond_issuance_generates_transaction(self):
         """
         Verify that issuing bonds under QE generates correct transaction.
         """
         # Force high yield to trigger QE
-        self.mock_gov.get_debt_to_gdp_ratio = lambda: 1.5
+        self.mock_gov.total_debt = 160
+        self.mock_gov.sensory_data = MagicMock()
+        self.mock_gov.sensory_data.current_gdp = 100.0
 
         initial_gov_assets = self.mock_gov.assets
         initial_cb_cash = self.mock_cb.assets['cash']
@@ -172,15 +178,15 @@ class TestDoubleEntry(unittest.TestCase):
         bonds, txs = self.finance_system.issue_treasury_bonds(bond_amount, current_tick=1)
 
         # Assertions
-        # Assets Unchanged
-        self.assertEqual(self.mock_gov.assets, initial_gov_assets)
-        self.assertEqual(self.mock_cb.assets['cash'], initial_cb_cash)
+        # Assets Changed (Synchronous Transfer)
+        self.assertEqual(self.mock_gov.assets, initial_gov_assets + bond_amount)
+        self.assertEqual(self.mock_cb.assets['cash'], initial_cb_cash - bond_amount)
 
         # Transaction Generated
         self.assertEqual(len(txs), 1)
         if len(txs) > 0:
             tx = txs[0]
-            self.assertEqual(tx.buyer_id, self.mock_cb.id) # FAIL: Logic uses bank.id
+            self.assertEqual(tx.buyer_id, self.mock_cb.id)
             self.assertEqual(tx.seller_id, self.mock_gov.id)
             self.assertEqual(tx.price, bond_amount)
 

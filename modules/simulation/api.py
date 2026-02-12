@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol, TypedDict, Any, List, Dict, Optional, TYPE_CHECKING, runtime_checkable, NewType, Literal, Union
 from enum import Enum, auto
 
@@ -32,11 +32,22 @@ class AgentCoreConfigDTO:
     memory_interface: Optional["MemoryV2Interface"]
 
 @dataclass
+class ItemDTO:
+    name: str
+    quantity: float
+    quality: float = 1.0
+
+@dataclass
+class InventorySlotDTO:
+    items: List[ItemDTO] = field(default_factory=list)
+
+@dataclass
 class AgentStateDTO:
     """A snapshot of an agent's mutable state."""
     assets: Dict[CurrencyCode, float]
-    inventory: Dict[str, float]
     is_active: bool
+    inventories: Dict[str, InventorySlotDTO] = field(default_factory=dict)
+    inventory: Optional[Dict[str, float]] = None # Deprecated
 
 class AgentSensorySnapshotDTO(TypedDict):
     """

@@ -250,21 +250,42 @@ class FinanceSystem(IFinanceSystem):
 
         bond_id = f"BOND_{current_tick}_{len(self.ledger.treasury.bonds)}"
 
-        # Decide Buyer (Bank)
+        # Decide Buyer (QE Logic)
+        buyer_agent = self.bank
         buyer_id = self.bank.id
 
-        # Check bank funds in Ledger
-        bank_reserves = 0
-        if buyer_id in self.ledger.banks:
-            bank_reserves = self.ledger.banks[buyer_id].reserves.get(DEFAULT_CURRENCY, 0)
+        # QE Trigger Check
+        qe_threshold = 1.5
+        if hasattr(self.config_module, 'get'):
+             qe_threshold = self.config_module.get("economy_params.QE_DEBT_TO_GDP_THRESHOLD", 1.5)
 
-        if bank_reserves < amount:
-            return [], []
+        current_gdp = 1.0
+        if hasattr(self.government, 'sensory_data') and self.government.sensory_data and self.government.sensory_data.current_gdp > 0:
+            current_gdp = self.government.sensory_data.current_gdp
+
+        # Use Government's tracked debt or calculate from ledger
+        total_debt = self.government.total_debt
+
+        debt_to_gdp = total_debt / current_gdp
+
+        if debt_to_gdp > qe_threshold:
+            buyer_agent = self.central_bank
+            buyer_id = self.central_bank.id
+            logger.info(f"QE_ACTIVATED | Debt/GDP: {debt_to_gdp:.2f} > {qe_threshold}. Buyer: Central Bank")
+
+        # Check funds in Ledger (only for Commercial Bank)
+        if buyer_id == self.bank.id:
+            bank_reserves = 0
+            if buyer_id in self.ledger.banks:
+                bank_reserves = self.ledger.banks[buyer_id].reserves.get(DEFAULT_CURRENCY, 0)
+
+            if bank_reserves < amount:
+                 logger.warning(f"BOND_ISSUANCE_SKIPPED | Bank {buyer_id} insufficient reserves: {bank_reserves} < {amount}")
+                 return [], []
 
         # Execute Transfer via SettlementSystem (Synchronous Update of Agent Wallets)
         if self.settlement_system:
             # We must use the agent objects, not just IDs
-            buyer_agent = self.bank
             seller_agent = self.government
 
             success = self.settlement_system.transfer(
@@ -276,7 +297,7 @@ class FinanceSystem(IFinanceSystem):
             )
 
             if not success:
-                logger.warning(f"BOND_ISSUANCE_FAILED | Settlement transfer failed for amount {amount}")
+                logger.warning(f"BOND_ISSUANCE_FAILED | Settlement transfer failed for amount {amount}. Buyer: {buyer_id}")
                 return [], []
         else:
              logger.warning("BOND_ISSUANCE_WARNING | No SettlementSystem attached. Wallet updates skipped.")
