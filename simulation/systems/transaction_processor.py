@@ -47,9 +47,10 @@ class TransactionProcessor(SystemInterface):
 
         Args:
             state: The current simulation state DTO.
-            transactions: Optional list of transactions to process.
-                          If provided, this list is used instead of state.transactions.
-                          Useful when processing a combined list of drained and current transactions.
+            transactions: Optional iterable of transactions to process.
+                          Note: This parameter supports single-pass iterators (e.g., itertools.chain).
+                          Avoid multiple passes or sequence-specific operations (len, indexing).
+                          If provided, this is used instead of state.transactions.
 
         Returns:
             List[SettlementResultDTO]: Results of executed transactions.

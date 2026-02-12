@@ -34,9 +34,14 @@ The `TransactionProcessor.execute` method was audited to ensure it is compatible
 1.  It iterates over `transactions` exactly once using a `for` loop.
 2.  It does not use `len()` or indexing on the `transactions` parameter.
 3.  It does not pass the `transactions` object to any other functions that might require multi-pass access.
+4.  Type hints were updated to `Iterable[Transaction]` to explicitly communicate this constraint.
+5.  Docstrings were updated with a warning about single-pass iterator support.
 
 ### Recommendation:
 For future optimizations involving iterators, ensure that downstream consumers are documented as "single-pass" compatible or use `itertools.tee` if multi-pass is required (though `tee` has its own memory trade-offs).
+
+## Repository Hygiene and Snapshot Cleanup
+As part of this PR, several transient snapshot files located in `reports/snapshots/` (specifically those from 2026-02-12) were removed. These files were generated during local validation and performance benchmarking. Their removal is intentional to maintain repository hygiene and ensure that execution artifacts do not pollute the codebase.
 
 ## Status
 Implemented and verified with unit and integration tests.
