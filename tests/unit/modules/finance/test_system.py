@@ -45,6 +45,8 @@ class StubGovernment:
         self.debt_to_gdp_ratio = 0.5
         self.wallet = Mock()
         self.wallet.get_balance.return_value = assets
+        self.sensory_data = Mock()
+        self.sensory_data.current_gdp = 100000.0
 
     @property
     def assets(self):

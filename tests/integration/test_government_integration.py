@@ -9,7 +9,7 @@ def mock_config():
     config.UNEMPLOYMENT_BENEFIT_RATIO = 0.5
     config.ANNUAL_WEALTH_TAX_RATE = 0.02
     config.TICKS_PER_YEAR = 100
-    config.WEALTH_TAX_THRESHOLD = 1000.0 # 1000 dollars. Code converts to pennies * 100 -> 100,000 pennies
+    config.WEALTH_TAX_THRESHOLD = 100000 # 1000.00 dollars -> 100000 pennies
     config.STIMULUS_TRIGGER_GDP_DROP = -0.1
     config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
     config.GOODS_INITIAL_PRICE = {"basic_food": 10}
@@ -84,7 +84,7 @@ def test_government_execute_social_policy_tax_and_welfare(government):
     assert args0[3] == "wealth_tax"
 
     # Check Welfare Call
-    # Benefit = 20 (survival) * 0.5 = 10
+    # Benefit = max(20, 1000) * 0.5 = 500 (Floor at 1000 pennies applied)
     args1, kwargs1 = transfer_calls[1]
 
     payer_val = args1[0]
@@ -94,7 +94,7 @@ def test_government_execute_social_policy_tax_and_welfare(government):
         assert str(payer_val) == "GOVERNMENT" or str(payer_val) == str(government.id)
 
     assert args1[1].id == poor_agent.id
-    assert args1[2] == 10
+    assert args1[2] == 500
     assert args1[3] == "welfare_support_unemployment"
 
     # Check Revenue Recorded
@@ -102,4 +102,4 @@ def test_government_execute_social_policy_tax_and_welfare(government):
 
     # Check Expenditure Recorded
     # finalize_tick not called yet, but Manager tracks it.
-    assert government.welfare_manager.get_spending_this_tick() == 10
+    assert government.welfare_manager.get_spending_this_tick() == 500

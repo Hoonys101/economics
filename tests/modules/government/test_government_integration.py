@@ -10,7 +10,7 @@ def mock_config():
     config = MagicMock()
     config.TICKS_PER_YEAR = 100
     config.ANNUAL_WEALTH_TAX_RATE = 0.01
-    config.WEALTH_TAX_THRESHOLD = 1000.0
+    config.WEALTH_TAX_THRESHOLD = 100000 # 1000.00 dollars -> 100000 pennies
     config.UNEMPLOYMENT_BENEFIT_RATIO = 0.5
     config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
     config.GOODS_INITIAL_PRICE = {"basic_food": 10.0}
@@ -36,12 +36,14 @@ def test_execute_social_policy_integration(mock_config):
     agent.is_active = True
     agent.is_employed = False
     agent.assets = {DEFAULT_CURRENCY: 50000} # $500
+    # Mock get_balance to return int for TaxService
+    agent.get_balance.return_value = 50000
     # needs is not strictly required by WelfareManager anymore but good for complete mock
     agent.needs = {}
 
     agents = [agent]
     market_data = {
-        "goods_market": {"basic_food_current_sell_price": 1000.0}, # $10
+        "goods_market": {"basic_food_current_sell_price": 10.0}, # $10
         "total_production": 1000.0
     }
 
@@ -92,11 +94,12 @@ def test_execute_social_policy_tax_and_welfare(mock_config):
     # Rate = 0.01 / 100 = 0.0001 per tick.
     # Tax = 100,000 * 0.0001 = 10 pennies.
     agent.assets = {DEFAULT_CURRENCY: 200000}
+    agent.get_balance.return_value = 200000
     agent.needs = {}
 
     agents = [agent]
     market_data = {
-        "goods_market": {"basic_food_current_sell_price": 1000.0},
+        "goods_market": {"basic_food_current_sell_price": 10.0},
         "total_production": 1000.0
     }
     gov.gdp_history = [1000.0] * 20

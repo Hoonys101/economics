@@ -22,7 +22,8 @@ class TestFiscalPolicyManager:
 
     def test_determine_fiscal_stance_calculates_survival_cost_correctly(self, manager, mock_config):
         # Setup
-        market_data = {'goods_market': {'basic_food_current_sell_price': 1000.0}} # $10
+        # Input 10.0 (Dollars) is converted to 1000 pennies inside manager (10.0 * 100)
+        market_data = {'goods_market': {'basic_food_current_sell_price': 10.0}} # $10
         snapshot = MarketSnapshotDTO(tick=1, market_signals={}, market_data=market_data)
 
         # Execute
