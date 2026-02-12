@@ -36,7 +36,6 @@ def test_government_execute_social_policy_tax_and_welfare(government):
     rich_agent.is_active = True
     rich_agent.is_employed = True
     rich_agent.needs = {}
-    rich_agent.assets = {DEFAULT_CURRENCY: 2000000} # Net worth 2M pennies.
     # Mock get_balance to support engines using IFinancialAgent
     rich_agent.get_balance.return_value = 2000000
     # Mock get_assets_by_currency for ICurrencyHolder
@@ -48,7 +47,6 @@ def test_government_execute_social_policy_tax_and_welfare(government):
     poor_agent.is_active = True
     poor_agent.is_employed = False
     poor_agent.needs = {}
-    poor_agent.assets = {DEFAULT_CURRENCY: 100}
     poor_agent.get_balance.return_value = 100
     poor_agent.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 100}
 

@@ -110,14 +110,16 @@ class TaxService(ITaxService):
 
              if hasattr(agent, "needs") and hasattr(agent, "is_employed"):
                 net_worth = 0
-                assets = getattr(agent, "assets", 0)
-                if isinstance(assets, dict):
-                     # Handle float values in dict if legacy
-                     val = assets.get(DEFAULT_CURRENCY, 0)
-                     net_worth = int(val)
+                if hasattr(agent, "get_balance"):
+                    net_worth = agent.get_balance(DEFAULT_CURRENCY)
                 else:
-                     # Handle float assets if legacy
-                     net_worth = int(assets)
+                    # Legacy fallback
+                    assets = getattr(agent, "assets", 0)
+                    if isinstance(assets, dict):
+                         val = assets.get(DEFAULT_CURRENCY, 0)
+                         net_worth = int(val)
+                    else:
+                         net_worth = int(assets)
 
                 tax_amount = self.calculate_wealth_tax(net_worth)
 

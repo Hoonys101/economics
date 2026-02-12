@@ -16,11 +16,11 @@ class MockAgent:
         self._econ_state = MagicMock()
         self._econ_state.assets = self.assets
 
-    def deposit(self, amount, currency="USD"):
+    def _deposit(self, amount, currency="USD"):
         self.assets += amount
         self._econ_state.assets = self.assets
 
-    def withdraw(self, amount, currency="USD"):
+    def _withdraw(self, amount, currency="USD"):
         if self.id != ID_CENTRAL_BANK and self.assets < amount:
             from modules.finance.api import InsufficientFundsError
             raise InsufficientFundsError("Insufficient Funds")
@@ -28,6 +28,13 @@ class MockAgent:
         self._econ_state.assets = self.assets
 
     def get_balance(self, currency="USD"):
+        return self.assets
+
+    def get_all_balances(self):
+        return {"USD": self.assets}
+
+    @property
+    def total_wealth(self) -> int:
         return self.assets
 
 @pytest.fixture
@@ -121,13 +128,13 @@ def test_process_omo_purchase_transaction(omo_setup):
     )
     state.transactions = [tx]
 
-    initial_hh_assets = household._econ_state.assets
+    initial_hh_assets = household.get_balance()
     initial_money_issued = gov_agent.total_money_issued
 
     tx_manager.execute(state)
 
     # Verify Household got paid
-    assert household._econ_state.assets == initial_hh_assets + trade_price
+    assert household.get_balance() == initial_hh_assets + trade_price
 
     # Verify Gov Ledger Updated (Minting)
     assert gov_agent.total_money_issued == initial_money_issued + trade_price
@@ -150,13 +157,13 @@ def test_process_omo_sale_transaction(omo_setup):
     )
     state.transactions = [tx]
 
-    initial_hh_assets = household._econ_state.assets
+    initial_hh_assets = household.get_balance()
     initial_money_destroyed = gov_agent.total_money_destroyed
 
     tx_manager.execute(state)
 
     # Verify Household paid
-    assert household._econ_state.assets == initial_hh_assets - trade_price
+    assert household.get_balance() == initial_hh_assets - trade_price
 
     # Verify Gov Ledger Updated (Burning)
     assert gov_agent.total_money_destroyed == initial_money_destroyed + trade_price

@@ -8,11 +8,11 @@ class MockAgent:
         self.id = id
         self.assets = int(assets)
 
-    def deposit(self, amount: int, currency=DEFAULT_CURRENCY):
+    def _deposit(self, amount: int, currency=DEFAULT_CURRENCY):
         if amount < 0: raise ValueError("Negative deposit")
         self.assets += amount
 
-    def withdraw(self, amount: int, currency=DEFAULT_CURRENCY):
+    def _withdraw(self, amount: int, currency=DEFAULT_CURRENCY):
         if amount < 0: raise ValueError("Negative withdraw")
         # SettlementSystem checks assets property manually before calling withdraw,
         # but pure withdraw should also work.
@@ -23,6 +23,13 @@ class MockAgent:
         self.assets -= amount
 
     def get_balance(self, currency=DEFAULT_CURRENCY) -> int:
+        return self.assets
+
+    def get_all_balances(self):
+        return {DEFAULT_CURRENCY: self.assets}
+
+    @property
+    def total_wealth(self) -> int:
         return self.assets
 
 def test_settle_atomic_success():
@@ -39,9 +46,9 @@ def test_settle_atomic_success():
     success = settlement.settle_atomic(debit_agent, credits, tick=1)
 
     assert success is True
-    assert debit_agent.assets == 5000
-    assert credit_agent1.assets == 3000
-    assert credit_agent2.assets == 2000
+    assert debit_agent.get_balance() == 5000
+    assert credit_agent1.get_balance() == 3000
+    assert credit_agent2.get_balance() == 2000
 
 def test_settle_atomic_rollback():
     settlement = SettlementSystem()
@@ -50,7 +57,7 @@ def test_settle_atomic_rollback():
     credit_agent2 = MockAgent(3, 0)
 
     # Mock credit_agent2 to fail on deposit
-    credit_agent2.deposit = MagicMock(side_effect=Exception("Bank Frozen"))
+    credit_agent2._deposit = MagicMock(side_effect=Exception("Bank Frozen"))
 
     credits = [
         (credit_agent1, 3000, "c1"),
@@ -60,8 +67,8 @@ def test_settle_atomic_rollback():
     success = settlement.settle_atomic(debit_agent, credits, tick=1)
 
     assert success is False
-    assert debit_agent.assets == 10000 # Full refund
-    assert credit_agent1.assets == 0 # Rolled back
+    assert debit_agent.get_balance() == 10000 # Full refund
+    assert credit_agent1.get_balance() == 0 # Rolled back
 
     # Verify that credit_agent2.deposit was called
-    credit_agent2.deposit.assert_called_once()
+    credit_agent2._deposit.assert_called_once()

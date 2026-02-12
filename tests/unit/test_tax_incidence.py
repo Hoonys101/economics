@@ -156,9 +156,9 @@ class TestTaxIncidence(unittest.TestCase):
         
         # 가계: 100000 + (10000 - 1625) = 108375 (Progressive Tax)
         # 기업: 500000 - 10000 = 490000
-        self.assertEqual(h.assets, 108375)
-        self.assertEqual(f.assets, 490000)
-        self.assertEqual(sim.government.assets, 1625)
+        self.assertEqual(h.get_balance(DEFAULT_CURRENCY), 108375)
+        self.assertEqual(f.get_balance(DEFAULT_CURRENCY), 490000)
+        self.assertEqual(sim.government.get_balance(DEFAULT_CURRENCY), 1625)
         print("✓ Household Payer (Withholding): Agent Assets Correct")
 
     def test_firm_payer_scenario(self):
@@ -175,9 +175,9 @@ class TestTaxIncidence(unittest.TestCase):
         
         # 가계: 100000 + 10000 = 110000
         # 기업: 500000 - (10000 + 1625) = 488375
-        self.assertEqual(h.assets, 110000)
-        self.assertEqual(f.assets, 488375)
-        self.assertEqual(sim.government.assets, 1625)
+        self.assertEqual(h.get_balance(DEFAULT_CURRENCY), 110000)
+        self.assertEqual(f.get_balance(DEFAULT_CURRENCY), 488375)
+        self.assertEqual(sim.government.get_balance(DEFAULT_CURRENCY), 1625)
         print("✓ Firm Payer (Extra Tax): Agent Assets Correct")
 
 if __name__ == "__main__":

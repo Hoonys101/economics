@@ -419,8 +419,8 @@ class TestSimulation:
     ):
         buyer_hh = mock_households[0]
         seller_firm = mock_firms[0]
-        initial_buyer_assets = buyer_hh.assets
-        initial_seller_assets = seller_firm.wallet.get_balance(DEFAULT_CURRENCY)
+        initial_buyer_assets = buyer_hh.get_balance(DEFAULT_CURRENCY)
+        initial_seller_assets = seller_firm.get_balance(DEFAULT_CURRENCY)
         initial_seller_inventory = seller_firm.get_quantity("basic_food")
         initial_buyer_inventory = buyer_hh.inventory.get("basic_food", 0)
 
@@ -440,8 +440,8 @@ class TestSimulation:
         trade_value = tx.quantity * tx.price
         from modules.finance.utils.currency_math import round_to_pennies
         tax = round_to_pennies(trade_value * simulation_instance.config_module.SALES_TAX_RATE)
-        assert buyer_hh.assets == initial_buyer_assets - (trade_value + tax)
-        assert seller_firm.wallet.get_balance(DEFAULT_CURRENCY) == initial_seller_assets + trade_value
+        assert buyer_hh.get_balance(DEFAULT_CURRENCY) == initial_buyer_assets - (trade_value + tax)
+        assert seller_firm.get_balance(DEFAULT_CURRENCY) == initial_seller_assets + trade_value
         assert (
             seller_firm.get_quantity("basic_food")
             == initial_seller_inventory - tx.quantity
@@ -458,8 +458,8 @@ class TestSimulation:
     ):
         buyer_firm = mock_firms[0]
         seller_hh = mock_households[0]
-        initial_buyer_assets = buyer_firm.wallet.get_balance(DEFAULT_CURRENCY)
-        initial_seller_assets = seller_hh.assets
+        initial_buyer_assets = buyer_firm.get_balance(DEFAULT_CURRENCY)
+        initial_seller_assets = seller_hh.get_balance(DEFAULT_CURRENCY)
 
         seller_hh.is_employed = False
         buyer_firm.hr_state.employees = []
@@ -493,8 +493,8 @@ class TestSimulation:
         # tax = 1.25
         tax = 2.0
 
-        assert buyer_firm.wallet.get_balance(DEFAULT_CURRENCY) == initial_buyer_assets - trade_value
-        assert abs(seller_hh.assets - (initial_seller_assets + (trade_value - tax))) < 1e-9
+        assert buyer_firm.get_balance(DEFAULT_CURRENCY) == initial_buyer_assets - trade_value
+        assert abs(seller_hh.get_balance(DEFAULT_CURRENCY) - (initial_seller_assets + (trade_value - tax))) < 1e-9
         assert seller_hh.is_employed is True
         assert seller_hh.employer_id == buyer_firm.id
         assert seller_hh.needs["labor_need"] == 0.0
@@ -549,13 +549,13 @@ class TestSimulation:
         tx_invalid_seller.price = 1.0
         tx_invalid_seller.transaction_type = "goods"
 
-        initial_hh_assets = mock_households[0].assets
-        initial_firm_assets = mock_firms[0].assets
+        initial_hh_assets = mock_households[0].get_balance(DEFAULT_CURRENCY)
+        initial_firm_assets = mock_firms[0].get_balance(DEFAULT_CURRENCY)
 
         simulation_instance._process_transactions([tx_invalid_buyer, tx_invalid_seller])
 
-        assert mock_households[0].assets == initial_hh_assets
-        assert mock_firms[0].assets == initial_firm_assets
+        assert mock_households[0].get_balance(DEFAULT_CURRENCY) == initial_hh_assets
+        assert mock_firms[0].get_balance(DEFAULT_CURRENCY) == initial_firm_assets
 
 
 # Fixtures for the new test case

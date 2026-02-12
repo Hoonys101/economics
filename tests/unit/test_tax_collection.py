@@ -22,20 +22,19 @@ class MockConfig:
 class MockAgent:
     def __init__(self, id, assets):
         self.id = id
-        self._assets = assets
+        self._wallet = {DEFAULT_CURRENCY: assets}
         self.is_active = True
         self.is_employed = True
         self.needs = {"labor_need": 0}
 
-    @property
-    def assets(self):
-        return self._assets
+    def get_balance(self, currency=DEFAULT_CURRENCY):
+        return self._wallet.get(currency, 0)
 
-    def _add_assets(self, amount):
-        self._assets += amount
+    def _deposit(self, amount, currency=DEFAULT_CURRENCY):
+        self._wallet[currency] = self._wallet.get(currency, 0) + amount
 
-    def _sub_assets(self, amount):
-        self._assets -= amount
+    def _withdraw(self, amount, currency=DEFAULT_CURRENCY):
+        self._wallet[currency] = self._wallet.get(currency, 0) - amount
 
 class MockSettlementSystem:
     def __init__(self):
@@ -48,14 +47,16 @@ class MockSettlementSystem:
             "amount": amount,
             "memo": memo
         })
-        if debit_agent.assets >= amount:
-            debit_agent._sub_assets(amount)
-            if hasattr(credit_agent, 'deposit'):
-                 credit_agent.deposit(amount)
-            else:
-                 credit_agent._add_assets(amount)
+        # Use IFinancialAgent methods
+        currency = kwargs.get('currency', DEFAULT_CURRENCY)
+        if debit_agent.get_balance(currency) >= amount:
+            debit_agent._withdraw(amount, currency)
+            credit_agent._deposit(amount, currency)
             return True
         return False
+
+    def get_balance(self, agent_id, currency=DEFAULT_CURRENCY):
+        return 0 # Not used in these specific tests as assertions check objects directly
 
 def test_atomic_wealth_tax_collection_success():
     config = MockConfig()
@@ -75,8 +76,8 @@ def test_atomic_wealth_tax_collection_success():
     txs = gov.run_welfare_check([household], market_data, current_tick=1)
 
     # Check assets transferred
-    assert household.assets == 200000 - 20
-    assert gov.assets == 20
+    assert household.get_balance() == 200000 - 20
+    assert gov.get_balance() == 20
 
     # Check stats
     assert gov.total_collected_tax[DEFAULT_CURRENCY] == 20
@@ -105,8 +106,8 @@ def test_atomic_wealth_tax_collection_insufficient_funds():
     gov.run_welfare_check([household], market_data, current_tick=1)
 
     # Assets unchanged
-    assert household.assets == 200000
-    assert gov.assets == 0
+    assert household.get_balance() == 200000
+    assert gov.get_balance() == 0
 
     # Stats unchanged
     assert gov.total_collected_tax[DEFAULT_CURRENCY] == 0
@@ -125,8 +126,8 @@ def test_government_collect_tax_adapter_success():
 
     assert collected['amount_collected'] == 1000
     assert collected['success'] is True
-    assert payer.assets == 9000
-    assert gov.assets == 1000
+    assert payer.get_balance() == 9000
+    assert gov.get_balance() == 1000
     assert gov.total_collected_tax[DEFAULT_CURRENCY] == 1000
     assert gov.tax_revenue["test_tax"] == 1000
 
@@ -143,7 +144,7 @@ def test_government_collect_tax_adapter_failure():
 
     assert collected['amount_collected'] == 0
     assert collected['success'] is False
-    assert payer.assets == 500
-    assert gov.assets == 0
+    assert payer.get_balance() == 500
+    assert gov.get_balance() == 0
     assert gov.total_collected_tax[DEFAULT_CURRENCY] == 0
     assert "test_tax" not in gov.tax_revenue

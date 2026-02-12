@@ -128,28 +128,25 @@ def test_mitosis_zero_sum_logic(golden_config, golden_households):
     parent = create_real_household_from_golden(mock_h, golden_config)
     # Fix: Access wallet via interface
     # Reset wallet for deterministic test
-    # parent.withdraw(parent.assets)
-    # parent.deposit(10000.0)
-    # Or just overwrite for test
     from modules.system.api import DEFAULT_CURRENCY
     parent._econ_state.wallet._balances[DEFAULT_CURRENCY] = 10000.0
 
-    initial_total_assets = parent.assets
+    initial_total_assets = parent.get_balance(DEFAULT_CURRENCY)
 
     # Simulate Mitosis (DemographicManager logic)
     # 1. Determine split amount (e.g., 50% for fission, or 10% for birth)
-    split_amount = parent.assets * 0.5
+    split_amount = int(parent.get_balance(DEFAULT_CURRENCY) * 0.5)
 
     # 2. Deduct from parent (Manual deduction as in manager logic)
-    parent.withdraw(split_amount)
+    parent._withdraw(split_amount)
 
     # 3. Create child with deducted amount
     child = parent.clone(new_id=999, initial_assets_from_parent=split_amount, current_tick=100)
 
     # Assertions
-    assert child.assets == split_amount
-    assert parent.assets == initial_total_assets - split_amount
-    assert parent.assets + child.assets == initial_total_assets
+    assert child.get_balance(DEFAULT_CURRENCY) == split_amount
+    assert parent.get_balance(DEFAULT_CURRENCY) == initial_total_assets - split_amount
+    assert parent.get_balance(DEFAULT_CURRENCY) + child.get_balance(DEFAULT_CURRENCY) == initial_total_assets
     assert child.id == 999
 
 def test_mitosis_stock_inheritance(golden_config, golden_households):

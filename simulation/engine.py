@@ -14,6 +14,7 @@ from simulation.orchestration.command_service import CommandService
 from simulation.action_processor import ActionProcessor
 from simulation.models import Transaction
 from modules.simulation.api import EconomicIndicatorsDTO, SystemStateDTO
+from modules.system.api import DEFAULT_CURRENCY
 
 from simulation.db.logger import SimulationLogger
 import simulation
@@ -188,7 +189,10 @@ class Simulation:
 
         # Access Bank via world_state
         if self.world_state.bank:
-            bank_reserves = self.world_state.bank.assets
+            if hasattr(self.world_state.bank, "get_balance"):
+                bank_reserves = self.world_state.bank.get_balance(DEFAULT_CURRENCY)
+            else:
+                bank_reserves = getattr(self.world_state.bank, "assets", 0.0)
             # Bank deposits are stored in 'deposits' dict
             if hasattr(self.world_state.bank, "deposits"):
                 bank_deposits = sum(d.amount for d in self.world_state.bank.deposits.values())

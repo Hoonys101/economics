@@ -26,7 +26,7 @@ class TestInheritance:
 
         # Pre-test validation
         # Assert that selected households have sufficient and diverse assets
-        assert self.deceased.assets > 0, "Deceased must have assets"
+        assert self.deceased.get_balance() > 0, "Deceased must have assets"
 
         if not hasattr(self.deceased, 'shares_owned'):
             self.deceased.shares_owned = {}
@@ -44,13 +44,14 @@ class TestInheritance:
         # Setup Deceased State
         self.deceased.id = 1
         # Override assets for consistency with original test logic
-        self.deceased.assets = 50000.0
+        self.deceased._econ_state.wallet.clear()
+        self.deceased._deposit(50000)
         self.deceased.shares_owned = {}
         self.deceased.owned_properties = []
         self.deceased.children_ids = [self.heir.id] # Use dynamic ID from heir
 
         # Setup Heir State
-        self.heir.assets = 0.0
+        self.heir._econ_state.wallet.clear() # Reset assets
         self.heir.shares_owned = {}
         self.heir.is_active = True
         self.heir.owned_properties = []
@@ -59,10 +60,10 @@ class TestInheritance:
         self.simulation.settlement_system = MagicMock()
 
         def transfer_side_effect(sender, receiver, amount, memo=None):
-            if hasattr(sender, 'assets'):
-                sender.assets -= amount
-            if hasattr(receiver, 'assets'):
-                receiver.assets += amount
+            if hasattr(sender, '_withdraw'):
+                sender._withdraw(amount)
+            if hasattr(receiver, '_deposit'):
+                receiver._deposit(amount)
             return True
 
         self.simulation.settlement_system.transfer.side_effect = transfer_side_effect
@@ -82,11 +83,12 @@ class TestInheritance:
 
         self.government.record_revenue.assert_called()
         # Check heir assets ~ 34k
-        assert self.heir.assets == pytest.approx(34000.0)
+        assert self.heir.get_balance() == pytest.approx(34000.0)
 
     def test_liquidation_stocks(self):
         """Cash poor, Stock rich. Stocks sold to pay tax."""
-        self.deceased.assets = 1000.0 # Low cash
+        self.deceased._econ_state.wallet.clear()
+        self.deceased._deposit(1000.0) # Low cash
         self.deceased.portfolio.add(99, 100, 100.0) # 100 shares of Firm 99 @ 100.0
         # Value = 10000.0
         # Total Wealth = 11000.0
@@ -109,7 +111,7 @@ class TestInheritance:
         # Paid 4400.
         # Remaining 6600.
 
-        assert self.heir.assets == pytest.approx(6600.0)
+        assert self.heir.get_balance() == pytest.approx(6600.0)
         assert len(self.heir.portfolio.holdings) == 0 # No stocks inherited (Sold)
 
     def test_portfolio_merge(self):

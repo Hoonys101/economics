@@ -72,7 +72,7 @@ class GovernmentAI:
 
         # Debt Gap (calculated live, as it depends on current assets)
         current_gdp = self.agent.sensory_data.current_gdp
-        assets = getattr(self.agent, "assets", 0.0)
+        assets = getattr(self.agent, "total_wealth", getattr(self.agent, "assets", 0.0))
         debt = max(0.0, -assets)
         debt_ratio = debt / current_gdp if current_gdp > 0 else 0.0
         debt_gap_val = debt_ratio - 0.60 # Target Debt Ratio 60%
@@ -122,7 +122,7 @@ class GovernmentAI:
 
         # Recalculate debt ratio live
         current_gdp = self.agent.sensory_data.current_gdp
-        assets = getattr(self.agent, "assets", 0.0)
+        assets = getattr(self.agent, "total_wealth", getattr(self.agent, "assets", 0.0))
         debt = max(0.0, -assets)
         debt_ratio = debt / current_gdp if current_gdp > 0 else 0.0
 

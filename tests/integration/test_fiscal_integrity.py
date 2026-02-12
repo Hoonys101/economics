@@ -66,13 +66,13 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
     h1 = MagicMock(spec=Household)
     h1.id = 101
     h1.is_active = True
-    h1.assets = 0.0
+    h1.get_balance.return_value = 0.0
 
     households = [h1]
 
     # Check Initial State
-    initial_gov_assets = gov.assets
-    initial_bank_assets = bank.assets
+    initial_gov_assets = gov.total_wealth
+    initial_bank_assets = bank.total_wealth
 
     # Cost 5000. Gov has 1000. Deficit 4000.
     # Gov should issue 4000 bonds (synchronous).
@@ -150,7 +150,7 @@ def test_education_spending_generates_transactions_only():
     household.id = 10
     household._econ_state = MagicMock()
     household._econ_state.education_level = 0
-    household._econ_state.assets = 100.0
+    household.get_balance.return_value = 100.0
     household._bio_state = MagicMock()
     household._bio_state.is_active = True
     # Needed for education logic check

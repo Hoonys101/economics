@@ -483,7 +483,7 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
              is_solvent = self.finance_system.evaluate_solvency(firm, current_tick)
 
         financials: FirmFinancialsDTO = {
-            "assets": int(firm.assets) if hasattr(firm, 'assets') else 0,
+            "assets": int(firm.total_wealth) if hasattr(firm, 'total_wealth') else (int(firm.assets) if hasattr(firm, 'assets') else 0),
             "profit": 0, # Not easily available without deep inspection
             "is_solvent": is_solvent
         }

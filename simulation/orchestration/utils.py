@@ -93,13 +93,7 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
             if price <= 0:
                 price = state.stock_market.get_best_ask(firm.id) or 0
             if price <= 0:
-                # Refactor: Use finance.balance
-                assets = firm.finance.balance if hasattr(firm, 'finance') else firm.assets
-                # TD-024: Handle multi-currency assets safely
-                if isinstance(assets, dict):
-                    asset_val = assets.get(DEFAULT_CURRENCY, 0.0)
-                else:
-                    asset_val = float(assets)
+                asset_val = float(firm.get_balance(DEFAULT_CURRENCY))
                 price = asset_val / firm.total_shares if firm.total_shares > 0 else 10.0
             stock_market_data[firm_item_id] = {"avg_price": price}
 

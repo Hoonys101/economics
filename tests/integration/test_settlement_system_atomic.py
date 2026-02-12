@@ -21,7 +21,6 @@ def test_settlement_scenario_1_standard_inheritance(settlement_system, golden_ho
 
     # Setup Deceased Agent
     deceased.id = 101
-    deceased.assets = 1000
 
     portfolio_dto = PortfolioDTO(assets=[
         PortfolioAsset(asset_type="stock", asset_id="999", quantity=10.0)
@@ -79,7 +78,6 @@ def test_settlement_scenario_2_escheatment(settlement_system, golden_households,
 
     deceased = MagicMock(spec=MockSettlementAgent)
     deceased.id = 201
-    deceased.assets = 1000
 
     portfolio_dto = PortfolioDTO(assets=[
         PortfolioAsset(asset_type="stock", asset_id="123", quantity=50.0)
@@ -145,7 +143,6 @@ def test_settlement_scenario_3_insolvency(settlement_system, golden_households, 
 
     deceased = MagicMock(spec=MockSettlementAgent)
     deceased.id = 301
-    deceased.assets = 100
 
     portfolio_dto = PortfolioDTO(assets=[])
 
@@ -174,7 +171,6 @@ def test_settlement_scenario_3_insolvency(settlement_system, golden_households, 
 
     # Test Overdraft Protection
     # If we tried to pay 101...
-    deceased.assets = 100
     # Reset mock for new call
     deceased.get_balance = MagicMock(return_value=100)
     deceased._withdraw = MagicMock()
