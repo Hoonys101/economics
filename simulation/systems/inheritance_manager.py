@@ -180,6 +180,8 @@ class InheritanceManager:
             if child and child._bio_state.is_active:
                 heirs.append(child)
 
+        distribution_success = False
+
         if not heirs:
             # Escheatment (To Gov)
             if cash > 0:
@@ -199,6 +201,9 @@ class InheritanceManager:
                 results = simulation.transaction_processor.execute(simulation, [tx])
                 if results and results[0].success:
                     transactions.append(tx)
+                    distribution_success = True
+            else:
+                 distribution_success = True # No cash to distribute means success (nothing to do)
 
             # Escheat remaining Real Estate (Execute Synchronously)
             for unit in deceased_units:
@@ -237,6 +242,9 @@ class InheritanceManager:
                 results = simulation.transaction_processor.execute(simulation, [tx])
                 if results and results[0].success:
                     transactions.append(tx)
+                    distribution_success = True
+            else:
+                distribution_success = True
 
             # Distribute Real Estate (Round Robin - Synchronous)
             count = len(heirs)
@@ -260,9 +268,57 @@ class InheritanceManager:
                     tx.metadata["executed"] = True
                     transactions.append(tx)
 
+        # Fallback Escheatment Logic
+        if not distribution_success and cash > 0:
+             self.logger.warning(f"INHERITANCE_FALLBACK | Distribution failed for Agent {deceased.id}. Attempting fallback escheatment.")
+             tx = Transaction(
+                buyer_id=deceased.id,
+                seller_id=government.id,
+                item_id="escheatment_fallback",
+                quantity=1.0,
+                price=cash,
+                market_id="system",
+                transaction_type="escheatment",
+                time=current_tick,
+                metadata={"reason": "distribution_failed"}
+             )
+             results = simulation.transaction_processor.execute(simulation, [tx])
+             if results and results[0].success:
+                 transactions.append(tx)
+                 distribution_success = True
+                 self.logger.info("INHERITANCE_FALLBACK | Fallback successful.")
+             else:
+                 self.logger.error("INHERITANCE_FALLBACK_FAIL | Fallback failed.")
+
         # 5. TD-232: Removed execute_settlement as we dispatched transactions directly.
 
-        # 6. TD-232: Removed verify_and_close as no Settlement Account was created.
+        # 6. Final Sweep (Ensure Zero Leak)
+        # Check actual balance on agent to catch rounding errors or failed distributions
+        remaining_balance = 0.0
+        if isinstance(deceased._econ_state.assets, dict):
+             remaining_balance = deceased._econ_state.assets.get(DEFAULT_CURRENCY, 0.0)
+        else:
+             try:
+                 remaining_balance = float(deceased._econ_state.assets)
+             except (TypeError, ValueError):
+                 remaining_balance = 0.0
+
+        if remaining_balance > 0.01:
+             self.logger.warning(f"INHERITANCE_LEAK_DETECTED | Agent {deceased.id} has remaining {remaining_balance:.2f}. Sweeping to Gov.")
+             tx = Transaction(
+                buyer_id=deceased.id,
+                seller_id=government.id,
+                item_id="final_sweep",
+                quantity=1.0,
+                price=remaining_balance,
+                market_id="system",
+                transaction_type="final_sweep",
+                time=current_tick,
+                metadata={"reason": "final_sweep_leak_fix"}
+             )
+             results = simulation.transaction_processor.execute(simulation, [tx])
+             if results and results[0].success:
+                 transactions.append(tx)
 
         return transactions
 
