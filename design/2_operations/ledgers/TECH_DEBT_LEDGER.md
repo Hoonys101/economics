@@ -9,13 +9,11 @@
 | **TD-COCKPIT-FE** | Simulation | **Ghost Implementation**: FE missing sliders/HUD for Cockpit (Phase 11) despite BE readiness. | **Medium**: Logic usability gap. | Identified |
 | **TD-STR-GOD-DECOMP** | Architecture | **Residual God Classes**: `Firm` (1276 lines) and `Household` (1042 lines) exceed 800-line limit. | **Medium**: Maintenance friction. | Open |
 | **TD-ARCH-LEAK-CONTEXT** | Finance | **Abstraction Leak**: `LiquidationContext` passes agent interfaces instead of pure DTO snapshots. | **Low**: Future coupling risk. | Identified |
-| **TD-AGENT-STATE-INVFIRM** | Data/DTO | **Serialization Gap**: `AgentStateDTO` (save/load) does not support multi-slot inventories (e.g., `_input_inventory`). | **High**: Data loss on reload. | Open |
 | **TD-ARCH-LEAK-PROTI** | Architecture | **Interface Drift**: `IFinancialEntity` still defines `deposit/withdraw` which now raise errors. | **Medium**: Type safety friction. | Resolved |
 | **TD-ARCH-DI-SETTLE** | Architecture | **DI Timing**: `AgentRegistry` injection into `SettlementSystem` happens post-initialization. | **Low**: Initialization fragility. | Open |
 | **TD-DOC-PARITY** | Documentation | **Missing Manual**: `AUDIT_PARITY.md` missing from operations manuals. | **Low**: Knowledge loss. | Identified |
 | **TD-ENFORCE-NONE** | System | **Protocol Enforcement**: Lack of static/runtime guards for architectural rules. | **High**: Regression risk. | Open (Phase 15) |
 | **TD-CONFIG-LEAK** | Architecture | **Encapsulation**: Direct access to `agent.config` in internal systems. | **Medium**: Coupling risk. | Open |
-| **TD-QE-MISSING** | Financials | **Logic Gap**: QE Bond Issuance logic lost during refactor. | **High**: Feature Regression. | Open |
 
 ## ✅ Resolved Technical Debt
 
@@ -67,6 +65,8 @@
 | **TD-FIN-ZERO** | Finance | **Fix**: Double-entry integrity in stateless finance engines (Retained Earnings). | Refactoring Era | [Finance Insight](../../communications/insights/TECH_DEBT_LEDGER.md) |
 | **WO-101** | Test | **Restoration**: Fixed test mocks and signatures broken by SSoT migration. | Clean Room Era | [Audit Guide](../../design/3_work_artifacts/reports/audit_test_migration_guide.md) |
 | **TD-ARCH-LEAK-PROTI** | Architecture | **Purification**: Migrated tests away from deprecated `deposit/withdraw` interfaces. | Clean Room Era | [Audit Guide](../../design/3_work_artifacts/reports/audit_test_migration_guide.md) |
+| **TD-AGENT-STATE-INVFIRM** | Data/DTO | **Serialization Gap**: `AgentStateDTO` multi-slot inventory support. | PH15-FIX | [Insight](../../communications/insights/FIX-FINAL-TESTS.md) |
+| **TD-QE-MISSING** | Financials | **Logic Gap**: QE Bond Issuance logic restoration. | PH15-FIX | [Insight](../../communications/insights/FIX-FINAL-TESTS.md) |
 
 ## 📓 Implementation Lessons & Detailed Debt
 

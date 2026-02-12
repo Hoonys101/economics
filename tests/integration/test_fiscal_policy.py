@@ -76,6 +76,7 @@ def test_debt_ceiling_enforcement(government):
     def issue_bonds_side_effect(amount, tick):
         government.wallet.add(amount, "USD") # Update Wallet!
         government._assets += amount # Keep this for legacy check if any
+        government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
         return [Mock()], [] # Return a successful bond issuance and empty transactions
 
     government.finance_system.issue_treasury_bonds = Mock(side_effect=issue_bonds_side_effect)
@@ -89,10 +90,11 @@ def test_debt_ceiling_enforcement(government):
     # Simulate execution (deduct spent amount)
     government._assets -= paid
     government.wallet.subtract(paid, "USD")
+    government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
 
     # After spending 500, assets should be 0, and total_debt (which is -assets) should be 0.
     # The bonds were issued for 500, assets became 500, then spent.
-    assert government.assets == 0.0
+    assert government.settlement_system.get_balance(government.id) == 0.0
 
     # 2. Spend more
     amount = 1500.0
@@ -103,8 +105,9 @@ def test_debt_ceiling_enforcement(government):
     # Simulate execution
     government._assets -= paid
     government.wallet.subtract(paid, "USD")
+    government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
 
-    assert government.assets == 0.0
+    assert government.settlement_system.get_balance(government.id) == 0.0
 
     # 3. Try to spend when bond issuance fails
     government.finance_system.issue_treasury_bonds.side_effect = None # Disable the side effect

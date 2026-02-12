@@ -41,6 +41,7 @@ class StubGovernment:
     def __init__(self, assets=1000000): # 10000.00 -> 1000000 pennies
         self.id = "GOVERNMENT"
         self._assets = assets
+        self.total_debt = 0
         self.debt_to_gdp_ratio = 0.5
         self.wallet = Mock()
         self.wallet.get_balance.return_value = assets
