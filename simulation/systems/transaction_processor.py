@@ -1,8 +1,12 @@
 from __future__ import annotations
-from typing import Dict, Any, TYPE_CHECKING, List, Optional
+from typing import Dict, Any, TYPE_CHECKING, List, Optional, Iterable
 import logging
 
-from simulation.systems.api import SystemInterface, ITransactionHandler, TransactionContext
+from simulation.systems.api import (
+    SystemInterface,
+    ITransactionHandler,
+    TransactionContext,
+)
 from simulation.dtos.settlement_dtos import SettlementResultDTO
 
 if TYPE_CHECKING:
@@ -10,6 +14,7 @@ if TYPE_CHECKING:
     from simulation.models import Transaction
 
 logger = logging.getLogger(__name__)
+
 
 class TransactionProcessor(SystemInterface):
     """
@@ -32,7 +37,11 @@ class TransactionProcessor(SystemInterface):
         """Registers a handler for Public Manager transactions (seller check)."""
         self._public_manager_handler = handler
 
-    def execute(self, state: SimulationState, transactions: Optional[List[Transaction]] = None) -> List[SettlementResultDTO]:
+    def execute(
+        self,
+        state: SimulationState,
+        transactions: Optional[Iterable[Transaction]] = None,
+    ) -> List[SettlementResultDTO]:
         """
         Dispatches transactions to registered handlers.
 
@@ -61,6 +70,7 @@ class TransactionProcessor(SystemInterface):
             if not hasattr(self, "taxation_system"):
                 # Lazy init if missing? Or rely on config.
                 from modules.government.taxation.system import TaxationSystem
+
                 self.taxation_system = TaxationSystem(self.config_module)
             taxation_system = self.taxation_system
 
@@ -79,8 +89,8 @@ class TransactionProcessor(SystemInterface):
             bank=bank,
             central_bank=central_bank,
             public_manager=public_manager,
-            transaction_queue=[], # Initialize empty queue for side-effects
-            shareholder_registry=state.shareholder_registry
+            transaction_queue=[],  # Initialize empty queue for side-effects
+            shareholder_registry=state.shareholder_registry,
         )
 
         default_handler = self._handlers.get("default")
@@ -89,21 +99,42 @@ class TransactionProcessor(SystemInterface):
 
         for tx in tx_list:
             # 0. Skip Executed Transactions (TD-160: Atomic Inheritance)
-            if hasattr(tx, "metadata") and tx.metadata and tx.metadata.get("executed", False):
+            if (
+                hasattr(tx, "metadata")
+                and tx.metadata
+                and tx.metadata.get("executed", False)
+            ):
                 continue
 
             # 1. Special Routing: Public Manager (Seller)
-            # Hijack if seller is explicitly PUBLIC_MANAGER or system placeholder, 
+            # Hijack if seller is explicitly PUBLIC_MANAGER or system placeholder,
             # BUT only if it's not a specialized systemic distribution (Inheritance/Escheatment)
-            is_pm_seller = (tx.seller_id == "PUBLIC_MANAGER" or tx.seller_id == 999999 or tx.seller_id == -1)
-            is_systemic = tx.transaction_type in ["inheritance_distribution", "escheatment"]
-            
+            is_pm_seller = (
+                tx.seller_id == "PUBLIC_MANAGER"
+                or tx.seller_id == 999999
+                or tx.seller_id == -1
+            )
+            is_systemic = tx.transaction_type in [
+                "inheritance_distribution",
+                "escheatment",
+            ]
+
             if is_pm_seller and not is_systemic and self._public_manager_handler:
-                buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
+                buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(
+                    tx.buyer_id
+                )
                 if buyer:
-                    success = self._public_manager_handler.handle(tx, buyer, None, context)
+                    success = self._public_manager_handler.handle(
+                        tx, buyer, None, context
+                    )
                     amount = tx.quantity * tx.price if success else 0.0
-                    results.append(SettlementResultDTO(original_transaction=tx, success=success, amount_settled=amount))
+                    results.append(
+                        SettlementResultDTO(
+                            original_transaction=tx,
+                            success=success,
+                            amount_settled=amount,
+                        )
+                    )
                 continue
 
             # 2. Standard Dispatch
@@ -111,33 +142,43 @@ class TransactionProcessor(SystemInterface):
 
             # Fallback
             if handler is None:
-                 if tx.transaction_type in ["credit_creation", "credit_destruction"]:
-                     continue # Symbolic, no-op
+                if tx.transaction_type in ["credit_creation", "credit_destruction"]:
+                    continue  # Symbolic, no-op
 
-                 if default_handler:
-                     handler = default_handler
-                 else:
-                     if tx.transaction_type == "housing":
-                         pass
-                     else:
-                        state.logger.warning(f"No handler for tx type: {tx.transaction_type}")
-                     continue
+                if default_handler:
+                    handler = default_handler
+                else:
+                    if tx.transaction_type == "housing":
+                        pass
+                    else:
+                        state.logger.warning(
+                            f"No handler for tx type: {tx.transaction_type}"
+                        )
+                    continue
 
             # Resolve Agents
-            buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(tx.buyer_id)
-            seller = context.agents.get(tx.seller_id) or context.inactive_agents.get(tx.seller_id)
-            
+            buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(
+                tx.buyer_id
+            )
+            seller = context.agents.get(tx.seller_id) or context.inactive_agents.get(
+                tx.seller_id
+            )
+
             # Dispatch
             success = handler.handle(tx, buyer, seller, context)
 
             # Record Result
             amount = tx.quantity * tx.price if success else 0.0
-            results.append(SettlementResultDTO(original_transaction=tx, success=success, amount_settled=amount))
+            results.append(
+                SettlementResultDTO(
+                    original_transaction=tx, success=success, amount_settled=amount
+                )
+            )
 
             # Post-processing
             if success and tx.metadata and tx.metadata.get("triggers_effect"):
                 state.effects_queue.append(tx.metadata)
-                
+
         # Append queued transactions from context to state (e.g. credit creation from loans)
         if context.transaction_queue:
             state.transactions.extend(context.transaction_queue)
