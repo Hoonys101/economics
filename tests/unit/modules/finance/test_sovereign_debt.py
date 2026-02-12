@@ -15,6 +15,9 @@ class TestSovereignDebt:
         # Govt wallet mock
         self.govt.wallet = MagicMock()
         self.govt.wallet.get_balance.return_value = 0
+        self.govt.total_debt = 0
+        self.govt.sensory_data = MagicMock()
+        self.govt.sensory_data.current_gdp = 100.0
 
         self.central_bank = MagicMock()
         self.bank = MagicMock()

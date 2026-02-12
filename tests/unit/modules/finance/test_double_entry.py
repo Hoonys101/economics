@@ -13,7 +13,9 @@ class MockGovernment:
     def __init__(self, initial_assets):
         self.id = 0
         self._assets = initial_assets
-        self.sensory_data = None
+        self.sensory_data = MagicMock()
+        self.sensory_data.current_gdp = 100.0
+        self._total_debt = 0
         # Mock wallet for FinanceSystem init sync
         self.wallet = MagicMock()
         self.wallet.get_balance.return_value = initial_assets
