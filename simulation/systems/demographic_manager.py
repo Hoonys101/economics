@@ -8,7 +8,8 @@ from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from modules.system.api import DEFAULT_CURRENCY
 from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO, ITalented
-from modules.household.api import IHouseholdFactory
+from modules.household.api import IHouseholdFactory, HouseholdFactoryContext
+from simulation.factories.household_factory import HouseholdFactory
 
 if TYPE_CHECKING:
     from simulation.dtos.strategy import ScenarioStrategy
@@ -119,6 +120,31 @@ class DemographicManager:
 
             try:
                 # Use Factory for creation
+
+                # Lazy initialization of HouseholdFactory if missing
+                if not self.household_factory:
+                    try:
+                         # Construct context from simulation
+                         # NOTE: This assumes simulation object has these attributes (usually provided by Initializer/Simulation class)
+                         config_module = getattr(simulation, 'config', self.config_module)
+
+                         context = HouseholdFactoryContext(
+                             core_config_module=config_module,
+                             household_config_dto=create_config_dto(config_module),
+                             goods_data=getattr(simulation, 'goods_data', []),
+                             loan_market=getattr(simulation, 'loan_market', None),
+                             ai_training_manager=getattr(simulation, 'ai_trainer', None),
+                             settlement_system=getattr(simulation, 'settlement_system', None),
+                             markets=getattr(simulation, 'markets', {}),
+                             memory_system=getattr(simulation, 'memory_system', None),
+                             central_bank=getattr(simulation, 'central_bank', None)
+                         )
+                         self.household_factory = HouseholdFactory(context)
+                         self.logger.info("HouseholdFactory initialized lazily in process_births.")
+                    except Exception as ex:
+                         self.logger.error(f"Failed to initialize HouseholdFactory lazily: {ex}")
+                         raise ex
+
                 child = self.household_factory.create_newborn(parent, simulation, child_id)
 
                 # Register linkage and finalize

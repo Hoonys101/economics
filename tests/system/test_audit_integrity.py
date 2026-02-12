@@ -34,7 +34,7 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
         self.government = MagicMock()
         self.government.id = 1
 
-    @patch('simulation.factories.agent_factory.HouseholdFactory')
+    @patch('simulation.systems.demographic_manager.HouseholdFactory')
     @patch('simulation.systems.demographic_manager.Household')
     @patch('simulation.systems.demographic_manager.create_config_dto')
     def test_birth_gift_rounding(self, mock_create_config, mock_household_cls, mock_household_factory_cls):
