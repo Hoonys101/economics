@@ -4,7 +4,7 @@ from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union, TypedDict
 from simulation.dtos.firm_state_dto import FirmStateDTO
 from simulation.models import Order
 from simulation.dtos.decision_dtos import DecisionOutputDTO
-from modules.finance.api import IFinancialEntity
+from modules.finance.api import IFinancialAgent
 from modules.simulation.api import AgentID
 from modules.governance.api import SystemCommand
 
@@ -201,7 +201,7 @@ class FiscalContext:
     Used by agents to interact with the government (e.g., paying taxes, receiving subsidies)
     without direct access to the full Government agent object.
     """
-    government: IFinancialEntity
+    government: IFinancialAgent
 
 
 @dataclass

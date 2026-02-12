@@ -7,16 +7,16 @@ from modules.system.api import (
     IAssetRecoverySystem, AgentBankruptcyEventDTO, MarketSignalDTO, PublicManagerReportDTO,
     CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
 )
-from modules.finance.api import IFinancialEntity, InsufficientFundsError
+from modules.finance.api import IFinancialAgent, InsufficientFundsError
 from simulation.models import Order
 
-class PublicManager(IAssetRecoverySystem, ICurrencyHolder):
+class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
     """
     A system-level service responsible for asset recovery and liquidation.
     It acts as a 'Receiver' in bankruptcy proceedings, taking custody of assets
     and liquidating them back into the market to prevent value destruction.
 
-    Implements IAssetRecoverySystem and IFinancialEntity (for atomic settlement).
+    Implements IAssetRecoverySystem and IFinancialAgent (for atomic settlement).
     """
 
     def __init__(self, config: Any):
@@ -24,46 +24,59 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder):
         self.config = config
         self.logger = logging.getLogger("PublicManager")
         self.managed_inventory: Dict[str, float] = defaultdict(float)
-        self.system_treasury: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.system_treasury: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
         self.logger = logging.getLogger("PublicManager")
 
         # Tracking for report (resets every tick or tracked cumulatively?)
         # For the report DTO, we likely want "current tick's activity".
         # But since get_status_report might be called anytime, we'll store cumulative or last tick data.
         self.last_tick_recovered_assets: Dict[str, float] = defaultdict(float)
-        self.last_tick_revenue: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
-        self.total_revenue_lifetime: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
+        self.last_tick_revenue: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
+        self.total_revenue_lifetime: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
 
-    # --- IFinancialEntity Implementation ---
+    # --- IFinancialAgent Implementation ---
     @property
     def id(self) -> int:
         """Returns the unique integer ID for the PublicManager."""
         return self._id
 
-    @property
-    def assets(self) -> float:
-        """Current assets in DEFAULT_CURRENCY (Read-Only)."""
-        return self.system_treasury.get(DEFAULT_CURRENCY, 0.0)
-
-    def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
-        """Implementation of ICurrencyHolder."""
-        return self.system_treasury.copy()
-
-    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        """Deposits funds (alias for deposit_revenue)."""
+    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Deposits funds (internal use)."""
+        if amount < 0:
+             self.logger.error(f"Negative deposit attempted: {amount}")
+             return
         self.deposit_revenue(amount, currency=currency)
 
-    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Withdraws funds from treasury."""
         if amount < 0:
             raise ValueError("Cannot withdraw negative amount.")
         
-        current_bal = self.system_treasury.get(currency, 0.0)
+        current_bal = self.system_treasury.get(currency, 0)
         if current_bal < amount:
             raise InsufficientFundsError(f"PublicManager insufficient funds. Required: {amount} {currency}, Available: {current_bal}")
 
         self.system_treasury[currency] -= amount
         # Note: withdrawals don't usually track 'revenue', so we don't update last_tick_revenue here.
+
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """Returns the current balance for the specified currency."""
+        return self.system_treasury.get(currency, 0)
+
+    def get_all_balances(self) -> Dict[CurrencyCode, int]:
+        """Returns a copy of all currency balances."""
+        return self.system_treasury.copy()
+
+    @property
+    def total_wealth(self) -> int:
+        """Returns the total wealth in default currency estimation."""
+        return sum(self.system_treasury.values())
+
+    # --- Legacy / Helper ---
+
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, int]:
+        """Implementation of ICurrencyHolder."""
+        return self.system_treasury.copy()
 
     # --- IAssetRecoverySystem Implementation ---
 
@@ -104,7 +117,7 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder):
         """
         # We can reset "last tick" metrics here, assuming this starts the liquidation cycle for the tick.
         self.last_tick_recovered_assets = defaultdict(float)
-        self.last_tick_revenue = {DEFAULT_CURRENCY: 0.0}
+        self.last_tick_revenue = {DEFAULT_CURRENCY: 0}
 
         orders: List[Order] = []
         items_to_liquidate = list(self.managed_inventory.items())
@@ -171,11 +184,11 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder):
         else:
             self.logger.warning(f"Confirmed sale for {item_id} but item not in managed inventory.")
 
-    def deposit_revenue(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def deposit_revenue(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Deposits revenue from liquidation sales into the system treasury."""
-        if currency not in self.system_treasury: self.system_treasury[currency] = 0.0
-        if currency not in self.last_tick_revenue: self.last_tick_revenue[currency] = 0.0
-        if currency not in self.total_revenue_lifetime: self.total_revenue_lifetime[currency] = 0.0
+        if currency not in self.system_treasury: self.system_treasury[currency] = 0
+        if currency not in self.last_tick_revenue: self.last_tick_revenue[currency] = 0
+        if currency not in self.total_revenue_lifetime: self.total_revenue_lifetime[currency] = 0
 
         self.system_treasury[currency] += amount
         self.last_tick_revenue[currency] += amount

@@ -3,7 +3,8 @@ from uuid import UUID
 
 from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO, IHousingTransactionSagaHandler
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
-from simulation.finance.api import IFinancialEntity, ITransaction
+from simulation.finance.api import ITransaction
+from modules.finance.api import IFinancialAgent
 
 # --- 1. Saga Orchestration ---
 
@@ -72,9 +73,9 @@ class ISettlementSystem(Protocol):
     # --- Core Transfer APIs (Unchanged) ---
     def transfer(
         self,
-        debit_agent: IFinancialEntity,
-        credit_agent: IFinancialEntity,
-        amount: float,
+        debit_agent: IFinancialAgent,
+        credit_agent: IFinancialAgent,
+        amount: int,
         memo: str,
         debit_context: Optional[Dict[str, Any]] = None,
         credit_context: Optional[Dict[str, Any]] = None,
@@ -84,23 +85,23 @@ class ISettlementSystem(Protocol):
 
     def settle_atomic(
         self,
-        debit_agent: IFinancialEntity,
-        credits_list: List[Tuple[IFinancialEntity, float, str]],
+        debit_agent: IFinancialAgent,
+        credits_list: List[Tuple[IFinancialAgent, int, str]],
         tick: int,
     ) -> bool: ...
 
     def execute_multiparty_settlement(
         self,
-        transfers: List[Tuple[IFinancialEntity, IFinancialEntity, float]],
+        transfers: List[Tuple[IFinancialAgent, IFinancialAgent, int]],
         tick: int,
     ) -> bool: ...
 
     # --- Mint/Burn APIs (Unchanged) ---
     def create_and_transfer(
         self,
-        source_authority: IFinancialEntity,
-        destination: IFinancialEntity,
-        amount: float,
+        source_authority: IFinancialAgent,
+        destination: IFinancialAgent,
+        amount: int,
         reason: str,
         tick: int,
         currency: CurrencyCode = DEFAULT_CURRENCY,
@@ -108,9 +109,9 @@ class ISettlementSystem(Protocol):
 
     def transfer_and_destroy(
         self,
-        source: IFinancialEntity,
-        sink_authority: IFinancialEntity,
-        amount: float,
+        source: IFinancialAgent,
+        sink_authority: IFinancialAgent,
+        amount: int,
         reason: str,
         tick: int,
         currency: CurrencyCode = DEFAULT_CURRENCY,
@@ -119,13 +120,13 @@ class ISettlementSystem(Protocol):
     # --- Other Settlement Logic (Unchanged) ---
     def record_liquidation(
         self,
-        agent: IFinancialEntity,
-        inventory_value: float,
-        capital_value: float,
-        recovered_cash: float,
+        agent: IFinancialAgent,
+        inventory_value: int,
+        capital_value: int,
+        recovered_cash: int,
         reason: str,
         tick: int,
-        government_agent: Optional[IFinancialEntity] = None
+        government_agent: Optional[IFinancialAgent] = None
     ) -> None: ...
 
     def create_settlement(self, agent: Any, tick: int) -> Any: ...
@@ -133,7 +134,7 @@ class ISettlementSystem(Protocol):
     def execute_settlement(
         self,
         account_id: int,
-        distribution_plan: List[Tuple[Any, float, str, str]], # (Recipient, Amount, Memo, TxType)
+        distribution_plan: List[Tuple[Any, int, str, str]], # (Recipient, Amount, Memo, TxType)
         tick: int
     ) -> List[ITransaction]: ...
 

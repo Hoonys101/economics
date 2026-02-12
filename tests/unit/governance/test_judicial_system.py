@@ -5,7 +5,7 @@ from modules.system.event_bus.event_bus import EventBus
 from modules.events.dtos import LoanDefaultedEvent, DebtRestructuringRequiredEvent
 from simulation.finance.api import ISettlementSystem
 from modules.system.api import IAgentRegistry, DEFAULT_CURRENCY
-from modules.finance.api import IShareholderRegistry, IPortfolioHandler, ICreditFrozen, IFinancialEntity, ILiquidatable
+from modules.finance.api import IShareholderRegistry, IPortfolioHandler, ICreditFrozen, IFinancialAgent, ILiquidatable
 from modules.simulation.api import IEducated
 
 class MockAgent:
@@ -13,7 +13,7 @@ class MockAgent:
         self.id = id
         self.education_xp = 100.0
         self._credit_frozen_until_tick = 0
-        self._assets = assets # Liquid assets
+        self._assets = int(assets) # Liquid assets
         self.portfolio_mock = MagicMock()
         mock_asset = MagicMock()
         mock_asset.asset_type = 'stock'
@@ -40,16 +40,23 @@ class MockAgent:
         pass
 
     @property
-    def assets(self) -> float:
+    def assets(self) -> int:
         return self._assets
 
-    def deposit(self, amount, currency=DEFAULT_CURRENCY):
-        self._assets += amount
+    def _deposit(self, amount, currency=DEFAULT_CURRENCY):
+        self._assets += int(amount)
 
-    def withdraw(self, amount, currency=DEFAULT_CURRENCY):
-        self._assets -= amount
+    def _withdraw(self, amount, currency=DEFAULT_CURRENCY):
+        self._assets -= int(amount)
 
     def get_balance(self, currency=DEFAULT_CURRENCY):
+        return self._assets
+
+    def get_all_balances(self):
+        return {DEFAULT_CURRENCY: self._assets}
+
+    @property
+    def total_wealth(self) -> int:
         return self._assets
 
     def liquidate_assets(self, tick):
@@ -91,8 +98,10 @@ def test_judicial_system_waterfall_full_recovery(mock_dependencies):
 
     # Setup Transfer Side Effect
     def transfer_side_effect(debit_agent, credit_agent, amount, memo, tick, currency=DEFAULT_CURRENCY):
-        debit_agent.withdraw(amount)
-        credit_agent.deposit(amount)
+        debit_agent._withdraw(amount)
+        credit_agent._deposit(amount)
+        debit_agent._withdraw(amount)
+        credit_agent._deposit(amount)
         return True
     deps["settlement_system"].transfer.side_effect = transfer_side_effect
 
@@ -139,8 +148,8 @@ def test_judicial_system_waterfall_partial_recovery_and_restructuring(mock_depen
 
     # Setup Transfer Side Effect
     def transfer_side_effect(debit_agent, credit_agent, amount, memo, tick, currency=DEFAULT_CURRENCY):
-        debit_agent.withdraw(amount)
-        credit_agent.deposit(amount)
+        debit_agent._withdraw(amount)
+        credit_agent._deposit(amount)
         return True
     deps["settlement_system"].transfer.side_effect = transfer_side_effect
 

@@ -309,33 +309,6 @@ class ILiquidatable(Protocol):
         ...
 
 @runtime_checkable
-class IFinancialEntity(Protocol):
-    """
-    Protocol for any entity that possesses assets and participates in financial transactions.
-    Native implementation operates exclusively on DEFAULT_CURRENCY.
-    DEPRECATED: Prefer IFinancialAgent for multi-currency support.
-    """
-    id: AgentID
-
-    @property
-    def assets(self) -> int:
-        """Current assets in DEFAULT_CURRENCY (Read-Only)."""
-        ...
-
-    def deposit(self, amount: int) -> None:
-        """Deposits a given amount of DEFAULT_CURRENCY into the entity's account."""
-        ...
-
-    def withdraw(self, amount: int) -> None:
-        """
-        Withdraws a given amount of DEFAULT_CURRENCY from the entity's account.
-
-        Raises:
-            InsufficientFundsError: If the withdrawal amount exceeds available funds.
-        """
-        ...
-
-@runtime_checkable
 class IFinancialAgent(Protocol):
     """
     Strict protocol for any agent participating in the financial system.
@@ -467,7 +440,7 @@ class IFinanceSystem(Protocol):
         """
         ...
 
-    def collect_corporate_tax(self, firm: IFinancialEntity, tax_amount: int) -> bool:
+    def collect_corporate_tax(self, firm: IFinancialAgent, tax_amount: int) -> bool:
         """Collects corporate tax using atomic settlement."""
         ...
 

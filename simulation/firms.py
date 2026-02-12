@@ -42,7 +42,7 @@ from modules.firm.api import (
 )
 
 from simulation.utils.shadow_logger import log_shadow
-from modules.finance.api import InsufficientFundsError, IFinancialEntity, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake
+from modules.finance.api import InsufficientFundsError, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake
 from modules.common.interfaces import IPropertyOwner
 from modules.common.dtos import Claim
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
@@ -107,7 +107,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner, IFirmStateProvider):
+class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner, IFirmStateProvider):
     """
     Firm Agent (Orchestrator).
     Manages state and delegates logic to stateless engines.
@@ -225,7 +225,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         return {
             "is_active": self.is_active,
             "approval_rating": 0.0,
-            "total_wealth": self.assets # Returns int pennies
+            "total_wealth": self.wallet.get_balance(DEFAULT_CURRENCY) # Returns int pennies
         }
 
     def get_current_state(self) -> AgentStateDTO:
@@ -1343,21 +1343,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         if property_id in self.finance_state.owned_properties:
             self.finance_state.owned_properties.remove(property_id)
 
-    # --- IFinancialEntity Implementation ---
-    # These are handled by BaseAgent and wallet, but we expose properties for convenience or protocol satisfaction
-
-    @property
-    @override
-    def assets(self) -> int:
-        return self.wallet.get_balance(DEFAULT_CURRENCY)
-
-    @override
-    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-         raise NotImplementedError("Direct deposit is deprecated. Use SettlementSystem.transfer.")
-
-    @override
-    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-         raise NotImplementedError("Direct withdraw is deprecated. Use SettlementSystem.transfer.")
+    # --- IFinancialAgent Implementation ---
 
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
          self.wallet.add(amount, currency)

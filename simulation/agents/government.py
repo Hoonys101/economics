@@ -15,7 +15,7 @@ from simulation.utils.shadow_logger import log_shadow
 from simulation.models import Transaction
 from simulation.systems.ministry_of_education import MinistryOfEducation
 from simulation.portfolio import Portfolio
-from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset, IFinancialEntity, IFinancialAgent
+from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset, IFinancialAgent
 from modules.government.dtos import (
     FiscalPolicyDTO,
     PaymentRequestDTO,
@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDataProvider):
+class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
     """
     Refactored Government Agent (Orchestrator).
     Delegates decision-making and execution to stateless engines.
@@ -161,13 +161,8 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
         return {
             "is_active": True,
             "approval_rating": self.approval_rating,
-            "total_wealth": self.assets # int
+            "total_wealth": self.total_wealth # int
         }
-
-    # --- IFinancialEntity Implementation ---
-    @property
-    def assets(self) -> int:
-        return self.wallet.get_balance(DEFAULT_CURRENCY)
 
     @property
     def total_collected_tax(self) -> Dict[CurrencyCode, float]:
@@ -652,7 +647,7 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
             "stimulus": 0.0,
             "education": 0.0,
             "debt": self.total_debt,
-            "assets": self.assets
+            "assets": self.total_wealth
         }
         self.welfare_history.append(welfare_snapshot)
         if len(self.welfare_history) > self.history_window_size:
@@ -665,7 +660,7 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
         return {
             "id": self.id,
             "agent_type": "government",
-            "assets": self.assets,
+            "assets": self.total_wealth,
             "ruling_party": self.ruling_party.name,
             "approval_rating": self.approval_rating,
             "income_tax_rate": self.income_tax_rate,
@@ -676,26 +671,8 @@ class Government(ICurrencyHolder, IFinancialEntity, IFinancialAgent, ISensoryDat
     def get_debt_to_gdp_ratio(self) -> float:
         if not self.sensory_data or self.sensory_data.current_gdp == 0:
             return 0.0
-        debt = max(0.0, float(-self.assets))
+        debt = max(0.0, float(-self.total_wealth))
         return debt / self.sensory_data.current_gdp
-
-    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        if amount <= 0:
-            raise ValueError("Deposit amount must be positive.")
-        self.wallet.add(amount, currency)
-
-    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        if amount <= 0:
-            raise ValueError("Withdrawal amount must be positive.")
-        self.wallet.subtract(amount, currency)
-
-    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        """Internal deposit method for IFinancialAgent."""
-        self.wallet.add(amount, currency)
-
-    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        """Internal withdraw method for IFinancialAgent."""
-        self.wallet.subtract(amount, currency)
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         return self.wallet.get_balance(currency)

@@ -32,12 +32,7 @@ class InfrastructureManager:
             return []
 
         # Synchronous Financing (WO-117)
-        current_assets_raw = self.government.assets
-        current_assets = 0
-        if isinstance(current_assets_raw, dict):
-            current_assets = int(current_assets_raw.get(DEFAULT_CURRENCY, 0))
-        else:
-            current_assets = int(current_assets_raw)
+        current_assets = self.government.total_wealth
 
         if current_assets < effective_cost:
             needed = int(effective_cost - current_assets)

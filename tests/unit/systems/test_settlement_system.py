@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, PropertyMock, patch
 from simulation.systems.settlement_system import SettlementSystem
-from modules.finance.api import IFinancialEntity, IFinancialAgent, IBank, InsufficientFundsError
+from modules.finance.api import IFinancialAgent, IBank, InsufficientFundsError
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.system.api import DEFAULT_CURRENCY
 
@@ -49,6 +49,13 @@ class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
         if currency == DEFAULT_CURRENCY:
             return self._assets
         return 0
+
+    def get_all_balances(self):
+        return {DEFAULT_CURRENCY: self._assets}
+
+    @property
+    def total_wealth(self) -> int:
+        return self._assets
 
     def _add_assets(self, amount):
         self._deposit(amount)

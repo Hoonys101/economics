@@ -1,8 +1,10 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.agents.government import Government
-from simulation.finance.api import IFinancialEntity, ISettlementSystem
+from simulation.finance.api import ISettlementSystem
+from modules.finance.api import IFinancialAgent
 from typing import Optional, Dict, Any, List
+from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from simulation.models import Transaction
 
 class MockRefluxSystem:
@@ -11,8 +13,8 @@ class MockRefluxSystem:
         self._assets = initial_assets
 
     @property
-    def assets(self) -> float:
-        return self._assets
+    def total_wealth(self) -> int:
+        return int(self._assets)
 
     def _add_assets(self, amount: float) -> None:
         self._assets += amount
@@ -20,20 +22,31 @@ class MockRefluxSystem:
     def _sub_assets(self, amount: float) -> None:
         self._assets -= amount
 
-    def deposit(self, amount: float) -> None:
+    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         self._add_assets(amount)
+
+    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._sub_assets(amount)
+
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        return int(self._assets)
+
+    def get_all_balances(self) -> Dict[CurrencyCode, int]:
+        return {DEFAULT_CURRENCY: int(self._assets)}
 
 class MockSettlementSystem(ISettlementSystem):
     def transfer(
         self,
-        debit_agent: IFinancialEntity,
-        credit_agent: IFinancialEntity,
-        amount: float,
+        debit_agent: IFinancialAgent,
+        credit_agent: IFinancialAgent,
+        amount: int,
         memo: str,
         debit_context: Optional[Dict[str, Any]] = None,
-        credit_context: Optional[Dict[str, Any]] = None
+        credit_context: Optional[Dict[str, Any]] = None,
+        tick: int = 0,
+        currency: CurrencyCode = DEFAULT_CURRENCY
     ) -> bool:
-        credit_agent._add_assets(amount)
+        credit_agent._deposit(amount)
         # We don't debit to simulate "bug" in original test context,
         # but here we just need a dummy implementation.
         return True
@@ -68,7 +81,7 @@ def test_invest_infrastructure_generates_transaction():
     mock_household.is_active = True
 
     # 2. Record State Before
-    assets_gov_before = government.assets
+    assets_gov_before = government.total_wealth
 
     # 3. Execute
     txs = government.invest_infrastructure(current_tick=1, households=[mock_household])
@@ -97,4 +110,4 @@ def test_invest_infrastructure_generates_transaction():
     # We mocked it.
 
     # Assert assets didn't change (assuming transaction not processed)
-    assert government.assets == assets_gov_before
+    assert government.total_wealth == assets_gov_before

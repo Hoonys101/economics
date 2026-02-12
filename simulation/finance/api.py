@@ -1,30 +1,7 @@
 from typing import Protocol, runtime_checkable, Optional, Dict, Any, TypedDict, Union
 from abc import ABC, abstractmethod
-
-@runtime_checkable
-class IFinancialEntity(Protocol):
-    """
-    Protocol for any entity that possesses assets and participates in financial transactions.
-    Assets are read-only to the public; state changes must occur via the SettlementSystem
-    calling the public deposit / withdraw methods.
-    """
-    id: int
-
-    @property
-    def assets(self) -> float:
-        """Current assets (Read-Only)."""
-        ...
-
-    def deposit(self, amount: float) -> None:
-        """Deposits a given amount into the entity's account."""
-        ...
-
-    def withdraw(self, amount: float) -> None:
-        """
-        Withdraws a given amount from the entity's account.
-        Raises InsufficientFundsError if funds are insufficient.
-        """
-        ...
+from modules.finance.api import IFinancialAgent
+from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 
 class ITransaction(TypedDict):
     """
@@ -50,13 +27,14 @@ class ISettlementSystem(ABC):
     @abstractmethod
     def transfer(
         self,
-        debit_agent: IFinancialEntity,
-        credit_agent: IFinancialEntity,
-        amount: float,
+        debit_agent: IFinancialAgent,
+        credit_agent: IFinancialAgent,
+        amount: int,
         memo: str,
         debit_context: Optional[Dict[str, Any]] = None,
         credit_context: Optional[Dict[str, Any]] = None,
-        tick: int = 0
+        tick: int = 0,
+        currency: CurrencyCode = DEFAULT_CURRENCY
     ) -> Optional[ITransaction]:
         """
         Atomically transfers an amount from one financial entity to another.
@@ -73,6 +51,7 @@ class ISettlementSystem(ABC):
             debit_context: Optional metadata for the debit side logic.
             credit_context: Optional metadata for the credit side logic.
             tick: The current simulation tick.
+            currency: The currency of the transfer.
 
         Returns:
             Transaction object if successful, None otherwise.
@@ -82,11 +61,12 @@ class ISettlementSystem(ABC):
     @abstractmethod
     def create_and_transfer(
         self,
-        source_authority: IFinancialEntity,
-        destination: IFinancialEntity,
-        amount: float,
+        source_authority: IFinancialAgent,
+        destination: IFinancialAgent,
+        amount: int,
         reason: str,
-        tick: int
+        tick: int,
+        currency: CurrencyCode = DEFAULT_CURRENCY
     ) -> Optional[ITransaction]:
         """
         Creates new money (or grants) and transfers it to an agent.
@@ -97,11 +77,12 @@ class ISettlementSystem(ABC):
     @abstractmethod
     def transfer_and_destroy(
         self,
-        source: IFinancialEntity,
-        sink_authority: IFinancialEntity,
-        amount: float,
+        source: IFinancialAgent,
+        sink_authority: IFinancialAgent,
+        amount: int,
         reason: str,
-        tick: int
+        tick: int,
+        currency: CurrencyCode = DEFAULT_CURRENCY
     ) -> Optional[ITransaction]:
         """
         Transfers money from an agent to an authority to be destroyed (or sequestered).
@@ -112,13 +93,13 @@ class ISettlementSystem(ABC):
     @abstractmethod
     def record_liquidation(
         self,
-        agent: IFinancialEntity,
-        inventory_value: float,
-        capital_value: float,
-        recovered_cash: float,
+        agent: IFinancialAgent,
+        inventory_value: int,
+        capital_value: int,
+        recovered_cash: int,
         reason: str,
         tick: int,
-        government_agent: Optional[IFinancialEntity] = None
+        government_agent: Optional[IFinancialAgent] = None
     ) -> None:
         """
         Records the outcome of an asset liquidation.

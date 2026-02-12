@@ -24,7 +24,7 @@ from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IOrchest
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.systems.api import LifecycleContext, MarketInteractionContext, LearningUpdateContext, ILearningAgent
-from modules.finance.api import IFinancialEntity, IFinancialAgent, ICreditFrozen
+from modules.finance.api import IFinancialAgent, ICreditFrozen
 from modules.simulation.api import IEducated
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.finance.wallet.wallet import Wallet
@@ -82,7 +82,6 @@ class Household(
     ILearningAgent,
     IEmployeeDataProvider,
     IEducated,
-    IFinancialEntity,
     IFinancialAgent,
     IOrchestratorAgent,
     ICreditFrozen,
@@ -991,7 +990,7 @@ class Household(
 
         # Hydrate Assets
         if initial_assets_from_parent > 0:
-            new_household.deposit(initial_assets_from_parent, DEFAULT_CURRENCY)
+            new_household._deposit(initial_assets_from_parent, DEFAULT_CURRENCY)
 
         return new_household
 

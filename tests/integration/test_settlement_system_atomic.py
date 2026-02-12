@@ -3,12 +3,12 @@ from unittest.mock import MagicMock
 from simulation.systems.settlement_system import SettlementSystem
 from modules.finance.api import (
     PortfolioDTO, PortfolioAsset, IFinancialAgent, IPortfolioHandler,
-    IHeirProvider, IFinancialEntity
+    IHeirProvider
 )
 from simulation.core_agents import Household
 from simulation.agents.government import Government
 
-class MockSettlementAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider, IFinancialEntity):
+class MockSettlementAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
     pass
 
 # Scenario 1: Standard Inheritance (Cash + Portfolio)
@@ -64,11 +64,8 @@ def test_settlement_scenario_1_standard_inheritance(settlement_system, golden_ho
     assert received_dto.assets[0].asset_id == "999"
     assert received_dto.assets[0].quantity == 10.0
 
-    # Check _deposit (IFinancialAgent) or deposit (fallback)
-    if heir._deposit.called:
-        heir._deposit.assert_called_with(1000)
-    else:
-        heir.deposit.assert_called_with(1000)
+    # Check _deposit (IFinancialAgent)
+    heir._deposit.assert_called_with(1000)
 
     # Close
     success = settlement_system.verify_and_close(deceased.id, tick=102)

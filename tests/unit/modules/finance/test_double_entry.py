@@ -19,35 +19,34 @@ class MockGovernment:
         self.wallet.get_balance.return_value = initial_assets
 
     @property
-    def assets(self): return self._assets
+    def total_wealth(self): return self._assets
+    @property
+    def assets(self): return self.total_wealth # Alias for tests
+    def get_balance(self, currency=DEFAULT_CURRENCY): return self._assets
     @property
     def total_debt(self): return getattr(self, '_total_debt', 0)
     @total_debt.setter
     def total_debt(self, value): self._total_debt = value
-
     def get_debt_to_gdp_ratio(self):
         return 0.5
-    # Deprecated methods for Phase 3 but kept for interface compliance
     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self._assets += amount
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self._assets -= amount
-    def deposit(self, amount): self._deposit(amount)
-    def withdraw(self, amount): self._withdraw(amount)
 
 class MockCentralBank:
     def __init__(self, initial_cash):
         self.id = 999
         self._assets = {"cash": initial_cash, "bonds": []}
     @property
-    def assets(self): return self._assets
+    def total_wealth(self): return self._assets
+    @property
+    def assets(self): return self.total_wealth # Alias for tests
+    def get_balance(self, currency=DEFAULT_CURRENCY): return self.assets['cash']
     def get_base_rate(self):
         return 0.01
     def add_bond_to_portfolio(self, bond):
         self.assets["bonds"].append(bond)
-    # Mocking IFinancialEntity behavior loosely
     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self.assets['cash'] += amount
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self.assets['cash'] -= amount
-    def deposit(self, amount): self._deposit(amount)
-    def withdraw(self, amount): self._withdraw(amount)
 
 class MockBank:
     def __init__(self, initial_assets, id=1):
@@ -59,11 +58,12 @@ class MockBank:
         self.base_rate = 0.03
 
     @property
-    def assets(self): return self._assets
+    def total_wealth(self): return self._assets
+    @property
+    def assets(self): return self.total_wealth # Alias for tests
+    def get_balance(self, currency=DEFAULT_CURRENCY): return self._assets
     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self._assets += amount
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self._assets -= amount
-    def deposit(self, amount): self._deposit(amount)
-    def withdraw(self, amount): self._withdraw(amount)
 
 class MockFirm:
     def __init__(self, id, initial_cash_reserve):
@@ -74,11 +74,12 @@ class MockFirm:
         self.has_bailout_loan = False
         self.age = 100
     @property
-    def assets(self): return self.cash_reserve
+    def total_wealth(self): return self.cash_reserve
+    @property
+    def assets(self): return self.total_wealth # Alias for tests
+    def get_balance(self, currency=DEFAULT_CURRENCY): return self.cash_reserve
     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self.cash_reserve += amount
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self.cash_reserve -= amount
-    def deposit(self, amount): self._deposit(amount)
-    def withdraw(self, amount): self._withdraw(amount)
 
 class MockConfig:
     QE_INTERVENTION_YIELD_THRESHOLD = 0.05

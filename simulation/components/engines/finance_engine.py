@@ -3,7 +3,7 @@ from typing import List, Dict, Any, Optional, TYPE_CHECKING
 import logging
 from simulation.models import Transaction, Order
 from simulation.components.state.firm_state_models import FinanceState
-from modules.finance.api import IFinancialEntity, InsufficientFundsError, IShareholderRegistry
+from modules.finance.api import InsufficientFundsError, IShareholderRegistry
 from modules.finance.wallet.api import IWallet
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
