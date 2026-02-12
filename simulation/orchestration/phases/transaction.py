@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 import logging
+import itertools
 
 from simulation.orchestration.api import IPhaseStrategy
 from simulation.dtos.api import SimulationState
@@ -9,6 +10,7 @@ if TYPE_CHECKING:
     from simulation.world_state import WorldState
 
 logger = logging.getLogger(__name__)
+
 
 class Phase3_Transaction(IPhaseStrategy):
     def __init__(self, world_state: WorldState):
@@ -24,8 +26,12 @@ class Phase3_Transaction(IPhaseStrategy):
         # Main transaction processing logic
         if self.world_state.transaction_processor:
             # TD-192: Pass combined transactions to ensure execution of drained (historic) and current items
-            combined_txs = list(self.world_state.transactions) + list(state.transactions)
-            results = self.world_state.transaction_processor.execute(state, transactions=combined_txs)
+            combined_txs = itertools.chain(
+                self.world_state.transactions, state.transactions
+            )
+            results = self.world_state.transaction_processor.execute(
+                state, transactions=combined_txs
+            )
 
             # WO-116: Record Revenue (Saga Pattern)
             if state.taxation_system:
