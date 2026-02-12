@@ -1,10 +1,9 @@
 import pytest
-from unittest.mock import MagicMock, PropertyMock
-from typing import List, Any
+from unittest.mock import MagicMock
 from modules.government.welfare.manager import WelfareManager
-from modules.government.dtos import WelfareResultDTO, PaymentRequestDTO, BailoutResultDTO
+from modules.government.dtos import WelfareResultDTO, BailoutResultDTO
 from simulation.dtos.api import MarketSnapshotDTO
-from modules.system.api import DEFAULT_CURRENCY
+from simulation.factories.golden_agents import create_golden_agent
 
 @pytest.fixture
 def mock_config():
@@ -12,6 +11,8 @@ def mock_config():
     config.UNEMPLOYMENT_BENEFIT_RATIO = 0.5
     config.STIMULUS_TRIGGER_GDP_DROP = -0.1
     config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
+    # Config values might be float if they are prices, but here it's 10.0.
+    # If WelfareManager converts it: "val = goods_market['basic_food_current_sell_price'] ... round_to_pennies(val * 100)"
     config.GOODS_INITIAL_PRICE = {"basic_food": 10.0}
     return config
 
@@ -20,12 +21,10 @@ def welfare_manager(mock_config):
     return WelfareManager(mock_config)
 
 @pytest.fixture
-def mock_agent():
-    agent = MagicMock()
-    agent.id = 101
-    agent.is_active = True
-    agent.is_employed = False
-    agent.needs = {} # Marker for household
+def golden_agent():
+    # ID 101, unemployed, active
+    agent = create_golden_agent(agent_id=101, assets_pennies=0, is_employed=False)
+    # Needs are already {}, is_active is True
     return agent
 
 @pytest.fixture
@@ -39,9 +38,9 @@ def market_data():
         }
     )
 
-def test_run_welfare_check_unemployment(welfare_manager, mock_agent, market_data):
+def test_run_welfare_check_unemployment(welfare_manager, golden_agent, market_data):
     # Setup
-    agents = [mock_agent]
+    agents = [golden_agent]
     gdp_history = [1000.0] * 10
 
     # Execution
@@ -51,22 +50,20 @@ def test_run_welfare_check_unemployment(welfare_manager, mock_agent, market_data
     assert isinstance(result, WelfareResultDTO)
     assert len(result.payment_requests) == 1
     req = result.payment_requests[0]
-    assert req.payee == mock_agent
+    assert req.payee == golden_agent
     assert req.memo == "welfare_support_unemployment"
 
-    # Calculation check: survival_cost = 20.0 * 1.0 = 20.0
-    # benefit = 20.0 * 0.5 = 10.0
-    assert req.amount == 10.0
-    assert welfare_manager.get_spending_this_tick() == 10.0
+    # Calculation check: survival_cost = 20.0 * 1.0 = 20.0 -> 2000 pennies
+    # benefit = 2000 * 0.5 = 1000 pennies
+    assert req.amount == 1000
+    assert welfare_manager.get_spending_this_tick() == 1000
 
-def test_run_welfare_check_stimulus(welfare_manager, mock_agent, market_data):
+def test_run_welfare_check_stimulus(welfare_manager, golden_agent, market_data):
     # Setup
-    mock_agent.is_employed = True # Employed agents get stimulus too? Logic: "active_households = [a for a in agents if hasattr(a, "is_employed") and getattr(a, "is_active", False)]"
-    # Wait, employed or not, if they have "is_employed" attribute (households), they get stimulus?
-    # Logic in manager: "active_households = [a for a in agents if hasattr(a, "is_employed") and getattr(a, "is_active", False)]"
-    # Yes.
+    golden_agent.is_employed = True
+    # For stimulus, any active household (which golden_agent is) gets it if trigger hits.
 
-    agents = [mock_agent]
+    agents = [golden_agent]
 
     # Trigger drop
     # Past GDP was 2000, current 1000. Drop 50%. Threshold -0.1 (10%).
@@ -81,40 +78,45 @@ def test_run_welfare_check_stimulus(welfare_manager, mock_agent, market_data):
     req = result.payment_requests[0]
     assert req.memo == "welfare_support_stimulus"
 
-    # Calculation: survival_cost = 20.0. Stimulus = 5 * survival = 100.0.
-    assert req.amount == 100.0
+    # Calculation: survival_cost = 20.0 -> 2000 pennies.
+    # Stimulus = 5 * survival = 10000 pennies.
+    assert req.amount == 10000
 
 def test_provide_firm_bailout(welfare_manager):
+    # Firm ID is int, not agent object, for payee?
+    # WelfareManager.provide_firm_bailout takes firm: IAgent.
+    # Returns PaymentRequestDTO.payee as firm.id or firm?
+    # Code: payee=firm.id
+
     firm = MagicMock()
     firm.id = 501
 
     # Solvent
-    result = welfare_manager.provide_firm_bailout(firm, 5000.0, 100, is_solvent=True)
+    result = welfare_manager.provide_firm_bailout(firm, 5000, 100, is_solvent=True)
     assert isinstance(result, BailoutResultDTO)
-    assert result.payment_request.amount == 5000.0
+    assert result.payment_request.amount == 5000
     assert result.payment_request.payee == 501
-    assert result.loan_request.amount == 5000.0
+    assert result.loan_request.amount == 5000
 
     # Insolvent
-    result_fail = welfare_manager.provide_firm_bailout(firm, 5000.0, 100, is_solvent=False)
+    result_fail = welfare_manager.provide_firm_bailout(firm, 5000, 100, is_solvent=False)
     assert result_fail is None
 
-def test_run_welfare_check_with_firm(welfare_manager, mock_agent, market_data):
+def test_run_welfare_check_with_firm(welfare_manager, golden_agent, market_data):
     # Setup Firm: Should NOT be a welfare recipient
     firm = MagicMock()
     firm.id = 501
     firm.is_active = True
+    # firm does NOT implement IWelfareRecipient (no 'is_employed', 'needs')
+    # So it should be filtered out.
 
-    # Remove 'is_employed' to fail IWelfareRecipient check
-    del firm.is_employed
-
-    agents = [mock_agent, firm]
+    agents = [golden_agent, firm]
     gdp_history = [1000.0] * 10
 
     # Execution
     result = welfare_manager.run_welfare_check(agents, market_data, 100, gdp_history)
 
     # Verification
-    # Only mock_agent should be processed.
+    # Only golden_agent should be processed.
     assert len(result.payment_requests) == 1
-    assert result.payment_requests[0].payee == mock_agent
+    assert result.payment_requests[0].payee == golden_agent

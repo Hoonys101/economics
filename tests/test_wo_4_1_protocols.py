@@ -6,54 +6,20 @@ from modules.market.handlers.housing_transaction_handler import HousingTransacti
 from simulation.models import Transaction
 from modules.system.escrow_agent import EscrowAgent
 from modules.system.api import DEFAULT_CURRENCY
-
-class MockAgent:
-    def __init__(self, id, assets=None):
-        self.id = id
-        self.assets = assets or {DEFAULT_CURRENCY: 100000.0}
-        self.current_wage = 5000.0
-        self.owned_properties: List[int] = []
-        self.residing_property_id: Optional[int] = None
-        self.is_homeless: bool = True
-
-    def add_property(self, property_id: int) -> None:
-        self.owned_properties.append(property_id)
-
-    def remove_property(self, property_id: int) -> None:
-        if property_id in self.owned_properties:
-            self.owned_properties.remove(property_id)
-
-    def deposit(self, amount: float, currency: str = DEFAULT_CURRENCY) -> None:
-        if currency not in self.assets:
-            self.assets[currency] = 0.0
-        self.assets[currency] += amount
-
-    def withdraw(self, amount: float, currency: str = DEFAULT_CURRENCY) -> None:
-        if self.assets.get(currency, 0.0) < amount:
-             raise Exception("Insufficient funds")
-        self.assets[currency] -= amount
-
-    def get_balance(self, currency: str = DEFAULT_CURRENCY) -> float:
-        return self.assets.get(currency, 0.0)
-
-    def get_all_balances(self) -> Dict[str, float]:
-        return self.assets.copy()
-
-    @property
-    def total_wealth(self) -> float:
-        return self.assets.get(DEFAULT_CURRENCY, 0.0)
+from simulation.factories.golden_agents import create_golden_agent, GoldenAgent
 
 def test_housing_handler_with_protocol_agent():
     # Setup
     handler = HousingTransactionHandler()
 
-    buyer = MockAgent(id=101)
+    # Create Golden Agents
+    buyer = create_golden_agent(agent_id=101, assets_pennies=10000000) # Plenty of money
     # Ensure buyer implements protocols (runtime check)
     assert isinstance(buyer, IMortgageBorrower)
     assert isinstance(buyer, IPropertyOwner)
     assert isinstance(buyer, IResident)
 
-    seller = MockAgent(id=102)
+    seller = create_golden_agent(agent_id=102, assets_pennies=0)
     seller.add_property(999)
 
     # Context mocks
@@ -72,6 +38,8 @@ def test_housing_handler_with_protocol_agent():
     unit = MagicMock()
     unit.id = 999
     unit.liens = []
+    # unit.owner_id should be updated by handler
+    unit.owner_id = 102
     context.real_estate_units = [unit]
 
     # Config
@@ -118,8 +86,8 @@ def test_housing_handler_with_protocol_agent():
     assert 999 not in seller.owned_properties
 
 def test_protocol_compliance():
-    """Verify MockAgent satisfies protocols via isinstance check."""
-    agent = MockAgent(1)
+    """Verify GoldenAgent satisfies protocols via isinstance check."""
+    agent = create_golden_agent(1)
     assert isinstance(agent, IMortgageBorrower)
     assert isinstance(agent, IPropertyOwner)
     assert isinstance(agent, IResident)
