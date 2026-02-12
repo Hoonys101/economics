@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Any, Dict, Optional, TYPE_CHECKING, Protocol, Tuple
 import logging
-from modules.finance.api import IFinancialEntity
+from modules.finance.api import IFinancialAgent
 from modules.simulation.api import IGovernment
 from simulation.models import Transaction
 from modules.system.api import DEFAULT_CURRENCY
@@ -92,8 +92,8 @@ class TaxationSystem:
     def calculate_tax_intents(
         self,
         transaction: Transaction,
-        buyer: IFinancialEntity,
-        seller: IFinancialEntity,
+        buyer: IFinancialAgent,
+        seller: IFinancialAgent,
         government: IGovernment,
         market_data: Optional[Dict[str, Any]] = None
     ) -> List[TaxIntent]:

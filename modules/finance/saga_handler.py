@@ -16,7 +16,8 @@ from modules.market.loan_api import (
     calculate_total_monthly_debt_payments
 )
 from modules.simulation.api import ISimulationState, HouseholdSnapshotDTO
-from simulation.finance.api import ISettlementSystem, IFinancialEntity
+from simulation.finance.api import ISettlementSystem
+from modules.finance.api import IFinancialAgent
 from simulation.models import Transaction
 from modules.finance.kernel.api import IMonetaryLedger
 
@@ -230,7 +231,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         principal = saga['mortgage_approval']['approved_principal']
         offer_price = saga['offer_price']
 
-        transfers: List[Tuple[IFinancialEntity, IFinancialEntity, float]] = [
+        transfers: List[Tuple[IFinancialAgent, IFinancialAgent, float]] = [
             (bank, buyer, principal),
             (buyer, seller, offer_price)
         ]

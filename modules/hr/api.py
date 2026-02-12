@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Optional, TYPE_CHECKING, Protocol
 
-from modules.finance.api import IFinancialEntity
+from modules.finance.api import IFinancialAgent
 
 if TYPE_CHECKING:
     from modules.common.dtos import Claim
@@ -14,11 +14,11 @@ class IHRService(ABC):
         """Calculates all employee-related claims (wages, severance) for a firm in liquidation."""
         ...
 
-class IEmployeeDataProvider(IFinancialEntity):
+class IEmployeeDataProvider(IFinancialAgent, Protocol):
     """
     Protocol for accessing employee data and managing employment lifecycle.
     Decouples HR/Finance departments from the concrete Household agent.
-    Inherits IFinancialEntity to support wage/severance payments.
+    Inherits IFinancialAgent to support wage/severance payments.
     MIGRATION: Monetary values are integers (pennies).
     """
     id: int

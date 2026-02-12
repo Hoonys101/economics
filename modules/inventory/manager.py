@@ -1,6 +1,7 @@
 from typing import Dict, Optional, TYPE_CHECKING
 import logging
 from modules.simulation.api import IInventoryHandler
+from modules.common.protocol import enforce_purity
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,7 @@ class InventoryManager(IInventoryHandler):
         self._inventory: Dict[str, float] = inventory if inventory is not None else {}
         self._inventory_quality: Dict[str, float] = quality if quality is not None else {} # Weighted average quality
 
+    @enforce_purity()
     def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0) -> bool:
         if quantity < 0:
             logger.warning(f"INVENTORY_FAIL | Agent {self.owner_id} attempt to add negative quantity {quantity} of {item_id}")
@@ -32,6 +34,7 @@ class InventoryManager(IInventoryHandler):
         self._inventory[item_id] = total_qty
         return True
 
+    @enforce_purity()
     def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None) -> bool:
         if quantity < 0:
             logger.warning(f"INVENTORY_FAIL | Agent {self.owner_id} attempt to remove negative quantity {quantity} of {item_id}")

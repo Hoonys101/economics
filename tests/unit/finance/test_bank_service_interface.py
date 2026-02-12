@@ -7,7 +7,6 @@ from modules.finance.api import (
     DebtStatusDTO,
     LoanNotFoundError,
     LoanRepaymentError,
-    IFinancialEntity,
     IFinanceSystem
 )
 from simulation.bank import Bank
@@ -36,8 +35,8 @@ class TestBankServiceInterface:
         assert hasattr(bank, 'repay_loan')
         assert hasattr(bank, 'get_balance')
         assert hasattr(bank, 'get_debt_status')
-        assert hasattr(bank, 'deposit')
-        assert hasattr(bank, 'withdraw')
+        assert hasattr(bank, '_deposit')
+        assert hasattr(bank, '_withdraw')
 
     def test_grant_loan(self, bank, mock_finance_system):
         borrower_id = "101"

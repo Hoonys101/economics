@@ -2,7 +2,7 @@ from typing import List, Dict, Optional, Any, Tuple, Union
 import logging
 import uuid
 from modules.finance.api import (
-    IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialEntity,
+    IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialAgent,
     InsufficientFundsError, GrantBailoutCommand, BorrowerProfileDTO, LoanInfoDTO
 )
 from modules.finance.domain import AltmanZScoreCalculator
@@ -356,7 +356,7 @@ class FinanceSystem(IFinanceSystem):
 
         return loan_dto, txs
 
-    def collect_corporate_tax(self, firm: IFinancialEntity, tax_amount: int) -> bool:
+    def collect_corporate_tax(self, firm: IFinancialAgent, tax_amount: int) -> bool:
         logger.warning("FinanceSystem.collect_corporate_tax called. Should be using Transaction Generation.")
         return False
 

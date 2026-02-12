@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from modules.system.execution.public_manager import PublicManager
-from modules.finance.api import IFinancialEntity, InsufficientFundsError
+from modules.finance.api import IFinancialAgent, InsufficientFundsError
 from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO
 
 class TestPublicManagerCompliance:
@@ -13,26 +13,26 @@ class TestPublicManagerCompliance:
         config.LIQUIDATION_ASK_UNDERCUT = 0.05
         return PublicManager(config)
 
-    def test_implements_financial_entity(self, public_manager):
-        """Verify PublicManager strictly implements IFinancialEntity."""
+    def test_implements_financial_agent(self, public_manager):
+        """Verify PublicManager strictly implements IFinancialAgent."""
         # Check ID Type
         assert isinstance(public_manager.id, int), "PublicManager.id must be an integer"
         assert public_manager.id == 999999
 
         # Check Assets
-        assert public_manager.assets == 0.0
+        assert public_manager.total_wealth == 0
 
         # Check Deposit
-        public_manager.deposit(100.0)
-        assert public_manager.assets == 100.0
+        public_manager._deposit(100)
+        assert public_manager.total_wealth == 100
 
         # Check Withdraw
-        public_manager.withdraw(50.0)
-        assert public_manager.assets == 50.0
+        public_manager._withdraw(50)
+        assert public_manager.total_wealth == 50
 
         # Check Insufficient Funds
         with pytest.raises(InsufficientFundsError):
-            public_manager.withdraw(100.0)
+            public_manager._withdraw(100)
 
     def test_implements_asset_recovery_system(self, public_manager):
         """Verify PublicManager implements IAssetRecoverySystem."""

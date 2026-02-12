@@ -8,7 +8,6 @@ from modules.finance.api import (
     DebtStatusDTO,
     BorrowerProfileDTO,
     IFinancialAgent,
-    IFinancialEntity,
     IFinanceSystem
 )
 from modules.simulation.api import AgentID
@@ -29,7 +28,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_TICKS_PER_YEAR = 365.0
 _DEFAULT_INITIAL_BASE_ANNUAL_RATE = 0.03
 
-class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+class Bank(IBank, ICurrencyHolder):
     """
     Refactored Bank Agent (Stateless Wrapper).
     Delegates all financial logic to FinanceSystem (FinancialLedgerDTO).
@@ -84,19 +83,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     def set_finance_system(self, finance_system: IFinanceSystem) -> None:
         self.finance_system = finance_system
 
-    # --- IFinancialEntity Implementation ---
-
-    @property
-    def assets(self) -> int:
-        return self.get_balance(DEFAULT_CURRENCY)
-
     # --- IFinancialAgent Implementation ---
-
-    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        raise NotImplementedError("Direct deposit is deprecated. Use SettlementSystem.transfer.")
-
-    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        raise NotImplementedError("Direct withdraw is deprecated. Use SettlementSystem.transfer.")
 
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         # Bank's own funds
@@ -111,6 +98,10 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
     def get_all_balances(self) -> Dict[CurrencyCode, int]:
         return self._wallet.get_all_balances()
+
+    @property
+    def total_wealth(self) -> int:
+        return sum(self._wallet.get_all_balances().values())
 
     # --- ICurrencyHolder Implementation ---
 

@@ -7,7 +7,7 @@ from modules.governance.judicial.api import IJudicialSystem, SeizureWaterfallRes
 from simulation.finance.api import ISettlementSystem
 from modules.system.api import IAgentRegistry
 from modules.finance.api import (
-    IShareholderRegistry, IPortfolioHandler, ICreditFrozen, IFinancialEntity, IFinancialAgent, ILiquidatable
+    IShareholderRegistry, IPortfolioHandler, ICreditFrozen, IFinancialAgent, ILiquidatable
 )
 from modules.simulation.api import IEducated
 from modules.system.api import DEFAULT_CURRENCY
@@ -74,8 +74,6 @@ class JudicialSystem(IJudicialSystem):
     def _get_agent_balance(self, agent: Any) -> float:
         if isinstance(agent, IFinancialAgent):
             return agent.get_balance(DEFAULT_CURRENCY)
-        elif isinstance(agent, IFinancialEntity):
-            return agent.assets
         elif hasattr(agent, 'wallet'):
             return agent.wallet.get_balance(DEFAULT_CURRENCY)
         return 0.0
