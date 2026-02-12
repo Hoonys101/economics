@@ -1,6 +1,6 @@
 # --- modules/government/treasury/api.py ---
 from __future__ import annotations
-from typing import Protocol, TypedDict, Literal, List
+from typing import Protocol, TypedDict, Literal, List, Union
 from dataclasses import dataclass
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 
@@ -16,7 +16,7 @@ class BondDTO:
     """
     id: str
     issuer: str
-    face_value: float
+    face_value: int # MIGRATION: pennies
     yield_rate: float
     maturity_date: int
 
@@ -24,7 +24,7 @@ class TreasuryOperationResultDTO(TypedDict):
     """Result of a treasury market operation."""
     success: bool
     bonds_exchanged: int
-    cash_exchanged: float
+    cash_exchanged: int # MIGRATION: pennies
     message: str
 
 # ==============================================================================
@@ -37,16 +37,18 @@ class ITreasuryService(Protocol):
     interacting with the Central Bank for open market operations.
     """
 
-    def execute_market_purchase(self, buyer_id: int | str, target_cash_amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> TreasuryOperationResultDTO:
+    def execute_market_purchase(self, buyer_id: Union[int, str], target_cash_amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> TreasuryOperationResultDTO:
         """
         Executes a purchase of bonds from the market (e.g. by Central Bank).
         The caller (buyer) provides cash, and receives bonds.
+        target_cash_amount: int pennies
         """
         ...
 
-    def execute_market_sale(self, seller_id: int | str, target_cash_amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> TreasuryOperationResultDTO:
+    def execute_market_sale(self, seller_id: Union[int, str], target_cash_amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> TreasuryOperationResultDTO:
         """
         Executes a sale of bonds to the market (e.g. by Central Bank).
         The caller (seller) provides bonds, and receives cash.
+        target_cash_amount: int pennies
         """
         ...

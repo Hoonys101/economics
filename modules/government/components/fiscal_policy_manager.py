@@ -4,6 +4,8 @@ import math
 from modules.government.dtos import FiscalPolicyDTO, TaxBracketDTO
 from simulation.dtos.api import MarketSnapshotDTO
 from modules.government.api import IFiscalPolicyManager
+from modules.finance.utils.currency_math import round_to_pennies
+from modules.government.constants import DEFAULT_BASIC_FOOD_PRICE
 
 class FiscalPolicyManager(IFiscalPolicyManager):
     """
@@ -24,7 +26,11 @@ class FiscalPolicyManager(IFiscalPolicyManager):
         # MarketSnapshotDTO is now a TypedDict.
         # Prioritize 'market_signals' (new) > 'market_data' (legacy)
 
-        basic_food_price = 5.0 # Default
+        # MIGRATION: Default is now pennies (500), but logic below assumes DOLLARS from Market
+        # If fallback is needed, we must be careful.
+        # Let's say fallback is 5.0 dollars (legacy constant usage in tests might expect 5.0).
+        # We will convert whatever we get to pennies.
+        basic_food_price_raw = 5.0
 
         signals = getattr(market_snapshot, 'market_signals', {})
         if isinstance(signals, dict) and 'basic_food' in signals:
@@ -35,7 +41,7 @@ class FiscalPolicyManager(IFiscalPolicyManager):
              if price is None or price <= 0:
                  price = getattr(signal, 'last_traded_price', None)
              if price is not None and price > 0:
-                 basic_food_price = price
+                 basic_food_price_raw = float(price)
 
         else:
              m_data = getattr(market_snapshot, 'market_data', {})
@@ -43,25 +49,28 @@ class FiscalPolicyManager(IFiscalPolicyManager):
                  price = m_data['goods_market'].get('basic_food_current_sell_price', 5.0)
                  # Protective check for Mock objects in tests
                  try:
-                     basic_food_price = float(price)
+                     basic_food_price_raw = float(price)
                  except (ValueError, TypeError):
-                     basic_food_price = 5.0
+                     basic_food_price_raw = 5.0
 
         daily_consumption = getattr(self.config_module, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
 
-        # Convert to pennies if float dollars (heuristic < 1000) or force int.
-        # Assuming input price might be float dollars.
-        raw_price = float(basic_food_price)
-        if raw_price < 1000.0:
-             raw_price *= 100.0
+        # MIGRATION: Assume market prices are float DOLLARS.
+        # Convert to pennies explicitly.
+        # If raw_price is small (e.g. 5.0), it becomes 500.
+        # If raw_price is huge (e.g. 500.0), it becomes 50000.
+        # We removed the heuristic check < 1000.0.
 
-        survival_cost = int(raw_price * float(daily_consumption))
+        # Calculate survival cost in pennies
+        # survival_cost = (Price in Dollars * 100) * Consumption
+        # Note: round_to_pennies expects input in pennies (fractional).
+        # Since basic_food_price_raw is in DOLLARS, we multiply by 100.
+        survival_cost = round_to_pennies(basic_food_price_raw * 100 * float(daily_consumption))
 
         # Ensure non-zero survival cost to prevent issues
         if survival_cost <= 0:
-            # Fallback to config default or hardcoded safe value
-            default_price = getattr(self.config_module, "DEFAULT_FALLBACK_PRICE", 5.0)
-            survival_cost = int(default_price * 100) # Convert default dollars to pennies
+            # Fallback to config default or hardcoded safe value (500 pennies)
+            survival_cost = int(DEFAULT_BASIC_FOOD_PRICE)
 
         # 2. Get Tax Brackets Configuration
         # Format: List of (multiple_of_survival_cost, tax_rate)
@@ -76,15 +85,15 @@ class FiscalPolicyManager(IFiscalPolicyManager):
                 (float('inf'), 0.20) # 20% above 3x survival
             ]
 
-        # 3. Convert to Absolute TaxBracketDTOs
+        # 3. Convert to Absolute TaxBracketDTOs (in pennies)
         progressive_tax_brackets: List[TaxBracketDTO] = []
-        previous_ceiling = 0.0
+        previous_ceiling = 0
 
         for multiple, rate in raw_brackets:
             if multiple == float('inf'):
                 ceiling = None
             else:
-                ceiling = multiple * survival_cost
+                ceiling = int(multiple * survival_cost)
 
             bracket = TaxBracketDTO(
                 floor=previous_ceiling,
@@ -102,12 +111,13 @@ class FiscalPolicyManager(IFiscalPolicyManager):
             progressive_tax_brackets=progressive_tax_brackets
         )
 
-    def calculate_tax_liability(self, policy: FiscalPolicyDTO, income: float) -> float:
+    def calculate_tax_liability(self, policy: FiscalPolicyDTO, income: int) -> int:
         """
         Calculates the tax owed based on a progressive bracket system.
+        Income and return value are in pennies.
         """
         if income <= 0:
-            return 0.0
+            return 0
 
         total_tax = 0.0
 
@@ -119,12 +129,17 @@ class FiscalPolicyManager(IFiscalPolicyManager):
             if income <= bracket_floor:
                 continue
 
-            taxable_in_bracket = min(income, bracket_ceiling) - bracket_floor
+            # Calculate taxable amount in this bracket
+            # Use float('inf') comparison logic
+            if bracket.ceiling is None:
+                 taxable_in_bracket = income - bracket_floor
+            else:
+                 taxable_in_bracket = min(income, bracket_ceiling) - bracket_floor
 
             if taxable_in_bracket > 0:
                 total_tax += taxable_in_bracket * bracket.rate
 
-            if income <= bracket_ceiling:
+            if bracket.ceiling is not None and income <= bracket_ceiling:
                 break
 
-        return total_tax
+        return round_to_pennies(total_tax)

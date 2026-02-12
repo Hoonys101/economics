@@ -17,15 +17,15 @@ HouseholdID = int
 @dataclass
 class TaxHistoryItemDTO:
     tick: int
-    total: float
-    tax_revenue: Dict[str, float]
+    total: int # MIGRATION: pennies
+    tax_revenue: Dict[str, int] # MIGRATION: pennies
 
 @dataclass
 class TaxBracketDTO:
     """Defines a single progressive tax bracket."""
-    floor: float
+    floor: int # MIGRATION: pennies
     rate: float
-    ceiling: Optional[float] # None for the highest bracket
+    ceiling: Optional[int] # MIGRATION: pennies (None for the highest bracket)
 
 @dataclass
 class FiscalPolicyDTO:
@@ -47,8 +47,8 @@ class MonetaryPolicyDTO:
 class GovernmentStateDTO:
     """Immutable snapshot of the Government's state."""
     tick: int
-    assets: Dict[str, float]
-    total_debt: float
+    assets: Dict[str, int] # MIGRATION: pennies
+    total_debt: int # MIGRATION: pennies
     income_tax_rate: float
     corporate_tax_rate: float
     fiscal_policy: 'FiscalPolicyDTO'
@@ -75,7 +75,7 @@ class ExecutionResultDTO:
     """Concrete commands resulting from policy execution."""
     payment_requests: List['PaymentRequestDTO'] = field(default_factory=list)
     bailout_results: List['BailoutResultDTO'] = field(default_factory=list)
-    monetary_ledger_updates: Dict[str, float] = field(default_factory=dict)
+    monetary_ledger_updates: Dict[str, int] = field(default_factory=dict) # MIGRATION: pennies
     state_updates: Dict[str, Any] = field(default_factory=dict) # For Orchestrator to update its state
     transactions: List[Any] = field(default_factory=list) # General transactions (e.g. from bailouts)
     executed_loans: List[Any] = field(default_factory=list) # Executed loan objects (e.g. from bailouts)
@@ -108,7 +108,7 @@ class PaymentRequestDTO:
     """
     payer: Union[IAgent, FirmID, HouseholdID]
     payee: Union[IAgent, FirmID, HouseholdID]
-    amount: float
+    amount: int # MIGRATION: pennies
     currency: CurrencyCode
     memo: str
 
@@ -116,14 +116,14 @@ class PaymentRequestDTO:
 class TaxCollectionResultDTO:
     """Result from a tax collection operation, containing payment requests."""
     payment_requests: List[PaymentRequestDTO] = field(default_factory=list)
-    total_collected: float = 0.0
+    total_collected: int = 0 # MIGRATION: pennies
     tax_type: str = ""
 
 @dataclass
 class WelfareResultDTO:
     """Result from a welfare check operation, containing payment requests."""
     payment_requests: List[PaymentRequestDTO] = field(default_factory=list)
-    total_paid: float = 0.0
+    total_paid: int = 0 # MIGRATION: pennies
 
 @dataclass
 class BailoutResultDTO:

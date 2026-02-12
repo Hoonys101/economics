@@ -13,6 +13,7 @@ from simulation.models import Transaction
 from simulation.core_agents import Household
 from simulation.firms import Firm
 from modules.finance.utils.currency_math import round_to_pennies
+from modules.government.constants import DEFAULT_BASIC_FOOD_PRICE
 
 logger = logging.getLogger(__name__)
 
@@ -159,8 +160,9 @@ class TransactionManager(SystemInterface):
             elif tx.transaction_type == "goods":
                 # Sales Tax Logic
                 sales_tax_rate = getattr(self.config, "SALES_TAX_RATE", 0.05)
-                tax_amount = int(trade_value * sales_tax_rate)
-                total_cost = int(trade_value + tax_amount)
+                # MIGRATION: Use round_to_pennies explicitly
+                tax_amount = round_to_pennies(trade_value * sales_tax_rate)
+                total_cost = trade_value + tax_amount
 
                 # Solvency Check (Legacy compatibility)
                 if hasattr(buyer, 'check_solvency'):
@@ -240,19 +242,25 @@ class TransactionManager(SystemInterface):
                 # Income Tax Logic
                 tax_payer = getattr(self.config, "INCOME_TAX_PAYER", "HOUSEHOLD")
 
+                # MIGRATION: Standardized price handling
+                avg_food_price_pennies = 0
                 if "basic_food_current_sell_price" in goods_market_data:
-                    avg_food_price = goods_market_data["basic_food_current_sell_price"]
+                    val = goods_market_data["basic_food_current_sell_price"]
+                    if isinstance(val, float):
+                         avg_food_price_pennies = round_to_pennies(val * 100)
+                    else:
+                         avg_food_price_pennies = int(val)
                 else:
-                    avg_food_price = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("basic_food", 5.0)
+                    val = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("basic_food", DEFAULT_BASIC_FOOD_PRICE)
+                    if isinstance(val, float):
+                         avg_food_price_pennies = round_to_pennies(val * 100)
+                    else:
+                         avg_food_price_pennies = int(val)
 
                 daily_food_need = getattr(self.config, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
 
-                # Assume avg_food_price might be dollars (float) from legacy or int pennies.
-                # Safety check: if small float (< 100), treat as dollars -> convert to pennies.
-                if isinstance(avg_food_price, float) and avg_food_price < 1000.0:
-                     avg_food_price = avg_food_price * 100
-
-                survival_cost = int(max(avg_food_price * daily_food_need, 1000.0)) # 1000 pennies = $10 min survival cost?
+                # MIGRATION: survival_cost in pennies, max 1000 pennies ($10)
+                survival_cost = int(max(avg_food_price_pennies * daily_food_need, 1000))
 
                 # Calculate Tax (Standardized method call on Gov)
                 # Note: calculate_income_tax is on Government agent.
