@@ -53,29 +53,13 @@ from modules.household.mixins._state_access import HouseholdStateAccessMixin
 
 # Protocols
 from modules.hr.api import IEmployeeDataProvider
+from simulation.dtos.household_state_container import HouseholdStateContainer
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
     from simulation.dtos.scenario import StressScenarioConfig
 
 logger = logging.getLogger(__name__)
-
-class HouseholdStateContainer:
-    """Helper to expose Household state components."""
-    def __init__(self, agent: "Household"):
-        self._agent = agent
-
-    @property
-    def econ_state(self) -> EconStateDTO:
-        return self._agent._econ_state
-
-    @property
-    def bio_state(self) -> BioStateDTO:
-        return self._agent._bio_state
-
-    @property
-    def social_state(self) -> SocialStateDTO:
-        return self._agent._social_state
 
 class Household(
     ILearningAgent,
