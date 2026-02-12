@@ -9,7 +9,7 @@ def mock_config():
     config = MagicMock()
     config.ANNUAL_WEALTH_TAX_RATE = 0.02 # 2%
     config.TICKS_PER_YEAR = 100
-    config.WEALTH_TAX_THRESHOLD = 1000.0
+    config.WEALTH_TAX_THRESHOLD = 100000 # 1000 dollars in pennies
     return config
 
 @pytest.fixture
@@ -23,6 +23,7 @@ def mock_agent():
     agent.is_active = True
     agent.needs = {}
     agent.is_employed = True
+    agent.get_balance.return_value = 0
     return agent
 
 def test_collect_wealth_tax(tax_service, mock_agent):
@@ -33,6 +34,7 @@ def test_collect_wealth_tax(tax_service, mock_agent):
     # Tax = 100,000 * 0.0002 = 20 pennies.
 
     mock_agent.assets = {DEFAULT_CURRENCY: 200000}
+    mock_agent.get_balance.return_value = 200000
     agents = [mock_agent]
 
     # Execution
@@ -48,6 +50,7 @@ def test_collect_wealth_tax(tax_service, mock_agent):
 
 def test_collect_wealth_tax_below_threshold(tax_service, mock_agent):
     mock_agent.assets = {DEFAULT_CURRENCY: 50000}
+    mock_agent.get_balance.return_value = 50000
     agents = [mock_agent]
 
     result = tax_service.collect_wealth_tax(agents)

@@ -23,15 +23,21 @@ class MockAgent:
         if property_id in self.owned_properties:
             self.owned_properties.remove(property_id)
 
-    def deposit(self, amount: float, currency: str = DEFAULT_CURRENCY) -> None:
+    def _deposit(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
         if currency not in self.assets:
             self.assets[currency] = 0.0
         self.assets[currency] += amount
 
-    def withdraw(self, amount: float, currency: str = DEFAULT_CURRENCY) -> None:
+    def _withdraw(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
         if self.assets.get(currency, 0.0) < amount:
              raise Exception("Insufficient funds")
         self.assets[currency] -= amount
+
+    def deposit(self, amount: float, currency: str = DEFAULT_CURRENCY) -> None:
+        self._deposit(int(amount), currency)
+
+    def withdraw(self, amount: float, currency: str = DEFAULT_CURRENCY) -> None:
+        self._withdraw(int(amount), currency)
 
     def get_balance(self, currency: str = DEFAULT_CURRENCY) -> float:
         return self.assets.get(currency, 0.0)

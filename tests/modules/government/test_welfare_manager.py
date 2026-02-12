@@ -55,9 +55,9 @@ def test_run_welfare_check_unemployment(welfare_manager, mock_agent, market_data
     assert req.memo == "welfare_support_unemployment"
 
     # Calculation check: survival_cost = 20.0 * 1.0 = 20.0
-    # benefit = 20.0 * 0.5 = 10.0
-    assert req.amount == 10.0
-    assert welfare_manager.get_spending_this_tick() == 10.0
+    # benefit = 20.0 * 0.5 = 10.0 -> 1000 pennies
+    assert req.amount == 1000
+    assert welfare_manager.get_spending_this_tick() == 1000
 
 def test_run_welfare_check_stimulus(welfare_manager, mock_agent, market_data):
     # Setup
@@ -81,8 +81,8 @@ def test_run_welfare_check_stimulus(welfare_manager, mock_agent, market_data):
     req = result.payment_requests[0]
     assert req.memo == "welfare_support_stimulus"
 
-    # Calculation: survival_cost = 20.0. Stimulus = 5 * survival = 100.0.
-    assert req.amount == 100.0
+    # Calculation: survival_cost = 20.0. Stimulus = 5 * survival = 100.0 -> 10000 pennies
+    assert req.amount == 10000
 
 def test_provide_firm_bailout(welfare_manager):
     firm = MagicMock()

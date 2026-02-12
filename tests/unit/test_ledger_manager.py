@@ -1,6 +1,7 @@
 import pytest
 import shutil
 import os
+from unittest.mock import patch
 from scripts.ledger_manager import LedgerManager, TableBlock
 
 @pytest.fixture
@@ -73,17 +74,16 @@ def test_register_new_item(mock_ledger_env):
                     assert "OPERATIONS" in block.section_title
     assert found
 
-def test_sync_with_codebase(mock_ledger_env, capsys, mocker):
+def test_sync_with_codebase(mock_ledger_env, capsys):
     ledger_path, archive_dir = mock_ledger_env
     manager = LedgerManager(str(ledger_path), str(archive_dir))
 
     # Mock scan_code
-    mocker.patch.object(manager, '_scan_code_for_todos', return_value={
+    with patch.object(manager, '_scan_code_for_todos', return_value={
         'TD-001': ['file.py:10'], # TD-001 is active
         'TD-999': ['file.py:20']  # TD-999 is orphan
-    })
-
-    manager.sync_with_codebase()
+    }):
+        manager.sync_with_codebase()
 
     captured = capsys.readouterr()
     assert "[ORPHANED TODOs]" in captured.out
