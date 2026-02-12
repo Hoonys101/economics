@@ -437,6 +437,22 @@ class SimulationInitializer(SimulationInitializerInterface):
             repository=self.repository
         )
 
+        # Create HouseholdFactory Context and Instance
+        hh_config_dto = create_config_dto(self.config, HouseholdConfigDTO)
+
+        hh_factory_context = HouseholdFactoryContext(
+            core_config_module=self.config,
+            household_config_dto=hh_config_dto,
+            goods_data=self.goods_data,
+            loan_market=sim.markets.get("loan_market"),
+            ai_training_manager=sim.ai_training_manager,
+            settlement_system=sim.settlement_system,
+            markets=sim.markets,
+            memory_system=sim.persistence_manager,
+            central_bank=sim.central_bank
+        )
+
+        household_factory = HouseholdFactory(hh_factory_context)
 
         sim.demographic_manager = DemographicManager(
             config_module=self.config,
@@ -537,23 +553,6 @@ class SimulationInitializer(SimulationInitializerInterface):
         # 5. Public Manager
         sim.transaction_processor.register_public_manager_handler(PublicManagerTransactionHandler())
 
-
-        # Create HouseholdFactory Context and Instance
-        hh_config_dto = create_config_dto(self.config, HouseholdConfigDTO)
-
-        hh_factory_context = HouseholdFactoryContext(
-            core_config_module=self.config,
-            household_config_dto=hh_config_dto,
-            goods_data=self.goods_data,
-            loan_market=sim.markets.get("loan_market"),
-            ai_training_manager=sim.ai_training_manager,
-            settlement_system=sim.settlement_system,
-            markets=sim.markets,
-            memory_system=sim.persistence_manager,
-            central_bank=sim.central_bank
-        )
-
-        household_factory = HouseholdFactory(hh_factory_context)
 
         # AgentLifecycleManager is created here and injected into the simulation
         sim.lifecycle_manager = AgentLifecycleManager(

@@ -13,7 +13,7 @@ class MockConfig:
     CORPORATE_TAX_RATE = 0.2
     TAX_MODE = "PROGRESSIVE"
     ANNUAL_WEALTH_TAX_RATE = 0.02
-    WEALTH_TAX_THRESHOLD = 1000.0 # Dollars in config, converted to pennies by service
+    WEALTH_TAX_THRESHOLD = 100000 # 1000 dollars in pennies
     GOODS_INITIAL_PRICE = {"basic_food": 10.0}
     HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
     UNEMPLOYMENT_BENEFIT_RATIO = 0.5

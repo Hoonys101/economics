@@ -128,8 +128,21 @@ def test_newborn_receives_initial_needs_from_config(mock_config, mock_simulation
     # ARRANGE
     # Reset singleton to ensure this test's mock_config is used
     DemographicManager._instance = None
-    # Instantiate the manager and surgically attach the mock config
-    manager = DemographicManager(config_module=mock_config)
+    # Mock HouseholdFactory
+    mock_factory = MagicMock()
+
+    # Configure the mock factory to return a child with correct properties
+    # This simulates the factory correctly using the config to set initial needs
+    mock_child = MagicMock(spec=Household)
+    mock_child.id = 101
+    mock_child.parent_id = parent_agent.id
+    mock_child.age = 0.0
+    mock_child.needs = mock_config.NEWBORN_INITIAL_NEEDS
+
+    mock_factory.create_newborn.return_value = mock_child
+
+    # Instantiate the manager and surgically attach the mock config and factory
+    manager = DemographicManager(config_module=mock_config, household_factory=mock_factory)
     manager.logger = MagicMock() # Isolate logger
 
     birth_requests = [parent_agent]
