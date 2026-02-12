@@ -58,7 +58,12 @@ class TickOrchestrator:
             # Ensure currency_holders is correct before baseline calculation
             # TD-030: Removed _rebuild_currency_holders. Initializer populates this.
             # self._rebuild_currency_holders(state)
-            state.baseline_money_supply = state.calculate_total_money().get(DEFAULT_CURRENCY, 0.0)
+            total_money = state.calculate_total_money()
+            if isinstance(total_money, dict):
+                state.baseline_money_supply = total_money.get(DEFAULT_CURRENCY, 0.0)
+            else:
+                state.baseline_money_supply = float(total_money)
+
             state.logger.info(
                 f"MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: {state.baseline_money_supply:.2f}",
                 extra={"tick": state.time, "money_supply": state.baseline_money_supply}

@@ -100,7 +100,7 @@ class HousingSystem:
 
                     payable = min(cost, owner_assets)
                     if payable > 0 and settlement and simulation.government:
-                        settlement.transfer(owner, simulation.government, payable, "housing_maintenance", tick=simulation.time, currency=DEFAULT_CURRENCY)
+                        settlement.transfer(owner, simulation.government, int(payable), "housing_maintenance", tick=simulation.time, currency=DEFAULT_CURRENCY)
 
             # B. Rent Collection (Tenant pays Owner)
             if unit.occupant_id is not None and unit.owner_id is not None:
@@ -119,7 +119,7 @@ class HousingSystem:
 
                     if tenant_assets >= rent:
                         if settlement:
-                            settlement.transfer(tenant, owner, rent, "rent_payment", tick=simulation.time, currency=DEFAULT_CURRENCY)
+                            settlement.transfer(tenant, owner, int(rent), "rent_payment", tick=simulation.time, currency=DEFAULT_CURRENCY)
                     else:
                         # Eviction due to rent non-payment
                         logger.info(
