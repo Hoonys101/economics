@@ -679,3 +679,42 @@ class IDepositManager(Protocol):
         ...
     def withdraw(self, agent_id: AgentID, amount: int) -> bool: ...
     def get_total_deposits(self) -> int: ...
+
+# ==============================================================================
+# === ADDITIONS FOR SOLVENCY CHECK ENGINE
+# ==============================================================================
+
+# --- Data Transfer Objects (DTOs) ---
+
+class SolvencyCheckInputDTO(TypedDict):
+    """Input DTO containing an entity's asset and liability totals."""
+    entity_id: str
+    total_assets: float
+    total_liabilities: float
+
+class SolvencyCheckOutputDTO(TypedDict):
+    """Output DTO reporting the results of a solvency check."""
+    entity_id: str
+    is_solvent: bool
+    net_worth: float
+    debt_to_asset_ratio: float # liabilities / assets
+
+
+# --- Engine Interface ---
+
+class SolvencyEngine(Protocol):
+    """
+    A stateless engine for checking the financial solvency of an entity.
+    """
+
+    def check(self, inputs: SolvencyCheckInputDTO) -> SolvencyCheckOutputDTO:
+        """
+        Evaluates solvency based on assets and liabilities.
+
+        Args:
+            inputs: A DTO containing the entity's total assets and liabilities.
+
+        Returns:
+            A DTO reporting solvency status, net worth, and key ratios.
+        """
+        ...
