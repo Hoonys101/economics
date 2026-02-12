@@ -12,7 +12,6 @@
 | **TD-DOC-PARITY** | Documentation | **Missing Manual**: `AUDIT_PARITY.md` missing from operations manuals. | **Low**: Knowledge loss. | Identified |
 | **TD-ENFORCE-NONE** | System | **Protocol Enforcement**: Lack of static/runtime guards for architectural rules. | **High**: Regression risk. | Open (Phase 15) |
 | **TD-CONFIG-LEAK** | Architecture | **Encapsulation**: Direct access to `agent.config` in internal systems. | **Medium**: Coupling risk. | Open |
-| **TD-PH15-SEO** | Finance/Tax | **SEO Leak**: Core engines receive direct Agent handles instead of Snapshots. | **High**: Architectural Drift. | Open |
 
 ---
 > [!NOTE]
@@ -22,23 +21,6 @@
 
 ## 📓 Implementation Lessons & Detailed Debt (Open)
 
----
-### ID: TDL-031 / TD-QE-MISSING
-### Title: QE Bond Issuance Logic Missing Post-Refactor
-- **Date**: 2026-02-11
-- **Component**: `modules.finance.system.FinanceSystem`
-- **Issue**: QE Bond Issuance Logic Missing Post-Refactor
-- **Description**: The `issue_treasury_bonds` function in the stateless `FinanceSystem` engine hardcodes the bond buyer as the primary commercial bank (`self.bank.id`). The original logic, which allowed the Central Bank to be the buyer under specific QE conditions (e.g., high debt-to-gdp), was lost during refactoring.
-- **Impact**: The system can no longer properly simulate Quantitative Easing. Test `test_qe_bond_issuance` has a critical assertion marked as xfail to prevent build failure.
-- **Reporter**: Jules (via PR #FP-INT-MIGRATION-02)
-- **Status**: Open
-
----
-### ID: TD-FIN-001
-### Title: Impure Financial Engines (State Mutation)
-- **Symptom**: `DebtServicingEngine`, `LiquidationEngine`, `LoanBookingEngine` directly mutate input DTOs.
-- **Risk**: Breaks functional purity, creates race conditions, and complicates zero-sum verification.
-- **Solution**: Refactor to `State_In -> State_Out` pattern using DTO copies.
 
 ---
 ### ID: TD-FIN-002
@@ -90,14 +72,3 @@
 - **Solution**: Restore or recreate the `AUDIT_PARITY.md` manual.
 - **Reported**: `PROJECT_PARITY_AUDIT_REPORT_20260212.md`
 
----
-### ID: TD-PH15-SEO-LEAKS
-### Title: Phase 15 Residual SEO Leaks (Audit findings)
-- **Symptom**: Core engines in Finance/Taxation still receive direct Agent handles instead of Snapshots/DTOs.
-- **Identified Leaks**:
-  1. `FinanceSystem.evaluate_solvency` (direct `firm.assets` access).
-  2. `TaxService.collect_wealth_tax` (direct `IAgent` list iteration).
-  3. `TaxationSystem` (direct property access on `IFinancialAgent`).
-  4. Mutable DTOs in `debt_servicing_engine` and `loan_booking_engine`.
-- **Status**: Open (Post-PH15)
-- **Reported**: `PH15_FINAL_COMPLIANCE_AUDIT.md` (2026-02-12)

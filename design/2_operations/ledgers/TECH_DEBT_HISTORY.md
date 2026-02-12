@@ -52,7 +52,9 @@ This document archives resolved technical debt items to keep the primary ledger 
 | **TD-STR-LEAK** | Architecture | **Purification**: Removed raw agent handles from engines (Finance, HH, Firm). | Refactoring Era | [Audit Report](../../communications/insights/REFACTORING_COMPLIANCE_AUDIT.md) |
 | **TD-FIN-ZERO** | Finance | **Fix**: Double-entry integrity in stateless finance engines (Retained Earnings). | Refactoring Era | [Finance Insight](../../communications/insights/TECH_DEBT_LEDGER.md) |
 | **TD-AGENT-STATE-INVFIRM** | Data/DTO | **Serialization Gap**: `AgentStateDTO` multi-slot inventory support. | PH15-FIX | [Insight](../../communications/insights/FIX-FINAL-TESTS.md) |
-| **TD-QE-MISSING** | Financials | **Logic Gap**: QE Bond Issuance logic restoration. | PH15-FIX | [Insight](../../communications/insights/FIX-FINAL-TESTS.md) |
+| **TD-QE-MISSING** | Financials | **Logic Gap**: QE Bond Issuance logic restoration. | PH15.2 | [Insight](../../communications/insights/MS-Finance-Purity-QE.md) |
+| **TD-FIN-001** | Finance | **Purity**: Refactored `DebtServicing` & `LoanBooking` to functional pattern. | PH15.2 | [Insight](../../communications/insights/MS-Finance-Purity-QE.md) |
+| **TD-PH15-SEO** | Architecture | **Hardening**: Eliminated direct Agent handle leaks in core engines (Tax/Solvency). | PH15.2 | [Insight](../../communications/insights/MS-0128-Tax-Engine-Refactor.md) |
 
 ## 📓 Implementation Lessons (Resolved Path)
 
