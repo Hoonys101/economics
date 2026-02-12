@@ -203,3 +203,14 @@
 - **Risk**: Inconsistency in future parity audits due to lack of defined methodology.
 - **Solution**: Restore or recreate the `AUDIT_PARITY.md` manual.
 - **Reported**: `PROJECT_PARITY_AUDIT_REPORT_20260212.md`
+
+---
+- **Source**: `communications/insights/IMPL-CORE-DECOMP-P2.md`
+- **Entry Date**: 2026-02-12
+- **Type**: Refactoring / Architectural Debt
+- **Description**: The God-Class decomposition (Phase 2) was successful, but follow-up actions are required:
+  - The `FirmSystem` manager still manually instantiates `Firm` agents and needs to be refactored to use the new `FirmFactory`.
+  - `Firm` and `Household` orchestrators are still overly large (~1400 and ~1058 lines respectively). Further decomposition of finance and production logic is needed.
+  - The legacy `simulation/factories/agent_factory.py` is deprecated but still in use by some tests. It should be fully eliminated.
+- **Status**: `OPEN`
+---
