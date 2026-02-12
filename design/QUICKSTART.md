@@ -7,11 +7,11 @@ This is the definitive entry point for all contributors. **Read this first.**
 ## 🛑 0. The Master Principle (Architect's Rule)
 
 ### 1. The Delegation Chain
-| Role | Agent | Responsibility |
-| :--- | :--- | :--- |
-| **The Brain** | Gemini (gemini-go) | Analysis, Spec Writing, PR Review, Log Forensics |
-| **The Hands** | Jules (jules-go) | Implementation, Debugging, Execution |
-| **The Team Lead** | Antigravity | Orchestration, Context Management, Delegation |
+| Role | Agent | Responsibility | Output Type |
+| :--- | :--- | :--- | :--- |
+| **Architect & Orchestrator** | **Antigravity** | Role Assignment, Context Selection, Final Review | Missions & Strategic Direction |
+| **Logic Generator** | Gemini-CLI Workers | Analysis, Spec Writing, PR Review, Logging | Markdown Reports & Specs |
+| **Implementation Hand** | Jules | Coding, Debugging, Execution | Git PRs & Codebase Changes |
 
 ### 2. The Architectural Governance Philosophy (Team Lead's Creed)
 **"팀장은 세부 구현에 매몰되는 실무자가 아니라, 시스템의 방향성을 결정하는 설계자입니다."**
