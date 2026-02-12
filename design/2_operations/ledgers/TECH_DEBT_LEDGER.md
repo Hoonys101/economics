@@ -2,7 +2,7 @@
 
 | ID | Module / Component | Description | Priority / Impact | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **WO-101** | Test | Core logic-protocol changes (e.g., wallet) break test mocks. | **High**: Logic brittleness/Drift. | Partially Mitigated |
+| **WO-101** | Test | Core logic-protocol changes (e.g., wallet) break test mocks. | **High**: Logic brittleness/Drift. | Resolved |
 | **TD-LEG-TRANS** | System | Legacy `TransactionManager` contains redundant/conflicting logic. | **Low**: Confusion & code bloat. | Pending Deletion |
 | **TD-PRECISION** | Financials | Use of `float` for currency leads to precision dust/leaks over long runs. | **Medium**: Marginal zero-sum drift. | Identified (Next Priority) |
 | **TD-CONFIG-MUT** | System | Scenarios directly mutate global config via `setattr`. | **Medium**: State pollution risk. | Identified (Next Priority) |
@@ -10,7 +10,7 @@
 | **TD-STR-GOD-DECOMP** | Architecture | **Residual God Classes**: `Firm` (1276 lines) and `Household` (1042 lines) exceed 800-line limit. | **Medium**: Maintenance friction. | Open |
 | **TD-ARCH-LEAK-CONTEXT** | Finance | **Abstraction Leak**: `LiquidationContext` passes agent interfaces instead of pure DTO snapshots. | **Low**: Future coupling risk. | Identified |
 | **TD-AGENT-STATE-INVFIRM** | Data/DTO | **Serialization Gap**: `AgentStateDTO` (save/load) does not support multi-slot inventories (e.g., `_input_inventory`). | **High**: Data loss on reload. | Open |
-| **TD-ARCH-LEAK-PROTI** | Architecture | **Interface Drift**: `IFinancialEntity` still defines `deposit/withdraw` which now raise errors. | **Medium**: Type safety friction. | Open |
+| **TD-ARCH-LEAK-PROTI** | Architecture | **Interface Drift**: `IFinancialEntity` still defines `deposit/withdraw` which now raise errors. | **Medium**: Type safety friction. | Resolved |
 | **TD-ARCH-DI-SETTLE** | Architecture | **DI Timing**: `AgentRegistry` injection into `SettlementSystem` happens post-initialization. | **Low**: Initialization fragility. | Open |
 | **TD-DOC-PARITY** | Documentation | **Missing Manual**: `AUDIT_PARITY.md` missing from operations manuals. | **Low**: Knowledge loss. | Identified |
 | **TD-ENFORCE-NONE** | System | **Protocol Enforcement**: Lack of static/runtime guards for architectural rules. | **High**: Regression risk. | Open (Phase 15) |
@@ -65,6 +65,8 @@
 | **TD-STR-GOD** | Architecture | **Refactor**: Decomposed `Firm` and `Household` into Orchestrator-Engine pattern. | Refactoring Era | [Firm Insight](./firm_decomposition.md), [HH Insight](./HH_Engine_Refactor_Insights.md) |
 | **TD-STR-LEAK** | Architecture | **Purification**: Removed raw agent handles from engines (Finance, HH, Firm). | Refactoring Era | [Audit Report](../../communications/insights/REFACTORING_COMPLIANCE_AUDIT.md) |
 | **TD-FIN-ZERO** | Finance | **Fix**: Double-entry integrity in stateless finance engines (Retained Earnings). | Refactoring Era | [Finance Insight](../../communications/insights/TECH_DEBT_LEDGER.md) |
+| **WO-101** | Test | **Restoration**: Fixed test mocks and signatures broken by SSoT migration. | Clean Room Era | [Audit Guide](../../design/3_work_artifacts/reports/audit_test_migration_guide.md) |
+| **TD-ARCH-LEAK-PROTI** | Architecture | **Purification**: Migrated tests away from deprecated `deposit/withdraw` interfaces. | Clean Room Era | [Audit Guide](../../design/3_work_artifacts/reports/audit_test_migration_guide.md) |
 
 ## 📓 Implementation Lessons & Detailed Debt
 
