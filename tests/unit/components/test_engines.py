@@ -2,9 +2,11 @@ import pytest
 from unittest.mock import MagicMock, Mock
 from simulation.components.engines.hr_engine import HREngine
 from simulation.components.engines.sales_engine import SalesEngine
-from simulation.components.state.firm_state_models import HRState, SalesState
+from simulation.components.engines.finance_engine import FinanceEngine
+from simulation.components.state.firm_state_models import HRState, SalesState, FinanceState
 from simulation.dtos.hr_dtos import HRPayrollContextDTO, TaxPolicyDTO
 from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingContextDTO
+from simulation.dtos.context_dtos import FinancialTransactionContext
 from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.models import Transaction, Order
 from modules.system.api import DEFAULT_CURRENCY
@@ -129,3 +131,38 @@ class TestSalesEngine:
         )
         tx_fail = engine.generate_marketing_transaction(state, context_fail)
         assert tx_fail is None
+
+class TestFinanceEngine:
+    def test_generate_financial_transactions(self):
+        engine = FinanceEngine()
+        state = FinanceState()
+        config = MagicMock(spec=FirmConfigDTO)
+        config.inventory_holding_cost_rate = 0.1
+        config.firm_maintenance_fee = 10.0 # 1000 pennies
+        config.bailout_repayment_ratio = 0.1
+
+        context = FinancialTransactionContext(
+            government_id=999,
+            tax_rates={},
+            market_context={"exchange_rates": {DEFAULT_CURRENCY: 1.0}},
+            shareholder_registry=None
+        )
+
+        # Test balances - using dict instead of Wallet object
+        balances = {DEFAULT_CURRENCY: 2000} # 20.00
+
+        # Inventory value 50.00 -> holding cost 5.00 -> 500 pennies
+        transactions = engine.generate_financial_transactions(
+            state, firm_id=1, balances=balances, config=config, current_time=10, context=context, inventory_value=50.0
+        )
+
+        # Expect Holding Cost + Maintenance
+        # Maintenance 1000 pennies. Holding 500 pennies.
+        # Total cost 1500. Balance 2000. OK.
+
+        assert len(transactions) >= 2
+        holding_tx = next((t for t in transactions if t.item_id == "holding_cost"), None)
+        assert holding_tx.price == 500
+
+        maint_tx = next((t for t in transactions if t.item_id == "firm_maintenance"), None)
+        assert maint_tx.price == 1000

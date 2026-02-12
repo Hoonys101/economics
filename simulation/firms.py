@@ -27,6 +27,7 @@ from simulation.components.engines.sales_engine import SalesEngine
 from simulation.components.engines.asset_management_engine import AssetManagementEngine
 from simulation.components.engines.rd_engine import RDEngine
 from modules.firm.engines.brand_engine import BrandEngine
+from simulation.components.engines.real_estate_component import RealEstateUtilizationComponent
 
 from simulation.dtos.context_dtos import PayrollProcessingContext, FinancialTransactionContext, SalesContext
 from simulation.dtos.hr_dtos import HRPayrollContextDTO, TaxPolicyDTO
@@ -50,50 +51,6 @@ from modules.finance.wallet.wallet import Wallet
 from modules.inventory.manager import InventoryManager
 from simulation.systems.api import ILearningAgent, LearningUpdateContext
 from simulation.systems.tech.api import FirmTechInfoDTO
-
-class RealEstateUtilizationComponent:
-    """
-    TD-271: Converts firm-owned real estate into a production bonus.
-    Applies production cost reduction based on owned space and market conditions.
-    """
-    def apply(self, owned_properties: List[int], config: FirmConfigDTO, firm_id: int, current_tick: int, market_data: Optional[Dict[str, Any]] = None) -> Tuple[Optional[Dict[str, Any]], int]:
-        # 1. Calculate Owned Space
-        # Assuming 1 property = 1 unit of space for now (or configurable)
-        owned_space = len(owned_properties)
-        if owned_space <= 0:
-            return None, 0
-
-        # space_utility_factor: How much cost reduction per unit of space?
-        # Ideally from config. Assuming default 100.0 if not in config.
-        space_utility_factor = getattr(config, "space_utility_factor", 100.0)
-
-        # regional_rent_index: From market data or default 1.0
-        regional_rent_index = 1.0
-        # Placeholder for market data integration
-
-        # 3. Calculate Cost Reduction (Bonus)
-        # Formula: owned_space * space_utility_factor * regional_rent_index
-        cost_reduction = owned_space * space_utility_factor * regional_rent_index
-
-        # 4. Apply Bonus
-        # Effectively reduces net cost by increasing revenue/profit internally
-        if cost_reduction > 0:
-             amount_pennies = int(cost_reduction * 100) if space_utility_factor < 100 else int(cost_reduction) # Assuming utility factor is in dollars? Let's assume result is pennies if factor is pennies.
-             # Let's assume result is pennies.
-             amount_pennies = int(cost_reduction) # Assuming pre-scaled or handled elsewhere. For now just int cast.
-
-             effect = {
-                 "type": "PRODUCTION_COST_REDUCTION",
-                 "agent_id": firm_id,
-                 "amount": amount_pennies,
-                 "tick": current_tick,
-                 "details": {
-                     "owned_space": owned_space,
-                     "utility_factor": space_utility_factor
-                 }
-             }
-             return effect, amount_pennies
-        return None, 0
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -1111,7 +1068,7 @@ class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, I
                 reason = order.item_id
 
                 tx = self.finance_engine.pay_ad_hoc_tax(
-                    self.finance_state, self.id, self.wallet, amount, currency, reason, fin_ctx, current_time
+                    self.finance_state, self.id, self.wallet.get_all_balances(), amount, currency, reason, fin_ctx, current_time
                 )
                 if tx:
                     if self.settlement_system and self.settlement_system.transfer(self, government, amount, reason, currency=currency):
@@ -1260,7 +1217,7 @@ class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, I
         )
 
         tx_finance = self.finance_engine.generate_financial_transactions(
-            self.finance_state, self.id, self.wallet, self.config, current_time, fin_ctx, inventory_value
+            self.finance_state, self.id, self.wallet.get_all_balances(), self.config, current_time, fin_ctx, inventory_value
         )
         transactions.extend(tx_finance)
 
@@ -1378,7 +1335,7 @@ class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, I
             )
 
         return int(self.finance_engine.calculate_valuation(
-            self.finance_state, self.wallet, self.config, inventory_value, self.capital_stock, fin_ctx
+            self.finance_state, self.wallet.get_all_balances(), self.config, inventory_value, self.capital_stock, fin_ctx
         ))
 
     def get_financial_snapshot(self) -> Dict[str, Any]:

@@ -4,7 +4,6 @@ import logging
 from simulation.models import Transaction, Order
 from simulation.components.state.firm_state_models import FinanceState
 from modules.finance.api import InsufficientFundsError, IShareholderRegistry
-from modules.finance.wallet.api import IWallet
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
 from simulation.dtos.context_dtos import FinancialTransactionContext
@@ -25,7 +24,7 @@ class FinanceEngine:
         self,
         state: FinanceState,
         firm_id: int,
-        wallet: IWallet,
+        balances: Dict[CurrencyCode, int],
         config: FirmConfigDTO,
         current_time: int,
         context: FinancialTransactionContext,
@@ -63,7 +62,7 @@ class FinanceEngine:
         fee_float = config.firm_maintenance_fee
         fee_pennies = int(fee_float * 100)
 
-        current_balance = wallet.get_balance(DEFAULT_CURRENCY)
+        current_balance = balances.get(DEFAULT_CURRENCY, 0)
         payment = min(current_balance, fee_pennies)
 
         if payment > 0 and gov_id is not None:
@@ -214,7 +213,7 @@ class FinanceEngine:
     def calculate_valuation(
         self,
         state: FinanceState,
-        wallet: IWallet,
+        balances: Dict[CurrencyCode, int],
         config: FirmConfigDTO,
         inventory_value: float,
         capital_stock: float,
@@ -230,7 +229,7 @@ class FinanceEngine:
             return int(amt * rate)
 
         total_assets_val = 0
-        for cur, amount in wallet.get_all_balances().items():
+        for cur, amount in balances.items():
              total_assets_val += convert(amount, cur)
 
         # Add Inventory & Capital (convert from float dollars to pennies)
@@ -249,7 +248,7 @@ class FinanceEngine:
         self,
         state: FinanceState,
         firm_id: int,
-        wallet: IWallet,
+        balances: Dict[CurrencyCode, int],
         amount: int,
         context: FinancialTransactionContext,
         current_time: int
@@ -257,7 +256,7 @@ class FinanceEngine:
         """
         Creates investment transaction for automation.
         """
-        current_balance = wallet.get_balance(DEFAULT_CURRENCY)
+        current_balance = balances.get(DEFAULT_CURRENCY, 0)
         if current_balance < amount:
             return None
 
@@ -280,7 +279,7 @@ class FinanceEngine:
         self,
         state: FinanceState,
         firm_id: int,
-        wallet: IWallet,
+        balances: Dict[CurrencyCode, int],
         amount: int,
         context: FinancialTransactionContext,
         current_time: int
@@ -288,7 +287,7 @@ class FinanceEngine:
         """
         Creates investment transaction for R&D.
         """
-        current_balance = wallet.get_balance(DEFAULT_CURRENCY)
+        current_balance = balances.get(DEFAULT_CURRENCY, 0)
         if current_balance < amount:
             return None
 
@@ -311,7 +310,7 @@ class FinanceEngine:
         self,
         state: FinanceState,
         firm_id: int,
-        wallet: IWallet,
+        balances: Dict[CurrencyCode, int],
         amount: int,
         context: FinancialTransactionContext,
         current_time: int
@@ -319,7 +318,7 @@ class FinanceEngine:
         """
         Creates investment transaction for CAPEX.
         """
-        current_balance = wallet.get_balance(DEFAULT_CURRENCY)
+        current_balance = balances.get(DEFAULT_CURRENCY, 0)
         if current_balance < amount:
             return None
 
@@ -342,7 +341,7 @@ class FinanceEngine:
         self,
         state: FinanceState,
         firm_id: int,
-        wallet: IWallet,
+        balances: Dict[CurrencyCode, int],
         amount: int,
         currency: CurrencyCode,
         reason: str,
@@ -352,7 +351,7 @@ class FinanceEngine:
         """
         Creates tax payment transaction.
         """
-        current_balance = wallet.get_balance(currency)
+        current_balance = balances.get(currency, 0)
         if current_balance < amount:
             return None
 
