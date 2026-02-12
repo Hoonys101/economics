@@ -94,7 +94,7 @@ from modules.system.event_bus.event_bus import EventBus
 from modules.governance.judicial.system import JudicialSystem
 from modules.system.registry import AgentRegistry
 from modules.household.api import HouseholdFactoryContext
-from modules.household.factory import HouseholdFactory
+from simulation.factories.household_factory import HouseholdFactory
 from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 
@@ -430,16 +430,24 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Note: New agents must be explicitly added to this list by lifecycle managers.
         sim.ai_training_manager = AITrainingManager(sim.households + sim.firms, self.config)
         sim.ma_manager = MAManager(sim, self.config, settlement_system=sim.settlement_system)
-        sim.demographic_manager = DemographicManager(config_module=self.config, strategy=sim.strategy)
-        sim.demographic_manager.settlement_system = sim.settlement_system # Inject SettlementSystem
-        sim.immigration_manager = ImmigrationManager(config_module=self.config, settlement_system=sim.settlement_system)
-        sim.inheritance_manager = InheritanceManager(config_module=self.config)
-        sim.housing_system = HousingSystem(config_module=self.config)
+
         sim.persistence_manager = PersistenceManager(
             run_id=0,
             config_module=self.config,
             repository=self.repository
         )
+
+
+        sim.demographic_manager = DemographicManager(
+            config_module=self.config,
+            strategy=sim.strategy,
+            household_factory=household_factory
+        )
+        sim.demographic_manager.settlement_system = sim.settlement_system # Inject SettlementSystem
+
+        sim.immigration_manager = ImmigrationManager(config_module=self.config, settlement_system=sim.settlement_system)
+        sim.inheritance_manager = InheritanceManager(config_module=self.config)
+        sim.housing_system = HousingSystem(config_module=self.config)
         sim.analytics_system = AnalyticsSystem()
         sim.firm_system = FirmSystem(config_module=self.config, strategy=sim.strategy)
         sim.technology_manager = TechnologyManager(config_module=self.config, logger=self.logger, strategy=sim.strategy)

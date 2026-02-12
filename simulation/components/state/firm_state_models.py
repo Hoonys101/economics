@@ -98,6 +98,11 @@ class SalesState:
     marketing_budget_rate: float = 0.05
     prev_awareness: float = 0.0
 
+    # Brand State
+    adstock: float = 0.0
+    brand_awareness: float = 0.0
+    perceived_quality: float = 0.0
+
     last_prices: Dict[str, float] = field(default_factory=dict) # Prices remain float? Spec says prices can be Decimal/float but transactions are int.
     # Wait, spec says: "Price determination... store as high-precision Decimal".
     # But last_prices is mostly for memory.

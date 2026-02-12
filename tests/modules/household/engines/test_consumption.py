@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from modules.household.engines.consumption import ConsumptionEngine
+from modules.household.engines.consumption_engine import ConsumptionEngine
 from modules.household.api import ConsumptionInputDTO, BudgetPlan
 from modules.household.dtos import EconStateDTO, BioStateDTO
 from simulation.models import Order

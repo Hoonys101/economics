@@ -167,9 +167,8 @@ class TestFirmSales:
             sector="FOOD",
             assets=0
         )
-        firm.brand_manager = Mock()
-        firm.brand_manager.brand_awareness = 0.5
-        firm.brand_manager.perceived_quality = 1.0
+        firm.sales_state.brand_awareness = 0.5
+        firm.sales_state.perceived_quality = 1.0
 
         firm.sales_state.marketing_budget_pennies = 100 # 100 pennies
         firm.sales_state.marketing_budget_rate = 0.1

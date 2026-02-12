@@ -8,6 +8,7 @@ from simulation.utils.config_factory import create_config_dto
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from modules.system.api import DEFAULT_CURRENCY
 from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO, ITalented
+from modules.household.api import IHouseholdFactory
 
 if TYPE_CHECKING:
     from simulation.dtos.strategy import ScenarioStrategy
@@ -27,7 +28,7 @@ class DemographicManager:
             cls._instance = super(DemographicManager, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, config_module: Any = None, strategy: Optional["ScenarioStrategy"] = None):
+    def __init__(self, config_module: Any = None, strategy: Optional["ScenarioStrategy"] = None, household_factory: Optional[IHouseholdFactory] = None):
         if hasattr(self, "initialized") and self.initialized:
             return
 
@@ -37,8 +38,10 @@ class DemographicManager:
         self.settlement_system: Optional[Any] = None # Injected via Initializer
 
         # Initialize Factory
-        from simulation.factories.agent_factory import HouseholdFactory
-        self.household_factory = HouseholdFactory(config_module)
+        self.household_factory = household_factory
+        # If no factory injected, we warn (since internal creation is complex without context)
+        if not self.household_factory:
+             self.logger.warning("DemographicManager initialized without a HouseholdFactory. Births may fail.")
 
         self.initialized = True
         self.logger.info("DemographicManager initialized.")

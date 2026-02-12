@@ -25,6 +25,8 @@ class HouseholdFactory:
     """
 
     def __init__(self, config_module: Any):
+        import warnings
+        warnings.warn("simulation.factories.agent_factory.HouseholdFactory is deprecated. Use simulation.factories.household_factory.HouseholdFactory instead.", DeprecationWarning, stacklevel=2)
         self.config_module = config_module
 
     def create_household(
@@ -95,11 +97,15 @@ class HouseholdFactory:
 
         # 5. Hydrate State (Assets)
         initial_state = AgentStateDTO(
-            assets={DEFAULT_CURRENCY: int(initial_assets)},
+            assets={}, # Assets handled separately via deposit for legacy compatibility
             inventory={},
             is_active=True
         )
         agent.load_state(initial_state)
+
+        # Legacy support: Directly deposit assets if provided, as load_state ignores them.
+        if initial_assets > 0:
+            agent._deposit(int(initial_assets), DEFAULT_CURRENCY)
 
         # 6. Additional Initializations
         if spouse_id:

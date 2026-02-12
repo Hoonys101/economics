@@ -1,9 +1,12 @@
 from __future__ import annotations
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 import logging
+import copy
 
 from modules.household.api import IConsumptionEngine, ConsumptionInputDTO, ConsumptionOutputDTO
-from modules.household.dtos import EconStateDTO, BioStateDTO
+from modules.household.dtos import EconStateDTO, BioStateDTO, SocialStateDTO
+from simulation.dtos.config_dtos import HouseholdConfigDTO
+from simulation.dtos import LeisureEffectDTO
 from simulation.models import Order
 from modules.system.api import DEFAULT_CURRENCY
 
@@ -97,3 +100,50 @@ class ConsumptionEngine(IConsumptionEngine):
             orders=orders,
             social_state=None # Add if leisure effect implemented
         )
+
+    def apply_leisure_effect(
+        self,
+        leisure_hours: float,
+        consumed_items: Dict[str, float],
+        social_state: SocialStateDTO,
+        econ_state: EconStateDTO,
+        bio_state: BioStateDTO,
+        config: HouseholdConfigDTO
+    ) -> Tuple[SocialStateDTO, EconStateDTO, LeisureEffectDTO]:
+
+        has_children = len(bio_state.children_ids) > 0
+        has_education = consumed_items.get("education_service", 0.0) > 0
+        has_luxury = (consumed_items.get("luxury_food", 0.0) > 0 or consumed_items.get("clothing", 0.0) > 0)
+
+        leisure_type = "SELF_DEV"
+        if has_children and has_education: leisure_type = "PARENTING"
+        elif has_luxury: leisure_type = "ENTERTAINMENT"
+
+        # Update Social State
+        new_social_state = copy.deepcopy(social_state)
+        new_social_state.last_leisure_type = leisure_type
+
+        # Calculate Gains
+        leisure_coeffs = config.leisure_coeffs
+        coeffs = leisure_coeffs.get(leisure_type, {})
+        utility_per_hour = coeffs.get("utility_per_hour", 0.0)
+        xp_gain_per_hour = coeffs.get("xp_gain_per_hour", 0.0)
+        productivity_gain = coeffs.get("productivity_gain", 0.0)
+
+        utility_gained = leisure_hours * utility_per_hour
+        xp_gained = leisure_hours * xp_gain_per_hour
+        prod_gained = leisure_hours * productivity_gain
+
+        # Update Econ State (Skill)
+        new_econ_state = copy.deepcopy(econ_state)
+        if leisure_type == "SELF_DEV" and prod_gained > 0:
+            new_econ_state.labor_skill += prod_gained
+
+        effect_dto = LeisureEffectDTO(
+            leisure_type=leisure_type,
+            leisure_hours=leisure_hours,
+            utility_gained=utility_gained,
+            xp_gained=xp_gained
+        )
+
+        return new_social_state, new_econ_state, effect_dto

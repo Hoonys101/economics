@@ -6,7 +6,6 @@ import copy
 import math
 
 from simulation.models import Order, Transaction
-from simulation.brands.brand_manager import BrandManager
 from simulation.core_agents import Household
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
@@ -27,6 +26,7 @@ from simulation.components.engines.production_engine import ProductionEngine
 from simulation.components.engines.sales_engine import SalesEngine
 from simulation.components.engines.asset_management_engine import AssetManagementEngine
 from simulation.components.engines.rd_engine import RDEngine
+from modules.firm.engines.brand_engine import BrandEngine
 
 from simulation.dtos.context_dtos import PayrollProcessingContext, FinancialTransactionContext, SalesContext
 from simulation.dtos.hr_dtos import HRPayrollContextDTO, TaxPolicyDTO
@@ -162,6 +162,7 @@ class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, I
         self.sales_engine = SalesEngine()
         self.asset_management_engine: IAssetManagementEngine = AssetManagementEngine()
         self.rd_engine: IRDEngine = RDEngine()
+        self.brand_engine = BrandEngine()
 
         # Initialize core attributes in State
         self.production_state.specialization = specialization
@@ -184,9 +185,6 @@ class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, I
             for item_id, qty in initial_inventory.items():
                 self.add_item(item_id, qty)
 
-        # Brand Manager (Kept as component for now, or could be moved to SalesState/Engine)
-        self.brand_manager = BrandManager(self.id, self.config, self.logger)
-        
         # TD-271: Real Estate Utilization
         self.real_estate_utilization_component = RealEstateUtilizationComponent()
 
@@ -760,8 +758,8 @@ class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, I
         sales_dto = SalesStateDTO(
             inventory_last_sale_tick=self.sales_state.inventory_last_sale_tick.copy(),
             price_history=self.sales_state.last_prices.copy(),
-            brand_awareness=self.brand_manager.brand_awareness,
-            perceived_quality=self.brand_manager.perceived_quality,
+            brand_awareness=self.sales_state.brand_awareness,
+            perceived_quality=self.sales_state.perceived_quality,
             marketing_budget=float(self.sales_state.marketing_budget_pennies)
         )
         
@@ -824,42 +822,6 @@ class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, I
         if effect and effects_queue is not None:
             effects_queue.append(effect)
 
-    @override
-    def clone(self, new_id: int, initial_assets_from_parent: int, current_tick: int) -> "Firm":
-        cloned_decision_engine = copy.deepcopy(self.decision_engine)
-
-        new_core_config = replace(self.get_core_config(), id=new_id, name=f"Firm_{new_id}")
-
-        new_firm = Firm(
-            core_config=new_core_config,
-            engine=cloned_decision_engine,
-            specialization=self.specialization,
-            productivity_factor=self.productivity_factor,
-            config_dto=self.config,
-            initial_inventory=self.get_all_items(),
-            loan_market=self.decision_engine.loan_market,
-            personality=self.personality
-        )
-
-        # Hydrate State
-        initial_state = AgentStateDTO(
-            assets={DEFAULT_CURRENCY: initial_assets_from_parent},
-            inventory=copy.deepcopy(self._inventory),
-            is_active=True
-        )
-        new_firm.load_state(initial_state)
-        new_firm._input_inventory = copy.deepcopy(self._input_inventory)
-        new_firm._input_inventory_quality = copy.deepcopy(self._input_inventory_quality)
-
-        new_firm.logger.info(
-            f"Firm {self.id} was cloned to new Firm {new_id}",
-            extra={
-                "original_agent_id": self.id,
-                "new_agent_id": new_id,
-                "tags": ["lifecycle", "clone"],
-            },
-        )
-        return new_firm
 
     @override
     def get_agent_data(self) -> Dict[str, Any]:
@@ -944,8 +906,8 @@ class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, I
         sales_dto = SalesStateDTO(
             inventory_last_sale_tick=self.sales_state.inventory_last_sale_tick.copy(),
             price_history=self.sales_state.last_prices.copy(),
-            brand_awareness=self.brand_manager.brand_awareness,
-            perceived_quality=self.brand_manager.perceived_quality,
+            brand_awareness=self.sales_state.brand_awareness,
+            perceived_quality=self.sales_state.perceived_quality,
             marketing_budget=float(self.sales_state.marketing_budget_pennies)
         )
 
@@ -1236,8 +1198,8 @@ class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, I
 
     def _build_sales_post_ask_context(self, item_id: str, price: float, quantity: float, market_id: str, current_tick: int) -> SalesPostAskContextDTO:
         brand_snapshot = {
-            "brand_awareness": self.brand_manager.brand_awareness,
-            "perceived_quality": self.brand_manager.perceived_quality,
+            "brand_awareness": self.sales_state.brand_awareness,
+            "perceived_quality": self.sales_state.perceived_quality,
             "quality": self.get_quality(item_id),
         }
         return SalesPostAskContextDTO(
@@ -1319,7 +1281,13 @@ class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, I
             transactions.append(tx_marketing)
 
         # Brand Update
-        self.brand_manager.update(float(self.sales_state.marketing_budget_pennies), self.productivity_factor / 10.0)
+        self.brand_engine.update(
+            self.sales_state,
+            self.config,
+            float(self.sales_state.marketing_budget_pennies),
+            self.productivity_factor / 10.0,
+            self.id
+        )
 
         # WO-4.6: Finance cleanup is now handled in Post-Sequence via reset()
         # This ensures expenses_this_tick accumulates for the full tick duration.

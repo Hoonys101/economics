@@ -6,7 +6,6 @@ from collections import deque, defaultdict
 import random
 import copy
 import math
-import warnings
 
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.models import Order, Skill, Talent
@@ -36,7 +35,7 @@ from modules.household.engines.lifecycle import LifecycleEngine
 from modules.household.engines.needs import NeedsEngine
 from modules.household.engines.social import SocialEngine
 from modules.household.engines.budget import BudgetEngine
-from modules.household.engines.consumption import ConsumptionEngine
+from modules.household.engines.consumption_engine import ConsumptionEngine
 
 # API & DTOs
 from modules.household.api import (
@@ -901,98 +900,6 @@ class Household(
             ambition=self._social_state.ambition
         )
 
-    def clone(self, new_id: int, initial_assets_from_parent: int, current_tick: int) -> "Household":
-        """
-        Creates a clone (child) of this household.
-        Used by LifecycleManager/DemographicManager.
-
-        @deprecated: Use HouseholdFactory.create_newborn instead.
-        """
-        warnings.warn("Household.clone() is deprecated. Use HouseholdFactory.create_newborn() instead.", DeprecationWarning, stacklevel=2)
-
-        # 1. Get Offspring Demographics from Lifecycle Engine
-        offspring_demo = self.lifecycle_engine.create_offspring_demographics(
-            self._bio_state, new_id, current_tick
-        )
-
-        # 2. Econ Inheritance (Manual Logic as no EconEngine)
-        # We can implement this helper or keep simplified logic here.
-        # Since EconComponent had `prepare_clone_state`, we should ideally replicate it.
-        # It was simple: 20% of skills, 80% of expected wage.
-        new_skills = {}
-        for domain, skill in self._econ_state.skills.items():
-            new_skills[domain] = Skill(
-                domain=domain,
-                value=skill.value * 0.2,
-                observability=skill.observability
-            )
-
-        # 3. Create Child Instance
-        # ... Reuse init logic via factory or constructor
-        # Since this method is on the class instance, we can't easily use "self.__class__".
-        # We assume "Household" is the class.
-
-        # We need to construct params.
-        # This duplicates __init__ logic a bit or DemographicsManager logic.
-        # DemographicsManager calls this method.
-        # But DemographicsManager ALSO instantiates Household directly in `process_births`.
-        # Wait, I found `process_births` calling `Household(...)` directly in `DemographicManager`.
-        # But `HouseholdReproductionMixin` had `clone`.
-        # The grep showed `clone` usage in tests.
-        # `DemographicManager` comment said "We can use parent.clone() logic but customized."
-        # If `DemographicManager` creates child manually, then `clone` might not be used by it!
-        # `DemographicManager.process_births` code:
-        # child = Household(...)
-        # So `Household.clone` is primarily for tests or legacy.
-        # I will implement `clone` to satisfy tests.
-
-        # Construct Core Config
-        core_config = AgentCoreConfigDTO(
-            id=new_id,
-            name=f"Household_{new_id}",
-            value_orientation=self.value_orientation,
-            initial_needs=self._bio_state.needs.copy(),
-            logger=self.logger,
-            memory_interface=None
-        )
-
-        # New Decision Engine (Basic AI)
-        # We need a decision engine instance.
-        # For simplicity in `clone`, we can reuse parent's engine type or create new.
-        # Tests might expect working engine.
-        # Reuse parent's strategy if possible?
-        # Creating a new AI engine is complex without `ai_trainer`.
-        # I'll try to clone parent's engine or pass `self.decision_engine` (bad).
-        # Tests using `clone` usually mock things.
-        # I'll implement a basic functional clone.
-
-        new_household = Household(
-            core_config=core_config,
-            engine=self.decision_engine, # Warning: Shared engine reference! But engines should be stateless or specific.
-            # If Engine is stateful (AI), this is bad.
-            # But verifying tests will tell.
-            talent=self._econ_state.talent, # Copy talent?
-            goods_data=self.goods_data,
-            personality=self._social_state.personality,
-            config_dto=self.config,
-            loan_market=self.decision_engine.loan_market,
-            risk_aversion=self.risk_aversion,
-            initial_age=offspring_demo["initial_age"],
-            gender=offspring_demo["gender"],
-            parent_id=offspring_demo["parent_id"],
-            generation=offspring_demo["generation"],
-            initial_assets_record=initial_assets_from_parent
-        )
-
-        # Set Econ State
-        new_household._econ_state.skills = new_skills
-        new_household._econ_state.expected_wage_pennies = int(self._econ_state.expected_wage_pennies * 0.8)
-
-        # Hydrate Assets
-        if initial_assets_from_parent > 0:
-            new_household._deposit(initial_assets_from_parent, DEFAULT_CURRENCY)
-
-        return new_household
 
     def initialize_demographics(
         self,
@@ -1067,38 +974,18 @@ class Household(
                 self._econ_state.perceived_avg_prices[item_id] = new_perceived_price
 
     def apply_leisure_effect(self, leisure_hours: float, consumed_items: Dict[str, float]) -> LeisureEffectDTO:
-        # Legacy SocialComponent.apply_leisure_effect logic.
-        # Ideally in ConsumptionEngine.
-        # Implementing here for now.
-        has_children = len(self._bio_state.children_ids) > 0
-        has_education = consumed_items.get("education_service", 0.0) > 0
-        has_luxury = (consumed_items.get("luxury_food", 0.0) > 0 or consumed_items.get("clothing", 0.0) > 0)
-
-        leisure_type = "SELF_DEV"
-        if has_children and has_education: leisure_type = "PARENTING"
-        elif has_luxury: leisure_type = "ENTERTAINMENT"
-
-        self._social_state.last_leisure_type = leisure_type
-
-        leisure_coeffs = self.config.leisure_coeffs
-        coeffs = leisure_coeffs.get(leisure_type, {})
-        utility_per_hour = coeffs.get("utility_per_hour", 0.0)
-        xp_gain_per_hour = coeffs.get("xp_gain_per_hour", 0.0)
-        productivity_gain = coeffs.get("productivity_gain", 0.0)
-
-        utility_gained = leisure_hours * utility_per_hour
-        xp_gained = leisure_hours * xp_gain_per_hour
-        prod_gained = leisure_hours * productivity_gain
-
-        if leisure_type == "SELF_DEV" and prod_gained > 0:
-            self._econ_state.labor_skill += prod_gained
-
-        return LeisureEffectDTO(
-            leisure_type=leisure_type,
-            leisure_hours=leisure_hours,
-            utility_gained=utility_gained,
-            xp_gained=xp_gained
+        # Delegate to ConsumptionEngine
+        new_social, new_econ, result_dto = self.consumption_engine.apply_leisure_effect(
+            leisure_hours,
+            consumed_items,
+            self._social_state,
+            self._econ_state,
+            self._bio_state,
+            self.config
         )
+        self._social_state = new_social
+        self._econ_state = new_econ
+        return result_dto
 
     def consume(self, item_id: str, amount: float, current_tick: int) -> None:
         """

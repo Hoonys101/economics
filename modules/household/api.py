@@ -142,6 +142,16 @@ class IConsumptionEngine(Protocol):
     """Transforms a budget plan into concrete consumption and market orders."""
     def generate_orders(self, input_dto: ConsumptionInputDTO) -> ConsumptionOutputDTO: ...
 
+    def apply_leisure_effect(
+        self,
+        leisure_hours: float,
+        consumed_items: Dict[str, float],
+        social_state: SocialStateDTO,
+        econ_state: EconStateDTO,
+        bio_state: BioStateDTO,
+        config: HouseholdConfigDTO
+    ) -> Tuple[SocialStateDTO, EconStateDTO, LeisureEffectDTO]: ...
+
 # --- Deprecated / Legacy Support ---
 # OrchestrationContextDTO is kept if needed for transition, but Engines use specific inputs.
 class OrchestrationContextDTO(TypedDict):
