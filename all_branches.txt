@@ -6,9 +6,3 @@
 * main
   ph6-watchtower-scaffold-18088587128119282769
   refactor/strict-typing-dto-enforcement-3664420407678054950
-  remotes/origin/HEAD -> origin/main
-  remotes/origin/TD-275-shareholder-registry-4778126289619716275
-  remotes/origin/main
-  remotes/origin/refactor-base-agent-dto-protocol-enforcement-15517842194297419126
-  remotes/origin/refactor/bank-decomposition-td274-4679290490066895833
-  remotes/origin/refactor/hr-finance-decouple-8448769851670572291

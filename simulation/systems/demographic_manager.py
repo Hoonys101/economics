@@ -127,8 +127,11 @@ class DemographicManager:
 
                 # WO-124: Transfer Birth Gift via SettlementSystem
                 if initial_gift_pennies > 0:
+
                     # Prefer injected settlement_system, fallback to simulation object for compatibility
-                    settlement = self.settlement_system or getattr(simulation, "settlement_system", None)
+                    settlement = self.settlement_system
+                    if not settlement and hasattr(simulation, "settlement_system"):
+                         settlement = simulation.settlement_system
 
                     if settlement:
                          settlement.transfer(parent, child, initial_gift_pennies, "BIRTH_GIFT")
