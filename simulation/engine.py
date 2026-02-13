@@ -10,7 +10,6 @@ from simulation.systems.tech.api import FirmTechInfoDTO, HouseholdEducationDTO
 
 from simulation.world_state import WorldState
 from simulation.orchestration.tick_orchestrator import TickOrchestrator
-from modules.system.services.command_service import CommandService
 from simulation.action_processor import ActionProcessor
 from simulation.models import Transaction
 from modules.simulation.api import EconomicIndicatorsDTO, SystemStateDTO
@@ -50,6 +49,8 @@ class Simulation:
         # Inject dependencies into WorldState
         self.world_state.global_registry = registry
         self.world_state.settlement_system = settlement_system
+        # AgentRegistry is not explicitly in WorldState definition but Phase0 might look for it
+        # or other components. Attaching it dynamically is safe.
         self.world_state.agent_registry = agent_registry
 
         self.settlement_system = settlement_system
@@ -58,8 +59,6 @@ class Simulation:
         self.action_processor = ActionProcessor(self.world_state)
         self.tick_orchestrator = TickOrchestrator(self.world_state, self.action_processor)
 
-        # Initialize Command Service and Controls
-        self.command_service = CommandService(registry, settlement_system, agent_registry)
         self.is_paused = False
         self.step_requested = False
 
@@ -75,7 +74,7 @@ class Simulation:
 
     def __setattr__(self, name: str, value: Any) -> None:
         # Avoid infinite recursion for internal components
-        if name in ["world_state", "tick_orchestrator", "action_processor", "simulation_logger", "command_service", "is_paused", "step_requested", "settlement_system", "agent_registry"]:
+        if name in ["world_state", "tick_orchestrator", "action_processor", "simulation_logger", "is_paused", "step_requested", "settlement_system", "agent_registry"]:
             super().__setattr__(name, value)
             return
 
@@ -103,39 +102,7 @@ class Simulation:
             except Exception as e:
                 self.world_state.logger.error(f"Failed to release simulation.lock: {e}")
 
-    def _process_commands(self) -> None:
-        """Processes all pending commands from the command service."""
-        commands = self.command_service.pop_commands()
-        for cmd in commands:
-            logger.info(f"Executing command: {cmd.type} | {cmd.payload}")
-            try:
-                if cmd.type == "PAUSE":
-                    self.is_paused = True
-                elif cmd.type == "RESUME":
-                    self.is_paused = False
-                elif cmd.type == "STEP":
-                    self.step_requested = True
-                elif cmd.type == "SET_BASE_RATE":
-                    rate = cmd.payload.get("rate")
-                    if self.world_state.central_bank:
-                        self.world_state.central_bank.base_rate = rate
-                        # Log the manual intervention
-                        logger.info(f"MANUAL INTERVENTION: Base Rate set to {rate}")
-                elif cmd.type == "SET_TAX_RATE":
-                    tax_type = cmd.payload.get("tax_type")
-                    rate = cmd.payload.get("rate")
-                    if self.world_state.government:
-                        if tax_type == "corporate":
-                            self.world_state.government.corporate_tax_rate = rate
-                        elif tax_type == "income":
-                            self.world_state.government.income_tax_rate = rate
-                        logger.info(f"MANUAL INTERVENTION: {tax_type} Tax Rate set to {rate}")
-            except Exception as e:
-                logger.error(f"Failed to execute command {cmd}: {e}", exc_info=True)
-
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:
-        self._process_commands()
-
         if self.is_paused:
             if self.step_requested:
                 self.step_requested = False
