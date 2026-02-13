@@ -209,7 +209,8 @@ class FirmAI(BaseAIEngine):
         net_profit = delta_assets
 
         # Brand Awareness Delta
-        current_awareness = firm_agent.brand_manager.brand_awareness
+        # Refactored for INT-01: Use sales_state instead of deprecated brand_manager
+        current_awareness = firm_agent.sales_state.brand_awareness
         prev_awareness = firm_agent.prev_awareness
         delta_awareness = current_awareness - prev_awareness
         firm_agent.prev_awareness = current_awareness # Update state

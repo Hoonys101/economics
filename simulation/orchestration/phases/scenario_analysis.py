@@ -1,7 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 import logging
+from datetime import datetime
 from simulation.orchestration.api import IPhaseStrategy
+from simulation.dtos.watchtower_v2 import WatchtowerV2DTO
+from simulation.orchestration.dashboard_service import DashboardService
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
@@ -37,8 +40,6 @@ class Phase_ScenarioAnalysis(IPhaseStrategy):
             reports = scenario_verifier.verify_tick(telemetry_snapshot["data"])
 
             # 3. Log/Report Results
-            # For now, we log to info/debug.
-            # In future, this could push to a Dashboard Service or Watchtower.
             if reports:
                 for report in reports:
                     # Log interesting updates
@@ -59,6 +60,31 @@ class Phase_ScenarioAnalysis(IPhaseStrategy):
                             "tick": state.time
                         }
                     )
+
+            # 4. Watchtower V2 Broadcast (INT-01)
+            if self.world_state.telemetry_exchange:
+                # Use DashboardService to get standard snapshot structure
+                # We instantiate it transiently or better if WorldState had it.
+                # Since we refactored it, we can instantiate it cheaply.
+                dashboard_service = DashboardService(self.world_state)
+                base_snapshot = dashboard_service.get_snapshot()
+
+                # Construct V2 DTO
+                v2_dto = WatchtowerV2DTO(
+                    tick=state.time,
+                    timestamp=datetime.now().timestamp(),
+                    status=base_snapshot.status,
+                    integrity=base_snapshot.integrity,
+                    macro=base_snapshot.macro,
+                    finance=base_snapshot.finance,
+                    politics=base_snapshot.politics,
+                    population=base_snapshot.population,
+                    scenario_reports=reports,
+                    custom_data=telemetry_snapshot.get("data", {})
+                )
+
+                # Update Exchange
+                self.world_state.telemetry_exchange.update(v2_dto)
 
         except Exception as e:
             logger.error(f"Error in Phase_ScenarioAnalysis: {e}", exc_info=True)

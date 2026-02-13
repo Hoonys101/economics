@@ -33,8 +33,14 @@ class LaborManager:
 
             quit_threshold = config.job_quit_threshold_base - agg_mobility
 
-            if (market_avg_wage > household.current_wage * quit_threshold or
-                best_market_offer > household.current_wage * quit_threshold):
+            current_wage = getattr(household, 'current_wage', None)
+            if current_wage is None and hasattr(household, 'current_wage_pennies'):
+                 current_wage = household.current_wage_pennies / 100.0
+            if current_wage is None:
+                 current_wage = 0.0
+
+            if (market_avg_wage > current_wage * quit_threshold or
+                best_market_offer > current_wage * quit_threshold):
 
                 if random.random() < (config.job_quit_prob_base + agg_mobility * config.job_quit_prob_scale):
                     # Signal quit via Order

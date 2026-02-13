@@ -77,7 +77,11 @@ class MAManager:
                 preys.append(firm)
             
             # Phase 21: Hostile Takeover Criteria
-            intrinsic_value = firm.finance_state.valuation
+            if hasattr(firm.finance_state, 'valuation'):
+                intrinsic_value = firm.finance_state.valuation
+            else:
+                intrinsic_value = getattr(firm.finance_state, 'valuation_pennies', 0) / 100.0
+
             market_cap = firm.get_market_cap()
             threshold = getattr(self.config, "HOSTILE_TAKEOVER_DISCOUNT_THRESHOLD", 0.7)
 

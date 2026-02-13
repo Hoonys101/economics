@@ -68,7 +68,10 @@ class StockMarketTracker:
         # Refactor: Use finance component
         firm_assets = firm.wallet.get_all_balances()
         firm_profit = firm.finance_state.current_profit
-        dividend_paid = firm.finance_state.dividends_paid_last_tick
+        if hasattr(firm.finance_state, "dividends_paid_last_tick"):
+            dividend_paid = firm.finance_state.dividends_paid_last_tick
+        else:
+            dividend_paid = getattr(firm.finance_state, "dividends_paid_last_tick_pennies", 0) / 100.0
         market_cap = firm.get_market_cap(stock_price)
         
         return {
@@ -244,8 +247,18 @@ class PersonalityStatisticsTracker:
         avg_growth_rate = sum(growth_rates) / len(growth_rates) if growth_rates else 0.0
         
         # 소득 통계 (labor_income_this_tick, capital_income_this_tick 사용)
-        labor_incomes = [h._econ_state.labor_income_this_tick for h in members]
-        capital_incomes = [h._econ_state.capital_income_this_tick for h in members]
+        def get_labor_inc(h):
+            if hasattr(h._econ_state, "labor_income_this_tick"):
+                return h._econ_state.labor_income_this_tick
+            return getattr(h._econ_state, "labor_income_this_tick_pennies", 0) / 100.0
+
+        def get_cap_inc(h):
+            if hasattr(h._econ_state, "capital_income_this_tick"):
+                return h._econ_state.capital_income_this_tick
+            return getattr(h._econ_state, "capital_income_this_tick_pennies", 0) / 100.0
+
+        labor_incomes = [get_labor_inc(h) for h in members]
+        capital_incomes = [get_cap_inc(h) for h in members]
 
         avg_labor_income = sum(labor_incomes) / n
         avg_capital_income = sum(capital_incomes) / n

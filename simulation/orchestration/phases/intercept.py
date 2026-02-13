@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 import logging
 
 from simulation.orchestration.api import IPhaseStrategy
@@ -21,7 +21,13 @@ class Phase0_Intercept(IPhaseStrategy):
 
     def __init__(self, world_state: WorldState):
         self.world_state = world_state
+        self.command_service: Optional[CommandService] = None
 
+    def _ensure_service_initialized(self):
+        if self.command_service:
+            return
+
+        world_state = self.world_state
         # Validation (FOUND-03 requirement)
         if not hasattr(world_state, 'global_registry') or not world_state.global_registry:
              raise RuntimeError("GlobalRegistry not initialized in WorldState (FOUND-03 requirement).")
@@ -38,7 +44,10 @@ class Phase0_Intercept(IPhaseStrategy):
              if hasattr(world_state, 'agent_registry'):
                  agent_registry = getattr(world_state, 'agent_registry')
              else:
-                 raise RuntimeError("AgentRegistry not found linked to SettlementSystem.")
+                 pass
+
+        if not agent_registry:
+             raise RuntimeError("AgentRegistry not found linked to SettlementSystem.")
 
         self.command_service = CommandService(
             registry=world_state.global_registry,
@@ -47,6 +56,8 @@ class Phase0_Intercept(IPhaseStrategy):
         )
 
     def execute(self, state: SimulationState) -> SimulationState:
+        self._ensure_service_initialized()
+
         # 1. Fetch pending God-Mode commands
         # Assumes TickOrchestrator drained WorldState.god_command_queue into state.god_commands
         pending_commands: List[GodCommandDTO] = state.god_commands

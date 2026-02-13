@@ -111,6 +111,16 @@ class TickOrchestrator:
         god_commands_for_tick = list(state.god_command_queue)
         state.god_command_queue.clear()
 
+        # PRODUCTION INTEGRATION: Drain external CommandQueue
+        if state.command_queue:
+            while not state.command_queue.empty():
+                try:
+                    # Using get_nowait to avoid blocking the engine
+                    cmd = state.command_queue.get_nowait()
+                    god_commands_for_tick.append(cmd)
+                except Exception:
+                    break
+
         # Ensure injectable_sensory_dto has valid current_gdp if provided
         # This is passed to government as sensory_data, which is then used by FinanceSystem
         # to calculate debt-to-GDP ratio via FiscalMonitor.

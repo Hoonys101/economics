@@ -48,6 +48,7 @@ from modules.finance.api import IShareholderRegistry
 from modules.simulation.api import AgentID
 from modules.governance.api import SystemCommand
 from simulation.dtos.commands import GodCommandDTO
+from modules.system.server_bridge import CommandQueue, TelemetryExchange
 
 
 class WorldState:
@@ -109,6 +110,10 @@ class WorldState:
         self.system_command_queue: List[SystemCommand] = [] # TD-255: Cockpit Event Queue
         self.god_command_queue: List[GodCommandDTO] = [] # FOUND-03: Phase 0 Intercept Queue
 
+        # Production Integration (INT-01)
+        self.command_queue: Optional[CommandQueue] = None
+        self.telemetry_exchange: Optional[TelemetryExchange] = None
+
         # New Systems
         self.social_system: Optional[SocialSystem] = None
         self.event_system: Optional[EventSystem] = None
@@ -125,7 +130,9 @@ class WorldState:
         self.public_manager: Optional[IAssetRecoverySystem] = None
         self.currency_holders: List[ICurrencyHolder] = [] # Added for Phase 33
         self._currency_holders_set: set = set()
-        self.global_registry: Optional[IGlobalRegistry] = None # FOUND-03: Global Registry
+        # FOUND-03: Global Registry - Initialize by default to satisfy Phase0_Intercept requirements
+        from modules.system.registry import GlobalRegistry
+        self.global_registry: IGlobalRegistry = GlobalRegistry()
 
         # Attributes with default values
         self.batch_save_interval: int = self.config_manager.get("simulation.batch_save_interval", 50)

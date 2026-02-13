@@ -1,8 +1,10 @@
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union, TYPE_CHECKING
 from datetime import datetime
 import logging
 
-from simulation.engine import Simulation
+if TYPE_CHECKING:
+    from simulation.engine import Simulation
+
 from simulation.dtos.watchtower import (
     WatchtowerSnapshotDTO, IntegrityDTO, MacroDTO, FinanceDTO,
     FinanceRatesDTO, FinanceSupplyDTO, PoliticsDTO, PoliticsApprovalDTO,
@@ -16,14 +18,24 @@ from modules.simulation.api import IEconomicIndicatorTracker, IAgentRepository
 logger = logging.getLogger(__name__)
 
 class DashboardService:
-    def __init__(self, simulation: Simulation):
-        self.simulation = simulation
+    def __init__(self, simulation_or_state: Union["Simulation", Any]):
+        """
+        Accepts Simulation OR WorldState to allow decoupled usage (e.g., inside Phase 8).
+        """
+        if hasattr(simulation_or_state, 'world_state'):
+            self.state = simulation_or_state.world_state
+            self.simulation = simulation_or_state
+        else:
+            self.state = simulation_or_state
+            self.simulation = None
+
         self._last_tick_time = datetime.now()
         self._last_tick = 0
-        self.persistence = PersistenceBridge(simulation)
+        # PersistenceBridge handles Optional[Simulation] internally
+        self.persistence = PersistenceBridge(self.simulation)
 
     def get_snapshot(self) -> WatchtowerSnapshotDTO:
-        state = self.simulation.world_state
+        state = self.state
         tracker = state.tracker
         gov = state.governments[0] if state.governments else None
 
