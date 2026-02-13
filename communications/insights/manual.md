@@ -33,15 +33,25 @@ The regression in `tests/system/test_phase29_depression.py` highlighted two crit
 1.  **DTO Synchronization**: `MarketSignalDTO` had evolved to require `total_bid_quantity` and `total_ask_quantity`, but the `Phase_SystemicLiquidation` implementation (and subsequently the test execution path) had not been updated. This caused a `TypeError` during test execution.
 2.  **Mock Completeness**: The `config_module` mock was missing numerous fields required by `HouseholdConfigDTO` (e.g., `TARGET_FOOD_BUFFER_QUANTITY`, `WAGE_DECAY_RATE`), which are mandatory for agent initialization. This reinforces the need for mocks to strictly adhere to the schemas of the objects they impersonate.
 
-### Optimization
-In `Phase_SystemicLiquidation`, calculating `total_bid_quantity` and `total_ask_quantity` provided an opportunity to optimize `order_book_depth` calculations. Instead of accessing the expensive `buy_orders` property (which constructs DTOs), we now utilize the lightweight `get_all_bids()` method to sum quantities and compute length, reducing overhead during signal generation.
-
-## [Test Evidence]
-
-### tests/system/test_phase29_depression.py
+### Test Evidence
+#### tests/system/test_phase29_depression.py
 ```
 tests/system/test_phase29_depression.py::TestPhase29Depression::test_crisis_monitor_logging PASSED [ 50%]
 tests/system/test_phase29_depression.py::TestPhase29Depression::test_depression_scenario_triggers PASSED [100%]
 ======================== 2 passed, 2 warnings in 3.38s =========================
->>>>>>> origin/fix-registry-priority-mocks-3161058196102907555
+```
+
+---
+
+## 3. Server Integration & Async Dependencies
+
+### Architectural Insights
+*   **Dependency Management**: Cleaned up `requirements.txt` to remove redundant `pytest-asyncio` entries and pinned the version to `>=0.24.0` to ensure compatibility with modern asyncio testing patterns.
+*   **Async Testing Configuration**: Verified `pytest.ini` enforces `asyncio_default_fixture_loop_scope = function`, which aligns with `pytest-asyncio`'s strict mode, ensuring test isolation and preventing event loop leakage between tests.
+*   **Server Integration**: The integration tests (`tests/integration/test_server_integration.py`) correctly utilize a threaded `SimulationServer` alongside async test functions. This separation (server in thread, client in async test loop) avoids event loop conflicts and correctly simulates a real network environment.
+
+### Test Evidence
+```bash
+$ pytest tests/integration/test_server_integration.py
+============================== 2 passed in 2.95s ===============================
 ```
