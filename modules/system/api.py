@@ -164,7 +164,22 @@ class ICurrencyHolder(Protocol):
 
 class IAssetRecoverySystem(Protocol):
     """
-    Interface for Public Manager (Asset Recovery / Liquidation).
+    Interface for the Public Manager acting as a receiver of assets.
     """
-    def liquidate_assets(self, agent: Any) -> float:
+    def process_bankruptcy_event(self, event: AgentBankruptcyEventDTO) -> None:
+        """
+        Ingests assets from a bankrupt agent.
+        """
+        ...
+
+    def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
+        """
+        Receives inventory from a firm undergoing liquidation (Asset Buyout).
+        """
+        ...
+
+    def generate_liquidation_orders(self, market_signals: Dict[str, MarketSignalDTO], core_config: Any = None, engine: Any = None) -> List[Any]:
+        """
+        Generates SELL orders to liquidate managed assets into the market.
+        """
         ...

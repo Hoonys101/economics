@@ -8,6 +8,7 @@ from simulation.dtos.commands import GodCommandDTO
 from simulation.finance.api import ISettlementSystem
 from modules.system.api import IAgentRegistry
 from modules.system.constants import ID_CENTRAL_BANK
+from modules.finance.api import IFinancialAgent
 
 @pytest.fixture
 def mock_registry():
@@ -15,14 +16,25 @@ def mock_registry():
 
 @pytest.fixture
 def mock_settlement_system():
-    return Mock(spec=ISettlementSystem)
+    mock = Mock(spec=ISettlementSystem)
+    mock.mint_and_distribute = Mock()
+    mock.transfer_and_destroy = Mock()
+    return mock
 
 @pytest.fixture
 def mock_agent_registry():
     registry = Mock(spec=IAgentRegistry)
-    central_bank = Mock()
+    central_bank = Mock(spec=IFinancialAgent)
     central_bank.id = ID_CENTRAL_BANK
-    registry.get_agent.side_effect = lambda id: central_bank if str(id) == str(ID_CENTRAL_BANK) else Mock()
+
+    def get_agent_side_effect(id):
+        if str(id) == str(ID_CENTRAL_BANK):
+            return central_bank
+        agent = Mock(spec=IFinancialAgent)
+        agent.id = id
+        return agent
+
+    registry.get_agent.side_effect = get_agent_side_effect
     return registry
 
 @pytest.fixture
