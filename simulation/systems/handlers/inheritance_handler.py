@@ -1,9 +1,9 @@
 from typing import Any, List, Tuple
-import math
 import logging
 from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction
 from modules.system.api import DEFAULT_CURRENCY
+from modules.finance.api import IFinancialAgent
 
 logger = logging.getLogger(__name__)
 
@@ -22,60 +22,82 @@ class InheritanceHandler(ITransactionHandler):
         """
         # "buyer" is the Deceased Agent (Estate) holding the assets.
         deceased_agent = buyer
+        if not deceased_agent:
+            context.logger.error("INHERITANCE_FAIL | Deceased agent (buyer) is None.")
+            return False
 
         heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
 
         # Assets are in pennies (integer)
         assets_val = 0
-        if hasattr(deceased_agent, 'wallet'):
-            assets_val = deceased_agent.wallet.get_balance(DEFAULT_CURRENCY)
-        elif hasattr(deceased_agent, 'assets') and isinstance(deceased_agent.assets, dict):
-            assets_val = int(deceased_agent.assets.get(DEFAULT_CURRENCY, 0))
-        elif hasattr(deceased_agent, 'assets'):
-            assets_val = int(deceased_agent.assets)
+        if isinstance(deceased_agent, IFinancialAgent):
+            assets_val = deceased_agent.get_balance(DEFAULT_CURRENCY)
+        else:
+            # Fallback
+            assets_raw = getattr(deceased_agent, 'assets', 0)
+            if isinstance(assets_raw, dict):
+                 assets_val = int(assets_raw.get(DEFAULT_CURRENCY, 0))
+            else:
+                 try:
+                     assets_val = int(float(assets_raw))
+                 except (ValueError, TypeError):
+                     assets_val = 0
 
         if assets_val <= 0:
             context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no assets ({assets_val}).")
             return True
 
-        if not heir_ids:
-            # If no heirs but we have dust/cash, handled elsewhere or we skip
-            # InheritanceManager should handle escheatment if no heirs.
-             context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no heirs.")
-             return True
+        # Resolve Valid Heirs
+        valid_heirs = []
+        agents = context.agents
 
-        count = len(heir_ids)
-        # Calculate amount per heir (integer division)
-        base_amount = assets_val // count
-
-        credits: List[Tuple[Any, int, str]] = []
-        distributed_sum = 0
-
-        agents = context.agents # SimulationState has agents dict
-
-        # Distribute to all but the last heir
-        for i in range(count - 1):
-            h_id = heir_ids[i]
+        for h_id in heir_ids:
             heir = agents.get(h_id)
+            # Also check inactive_agents if heirs are temporarily inactive? No, heirs should be active.
             if heir:
-                credits.append((heir, base_amount, "inheritance_distribution"))
-                distributed_sum += base_amount
+                valid_heirs.append(heir)
+            else:
+                context.logger.warning(f"INHERITANCE_WARN | Heir {h_id} not found in active agents.")
 
-        # Last heir gets the remainder to ensure zero-sum
-        last_heir_id = heir_ids[-1]
-        last_heir = agents.get(last_heir_id)
-        if last_heir:
+        count = len(valid_heirs)
+        credits: List[Tuple[Any, int, str]] = []
+
+        if count > 0:
+            # Distribute to Heirs
+            base_amount = assets_val // count
+            distributed_sum = 0
+
+            # Distribute to all but last
+            for i in range(count - 1):
+                heir = valid_heirs[i]
+                if base_amount > 0:
+                    credits.append((heir, base_amount, "inheritance_distribution"))
+                    distributed_sum += base_amount
+
+            # Last valid heir gets remainder
+            last_heir = valid_heirs[-1]
             remaining_amount = assets_val - distributed_sum
-            # Ensure we don't transfer negative amounts
             if remaining_amount > 0:
                 credits.append((last_heir, remaining_amount, "inheritance_distribution_final"))
+
+            context.logger.info(f"INHERITANCE_PLAN | Distributing {assets_val} to {count} heirs.")
+
+        else:
+            # Fallback: Escheatment (No Valid Heirs)
+            context.logger.warning(f"INHERITANCE_FALLBACK | Agent {deceased_agent.id} has no VALID heirs (ids: {heir_ids}). Escheating {assets_val} to Government.")
+            gov = context.government
+            if gov:
+                credits.append((gov, assets_val, "escheatment_fallback"))
+            else:
+                context.logger.critical("INHERITANCE_CRITICAL | Government not found for fallback escheatment! Assets LEAKED.")
+                return False
 
         # Atomic Settlement
         if credits:
             success = context.settlement_system.settle_atomic(deceased_agent, credits, context.time)
 
             if success:
-                 context.logger.info(f"INHERITANCE_SUCCESS | Distributed {assets_val} from {deceased_agent.id} to {count} heirs.")
+                 context.logger.info(f"INHERITANCE_SUCCESS | Distributed {assets_val} from {deceased_agent.id}.")
             else:
                  context.logger.error(f"INHERITANCE_FAIL | Atomic settlement failed for {deceased_agent.id}.")
 
