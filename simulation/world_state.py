@@ -41,12 +41,13 @@ if TYPE_CHECKING:
     from simulation.db.repository import SimulationRepository
     from modules.common.config_manager.api import ConfigManager
     from simulation.dtos.scenario import StressScenarioConfig
-from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode # Added for Phase 33
+from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry # Added for Phase 33
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
 from modules.finance.api import IShareholderRegistry
 from modules.simulation.api import AgentID
 from modules.governance.api import SystemCommand
+from simulation.dtos.commands import GodCommandDTO
 
 
 class WorldState:
@@ -106,6 +107,7 @@ class WorldState:
         self.effects_queue: List[Dict[str, Any]] = []  # WO-109: Queue for side-effects
         self.inactive_agents: Dict[int, Any] = {}  # WO-109: Store inactive agents for transaction processing
         self.system_command_queue: List[SystemCommand] = [] # TD-255: Cockpit Event Queue
+        self.god_command_queue: List[GodCommandDTO] = [] # FOUND-03: Phase 0 Intercept Queue
 
         # New Systems
         self.social_system: Optional[SocialSystem] = None
@@ -123,6 +125,7 @@ class WorldState:
         self.public_manager: Optional[IAssetRecoverySystem] = None
         self.currency_holders: List[ICurrencyHolder] = [] # Added for Phase 33
         self._currency_holders_set: set = set()
+        self.global_registry: Optional[IGlobalRegistry] = None # FOUND-03: Global Registry
 
         # Attributes with default values
         self.batch_save_interval: int = self.config_manager.get("simulation.batch_save_interval", 50)

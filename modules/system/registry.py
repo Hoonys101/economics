@@ -28,6 +28,24 @@ class AgentRegistry(IAgentRegistry):
 
         return None
 
+    def get_all_financial_agents(self) -> List[Any]:
+        if self._state is None:
+            return []
+
+        # Start with all registered agents
+        all_agents = list(self._state.agents.values())
+
+        # Ensure Government, Bank, Central Bank are included if not already
+        known_ids = {a.id for a in all_agents if hasattr(a, 'id')}
+
+        extras = [self._state.government, self._state.bank, self._state.central_bank]
+        for extra in extras:
+            if extra and hasattr(extra, 'id') and extra.id not in known_ids:
+                all_agents.append(extra)
+                known_ids.add(extra.id)
+
+        return all_agents
+
 class GlobalRegistry(IGlobalRegistry):
     """
     Central repository for simulation parameters with priority and locking mechanisms.

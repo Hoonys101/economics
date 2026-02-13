@@ -168,6 +168,11 @@ class IAgentRegistry(ABC):
         """Updates the registry with the current simulation state."""
         ...
 
+    @abstractmethod
+    def get_all_financial_agents(self) -> List[Any]:
+        """Returns a list of all agents that hold currency."""
+        ...
+
 # --- FOUND-01: GlobalRegistry Interface ---
 
 class OriginType(IntEnum):

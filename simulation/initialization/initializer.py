@@ -92,7 +92,7 @@ from modules.finance.sagas.orchestrator import SagaOrchestrator
 from modules.finance.shareholder_registry import ShareholderRegistry
 from modules.system.event_bus.event_bus import EventBus
 from modules.governance.judicial.system import JudicialSystem
-from modules.system.registry import AgentRegistry
+from modules.system.registry import AgentRegistry, GlobalRegistry
 from modules.household.api import HouseholdFactoryContext
 from simulation.factories.household_factory import HouseholdFactory
 from simulation.utils.config_factory import create_config_dto
@@ -157,6 +157,9 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.settlement_system = SettlementSystem(logger=self.logger)
         sim.event_bus = EventBus()
         sim.world_state.taxation_system = TaxationSystem(config_module=self.config)
+
+        # Initialize Global Registry (FOUND-03)
+        sim.world_state.global_registry = GlobalRegistry()
 
         # TD-253: Saga & Ledger
         # MonetaryLedger needs transaction_log (sim.world_state.transactions) and time_provider (sim)

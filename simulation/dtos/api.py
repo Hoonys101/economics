@@ -7,6 +7,7 @@ from simulation.dtos.decision_dtos import DecisionOutputDTO
 from modules.finance.api import IFinancialAgent
 from modules.simulation.api import AgentID
 from modules.governance.api import SystemCommand
+from simulation.dtos.commands import GodCommandDTO
 
 # Alias for standardization
 OrderDTO = Order
@@ -248,6 +249,7 @@ class SimulationState:
 
     # TD-255: System Command Pipeline
     system_commands: List[SystemCommand] = field(default_factory=list)
+    god_commands: List[GodCommandDTO] = field(default_factory=list) # FOUND-03: Phase 0 Intercept
 
     # --- NEW TRANSIENT FIELDS ---
     # From Phase 1 (Decisions)
@@ -283,6 +285,8 @@ class SimulationState:
             self.transactions = []
         if self.system_commands is None:
             self.system_commands = []
+        if self.god_commands is None:
+            self.god_commands = []
         if self.inter_tick_queue is None:
             self.inter_tick_queue = []
         if self.effects_queue is None:

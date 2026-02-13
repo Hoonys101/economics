@@ -706,3 +706,108 @@ class SettlementSystem(ISettlementSystem):
             time=tick,
             metadata={"memo": memo}
         )
+
+    def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = "god_mode_injection") -> bool:
+        """
+        FOUND-03: Phase 0 Intercept - Special transaction for God Mode injection.
+        Uses Central Bank as the source to ensure authorized money creation.
+        """
+        if not self.agent_registry:
+            self.logger.critical("MINT_FAIL | Agent registry not linked.")
+            return False
+
+        central_bank = self.agent_registry.get_agent(ID_CENTRAL_BANK)
+        if not central_bank:
+             # Try fallback to string ID if registry keys are strings
+             central_bank = self.agent_registry.get_agent(str(ID_CENTRAL_BANK))
+
+        if not central_bank:
+            self.logger.critical("MINT_FAIL | Central Bank not found.")
+            return False
+
+        target_agent = self.agent_registry.get_agent(target_agent_id)
+        if not target_agent:
+            self.logger.critical(f"MINT_FAIL | Target agent {target_agent_id} not found.")
+            return False
+
+        if not isinstance(central_bank, IFinancialAgent) or not isinstance(target_agent, IFinancialAgent):
+            self.logger.critical("MINT_FAIL | Agents must implement IFinancialAgent.")
+            return False
+
+        tx = self.create_and_transfer(
+            source_authority=central_bank,
+            destination=target_agent,
+            amount=amount,
+            reason=reason,
+            tick=tick
+        )
+        return tx is not None
+
+    def audit_total_m2(self, expected_total: Optional[int] = None) -> bool:
+        """
+        FOUND-03: Phase 0 Intercept - M2 Integrity Audit.
+        Sums up all cash in the system and compares with expected total.
+        If expected_total is None, it just logs the current total (Passive Mode).
+        """
+        if not self.agent_registry:
+             self.logger.critical("AUDIT_FAIL | Agent registry not linked.")
+             return False
+
+        # Use the enhanced registry method
+        if not hasattr(self.agent_registry, "get_all_financial_agents"):
+             self.logger.critical("AUDIT_FAIL | Agent registry does not support get_all_financial_agents.")
+             return False
+
+        agents = self.agent_registry.get_all_financial_agents()
+        total_cash = 0
+        bank_reserves = 0
+        total_deposits = 0
+
+        for agent in agents:
+            # Exclude Central Bank from M2 calculation to align with WorldState.calculate_total_money
+            # M2 is money in circulation, not held by the issuer.
+            if hasattr(agent, 'id') and (agent.id == ID_CENTRAL_BANK or str(agent.id) == str(ID_CENTRAL_BANK)):
+                continue
+
+            current_balance = 0
+            if isinstance(agent, IFinancialAgent):
+                current_balance = agent.get_balance(DEFAULT_CURRENCY)
+            elif hasattr(agent, "get_assets_by_currency"):
+                assets = agent.get_assets_by_currency()
+                current_balance = assets.get(DEFAULT_CURRENCY, 0)
+
+            total_cash += current_balance
+
+            # Bank Logic: Reserves and Deposits
+            # Identify if agent is a Bank to adjust for M2 (Fractional Reserve)
+            is_bank = isinstance(agent, IBank) or (hasattr(agent, '__class__') and agent.__class__.__name__ == "Bank")
+
+            if is_bank:
+                bank_reserves += current_balance
+                if hasattr(agent, 'get_total_deposits'):
+                    total_deposits += agent.get_total_deposits()
+                elif hasattr(agent, 'deposits') and isinstance(agent.deposits, dict):
+                     # Legacy Bank support
+                     total_deposits += sum(d.amount for d in agent.deposits.values() if hasattr(d, 'amount'))
+
+        # Include escrow accounts (considered removed from circulation until settled, but part of system total)
+        # Escrow is effectively "Cash in Limbo".
+        escrow_cash = sum(acc.escrow_cash for acc in self.settlement_accounts.values())
+
+        # M2 = (Total Cash - Bank Reserves) + Total Deposits + Escrow
+        # Currency in Circulation = Total Cash - Bank Reserves
+        total_m2 = (total_cash - bank_reserves) + total_deposits + escrow_cash
+
+        if expected_total is not None:
+            if total_m2 != expected_total:
+                self.logger.critical(
+                    f"AUDIT_INTEGRITY_FAILURE | M2 Mismatch! Expected: {expected_total}, Actual: {total_m2}, Diff: {total_m2 - expected_total}",
+                    extra={"expected": expected_total, "actual": total_m2, "diff": total_m2 - expected_total}
+                )
+                return False
+            else:
+                self.logger.info(f"AUDIT_PASS | M2 Verified: {total_m2}")
+                return True
+        else:
+             self.logger.info(f"AUDIT_PASS | M2 Current: {total_m2} (No expectation set)")
+             return True
