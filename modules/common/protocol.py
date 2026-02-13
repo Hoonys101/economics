@@ -51,7 +51,7 @@ def enforce_purity(allowed_modules: list = AUTHORIZED_MODULES):
             is_authorized = False
             for mod in allowed_modules:
                 # Normalize mod path (remove trailing slash for check if file)
-                mod_clean = mod.rstrip("/")
+                mod_clean = os.path.normpath(mod.rstrip("/"))
                 if mod_clean in caller_filepath:
                     is_authorized = True
                     break
