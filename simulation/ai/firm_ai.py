@@ -213,7 +213,9 @@ class FirmAI(BaseAIEngine):
         current_awareness = firm_agent.sales_state.brand_awareness
         prev_awareness = firm_agent.prev_awareness
         delta_awareness = current_awareness - prev_awareness
-        firm_agent.prev_awareness = current_awareness # Update state
+
+        # NOTE: State update removed from Engine to satisfy Purity.
+        # firm_agent.prev_awareness = current_awareness
 
         reward = 0.0
 
@@ -239,7 +241,9 @@ class FirmAI(BaseAIEngine):
             current_quality = current_state.get("base_quality", 1.0)
             prev_quality = firm_agent.prev_avg_quality
             delta_quality = current_quality - prev_quality
-            firm_agent.prev_avg_quality = current_quality
+
+            # NOTE: State update removed from Engine to satisfy Purity.
+            # firm_agent.prev_avg_quality = current_quality
 
             reward = (delta_assets * 0.1) + (delta_quality * 200.0) + (net_profit * 0.01) # Profit matters less
 

@@ -1366,6 +1366,10 @@ class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, I
                 next_market_data=next_market_data,
             )
 
+        # Update State Tracking for Rewards (Moved from Engine for Purity)
+        self.prev_awareness = self.sales_state.brand_awareness
+        self.prev_avg_quality = self.production_state.base_quality
+
     def reset_finance(self) -> None:
         """
         Resets the financial state for the next tick.

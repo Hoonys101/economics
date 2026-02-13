@@ -49,6 +49,7 @@ from modules.simulation.api import AgentID
 from modules.governance.api import SystemCommand
 from simulation.dtos.commands import GodCommandDTO
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
+from simulation.orchestration.dashboard_service import DashboardService
 
 
 class WorldState:
@@ -113,6 +114,7 @@ class WorldState:
         # Production Integration (INT-01)
         self.command_queue: Optional[CommandQueue] = None
         self.telemetry_exchange: Optional[TelemetryExchange] = None
+        self.dashboard_service: Optional[DashboardService] = None
 
         # New Systems
         self.social_system: Optional[SocialSystem] = None
@@ -130,9 +132,8 @@ class WorldState:
         self.public_manager: Optional[IAssetRecoverySystem] = None
         self.currency_holders: List[ICurrencyHolder] = [] # Added for Phase 33
         self._currency_holders_set: set = set()
-        # FOUND-03: Global Registry - Initialize by default to satisfy Phase0_Intercept requirements
-        from modules.system.registry import GlobalRegistry
-        self.global_registry: IGlobalRegistry = GlobalRegistry()
+        # FOUND-03: Global Registry - Initialized via Dependency Injection (simulation.lock via initializer)
+        self.global_registry: Optional[IGlobalRegistry] = None
 
         # Attributes with default values
         self.batch_save_interval: int = self.config_manager.get("simulation.batch_save_interval", 50)

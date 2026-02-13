@@ -63,11 +63,11 @@ class Phase_ScenarioAnalysis(IPhaseStrategy):
 
             # 4. Watchtower V2 Broadcast (INT-01)
             if self.world_state.telemetry_exchange:
-                # Use DashboardService to get standard snapshot structure
-                # We instantiate it transiently or better if WorldState had it.
-                # Since we refactored it, we can instantiate it cheaply.
-                dashboard_service = DashboardService(self.world_state)
-                base_snapshot = dashboard_service.get_snapshot()
+                # Cache DashboardService instance in WorldState to avoid re-instantiation overhead
+                if not self.world_state.dashboard_service:
+                    self.world_state.dashboard_service = DashboardService(self.world_state)
+
+                base_snapshot = self.world_state.dashboard_service.get_snapshot()
 
                 # Construct V2 DTO
                 v2_dto = WatchtowerV2DTO(
