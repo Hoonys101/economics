@@ -142,24 +142,39 @@ class SimulationInitializer(SimulationInitializerInterface):
         else:
             self.logger.warning("File locking (fcntl) is not supported on this platform. Concurrency safety is not guaranteed.")
 
-        # 1. Create the empty Simulation shell
+        # --- PRE-INSTANTIATION OF CORE SERVICES ---
+        # Resolve circular dependency for CommandService injection
+
+        # 1. Global Registry (FOUND-03)
+        global_registry = GlobalRegistry()
+
+        # 2. Settlement System
+        settlement_system = SettlementSystem(logger=self.logger)
+
+        # 3. Agent Registry
+        agent_registry = AgentRegistry()
+
+        # 4. Create the Simulation shell with injected dependencies
         sim = Simulation(
             config_manager=self.config_manager,
             config_module=self.config,
             logger=self.logger,
-            repository=self.repository
+            repository=self.repository,
+            registry=global_registry,
+            settlement_system=settlement_system,
+            agent_registry=agent_registry
         )
 
         # Attach lock file to simulation to keep it open (and locked) until shutdown
         sim._lock_file = lock_file
 
-        # 2. Populate the shell with all its components
-        sim.settlement_system = SettlementSystem(logger=self.logger)
+        # 5. Populate the shell with other components
+        # Note: sim.settlement_system, sim.agent_registry are already set by Simulation.__init__
+        # but explicit assignment here for safety/clarity if needed, or we rely on __init__.
+        # We will assume __init__ handles assignment to 'sim' attributes.
+
         sim.event_bus = EventBus()
         sim.world_state.taxation_system = TaxationSystem(config_module=self.config)
-
-        # Initialize Global Registry (FOUND-03)
-        sim.world_state.global_registry = GlobalRegistry()
 
         # DATA-02: Initialize TelemetryCollector
         from modules.system.telemetry import TelemetryCollector
@@ -509,7 +524,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.next_agent_id += 1
 
         # TD-261: Initialize Judicial System
-        sim.agent_registry = AgentRegistry()
+        # AgentRegistry was pre-instantiated and passed to Simulation
         sim.judicial_system = JudicialSystem(
             event_bus=sim.event_bus,
             settlement_system=sim.settlement_system,

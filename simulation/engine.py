@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
 import logging
 
 from modules.common.config_manager.api import ConfigManager
@@ -14,7 +14,8 @@ from modules.system.services.command_service import CommandService
 from simulation.action_processor import ActionProcessor
 from simulation.models import Transaction
 from modules.simulation.api import EconomicIndicatorsDTO, SystemStateDTO
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, IGlobalRegistry, IAgentRegistry
+from simulation.finance.api import ISettlementSystem
 
 from simulation.db.logger import SimulationLogger
 import simulation
@@ -30,7 +31,10 @@ class Simulation:
         config_manager: ConfigManager,
         config_module: Any,
         logger: logging.Logger,
-        repository: SimulationRepository
+        repository: SimulationRepository,
+        registry: IGlobalRegistry,
+        settlement_system: ISettlementSystem,
+        agent_registry: IAgentRegistry
     ) -> None:
         """
         초기화된 구성 요소들을 할당받습니다.
@@ -42,11 +46,19 @@ class Simulation:
             logger=logger,
             repository=repository
         )
+
+        # Inject dependencies into WorldState
+        self.world_state.global_registry = registry
+        # SettlementSystem and AgentRegistry are typically accessed via Simulation or injected into components
+
+        self.settlement_system = settlement_system
+        self.agent_registry = agent_registry
+
         self.action_processor = ActionProcessor(self.world_state)
         self.tick_orchestrator = TickOrchestrator(self.world_state, self.action_processor)
 
         # Initialize Command Service and Controls
-        self.command_service = CommandService()
+        self.command_service = CommandService(registry, settlement_system, agent_registry)
         self.is_paused = False
         self.step_requested = False
 
@@ -62,7 +74,7 @@ class Simulation:
 
     def __setattr__(self, name: str, value: Any) -> None:
         # Avoid infinite recursion for internal components
-        if name in ["world_state", "tick_orchestrator", "action_processor", "simulation_logger", "command_service", "is_paused", "step_requested"]:
+        if name in ["world_state", "tick_orchestrator", "action_processor", "simulation_logger", "command_service", "is_paused", "step_requested", "settlement_system", "agent_registry"]:
             super().__setattr__(name, value)
             return
 

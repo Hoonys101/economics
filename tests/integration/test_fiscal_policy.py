@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import Mock
 from simulation.dtos import GovernmentSensoryDTO
+from modules.government.dtos import BondIssuanceResultDTO, PaymentRequestDTO
+from modules.finance.api import BondDTO
 
 # Note: The 'government', 'mock_config', 'mock_central_bank' fixtures are provided by tests/conftest.py
 
@@ -59,27 +61,56 @@ def test_counter_cyclical_tax_adjustment_boom(government, mock_config, mock_cent
 
 def test_debt_ceiling_enforcement(government):
     """Test that spending is blocked when Debt Ceiling is hit."""
+
+    # Ensure wallet is empty to trigger bond issuance logic
+    current_balance = government.wallet.get_balance("USD")
+    if current_balance > 0:
+        government.wallet.subtract(current_balance, "USD")
+
     government._assets = 0.0
     government.total_debt = 0.0
     government.potential_gdp = 1000.0
     # From config, Debt Ceiling Ratio is 2.0, so ceiling is 2000.0
     government.sensory_data = GovernmentSensoryDTO(tick=0, current_gdp=1000.0, inflation_sma=0.02, unemployment_sma=0.05, gdp_growth_sma=0.01, wage_sma=100, approval_sma=0.5)
 
+    # Init mock settlement balance to 0
+    government.settlement_system.get_balance.return_value = 0.0
 
     agent = Mock()
     agent.id = 123
     agent._assets = 0.0
 
-    # This is the critical fix. We need to simulate the side effect of
-    # `issue_treasury_bonds`, which is that the government's assets INCREASE
-    # by the amount of the bond. A simple mock doesn't do this.
-    def issue_bonds_side_effect(amount, tick):
-        government.wallet.add(amount, "USD") # Update Wallet!
-        government._assets += amount # Keep this for legacy check if any
-        government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
-        return [Mock()], [] # Return a successful bond issuance and empty transactions
+    # Mock the FiscalBondService.issue_bonds to simulate bond issuance and wallet update.
+    # Note: Government._issue_deficit_bonds calls self.fiscal_bond_service.issue_bonds
 
-    government.finance_system.issue_treasury_bonds = Mock(side_effect=issue_bonds_side_effect)
+    def issue_bonds_side_effect(request, context, buyer_pool):
+        amount = request.amount_pennies
+        government.wallet.add(amount, "USD") # Update Wallet with cash
+
+        # Mock payment request (Buyer -> Gov)
+        payment_req = PaymentRequestDTO(
+            payer="MOCK_BUYER",
+            payee=government.id,
+            amount=amount,
+            currency="USD",
+            memo="Bond Issue"
+        )
+
+        bond_dto = BondDTO(
+             id=f"BOND_{government.id}_{context.tick}",
+             issuer=str(government.id),
+             face_value=amount,
+             maturity_date=context.tick + request.maturity_ticks,
+             yield_rate=request.target_yield
+        )
+
+        return BondIssuanceResultDTO(
+            payment_request=payment_req,
+            bond_dto=bond_dto
+        )
+
+    government.fiscal_bond_service = Mock()
+    government.fiscal_bond_service.issue_bonds.side_effect = issue_bonds_side_effect
 
     # 1. Spend within limit
     amount = 500.0
@@ -92,9 +123,10 @@ def test_debt_ceiling_enforcement(government):
     government.wallet.subtract(paid, "USD")
     government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
 
-    # After spending 500, assets should be 0, and total_debt (which is -assets) should be 0.
-    # The bonds were issued for 500, assets became 500, then spent.
-    assert government.settlement_system.get_balance(government.id) == 0.0
+    # After spending 500, assets should be 0, and total_debt (which is -assets if no cash)
+    # Actually total_debt is tracked via outstanding bonds.
+    # Here we simulate total_debt check or just rely on wallet balance being empty again.
+    assert government.wallet.get_balance("USD") == 0.0
 
     # 2. Spend more
     amount = 1500.0
@@ -107,11 +139,15 @@ def test_debt_ceiling_enforcement(government):
     government.wallet.subtract(paid, "USD")
     government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
 
-    assert government.settlement_system.get_balance(government.id) == 0.0
+    assert government.wallet.get_balance("USD") == 0.0
 
     # 3. Try to spend when bond issuance fails
-    government.finance_system.issue_treasury_bonds.side_effect = None # Disable the side effect
-    government.finance_system.issue_treasury_bonds.return_value = [], []
+    government.fiscal_bond_service.issue_bonds.side_effect = None
+    # Return a result with UNKNOWN_BUYER to simulate failure
+    fail_payment = PaymentRequestDTO(payer="UNKNOWN_BUYER", payee=government.id, amount=0, currency="USD", memo="")
+    fail_bond = BondDTO(id="FAIL", issuer=str(government.id), face_value=0, maturity_date=0, yield_rate=0.0)
+    government.fiscal_bond_service.issue_bonds.return_value = BondIssuanceResultDTO(fail_payment, fail_bond)
+
     amount = 100.0
     txs = government.provide_household_support(agent, amount, current_tick=3)
     paid = sum(tx.price for tx in txs)
