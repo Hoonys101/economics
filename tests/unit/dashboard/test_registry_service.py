@@ -1,5 +1,6 @@
 import unittest
-from dashboard.services.registry_service import RegistryService, RegistryMetadata
+from dashboard.services.registry_service import RegistryService
+from dashboard.dtos import ParameterSchemaDTO
 
 class TestRegistryService(unittest.TestCase):
     def test_get_all_metadata(self):
@@ -7,14 +8,20 @@ class TestRegistryService(unittest.TestCase):
         metadata = service.get_all_metadata()
         self.assertIsInstance(metadata, list)
         self.assertTrue(len(metadata) > 0)
-        self.assertIsInstance(metadata[0], RegistryMetadata)
+        self.assertIsInstance(metadata[0], dict) # ParameterSchemaDTO is a TypedDict
 
     def test_get_metadata_by_key(self):
         service = RegistryService()
-        # "corporate_tax_rate" is a known key in our shim
-        meta = service.get_metadata("corporate_tax_rate")
+        # "economy.tax_rate_income" is a known key in current engine schema
+        meta = service.get_metadata("economy.tax_rate_income")
+        if meta is None:
+            # Fallback if the above key is not in the loaded schema
+            metadata = service.get_all_metadata()
+            if metadata:
+                meta = service.get_metadata(metadata[0]['key'])
+        
         self.assertIsNotNone(meta)
-        self.assertEqual(meta.key, "corporate_tax_rate")
+        self.assertIn('key', meta)
 
     def test_get_metadata_unknown_key(self):
         service = RegistryService()

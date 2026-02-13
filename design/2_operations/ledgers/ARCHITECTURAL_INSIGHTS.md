@@ -56,6 +56,15 @@
 - **[2026-02-13] Reactive Telemetry Masking (Pull Model) (UI-03)**
     - Established an 'On-Demand' data flow where the UI components define their own `required_mask`. The dashboard aggregates these masks and sends an `UPDATE_TELEMETRY` command to the engine. This minimizes bandwidth and serialization overhead by only harvesting data that is being actively visualized.
     - [Insight Report](../../communications/insights/mission-ui-03.md)
+- **[2026-02-13] The External Integration Bridge (INT-01)**
+    - **Principle**: To decouple the real-time simulation engine from external networking (WebSocket), we implemented a thread-safe `Bridge` using `CommandQueue` and `TelemetryExchange`. This pattern prevents the server's network latency or crashes from blocking the engine thread.
+    - **Implementation**: The engine thread remains the "Sovereign" owner of the state, consuming commands only during `Phase 0` and publishing results only during `Phase 8`.
+    - [Insight Report](../../communications/insights/mission-int-01.md)
+- **[2026-02-13] Two-Step Settlement for Macro Shocks (INT-02)**
+    - **Problem**: Directly moving cash or assets during a God-Mode intervention (e.g., Bank-run or Asset Seizure) often leads to M2 leaks or balance sheet desync between banks and agents.
+    - **Principle**: **"Divine Intervention is still an Accounting Entry."** Even forced withdrawals must follow a two-step settlement: (1) Reduce the liability (Deposit) on the bank side, and (2) Synchronize the physical asset (Cash) on the agent side.
+    - **Implementation**: The `CommandService` was updated to orchestrate these dual transformations, ensuring that `SettlementSystem.audit()` always passes post-intervention.
+    - [Insight Report](../../communications/insights/mission-int-02.md)
 - **[2026-02-13] Lazy Dependency Resolution Pattern**
     - Implemented lazy initialization in `DemographicManager` to resolve internal factories from the simulation context if not explicitly injected. Prevents silent failures while maintaining flexible testing.
     - [Insight Report](../_archive/insights/2026-02-13_Lazy_Dependency_Resolution_Demographics.md)

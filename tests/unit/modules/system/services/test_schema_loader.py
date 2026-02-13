@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, mock_open
-from dashboard.services.schema_loader import SchemaLoader
+from modules.system.services.schema_loader import SchemaLoader
 import logging
 import yaml
 
@@ -8,7 +8,7 @@ import yaml
 logging.disable(logging.CRITICAL)
 
 class TestSchemaLoader(unittest.TestCase):
-    @patch('dashboard.services.schema_loader.yaml.safe_load')
+    @patch('modules.system.services.schema_loader.yaml.safe_load')
     def test_load_schema_success(self, mock_yaml_load):
         mock_data = [{
             'key': 'test.param',
@@ -33,7 +33,7 @@ class TestSchemaLoader(unittest.TestCase):
             schema = SchemaLoader.load_schema("nonexistent.yaml")
             self.assertEqual(schema, [])
 
-    @patch('dashboard.services.schema_loader.yaml.safe_load')
+    @patch('modules.system.services.schema_loader.yaml.safe_load')
     def test_load_schema_invalid_structure(self, mock_yaml_load):
         # Returns dict instead of list
         mock_yaml_load.return_value = {"key": "val"}
@@ -42,7 +42,7 @@ class TestSchemaLoader(unittest.TestCase):
             schema = SchemaLoader.load_schema("invalid.yaml")
             self.assertEqual(schema, [])
 
-    @patch('dashboard.services.schema_loader.yaml.safe_load')
+    @patch('modules.system.services.schema_loader.yaml.safe_load')
     def test_load_schema_yaml_error(self, mock_yaml_load):
         mock_yaml_load.side_effect = yaml.YAMLError("parse error")
 
