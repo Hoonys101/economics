@@ -32,6 +32,15 @@
 - **[2026-02-13] Stateless Engine vs Stateful Service (Tax Refactor)**
     - Refactored `TaxService` (God Object) into a pure `TaxEngine`. Enforced separation between calculation (pure) and collection (side-effecting orchestrator). Pushed state preparation to DTOs.
     - [Insight Report](../_archive/insights/2026-02-13_Stateless_Tax_Engine_Refactor.md)
+- **[2026-02-13] The Sovereign Slot (Phase 0 Intercept)**
+    - Established 'Phase 0' in the `TickOrchestrator` to process external God-mode commands *before* the simulation's causal chain (Phase 1 Perception) begins. This protects causality and ensures all agents perceive a consistent "Divine Intervention" state within the same tick.
+    - [Insight Report](../../communications/insights/mission-found-03.md)
+- **[2026-02-13] Global Registry & Origin Priority (SSoT)**
+    - Implemented a priority-based registry system (SYSTEM < CONFIG < GOD_MODE) to manage simulation parameters. Used `__getattr__` on the `config` module to proxy attributes to the registry, ensuring that all consumers fetch the most recent, potentially hot-swapped values.
+    - [Insight Report](../../communications/insights/mission-found-01.md)
+- **[2026-02-13] Explicit Financial Settlement for Government Bonds**
+    - Transitioned government bond issuance from an internal state mutation in `FinanceSystem` to an explicit `SettlementSystem.transfer` orchestrated by the `Government` agent. This enforces zero-sum integrity and ensures that Quantitative Easing (QE) or standard bond purchases are explicitly audited and debited against actual account balances.
+    - [Insight Report](../../communications/insights/mission-found-02.md)
 - **[2026-02-13] Lazy Dependency Resolution Pattern**
     - Implemented lazy initialization in `DemographicManager` to resolve internal factories from the simulation context if not explicitly injected. Prevents silent failures while maintaining flexible testing.
     - [Insight Report](../_archive/insights/2026-02-13_Lazy_Dependency_Resolution_Demographics.md)

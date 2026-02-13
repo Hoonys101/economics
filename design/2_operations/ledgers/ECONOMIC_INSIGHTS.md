@@ -19,6 +19,9 @@
 ## 💰 [Monetary] Circulation & Integrity
 *M2 integrity, zero-sum principles, and financial market logic.*
 
+- **[2026-02-13] Quantitative Easing & Bond Yield Feedback**
+    - Implemented a dynamic sovereign risk premium mechanism. Government bond yields now fluctuate based on the Debt-to-GDP ratio. In scenarios where market liquidity is insufficient to absorb new debt (High Debt/GDP > 1.5), the Central Bank acts as the "Buyer of Last Resort" (Quantitative Easing), ensuring fiscal continuity at the cost of potential inflationary pressure (to be modeled in future phases).
+    - [Insight Report](../../communications/insights/mission-found-02.md)
 - **[2026-02-09] Judicial Decoupling & Event-Driven Consequence**
     - Separation of bank credit destruction from punitive governance actions.
     - [Insight Report](../_archive/insights/TD-261_Judicial_Decoupling.md)

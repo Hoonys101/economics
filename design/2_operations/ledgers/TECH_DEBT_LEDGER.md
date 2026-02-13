@@ -2,13 +2,14 @@
 
 | ID | Module / Component | Description | Priority / Impact | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **TD-278** | Finance | **Penny Standard Guardrails**: Risk of `SETTLEMENT_TYPE_ERROR` if floats bypass integer casting. | **Critical**: Monetary Integrity. | Open |
+| **TD-GHOST-CONSTANTS** | System | **Registry Binding**: `from config import PARAM` binds at import time, bypassing updates. | **High**: Logic Inconsistency. | Open |
+| **TD-AGENT-REGISTRY-SCALE** | System | **M2 Audit Capacity**: O(N) iteration over all agents for M2 calculation. | **Medium**: Performance (Scale). | Open |
+| **TD-DTO-OVERLAP** | Finance | **DTO Schism**: Overlap between `modules/finance/api.py` and new `Government` DTOs. | **Low**: Code Duplication. | Open |
+| **TD-GOV-SERVICE-FLATTEN** | Government | **Legacy Coupling**: `TaxService` still depends on `TaxationSystem` and `FiscalPolicyManager`. | **Medium**: Structural Purity. | Open |
 | **TD-275** | System | **Housing ID Utility**: Duplicated `split("_")` logic across handlers. | **High**: Maintenance Fragility. | Open |
 | **TD-276** | Finance | **Solvency Valuation Spec**: Ambiguity between Market vs Liquidation price for assets. | **Medium**: Logic Consistency. | Open |
-| **TD-277** | Finance | **Taxable Income Inconsistency**: Divergent definitions across modules. | **Medium**: Logic Consistency. | Open |
 | **TD-LEG-TRANS** | System | Legacy `TransactionManager` contains redundant/conflicting logic. | **Low**: Confusion & code bloat. | Pending Deletion |
 | **TD-PRECISION** | Financials | Use of `float` for currency leads to precision dust/leaks over long runs. | **Medium**: Marginal zero-sum drift. | Identified (Next Priority) |
-| **TD-CONFIG-MUT** | System | Scenarios directly mutate global config via `setattr`. | **Medium**: State pollution risk. | Identified (Next Priority) |
 | **TD-COCKPIT-FE** | Simulation | **Ghost Implementation**: FE missing sliders/HUD for Cockpit (Phase 11) despite BE readiness. | **Medium**: Logic usability gap. | Identified |
 | **TD-STR-GOD-DECOMP** | Architecture | **Residual God Classes**: `Firm` (1276 lines) and `Household` (1042 lines) exceed 800-line limit. | **Medium**: Maintenance friction. | Open |
 | **TD-ARCH-LEAK-CONTEXT** | Finance | **Abstraction Leak**: `LiquidationContext` passes agent interfaces instead of pure DTO snapshots. | **Low**: Future coupling risk. | Identified |
@@ -27,18 +28,18 @@
 
 
 ---
-### ID: TD-FIN-002
-### Title: Monetary Unit Mismatch (Pennies vs Dollars)
-- **Symptom**: Configs and Tax/Fiscal modules still use float dollars, requiring adapters in `TransactionManager`.
-- **Risk**: Implicit unit conversions are high-friction and prone to 100x scaling errors.
-- **Solution**: Complete the "Penny Standard" migration across all configurations and government modules.
+### ID: TD-GHOST-CONSTANTS
+### Title: Module-level Import Binding (Ghost Constants)
+- **Symptom**: `from config import PARAM` binds the value at import time. Even if `GlobalRegistry` is updated, the locally bound `PARAM` remains stale.
+- **Risk**: Inconsistent behavior when using hot-swapping sliders.
+- **Solution**: Refactor all architectural imports to `import config` and use `config.PARAM`, or use the registry directly.
 
 ---
-### ID: TD-FIN-004
-### Title: Missing Sovereign Risk Premium Logic
-- **Symptom**: `issue_treasury_bonds` uses fixed spreads regardless of debt levels.
-- **Risk**: Inability to model fiscal sustainability crises.
-- **Solution**: Integrate `debt_to_gdp` based feedback loops into bond yield calculations.
+### ID: TD-AGENT-REGISTRY-SCALE
+### Title: Agent Registry Iteration Bottleneck
+- **Symptom**: M2 Audit requires O(N) iteration over all financial agents in Every Tick (Phase 8).
+- **Risk**: Performance degradation as population scales (>100k agents).
+- **Solution**: Implement incremental M2 tracking in `IAgentRegistry` or the `SettlementSystem`.
 
 ---
 ### ID: TD-ARCH-DI-SETTLE
