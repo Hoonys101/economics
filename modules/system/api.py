@@ -9,6 +9,16 @@ CurrencyCode = str
 DEFAULT_CURRENCY: CurrencyCode = "USD"
 AgentID = int
 
+@dataclass
+class MarketContextDTO:
+    """
+    Context object passed to agents for making decisions.
+    Contains strictly external market data (prices, rates, signals).
+    """
+    market_data: Dict[str, Any]
+    market_signals: Dict[str, float]
+    tick: int
+
 class OriginType(IntEnum):
     """
     Priority Level for Parameter Updates.

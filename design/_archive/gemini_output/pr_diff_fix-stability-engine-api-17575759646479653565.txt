@@ -1,0 +1,310 @@
+diff --git a/communications/insights/fix-stability-engine-api.md b/communications/insights/fix-stability-engine-api.md
+new file mode 100644
+index 00000000..3c1bcf31
+--- /dev/null
++++ b/communications/insights/fix-stability-engine-api.md
+@@ -0,0 +1,39 @@
++# Fix: [STABILITY-2-1] Simulation & CommandService API Alignment
++
++## 1. Architectural Insights
++
++### Dependency Injection Gaps
++The primary cause of the `AttributeError: 'NoneType' object has no attribute 'settle_atomic'` in `test_engine.py` was a missing injection of `SettlementSystem` into `WorldState` within the `Simulation` constructor. While `Simulation` received the dependency, it failed to propagate it to `WorldState`, leaving `TransactionProcessor` (which relies on `WorldState.settlement_system` for its context) with a `None` reference. This highlights the fragility of manual dependency injection in the `Simulation` facade and suggests a need for a more robust container or builder pattern that ensures `WorldState` is fully populated before usage.
++
++### Command Processing Refactoring
++The `Simulation._process_commands` method was attempting to call `self.command_service.pop_commands()`, a method that no longer exists in the new `CommandService` architecture (which is stateless regarding the queue). I refactored `Simulation` to:
++1.  Directly drain the thread-safe `WorldState.command_queue`.
++2.  Handle "System Control" commands (`PAUSE`, `RESUME`, `STEP`) locally.
++3.  Forward "God Mode" commands (`SET_PARAM`, `INJECT_ASSET`) to `WorldState.god_command_queue` for processing by `TickOrchestrator` (Phase 0).
++This separation of concerns ensures that the `Simulation` loop handles lifecycle (Time) while the `TickOrchestrator` handles mutations (State), respecting the architectural boundary.
++
++### Test Suite Alignment
++Several integration tests were out of sync with the codebase:
++-   `test_cockpit_integration.py`: Instantiated `Simulation` with missing arguments and used legacy `CommandService` methods.
++-   `test_fiscal_policy.py`: Mocked `SettlementSystem` inconsistent with `Wallet` state, causing valid spending logic to fail checks.
++-   `pytest-asyncio`: Missing from environment, causing async tests to be skipped or fail.
++
++## 2. Test Evidence
++
++```text
++============================= test session starts ==============================
++platform linux -- Python 3.12.9, pytest-8.3.4, pluggy-1.5.0
++rootdir: /app
++configfile: pytest.ini
++testpaths: tests/unit, tests/integration, tests/system, tests
++plugins: anyio-4.8.0, asyncio-0.25.1, mock-3.14.0
++asyncio: mode=Mode.AUTO, default_loop_scope=None
++collected 19 items
++
++tests/integration/test_cockpit_integration.py ...                        [ 15%]
++tests/integration/test_fiscal_policy.py ....                             [ 36%]
++tests/integration/test_server_integration.py ..                          [ 47%]
++tests/system/test_engine.py ..........                                   [100%]
++
++============================== 19 passed in 3.37s ==============================
++```
+diff --git a/simulation/engine.py b/simulation/engine.py
+index 72e19e59..a199fb33 100644
+--- a/simulation/engine.py
++++ b/simulation/engine.py
+@@ -52,6 +52,7 @@ class Simulation:
+         # SettlementSystem and AgentRegistry are typically accessed via Simulation or injected into components
+ 
+         self.settlement_system = settlement_system
++        self.world_state.settlement_system = settlement_system
+         self.agent_registry = agent_registry
+ 
+         self.action_processor = ActionProcessor(self.world_state)
+@@ -103,34 +104,47 @@ class Simulation:
+                 self.world_state.logger.error(f"Failed to release simulation.lock: {e}")
+ 
+     def _process_commands(self) -> None:
+-        """Processes all pending commands from the command service."""
+-        commands = self.command_service.pop_commands()
++        """Processes all pending commands from the world state command queue."""
++        # Drain the thread-safe queue
++        commands = []
++        if self.world_state.command_queue:
++            while not self.world_state.command_queue.empty():
++                try:
++                    commands.append(self.world_state.command_queue.get_nowait())
++                except Exception:
++                    break
++
++        god_commands = []
+         for cmd in commands:
+-            logger.info(f"Executing command: {cmd.type} | {cmd.payload}")
+-            try:
+-                if cmd.type == "PAUSE":
+-                    self.is_paused = True
+-                elif cmd.type == "RESUME":
+-                    self.is_paused = False
+-                elif cmd.type == "STEP":
+-                    self.step_requested = True
+-                elif cmd.type == "SET_BASE_RATE":
+-                    rate = cmd.payload.get("rate")
+-                    if self.world_state.central_bank:
+-                        self.world_state.central_bank.base_rate = rate
+-                        # Log the manual intervention
+-                        logger.info(f"MANUAL INTERVENTION: Base Rate set to {rate}")
+-                elif cmd.type == "SET_TAX_RATE":
+-                    tax_type = cmd.payload.get("tax_type")
+-                    rate = cmd.payload.get("rate")
+-                    if self.world_state.government:
+-                        if tax_type == "corporate":
+-                            self.world_state.government.corporate_tax_rate = rate
+-                        elif tax_type == "income":
+-                            self.world_state.government.income_tax_rate = rate
+-                        logger.info(f"MANUAL INTERVENTION: {tax_type} Tax Rate set to {rate}")
+-            except Exception as e:
+-                logger.error(f"Failed to execute command {cmd}: {e}", exc_info=True)
++            # Polymorphic handling (Legacy CockpitCommand vs New GodCommandDTO)
++            c_type = getattr(cmd, "command_type", getattr(cmd, "type", None))
++
++            # Handle System Control Commands locally
++            if c_type == "PAUSE":
++                self.is_paused = True
++                logger.info("System PAUSED via command.")
++            elif c_type == "RESUME":
++                self.is_paused = False
++                logger.info("System RESUMED via command.")
++            elif c_type == "PAUSE_STATE":
++                # New DTO style: new_value determines state
++                val = getattr(cmd, "new_value", True)
++                self.is_paused = bool(val)
++                logger.info(f"System Pause State set to {self.is_paused}")
++            elif c_type == "STEP":
++                self.step_requested = True
++                logger.info("Step requested.")
++            elif c_type == "TRIGGER_EVENT" and getattr(cmd, "parameter_key", "") == "STEP":
++                 self.step_requested = True
++                 logger.info("Step requested via TRIGGER_EVENT.")
++            else:
++                # Forward God Commands (SET_PARAM, INJECT_*, etc.) to TickOrchestrator
++                god_commands.append(cmd)
++
++        # Forward God Commands to TickOrchestrator via WorldState
++        if god_commands:
++            self.world_state.god_command_queue.extend(god_commands)
++            logger.debug(f"Forwarded {len(god_commands)} commands to TickOrchestrator.")
+ 
+     def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:
+         self._process_commands()
+diff --git a/tests/integration/test_cockpit_integration.py b/tests/integration/test_cockpit_integration.py
+index c670738a..0082f0a5 100644
+--- a/tests/integration/test_cockpit_integration.py
++++ b/tests/integration/test_cockpit_integration.py
+@@ -1,8 +1,11 @@
+ import pytest
++import queue
+ from unittest.mock import MagicMock
+ from simulation.engine import Simulation
+-from modules.governance.cockpit.api import CockpitCommand
++from simulation.dtos.commands import GodCommandDTO
+ from modules.system.services.command_service import CommandService
++from modules.system.api import IGlobalRegistry, IAgentRegistry
++from simulation.finance.api import ISettlementSystem
+ 
+ # Mock dependencies for Simulation
+ @pytest.fixture
+@@ -20,39 +23,52 @@ def mock_simulation_deps():
+     world_state.government.corporate_tax_rate = 0.2
+     world_state.government.income_tax_rate = 0.1
+ 
++    # Initialize queues as real objects to allow draining
++    world_state.command_queue = queue.Queue()
++    world_state.god_command_queue = []
++
+     return config_manager, config_module, logger, repository, world_state
+ 
+ def test_simulation_processes_pause_resume(mock_simulation_deps):
+     cm, config_module, logger, repo, ws = mock_simulation_deps
+ 
+-    # Initialize Simulation (we need to patch WorldState creation or inject it)
+-    # Since Simulation creates WorldState internally, we can mock it after init
+-    # or rely on the fact that we can monkeypatch.
+-    # But simpler: just instantiate Simulation and mock its internals.
+-
+-    # We can't easily mock __init__ without patching, so let's rely on patching WorldState class
+     with pytest.MonkeyPatch.context() as m:
+         m.setattr("simulation.engine.WorldState", MagicMock(return_value=ws))
+         m.setattr("simulation.engine.ActionProcessor", MagicMock())
+         m.setattr("simulation.engine.TickOrchestrator", MagicMock())
+         m.setattr("simulation.engine.SimulationLogger", MagicMock())
+ 
+-        sim = Simulation(cm, config_module, logger, repo)
++        # Mocks for new dependencies
++        reg = MagicMock(spec=IGlobalRegistry)
++        settle = MagicMock(spec=ISettlementSystem)
++        agent_reg = MagicMock(spec=IAgentRegistry)
++
++        sim = Simulation(cm, config_module, logger, repo, reg, settle, agent_reg)
+ 
+         # Verify initial state
+         assert sim.is_paused is False
+ 
+-        # Enqueue PAUSE
+-        cmd = CockpitCommand(type="PAUSE", payload={})
+-        sim.command_service.enqueue_command(cmd)
++        # Enqueue PAUSE (using new DTO format)
++        cmd = GodCommandDTO(
++            command_type="PAUSE_STATE",
++            target_domain="System",
++            parameter_key="PAUSE",
++            new_value=True
++        )
++        ws.command_queue.put(cmd)
+ 
+-        # Run tick (should process command)
++        # Run tick (should process command locally in _process_commands)
+         sim.run_tick()
+         assert sim.is_paused is True
+ 
+         # Enqueue RESUME
+-        cmd = CockpitCommand(type="RESUME", payload={})
+-        sim.command_service.enqueue_command(cmd)
++        cmd = GodCommandDTO(
++            command_type="PAUSE_STATE",
++            target_domain="System",
++            parameter_key="PAUSE",
++            new_value=False
++        )
++        ws.command_queue.put(cmd)
+ 
+         # Run tick
+         sim.run_tick()
+@@ -67,15 +83,29 @@ def test_simulation_processes_set_base_rate(mock_simulation_deps):
+         m.setattr("simulation.engine.TickOrchestrator", MagicMock())
+         m.setattr("simulation.engine.SimulationLogger", MagicMock())
+ 
+-        sim = Simulation(cm, config_module, logger, repo)
++        reg = MagicMock(spec=IGlobalRegistry)
++        settle = MagicMock(spec=ISettlementSystem)
++        agent_reg = MagicMock(spec=IAgentRegistry)
++
++        sim = Simulation(cm, config_module, logger, repo, reg, settle, agent_reg)
+ 
+-        # Enqueue SET_BASE_RATE
+-        cmd = CockpitCommand(type="SET_BASE_RATE", payload={"rate": 0.15})
+-        sim.command_service.enqueue_command(cmd)
++        # Enqueue SET_BASE_RATE via SET_PARAM
++        cmd = GodCommandDTO(
++            command_type="SET_PARAM",
++            target_domain="CentralBank",
++            parameter_key="base_rate",
++            new_value=0.15
++        )
++        ws.command_queue.put(cmd)
+ 
++        # Run tick
++        # Note: Since TickOrchestrator is mocked, it won't execute Phase 0.
++        # We verify that Simulation forwarded the command to god_command_queue.
+         sim.run_tick()
+ 
+-        assert ws.central_bank.base_rate == 0.15
++        assert len(ws.god_command_queue) == 1
++        assert ws.god_command_queue[0].command_type == "SET_PARAM"
++        assert ws.god_command_queue[0].new_value == 0.15
+ 
+ def test_simulation_processes_set_tax_rate(mock_simulation_deps):
+     cm, config_module, logger, repo, ws = mock_simulation_deps
+@@ -86,18 +116,39 @@ def test_simulation_processes_set_tax_rate(mock_simulation_deps):
+         m.setattr("simulation.engine.TickOrchestrator", MagicMock())
+         m.setattr("simulation.engine.SimulationLogger", MagicMock())
+ 
+-        sim = Simulation(cm, config_module, logger, repo)
++        reg = MagicMock(spec=IGlobalRegistry)
++        settle = MagicMock(spec=ISettlementSystem)
++        agent_reg = MagicMock(spec=IAgentRegistry)
++
++        sim = Simulation(cm, config_module, logger, repo, reg, settle, agent_reg)
+ 
+         # Enqueue SET_TAX_RATE (Corporate)
+-        cmd = CockpitCommand(type="SET_TAX_RATE", payload={"tax_type": "corporate", "rate": 0.25})
+-        sim.command_service.enqueue_command(cmd)
++        cmd = GodCommandDTO(
++            command_type="SET_PARAM",
++            target_domain="Government",
++            parameter_key="corporate_tax_rate",
++            new_value=0.25
++        )
++        ws.command_queue.put(cmd)
+ 
+         sim.run_tick()
+-        assert ws.government.corporate_tax_rate == 0.25
++        assert len(ws.god_command_queue) == 1
++        assert ws.god_command_queue[0].parameter_key == "corporate_tax_rate"
++        assert ws.god_command_queue[0].new_value == 0.25
++
++        # Clear queue for next step
++        ws.god_command_queue.clear()
+ 
+         # Enqueue SET_TAX_RATE (Income)
+-        cmd = CockpitCommand(type="SET_TAX_RATE", payload={"tax_type": "income", "rate": 0.15})
+-        sim.command_service.enqueue_command(cmd)
++        cmd = GodCommandDTO(
++            command_type="SET_PARAM",
++            target_domain="Government",
++            parameter_key="income_tax_rate",
++            new_value=0.15
++        )
++        ws.command_queue.put(cmd)
+ 
+         sim.run_tick()
+-        assert ws.government.income_tax_rate == 0.15
++        assert len(ws.god_command_queue) == 1
++        assert ws.god_command_queue[0].parameter_key == "income_tax_rate"
++        assert ws.god_command_queue[0].new_value == 0.15
+diff --git a/tests/integration/test_fiscal_policy.py b/tests/integration/test_fiscal_policy.py
+index 894e9828..0de42b4c 100644
+--- a/tests/integration/test_fiscal_policy.py
++++ b/tests/integration/test_fiscal_policy.py
+@@ -86,6 +86,8 @@ def test_debt_ceiling_enforcement(government):
+     def issue_bonds_side_effect(request, context, buyer_pool):
+         amount = request.amount_pennies
+         government.wallet.add(amount, "USD") # Update Wallet with cash
++        # Sync mocked settlement system balance so subsequent checks in the same tick see the funds
++        government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
+ 
+         # Mock payment request (Buyer -> Gov)
+         payment_req = PaymentRequestDTO(

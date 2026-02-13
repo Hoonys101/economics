@@ -108,8 +108,10 @@ class TickOrchestrator:
         commands_for_tick = list(state.system_command_queue)
         state.system_command_queue.clear()
 
-        god_commands_for_tick = list(state.god_command_queue)
-        state.god_command_queue.clear()
+        # drain god_command_queue atomically using popleft
+        god_commands_for_tick = []
+        while state.god_command_queue:
+            god_commands_for_tick.append(state.god_command_queue.popleft())
 
         # PRODUCTION INTEGRATION: Drain external CommandQueue
         if state.command_queue:

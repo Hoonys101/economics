@@ -23,9 +23,10 @@ def mock_simulation_deps():
     world_state.government.corporate_tax_rate = 0.2
     world_state.government.income_tax_rate = 0.1
 
+    from collections import deque
     # Initialize queues as real objects to allow draining
     world_state.command_queue = queue.Queue()
-    world_state.god_command_queue = []
+    world_state.god_command_queue = deque()
 
     return config_manager, config_module, logger, repository, world_state
 

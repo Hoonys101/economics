@@ -116,29 +116,17 @@ class Simulation:
 
         god_commands = []
         for cmd in commands:
-            # Polymorphic handling (Legacy CockpitCommand vs New GodCommandDTO)
-            c_type = getattr(cmd, "command_type", getattr(cmd, "type", None))
-
-            # Handle System Control Commands locally
-            if c_type == "PAUSE":
-                self.is_paused = True
-                logger.info("System PAUSED via command.")
-            elif c_type == "RESUME":
-                self.is_paused = False
-                logger.info("System RESUMED via command.")
-            elif c_type == "PAUSE_STATE":
-                # New DTO style: new_value determines state
+            # 1. Map Control Commands locally
+            if cmd.command_type == "PAUSE_STATE":
+                # new_value determines paused state (True=Pause, False=Resume)
                 val = getattr(cmd, "new_value", True)
                 self.is_paused = bool(val)
                 logger.info(f"System Pause State set to {self.is_paused}")
-            elif c_type == "STEP":
-                self.step_requested = True
-                logger.info("Step requested.")
-            elif c_type == "TRIGGER_EVENT" and getattr(cmd, "parameter_key", "") == "STEP":
+            elif cmd.command_type == "TRIGGER_EVENT" and cmd.parameter_key == "STEP":
                  self.step_requested = True
-                 logger.info("Step requested via TRIGGER_EVENT.")
+                 logger.info("Step requested via internal trigger.")
+            # 2. Forward everything else to God Command Queue for Phase 0 execution
             else:
-                # Forward God Commands (SET_PARAM, INJECT_*, etc.) to TickOrchestrator
                 god_commands.append(cmd)
 
         # Forward God Commands to TickOrchestrator via WorldState
