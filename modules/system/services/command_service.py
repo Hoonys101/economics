@@ -5,7 +5,7 @@ import logging
 from uuid import UUID
 
 from simulation.dtos.commands import GodCommandDTO, GodResponseDTO
-from modules.system.api import IGlobalRegistry, OriginType, IAgentRegistry
+from modules.system.api import IGlobalRegistry, OriginType, IAgentRegistry, RegistryEntry
 from modules.system.constants import ID_CENTRAL_BANK
 from simulation.finance.api import ISettlementSystem, IFinancialAgent
 from modules.simulation.api import IInventoryHandler
@@ -30,7 +30,7 @@ class UndoRecord:
     command_type: str # "SET_PARAM" or "INJECT_ASSET"
     target_domain: Optional[str] = None
     parameter_key: Optional[str] = None
-    previous_value: Any = None
+    previous_entry: Optional[RegistryEntry] = None # Changed from previous_value for full state restore
     target_agent_id: Optional[Union[int, str]] = None
     amount: Optional[int] = None
     new_value: Any = None
@@ -169,14 +169,15 @@ class CommandService:
             raise ValueError("Parameter key missing for SET_PARAM")
 
         # Snapshot for Undo
-        current_value = self.registry.get(cmd.parameter_key, None)
+        # Use get_entry to capture full state (origin, is_locked)
+        previous_entry = self.registry.get_entry(cmd.parameter_key)
 
         record = UndoRecord(
             command_id=cmd.command_id,
             command_type="SET_PARAM",
             target_domain=cmd.target_domain,
             parameter_key=cmd.parameter_key,
-            previous_value=current_value,
+            previous_entry=previous_entry,
             new_value=cmd.new_value
         )
         self.undo_stack.push(record)
@@ -254,13 +255,26 @@ class CommandService:
         for record in reversed(records):
             try:
                 if record.command_type == "SET_PARAM":
-                     # Restore previous value
-                     self.registry.set(
-                         record.parameter_key,
-                         record.previous_value,
-                         origin=OriginType.GOD_MODE
-                     )
-                     logger.info(f"ROLLBACK: Reverted {record.parameter_key} to {record.previous_value}")
+                     # Restore previous entry state directly to preserve origin/locks
+                     if record.previous_entry is None:
+                         # Key didn't exist before, so delete it
+                         # Accessing internal storage as GlobalRegistry doesn't expose delete
+                         if hasattr(self.registry, '_storage') and record.parameter_key in self.registry._storage:
+                             del self.registry._storage[record.parameter_key]
+                             logger.info(f"ROLLBACK: Deleted {record.parameter_key}")
+                     else:
+                         # Restore entry
+                         if hasattr(self.registry, '_storage'):
+                             self.registry._storage[record.parameter_key] = record.previous_entry
+                             logger.info(f"ROLLBACK: Restored {record.parameter_key} to {record.previous_entry.value} (Origin: {record.previous_entry.origin})")
+                         else:
+                             # Fallback if _storage not available (unlikely given spec)
+                             self.registry.set(
+                                 record.parameter_key,
+                                 record.previous_entry.value,
+                                 origin=record.previous_entry.origin
+                             )
+                             logger.warning(f"ROLLBACK: Used set() fallback for {record.parameter_key}. Lock state might be incorrect if mismatched.")
 
                 elif record.command_type in ["INJECT_ASSET", "INJECT_MONEY"]:
                      self._rollback_injection(record)
