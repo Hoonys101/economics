@@ -54,6 +54,7 @@ class Simulation:
         self.world_state.agent_registry = agent_registry
 
         self.settlement_system = settlement_system
+        self.world_state.settlement_system = settlement_system
         self.agent_registry = agent_registry
 
         self.action_processor = ActionProcessor(self.world_state)
@@ -102,6 +103,48 @@ class Simulation:
             except Exception as e:
                 self.world_state.logger.error(f"Failed to release simulation.lock: {e}")
 
+    def _process_commands(self) -> None:
+        """Processes all pending commands from the world state command queue."""
+        # Drain the thread-safe queue
+        commands = []
+        if self.world_state.command_queue:
+            while not self.world_state.command_queue.empty():
+                try:
+                    commands.append(self.world_state.command_queue.get_nowait())
+                except Exception:
+                    break
+
+        god_commands = []
+        for cmd in commands:
+            # Polymorphic handling (Legacy CockpitCommand vs New GodCommandDTO)
+            c_type = getattr(cmd, "command_type", getattr(cmd, "type", None))
+
+            # Handle System Control Commands locally
+            if c_type == "PAUSE":
+                self.is_paused = True
+                logger.info("System PAUSED via command.")
+            elif c_type == "RESUME":
+                self.is_paused = False
+                logger.info("System RESUMED via command.")
+            elif c_type == "PAUSE_STATE":
+                # New DTO style: new_value determines state
+                val = getattr(cmd, "new_value", True)
+                self.is_paused = bool(val)
+                logger.info(f"System Pause State set to {self.is_paused}")
+            elif c_type == "STEP":
+                self.step_requested = True
+                logger.info("Step requested.")
+            elif c_type == "TRIGGER_EVENT" and getattr(cmd, "parameter_key", "") == "STEP":
+                 self.step_requested = True
+                 logger.info("Step requested via TRIGGER_EVENT.")
+            else:
+                # Forward God Commands (SET_PARAM, INJECT_*, etc.) to TickOrchestrator
+                god_commands.append(cmd)
+
+        # Forward God Commands to TickOrchestrator via WorldState
+        if god_commands:
+            self.world_state.god_command_queue.extend(god_commands)
+            logger.debug(f"Forwarded {len(god_commands)} commands to TickOrchestrator.")
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:
         if self.is_paused:
             if self.step_requested:

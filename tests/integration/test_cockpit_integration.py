@@ -1,8 +1,11 @@
 import pytest
+import queue
 from unittest.mock import MagicMock
 from simulation.engine import Simulation
-from modules.governance.cockpit.api import CockpitCommand
+from simulation.dtos.commands import GodCommandDTO
 from modules.system.services.command_service import CommandService
+from modules.system.api import IGlobalRegistry, IAgentRegistry
+from simulation.finance.api import ISettlementSystem
 
 # Mock dependencies for Simulation
 @pytest.fixture
@@ -20,39 +23,52 @@ def mock_simulation_deps():
     world_state.government.corporate_tax_rate = 0.2
     world_state.government.income_tax_rate = 0.1
 
+    # Initialize queues as real objects to allow draining
+    world_state.command_queue = queue.Queue()
+    world_state.god_command_queue = []
+
     return config_manager, config_module, logger, repository, world_state
 
 def test_simulation_processes_pause_resume(mock_simulation_deps):
     cm, config_module, logger, repo, ws = mock_simulation_deps
 
-    # Initialize Simulation (we need to patch WorldState creation or inject it)
-    # Since Simulation creates WorldState internally, we can mock it after init
-    # or rely on the fact that we can monkeypatch.
-    # But simpler: just instantiate Simulation and mock its internals.
-
-    # We can't easily mock __init__ without patching, so let's rely on patching WorldState class
     with pytest.MonkeyPatch.context() as m:
         m.setattr("simulation.engine.WorldState", MagicMock(return_value=ws))
         m.setattr("simulation.engine.ActionProcessor", MagicMock())
         m.setattr("simulation.engine.TickOrchestrator", MagicMock())
         m.setattr("simulation.engine.SimulationLogger", MagicMock())
 
-        sim = Simulation(cm, config_module, logger, repo, MagicMock(), MagicMock(), MagicMock())
+        # Mocks for new dependencies
+        reg = MagicMock(spec=IGlobalRegistry)
+        settle = MagicMock(spec=ISettlementSystem)
+        agent_reg = MagicMock(spec=IAgentRegistry)
+
+        sim = Simulation(cm, config_module, logger, repo, reg, settle, agent_reg)
 
         # Verify initial state
         assert sim.is_paused is False
 
-        # Enqueue PAUSE
-        cmd = CockpitCommand(type="PAUSE", payload={})
-        sim.command_service.queue_command(cmd)
+        # Enqueue PAUSE (using new DTO format)
+        cmd = GodCommandDTO(
+            command_type="PAUSE_STATE",
+            target_domain="System",
+            parameter_key="PAUSE",
+            new_value=True
+        )
+        ws.command_queue.put(cmd)
 
-        # Run tick (should process command)
+        # Run tick (should process command locally in _process_commands)
         sim.run_tick()
         assert sim.is_paused is True
 
         # Enqueue RESUME
-        cmd = CockpitCommand(type="RESUME", payload={})
-        sim.command_service.queue_command(cmd)
+        cmd = GodCommandDTO(
+            command_type="PAUSE_STATE",
+            target_domain="System",
+            parameter_key="PAUSE",
+            new_value=False
+        )
+        ws.command_queue.put(cmd)
 
         # Run tick
         sim.run_tick()
@@ -67,15 +83,29 @@ def test_simulation_processes_set_base_rate(mock_simulation_deps):
         m.setattr("simulation.engine.TickOrchestrator", MagicMock())
         m.setattr("simulation.engine.SimulationLogger", MagicMock())
 
-        sim = Simulation(cm, config_module, logger, repo, MagicMock(), MagicMock(), MagicMock())
+        reg = MagicMock(spec=IGlobalRegistry)
+        settle = MagicMock(spec=ISettlementSystem)
+        agent_reg = MagicMock(spec=IAgentRegistry)
 
-        # Enqueue SET_BASE_RATE
-        cmd = CockpitCommand(type="SET_BASE_RATE", payload={"rate": 0.15})
-        sim.command_service.queue_command(cmd)
+        sim = Simulation(cm, config_module, logger, repo, reg, settle, agent_reg)
 
+        # Enqueue SET_BASE_RATE via SET_PARAM
+        cmd = GodCommandDTO(
+            command_type="SET_PARAM",
+            target_domain="CentralBank",
+            parameter_key="base_rate",
+            new_value=0.15
+        )
+        ws.command_queue.put(cmd)
+
+        # Run tick
+        # Note: Since TickOrchestrator is mocked, it won't execute Phase 0.
+        # We verify that Simulation forwarded the command to god_command_queue.
         sim.run_tick()
 
-        assert ws.central_bank.base_rate == 0.15
+        assert len(ws.god_command_queue) == 1
+        assert ws.god_command_queue[0].command_type == "SET_PARAM"
+        assert ws.god_command_queue[0].new_value == 0.15
 
 def test_simulation_processes_set_tax_rate(mock_simulation_deps):
     cm, config_module, logger, repo, ws = mock_simulation_deps
@@ -86,18 +116,39 @@ def test_simulation_processes_set_tax_rate(mock_simulation_deps):
         m.setattr("simulation.engine.TickOrchestrator", MagicMock())
         m.setattr("simulation.engine.SimulationLogger", MagicMock())
 
-        sim = Simulation(cm, config_module, logger, repo, MagicMock(), MagicMock(), MagicMock())
+        reg = MagicMock(spec=IGlobalRegistry)
+        settle = MagicMock(spec=ISettlementSystem)
+        agent_reg = MagicMock(spec=IAgentRegistry)
+
+        sim = Simulation(cm, config_module, logger, repo, reg, settle, agent_reg)
 
         # Enqueue SET_TAX_RATE (Corporate)
-        cmd = CockpitCommand(type="SET_TAX_RATE", payload={"tax_type": "corporate", "rate": 0.25})
-        sim.command_service.queue_command(cmd)
+        cmd = GodCommandDTO(
+            command_type="SET_PARAM",
+            target_domain="Government",
+            parameter_key="corporate_tax_rate",
+            new_value=0.25
+        )
+        ws.command_queue.put(cmd)
 
         sim.run_tick()
-        assert ws.government.corporate_tax_rate == 0.25
+        assert len(ws.god_command_queue) == 1
+        assert ws.god_command_queue[0].parameter_key == "corporate_tax_rate"
+        assert ws.god_command_queue[0].new_value == 0.25
+
+        # Clear queue for next step
+        ws.god_command_queue.clear()
 
         # Enqueue SET_TAX_RATE (Income)
-        cmd = CockpitCommand(type="SET_TAX_RATE", payload={"tax_type": "income", "rate": 0.15})
-        sim.command_service.queue_command(cmd)
+        cmd = GodCommandDTO(
+            command_type="SET_PARAM",
+            target_domain="Government",
+            parameter_key="income_tax_rate",
+            new_value=0.15
+        )
+        ws.command_queue.put(cmd)
 
         sim.run_tick()
-        assert ws.government.income_tax_rate == 0.15
+        assert len(ws.god_command_queue) == 1
+        assert ws.god_command_queue[0].parameter_key == "income_tax_rate"
+        assert ws.god_command_queue[0].new_value == 0.15
