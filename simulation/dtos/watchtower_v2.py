@@ -1,8 +1,9 @@
-from dataclasses import dataclass
-from typing import Dict, Any, Optional
+from dataclasses import dataclass, field
+from typing import Dict, Any, Optional, List
 from simulation.dtos.watchtower import (
     IntegrityDTO, MacroDTO, FinanceDTO, PoliticsDTO, PopulationDTO
 )
+from modules.analysis.scenario_verifier.api import ScenarioReportDTO
 
 @dataclass
 class WatchtowerV2DTO:
@@ -18,3 +19,5 @@ class WatchtowerV2DTO:
     finance: FinanceDTO
     politics: PoliticsDTO
     population: PopulationDTO
+    scenario_reports: List[ScenarioReportDTO] = field(default_factory=list)
+    custom_data: Dict[str, Any] = field(default_factory=dict)

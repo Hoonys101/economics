@@ -48,6 +48,27 @@ class TelemetryCollector:
             if path in self._invalid_paths:
                 self._invalid_paths.remove(path)
 
+    def update_subscriptions(self, mask: List[str]):
+        """
+        구독 리스트 전체 교체 (On-Demand Telemetry).
+        Replaces the current subscription list with a new mask.
+        Optimized to retain existing accessors if paths overlap.
+        """
+        # Identify paths to remove
+        current_paths = set(self._subscriptions.keys())
+        new_paths = set(mask)
+
+        to_remove = current_paths - new_paths
+        to_add = new_paths - current_paths
+
+        # Remove old subscriptions
+        if to_remove:
+            self.unsubscribe(list(to_remove))
+
+        # Add new subscriptions
+        if to_add:
+            self.subscribe(list(to_add), frequency_interval=1) # Default to 1 tick for on-demand
+
     def harvest(self, current_tick: int) -> TelemetrySnapshotDTO:
         """
         현재 틱에서 수집 주기가 도래한 데이터들만 추출.

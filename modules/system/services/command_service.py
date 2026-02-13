@@ -82,6 +82,8 @@ class CommandService:
                 elif cmd.command_type == "INJECT_MONEY": # Legacy support
                     injected_amount = self._handle_inject_asset(cmd, tick) # Re-use logic
                     net_injection += injected_amount
+                elif cmd.command_type == "UPDATE_TELEMETRY":
+                    self._handle_update_telemetry(cmd)
                 elif cmd.command_type in ["TRIGGER_EVENT", "PAUSE_STATE"]:
                     # TODO: Implement event/pause logic. For now just log.
                     logger.info(f"Command {cmd.command_type} received but handler pending.")
@@ -285,3 +287,26 @@ class CommandService:
              raise RuntimeError(f"Failed to rollback injection of {record.amount} from {record.target_agent_id}")
 
         logger.info(f"ROLLBACK: Burned {record.amount} from {record.target_agent_id}")
+
+    def _handle_update_telemetry(self, cmd: GodCommandDTO):
+        """
+        Handles UPDATE_TELEMETRY command to change active subscriptions.
+        """
+        mask = cmd.new_value
+        if not isinstance(mask, list):
+            raise ValueError("New value for UPDATE_TELEMETRY must be a list of strings (mask).")
+
+        # Access TelemetryCollector via GlobalRegistry (Initialized in initializer.py)
+        # We need to access the 'system' origin or just get by key.
+        collector = self.registry.get("system.telemetry_collector")
+
+        if not collector:
+            logger.error("TelemetryCollector not found in GlobalRegistry under 'system.telemetry_collector'")
+            # Fallback or silent fail? Better to raise error so command reports failure.
+            raise RuntimeError("TelemetryCollector service is not available.")
+
+        if hasattr(collector, "update_subscriptions"):
+            collector.update_subscriptions(mask)
+            logger.info(f"Telemetry mask updated: {mask}")
+        else:
+            raise RuntimeError("TelemetryCollector does not support 'update_subscriptions'.")

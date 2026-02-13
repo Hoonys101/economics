@@ -12,7 +12,7 @@ class GodCommandDTO:
     parameter_key: str        # e.g., "tax_rate", "harvest_multiplier"
     new_value: Any
     command_id: UUID = field(default_factory=uuid4)
-    command_type: Literal["SET_PARAM", "TRIGGER_EVENT", "INJECT_ASSET", "PAUSE_STATE"] = "SET_PARAM"
+    command_type: Literal["SET_PARAM", "TRIGGER_EVENT", "INJECT_ASSET", "PAUSE_STATE", "UPDATE_TELEMETRY"] = "SET_PARAM"
     requester_id: str = "WATCHTOWER_UI"
     metadata: Dict[str, Any] = field(default_factory=dict)
 

@@ -8,9 +8,13 @@ from uuid import uuid4
 async def handler(websocket):
     print("Client connected")
     tick = 0
+
+    # State for On-Demand Telemetry
+    active_mask = []
+
     try:
         while True:
-            # 1. Send Telemetry
+            # 1. Generate Base Telemetry
             telemetry = {
                 "tick": tick,
                 "timestamp": time.time(),
@@ -65,12 +69,41 @@ async def handler(websocket):
                         "birth": 10,
                         "death": 8
                     }
-                }
+                },
+                "scenario_reports": [
+                    {
+                        "scenario_id": "SC-001: Female Labor Participation",
+                        "status": "RUNNING",
+                        "progress_pct": min(100.0, tick * 0.5),
+                        "current_kpi_value": 0.45 + (tick * 0.0001),
+                        "target_kpi_value": 0.6,
+                        "message": "Participation rate increasing steadily."
+                    }
+                ],
+                "custom_data": {}
             }
+
+            # 2. Populate On-Demand Data
+            if "population.distribution" in active_mask:
+                # Mirroring population.distribution for test
+                telemetry["custom_data"]["population.distribution"] = telemetry["population"]["distribution"]
+
+            if "household_detailed_stats" in active_mask:
+                # Generate fake agent list
+                agents = []
+                for i in range(50):
+                    agents.append({
+                        "id": i,
+                        "age": random.randint(20, 80),
+                        "wealth": random.randint(1000, 100000),
+                        "satisfaction": random.uniform(0, 1),
+                        "occupation": random.choice(["Farmer", "Worker", "Engineer"])
+                    })
+                telemetry["custom_data"]["household_detailed_stats"] = agents
 
             await websocket.send(json.dumps(telemetry))
 
-            # 2. Check for Commands
+            # 3. Check for Commands
             try:
                 # Wait briefly for incoming messages
                 message = await asyncio.wait_for(websocket.recv(), timeout=0.1)
@@ -79,6 +112,10 @@ async def handler(websocket):
 
                 # Verify it's a command
                 if "command_type" in data:
+                    if data["command_type"] == "UPDATE_TELEMETRY":
+                        active_mask = data.get("new_value", [])
+                        print(f"Updated Mask: {active_mask}")
+
                     # Echo back a response
                     response = {
                         "command_id": data.get("command_id", str(uuid4())),

@@ -165,6 +165,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         from modules.system.telemetry import TelemetryCollector
         sim.telemetry_collector = TelemetryCollector(sim.world_state.global_registry)
         sim.world_state.telemetry_collector = sim.telemetry_collector
+        sim.world_state.global_registry.set("system.telemetry_collector", sim.telemetry_collector, origin=OriginType.SYSTEM)
 
         # TD-253: Saga & Ledger
         # MonetaryLedger needs transaction_log (sim.world_state.transactions) and time_provider (sim)
