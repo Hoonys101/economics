@@ -67,6 +67,17 @@ class CommandService:
         self.settlement_system = settlement_system
         self.agent_registry = agent_registry
         self.undo_stack = UndoStack()
+        self._command_queue: deque = deque()
+
+    def queue_command(self, command: GodCommandDTO) -> None:
+        """Adds a command to the internal queue for later processing."""
+        self._command_queue.append(command)
+
+    def pop_commands(self) -> List[GodCommandDTO]:
+        """Drains the internal command queue and returns the list of pending commands."""
+        commands = list(self._command_queue)
+        self._command_queue.clear()
+        return commands
 
     def execute_command_batch(self, commands: List[GodCommandDTO], tick: int, baseline_m2: int) -> List[GodResponseDTO]:
         """

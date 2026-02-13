@@ -289,6 +289,8 @@ def simulation_instance(
 ):
     from simulation.initialization.initializer import SimulationInitializer
     from modules.common.config_manager.api import ConfigManager
+    from modules.system.api import IGlobalRegistry, IAgentRegistry
+    from simulation.finance.api import ISettlementSystem
 
     # Create a mock ConfigManager
     mock_config_manager = Mock(spec=ConfigManager)
@@ -317,6 +319,7 @@ def simulation_instance(
         firms=mock_firms,
         ai_trainer=mock_ai_trainer,
     )
+
     sim = initializer.build_simulation()
     sim.government.finance_system = Mock()
     sim.government.get_debt_to_gdp_ratio = Mock(return_value=0.5)

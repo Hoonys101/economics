@@ -37,14 +37,14 @@ def test_simulation_processes_pause_resume(mock_simulation_deps):
         m.setattr("simulation.engine.TickOrchestrator", MagicMock())
         m.setattr("simulation.engine.SimulationLogger", MagicMock())
 
-        sim = Simulation(cm, config_module, logger, repo)
+        sim = Simulation(cm, config_module, logger, repo, MagicMock(), MagicMock(), MagicMock())
 
         # Verify initial state
         assert sim.is_paused is False
 
         # Enqueue PAUSE
         cmd = CockpitCommand(type="PAUSE", payload={})
-        sim.command_service.enqueue_command(cmd)
+        sim.command_service.queue_command(cmd)
 
         # Run tick (should process command)
         sim.run_tick()
@@ -52,7 +52,7 @@ def test_simulation_processes_pause_resume(mock_simulation_deps):
 
         # Enqueue RESUME
         cmd = CockpitCommand(type="RESUME", payload={})
-        sim.command_service.enqueue_command(cmd)
+        sim.command_service.queue_command(cmd)
 
         # Run tick
         sim.run_tick()
@@ -67,11 +67,11 @@ def test_simulation_processes_set_base_rate(mock_simulation_deps):
         m.setattr("simulation.engine.TickOrchestrator", MagicMock())
         m.setattr("simulation.engine.SimulationLogger", MagicMock())
 
-        sim = Simulation(cm, config_module, logger, repo)
+        sim = Simulation(cm, config_module, logger, repo, MagicMock(), MagicMock(), MagicMock())
 
         # Enqueue SET_BASE_RATE
         cmd = CockpitCommand(type="SET_BASE_RATE", payload={"rate": 0.15})
-        sim.command_service.enqueue_command(cmd)
+        sim.command_service.queue_command(cmd)
 
         sim.run_tick()
 
@@ -86,18 +86,18 @@ def test_simulation_processes_set_tax_rate(mock_simulation_deps):
         m.setattr("simulation.engine.TickOrchestrator", MagicMock())
         m.setattr("simulation.engine.SimulationLogger", MagicMock())
 
-        sim = Simulation(cm, config_module, logger, repo)
+        sim = Simulation(cm, config_module, logger, repo, MagicMock(), MagicMock(), MagicMock())
 
         # Enqueue SET_TAX_RATE (Corporate)
         cmd = CockpitCommand(type="SET_TAX_RATE", payload={"tax_type": "corporate", "rate": 0.25})
-        sim.command_service.enqueue_command(cmd)
+        sim.command_service.queue_command(cmd)
 
         sim.run_tick()
         assert ws.government.corporate_tax_rate == 0.25
 
         # Enqueue SET_TAX_RATE (Income)
         cmd = CockpitCommand(type="SET_TAX_RATE", payload={"tax_type": "income", "rate": 0.15})
-        sim.command_service.enqueue_command(cmd)
+        sim.command_service.queue_command(cmd)
 
         sim.run_tick()
         assert ws.government.income_tax_rate == 0.15

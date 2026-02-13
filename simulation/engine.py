@@ -49,7 +49,8 @@ class Simulation:
 
         # Inject dependencies into WorldState
         self.world_state.global_registry = registry
-        # SettlementSystem and AgentRegistry are typically accessed via Simulation or injected into components
+        self.world_state.settlement_system = settlement_system
+        self.world_state.agent_registry = agent_registry
 
         self.settlement_system = settlement_system
         self.agent_registry = agent_registry

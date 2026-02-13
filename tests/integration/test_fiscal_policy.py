@@ -87,6 +87,9 @@ def test_debt_ceiling_enforcement(government):
         amount = request.amount_pennies
         government.wallet.add(amount, "USD") # Update Wallet with cash
 
+        # Update settlement system balance mock as well so spending logic sees the funds
+        government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
+
         # Mock payment request (Buyer -> Gov)
         payment_req = PaymentRequestDTO(
             payer="MOCK_BUYER",
