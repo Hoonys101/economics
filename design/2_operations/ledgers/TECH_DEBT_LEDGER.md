@@ -3,13 +3,12 @@
 | ID | Module / Component | Description | Priority / Impact | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **TD-GHOST-CONSTANTS** | System | **Registry Binding**: `from config import PARAM` binds at import time, bypassing updates. | **High**: Logic Inconsistency. | Open |
+| **TD-DATA-01-MOCK** | Finance | **Protocol/Mock Drift**: `ISettlementSystem` lacks `audit_total_m2`. Manual mocking in tests. | **High**: Regression Risk. | Open |
+| **TD-DATA-02-ACCESSOR** | System | **Registry Bloat**: `GlobalRegistry` lacks dot-notation support; accessor logic duplicated in Telemetry. | **Medium**: Maintenance Bloat. | Open |
+| **TD-DATA-03-SCALE** | analysis | **O(N) Verifier Bottleneck**: `ScenarioVerifier` iterates all agents in Phase 8 for stats. | **Medium**: Performance (Scale). | Open |
 | **TD-AGENT-REGISTRY-SCALE** | System | **M2 Audit Capacity**: O(N) iteration over all agents for M2 calculation. | **Medium**: Performance (Scale). | Open |
 | **TD-DTO-OVERLAP** | Finance | **DTO Schism**: Overlap between `modules/finance/api.py` and new `Government` DTOs. | **Low**: Code Duplication. | Open |
 | **TD-GOV-SERVICE-FLATTEN** | Government | **Legacy Coupling**: `TaxService` still depends on `TaxationSystem` and `FiscalPolicyManager`. | **Medium**: Structural Purity. | Open |
-| **TD-275** | System | **Housing ID Utility**: Duplicated `split("_")` logic across handlers. | **High**: Maintenance Fragility. | Open |
-| **TD-276** | Finance | **Solvency Valuation Spec**: Ambiguity between Market vs Liquidation price for assets. | **Medium**: Logic Consistency. | Open |
-| **TD-LEG-TRANS** | System | Legacy `TransactionManager` contains redundant/conflicting logic. | **Low**: Confusion & code bloat. | Pending Deletion |
-| **TD-PRECISION** | Financials | Use of `float` for currency leads to precision dust/leaks over long runs. | **Medium**: Marginal zero-sum drift. | Identified (Next Priority) |
 | **TD-COCKPIT-FE** | Simulation | **Ghost Implementation**: FE missing sliders/HUD for Cockpit (Phase 11) despite BE readiness. | **Medium**: Logic usability gap. | Identified |
 | **TD-STR-GOD-DECOMP** | Architecture | **Residual God Classes**: `Firm` (1276 lines) and `Household` (1042 lines) exceed 800-line limit. | **Medium**: Maintenance friction. | Open |
 | **TD-ARCH-LEAK-CONTEXT** | Finance | **Abstraction Leak**: `LiquidationContext` passes agent interfaces instead of pure DTO snapshots. | **Low**: Future coupling risk. | Identified |
@@ -30,16 +29,23 @@
 ---
 ### ID: TD-GHOST-CONSTANTS
 ### Title: Module-level Import Binding (Ghost Constants)
-- **Symptom**: `from config import PARAM` binds the value at import time. Even if `GlobalRegistry` is updated, the locally bound `PARAM` remains stale.
-- **Risk**: Inconsistent behavior when using hot-swapping sliders.
-- **Solution**: Refactor all architectural imports to `import config` and use `config.PARAM`, or use the registry directly.
+- **Symptom**: `from config import PARAM` binds the value at import time. Even if `GlobalRegistry` is updated, the locally bound `PARAM` remains stale in the importing module.
+- **Risk**: Inconsistent behavior when using hot-swapping sliders in modules using old import patterns.
+- **Solution**: Complete refactor to `import config` and use `config.PARAM`.
 
 ---
-### ID: TD-AGENT-REGISTRY-SCALE
-### Title: Agent Registry Iteration Bottleneck
-- **Symptom**: M2 Audit requires O(N) iteration over all financial agents in Every Tick (Phase 8).
-- **Risk**: Performance degradation as population scales (>100k agents).
-- **Solution**: Implement incremental M2 tracking in `IAgentRegistry` or the `SettlementSystem`.
+### ID: TD-DATA-01-MOCK
+### Title: Protocol Drift in Settlement System
+- **Symptom**: `ISettlementSystem` protocol is missing `audit_total_m2` and `mint_and_distribute` definitions, forcing manual mocking (without `spec`) in `CommandService` tests.
+- **Risk**: Protocol violations may go undetected; high maintenance cost for tests.
+- **Solution**: Standardize `ISettlementSystem` and internal implementation.
+
+---
+### ID: TD-DATA-02-ACCESSOR
+### Title: Registry Accessor Logic Duplication
+- **Symptom**: `GlobalRegistry` only supports single-key `get()`. `TelemetryCollector` has to implement its own recursive dot-notation resolution logic.
+- **Risk**: Code duplication as other modules start needing path-based access.
+- **Solution**: Move recursive accessor logic into `GlobalRegistry.get_path()`.
 
 ---
 ### ID: TD-ARCH-DI-SETTLE

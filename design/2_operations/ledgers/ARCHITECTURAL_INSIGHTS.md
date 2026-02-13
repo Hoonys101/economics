@@ -41,6 +41,15 @@
 - **[2026-02-13] Explicit Financial Settlement for Government Bonds**
     - Transitioned government bond issuance from an internal state mutation in `FinanceSystem` to an explicit `SettlementSystem.transfer` orchestrated by the `Government` agent. This enforces zero-sum integrity and ensures that Quantitative Easing (QE) or standard bond purchases are explicitly audited and debited against actual account balances.
     - [Insight Report](../../communications/insights/mission-found-02.md)
+- **[2026-02-13] Atomic Intervention with Mandatory Rollback (DATA-01)**
+    - Implemented `CommandService` with an `UndoStack` to manage 'God Mode' interventions. Every command batch (SET_PARAM, INJECT_ASSET) follows a strict Validation -> Snapshot -> Execute -> Audit cycle. Any failure at the Audit step (Monetary Integrity) triggers a full batch reversal, ensuring the simulation never enters an invalid state from external actions.
+    - [Insight Report](../../communications/insights/mission-data-01.md)
+- **[2026-02-13] On-Demand Path Resolution & Pre-Validation (DATA-02)**
+    - Developed `TelemetryCollector` using dot-notation path resolution (e.g., `economy.m2`). Introduced a 'Subscription Purity' principle where paths are validated at registration time to reduce runtime overhead and handle missing data points gracefully via error flags in the DTO instead of crashing the engine.
+    - [Insight Report](../../communications/insights/mission-data-02.md)
+- **[2026-02-13] Strategy-Based Scenario Verification (DATA-03)**
+    - Adopted the Strategy pattern (`IScenarioJudge`) for real-time verification of economic hypotheses. This decouples the core simulation engine from complex social judging criteria, allowing for extensible "Scenario Cards" that can be evaluated in Phase 8 without side effects on agent logic.
+    - [Insight Report](../../communications/insights/mission-data-03.md)
 - **[2026-02-13] Lazy Dependency Resolution Pattern**
     - Implemented lazy initialization in `DemographicManager` to resolve internal factories from the simulation context if not explicitly injected. Prevents silent failures while maintaining flexible testing.
     - [Insight Report](../_archive/insights/2026-02-13_Lazy_Dependency_Resolution_Demographics.md)

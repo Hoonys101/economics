@@ -10,9 +10,12 @@
 
 - **[2026-01-25] R&D Investment and Endogenous Innovation**
     - Transition from time-based to probabilistic unlock models driven by firm activity.
-- **[2026-02-09] Cockpit's Direct State Injection (Divine Intervention)**
+- **[2026-02-13] Cockpit's Direct State Injection (Divine Intervention)**
     - Implementation of a real-time policy control layer. Identified the need for "Divine Intervention" event types to avoid side-effect isolation and state inconsistencies.
     - [Insight Report](../_archive/insights/2026-02-09_Cockpit_Direct_State_Intervention.md)
+- **[2026-02-13] Baseline M2 Accountability in Mixed-Intervention Models**
+    - Established that external state changes (e.g., injecting stimulus) must be mathematically reconciled with the 'Baseline M2'. In a mixed-intervention tick (automatic policy + manual injection), the audit system now distinguishes between legitimate credit expansion and corrupting "Magic Money," ensuring the simulation remains a valid environment for economic hypothesis testing.
+    - [Insight Report](../../communications/insights/mission-data-01.md)
 
 ---
 
