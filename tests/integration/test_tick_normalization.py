@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, Mock, patch
+from collections import deque
 from simulation.orchestration.tick_orchestrator import TickOrchestrator
 from simulation.models import Transaction
 from simulation.world_state import WorldState
@@ -58,6 +59,12 @@ class TestTickNormalization:
 
         # Tech manager
         state.technology_manager = MagicMock()
+
+        # Command Queues - Explicitly initialize to prevent MagicMock infinite loops
+        state.god_command_queue = deque()
+        state.system_command_queue = deque()
+        state.command_queue = MagicMock()
+        state.command_queue.empty.return_value = True
 
         # Systems
         state.ma_manager = MagicMock()
