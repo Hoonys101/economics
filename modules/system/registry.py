@@ -159,3 +159,19 @@ class GlobalRegistry(IGlobalRegistry):
 
     def get_entry(self, key: str) -> Optional[RegistryEntry]:
         return self._storage.get(key)
+
+    def delete_entry(self, key: str) -> bool:
+        """Deletes an entry completely (for rollback purposes)."""
+        if key in self._storage:
+            del self._storage[key]
+            # Notify deletion? Or just silent?
+            # Notification with None value might be appropriate
+            # self._notify(key, None, OriginType.SYSTEM)
+            return True
+        return False
+
+    def restore_entry(self, key: str, entry: RegistryEntry) -> None:
+        """Restores a full entry state (for rollback purposes)."""
+        self._storage[key] = entry
+        # Notify restoration
+        self._notify(key, entry.value, entry.origin)

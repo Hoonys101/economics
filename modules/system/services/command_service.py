@@ -258,17 +258,20 @@ class CommandService:
                      # Restore previous entry state directly to preserve origin/locks
                      if record.previous_entry is None:
                          # Key didn't exist before, so delete it
-                         # Accessing internal storage as GlobalRegistry doesn't expose delete
-                         if hasattr(self.registry, '_storage') and record.parameter_key in self.registry._storage:
-                             del self.registry._storage[record.parameter_key]
+                         # Access via protocol method delete_entry
+                         if hasattr(self.registry, 'delete_entry'):
+                             self.registry.delete_entry(record.parameter_key)
                              logger.info(f"ROLLBACK: Deleted {record.parameter_key}")
+                         else:
+                             # Should not happen if protocol is updated, but safe fallback logic
+                             logger.warning(f"ROLLBACK_FAIL: delete_entry not implemented in registry for {record.parameter_key}")
                      else:
                          # Restore entry
-                         if hasattr(self.registry, '_storage'):
-                             self.registry._storage[record.parameter_key] = record.previous_entry
+                         if hasattr(self.registry, 'restore_entry'):
+                             self.registry.restore_entry(record.parameter_key, record.previous_entry)
                              logger.info(f"ROLLBACK: Restored {record.parameter_key} to {record.previous_entry.value} (Origin: {record.previous_entry.origin})")
                          else:
-                             # Fallback if _storage not available (unlikely given spec)
+                             # Fallback if restore_entry not available
                              self.registry.set(
                                  record.parameter_key,
                                  record.previous_entry.value,

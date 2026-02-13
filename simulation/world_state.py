@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from simulation.db.repository import SimulationRepository
     from modules.common.config_manager.api import ConfigManager
     from simulation.dtos.scenario import StressScenarioConfig
-from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry # Added for Phase 33
+from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry # Added for Phase 33
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
 from modules.finance.api import IShareholderRegistry
@@ -121,6 +121,7 @@ class WorldState:
         self.event_system: Optional[EventSystem] = None
         self.sensory_system: Optional[SensorySystem] = None
         self.settlement_system: Optional[SettlementSystem] = None
+        self.agent_registry: Optional[IAgentRegistry] = None # Added for explicit typing
         self.saga_orchestrator: Optional[ISagaOrchestrator] = None
         self.monetary_ledger: Optional[IMonetaryLedger] = None
         self.shareholder_registry: Optional[IShareholderRegistry] = None # TD-275
