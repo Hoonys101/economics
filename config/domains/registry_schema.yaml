@@ -1,3 +1,37 @@
+
+- key: system.money_velocity_factor
+  label: Money Velocity Factor
+  description: Multiplier for transaction frequency and consumption probability.
+  widget_type: slider
+  data_type: float
+  min_value: 0.1
+  max_value: 10.0
+  step: 0.1
+  category: System
+  unit: "x"
+
+- key: system.social_trust_score
+  label: Social Trust Score
+  description: Index representing confidence in financial institutions (0.0 to 1.0).
+  widget_type: slider
+  data_type: float
+  min_value: 0.0
+  max_value: 1.0
+  step: 0.05
+  category: System
+  unit: ""
+
+- key: system.production_efficiency
+  label: Production Efficiency
+  description: Global multiplier for firm production output.
+  widget_type: slider
+  data_type: float
+  min_value: 0.0
+  max_value: 2.0
+  step: 0.05
+  category: System
+  unit: "x"
+
 - key: government.corporate_tax_rate
   label: Corporate Tax Rate
   description: The tax rate applied to corporate profits.

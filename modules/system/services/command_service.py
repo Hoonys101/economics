@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Any, Optional, Protocol, Dict, Union
+from typing import List, Any, Optional, Protocol, Dict, Union, runtime_checkable
 from dataclasses import dataclass, field
 import logging
 from uuid import UUID
@@ -8,6 +8,9 @@ from simulation.dtos.commands import GodCommandDTO, GodResponseDTO
 from modules.system.api import IGlobalRegistry, OriginType, IAgentRegistry
 from modules.system.constants import ID_CENTRAL_BANK
 from simulation.finance.api import ISettlementSystem, IFinancialAgent
+from modules.simulation.api import IInventoryHandler
+from modules.finance.api import IBank
+from collections import deque
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +19,10 @@ class ICommandService(Protocol):
         ...
     def commit_last_tick(self) -> None:
         ...
+
+@runtime_checkable
+class ISectorAgent(Protocol):
+    sector: str
 
 @dataclass
 class UndoRecord:
@@ -29,19 +36,28 @@ class UndoRecord:
     new_value: Any = None
 
 class UndoStack:
-    def __init__(self):
-        self._stack: List[List[UndoRecord]] = []
+    def __init__(self, maxlen: int = 50):
+        self._stack: deque = deque(maxlen=maxlen)
+        self._current_batch: List[UndoRecord] = []
 
     def start_batch(self):
-        self._stack.append([])
+        self._current_batch = []
 
     def push(self, record: UndoRecord):
-        if not self._stack:
-             self.start_batch()
-        self._stack[-1].append(record)
+        self._current_batch.append(record)
+
+    def commit_batch(self):
+        if self._current_batch:
+            self._stack.append(self._current_batch)
+            self._current_batch = []
 
     def pop_batch(self) -> List[UndoRecord]:
-        if self._stack:
+        if self._current_batch:
+            # If a batch is currently being built (e.g. during failure rollback), return it
+            batch = self._current_batch
+            self._current_batch = []
+            return batch
+        elif self._stack:
             return self._stack.pop()
         return []
 
@@ -84,8 +100,9 @@ class CommandService:
                     net_injection += injected_amount
                 elif cmd.command_type == "UPDATE_TELEMETRY":
                     self._handle_update_telemetry(cmd)
-                elif cmd.command_type in ["TRIGGER_EVENT", "PAUSE_STATE"]:
-                    # TODO: Implement event/pause logic. For now just log.
+                elif cmd.command_type == "TRIGGER_EVENT":
+                    self._handle_trigger_event(cmd, tick)
+                elif cmd.command_type == "PAUSE_STATE":
                     logger.info(f"Command {cmd.command_type} received but handler pending.")
                 else:
                     logger.warning(f"Unknown command type: {cmd.command_type}")
@@ -220,9 +237,11 @@ class CommandService:
 
     def commit_last_tick(self) -> None:
         """
-        Commits the last batch of commands, removing them from the undo stack.
+        Commits the last batch of commands.
+        Modified for INT-02: We keep the history to allow manual UNDO (ST-004).
+        Uses deque with maxlen to prevent memory leak.
         """
-        self.undo_stack.pop_batch()
+        self.undo_stack.commit_batch()
 
     def rollback_last_tick(self) -> bool:
         records = self.undo_stack.pop_batch()
@@ -310,3 +329,138 @@ class CommandService:
             logger.info(f"Telemetry mask updated: {mask}")
         else:
             raise RuntimeError("TelemetryCollector does not support 'update_subscriptions'.")
+
+    def _handle_trigger_event(self, cmd: GodCommandDTO, tick: int):
+        """
+        Handles TRIGGER_EVENT commands like FORCE_WITHDRAW_ALL and DESTROY_INVENTORY.
+        """
+        event_type = cmd.parameter_key
+        logger.info(f"TRIGGER_EVENT: {event_type} initiated.")
+
+        if event_type == "FORCE_WITHDRAW_ALL":
+            self._handle_force_withdraw_all(cmd, tick)
+        elif event_type == "DESTROY_INVENTORY":
+            self._handle_destroy_inventory(cmd, tick)
+        else:
+            logger.warning(f"Unknown event type: {event_type}")
+
+    def _handle_force_withdraw_all(self, cmd: GodCommandDTO, tick: int):
+        """
+        Simulates a systemic bank run by forcing all agents to withdraw their deposits.
+        """
+        # Identify Target Bank
+        # Default to finding any IBank if not specified or "CENTRAL" (which might mean Central Clearing)
+        # But usually we want the Commercial Bank where agents have deposits.
+
+        bank_id_target = None
+        if isinstance(cmd.new_value, dict):
+            bank_id_target = cmd.new_value.get("bank_id")
+
+        # Find the Bank Agent
+        bank_agent = None
+        if bank_id_target and bank_id_target != "CENTRAL":
+             bank_agent = self.agent_registry.get_agent(bank_id_target)
+
+        if not bank_agent:
+             # Heuristic: Find the first commercial bank
+             all_agents = self.agent_registry.get_all_agents()
+             for agent in all_agents:
+                 if isinstance(agent, IBank) and agent.id != ID_CENTRAL_BANK and str(agent.id) != str(ID_CENTRAL_BANK):
+                     bank_agent = agent
+                     break
+
+        if not bank_agent:
+             logger.warning("FORCE_WITHDRAW_ALL: No suitable commercial bank found.")
+             return
+
+        if not isinstance(bank_agent, IBank):
+             logger.warning(f"FORCE_WITHDRAW_ALL: Target {bank_agent.id} is not an IBank.")
+             return
+
+        logger.info(f"FORCE_WITHDRAW_ALL: Targeting Bank {bank_agent.id}")
+
+        # Iterate all agents and withdraw
+        agents = self.agent_registry.get_all_agents()
+        withdrawal_count = 0
+        total_withdrawn = 0
+
+        for agent in agents:
+            # Skip the bank itself and central bank
+            if agent.id == bank_agent.id or agent.id == ID_CENTRAL_BANK:
+                continue
+
+            # Check Balance
+            # Since IBank doesn't expose get_balance_of(agent), we use seamless withdraw check or custom method
+            # Bank.get_customer_balance is available in the implementation we read earlier
+            # Check Balance
+            # Since IBank doesn't expose get_balance_of(agent), we use seamless withdraw check or custom method
+            if isinstance(bank_agent, IBank): # Protocol check
+                 balance = bank_agent.get_customer_balance(agent.id)
+                 if balance > 0:
+                     # Execute Withdrawal - Two-Step Process for Zero-Sum Integrity
+
+                     # 1. Reduce Bank Liability (Deposit)
+                     liability_reduced = bank_agent.withdraw_for_customer(agent.id, balance)
+
+                     if liability_reduced:
+                         # 2. Transfer Cash (Bank Asset -> Agent Asset)
+                         # This ensures the Bank loses cash reserves corresponding to the liability reduction.
+                         tx = self.settlement_system.transfer(
+                             debit_agent=bank_agent,
+                             credit_agent=agent,
+                             amount=balance,
+                             memo="FORCE_WITHDRAW_ALL",
+                             tick=tick
+                         )
+
+                         if tx:
+                             total_withdrawn += balance
+                             withdrawal_count += 1
+                         else:
+                             # Rollback Liability Reduction if Cash Transfer fails (e.g. Bank Insolvent)
+                             logger.warning(f"Bank {bank_agent.id} insolvent! Failed to transfer cash {balance} to {agent.id}. Rolling back liability.")
+                             # Try to restore deposit (Legacy method usually available on Bank implementation)
+                             if hasattr(bank_agent, 'deposit_from_customer'):
+                                 bank_agent.deposit_from_customer(agent.id, float(balance))
+                     else:
+                         logger.warning(f"Failed to reduce liability {balance} for agent {agent.id}")
+
+        logger.info(f"FORCE_WITHDRAW_ALL: Processed {withdrawal_count} withdrawals. Total: {total_withdrawn}")
+
+    def _handle_destroy_inventory(self, cmd: GodCommandDTO, tick: int):
+        """
+        Destroys inventory across firms to simulate disaster (War/Famine).
+        """
+        ratio = 0.9 # Default
+        target_sector = None
+
+        if isinstance(cmd.new_value, dict):
+            ratio = cmd.new_value.get("ratio", 0.9)
+            target_sector = cmd.new_value.get("target")
+        elif isinstance(cmd.new_value, (float, int)):
+             ratio = float(cmd.new_value)
+
+        agents = self.agent_registry.get_all_agents()
+        destroyed_value_estimate = 0
+        agents_affected = 0
+
+        for agent in agents:
+            if isinstance(agent, IInventoryHandler):
+                # Filter by sector if needed (only Firms have sector usually)
+                if target_sector:
+                     # Protocol Check for Sector
+                     if not isinstance(agent, ISectorAgent) or agent.sector != target_sector:
+                         continue
+
+                items = agent.get_all_items()
+                for item_id, qty in list(items.items()):
+                    destroy_qty = qty * ratio
+                    if destroy_qty > 0:
+                        success = agent.remove_item(item_id, destroy_qty)
+                        if success:
+                             # Rough estimate of value (assuming 1.0 unit price if unknown, just for logging)
+                             destroyed_value_estimate += destroy_qty
+
+                agents_affected += 1
+
+        logger.info(f"DESTROY_INVENTORY: Affected {agents_affected} agents. Destroyed approx {destroyed_value_estimate} units.")
