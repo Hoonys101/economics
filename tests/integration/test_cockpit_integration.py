@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from simulation.engine import Simulation
 from modules.governance.cockpit.api import CockpitCommand
-from simulation.orchestration.command_service import CommandService
+from modules.system.services.command_service import CommandService
 
 # Mock dependencies for Simulation
 @pytest.fixture

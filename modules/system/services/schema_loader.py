@@ -1,5 +1,6 @@
 import yaml
 import logging
+import os
 from typing import List
 from simulation.dtos.registry_dtos import ParameterSchemaDTO
 
@@ -10,7 +11,15 @@ class SchemaLoader:
     Loads registry schema from YAML configuration.
     """
 
-    DEFAULT_SCHEMA_PATH = "config/domains/registry_schema.yaml"
+    # Resolve absolute path relative to project root
+    # File is in modules/system/services/schema_loader.py (depth 3 from modules, modules is depth 0 from root? No, modules is in root)
+    # path: modules/system/services/schema_loader.py
+    # dirname -> modules/system/services
+    # dirname -> modules/system
+    # dirname -> modules
+    # dirname -> root
+    _BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    DEFAULT_SCHEMA_PATH = os.path.join(_BASE_DIR, "config/domains/registry_schema.yaml")
 
     @staticmethod
     def load_schema(filepath: str = DEFAULT_SCHEMA_PATH) -> List[ParameterSchemaDTO]:

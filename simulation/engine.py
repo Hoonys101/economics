@@ -10,7 +10,7 @@ from simulation.systems.tech.api import FirmTechInfoDTO, HouseholdEducationDTO
 
 from simulation.world_state import WorldState
 from simulation.orchestration.tick_orchestrator import TickOrchestrator
-from simulation.orchestration.command_service import CommandService
+from modules.system.services.command_service import CommandService
 from simulation.action_processor import ActionProcessor
 from simulation.models import Transaction
 from modules.simulation.api import EconomicIndicatorsDTO, SystemStateDTO
