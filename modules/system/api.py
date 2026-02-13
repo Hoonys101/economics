@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from simulation.agents import Agent
     from simulation.dtos.api import SimulationState
     from modules.government.dtos import FiscalPolicyDTO
+    from simulation.dtos.registry_dtos import ParameterSchemaDTO
 
 # --- DTOs for Market Stability Signals ---
 
@@ -225,4 +226,12 @@ class IGlobalRegistry(Protocol):
 
     def snapshot(self) -> Dict[str, RegistryEntry]:
         """Returns a snapshot of all parameter states."""
+        ...
+
+    def get_metadata(self, key: str) -> Optional[ParameterSchemaDTO]:
+        """Returns metadata for a specific key."""
+        ...
+
+    def get_entry(self, key: str) -> Optional[RegistryEntry]:
+        """Returns the full registry entry (value, origin, lock status)."""
         ...

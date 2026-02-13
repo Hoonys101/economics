@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Optional, Any, TYPE_CHECKING, Dict, List
 from modules.system.api import IAgentRegistry, IGlobalRegistry, OriginType, RegistryEntry, RegistryObserver
+from modules.system.services.schema_loader import SchemaLoader
+from simulation.dtos.registry_dtos import ParameterSchemaDTO
 
 if TYPE_CHECKING:
     from simulation.agents import Agent
@@ -57,6 +59,14 @@ class GlobalRegistry(IGlobalRegistry):
         self._key_observers: Dict[str, List[RegistryObserver]] = {}
         # Placeholder for scheduler injection (Phase 0 Intercept)
         self._scheduler = None
+        # Load metadata schema on initialization
+        self._metadata_map: Dict[str, ParameterSchemaDTO] = {}
+        self._load_metadata()
+
+    def _load_metadata(self) -> None:
+        schemas = SchemaLoader.load_schema()
+        for schema in schemas:
+            self._metadata_map[schema['key']] = schema
 
     def get(self, key: str, default: Any = None) -> Any:
         entry = self._storage.get(key)
@@ -143,3 +153,9 @@ class GlobalRegistry(IGlobalRegistry):
 
     def snapshot(self) -> Dict[str, RegistryEntry]:
         return self._storage.copy()
+
+    def get_metadata(self, key: str) -> Optional[ParameterSchemaDTO]:
+        return self._metadata_map.get(key)
+
+    def get_entry(self, key: str) -> Optional[RegistryEntry]:
+        return self._storage.get(key)

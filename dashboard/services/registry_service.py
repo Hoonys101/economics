@@ -1,6 +1,6 @@
 from typing import List, Optional
 from dashboard.dtos import ParameterSchemaDTO
-from dashboard.services.schema_loader import SchemaLoader
+from modules.system.services.schema_loader import SchemaLoader
 
 class RegistryService:
     """

@@ -1,7 +1,7 @@
 import yaml
 import logging
 from typing import List
-from dashboard.dtos import ParameterSchemaDTO
+from simulation.dtos.registry_dtos import ParameterSchemaDTO
 
 logger = logging.getLogger(__name__)
 
