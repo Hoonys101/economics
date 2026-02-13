@@ -440,6 +440,13 @@ class IFinanceSystem(Protocol):
         """
         ...
 
+    def register_bond(self, bond: BondDTO, owner_id: AgentID) -> None:
+        """
+        Registers a newly issued bond in the system ledger.
+        This does NOT handle money transfer, only state tracking.
+        """
+        ...
+
     def collect_corporate_tax(self, firm: IFinancialAgent, tax_amount: int) -> bool:
         """Collects corporate tax using atomic settlement."""
         ...

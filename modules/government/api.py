@@ -12,6 +12,9 @@ from modules.government.dtos import (
     WelfareResultDTO,
     BailoutResultDTO,
     TaxCollectionResultDTO,
+    FiscalContextDTO,
+    BondIssueRequestDTO,
+    BondIssuanceResultDTO,
     IAgent
 )
 from modules.government.welfare.api import IWelfareRecipient
@@ -109,7 +112,7 @@ class ITaxService(Protocol):
         """Resets the per-tick revenue accumulators."""
         ...
 
-class IWelfareManager(Protocol):
+class IWelfareService(Protocol):
     """
     A stateless service responsible for all welfare and subsidy logic.
     It does not hold state or have access to agent wallets.
@@ -140,6 +143,25 @@ class IWelfareManager(Protocol):
         """Resets the per-tick spending accumulator."""
         ...
 
+# Alias for backward compatibility
+IWelfareManager = IWelfareService
+
+class IFiscalBondService(Protocol):
+    """
+    A stateless service responsible for sovereign debt logic:
+    calculating yields, determining buyers (QE), and preparing issuance.
+    """
+    def calculate_yield(self, context: FiscalContextDTO) -> float:
+        """Calculates bond yield based on debt-to-GDP and other factors."""
+        ...
+
+    def issue_bonds(self, request: BondIssueRequestDTO, context: FiscalContextDTO, buyer_pool: Dict[str, Any]) -> BondIssuanceResultDTO:
+        """
+        Prepares a bond issuance transaction.
+        Determines the buyer (e.g. Central Bank vs Commercial Bank) and creates the transaction request.
+        """
+        ...
+
 class IGovernment(Protocol):
     """Facade for the government agent."""
     state: GovernmentStateDTO
@@ -154,7 +176,8 @@ class GovernmentExecutionContext:
     settlement_system: Any # ISettlementSystem
     finance_system: Any # IFinanceSystem
     tax_service: ITaxService
-    welfare_manager: IWelfareManager
+    welfare_manager: IWelfareService
+    fiscal_bond_service: IFiscalBondService
     infrastructure_manager: Any = None # Optional for now
     public_manager: Any = None # PublicManager (IAssetRecoverySystem)
 

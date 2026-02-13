@@ -231,6 +231,31 @@ class FinanceSystem(IFinanceSystem):
             )
             return z_score > z_score_threshold
 
+    def register_bond(self, bond: BondDTO, owner_id: AgentID) -> None:
+        """
+        Registers a newly issued bond in the system ledger.
+        This does NOT handle money transfer, only state tracking.
+        """
+        # Ensure ledger is ready
+        if not self.ledger or not self.ledger.treasury:
+            logger.error("LEDGER_NOT_READY | Cannot register bond.")
+            return
+
+        # Create BondStateDTO
+        issue_tick = self.ledger.current_tick if self.ledger else 0
+
+        bond_state = BondStateDTO(
+            bond_id=bond.id,
+            owner_id=owner_id,
+            face_value_pennies=bond.face_value,
+            yield_rate=bond.yield_rate,
+            issue_tick=issue_tick,
+            maturity_tick=bond.maturity_date
+        )
+
+        self.ledger.treasury.bonds[bond.id] = bond_state
+        logger.info(f"BOND_REGISTERED | {bond.id} registered to {owner_id}")
+
     def issue_treasury_bonds(self, amount: int, current_tick: int) -> Tuple[List[BondDTO], List[Transaction]]:
         """
         Issues new treasury bonds using the new Ledger system (partially).

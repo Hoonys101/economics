@@ -23,12 +23,19 @@ from modules.government.dtos import (
     BailoutResultDTO,
     GovernmentStateDTO,
     PolicyDecisionDTO,
-    ExecutionResultDTO
+    ExecutionResultDTO,
+    FiscalContextDTO,
+    BondIssueRequestDTO
 )
-from modules.government.api import GovernmentExecutionContext
-from modules.government.welfare.manager import WelfareManager
+from modules.government.api import (
+    GovernmentExecutionContext,
+    ITaxService,
+    IWelfareService,
+    IFiscalBondService
+)
+from modules.government.services.welfare_service import WelfareService
 from modules.government.tax.service import TaxService
-from modules.government.tax.api import ITaxService
+from modules.government.services.fiscal_bond_service import FiscalBondService
 from modules.government.components.infrastructure_manager import InfrastructureManager
 from modules.government.constants import *
 from modules.government.components.monetary_ledger import MonetaryLedger
@@ -73,9 +80,10 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
         self.config_module = config_module
         self.settlement_system: Optional["ISettlementSystem"] = None
         
-        # Facade Services (kept for backward compat and Engine Context)
+        # Services
         self.tax_service: ITaxService = TaxService(config_module)
-        self.welfare_manager = WelfareManager(config_module)
+        self.welfare_manager: IWelfareService = WelfareService(config_module) # Kept name for context compat
+        self.fiscal_bond_service: IFiscalBondService = FiscalBondService(config_module)
 
         self.ministry_of_education = MinistryOfEducation(config_module)
         self.infrastructure_manager = InfrastructureManager(self)
@@ -93,14 +101,14 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             MarketSnapshotDTO(tick=0, market_signals={}, market_data={})
         )
 
-        # Legacy State Attributes (to be migrated to GovernmentStateDTO completely eventually)
+        # Legacy State Attributes
         self.total_spent_subsidies: Dict[CurrencyCode, float] = {DEFAULT_CURRENCY: 0.0}
         self.infrastructure_level: int = 0
         self.potential_gdp: float = 0.0
         self.gdp_ema: float = 0.0
         self.fiscal_stance: float = 0.0
 
-        # Legacy Policy Engine (for backward compat if needed, but we try to use new engine)
+        # Legacy Policy Engine
         if policy_mode == "AI_ADAPTIVE":
             self.policy_engine: IGovernmentPolicy = AdaptiveGovPolicy(self, config_module)
         elif policy_mode == "AI_LEGACY":
@@ -319,9 +327,6 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
         }
 
         # Prepare Market Snapshot DTO (TypedDict for Engines)
-        # Note: existing MarketSnapshotDTO is dataclass. We need dictionary for TypedDict?
-        # Or implementation handles it. The engine expects TypedDict.
-        # I'll construct the dict as expected by engine.
         engine_market_snapshot = {
             "tick": current_tick,
             "inflation_rate_annual": self.sensory_data.inflation_sma if self.sensory_data else 0.0,
@@ -344,7 +349,7 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             extra={"tick": current_tick, "agent_id": self.id}
         )
 
-        # Legacy Shadow Logging (Keep for verification parity)
+        # Legacy Shadow Logging
         self._log_shadow_metrics(market_data, current_tick, central_bank)
 
     def _apply_state_updates(self, updates: Dict[str, Any]):
@@ -360,10 +365,6 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             self.fiscal_stance = updates["fiscal_stance"]
 
     def _log_shadow_metrics(self, market_data: Dict[str, Any], current_tick: int, central_bank: Any):
-        # Re-implementation of legacy logging logic
-        # Note: self.potential_gdp is now updated via _apply_state_updates from DecisionEngine.
-        # We rely on the Engine's calculation to be the single source of truth for the state update.
-        # Only fallback if engine didn't provide it (which it should).
         if self.potential_gdp == 0.0 and self.sensory_data and self.sensory_data.current_gdp > 0:
              self.potential_gdp = self.sensory_data.current_gdp
 
@@ -408,10 +409,6 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
     }
 
     def fire_advisor(self, school: EconomicSchool, current_tick: int) -> None:
-        """
-        Fires the advisor of a specific economic school and locks associated policies.
-        Decoupled mapping via SCHOOL_TO_POLICY_MAP (TD-224).
-        """
         duration = 20
         tags_to_lock = self.SCHOOL_TO_POLICY_MAP.get(school, [])
 
@@ -430,6 +427,51 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             extra={"tick": current_tick, "agent_id": self.id}
         )
 
+    def _issue_deficit_bonds(self, amount: int, current_tick: int) -> bool:
+        """Helper to issue bonds for deficit spending."""
+        if amount <= 0 or not self.finance_system:
+            return False
+
+        # Gather context
+        current_gdp = 1000000 # Default 1M pennies
+        if self.sensory_data and self.sensory_data.current_gdp > 0:
+             current_gdp = int(self.sensory_data.current_gdp * 100) # Convert to pennies if float
+
+        context = FiscalContextDTO(
+            tick=current_tick,
+            current_gdp=current_gdp,
+            debt_to_gdp_ratio=self.get_debt_to_gdp_ratio(),
+            population_count=100, # Mock
+            treasury_balance=self.wallet.get_balance(DEFAULT_CURRENCY)
+        )
+
+        request = BondIssueRequestDTO(
+            amount_pennies=amount,
+            maturity_ticks=400,
+            target_yield=0.0
+        )
+
+        buyer_pool = {}
+        if hasattr(self.finance_system, 'bank'): buyer_pool['bank'] = self.finance_system.bank
+        if hasattr(self.finance_system, 'central_bank'): buyer_pool['central_bank'] = self.finance_system.central_bank
+
+        result = self.fiscal_bond_service.issue_bonds(request, context, buyer_pool)
+
+        if result.payment_request.payer != "UNKNOWN_BUYER":
+             success = self.settlement_system.transfer(
+                 result.payment_request.payer,
+                 self,
+                 result.payment_request.amount,
+                 result.payment_request.memo,
+                 result.payment_request.currency
+             )
+             if success:
+                 payer_id = result.payment_request.payer
+                 if hasattr(payer_id, 'id'): payer_id = payer_id.id
+                 self.finance_system.register_bond(result.bond_dto, owner_id=payer_id)
+                 return True
+        return False
+
     def provide_household_support(self, household: Any, amount: float, current_tick: int) -> List[Transaction]:
         """
         Manually executes household support.
@@ -444,8 +486,7 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
 
         current_balance = self.wallet.get_balance(DEFAULT_CURRENCY)
         if current_balance < effective_amount:
-             if self.finance_system:
-                  self.finance_system.issue_treasury_bonds(effective_amount - current_balance, current_tick)
+             self._issue_deficit_bonds(effective_amount - current_balance, current_tick)
 
         # Check balance again
         current_balance = self.wallet.get_balance(DEFAULT_CURRENCY)
@@ -472,19 +513,13 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
         """Provides a bailout loan to a firm if it's eligible. Returns (LoanDTO, Transactions)."""
 
         # 1. Create Request DTO
-        # Check solvency locally or via WelfareManager helper if needed, but Engine needs FinancialsDTO.
-        # Assuming we can get is_solvent from FinanceSystem or WelfareManager logic.
-        # For now, using WelfareManager logic if possible, or FinanceSystem.
-        # WelfareManager.provide_firm_bailout used 'is_solvent' passed in.
-        # Legacy code called: is_solvent = context.finance_system.evaluate_solvency(firm, state.tick)
-
         is_solvent = False
         if self.finance_system:
              is_solvent = self.finance_system.evaluate_solvency(firm, current_tick)
 
         financials: FirmFinancialsDTO = {
             "assets": int(firm.total_wealth) if hasattr(firm, 'total_wealth') else (int(firm.assets) if hasattr(firm, 'assets') else 0),
-            "profit": 0, # Not easily available without deep inspection
+            "profit": 0,
             "is_solvent": is_solvent
         }
 
@@ -497,7 +532,6 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
         request: FiscalRequestDTO = {"bailout_request": bailout_req}
 
         # 2. Call Engine
-        # Need state and market dummy
         fiscal_state: FiscalStateDTO = {
             "tick": current_tick,
             "assets": self.wallet.get_all_balances(),
@@ -510,7 +544,7 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
         }
         market_snapshot = {
             "tick": current_tick,
-            "inflation_rate_annual": 0.0, # Not needed for bailout check usually
+            "inflation_rate_annual": 0.0,
             "current_gdp": 0.0
         }
 
@@ -520,15 +554,9 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
         if decision["bailouts_to_grant"]:
             grant = decision["bailouts_to_grant"][0]
 
-            # Execute loan via FinanceSystem
-            # Reusing WelfareManager logic or direct FinanceSystem call?
-            # Legacy used WelfareManager.provide_firm_bailout to get DTO, then FinanceSystem to grant.
-            # Now we have grant details.
-
             if self.finance_system:
                 loan, txs = self.finance_system.grant_bailout_loan(firm, grant["amount"], current_tick)
 
-                # Track expenditure
                 cur = DEFAULT_CURRENCY
                 if cur not in self.expenditure_this_tick: self.expenditure_this_tick[cur] = 0
                 self.expenditure_this_tick[cur] += grant["amount"]
@@ -543,9 +571,6 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
         return self.welfare_manager.get_survival_cost(snapshot)
 
     def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int) -> List[Transaction]:
-        """
-        Legacy entry point. Orchestrates Tax and Welfare via execute_social_policy.
-        """
         self.execute_social_policy(agents, market_data, current_tick)
         return []
 
@@ -571,15 +596,13 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
         )
 
         # Funding for Welfare
-        # Only check OUTBOUND requests from Government
         welfare_reqs = [req for req in result.payment_requests if req.payer == self.id or (hasattr(req.payer, 'id') and req.payer.id == self.id)]
         total_welfare_needed = sum(req.amount for req in welfare_reqs)
 
         if total_welfare_needed > 0:
             current_balance = self.wallet.get_balance(DEFAULT_CURRENCY)
             if current_balance < total_welfare_needed:
-                if self.finance_system:
-                    self.finance_system.issue_treasury_bonds(total_welfare_needed - current_balance, current_tick)
+                self._issue_deficit_bonds(total_welfare_needed - current_balance, current_tick)
 
         # Execute Transfers
         for req in result.payment_requests:
@@ -587,12 +610,9 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             payee = req.payee
 
             if payer == self.id: payer = self
-            # Resolve Payer (similar to Payee logic for self-reference)
             if isinstance(payer, str) and "GOVERNMENT" in payer:
                 payer = self
 
-            # Resolve Payee
-            # Note: TaxService usually sets payee="GOVERNMENT"
             if isinstance(payee, str) and "GOVERNMENT" in payee:
                 payee = self
             elif hasattr(payee, 'id') and payee.id == self.id:
@@ -671,7 +691,7 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
     def get_debt_to_gdp_ratio(self) -> float:
         if not self.sensory_data or self.sensory_data.current_gdp == 0:
             return 0.0
-        debt = max(0.0, float(-self.total_wealth))
+        debt = max(0.0, float(self.total_debt)) # Use total_debt instead of negative wealth
         return debt / self.sensory_data.current_gdp
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
@@ -745,6 +765,7 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             finance_system=self.finance_system,
             tax_service=self.tax_service,
             welfare_manager=self.welfare_manager,
+            fiscal_bond_service=self.fiscal_bond_service,
             infrastructure_manager=self.infrastructure_manager,
             public_manager=self.public_manager
         )
