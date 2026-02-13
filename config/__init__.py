@@ -5,6 +5,8 @@ try:
 except ImportError:
     pass
 
+from modules.system.registry import GlobalRegistry, OriginType
+
 # --- Simulation Parameters ---
 from enum import Enum
 
@@ -903,3 +905,41 @@ AGE_DEATH_PROBABILITIES = {
 FALLBACK_SURVIVAL_COST = 10.0
 PRICE_VOLATILITY_WINDOW_TICKS = 20
 HOUSING_ANNUAL_MAINTENANCE_RATE = 0.01
+
+# ==============================================================================
+# FOUND-01: GlobalRegistry Integration
+# ==============================================================================
+_registry = GlobalRegistry()
+
+# Populate Registry and Cleanup Globals
+def _init_registry():
+    """
+    Moves all uppercase constants from module namespace to GlobalRegistry.
+    This ensures SSoT and enables hot-swapping.
+    """
+    keys = list(globals().keys())
+    for k in keys:
+        # Heuristic: Uppercase constants are config parameters
+        if k.isupper():
+            val = globals()[k]
+            # Exclude types/classes if any match the heuristic
+            if isinstance(val, type):
+                continue
+
+            _registry.set(k, val, OriginType.SYSTEM)
+            del globals()[k]
+
+_init_registry()
+
+# Proxy for access
+def __getattr__(name):
+    val = _registry.get(name)
+    if val is not None:
+        return val
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
+def __dir__():
+    return list(globals().keys()) + list(_registry.snapshot().keys())
+
+# Expose registry instance
+registry = _registry

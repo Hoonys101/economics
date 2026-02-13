@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TypedDict, List, Dict, Optional, Any, Protocol, TYPE_CHECKING, TypeAlias, runtime_checkable
 from abc import ABC, abstractmethod
+from enum import IntEnum
 from modules.finance.dtos import MoneyDTO
 
 # --- Phase 33: Multi-Polar WorldState Foundation ---
@@ -165,4 +166,58 @@ class IAgentRegistry(ABC):
     @abstractmethod
     def set_state(self, state: SimulationState) -> None:
         """Updates the registry with the current simulation state."""
+        ...
+
+# --- FOUND-01: GlobalRegistry Interface ---
+
+class OriginType(IntEnum):
+    """Priority-based data source definition."""
+    SYSTEM = 0   # Engine defaults (Hardcoded Fallback)
+    CONFIG = 1   # Loaded from YAML/Config
+    GOD_MODE = 2 # Observer intervention (Highest Priority, Forced Lock)
+
+@dataclass(frozen=True)
+class RegistryEntry:
+    """Registry storage unit."""
+    value: Any
+    origin: OriginType
+    is_locked: bool = False
+    last_updated_tick: int = 0
+
+@runtime_checkable
+class RegistryObserver(Protocol):
+    """Protocol for receiving value change notifications."""
+    def on_registry_update(self, key: str, value: Any, origin: OriginType) -> None:
+        """Callback invoked when a parameter changes."""
+        ...
+
+@runtime_checkable
+class IGlobalRegistry(Protocol):
+    """GlobalRegistry public interface."""
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Returns the current value of a parameter."""
+        ...
+
+    def set(self, key: str, value: Any, origin: OriginType = OriginType.CONFIG) -> bool:
+        """
+        Sets a parameter value.
+        Returns False or raises Exception if origin priority is lower than current or locked.
+        """
+        ...
+
+    def lock(self, key: str) -> None:
+        """Locks a specific parameter with God-Mode authority."""
+        ...
+
+    def unlock(self, key: str) -> None:
+        """Unlocks a parameter."""
+        ...
+
+    def subscribe(self, observer: RegistryObserver, keys: Optional[List[str]] = None) -> None:
+        """Registers an observer for specific keys or all changes."""
+        ...
+
+    def snapshot(self) -> Dict[str, RegistryEntry]:
+        """Returns a snapshot of all parameter states."""
         ...
