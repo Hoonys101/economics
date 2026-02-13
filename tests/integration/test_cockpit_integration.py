@@ -4,8 +4,9 @@ from unittest.mock import MagicMock
 from simulation.engine import Simulation
 from simulation.dtos.commands import GodCommandDTO
 from modules.system.services.command_service import CommandService
-from modules.system.api import IGlobalRegistry, IAgentRegistry
+from modules.system.api import IGlobalRegistry, IAgentRegistry, OriginType
 from simulation.finance.api import ISettlementSystem
+from uuid import uuid4
 
 # Mock dependencies for Simulation
 @pytest.fixture
@@ -15,6 +16,11 @@ def mock_simulation_deps():
     logger = MagicMock()
     repository = MagicMock()
 
+    # Mocks for new dependencies
+    registry = MagicMock()
+    settlement_system = MagicMock()
+    agent_registry = MagicMock()
+
     # Mock WorldState components
     world_state = MagicMock()
     world_state.config_manager = config_manager
@@ -22,16 +28,19 @@ def mock_simulation_deps():
     world_state.government = MagicMock()
     world_state.government.corporate_tax_rate = 0.2
     world_state.government.income_tax_rate = 0.1
+    world_state.god_command_queue = []
+    world_state.time = 0
+    world_state.baseline_money_supply = 100000.0
 
     from collections import deque
     # Initialize queues as real objects to allow draining
     world_state.command_queue = queue.Queue()
     world_state.god_command_queue = deque()
 
-    return config_manager, config_module, logger, repository, world_state
+    return config_manager, config_module, logger, repository, registry, settlement_system, agent_registry, world_state
 
 def test_simulation_processes_pause_resume(mock_simulation_deps):
-    cm, config_module, logger, repo, ws = mock_simulation_deps
+    cm, config_module, logger, repo, registry, settlement_system, agent_registry, ws = mock_simulation_deps
 
     with pytest.MonkeyPatch.context() as m:
         m.setattr("simulation.engine.WorldState", MagicMock(return_value=ws))
@@ -43,8 +52,11 @@ def test_simulation_processes_pause_resume(mock_simulation_deps):
         reg = MagicMock(spec=IGlobalRegistry)
         settle = MagicMock(spec=ISettlementSystem)
         agent_reg = MagicMock(spec=IAgentRegistry)
+        cmd_service = MagicMock(spec=CommandService)
 
-        sim = Simulation(cm, config_module, logger, repo, reg, settle, agent_reg)
+        sim = Simulation(cm, config_module, logger, repo, registry, settlement_system, agent_registry, cmd_service)
+        # Force world_state to be our mock (since Simulation creates its own even if we mock class)
+        sim.world_state = ws
 
         # Verify initial state
         assert sim.is_paused is False
@@ -53,8 +65,9 @@ def test_simulation_processes_pause_resume(mock_simulation_deps):
         cmd = GodCommandDTO(
             command_type="PAUSE_STATE",
             target_domain="System",
-            parameter_key="PAUSE",
-            new_value=True
+            parameter_key="pause",
+            new_value=True,
+            command_id=uuid4()
         )
         ws.command_queue.put(cmd)
 
@@ -66,8 +79,13 @@ def test_simulation_processes_pause_resume(mock_simulation_deps):
         cmd = GodCommandDTO(
             command_type="PAUSE_STATE",
             target_domain="System",
-            parameter_key="PAUSE",
-            new_value=False
+        # Enqueue RESUME
+        cmd = GodCommandDTO(
+            command_type="PAUSE_STATE",
+            target_domain="System",
+            parameter_key="pause",
+            new_value=False,
+            command_id=uuid4()
         )
         ws.command_queue.put(cmd)
 
@@ -76,7 +94,7 @@ def test_simulation_processes_pause_resume(mock_simulation_deps):
         assert sim.is_paused is False
 
 def test_simulation_processes_set_base_rate(mock_simulation_deps):
-    cm, config_module, logger, repo, ws = mock_simulation_deps
+    cm, config_module, logger, repo, registry, settlement_system, agent_registry, ws = mock_simulation_deps
 
     with pytest.MonkeyPatch.context() as m:
         m.setattr("simulation.engine.WorldState", MagicMock(return_value=ws))
@@ -84,11 +102,19 @@ def test_simulation_processes_set_base_rate(mock_simulation_deps):
         m.setattr("simulation.engine.TickOrchestrator", MagicMock())
         m.setattr("simulation.engine.SimulationLogger", MagicMock())
 
-        reg = MagicMock(spec=IGlobalRegistry)
-        settle = MagicMock(spec=ISettlementSystem)
-        agent_reg = MagicMock(spec=IAgentRegistry)
+        cmd_service = MagicMock(spec=CommandService)
+        sim = Simulation(cm, config_module, logger, repo, registry, settlement_system, agent_registry, cmd_service)
+        sim.world_state = ws
 
-        sim = Simulation(cm, config_module, logger, repo, reg, settle, agent_reg)
+        # Enqueue SET_PARAM central_bank.base_rate
+        cmd = GodCommandDTO(
+            command_type="SET_PARAM",
+            target_domain="CentralBank",
+            parameter_key="central_bank.base_rate",
+            new_value=0.15,
+            command_id=uuid4()
+        )
+        ws.command_queue.put(cmd)
 
         # Enqueue SET_BASE_RATE via SET_PARAM
         cmd = GodCommandDTO(
@@ -107,9 +133,12 @@ def test_simulation_processes_set_base_rate(mock_simulation_deps):
         assert len(ws.god_command_queue) == 1
         assert ws.god_command_queue[0].command_type == "SET_PARAM"
         assert ws.god_command_queue[0].new_value == 0.15
+        
+        # Check if Registry.set was called (via CommandService which we would need to verify if not mocked)
+        # Note: In this test, TickOrchestrator is mocked, so we just check if it was forwarded correctly to god_command_queue.
 
 def test_simulation_processes_set_tax_rate(mock_simulation_deps):
-    cm, config_module, logger, repo, ws = mock_simulation_deps
+    cm, config_module, logger, repo, registry, settlement_system, agent_registry, ws = mock_simulation_deps
 
     with pytest.MonkeyPatch.context() as m:
         m.setattr("simulation.engine.WorldState", MagicMock(return_value=ws))
@@ -117,18 +146,17 @@ def test_simulation_processes_set_tax_rate(mock_simulation_deps):
         m.setattr("simulation.engine.TickOrchestrator", MagicMock())
         m.setattr("simulation.engine.SimulationLogger", MagicMock())
 
-        reg = MagicMock(spec=IGlobalRegistry)
-        settle = MagicMock(spec=ISettlementSystem)
-        agent_reg = MagicMock(spec=IAgentRegistry)
-
-        sim = Simulation(cm, config_module, logger, repo, reg, settle, agent_reg)
+        cmd_service = MagicMock(spec=CommandService)
+        sim = Simulation(cm, config_module, logger, repo, registry, settlement_system, agent_registry, cmd_service)
+        sim.world_state = ws
 
         # Enqueue SET_TAX_RATE (Corporate)
         cmd = GodCommandDTO(
             command_type="SET_PARAM",
             target_domain="Government",
             parameter_key="corporate_tax_rate",
-            new_value=0.25
+            new_value=0.25,
+            command_id=uuid4()
         )
         ws.command_queue.put(cmd)
 
@@ -145,7 +173,8 @@ def test_simulation_processes_set_tax_rate(mock_simulation_deps):
             command_type="SET_PARAM",
             target_domain="Government",
             parameter_key="income_tax_rate",
-            new_value=0.15
+            new_value=0.15,
+            command_id=uuid4()
         )
         ws.command_queue.put(cmd)
 

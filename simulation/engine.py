@@ -12,9 +12,8 @@ from simulation.world_state import WorldState
 from simulation.orchestration.tick_orchestrator import TickOrchestrator
 from simulation.action_processor import ActionProcessor
 from simulation.models import Transaction
-from modules.simulation.api import EconomicIndicatorsDTO, SystemStateDTO
-from modules.system.api import DEFAULT_CURRENCY, IGlobalRegistry, IAgentRegistry
-from simulation.finance.api import ISettlementSystem
+from simulation.dtos.commands import GodCommandDTO
+from modules.system.services.command_service import CommandService
 
 from simulation.db.logger import SimulationLogger
 import simulation
@@ -33,7 +32,8 @@ class Simulation:
         repository: SimulationRepository,
         registry: IGlobalRegistry,
         settlement_system: ISettlementSystem,
-        agent_registry: IAgentRegistry
+        agent_registry: IAgentRegistry,
+        command_service: CommandService
     ) -> None:
         """
         초기화된 구성 요소들을 할당받습니다.
@@ -46,16 +46,11 @@ class Simulation:
             repository=repository
         )
 
-        # Inject dependencies into WorldState
-        self.world_state.global_registry = registry
-        self.world_state.settlement_system = settlement_system
-        # AgentRegistry is not explicitly in WorldState definition but Phase0 might look for it
-        # or other components. Attaching it dynamically is safe.
         self.world_state.agent_registry = agent_registry
-
-        self.settlement_system = settlement_system
         self.world_state.settlement_system = settlement_system
         self.agent_registry = agent_registry
+        self.settlement_system = settlement_system
+        self.command_service = command_service
 
         self.action_processor = ActionProcessor(self.world_state)
         self.tick_orchestrator = TickOrchestrator(self.world_state, self.action_processor)
@@ -75,7 +70,7 @@ class Simulation:
 
     def __setattr__(self, name: str, value: Any) -> None:
         # Avoid infinite recursion for internal components
-        if name in ["world_state", "tick_orchestrator", "action_processor", "simulation_logger", "is_paused", "step_requested", "settlement_system", "agent_registry"]:
+        if name in ["world_state", "tick_orchestrator", "action_processor", "simulation_logger", "is_paused", "step_requested", "settlement_system", "agent_registry", "command_service"]:
             super().__setattr__(name, value)
             return
 
@@ -105,32 +100,56 @@ class Simulation:
 
     def _process_commands(self) -> None:
         """Processes all pending commands from the world state command queue."""
-        # Drain the thread-safe queue
-        commands = []
-        if self.world_state.command_queue:
+        # 1. Drain the thread-safe queue from world_state
+        commands: List[GodCommandDTO] = []
+        if hasattr(self.world_state, "command_queue"):
             while not self.world_state.command_queue.empty():
                 try:
                     commands.append(self.world_state.command_queue.get_nowait())
                 except Exception:
                     break
 
+        # Also drain god_command_queue if it's being used for ingestion
+        if hasattr(self.world_state, "god_command_queue") and self.world_state.god_command_queue:
+            while self.world_state.god_command_queue:
+                commands.append(self.world_state.god_command_queue.popleft())
+
+        if not commands:
+            return
+
+        # 2. Execute batch via CommandService
+        tick = self.world_state.time
+        baseline_m2 = getattr(self.world_state, "baseline_money_supply", 0)
+        
+        results = self.command_service.execute_command_batch(commands, tick, baseline_m2)
+
+        # Log results
+        for result in results:
+            if not result.success:
+                logger.error(f"Command {result.command_id} failed: {result.failure_reason}")
+            else:
+                logger.info(f"Command {result.command_id} succeeded.")
+
+        # 3. Local Handling for PAUSE/RESUME/STEP and Phase 0 forwarding
         god_commands = []
         for cmd in commands:
-            # 1. Map Control Commands locally
+            # Check for PAUSE_STATE
             if cmd.command_type == "PAUSE_STATE":
-                # new_value determines paused state (True=Pause, False=Resume)
                 val = getattr(cmd, "new_value", True)
                 self.is_paused = bool(val)
-                logger.info(f"System Pause State set to {self.is_paused}")
+                logger.info(f"Simulation {'PAUSED' if self.is_paused else 'RESUMED'} via GodCommand.")
+            
+            # Check for STEP (via TRIGGER_EVENT)
             elif cmd.command_type == "TRIGGER_EVENT" and cmd.parameter_key == "STEP":
-                 self.step_requested = True
-                 logger.info("Step requested via internal trigger.")
-            # 2. Forward everything else to God Command Queue for Phase 0 execution
+                self.step_requested = True
+                logger.info("Simulation STEP requested via GodCommand.")
+            
+            # Forward everything else to god_command_queue for Phase 0 execution in TickOrchestrator
             else:
                 god_commands.append(cmd)
 
-        # Forward God Commands to TickOrchestrator via WorldState
         if god_commands:
+            # Re-enqueue to list for TickOrchestrator's Phase0 processing
             self.world_state.god_command_queue.extend(god_commands)
             logger.debug(f"Forwarded {len(god_commands)} commands to TickOrchestrator.")
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:

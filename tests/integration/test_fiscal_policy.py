@@ -84,7 +84,7 @@ def test_debt_ceiling_enforcement(government):
     # Note: Government._issue_deficit_bonds calls self.fiscal_bond_service.issue_bonds
 
     def issue_bonds_side_effect(request, context, buyer_pool):
-        amount = request.amount_pennies
+        amount = int(request.amount_pennies) # Ensure int
         government.wallet.add(amount, "USD") # Update Wallet with cash
         # Sync mocked settlement system balance so subsequent checks in the same tick see the funds
         government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
