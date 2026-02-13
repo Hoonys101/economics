@@ -75,10 +75,7 @@ def test_simulation_processes_pause_resume(mock_simulation_deps):
         sim.run_tick()
         assert sim.is_paused is True
 
-        # Enqueue RESUME
-        cmd = GodCommandDTO(
-            command_type="PAUSE_STATE",
-            target_domain="System",
+
         # Enqueue RESUME
         cmd = GodCommandDTO(
             command_type="PAUSE_STATE",
