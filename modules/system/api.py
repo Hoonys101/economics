@@ -18,6 +18,8 @@ class MarketContextDTO:
     market_data: Dict[str, Any]
     market_signals: Dict[str, float]
     tick: int
+    # Represents currency exchange rates relative to base currency
+    exchange_rates: Optional[Dict[str, float]] = None
 
 @dataclass(frozen=True)
 class MarketSignalDTO:

@@ -74,6 +74,8 @@ class TestPublicManagerIntegration:
                 volatility_7d=0.0,
                 order_book_depth_buy=1,
                 order_book_depth_sell=1,
+                total_bid_quantity=0.0,
+                total_ask_quantity=0.0,
                 is_frozen=False
             )
         }

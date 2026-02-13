@@ -19,8 +19,10 @@ def sales_state():
 @pytest.fixture
 def market_context():
     return MarketContextDTO(
-        exchange_rates={DEFAULT_CURRENCY: 1.0},
-        benchmark_rates={}
+        market_data={},
+        market_signals={},
+        tick=0,
+        exchange_rates={DEFAULT_CURRENCY: 1.0}
     )
 
 def test_adjust_marketing_budget(sales_engine, sales_state, market_context):

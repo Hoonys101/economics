@@ -31,7 +31,8 @@ def test_household_makes_decision(simple_household):
             market_signals={},
             housing=HousingMarketSnapshotDTO(for_sale_units=[], units_for_rent=[], avg_rent_price=0.0, avg_sale_price=0.0),
             loan=None,
-            labor=LaborMarketSnapshotDTO(avg_wage=10.0)
+            labor=LaborMarketSnapshotDTO(avg_wage=10.0),
+            market_data={}
         )
     )
     orders, tactic = simple_household.make_decision(input_dto)
@@ -61,7 +62,7 @@ def test_firm_makes_decision(simple_firm):
         goods_data=[],
         market_data={},
         current_time=1,
-        market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None)
+        market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None, market_data={})
     )
     orders, tactic = simple_firm.make_decision(input_dto)
 

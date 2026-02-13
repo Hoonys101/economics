@@ -85,7 +85,10 @@ def create_mock_snapshot(market_data):
                      price_history_7d=[],
                      volatility_7d=0.0,
                      order_book_depth_buy=0,
-                     order_book_depth_sell=0
+                     order_book_depth_sell=0,
+                     total_bid_quantity=0.0,
+                     total_ask_quantity=0.0,
+                     is_frozen=False
                 )
 
     return MarketSnapshotDTO(
