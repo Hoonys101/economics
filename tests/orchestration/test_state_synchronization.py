@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, Mock
+from collections import deque
 from simulation.orchestration.tick_orchestrator import TickOrchestrator
 from simulation.dtos.api import SimulationState
 from simulation.orchestration.api import IPhaseStrategy
@@ -26,6 +27,9 @@ class TestStateSynchronization:
         ws.effects_queue = []
         ws.inter_tick_queue = []
         ws.transactions = []
+        ws.god_command_queue = deque()
+        ws.system_command_queue = []
+        ws.command_queue = None
         ws.inactive_agents = {}
         ws.real_estate_units = []
         ws.goods_data = {}
