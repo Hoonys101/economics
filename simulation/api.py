@@ -70,15 +70,8 @@ class MarketHistoryDTO:
     worst_ask: float
     worst_bid: float
 
-@dataclass(frozen=True)
-class MarketSnapshotDTO:
-    """
-    A pure-data snapshot of the state of all markets at a point in time.
-    """
-    prices: Dict[str, float]
-    volumes: Dict[str, float]
-    asks: Dict[str, List[OrderDTO]]
-    best_asks: Dict[str, float]
+# MarketSnapshotDTO is now imported from modules.system.api
+from modules.system.api import MarketSnapshotDTO
 
 @dataclass(frozen=True)
 class GovernmentPolicyDTO:

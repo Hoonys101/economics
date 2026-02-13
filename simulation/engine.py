@@ -134,6 +134,8 @@ class Simulation:
             self.world_state.god_command_queue.extend(god_commands)
             logger.debug(f"Forwarded {len(god_commands)} commands to TickOrchestrator.")
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:
+        self._process_commands()
+
         if self.is_paused:
             if self.step_requested:
                 self.step_requested = False
