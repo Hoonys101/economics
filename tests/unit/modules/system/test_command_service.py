@@ -112,3 +112,16 @@ def test_rollback_inject_money(command_service, mock_settlement, mock_agent_regi
         reason="GodMode_Rollback",
         tick=0
     )
+
+def test_commit_last_tick_clears_stack(command_service):
+    # Simulate a batch
+    command_service.undo_stack.start_batch()
+    command_service.undo_stack.push(MagicMock())
+
+    assert len(command_service.undo_stack._stack) == 1
+
+    # Commit
+    command_service.commit_last_tick()
+
+    # Verify stack is empty
+    assert len(command_service.undo_stack._stack) == 0

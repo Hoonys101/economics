@@ -96,6 +96,10 @@ class Phase0_Intercept(IPhaseStrategy):
             # Audit Passed
             # Update baseline in WorldState to reflect valid injection so subsequent checks pass
             self.world_state.baseline_money_supply += net_injection
+
+            # Commit the batch to prevent undo stack memory leak
+            self.command_service.commit_last_tick()
+
             logger.info(f"PHASE_0_SUCCESS | M2 Audit Passed. Baseline updated by {net_injection}.")
 
         # Clear commands to prevent re-execution

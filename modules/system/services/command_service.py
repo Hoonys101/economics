@@ -15,6 +15,8 @@ class ICommandService(Protocol):
         ...
     def rollback_last_tick(self) -> bool:
         ...
+    def commit_last_tick(self) -> None:
+        ...
 
 @dataclass
 class UndoRecord:
@@ -118,6 +120,14 @@ class CommandService:
 
         # Push to stack only on success to avoid rollback of non-existent funds
         self.undo_stack.push(record)
+
+    def commit_last_tick(self) -> None:
+        """
+        Commits the last batch of commands, removing them from the undo stack.
+        This should be called when the tick is successfully validated (e.g., M2 audit passed).
+        Prevents memory leaks from accumulating undo history.
+        """
+        self.undo_stack.pop_batch()
 
     def rollback_last_tick(self) -> bool:
         records = self.undo_stack.pop_batch()

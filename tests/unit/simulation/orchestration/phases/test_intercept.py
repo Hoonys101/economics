@@ -16,7 +16,9 @@ def mock_world_state():
 
 @pytest.fixture
 def phase(mock_world_state):
-    return Phase0_Intercept(mock_world_state)
+    p = Phase0_Intercept(mock_world_state)
+    p.command_service = MagicMock() # Mock service to check calls
+    return p
 
 def test_execute_no_commands(phase, mock_world_state):
     state = MagicMock(spec=SimulationState)
@@ -39,8 +41,8 @@ def test_execute_commands_audit_pass(phase, mock_world_state):
 
     new_state = phase.execute(state)
 
-    # Verify dispatch called (via settlement system mock inside command service)
-    mock_world_state.settlement_system.mint_and_distribute.assert_called()
+    # Verify dispatch called
+    phase.command_service.dispatch_commands.assert_called_with(state.god_commands)
 
     # Verify audit called with correct expectation
     # Baseline 10000 + 100 = 10100
@@ -48,6 +50,9 @@ def test_execute_commands_audit_pass(phase, mock_world_state):
 
     # Verify baseline updated
     assert mock_world_state.baseline_money_supply == 10100
+
+    # Verify commit_last_tick called
+    phase.command_service.commit_last_tick.assert_called()
 
     # Verify commands cleared
     assert len(state.god_commands) == 0
