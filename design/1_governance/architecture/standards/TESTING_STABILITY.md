@@ -24,6 +24,11 @@ Test failures in isolated/lean environments often stem from brittle mocks and li
 ### 4. Protocol Compliance
 - **Strict Mocking**: Always create mocks with `spec=IProtocol` (e.g., `MagicMock(spec=IFinancialEntity)`) to ensure the mock fails immediately if the underlying interface changes. This prevents "Mock Drift" where tests pass against an outdated API.
 
+### 5. Test Collection & Packaging
+- **Explicit Packages**: All subdirectories within `tests/` MUST contain an `__init__.py` file to be recognized as proper Python packages. This prevents `import file mismatch` errors and namespace collisions during test collection.
+- **Unique Test Filenames**: Test files should be named uniquely across the entire project (e.g., `test_service_unit.py` vs `test_service_int.py`) to avoid conflicts when `pytest` collects tests from multiple directories.
+- **Absolute Path Resolution**: Code that loads configuration files or resources (e.g., `SchemaLoader`) MUST resolve paths relative to `__file__` using `pathlib.Path`, rather than relying on `os.getcwd()` or relative paths. This ensures tests run correctly regardless of the execution context.
+
 ---
 
 ## 🚨 Violations
