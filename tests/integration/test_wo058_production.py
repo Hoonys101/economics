@@ -126,7 +126,10 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer, mock_co
     ]
 
     # The bootstrapper is called during the Simulation initialization
-    sim = Simulation(config_manager=mock_config_manager, config_module=mock_config, logger=Mock(), repository=mock_repo)
+    mock_registry = MagicMock()
+    mock_settlement = MagicMock()
+    mock_agent_registry = MagicMock()
+    sim = Simulation(config_manager=mock_config_manager, config_module=mock_config, logger=Mock(), repository=mock_repo, registry=mock_registry, settlement_system=mock_settlement, agent_registry=mock_agent_registry)
     sim.world_state.households = households
     sim.world_state.firms = firms
     sim.world_state.ai_trainer = mock_ai_trainer
@@ -181,7 +184,10 @@ def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer, mock_conf
     ]
 
     # This is a simplified simulation setup; a real test would need more comprehensive mocks
-    sim = Simulation(config_manager=mock_config_manager, config_module=mock_config, logger=Mock(), repository=mock_repo)
+    mock_registry = MagicMock()
+    mock_settlement = MagicMock()
+    mock_agent_registry = MagicMock()
+    sim = Simulation(config_manager=mock_config_manager, config_module=mock_config, logger=Mock(), repository=mock_repo, registry=mock_registry, settlement_system=mock_settlement, agent_registry=mock_agent_registry)
     sim.world_state.households = households
     sim.world_state.firms = firms
     sim.world_state.ai_trainer = mock_ai_trainer

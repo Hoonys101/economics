@@ -49,7 +49,8 @@ class Simulation:
 
         # Inject dependencies into WorldState
         self.world_state.global_registry = registry
-        # SettlementSystem and AgentRegistry are typically accessed via Simulation or injected into components
+        self.world_state.settlement_system = settlement_system
+        self.world_state.agent_registry = agent_registry
 
         self.settlement_system = settlement_system
         self.agent_registry = agent_registry
@@ -103,34 +104,32 @@ class Simulation:
                 self.world_state.logger.error(f"Failed to release simulation.lock: {e}")
 
     def _process_commands(self) -> None:
-        """Processes all pending commands from the command service."""
-        commands = self.command_service.pop_commands()
-        for cmd in commands:
-            logger.info(f"Executing command: {cmd.type} | {cmd.payload}")
-            try:
-                if cmd.type == "PAUSE":
-                    self.is_paused = True
-                elif cmd.type == "RESUME":
-                    self.is_paused = False
-                elif cmd.type == "STEP":
-                    self.step_requested = True
-                elif cmd.type == "SET_BASE_RATE":
-                    rate = cmd.payload.get("rate")
-                    if self.world_state.central_bank:
-                        self.world_state.central_bank.base_rate = rate
-                        # Log the manual intervention
-                        logger.info(f"MANUAL INTERVENTION: Base Rate set to {rate}")
-                elif cmd.type == "SET_TAX_RATE":
-                    tax_type = cmd.payload.get("tax_type")
-                    rate = cmd.payload.get("rate")
-                    if self.world_state.government:
-                        if tax_type == "corporate":
-                            self.world_state.government.corporate_tax_rate = rate
-                        elif tax_type == "income":
-                            self.world_state.government.income_tax_rate = rate
-                        logger.info(f"MANUAL INTERVENTION: {tax_type} Tax Rate set to {rate}")
-            except Exception as e:
-                logger.error(f"Failed to execute command {cmd}: {e}", exc_info=True)
+        """Processes all pending commands from the command service and external queue."""
+        # Check External Queue (from Dashboard/Server)
+        if self.world_state.command_queue:
+            while not self.world_state.command_queue.empty():
+                try:
+                    cmd = self.world_state.command_queue.get_nowait()
+
+                    # Handle Control Commands locally
+                    # Map PAUSE_STATE to Pause/Resume
+                    if cmd.command_type == "PAUSE_STATE":
+                        # new_value should be boolean: True = Pause, False = Resume
+                        should_pause = bool(cmd.new_value)
+                        self.is_paused = should_pause
+                        logger.info(f"Simulation {'PAUSED' if should_pause else 'RESUMED'} by command.")
+
+                    # Map TRIGGER_EVENT: STEP
+                    elif cmd.command_type == "TRIGGER_EVENT" and cmd.parameter_key == "STEP":
+                        self.step_requested = True
+                        logger.info("Simulation STEP requested.")
+
+                    # Forward everything else (including other TRIGGER_EVENTs) to God Command Queue for Phase 0
+                    else:
+                        self.world_state.god_command_queue.append(cmd)
+
+                except Exception:
+                    break
 
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:
         self._process_commands()
