@@ -89,8 +89,8 @@ class OriginType(IntEnum):
     Priority Level for Parameter Updates.
     Higher value = Higher Priority.
     """
-    CONFIG = 0          # Loaded from file
-    SYSTEM = 10         # Internal logic (e.g. adaptive systems)
+    SYSTEM = 0          # Internal logic (Hardcoded defaults)
+    CONFIG = 10         # Loaded from file (User Configuration)
     USER = 50           # Dashboard/UI manual override
     GOD_MODE = 100      # Absolute override (Scenario Injection)
 

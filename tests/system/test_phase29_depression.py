@@ -109,7 +109,21 @@ class TestPhase29Depression(unittest.TestCase):
             SCHOLARSHIP_POTENTIAL_THRESHOLD=0.7,
             LIQUIDITY_NEED_INCREASE_RATE=1.0,
             ASSETS_CLOSURE_THRESHOLD=0.0,
-            FIRM_CLOSURE_TURNS_THRESHOLD=5
+            FIRM_CLOSURE_TURNS_THRESHOLD=5,
+            # Added for WO-023 and DTO compliance
+            TARGET_FOOD_BUFFER_QUANTITY=5.0,
+            WAGE_DECAY_RATE=0.02,
+            RESERVATION_WAGE_FLOOR=0.3,
+            SURVIVAL_CRITICAL_TURNS=5,
+            PRIMARY_SURVIVAL_GOOD_ID="basic_food",
+            HOUSEHOLD_LOW_ASSET_THRESHOLD=100.0,
+            HOUSEHOLD_LOW_ASSET_WAGE=8.0,
+            HOUSEHOLD_DEFAULT_WAGE=10.0,
+            SURVIVAL_NEED_EMERGENCY_THRESHOLD=80.0,
+            SURVIVAL_BID_PREMIUM=0.2,
+            # Added for FirmConfigDTO completeness
+            MARKET_CIRCUIT_BREAKER_BASE_LIMIT=0.15,
+            CIRCUIT_BREAKER_MIN_HISTORY=7,
         )
 
         # Create dummy agents
