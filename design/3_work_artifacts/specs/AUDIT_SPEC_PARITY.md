@@ -27,3 +27,7 @@
 3. **Discrepancy Reporting**:
    - **예시**: 문서에는 "TFP 배율은 3.0이다"라고 적혀 있으나, 코드에는 `TFP = 1.2`로 하드코딩된 경우 'Critical Parity Error'로 보고.
    - **예시**: `project_status.md`에는 "Real Estate 완료"라고 되어 있으나, 에이전트의 `housing_planner`가 `None`인 경우 보고.
+
+## 6. Output Configuration
+- **Output Location**: `reports/audit/`
+- **Recommended Filename**: `AUDIT_REPORT_PARITY.md`

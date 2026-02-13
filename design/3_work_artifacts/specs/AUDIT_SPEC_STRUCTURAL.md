@@ -32,3 +32,7 @@
 - **메인 구조**: `Simulation` (Orchestrator) -> `System` (Logic) -> `Component` (State).
 - **모듈 현황**: `modules/household/`, `modules/firm/` 내의 컴포넌트들이 각 지배 클래스로부터 얼마나 독립적으로 테스트 가능한지 평가한다.
 - **Util 현황**: `simulation/utils/` 내의 유틸리티들이 특정 도메인에 종속되어 구조적 결합도를 높이고 있지는 않은가?
+
+## 5. Output Configuration
+- **Output Location**: `reports/audit/`
+- **Recommended Filename**: `AUDIT_REPORT_STRUCTURAL.md`

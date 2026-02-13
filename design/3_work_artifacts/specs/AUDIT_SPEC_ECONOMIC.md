@@ -30,3 +30,7 @@
 - **Consistency Checks**: `tests/verification/verify_zero_sum.py`와 같은 구조적 검증 모듈이 실시간으로 활성화되어 있는가?
 - **Data Integrity Util**: `fixture_harvester.py`를 통해 추출된 데이터 샘플에서 `total_assets`의 합계가 틱(Tick) 간에 일관성을 보이고 있는가?
 - **Input/Output Data**: 경제적 무결성 감사 결과는 `LEAK_REPORT.json` 형태로 출력되어, 향후 AI 정부 요원(`Leviathan`)의 재정 정책 훈련 데이터로 활용될 수 있는가?
+
+## 5. Output Configuration
+- **Output Location**: `reports/audit/`
+- **Recommended Filename**: `AUDIT_REPORT_ECONOMIC.md`

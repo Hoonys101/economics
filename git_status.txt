@@ -1,0 +1,30 @@
+On branch main
+Your branch is up to date with 'origin/main'.
+
+You have unmerged paths.
+  (fix conflicts and run "git commit")
+  (use "git merge --abort" to abort the merge)
+
+Changes to be committed:
+	modified:   modules/system/api.py
+	modified:   tests/system/test_command_service_rollback.py
+	modified:   tests/unit/systems/test_liquidation_manager.py
+
+Unmerged paths:
+  (use "git add <file>..." to mark resolution)
+	both modified:   communications/insights/manual.md
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	design/_archive/gemini_output/pr_diff_fix-core-init-and-command-processing-17109587203534621183.txt
+	design/_archive/gemini_output/pr_diff_fix-public-manager-interface-5857173586640331996.txt
+	design/_archive/gemini_output/pr_review_fix-core-init-and-command-processing-17109587203534621183.md
+	design/_archive/gemini_output/pr_review_fix-public-manager-interface-5857173586640331996.md
+	design/_archive/gemini_output/review_backup_20260213_234259_Analyze_this_PR.md
+	design/_archive/gemini_output/review_backup_20260213_234502_Analyze_this_PR.md
+	design/_archive/gemini_output/review_backup_20260213_234701_Analyze_this_PR.md
+	design/_archive/gemini_output/review_backup_20260213_234925_Analyze_this_PR.md
+	design/_archive/gemini_output/review_backup_20260213_235105_Analyze_this_PR.md
+	design/_archive/gemini_output/review_backup_20260213_235213_Analyze_this_PR.md
+	git_status.txt
+
