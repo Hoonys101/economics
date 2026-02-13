@@ -6,7 +6,7 @@ from typing import Dict, Any, List
 
 from simulation.dtos.commands import GodCommandDTO, GodResponseDTO
 from modules.system.services.command_service import CommandService
-from modules.system.api import IGlobalRegistry, IAgentRegistry, OriginType, DEFAULT_CURRENCY
+from modules.system.api import IGlobalRegistry, IAgentRegistry, OriginType, DEFAULT_CURRENCY, RegistryEntry
 from modules.system.constants import ID_CENTRAL_BANK
 from simulation.finance.api import ISettlementSystem, IFinancialAgent
 from modules.finance.api import IBank
@@ -318,6 +318,8 @@ def test_parameter_rollback(test_env):
 
     # Mock current value 0.1
     registry.get.return_value = 0.1
+    # Mock previous entry for rollback logic (CommandService uses get_entry to snapshot)
+    registry.get_entry.return_value = RegistryEntry(value=0.1, origin=OriginType.CONFIG)
 
     service.execute_command_batch([cmd], tick=103, baseline_m2=10000)
 
@@ -336,4 +338,4 @@ def test_parameter_rollback(test_env):
     assert success is True
 
     # Verify Set called with original value
-    registry.set.assert_called_with("tax_rate", 0.1, origin=OriginType.GOD_MODE)
+    registry.set.assert_called_with("tax_rate", 0.1, origin=OriginType.CONFIG)
