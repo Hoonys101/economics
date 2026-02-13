@@ -46,8 +46,11 @@ class Simulation:
             repository=repository
         )
 
-        self.world_state.agent_registry = agent_registry
+        # Inject dependencies into WorldState
+        self.world_state.global_registry = registry
         self.world_state.settlement_system = settlement_system
+        self.world_state.agent_registry = agent_registry
+
         self.agent_registry = agent_registry
         self.settlement_system = settlement_system
         self.command_service = command_service
@@ -100,12 +103,29 @@ class Simulation:
 
     def _process_commands(self) -> None:
         """Processes all pending commands from the world state command queue."""
-        # 1. Drain the thread-safe queue from world_state
-        commands: List[GodCommandDTO] = []
-        if hasattr(self.world_state, "command_queue"):
+        # Check External Queue (from Dashboard/Server)
+        if hasattr(self.world_state, "command_queue") and self.world_state.command_queue:
             while not self.world_state.command_queue.empty():
                 try:
-                    commands.append(self.world_state.command_queue.get_nowait())
+                    cmd = self.world_state.command_queue.get_nowait()
+
+                    # Handle Control Commands locally
+                    # Map PAUSE_STATE to Pause/Resume
+                    if cmd.command_type == "PAUSE_STATE":
+                        # new_value should be boolean: True = Pause, False = Resume
+                        should_pause = bool(cmd.new_value)
+                        self.is_paused = should_pause
+                        logger.info(f"Simulation {'PAUSED' if should_pause else 'RESUMED'} by command.")
+
+                    # Map TRIGGER_EVENT: STEP
+                    elif cmd.command_type == "TRIGGER_EVENT" and cmd.parameter_key == "STEP":
+                        self.step_requested = True
+                        logger.info("Simulation STEP requested.")
+
+                    # Forward everything else (including other TRIGGER_EVENTs) to God Command Queue for Phase 0
+                    else:
+                        if hasattr(self.world_state, "god_command_queue"):
+                            self.world_state.god_command_queue.append(cmd)
                 except Exception:
                     break
 

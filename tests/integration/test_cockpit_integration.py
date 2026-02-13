@@ -6,6 +6,7 @@ from simulation.dtos.commands import GodCommandDTO
 from modules.system.services.command_service import CommandService
 from modules.system.api import IGlobalRegistry, IAgentRegistry, OriginType
 from simulation.finance.api import ISettlementSystem
+from modules.system.server_bridge import CommandQueue
 from uuid import uuid4
 
 # Mock dependencies for Simulation
@@ -34,7 +35,7 @@ def mock_simulation_deps():
 
     from collections import deque
     # Initialize queues as real objects to allow draining
-    world_state.command_queue = queue.Queue()
+    world_state.command_queue = CommandQueue()
     world_state.god_command_queue = deque()
 
     return config_manager, config_module, logger, repository, registry, settlement_system, agent_registry, world_state
@@ -55,7 +56,7 @@ def test_simulation_processes_pause_resume(mock_simulation_deps):
         cmd_service = MagicMock(spec=CommandService)
 
         sim = Simulation(cm, config_module, logger, repo, registry, settlement_system, agent_registry, cmd_service)
-        # Force world_state to be our mock (since Simulation creates its own even if we mock class)
+        # Force world_state to be our mock
         sim.world_state = ws
 
         # Verify initial state
@@ -74,7 +75,6 @@ def test_simulation_processes_pause_resume(mock_simulation_deps):
         # Run tick (should process command locally in _process_commands)
         sim.run_tick()
         assert sim.is_paused is True
-
 
         # Enqueue RESUME
         cmd = GodCommandDTO(

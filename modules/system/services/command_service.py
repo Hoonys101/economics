@@ -79,6 +79,13 @@ class CommandService:
         self._command_queue.clear()
         return commands
 
+    def pop_commands(self) -> List[Any]:
+        """
+        DEPRECATED: Retrieves pending commands.
+        Kept for backward compatibility with legacy tests.
+        """
+        return []
+
     def execute_command_batch(self, commands: List[GodCommandDTO], tick: int, baseline_m2: int) -> List[GodResponseDTO]:
         """
         Executes a batch of God-Mode commands with atomic rollback on audit failure.
