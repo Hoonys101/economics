@@ -7,9 +7,11 @@
 | **TD-DATA-02-ACCESSOR** | System | **Registry Bloat**: `GlobalRegistry` lacks dot-notation support; accessor logic duplicated in Telemetry. | **Medium**: Maintenance Bloat. | Open |
 | **TD-DATA-03-SCALE** | analysis | **O(N) Verifier Bottleneck**: `ScenarioVerifier` iterates all agents in Phase 8 for stats. | **Medium**: Performance (Scale). | Open |
 | **TD-AGENT-REGISTRY-SCALE** | System | **M2 Audit Capacity**: O(N) iteration over all agents for M2 calculation. | **Medium**: Performance (Scale). | Open |
-| **TD-DTO-OVERLAP** | Finance | **DTO Schism**: Overlap between `modules/finance/api.py` and new `Government` DTOs. | **Low**: Code Duplication. | Open |
-| **TD-GOV-SERVICE-FLATTEN** | Government | **Legacy Coupling**: `TaxService` still depends on `TaxationSystem` and `FiscalPolicyManager`. | **Medium**: Structural Purity. | Open |
-| **TD-COCKPIT-FE** | Simulation | **Ghost Implementation**: FE missing sliders/HUD for Cockpit (Phase 11) despite BE readiness. | **Medium**: Logic usability gap. | Identified |
+| **TD-UI-01-METADATA** | Cockpit | **Registry Metadata Gap**: `RegistryService` uses hardcoded shim; `GlobalRegistry` lacks UI metadata. | **High**: UX Inconsistency. | Open |
+| **TD-UI-DTO-PURITY** | Cockpit | **Manual Deserialization**: UI uses raw dicts/manual mapping for Telemetry. Lack of `dacite`-like helper. | **Medium**: Code Quality. | Open |
+| **TD-UI-WS-PROD** | Cockpit | **WS Server Wiring**: Real simulation loop wiring for WebSocket server unverified. | **Medium**: Integration Risk. | Open |
+| **TD-UI-PLOT-SCALE** | Cockpit | **Plotly Performance**: Large heatmap rendering in Streamlit causes UI lag. | **Low**: UX Performance. | Open |
+| **TD-COCKPIT-FE** | Simulation | **Partial Readiness**: Scaffold and Visualizers done. Dynamic Controls (UI-02) pending. | **Medium**: Logic usability gap. | Partially Resolved |
 | **TD-STR-GOD-DECOMP** | Architecture | **Residual God Classes**: `Firm` (1276 lines) and `Household` (1042 lines) exceed 800-line limit. | **Medium**: Maintenance friction. | Open |
 | **TD-ARCH-LEAK-CONTEXT** | Finance | **Abstraction Leak**: `LiquidationContext` passes agent interfaces instead of pure DTO snapshots. | **Low**: Future coupling risk. | Identified |
 | **TD-ARCH-DI-SETTLE** | Architecture | **DI Timing**: `AgentRegistry` injection into `SettlementSystem` happens post-initialization. | **Low**: Initialization fragility. | Open |
@@ -34,18 +36,18 @@
 - **Solution**: Complete refactor to `import config` and use `config.PARAM`.
 
 ---
-### ID: TD-DATA-01-MOCK
-### Title: Protocol Drift in Settlement System
-- **Symptom**: `ISettlementSystem` protocol is missing `audit_total_m2` and `mint_and_distribute` definitions, forcing manual mocking (without `spec`) in `CommandService` tests.
-- **Risk**: Protocol violations may go undetected; high maintenance cost for tests.
-- **Solution**: Standardize `ISettlementSystem` and internal implementation.
+### ID: TD-UI-01-METADATA
+### Title: Missing Registry Metadata Provider
+- **Symptom**: `RegistryService` in the dashboard uses hardcoded metadata because `GlobalRegistry` (FOUND-01) only stores values, not UI hints (min/max, description).
+- **Risk**: Desync between engine configuration and UI controls.
+- **Solution**: Extend `GlobalRegistry` or create a companion `MetadataRegistry` that provides UI schema.
 
 ---
-### ID: TD-DATA-02-ACCESSOR
-### Title: Registry Accessor Logic Duplication
-- **Symptom**: `GlobalRegistry` only supports single-key `get()`. `TelemetryCollector` has to implement its own recursive dot-notation resolution logic.
-- **Risk**: Code duplication as other modules start needing path-based access.
-- **Solution**: Move recursive accessor logic into `GlobalRegistry.get_path()`.
+### ID: TD-UI-DTO-PURITY
+### Title: Manual DTO Mapping and Raw Dicts in UI
+- **Symptom**: Dashboard often handles raw JSON dicts or uses manual loops to reconstruct `ScenarioReportDTO` from telemetry.
+- **Risk**: Maintenance burden; silent failures if DTO schema changes.
+- **Solution**: Adopt a serialization library (e.g., `dacite`, `pydantic`) for reliable boundary crossing.
 
 ---
 ### ID: TD-ARCH-DI-SETTLE

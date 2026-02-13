@@ -50,6 +50,12 @@
 - **[2026-02-13] Strategy-Based Scenario Verification (DATA-03)**
     - Adopted the Strategy pattern (`IScenarioJudge`) for real-time verification of economic hypotheses. This decouples the core simulation engine from complex social judging criteria, allowing for extensible "Scenario Cards" that can be evaluated in Phase 8 without side effects on agent logic.
     - [Insight Report](../../communications/insights/mission-data-03.md)
+- **[2026-02-13] Persistent Socket Management for Stateless UI (UI-01)**
+    - Solved Streamlit's "Rerun-as-Stateless" constraint by implementing a singleton `SocketManager` that runs the WebSocket client in a background thread. This allows the dashboard to maintain a persistent connection with the simulation engine while the UI script re-executes, ensuring no telemetry snapshots are lost during render cycles.
+    - [Insight Report](../../communications/insights/mission-ui-01.md)
+- **[2026-02-13] Reactive Telemetry Masking (Pull Model) (UI-03)**
+    - Established an 'On-Demand' data flow where the UI components define their own `required_mask`. The dashboard aggregates these masks and sends an `UPDATE_TELEMETRY` command to the engine. This minimizes bandwidth and serialization overhead by only harvesting data that is being actively visualized.
+    - [Insight Report](../../communications/insights/mission-ui-03.md)
 - **[2026-02-13] Lazy Dependency Resolution Pattern**
     - Implemented lazy initialization in `DemographicManager` to resolve internal factories from the simulation context if not explicitly injected. Prevents silent failures while maintaining flexible testing.
     - [Insight Report](../_archive/insights/2026-02-13_Lazy_Dependency_Resolution_Demographics.md)
