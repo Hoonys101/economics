@@ -50,6 +50,12 @@ class Phase_SystemicLiquidation(IPhaseStrategy):
                      # min_p, max_p = market.get_dynamic_price_bounds(item_id)
                      is_frozen = False
 
+                     # Calculate total quantities and depth efficiently
+                     bids = market.get_all_bids(item_id)
+                     asks = market.get_all_asks(item_id)
+                     total_bid_qty = sum(o.quantity for o in bids)
+                     total_ask_qty = sum(o.quantity for o in asks)
+
                      signal = MarketSignalDTO(
                          market_id=m_id,
                          item_id=item_id,
@@ -59,8 +65,10 @@ class Phase_SystemicLiquidation(IPhaseStrategy):
                          last_trade_tick=market.get_last_trade_tick(item_id) or -1,
                          price_history_7d=history_7d,
                          volatility_7d=volatility,
-                         order_book_depth_buy=len(market.buy_orders.get(item_id, [])),
-                         order_book_depth_sell=len(market.sell_orders.get(item_id, [])),
+                         order_book_depth_buy=len(bids),
+                         order_book_depth_sell=len(asks),
+                         total_bid_quantity=total_bid_qty,
+                         total_ask_quantity=total_ask_qty,
                          is_frozen=is_frozen
                      )
                      market_signals[item_id] = signal
