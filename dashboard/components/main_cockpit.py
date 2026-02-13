@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from typing import Dict, Any
+from dashboard.components.controls import render_dynamic_controls
 
 def render_main_cockpit():
     st.title("👁️ Watchtower Cockpit")
@@ -41,6 +42,10 @@ def render_main_cockpit():
         st.error(f"⚠️ M2 Leak Detected: {leak:.4f}")
     else:
         st.success(f"✅ System Integrity Normal (Leak: {leak:.4f}) - FPS: {fps:.1f}")
+
+    # Controls Section
+    st.divider()
+    render_dynamic_controls(use_tabs=True)
 
     # Wealth Distribution Heatmap (Placeholder)
     st.subheader("Wealth Distribution")

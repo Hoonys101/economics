@@ -123,6 +123,18 @@ class TelemetryCollector:
         if not path:
             return None
 
+        # Strategy 1: Try full path as a Key-Value pair (FOUND-01 Support)
+        # This handles cases where keys are stored flat (e.g. "government.tax_rate")
+        try:
+            # We use a distinct default to check existence, assuming registry doesn't store this sentinel
+            sentinel = object()
+            val = self._registry.get(path, default=sentinel)
+            if val is not sentinel:
+                return lambda: self._registry.get(path)
+        except Exception:
+            pass
+
+        # Strategy 2: Try object traversal (Deep Access)
         try:
             accessor = self._create_accessor(path)
             # Validation: try to access once
