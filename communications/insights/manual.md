@@ -1,67 +1,26 @@
-# Post-Merge Stabilization Fixes
+# PublicManager DTO Signature Mismatch Fix
 
-## 1. Integration & Stress Test Regressions
+## [Architectural Insights]
+The `MarketSignalDTO` is a frozen dataclass used for cross-boundary data transfer, specifically for market signals.
+It was updated to include `total_bid_quantity` and `total_ask_quantity` fields, which are crucial for market depth analysis and understanding liquidity.
+However, the test `tests/unit/modules/system/execution/test_public_manager_compliance.py` was instantiating `MarketSignalDTO` without these required fields, leading to a `TypeError`.
+This highlights the importance of keeping test data fixtures in sync with DTO schema changes.
+By adding `total_bid_quantity=0.0` and `total_ask_quantity=0.0` to the test fixture, we ensure that the test reflects the current `MarketSignalDTO` structure and that the `PublicManager` can process these signals correctly without crashing.
+This aligns with the "DTO Purity" guardrail, ensuring that typed DTOs are used correctly and consistently across the system.
 
-### Architectural Insights
-#### Protocol Purity and Zero-Sum Integrity
-To adhere to the "Protocol Purity" guardrail and avoid using `hasattr`, we introduced a new `@runtime_checkable` Protocol `IMintingSystem` in `simulation/finance/api.py`. This protocol defines the `mint_and_distribute` method, which is used for "God Mode" operations like hyperinflation scenarios.
-
-#### DTO Strictness
-The `MarketSnapshotDTO` now strictly requires `market_data` to be initialized. This change caused regressions in integration tests where DTOs were instantiated with missing fields. We updated all affected tests to provide `market_data={}`, ensuring compliance with the updated DTO schema.
-
-#### Integer Currency
-We observed that `SettlementSystem` operations require integer amounts (pennies) to prevent floating-point errors. The stress scenarios were updated to cast calculated injection amounts to `int` before calling settlement methods, reinforcing the system's financial integrity.
-
-### Test Evidence
-```bash
-$ pytest tests/integration/test_decision_engine_integration.py tests/integration/scenarios/test_stress_scenarios.py
-======================== 13 passed, 2 warnings in 0.26s ========================
+## [Test Evidence]
 ```
+tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_implements_financial_agent PASSED [ 25%]
+tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_implements_asset_recovery_system PASSED [ 50%]
+tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_bankruptcy_processing_id_handling
+-------------------------------- live log call ---------------------------------
+WARNING  PublicManager:public_manager.py:92 Processing bankruptcy for Agent 99 at tick 1. Recovering inventory.
+INFO     PublicManager:public_manager.py:100 Recovered 10.0 of gold.
+PASSED                                                                   [ 75%]
+tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_liquidation_order_generation_id
+-------------------------------- live log call ---------------------------------
+INFO     PublicManager:public_manager.py:172 Generated liquidation order for 1.0 of gold at 95.0.
+PASSED                                                                   [100%]
 
----
-
-## 2. System Registry Priority & Mocks
-
-### Architectural Insights
-#### Registry Priority Inversion
-The previous priority configuration (`SYSTEM=10`, `CONFIG=0`) incorrectly allowed internal system defaults to override user-provided configuration files. By inverting this to `SYSTEM=0` (Base Layer) and `CONFIG=10` (Override Layer), we restore the standard configuration hierarchy where external configs take precedence over hardcoded defaults.
-
-#### Protocol Drift & Mock Fidelity
-The regression in `tests/system/test_phase29_depression.py` highlighted two critical issues:
-1.  **DTO Synchronization**: `MarketSignalDTO` had evolved to require `total_bid_quantity` and `total_ask_quantity`.
-2.  **Mock Completeness**: The `config_module` mock was missing numerous fields required by `HouseholdConfigDTO` (e.g., `TARGET_FOOD_BUFFER_QUANTITY`, `WAGE_DECAY_RATE`). This reinforces the need for mocks to strictly adhere to the schemas of the objects they impersonate.
-
-### Test Evidence
-#### tests/system/test_phase29_depression.py
-```
-======================== 2 passed, 2 warnings in 3.38s =========================
-```
-
----
-
-## 3. Server Integration & Async Dependencies
-
-### Architectural Insights
-*   **Dependency Management**: Cleaned up `requirements.txt` to remove redundant `pytest-asyncio` entries and pinned the version to `>=0.24.0`.
-*   **Async Testing Configuration**: Verified `pytest.ini` enforces `asyncio_default_fixture_loop_scope = function`, ensuring test isolation.
-*   **Server Integration**: Integration tests correctly utilize a threaded `SimulationServer` alongside async test functions for safe network simulation.
-
-### Test Evidence
-```bash
-$ pytest tests/integration/test_server_integration.py
-============================== 2 passed in 2.95s ===============================
-```
-
----
-
-## 4. Household Module DTO Schema Mismatch
-
-### Architectural Insights
-*   **Schema Evolution Risk**: `MarketSnapshotDTO` (in `modules/system/api.py`) now enforces `market_data` as a required field. Independent unit tests for the Household module were broken due to this structural change.
-*   **Test Hygiene**: The fix applied (`market_data={}`) is a temporary measure to restore build stability. This regression highlights the urgent need for a centralized **DTO Factory** in the test suite to prevent "Shotgun Surgery" when shared DTO architectures evolve.
-
-### Test Evidence
-#### tests/unit/modules/household/test_decision_unit.py
-```
-======================== 2 passed, 2 warnings in 0.19s =========================
+============================== 4 passed in 0.18s ===============================
 ```
