@@ -95,6 +95,7 @@ class TestDecisionUnit:
         market_snapshot = MarketSnapshotDTO(
             tick=30,
             market_signals={},
+            market_data={},
             housing=housing_snapshot,
             loan=loan_snapshot,
             labor=labor_snapshot
@@ -141,6 +142,7 @@ class TestDecisionUnit:
         market_snapshot = MarketSnapshotDTO(
             tick=100,
             market_signals={},
+            market_data={},
             housing=housing_snapshot,
             loan=loan_snapshot,
             labor=labor_snapshot

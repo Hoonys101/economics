@@ -6,8 +6,6 @@
 #### Protocol Purity and Zero-Sum Integrity
 To adhere to the "Protocol Purity" guardrail and avoid using `hasattr`, we introduced a new `@runtime_checkable` Protocol `IMintingSystem` in `simulation/finance/api.py`. This protocol defines the `mint_and_distribute` method, which is used for "God Mode" operations like hyperinflation scenarios.
 
-The `EventSystem` now explicitly checks if the `settlement_system` implements this protocol using `isinstance(settlement_system, IMintingSystem)` before attempting to mint currency. This ensures type safety and clarity about which systems support monetary injection, aligning with the "Zero-Sum Integrity" principle where money creation is a privileged operation.
-
 #### DTO Strictness
 The `MarketSnapshotDTO` now strictly requires `market_data` to be initialized. This change caused regressions in integration tests where DTOs were instantiated with missing fields. We updated all affected tests to provide `market_data={}`, ensuring compliance with the updated DTO schema.
 
@@ -26,18 +24,16 @@ $ pytest tests/integration/test_decision_engine_integration.py tests/integration
 
 ### Architectural Insights
 #### Registry Priority Inversion
-The previous priority configuration (`SYSTEM=10`, `CONFIG=0`) incorrectly allowed internal system defaults to override user-provided configuration files. By inverting this to `SYSTEM=0` (Base Layer) and `CONFIG=10` (Override Layer), we restore the standard configuration hierarchy where external configs take precedence over hardcoded defaults. This change ensures that `config/__init__.py` (verified to use `OriginType.SYSTEM`) serves as the true fallback baseline.
+The previous priority configuration (`SYSTEM=10`, `CONFIG=0`) incorrectly allowed internal system defaults to override user-provided configuration files. By inverting this to `SYSTEM=0` (Base Layer) and `CONFIG=10` (Override Layer), we restore the standard configuration hierarchy where external configs take precedence over hardcoded defaults.
 
 #### Protocol Drift & Mock Fidelity
 The regression in `tests/system/test_phase29_depression.py` highlighted two critical issues:
-1.  **DTO Synchronization**: `MarketSignalDTO` had evolved to require `total_bid_quantity` and `total_ask_quantity`, but the `Phase_SystemicLiquidation` implementation (and subsequently the test execution path) had not been updated. This caused a `TypeError` during test execution.
-2.  **Mock Completeness**: The `config_module` mock was missing numerous fields required by `HouseholdConfigDTO` (e.g., `TARGET_FOOD_BUFFER_QUANTITY`, `WAGE_DECAY_RATE`), which are mandatory for agent initialization. This reinforces the need for mocks to strictly adhere to the schemas of the objects they impersonate.
+1.  **DTO Synchronization**: `MarketSignalDTO` had evolved to require `total_bid_quantity` and `total_ask_quantity`.
+2.  **Mock Completeness**: The `config_module` mock was missing numerous fields required by `HouseholdConfigDTO` (e.g., `TARGET_FOOD_BUFFER_QUANTITY`, `WAGE_DECAY_RATE`). This reinforces the need for mocks to strictly adhere to the schemas of the objects they impersonate.
 
 ### Test Evidence
 #### tests/system/test_phase29_depression.py
 ```
-tests/system/test_phase29_depression.py::TestPhase29Depression::test_crisis_monitor_logging PASSED [ 50%]
-tests/system/test_phase29_depression.py::TestPhase29Depression::test_depression_scenario_triggers PASSED [100%]
 ======================== 2 passed, 2 warnings in 3.38s =========================
 ```
 
@@ -46,12 +42,27 @@ tests/system/test_phase29_depression.py::TestPhase29Depression::test_depression_
 ## 3. Server Integration & Async Dependencies
 
 ### Architectural Insights
-*   **Dependency Management**: Cleaned up `requirements.txt` to remove redundant `pytest-asyncio` entries and pinned the version to `>=0.24.0` to ensure compatibility with modern asyncio testing patterns.
-*   **Async Testing Configuration**: Verified `pytest.ini` enforces `asyncio_default_fixture_loop_scope = function`, which aligns with `pytest-asyncio`'s strict mode, ensuring test isolation and preventing event loop leakage between tests.
-*   **Server Integration**: The integration tests (`tests/integration/test_server_integration.py`) correctly utilize a threaded `SimulationServer` alongside async test functions. This separation (server in thread, client in async test loop) avoids event loop conflicts and correctly simulates a real network environment.
+*   **Dependency Management**: Cleaned up `requirements.txt` to remove redundant `pytest-asyncio` entries and pinned the version to `>=0.24.0`.
+*   **Async Testing Configuration**: Verified `pytest.ini` enforces `asyncio_default_fixture_loop_scope = function`, ensuring test isolation.
+*   **Server Integration**: Integration tests correctly utilize a threaded `SimulationServer` alongside async test functions for safe network simulation.
 
 ### Test Evidence
 ```bash
 $ pytest tests/integration/test_server_integration.py
 ============================== 2 passed in 2.95s ===============================
+```
+
+---
+
+## 4. Household Module DTO Schema Mismatch
+
+### Architectural Insights
+*   **Schema Evolution Risk**: `MarketSnapshotDTO` (in `modules/system/api.py`) now enforces `market_data` as a required field. Independent unit tests for the Household module were broken due to this structural change.
+*   **Test Hygiene**: The fix applied (`market_data={}`) is a temporary measure to restore build stability. This regression highlights the urgent need for a centralized **DTO Factory** in the test suite to prevent "Shotgun Surgery" when shared DTO architectures evolve.
+
+### Test Evidence
+#### tests/unit/modules/household/test_decision_unit.py
+```
+======================== 2 passed, 2 warnings in 0.19s =========================
+```
 ```
