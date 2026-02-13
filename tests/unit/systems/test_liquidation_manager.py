@@ -20,6 +20,7 @@ class TestLiquidationManager(unittest.TestCase):
         self.mock_registry = MagicMock(spec=IAgentRegistry)
         self.mock_shareholder = MagicMock(spec=IShareholderRegistry)
         self.mock_public = MagicMock(spec=IAssetRecoverySystem)
+        self.mock_public.receive_liquidated_assets = MagicMock()
 
         self.manager = LiquidationManager(
             self.mock_settlement,
