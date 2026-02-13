@@ -20,15 +20,17 @@ Add an entry to the `REGISTRY` dict in `command_registry.py`. Use the `# --- CHO
 
 ### Legacy Command
 ```powershell
-python _internal/scripts/cmd_ops.py set-gemini <mission_key> --worker [audit|spec|git-review|verify] -i "<instruction>" -c <context_files...>
+python _internal/scripts/cmd_ops.py set-gemini <mission_key> --worker [spec|reporter|audit|git|git-review|verify|context|crystallizer] -i "<instruction>" -c <context_files...>
 ```
 
 ### Common Examples
 | Worker | Purpose | Typical Instruction |
 |---|---|---|
-| `audit` | Find leaks/bugs | "Analyze logs/forensics.log and identify asset leaks." |
+| `reporter` | Find leaks/bugs | "Analyze logs/forensics.log and identify asset leaks." |
 | `spec` | Draft logic | "Create a technical spec for the SettlementSystem based on audit_report.md" |
+| `audit` | Consistency audit | "Check for architectural rule violations in simulation/engine.py" |
 | `git-review` | Audit PRs | "Review branch feature/fix-leak for security and purity." |
+| `crystallizer` | Insight Extract | "Distill key takeaways from the recent integration test failures into a Spec." |
 
 ---
 
