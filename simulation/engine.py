@@ -52,6 +52,7 @@ class Simulation:
         # SettlementSystem and AgentRegistry are typically accessed via Simulation or injected into components
 
         self.settlement_system = settlement_system
+        self.world_state.settlement_system = settlement_system
         self.agent_registry = agent_registry
 
         self.action_processor = ActionProcessor(self.world_state)
@@ -103,34 +104,47 @@ class Simulation:
                 self.world_state.logger.error(f"Failed to release simulation.lock: {e}")
 
     def _process_commands(self) -> None:
-        """Processes all pending commands from the command service."""
-        commands = self.command_service.pop_commands()
+        """Processes all pending commands from the world state command queue."""
+        # Drain the thread-safe queue
+        commands = []
+        if self.world_state.command_queue:
+            while not self.world_state.command_queue.empty():
+                try:
+                    commands.append(self.world_state.command_queue.get_nowait())
+                except Exception:
+                    break
+
+        god_commands = []
         for cmd in commands:
-            logger.info(f"Executing command: {cmd.type} | {cmd.payload}")
-            try:
-                if cmd.type == "PAUSE":
-                    self.is_paused = True
-                elif cmd.type == "RESUME":
-                    self.is_paused = False
-                elif cmd.type == "STEP":
-                    self.step_requested = True
-                elif cmd.type == "SET_BASE_RATE":
-                    rate = cmd.payload.get("rate")
-                    if self.world_state.central_bank:
-                        self.world_state.central_bank.base_rate = rate
-                        # Log the manual intervention
-                        logger.info(f"MANUAL INTERVENTION: Base Rate set to {rate}")
-                elif cmd.type == "SET_TAX_RATE":
-                    tax_type = cmd.payload.get("tax_type")
-                    rate = cmd.payload.get("rate")
-                    if self.world_state.government:
-                        if tax_type == "corporate":
-                            self.world_state.government.corporate_tax_rate = rate
-                        elif tax_type == "income":
-                            self.world_state.government.income_tax_rate = rate
-                        logger.info(f"MANUAL INTERVENTION: {tax_type} Tax Rate set to {rate}")
-            except Exception as e:
-                logger.error(f"Failed to execute command {cmd}: {e}", exc_info=True)
+            # Polymorphic handling (Legacy CockpitCommand vs New GodCommandDTO)
+            c_type = getattr(cmd, "command_type", getattr(cmd, "type", None))
+
+            # Handle System Control Commands locally
+            if c_type == "PAUSE":
+                self.is_paused = True
+                logger.info("System PAUSED via command.")
+            elif c_type == "RESUME":
+                self.is_paused = False
+                logger.info("System RESUMED via command.")
+            elif c_type == "PAUSE_STATE":
+                # New DTO style: new_value determines state
+                val = getattr(cmd, "new_value", True)
+                self.is_paused = bool(val)
+                logger.info(f"System Pause State set to {self.is_paused}")
+            elif c_type == "STEP":
+                self.step_requested = True
+                logger.info("Step requested.")
+            elif c_type == "TRIGGER_EVENT" and getattr(cmd, "parameter_key", "") == "STEP":
+                 self.step_requested = True
+                 logger.info("Step requested via TRIGGER_EVENT.")
+            else:
+                # Forward God Commands (SET_PARAM, INJECT_*, etc.) to TickOrchestrator
+                god_commands.append(cmd)
+
+        # Forward God Commands to TickOrchestrator via WorldState
+        if god_commands:
+            self.world_state.god_command_queue.extend(god_commands)
+            logger.debug(f"Forwarded {len(god_commands)} commands to TickOrchestrator.")
 
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:
         self._process_commands()

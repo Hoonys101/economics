@@ -86,6 +86,8 @@ def test_debt_ceiling_enforcement(government):
     def issue_bonds_side_effect(request, context, buyer_pool):
         amount = request.amount_pennies
         government.wallet.add(amount, "USD") # Update Wallet with cash
+        # Sync mocked settlement system balance so subsequent checks in the same tick see the funds
+        government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
 
         # Mock payment request (Buyer -> Gov)
         payment_req = PaymentRequestDTO(
