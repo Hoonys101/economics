@@ -13,6 +13,7 @@ from simulation.orchestration.phases.intercept import Phase0_Intercept
 from simulation.orchestration.phases.system_commands import Phase_SystemCommands
 from simulation.orchestration.utils import prepare_market_data
 from simulation.orchestration.phases_recovery import Phase_SystemicLiquidation
+from simulation.orchestration.phases.scenario_analysis import Phase_ScenarioAnalysis
 from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
@@ -48,7 +49,8 @@ class TickOrchestrator:
             Phase3_Transaction(world_state),         # Transaction Processing & Cleanup
 
             Phase_Consumption(world_state),          # Late Lifecycle (Consumption Finalization)
-            Phase5_PostSequence(world_state)
+            Phase5_PostSequence(world_state),
+            Phase_ScenarioAnalysis(world_state)      # Phase 8: Telemetry & Verification (DATA-03)
         ]
 
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:

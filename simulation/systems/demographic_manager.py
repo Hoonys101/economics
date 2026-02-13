@@ -13,6 +13,7 @@ from simulation.factories.household_factory import HouseholdFactory
 
 if TYPE_CHECKING:
     from simulation.dtos.strategy import ScenarioStrategy
+    from simulation.world_state import WorldState
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,56 @@ class DemographicManager:
 
         self.initialized = True
         self.logger.info("DemographicManager initialized.")
+
+    def set_world_state(self, world_state: "WorldState") -> None:
+        """Injects WorldState for data access."""
+        self.world_state = world_state
+
+    def get_gender_stats(self) -> Dict[str, Any]:
+        """
+        Returns aggregated statistics by gender.
+        Required for SC-001 (Female Labor Participation).
+        """
+        if not hasattr(self, "world_state") or not self.world_state:
+            return {}
+
+        stats = {
+            "M": {"count": 0, "total_labor_hours": 0.0, "avg_labor_hours": 0.0},
+            "F": {"count": 0, "total_labor_hours": 0.0, "avg_labor_hours": 0.0}
+        }
+
+        # Access households via world_state
+        households = self.world_state.households
+        time_allocation = getattr(self.world_state, "household_time_allocation", {})
+
+        for hh in households:
+            if not hh.is_active:
+                continue
+
+            gender = hh.gender
+            if gender not in stats:
+                continue
+
+            stats[gender]["count"] += 1
+
+            # Calculate labor hours
+            # Labor = Total Time - Leisure - Shopping
+            # We assume HOURS_PER_TICK is 24 if not configured differently.
+            hours_per_tick = getattr(hh.config, "HOURS_PER_TICK", 24.0)
+            shopping_hours = getattr(hh.config, "SHOPPING_HOURS", 2.0)
+
+            leisure_hours = time_allocation.get(hh.id, 0.0)
+            labor_hours = max(0.0, hours_per_tick - leisure_hours - shopping_hours)
+
+            stats[gender]["total_labor_hours"] += labor_hours
+
+        # Calculate averages
+        for gender in stats:
+            count = stats[gender]["count"]
+            if count > 0:
+                stats[gender]["avg_labor_hours"] = stats[gender]["total_labor_hours"] / count
+
+        return stats
 
     def process_aging(self, agents: List[Household], current_tick: int, market_data: Optional[Dict[str, Any]] = None) -> None:
         """

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 from modules.common.config_manager.api import ConfigManager
 from simulation.initialization.api import SimulationInitializerInterface
 from simulation.models import Order, RealEstateUnit
-from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder
+from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder, OriginType
 from simulation.core_agents import Household
 from simulation.firms import Firm
 from simulation.core_markets import Market
@@ -160,6 +160,11 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         # Initialize Global Registry (FOUND-03)
         sim.world_state.global_registry = GlobalRegistry()
+
+        # DATA-02: Initialize TelemetryCollector
+        from modules.system.telemetry import TelemetryCollector
+        sim.telemetry_collector = TelemetryCollector(sim.world_state.global_registry)
+        sim.world_state.telemetry_collector = sim.telemetry_collector
 
         # TD-253: Saga & Ledger
         # MonetaryLedger needs transaction_log (sim.world_state.transactions) and time_provider (sim)
@@ -470,6 +475,10 @@ class SimulationInitializer(SimulationInitializerInterface):
         )
         sim.demographic_manager.settlement_system = sim.settlement_system # Inject SettlementSystem
 
+        # DATA-03: Inject WorldState and Register for Telemetry
+        sim.demographic_manager.set_world_state(sim.world_state)
+        sim.world_state.global_registry.set("demographics", sim.demographic_manager, origin=OriginType.SYSTEM)
+
         sim.immigration_manager = ImmigrationManager(config_module=self.config, settlement_system=sim.settlement_system)
         sim.inheritance_manager = InheritanceManager(config_module=self.config)
         sim.housing_system = HousingSystem(config_module=self.config)
@@ -625,6 +634,14 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         # Finalize AgentRegistry state
         sim.agent_registry.set_state(sim.world_state)
+
+        # DATA-03: Initialize ScenarioVerifier
+        from modules.analysis.scenario_verifier.engine import ScenarioVerifier
+        from modules.analysis.scenario_verifier.judges.sc001_female_labor import FemaleLaborParticipationJudge
+
+        sim.scenario_verifier = ScenarioVerifier(judges=[FemaleLaborParticipationJudge()])
+        sim.scenario_verifier.initialize(sim.telemetry_collector)
+        sim.world_state.scenario_verifier = sim.scenario_verifier
 
         # Inject AgentRegistry into SettlementSystem for SSoT resolution (get_balance)
         if hasattr(sim.settlement_system, 'agent_registry'):
