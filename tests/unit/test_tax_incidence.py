@@ -98,7 +98,11 @@ class TestTaxIncidence(unittest.TestCase):
             config_manager=mock_config_manager,
             config_module=cfg,
             logger=logger,
-            repository=self.repository
+            repository=self.repository,
+            registry=MagicMock(),
+            settlement_system=MagicMock(),
+            agent_registry=MagicMock(),
+            command_service=MagicMock()
         )
         sim.world_state.households = [h]
         sim.world_state.firms = [f]

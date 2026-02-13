@@ -154,6 +154,14 @@ class SimulationInitializer(SimulationInitializerInterface):
         # 3. Agent Registry
         agent_registry = AgentRegistry()
 
+        # Instantiate CommandService
+        from modules.system.services.command_service import CommandService
+        command_service = CommandService(
+            registry=global_registry,
+            settlement_system=settlement_system,
+            agent_registry=agent_registry
+        )
+
         # 4. Create the Simulation shell with injected dependencies
         sim = Simulation(
             config_manager=self.config_manager,
@@ -162,7 +170,8 @@ class SimulationInitializer(SimulationInitializerInterface):
             repository=self.repository,
             registry=global_registry,
             settlement_system=settlement_system,
-            agent_registry=agent_registry
+            agent_registry=agent_registry,
+            command_service=command_service
         )
 
         # Attach lock file to simulation to keep it open (and locked) until shutdown

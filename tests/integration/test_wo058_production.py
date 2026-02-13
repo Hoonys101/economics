@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import Mock, MagicMock
 from simulation.engine import Simulation
+from modules.system.services.command_service import CommandService
 from simulation.systems.bootstrapper import Bootstrapper
 from simulation.core_agents import Household, Talent
 from simulation.firms import Firm
@@ -129,7 +130,17 @@ def test_bootstrapper_injection(mock_config, mock_repo, mock_ai_trainer, mock_co
     mock_registry = MagicMock()
     mock_settlement = MagicMock()
     mock_agent_registry = MagicMock()
-    sim = Simulation(config_manager=mock_config_manager, config_module=mock_config, logger=Mock(), repository=mock_repo, registry=mock_registry, settlement_system=mock_settlement, agent_registry=mock_agent_registry)
+    mock_command_service = MagicMock(spec=CommandService)
+    sim = Simulation(
+        config_manager=mock_config_manager,
+        config_module=mock_config,
+        logger=Mock(),
+        repository=mock_repo,
+        registry=mock_registry,
+        settlement_system=mock_settlement,
+        agent_registry=mock_agent_registry,
+        command_service=mock_command_service
+    )
     sim.world_state.households = households
     sim.world_state.firms = firms
     sim.world_state.ai_trainer = mock_ai_trainer
@@ -187,7 +198,17 @@ def test_production_kickstart(mock_config, mock_repo, mock_ai_trainer, mock_conf
     mock_registry = MagicMock()
     mock_settlement = MagicMock()
     mock_agent_registry = MagicMock()
-    sim = Simulation(config_manager=mock_config_manager, config_module=mock_config, logger=Mock(), repository=mock_repo, registry=mock_registry, settlement_system=mock_settlement, agent_registry=mock_agent_registry)
+    mock_command_service = MagicMock(spec=CommandService)
+    sim = Simulation(
+        config_manager=mock_config_manager,
+        config_module=mock_config,
+        logger=Mock(),
+        repository=mock_repo,
+        registry=mock_registry,
+        settlement_system=mock_settlement,
+        agent_registry=mock_agent_registry,
+        command_service=mock_command_service
+    )
     sim.world_state.households = households
     sim.world_state.firms = firms
     sim.world_state.ai_trainer = mock_ai_trainer
