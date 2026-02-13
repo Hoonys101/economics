@@ -65,4 +65,3 @@ $ pytest tests/integration/test_server_integration.py
 ```
 ======================== 2 passed, 2 warnings in 0.19s =========================
 ```
-```
