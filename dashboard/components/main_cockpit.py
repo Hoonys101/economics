@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from typing import Dict, Any, List
 from dashboard.components.visuals import ScenarioCardVisualizer, AgentHeatmapVisualizer
+from dashboard.components.controls import render_dynamic_controls
 from simulation.dtos.commands import GodCommandDTO
 from modules.analysis.scenario_verifier.api import ScenarioReportDTO, ScenarioStatus
 from dashboard.services.socket_manager import SocketManager
@@ -102,6 +103,10 @@ def render_main_cockpit():
         st.error(f"⚠️ M2 Leak Detected: {leak:.4f}")
     else:
         st.success(f"✅ System Integrity Normal (Leak: {leak:.4f}) - FPS: {fps:.1f}")
+
+    # --- Controls Section (UI-02) ---
+    st.divider()
+    render_dynamic_controls(use_tabs=True)
 
     # --- Scenario Progress (SCENARIO COCKPIT) ---
     st.divider()
