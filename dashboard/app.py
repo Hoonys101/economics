@@ -1,67 +1,43 @@
-# 1. Imports
 import streamlit as st
-import pandas as pd
-from modules.analytics.loader import DataLoader
-# CRITICAL: No other imports from `simulation`, `modules.finance`, etc. are allowed.
+import time
+from dashboard.services.socket_manager import SocketManager
+from dashboard.components.sidebar import render_sidebar
+from dashboard.components.main_cockpit import render_main_cockpit
+from dashboard.components.command_center import render_command_center
+
+# 1. Page Config
+st.set_page_config(
+    page_title="GodMode Watchtower",
+    page_icon="👁️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 # 2. Initialization
-st.set_page_config(layout="wide")
-st.title("WO-037: Simulation Cockpit")
-st.markdown("A read-only dashboard for observing simulation outcomes.")
+if "initialized" not in st.session_state:
+    st.session_state.initialized = True
+    # Start SocketManager (it's a singleton, so init creates the thread once)
+    SocketManager()
 
-data_loader = DataLoader(db_path="simulation_data.db")
+# 3. Sidebar (Global Controls)
+render_sidebar()
 
-# 3. User Input for Run ID
-run_id_input = st.text_input("Enter Simulation Run ID", value="latest")
+# 4. Main Area
+socket_mgr = SocketManager()
 
-# 4. Data Loading
-economic_indicators_df = None
-try:
-    # Use the validated run_id for loading. The loader handles the 'latest' keyword.
-    economic_indicators_df = data_loader.load_economic_indicators(run_id=run_id_input)
-except Exception as e:
-    st.error(f"Failed to load data for run '{run_id_input}'. Error: {e}")
-    # st.stop() should ideally stop execution here, but in tests importing this module, it might continue or raise SystemExit
-    # Initializing variable above prevents NameError in subsequent checks if st.stop() is mocked or ignored.
+# Poll for latest telemetry (UI Loop)
+new_data = socket_mgr.get_latest_telemetry()
+if new_data:
+    st.session_state.telemetry_buffer = new_data
 
+# Render Main Cockpit
+render_main_cockpit()
 
-# 5. Data Validation and Display
-if economic_indicators_df is None or economic_indicators_df.empty:
-    st.warning(f"No economic indicator data found for Run ID: '{run_id_input}'.")
-else:
-    st.success(f"Displaying data for Run ID: '{run_id_input}'")
+# Render Command Center
+render_command_center()
 
-    # 6. Visualization
-    st.header("Key Economic Indicators")
-
-    # Chart 1: GDP
-    st.subheader("GDP (Real vs. Nominal)")
-    if 'gdp_real' in economic_indicators_df.columns and 'gdp_nominal' in economic_indicators_df.columns:
-        st.line_chart(economic_indicators_df[['gdp_real', 'gdp_nominal']])
-    else:
-        st.warning("GDP data not available.")
-
-    # Chart 2: Inflation (CPI)
-    st.subheader("Inflation (CPI)")
-    if 'cpi' in economic_indicators_df.columns:
-        st.line_chart(economic_indicators_df['cpi'])
-    else:
-        st.warning("CPI data not available.")
-
-    # Chart 3: Population
-    st.subheader("Population")
-    if 'population' in economic_indicators_df.columns:
-        st.line_chart(economic_indicators_df['population'])
-    else:
-        st.warning("Population data not available.")
-
-    # Chart 4: Gini Coefficient
-    st.subheader("Gini Coefficient")
-    if 'gini_coefficient' in economic_indicators_df.columns:
-        st.line_chart(economic_indicators_df['gini_coefficient'])
-    else:
-        st.warning("Gini Coefficient data not available.")
-
-    # Raw Data Viewer
-    with st.expander("View Raw Economic Indicators Data"):
-        st.dataframe(economic_indicators_df)
+# 5. Auto-refresh logic
+# Refresh periodically to fetch new data from the socket thread
+# Adjust sleep time to balance responsiveness and resource usage
+time.sleep(1.0)
+st.rerun()
