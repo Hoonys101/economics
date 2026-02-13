@@ -16,6 +16,7 @@ from simulation.models import Transaction
 from modules.simulation.api import EconomicIndicatorsDTO, SystemStateDTO
 from modules.system.api import DEFAULT_CURRENCY, IGlobalRegistry, IAgentRegistry
 from simulation.finance.api import ISettlementSystem
+from simulation.dtos.commands import GodCommandDTO
 
 from simulation.db.logger import SimulationLogger
 import simulation
@@ -49,7 +50,8 @@ class Simulation:
 
         # Inject dependencies into WorldState
         self.world_state.global_registry = registry
-        # SettlementSystem and AgentRegistry are typically accessed via Simulation or injected into components
+        self.world_state.settlement_system = settlement_system
+        self.world_state.agent_registry = agent_registry
 
         self.settlement_system = settlement_system
         self.agent_registry = agent_registry
@@ -103,34 +105,45 @@ class Simulation:
                 self.world_state.logger.error(f"Failed to release simulation.lock: {e}")
 
     def _process_commands(self) -> None:
-        """Processes all pending commands from the command service."""
-        commands = self.command_service.pop_commands()
+        """Processes all pending commands from the world state queue."""
+        # Consume commands from the queue
+        commands = []
+        if hasattr(self.world_state, "god_command_queue"):
+            while self.world_state.god_command_queue:
+                commands.append(self.world_state.god_command_queue.pop(0))
+
+        if not commands:
+            return
+
+        # Execute batch via CommandService
+        tick = self.world_state.time
+        baseline_m2 = getattr(self.world_state, "baseline_money_supply", 0)
+
+        # Execute via service
+        results = self.command_service.execute_command_batch(commands, tick, baseline_m2)
+
+        # Log results
+        for result in results:
+            if not result.success:
+                logger.error(f"Command {result.command_id} failed: {result.failure_reason}")
+            else:
+                logger.info(f"Command {result.command_id} succeeded.")
+
+        # Local Handling for PAUSE/RESUME/STEP (Facade Logic)
         for cmd in commands:
-            logger.info(f"Executing command: {cmd.type} | {cmd.payload}")
-            try:
-                if cmd.type == "PAUSE":
+            # Check for PAUSE_STATE
+            if cmd.command_type == "PAUSE_STATE":
+                if cmd.new_value is True:
                     self.is_paused = True
-                elif cmd.type == "RESUME":
+                    logger.info("Simulation PAUSED via GodCommand.")
+                elif cmd.new_value is False:
                     self.is_paused = False
-                elif cmd.type == "STEP":
-                    self.step_requested = True
-                elif cmd.type == "SET_BASE_RATE":
-                    rate = cmd.payload.get("rate")
-                    if self.world_state.central_bank:
-                        self.world_state.central_bank.base_rate = rate
-                        # Log the manual intervention
-                        logger.info(f"MANUAL INTERVENTION: Base Rate set to {rate}")
-                elif cmd.type == "SET_TAX_RATE":
-                    tax_type = cmd.payload.get("tax_type")
-                    rate = cmd.payload.get("rate")
-                    if self.world_state.government:
-                        if tax_type == "corporate":
-                            self.world_state.government.corporate_tax_rate = rate
-                        elif tax_type == "income":
-                            self.world_state.government.income_tax_rate = rate
-                        logger.info(f"MANUAL INTERVENTION: {tax_type} Tax Rate set to {rate}")
-            except Exception as e:
-                logger.error(f"Failed to execute command {cmd}: {e}", exc_info=True)
+                    logger.info("Simulation RESUMED via GodCommand.")
+
+            # Check for STEP (via TRIGGER_EVENT)
+            if cmd.command_type == "TRIGGER_EVENT" and cmd.parameter_key == "STEP":
+                self.step_requested = True
+                logger.info("Simulation STEP requested via GodCommand.")
 
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:
         self._process_commands()
