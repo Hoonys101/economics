@@ -18,6 +18,15 @@ class ITransaction(TypedDict):
     time: int
     metadata: Optional[Dict[str, Any]]
 
+@runtime_checkable
+class IMintingSystem(Protocol):
+    """
+    Protocol for systems capable of minting currency (God Mode / Central Bank Injection).
+    This capability is distinct from standard settlement to enforce Zero-Sum integrity elsewhere.
+    """
+    def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = "god_mode_injection") -> bool:
+        ...
+
 class ISettlementSystem(ABC):
     """
     Interface for the centralized settlement system.

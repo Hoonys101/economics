@@ -4,7 +4,7 @@ Implements the EventSystem which handles scheduled chaos events.
 from typing import Dict, Any, List, Optional, TYPE_CHECKING
 import logging
 from simulation.systems.api import IEventSystem, EventContext
-from simulation.finance.api import ISettlementSystem
+from simulation.finance.api import ISettlementSystem, IMintingSystem
 from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
@@ -41,7 +41,7 @@ class EventSystem(IEventSystem):
 
         # Scenario 1: Hyperinflation (Demand-Pull Shock)
         if config.scenario_name == 'hyperinflation' and config.demand_shock_cash_injection > 0:
-            if central_bank and self.settlement_system:
+            if self.settlement_system:
                 for h in households:
                     assets_val = 0.0
                     if hasattr(h, 'wallet'):
@@ -52,17 +52,31 @@ class EventSystem(IEventSystem):
                          # Fallback
                          assets_val = float(h._econ_state.assets) if hasattr(h._econ_state, 'assets') else 0.0
 
-                    amount = assets_val * config.demand_shock_cash_injection
-                    self.settlement_system.create_and_transfer(
-                        source_authority=central_bank,
-                        destination=h,
-                        amount=amount,
-                        reason="hyperinflation_stimulus",
-                        tick=time
-                    )
+                    amount = int(assets_val * config.demand_shock_cash_injection)
+
+                    if isinstance(self.settlement_system, IMintingSystem):
+                        self.settlement_system.mint_and_distribute(
+                            target_agent_id=h.id,
+                            amount=amount,
+                            tick=time,
+                            reason="hyperinflation_stimulus"
+                        )
+                    else:
+                        # Fallback for systems that don't implement mint_and_distribute
+                        if central_bank:
+                            self.settlement_system.create_and_transfer(
+                                source_authority=central_bank,
+                                destination=h,
+                                amount=amount,
+                                reason="hyperinflation_stimulus",
+                                tick=time
+                            )
+                        else:
+                            logger.warning("EventSystem: Missing CentralBank for legacy create_and_transfer fallback.")
+
                 logger.info(f"  -> Injected {config.demand_shock_cash_injection:.0%} cash into all households.")
             else:
-                logger.warning("EventSystem: Missing CentralBank or SettlementSystem for Hyperinflation.")
+                logger.warning("EventSystem: Missing SettlementSystem for Hyperinflation.")
 
         # Scenario 2: Deflationary Spiral (Asset Shock)
         if config.scenario_name == 'deflation' and config.asset_shock_reduction > 0:

@@ -177,7 +177,7 @@ class TestDecisionEngineIntegration:
             goods_data=GOODS_DATA,
             market_data={"all_households": [], "goods_data": GOODS_DATA},
             current_time=1,
-            market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None)
+            market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None, market_data={})
         )
         orders, _ = firm.make_decision(input_dto)
 
@@ -215,7 +215,7 @@ class TestDecisionEngineIntegration:
             goods_data=GOODS_DATA,
             market_data={"all_households": [], "goods_data": GOODS_DATA},
             current_time=1,
-            market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None)
+            market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None, market_data={})
         )
         orders, _ = household.make_decision(input_dto)
 
@@ -254,7 +254,7 @@ class TestDecisionEngineIntegration:
             goods_data=GOODS_DATA,
             market_data={"all_households": [household], "goods_data": GOODS_DATA},
             current_time=1,
-            market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None)
+            market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None, market_data={})
         )
         orders, _ = household.make_decision(input_dto)
 
@@ -290,7 +290,7 @@ class TestDecisionEngineIntegration:
             goods_data=GOODS_DATA,
             market_data={"all_households": [], "goods_data": GOODS_DATA},
             current_time=1,
-            market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None)
+            market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None, market_data={})
         )
         orders, _ = firm.make_decision(input_dto)
 

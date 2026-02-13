@@ -9,6 +9,7 @@ from simulation.systems.api import EventContext, CommerceContext
 from simulation.dtos.config_dtos import HouseholdConfigDTO
 from modules.household.dtos import HouseholdStateDTO
 from simulation.models import Share
+from simulation.systems.settlement_system import SettlementSystem
 
 class TestPhase28StressScenarios:
 
@@ -93,7 +94,7 @@ class TestPhase28StressScenarios:
     @pytest.fixture
     def event_system(self):
         config = MagicMock()
-        settlement_system = MagicMock()
+        settlement_system = MagicMock(spec=SettlementSystem)
         es = EventSystem(config, settlement_system)
         return es
 
@@ -128,15 +129,15 @@ class TestPhase28StressScenarios:
         # Verify settlement system calls
         # 1000 * 0.5 = 500
         # 5000 * 0.5 = 2500
-        assert event_system.settlement_system.create_and_transfer.call_count == 2
+        assert event_system.settlement_system.mint_and_distribute.call_count == 2
 
         # Check call args for first household
-        calls = event_system.settlement_system.create_and_transfer.call_args_list
+        calls = event_system.settlement_system.mint_and_distribute.call_args_list
         # Note: order depends on list iteration
         # h1: amount=500
         # h2: amount=2500
         amounts = sorted([c.kwargs['amount'] for c in calls])
-        assert amounts == [500.0, 2500.0]
+        assert amounts == [500, 2500]
 
     # --- Scenario 2: Deflation ---
 
@@ -328,7 +329,8 @@ class TestPhase28StressScenarios:
                 tick=100,
                 housing=MagicMock(),
                 labor=MagicMock(avg_wage=10.0),
-                market_signals={}
+                market_signals={},
+                market_data={}
             ),
             goods_data=[],
             market_data=markets,
