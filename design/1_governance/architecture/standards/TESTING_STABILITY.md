@@ -21,6 +21,9 @@ Test failures in isolated/lean environments often stem from brittle mocks and li
 ### 3. External Dependency Faking
 - **Fake Objects**: For complex libraries like `numpy` or `yaml`, use specialized "Fake" classes (e.g., `FakeNumpy`) that implement the minimal interface with primitive return values.
 
+### 4. Protocol Compliance
+- **Strict Mocking**: Always create mocks with `spec=IProtocol` (e.g., `MagicMock(spec=IFinancialEntity)`) to ensure the mock fails immediately if the underlying interface changes. This prevents "Mock Drift" where tests pass against an outdated API.
+
 ---
 
 ## 🚨 Violations

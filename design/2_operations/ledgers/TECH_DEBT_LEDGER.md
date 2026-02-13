@@ -2,6 +2,10 @@
 
 | ID | Module / Component | Description | Priority / Impact | Status |
 | :--- | :--- | :--- | :--- | :--- |
+| **TD-278** | Finance | **Penny Standard Guardrails**: Risk of `SETTLEMENT_TYPE_ERROR` if floats bypass integer casting. | **Critical**: Monetary Integrity. | Open |
+| **TD-275** | System | **Housing ID Utility**: Duplicated `split("_")` logic across handlers. | **High**: Maintenance Fragility. | Open |
+| **TD-276** | Finance | **Solvency Valuation Spec**: Ambiguity between Market vs Liquidation price for assets. | **Medium**: Logic Consistency. | Open |
+| **TD-277** | Finance | **Taxable Income Inconsistency**: Divergent definitions across modules. | **Medium**: Logic Consistency. | Open |
 | **TD-LEG-TRANS** | System | Legacy `TransactionManager` contains redundant/conflicting logic. | **Low**: Confusion & code bloat. | Pending Deletion |
 | **TD-PRECISION** | Financials | Use of `float` for currency leads to precision dust/leaks over long runs. | **Medium**: Marginal zero-sum drift. | Identified (Next Priority) |
 | **TD-CONFIG-MUT** | System | Scenarios directly mutate global config via `setattr`. | **Medium**: State pollution risk. | Identified (Next Priority) |

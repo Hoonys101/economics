@@ -12,6 +12,9 @@ Welcome to the central repository of architectural rules and coding patterns for
 - **[LIFECYCLE_HYGIENE.md](./LIFECYCLE_HYGIENE.md)**: Tick sequencing, Late-Reset principle, and state transition safety.
 - **[TESTING_STABILITY.md](./TESTING_STABILITY.md)**: Mock Purity, Golden Fixtures, and library-less environment stability.
 
+## ⚡ 3. Performance Optimization
+- **Iterator Efficiency**: When combining large sequences (e.g., `Transaction` lists), prefer `itertools.chain` over list concatenation (`+`) to save memory/CPU.
+
 ---
 
 ## 🚀 How to use these Standards
