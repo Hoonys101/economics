@@ -59,48 +59,44 @@ class Phase0_Intercept(IPhaseStrategy):
             extra={"tick": state.time, "count": len(pending_commands)}
         )
 
-        # 2. Dispatch Commands
+        # 2. Dispatch Commands via CommandService Protocol
         try:
-            results = self.command_service.dispatch_commands(pending_commands)
+            # CommandService handles Validation -> Snapshot -> Mutation -> Audit -> Commit/Rollback
+            baseline_m2 = int(self.world_state.baseline_money_supply)
+            results = self.command_service.execute_command_batch(pending_commands, state.time, baseline_m2)
+
+            total_net_injection = 0
+            all_success = True
+
             for res in results:
-                logger.info(f"PHASE_0_RESULT | {res}")
+                if not res.success:
+                    logger.warning(
+                        f"PHASE_0_CMD_FAIL | ID: {res.command_id}, Reason: {res.failure_reason}, Rollback: {res.rollback_performed}"
+                    )
+                    all_success = False
+                else:
+                    logger.info(f"PHASE_0_CMD_SUCCESS | ID: {res.command_id}")
+                    if res.audit_report and "m2_delta" in res.audit_report:
+                        total_net_injection += res.audit_report["m2_delta"]
+
+            # 3. Update Baseline if successful
+            # Since CommandService is atomic, if any failed, the whole batch was rolled back (in our implementation).
+            # If all success (or rather, if the batch was committed), we update the baseline.
+            # Currently CommandService rolls back entire batch on failure.
+            # So if results contain any success, they should ALL be success.
+            # If results contain failure, they should ALL be failure (or rolled back).
+
+            if all_success and total_net_injection != 0:
+                 self.world_state.baseline_money_supply += total_net_injection
+                 logger.info(
+                     f"PHASE_0_UPDATE | Baseline Money Supply updated by {total_net_injection}. New Baseline: {self.world_state.baseline_money_supply}"
+                 )
+
         except Exception as e:
             logger.critical(f"PHASE_0_FATAL | Dispatch failed: {e}", exc_info=True)
-            # Dispatch service should handle individual command errors, but if we crash here,
-            # we should probably just return state to avoid crashing the whole sim if desired.
-            # But "God Mode" implies power user, maybe better to crash?
-            # Spec says "Engine should not crash."
+            # If unexpected exception occurs outside CommandService (unlikely), we rely on CommandService to have rolled back
+            # or we might be in inconsistent state. But CommandService catches exceptions internally for the batch loop.
             pass
-
-        # 3. Audit Gate (M2 Integrity)
-        # Calculate expected net injection from commands
-        net_injection = 0
-        for cmd in pending_commands:
-            if cmd.command_type == "INJECT_MONEY" and cmd.amount:
-                 net_injection += cmd.amount
-
-        # Expected = Baseline (set at start of tick) + Net Injection
-        expected_m2 = int(self.world_state.baseline_money_supply) + net_injection
-
-        if not self.world_state.settlement_system.audit_total_m2(expected_total=expected_m2):
-            logger.critical("PHASE_0_AUDIT_FAIL | M2 Integrity Compromised! Rolling back tick.")
-
-            success = self.command_service.rollback_last_tick()
-            if success:
-                logger.info("PHASE_0_ROLLBACK | Successfully rolled back God-Mode intervention.")
-                # No baseline update needed as we rolled back to original state
-            else:
-                 logger.critical("PHASE_0_ROLLBACK_FAIL | Rollback failed! State corrupted.")
-                 raise RuntimeError("M2 Integrity Failure & Rollback Failed")
-        else:
-            # Audit Passed
-            # Update baseline in WorldState to reflect valid injection so subsequent checks pass
-            self.world_state.baseline_money_supply += net_injection
-
-            # Commit the batch to prevent undo stack memory leak
-            self.command_service.commit_last_tick()
-
-            logger.info(f"PHASE_0_SUCCESS | M2 Audit Passed. Baseline updated by {net_injection}.")
 
         # Clear commands to prevent re-execution
         state.god_commands.clear()
