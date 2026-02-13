@@ -3,18 +3,42 @@ from unittest.mock import MagicMock, call
 from uuid import uuid4
 from simulation.dtos.commands import GodCommandDTO, GodResponseDTO
 from modules.system.services.command_service import CommandService
-from modules.system.api import IGlobalRegistry, IAgentRegistry, OriginType
+from modules.system.api import IGlobalRegistry, IAgentRegistry, OriginType, RegistryEntry, IRestorableRegistry
 from simulation.finance.api import ISettlementSystem, IFinancialAgent
 from modules.system.constants import ID_CENTRAL_BANK
 
-class MockRegistry(IGlobalRegistry):
+class MockRegistry(IRestorableRegistry):
     def __init__(self):
         self.data = {}
+
     def get(self, key, default=None):
         return self.data.get(key, default)
+
     def set(self, key, value, origin=None):
         self.data[key] = value
         return True
+
+    def get_entry(self, key):
+        if key in self.data:
+            return RegistryEntry(value=self.data[key], origin=OriginType.CONFIG)
+        return None
+
+    def delete_entry(self, key):
+        if key in self.data:
+            del self.data[key]
+        return True
+
+    def restore_entry(self, key, entry):
+        self.data[key] = entry.value
+        return True
+
+    # Implement other IGlobalRegistry methods to satisfy protocol/abstract checks if needed
+    def lock(self, key): pass
+    def unlock(self, key): pass
+    def subscribe(self, observer, keys=None): pass
+    def snapshot(self): return {}
+    def get_metadata(self, key): return {}
+
 
 # Manually mock the interface + extra methods needed
 class MockSettlementSystem:
@@ -74,8 +98,9 @@ def test_set_param_success(command_service, mock_registry):
     assert len(results) == 1
     assert results[0].success
     assert mock_registry.data["test_key"] == 100
-    # Confirm commit cleared stack (accessing private for test)
-    assert len(command_service.undo_stack._stack) == 0
+    # Confirm commit DOES NOT clear stack (manual undo feature)
+    # The stack should contain 1 batch
+    assert len(command_service.undo_stack._stack) == 1
 
 def test_inject_asset_success(command_service, mock_settlement):
     cmd = GodCommandDTO(
