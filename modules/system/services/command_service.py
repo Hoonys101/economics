@@ -5,7 +5,7 @@ import logging
 from uuid import UUID
 
 from simulation.dtos.commands import GodCommandDTO, GodResponseDTO
-from modules.system.api import IGlobalRegistry, OriginType, IAgentRegistry, RegistryEntry
+from modules.system.api import IGlobalRegistry, OriginType, IAgentRegistry, RegistryEntry, IRestorableRegistry
 from modules.system.constants import ID_CENTRAL_BANK
 from simulation.finance.api import ISettlementSystem, IFinancialAgent
 from modules.simulation.api import IInventoryHandler
@@ -30,7 +30,7 @@ class UndoRecord:
     command_type: str # "SET_PARAM" or "INJECT_ASSET"
     target_domain: Optional[str] = None
     parameter_key: Optional[str] = None
-    previous_entry: Optional[RegistryEntry] = None # Changed from previous_value for full state restore
+    previous_entry: Optional[RegistryEntry] = None # STRICT: Must be RegistryEntry, not raw value
     target_agent_id: Optional[Union[int, str]] = None
     amount: Optional[int] = None
     new_value: Any = None
@@ -78,13 +78,6 @@ class CommandService:
         commands = list(self._command_queue)
         self._command_queue.clear()
         return commands
-
-    def pop_commands(self) -> List[Any]:
-        """
-        DEPRECATED: Retrieves pending commands.
-        Kept for backward compatibility with legacy tests.
-        """
-        return []
 
     def execute_command_batch(self, commands: List[GodCommandDTO], tick: int, baseline_m2: int) -> List[GodResponseDTO]:
         """
@@ -274,28 +267,26 @@ class CommandService:
             try:
                 if record.command_type == "SET_PARAM":
                      # Restore previous entry state directly to preserve origin/locks
-                     if record.previous_entry is None:
-                         # Key didn't exist before, so delete it
-                         # Access via protocol method delete_entry
-                         if hasattr(self.registry, 'delete_entry'):
+                     if isinstance(self.registry, IRestorableRegistry):
+                         if record.previous_entry is None:
+                             # Key didn't exist before, so delete it
                              self.registry.delete_entry(record.parameter_key)
                              logger.info(f"ROLLBACK: Deleted {record.parameter_key}")
                          else:
-                             # Should not happen if protocol is updated, but safe fallback logic
-                             logger.warning(f"ROLLBACK_FAIL: delete_entry not implemented in registry for {record.parameter_key}")
-                     else:
-                         # Restore entry
-                         if hasattr(self.registry, 'restore_entry'):
+                             # Restore entry
                              self.registry.restore_entry(record.parameter_key, record.previous_entry)
                              logger.info(f"ROLLBACK: Restored {record.parameter_key} to {record.previous_entry.value} (Origin: {record.previous_entry.origin})")
-                         else:
-                             # Fallback if restore_entry not available
+                     else:
+                         # Fallback if registry does not support IRestorableRegistry
+                         if record.previous_entry is not None:
                              self.registry.set(
                                  record.parameter_key,
                                  record.previous_entry.value,
                                  origin=record.previous_entry.origin
                              )
-                             logger.warning(f"ROLLBACK: Used set() fallback for {record.parameter_key}. Lock state might be incorrect if mismatched.")
+                             logger.warning(f"ROLLBACK: Used set() fallback for {record.parameter_key} (Registry not IRestorableRegistry). Lock state might be incorrect.")
+                         else:
+                             logger.warning(f"ROLLBACK_FAIL: Cannot delete {record.parameter_key} because registry is not IRestorableRegistry")
 
                 elif record.command_type in ["INJECT_ASSET", "INJECT_MONEY"]:
                      self._rollback_injection(record)

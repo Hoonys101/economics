@@ -103,6 +103,7 @@ class RegistryObserver(Protocol):
     def on_registry_update(self, key: str, value: Any, origin: OriginType) -> None:
         ...
 
+@runtime_checkable
 class IGlobalRegistry(Protocol):
     """
     Interface for the Global Parameter Registry.
@@ -132,12 +133,25 @@ class IGlobalRegistry(Protocol):
     def get_entry(self, key: str) -> Optional[RegistryEntry]:
         ...
 
+@runtime_checkable
+class IRestorableRegistry(IGlobalRegistry, Protocol):
+    """
+    Extended interface for Registries that support state restoration/undo operations.
+    Required for CommandService rollback functionality.
+    """
     def delete_entry(self, key: str) -> bool:
-        """Deletes an entry completely (for rollback purposes)."""
+        """
+        Removes an entry completely. Used when rolling back a creation.
+        Returns True if successful.
+        """
         ...
 
-    def restore_entry(self, key: str, entry: RegistryEntry) -> None:
-        """Restores a full entry state (for rollback purposes)."""
+    def restore_entry(self, key: str, entry: RegistryEntry) -> bool:
+        """
+        Restores a specific entry state (value + origin + lock).
+        Used when rolling back a modification.
+        Returns True if successful.
+        """
         ...
 
 class IAgentRegistry(Protocol):
