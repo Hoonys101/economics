@@ -14,6 +14,8 @@ from simulation.action_processor import ActionProcessor
 from simulation.models import Transaction
 from simulation.dtos.commands import GodCommandDTO
 from modules.system.services.command_service import CommandService
+from modules.simulation.api import EconomicIndicatorsDTO, SystemStateDTO
+from modules.system.api import DEFAULT_CURRENCY
 
 from simulation.db.logger import SimulationLogger
 import simulation
@@ -103,6 +105,7 @@ class Simulation:
 
     def _process_commands(self) -> None:
         """Processes all pending commands from the world state command queue."""
+        commands = []
         # Check External Queue (from Dashboard/Server)
         if hasattr(self.world_state, "command_queue") and self.world_state.command_queue:
             while not self.world_state.command_queue.empty():
@@ -122,10 +125,9 @@ class Simulation:
                         self.step_requested = True
                         logger.info("Simulation STEP requested.")
 
-                    # Forward everything else (including other TRIGGER_EVENTs) to God Command Queue for Phase 0
+                    # Forward everything else (including other TRIGGER_EVENTs) to commands list
                     else:
-                        if hasattr(self.world_state, "god_command_queue"):
-                            self.world_state.god_command_queue.append(cmd)
+                        commands.append(cmd)
                 except Exception:
                     break
 
@@ -143,35 +145,25 @@ class Simulation:
         
         results = self.command_service.execute_command_batch(commands, tick, baseline_m2)
 
-        # Log results
+        # Log results and Update Baseline
+        total_net_injection = 0
+        all_success = True
+
         for result in results:
             if not result.success:
                 logger.error(f"Command {result.command_id} failed: {result.failure_reason}")
+                all_success = False
             else:
                 logger.info(f"Command {result.command_id} succeeded.")
+                if result.audit_report and "m2_delta" in result.audit_report:
+                     total_net_injection += result.audit_report["m2_delta"]
 
-        # 3. Local Handling for PAUSE/RESUME/STEP and Phase 0 forwarding
-        god_commands = []
-        for cmd in commands:
-            # Check for PAUSE_STATE
-            if cmd.command_type == "PAUSE_STATE":
-                val = getattr(cmd, "new_value", True)
-                self.is_paused = bool(val)
-                logger.info(f"Simulation {'PAUSED' if self.is_paused else 'RESUMED'} via GodCommand.")
-            
-            # Check for STEP (via TRIGGER_EVENT)
-            elif cmd.command_type == "TRIGGER_EVENT" and cmd.parameter_key == "STEP":
-                self.step_requested = True
-                logger.info("Simulation STEP requested via GodCommand.")
-            
-            # Forward everything else to god_command_queue for Phase 0 execution in TickOrchestrator
-            else:
-                god_commands.append(cmd)
-
-        if god_commands:
-            # Re-enqueue to list for TickOrchestrator's Phase0 processing
-            self.world_state.god_command_queue.extend(god_commands)
-            logger.debug(f"Forwarded {len(god_commands)} commands to TickOrchestrator.")
+        if all_success and total_net_injection != 0:
+             # Update Baseline
+             self.world_state.baseline_money_supply += total_net_injection
+             logger.info(
+                 f"Baseline Money Supply updated by {total_net_injection}. New Baseline: {self.world_state.baseline_money_supply}"
+             )
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:
         self._process_commands()
 

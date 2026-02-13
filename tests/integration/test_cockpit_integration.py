@@ -100,39 +100,50 @@ def test_simulation_processes_set_base_rate(mock_simulation_deps):
         m.setattr("simulation.engine.SimulationLogger", MagicMock())
 
         cmd_service = MagicMock(spec=CommandService)
+        cmd_service.execute_command_batch.return_value = []
         sim = Simulation(cm, config_module, logger, repo, registry, settlement_system, agent_registry, cmd_service)
         sim.world_state = ws
 
         # Enqueue SET_PARAM central_bank.base_rate
-        cmd = GodCommandDTO(
+        cmd1 = GodCommandDTO(
             command_type="SET_PARAM",
             target_domain="CentralBank",
             parameter_key="central_bank.base_rate",
             new_value=0.15,
             command_id=uuid4()
         )
-        ws.command_queue.put(cmd)
+        ws.command_queue.put(cmd1)
+
+        sim.run_tick()
+
+        # Verify Execution: Queue drained, CommandService called
+        assert len(ws.god_command_queue) == 0
+        cmd_service.execute_command_batch.assert_called()
+        # Verify the batch contained our command
+        args, _ = cmd_service.execute_command_batch.call_args
+        assert len(args[0]) == 1
+        assert args[0][0].parameter_key == "central_bank.base_rate"
+
+        cmd_service.execute_command_batch.reset_mock()
 
         # Enqueue SET_BASE_RATE via SET_PARAM
-        cmd = GodCommandDTO(
+        cmd2 = GodCommandDTO(
             command_type="SET_PARAM",
             target_domain="CentralBank",
             parameter_key="base_rate",
             new_value=0.15
         )
-        ws.command_queue.put(cmd)
+        ws.command_queue.put(cmd2)
 
         # Run tick
-        # Note: Since TickOrchestrator is mocked, it won't execute Phase 0.
-        # We verify that Simulation forwarded the command to god_command_queue.
         sim.run_tick()
 
-        assert len(ws.god_command_queue) == 1
-        assert ws.god_command_queue[0].command_type == "SET_PARAM"
-        assert ws.god_command_queue[0].new_value == 0.15
-        
-        # Check if Registry.set was called (via CommandService which we would need to verify if not mocked)
-        # Note: In this test, TickOrchestrator is mocked, so we just check if it was forwarded correctly to god_command_queue.
+        # Verify Execution
+        assert len(ws.god_command_queue) == 0
+        cmd_service.execute_command_batch.assert_called()
+        args, _ = cmd_service.execute_command_batch.call_args
+        assert len(args[0]) == 1
+        assert args[0][0].new_value == 0.15
 
 def test_simulation_processes_set_tax_rate(mock_simulation_deps):
     cm, config_module, logger, repo, registry, settlement_system, agent_registry, ws = mock_simulation_deps
@@ -144,6 +155,7 @@ def test_simulation_processes_set_tax_rate(mock_simulation_deps):
         m.setattr("simulation.engine.SimulationLogger", MagicMock())
 
         cmd_service = MagicMock(spec=CommandService)
+        cmd_service.execute_command_batch.return_value = []
         sim = Simulation(cm, config_module, logger, repo, registry, settlement_system, agent_registry, cmd_service)
         sim.world_state = ws
 
@@ -158,12 +170,14 @@ def test_simulation_processes_set_tax_rate(mock_simulation_deps):
         ws.command_queue.put(cmd)
 
         sim.run_tick()
-        assert len(ws.god_command_queue) == 1
-        assert ws.god_command_queue[0].parameter_key == "corporate_tax_rate"
-        assert ws.god_command_queue[0].new_value == 0.25
 
-        # Clear queue for next step
-        ws.god_command_queue.clear()
+        assert len(ws.god_command_queue) == 0
+        cmd_service.execute_command_batch.assert_called()
+        args, _ = cmd_service.execute_command_batch.call_args
+        assert len(args[0]) == 1
+        assert args[0][0].parameter_key == "corporate_tax_rate"
+
+        cmd_service.execute_command_batch.reset_mock()
 
         # Enqueue SET_TAX_RATE (Income)
         cmd = GodCommandDTO(
@@ -176,6 +190,9 @@ def test_simulation_processes_set_tax_rate(mock_simulation_deps):
         ws.command_queue.put(cmd)
 
         sim.run_tick()
-        assert len(ws.god_command_queue) == 1
-        assert ws.god_command_queue[0].parameter_key == "income_tax_rate"
-        assert ws.god_command_queue[0].new_value == 0.15
+
+        assert len(ws.god_command_queue) == 0
+        cmd_service.execute_command_batch.assert_called()
+        args, _ = cmd_service.execute_command_batch.call_args
+        assert len(args[0]) == 1
+        assert args[0][0].parameter_key == "income_tax_rate"
