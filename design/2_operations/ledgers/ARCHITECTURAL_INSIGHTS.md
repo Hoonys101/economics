@@ -148,9 +148,14 @@
     - **Implementation**: Used `asyncio.loop.call_soon_threadsafe` for thread-safe cross-loop notifications and per-client `last_sent_tick` tracking to prevent race conditions during connection/broadcast overlaps.
     - [Insight Report](../_archive/insights/2026-02-14_WebSocket_Event_Driven_Optimization.md)
 - **[2026-02-14] God-Mode WebSocket Security (TD-ARCH-SEC-GOD)**
-    - **Security**: Implemented `X-GOD-MODE-TOKEN` header validation using `secrets.compare_digest`. SOURCE: `SecurityConfigDTO`.
-    - **Compatibility**: Patched `SimulationServer` for `websockets 16.0` (`process_request` signature and `Response` object return type requirements).
+    - **Optimization**: Implemented mandatory `god_mode_token` for `SimulationServer` constructor and WebSocket handlers.
+    - **Security**: Added token-based challenge/response for WebSocket upgrades to prevent unauthorized command injection.
     - [Insight Report](../_archive/insights/2026-02-14_God_Mode_Authentication_Security.md)
+- **[2026-02-14] Telemetry DTO Purity (v2.0)**
+    - **Optimization**: Migrated `TelemetrySnapshotDTO` to Pydantic `BaseModel` for improved validation and serialization efficiency.
+    - **Architecture**: Enforced attribute access (`.tick`) vs dictionary subscription (`["tick"]`) across integration and unit tests.
+- **[2026-02-14] SimulationServer Security Alignment**
+    - **Verification**: Updated server instantiation in test suite to mandate usage of the `god_mode_token`, ensuring security patterns are consistently tested.
 - **[2026-02-09] Tick-Level State Reset Best Practices**
     - **Problem**: Tick-level state variables (e.g., `expenses_this_tick`) were being reset mid-lifecycle, causing data loss for later-stage processes like learning and analysis.
     - **Principle**: All agent tick-level state resets must occur uniformly at the end of the simulation cycle (e.g., a "Post-Sequence" phase). This ensures that all phases within the tick have access to a consistent, complete dataset.
