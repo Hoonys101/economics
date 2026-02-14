@@ -49,26 +49,40 @@ class SalesEngine:
         self,
         state: SalesState,
         market_context: MarketContextDTO,
-        revenue_this_turn: float # MIGRATION: Input is float dollars (from Firm calculation), or int pennies?
-        # Firm.py calls it with `total_revenue = ... float(amount) * rate`.
-        # Firm.py: `for cur, amount in self.finance_state.revenue_this_turn.items(): ... total_revenue += float(amount) * rate`
-        # So input is float pennies (because amount is int pennies, cast to float).
-        # Wait, if amount is pennies (e.g. 10000), total_revenue is 10000.0.
-        # This is fine. We calculate budget in pennies.
+        revenue_this_turn: float, # MIGRATION: Input is float dollars (from Firm calculation), or int pennies?
+        last_revenue: float = 0.0,
+        last_marketing_spend: float = 0.0
     ) -> MarketingAdjustmentResultDTO:
         """
         Adjusts marketing budget based on ROI or simple heuristic.
         Returns the calculated new budget in a DTO (pennies).
         """
-        # Simple heuristic: % of revenue
+        # 1. ROI Logic
+        new_rate = state.marketing_budget_rate
+
+        if last_marketing_spend > 0:
+            # Revenue Delta: Difference between current revenue and last tick revenue
+            # Note: This logic assumes revenue growth is attributable to marketing.
+            revenue_delta = revenue_this_turn - last_revenue
+
+            roi = revenue_delta / last_marketing_spend
+
+            # ROI Thresholds (from legacy tests)
+            if roi > 1.5 and state.brand_awareness < 0.9:
+                new_rate *= 1.1 # Increase by 10%
+            elif roi < 0.8:
+                new_rate *= 0.9 # Decrease by 10%
+
+        # 2. Target Budget
         # revenue_this_turn is pennies (float).
-        target_budget = revenue_this_turn * state.marketing_budget_rate
+        target_budget = revenue_this_turn * new_rate
 
-        # Smoothing
+        # 3. Smoothing
         # marketing_budget_pennies is int.
-        new_budget = (state.marketing_budget_pennies * 0.8) + (target_budget * 0.2)
+        current_budget = float(state.marketing_budget_pennies)
+        new_budget = (current_budget * 0.8) + (target_budget * 0.2)
 
-        return MarketingAdjustmentResultDTO(new_budget=int(new_budget))
+        return MarketingAdjustmentResultDTO(new_budget=int(new_budget), new_marketing_rate=new_rate)
 
     def generate_marketing_transaction(
         self,

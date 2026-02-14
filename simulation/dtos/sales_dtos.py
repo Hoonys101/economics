@@ -31,3 +31,4 @@ class SalesMarketingContextDTO:
 class MarketingAdjustmentResultDTO:
     """Result from a marketing budget calculation."""
     new_budget: float
+    new_marketing_rate: float
