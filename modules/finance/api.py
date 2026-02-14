@@ -10,6 +10,7 @@ from modules.simulation.api import AgentID, AnyAgentID
 
 if TYPE_CHECKING:
     from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
+    from simulation.dtos.api import GovernmentSensoryDTO
     from simulation.models import Order, Transaction
     from modules.common.dtos import Claim
     from modules.finance.wallet.api import IWallet
@@ -18,6 +19,11 @@ if TYPE_CHECKING:
 # Forward reference for type hinting
 class Firm: pass
 class Household: pass # Assuming Household agent also interacts with the bank
+
+@runtime_checkable
+class IConfig(Protocol):
+    """Protocol for configuration module."""
+    def get(self, key: str, default: Any = None) -> Any: ...
 
 @runtime_checkable
 class IFinancialEntity(Protocol):
@@ -44,6 +50,8 @@ class IFinancialFirm(IFinancialEntity, Protocol):
     Interface for a Firm entity used in financial analysis (e.g., Solvency).
     Ensures strict typing for solvency checks and financial reporting.
     """
+    id: AgentID
+
     @property
     def age(self) -> int:
         """The age of the firm in ticks."""
@@ -412,6 +420,7 @@ class IBank(IFinancialAgent, Protocol):
     Designed to be used as a dependency for Household and Firm agents.
     Inherits IFinancialAgent for its own equity/reserves management.
     """
+    base_rate: float
 
     @abc.abstractmethod
     def grant_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
@@ -469,6 +478,12 @@ IBankService = IBank
 class IFiscalMonitor(Protocol):
     """Interface for the fiscal health analysis component."""
     def get_debt_to_gdp_ratio(self, government: "IGovernment", indicators: "EconomicIndicatorsDTO") -> float: ...
+
+@runtime_checkable
+class IGovernmentFinance(IFinancialAgent, Protocol):
+    """Interface for Government interaction within FinanceSystem."""
+    total_debt: int
+    sensory_data: Optional[GovernmentSensoryDTO]
 
 class ISettlementSystem(Protocol):
     """

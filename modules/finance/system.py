@@ -3,7 +3,8 @@ import logging
 import uuid
 from modules.finance.api import (
     IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialAgent, IFinancialFirm,
-    InsufficientFundsError, GrantBailoutCommand, BorrowerProfileDTO, LoanInfoDTO
+    InsufficientFundsError, GrantBailoutCommand, BorrowerProfileDTO, LoanInfoDTO,
+    IConfig, IBank, IGovernmentFinance
 )
 from modules.finance.domain import AltmanZScoreCalculator
 from modules.analysis.fiscal_monitor import FiscalMonitor
@@ -22,8 +23,9 @@ from modules.finance.engines.liquidation_engine import LiquidationEngine
 from modules.finance.engines.debt_servicing_engine import DebtServicingEngine
 from modules.finance.engines.interest_rate_engine import InterestRateEngine
 
-# Forward reference for type hinting
-from simulation.firms import Firm
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from simulation.firms import Firm
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +39,7 @@ class FinanceSystem(IFinanceSystem):
     MIGRATION: Uses integer pennies.
     """
 
-    def __init__(self, government: 'Government', central_bank: 'CentralBank', bank: 'Bank', config_module: Any, settlement_system: Any = None):
+    def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Any = None):
         self.government = government
         self.central_bank = central_bank
         self.bank = bank
@@ -62,7 +64,7 @@ class FinanceSystem(IFinanceSystem):
             banks={
                 bank.id: BankStateDTO(
                     bank_id=bank.id,
-                    base_rate=getattr(bank, 'base_rate', 0.03),
+                    base_rate=bank.base_rate,
                     reserves={DEFAULT_CURRENCY: 0}
                 )
             }
@@ -278,11 +280,11 @@ class FinanceSystem(IFinanceSystem):
 
         # QE Trigger Check
         qe_threshold = 1.5
-        if hasattr(self.config_module, 'get'):
+        if self.config_module:
              qe_threshold = self.config_module.get("economy_params.QE_DEBT_TO_GDP_THRESHOLD", 1.5)
 
         current_gdp = 1.0
-        if hasattr(self.government, 'sensory_data') and self.government.sensory_data and self.government.sensory_data.current_gdp > 0:
+        if self.government.sensory_data and self.government.sensory_data.current_gdp > 0:
             current_gdp = self.government.sensory_data.current_gdp
 
         # Use Government's tracked debt or calculate from ledger
@@ -368,7 +370,7 @@ class FinanceSystem(IFinanceSystem):
         bonds, txs = self.issue_treasury_bonds(amount_to_raise, current_tick)
         return (len(bonds) > 0, txs)
 
-    def grant_bailout_loan(self, firm: 'Firm', amount: int, current_tick: int) -> Tuple[Optional[LoanInfoDTO], List[Transaction]]:
+    def grant_bailout_loan(self, firm: IFinancialFirm, amount: int, current_tick: int) -> Tuple[Optional[LoanInfoDTO], List[Transaction]]:
         """
         Deprecated: Use request_bailout_loan.
         Provided for compatibility with legacy execution engines.
@@ -403,7 +405,7 @@ class FinanceSystem(IFinanceSystem):
         logger.warning("FinanceSystem.collect_corporate_tax called. Should be using Transaction Generation.")
         return False
 
-    def request_bailout_loan(self, firm: 'Firm', amount: int) -> Optional[GrantBailoutCommand]:
+    def request_bailout_loan(self, firm: IFinancialFirm, amount: int) -> Optional[GrantBailoutCommand]:
         # Sync SSoT
         self._sync_ledger_balances()
 
