@@ -1,6 +1,7 @@
-from typing import TypedDict, Dict, List, Any
+from typing import Dict, List, Any
+from pydantic import BaseModel
 
-class TelemetrySnapshotDTO(TypedDict):
+class TelemetrySnapshotDTO(BaseModel):
     """
     실시간 데이터 스냅샷 구조.
     Represents a snapshot of telemetry data collected at a specific tick.

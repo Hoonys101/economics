@@ -6,6 +6,7 @@ import websockets
 from dataclasses import asdict, is_dataclass
 from typing import Optional, List, Dict
 from uuid import UUID
+from pydantic import BaseModel
 from simulation.dtos.commands import GodCommandDTO
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
 
@@ -125,12 +126,23 @@ class SimulationServer:
         """Sends the snapshot to a specific client if it's new."""
         # Check against client's last sent tick
         last_tick = self.client_states.get(websocket, -1)
-        current_tick = getattr(snapshot, 'tick', -1)
+
+        # Access 'tick' safely regardless of type (BaseModel, Dataclass, or Dict)
+        if isinstance(snapshot, dict):
+             current_tick = snapshot.get('tick', -1)
+        else:
+             current_tick = getattr(snapshot, 'tick', -1)
 
         if current_tick > last_tick:
             try:
-                # Serialize
-                payload = asdict(snapshot) if is_dataclass(snapshot) else snapshot
+                # Serialize based on type
+                if isinstance(snapshot, BaseModel):
+                    payload = snapshot.model_dump(mode='json')
+                elif is_dataclass(snapshot):
+                    payload = asdict(snapshot)
+                else:
+                    payload = snapshot
+
                 await websocket.send(json.dumps(payload, default=str))
 
                 # Update client state

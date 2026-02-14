@@ -91,16 +91,16 @@ class TelemetryCollector:
                     # Fallback for paths that were neither resolved nor marked invalid (should not happen)
                     errors.append(path)
 
-        snapshot: TelemetrySnapshotDTO = {
-            "timestamp": time.time(),
-            "tick": current_tick,
-            "data": data,
-            "errors": errors,
-            "metadata": {
+        snapshot = TelemetrySnapshotDTO(
+            timestamp=time.time(),
+            tick=current_tick,
+            data=data,
+            errors=errors,
+            metadata={
                 "collected_count": len(data),
                 "error_count": len(errors)
             }
-        }
+        )
         return snapshot
 
     def _create_accessor(self, path: str) -> Callable[[], Any]:
