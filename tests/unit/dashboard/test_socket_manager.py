@@ -1,10 +1,3 @@
-import sys
-from unittest.mock import MagicMock
-
-# Mock websockets before import
-mock_ws = MagicMock()
-sys.modules["websockets"] = mock_ws
-
 import unittest
 from unittest.mock import patch, ANY
 import queue

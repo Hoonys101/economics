@@ -3,11 +3,12 @@ from unittest.mock import Mock, MagicMock, patch
 import pytest
 
 # Mock missing dependencies for CI/Sandbox environments
-for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing"]:
+for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit"]:
     try:
         __import__(module_name)
     except ImportError:
         mock = MagicMock()
+        mock.__path__ = []  # Ensure it is treated as a package
         if module_name == "numpy":
             mock.bool_ = bool
             mock.float64 = float
