@@ -238,6 +238,40 @@ class InheritanceManager:
                 if results and results[0].success:
                     transactions.append(tx)
 
+            # Distribute Remaining Stocks (Zero-Sum Integer Split)
+            for firm_id, share in portfolio_holdings.items():
+                total_shares = int(share.quantity)
+                if total_shares <= 0:
+                    continue
+
+                count = len(heirs)
+                shares_per_heir = total_shares // count
+                remainder = total_shares % count
+
+                # Distribute to each heir
+                for i, heir in enumerate(heirs):
+                    amount = shares_per_heir
+                    if i < remainder:
+                        amount += 1 # Distribute remainder one by one
+
+                    if amount > 0:
+                        tx = Transaction(
+                            buyer_id=heir.id,
+                            seller_id=deceased.id,
+                            item_id=f"stock_{firm_id}",
+                            quantity=amount,
+                            price=0.0, # Inheritance is free
+                            market_id="stock_market",
+                            transaction_type="asset_transfer",
+                            time=current_tick,
+                            metadata={"executed": False, "inheritance": True}
+                        )
+
+                        results = simulation.transaction_processor.execute(simulation, [tx])
+                        if results and results[0].success:
+                            tx.metadata["executed"] = True
+                            transactions.append(tx)
+
             # Distribute Real Estate (Round Robin - Synchronous)
             count = len(heirs)
             for i, unit in enumerate(deceased_units):
