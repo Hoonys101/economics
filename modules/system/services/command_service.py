@@ -405,21 +405,21 @@ class CommandService:
 
         logger.info(f"FORCE_WITHDRAW_ALL: Targeting Bank {bank_agent.id}")
 
-        # Iterate all agents and withdraw
-        agents = self.agent_registry.get_all_agents()
+        # TD-INT-STRESS-SCALE: Use Reverse Index for O(1) access
+        depositor_ids = self.settlement_system.get_account_holders(bank_agent.id)
         withdrawal_count = 0
         total_withdrawn = 0
 
-        for agent in agents:
+        for agent_id in depositor_ids:
             # Skip the bank itself and central bank
-            if agent.id == bank_agent.id or agent.id == ID_CENTRAL_BANK:
+            if agent_id == bank_agent.id or agent_id == ID_CENTRAL_BANK:
+                continue
+
+            agent = self.agent_registry.get_agent(agent_id)
+            if not agent:
                 continue
 
             # Check Balance
-            # Since IBank doesn't expose get_balance_of(agent), we use seamless withdraw check or custom method
-            # Bank.get_customer_balance is available in the implementation we read earlier
-            # Check Balance
-            # Since IBank doesn't expose get_balance_of(agent), we use seamless withdraw check or custom method
             if isinstance(bank_agent, IBank): # Protocol check
                  balance = bank_agent.get_customer_balance(agent.id)
                  if balance > 0:

@@ -1,35 +1,38 @@
-# Architectural Insights
-1. **Global `sys.modules` Patching in Tests is Harmful:** Manually modifying `sys.modules` in a test file (e.g., `sys.modules["websockets"] = Mock()`) affects the entire test process, including subsequent tests that rely on the real module. This leads to confusing failures like `ModuleNotFoundError` for submodules because the Mock object is not a package.
-2. **Conditional Mocking in `conftest.py` is Robust:** Centralizing mocks for optional dependencies in `conftest.py` ensures that tests can run in minimal environments while still allowing integration tests to use real libraries when available. Adding `mock.__path__ = []` is crucial for mimicking packages to support submodule imports.
+# Insight Report: Optimize Bank Stress Scan (O(N) -> O(1))
 
-# Test Evidence
-```
-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_audit_logs PASSED [ 16%]
-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_initialization PASSED [ 33%]
-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_send_command PASSED [ 50%]
-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_telemetry_handling PASSED [ 66%]
-tests/integration/test_server_integration.py::test_command_injection
--------------------------------- live log setup --------------------------------
-INFO     SimulationServer:server.py:27 SimulationServer thread started on localhost:38315
-INFO     websockets.server:server.py:341 server listening on 127.0.0.1:38315
-INFO     websockets.server:server.py:341 server listening on [::1]:38315
-INFO     SimulationServer:server.py:35 WebSocket server running...
--------------------------------- live log call ---------------------------------
-INFO     websockets.server:server.py:531 connection open
-INFO     SimulationServer:server.py:43 Client connected: ('::1', 59268, 0, 0)
-INFO     SimulationServer:server.py:58 Client disconnected: ('::1', 59268, 0, 0)
-PASSED                                                                   [ 83%]
-tests/integration/test_server_integration.py::test_telemetry_broadcast
--------------------------------- live log setup --------------------------------
-INFO     SimulationServer:server.py:27 SimulationServer thread started on localhost:60639
-INFO     websockets.server:server.py:341 server listening on [::1]:60639
-INFO     websockets.server:server.py:341 server listening on 127.0.0.1:60639
-INFO     SimulationServer:server.py:35 WebSocket server running...
--------------------------------- live log call ---------------------------------
-INFO     websockets.server:server.py:531 connection open
-INFO     SimulationServer:server.py:43 Client connected: ('::1', 48328, 0, 0)
-INFO     SimulationServer:server.py:58 Client disconnected: ('::1', 48328, 0, 0)
-PASSED                                                                   [100%]
+## Architectural Insights
 
-============================== 6 passed in 2.96s ===============================
+### 1. Reverse Index Implementation
+To address the O(N) performance bottleneck in `FORCE_WITHDRAW_ALL`, a reverse index `Bank -> List[Depositors]` was introduced in the `SettlementSystem`. This transforms the complexity of finding account holders for a bank run simulation from linear (scanning all agents) to constant/proportional (accessing a cached list).
+
+### 2. Synchronization Strategy
+The index is synchronized at three key lifecycle events:
+- **Account Creation**: When a loan is booked (via `FinanceSystem`) or a manual deposit occurs (via `Bank`), `SettlementSystem.register_account` is called.
+- **Account Closure**: When an agent is liquidated (via `AgentLifecycleManager`), `SettlementSystem.remove_agent_from_all_accounts` is called.
+- **Index Storage**: The index uses `Dict[BankID, Set[AgentID]]` for efficient O(1) insertions and lookups, while also maintaining a forward index `Dict[AgentID, Set[BankID]]` to enable fast O(1) removal of agents upon death.
+
+### 3. Protocol Updates
+The `ISettlementSystem` protocol was updated to formally include `register_account`, `deregister_account`, `get_account_holders`, and `remove_agent_from_all_accounts`, ensuring type safety and architectural compliance.
+
+## Test Evidence
+
+### Manual Verification Script (`test_settlement_index.py`)
+A dedicated verification script was created to test the index logic in isolation.
+
+**Script Output:**
 ```
+Holders 101: [1, 2]
+Holders 102: [3]
+Holders 103: []
+Holders 101 after deregister 1: [2]
+Holders 101 before removal: [2, 4]
+Holders 101 after removal: [2]
+Verification Passed!
+```
+
+### Integration Logic Verification
+- `modules/system/services/command_service.py` was updated to use `settlement_system.get_account_holders(bank_id)` instead of iterating `agent_registry.get_all_agents()`.
+- `modules/finance/system.py` and `simulation/bank.py` were updated to call `register_account` on deposit creation.
+- `simulation/systems/lifecycle_manager.py` was updated to call `remove_agent_from_all_accounts` on agent liquidation.
+
+These changes ensure the index remains accurate throughout the simulation lifecycle.

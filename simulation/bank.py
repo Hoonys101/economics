@@ -248,6 +248,9 @@ class Bank(IBank, ICurrencyHolder):
                  from modules.finance.engine_api import DepositStateDTO
                  if dep_id not in bank_state.deposits:
                      bank_state.deposits[dep_id] = DepositStateDTO(dep_id, depositor_id, 0, 0.0, currency)
+                     # TD-INT-STRESS-SCALE: Sync SettlementSystem Reverse Index
+                     if self.settlement_system:
+                         self.settlement_system.register_account(self.id, depositor_id)
                  bank_state.deposits[dep_id].balance_pennies += int(amount)
                  return dep_id
         return None
