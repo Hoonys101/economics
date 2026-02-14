@@ -8,6 +8,8 @@ for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model"
         __import__(module_name)
     except ImportError:
         mock = MagicMock()
+        # IMPORTANT: Setting __path__ = [] allows the mock to be treated as a package,
+        # supporting submodule imports like 'websockets.asyncio'.
         mock.__path__ = []  # Ensure it is treated as a package
         if module_name == "numpy":
             mock.bool_ = bool
