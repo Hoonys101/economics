@@ -408,6 +408,10 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             if isinstance(firm, ICurrencyHolder):
                 state.unregister_currency_holder(firm)
 
+            # TD-INT-STRESS-SCALE: Clean up settlement index
+            if self.settlement_system:
+                self.settlement_system.remove_agent_from_all_accounts(firm.id)
+
         # --- Household Liquidation (Inheritance) ---
         inactive_households = [h for h in state.households if not h._bio_state.is_active]
         for household in inactive_households:
@@ -461,6 +465,10 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             # TD-030: Unregister from currency registry immediately
             if isinstance(household, ICurrencyHolder):
                 state.unregister_currency_holder(household)
+
+            # TD-INT-STRESS-SCALE: Clean up settlement index
+            if self.settlement_system:
+                self.settlement_system.remove_agent_from_all_accounts(household.id)
 
         # Cleanup Global Lists
         state.households[:] = [h for h in state.households if h._bio_state.is_active]

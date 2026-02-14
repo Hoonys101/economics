@@ -149,6 +149,12 @@ class FinanceSystem(IFinanceSystem):
         if not loan_state:
             return None, result.generated_transactions
 
+        # TD-INT-STRESS-SCALE: Sync SettlementSystem Reverse Index
+        if self.settlement_system:
+             # Using register_account to ensure the borrower is tracked as a depositor
+             # since loan creation triggers deposit creation (credit money).
+             self.settlement_system.register_account(lender_id, borrower_id)
+
         info_dto = LoanInfoDTO(
             loan_id=loan_state.loan_id,
             borrower_id=loan_state.borrower_id,

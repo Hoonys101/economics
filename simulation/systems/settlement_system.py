@@ -1,6 +1,7 @@
-from typing import Optional, Dict, Any, cast, TYPE_CHECKING, Tuple, List
+from typing import Optional, Dict, Any, cast, TYPE_CHECKING, Tuple, List, Set
 import logging
 from uuid import UUID
+from collections import defaultdict
 
 from simulation.finance.api import ISettlementSystem, ITransaction
 from modules.finance.api import (
@@ -36,6 +37,54 @@ class SettlementSystem(ISettlementSystem):
         self.total_liquidation_losses: int = 0
         self.settlement_accounts: Dict[int, LegacySettlementAccount] = {} # TD-160
         self.agent_registry: Optional[Any] = None # Injected by SimulationInitializer
+
+        # TD-INT-STRESS-SCALE: Reverse Index for Bank Accounts
+        # BankID -> Set[AgentID]
+        self._bank_depositors: Dict[int, Set[int]] = defaultdict(set)
+        # AgentID -> Set[BankID] (for fast removal)
+        self._agent_banks: Dict[int, Set[int]] = defaultdict(set)
+
+    def register_account(self, bank_id: int, agent_id: int) -> None:
+        """
+        Registers an account link between a bank and an agent.
+        Used to maintain the reverse index for bank runs.
+        """
+        self._bank_depositors[bank_id].add(agent_id)
+        self._agent_banks[agent_id].add(bank_id)
+
+    def deregister_account(self, bank_id: int, agent_id: int) -> None:
+        """
+        Removes an account link between a bank and an agent.
+        """
+        if bank_id in self._bank_depositors:
+            self._bank_depositors[bank_id].discard(agent_id)
+            if not self._bank_depositors[bank_id]:
+                del self._bank_depositors[bank_id]
+
+        if agent_id in self._agent_banks:
+            self._agent_banks[agent_id].discard(bank_id)
+            if not self._agent_banks[agent_id]:
+                del self._agent_banks[agent_id]
+
+    def get_account_holders(self, bank_id: int) -> List[int]:
+        """
+        Returns a list of all agents holding accounts at the specified bank.
+        This provides O(1) access to depositors for bank run simulation.
+        """
+        if bank_id in self._bank_depositors:
+            return list(self._bank_depositors[bank_id])
+        return []
+
+    def remove_agent_from_all_accounts(self, agent_id: int) -> None:
+        """
+        Removes an agent from all bank account indices.
+        Called upon agent liquidation/deletion.
+        """
+        if agent_id in self._agent_banks:
+            # Copy to avoid modification during iteration
+            banks = list(self._agent_banks[agent_id])
+            for bank_id in banks:
+                self.deregister_account(bank_id, agent_id)
 
     def get_balance(self, agent_id: AgentID, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         """

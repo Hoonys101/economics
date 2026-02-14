@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable, Optional, Dict, Any, TypedDict, Union
+from typing import Protocol, runtime_checkable, Optional, Dict, Any, TypedDict, Union, List
 from abc import ABC, abstractmethod
 from modules.finance.api import IFinancialAgent
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
@@ -117,5 +117,36 @@ class ISettlementSystem(ABC):
 
         If `government_agent` is provided, any remaining assets (cash) in `agent` will be transferred
         to `government_agent` (Escheatment), ensuring zero-sum integrity.
+        """
+        ...
+
+    @abstractmethod
+    def register_account(self, bank_id: int, agent_id: int) -> None:
+        """
+        Registers an account link between a bank and an agent.
+        Used to maintain the reverse index for bank runs.
+        """
+        ...
+
+    @abstractmethod
+    def deregister_account(self, bank_id: int, agent_id: int) -> None:
+        """
+        Removes an account link between a bank and an agent.
+        """
+        ...
+
+    @abstractmethod
+    def get_account_holders(self, bank_id: int) -> List[int]:
+        """
+        Returns a list of all agents holding accounts at the specified bank.
+        This provides O(1) access to depositors for bank run simulation.
+        """
+        ...
+
+    @abstractmethod
+    def remove_agent_from_all_accounts(self, agent_id: int) -> None:
+        """
+        Removes an agent from all bank account indices.
+        Called upon agent liquidation/deletion.
         """
         ...
