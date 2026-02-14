@@ -18,3 +18,5 @@ currency_exchange:
     JPY: 135.0
     GBP: 0.79
     CNY: 7.0
+
+god_mode_token: "change_me_in_prod"
