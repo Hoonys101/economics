@@ -1,8 +1,0 @@
-  atomic-housing-saga-v3-6601307136540128487
-  feat/td-162-household-refactor
-  feature/integrity-refactor-20260201
-  feature/liquidation-sprint-20260202
-  housing-v2-refactor-15597012861367002904
-* main
-  ph6-watchtower-scaffold-18088587128119282769
-  refactor/strict-typing-dto-enforcement-3664420407678054950

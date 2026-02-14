@@ -78,6 +78,12 @@
     - **Insight**: 파편화된 데이터 구조는 모듈 간 소통 오류를 만들고 방어적 로직을 강요함. DTO는 시스템 내에서 정보가 흐르는 "통화"이며, 이 통화가 단일화될 때 거래 비용(버그)이 최소화됨.
     - **Principle**: **"DTO는 시스템의 기축 통화이다."** 표준화된 DTO(`AgentCoreConfigDTO`, `CanonicalOrderDTO`)를 인터페이스 표준으로 사용하여 모듈 간 결합을 제거하고 시스템적 확장성을 확보함.
     - [Insight Report](../_archive/insights/fix-test-systems.md)
+- **[2026-02-14] Protocol Centralization (TD-ARCH-PROTO-LOCATION)**
+    - Moved locally defined protocols `ISectorAgent` and `ICommandService` to a centralized `modules/api/protocols.py`. This reduces circular dependency risks and defines a clear 'Public API' layer for the simulation engines.
+    - [Insight Report](../_archive/insights/2026-02-14_Protocol_Centralization.md)
+- **[2026-02-14] System Registry Priority Inversion**
+    - Inverted registry priority to `SYSTEM=0`, `CONFIG=10`. This allows configuration files and God-mode interventions to override system defaults, providing a structured hierarchy for parameter control.
+    - [Insight Report](../_archive/insights/2026-02-14_Post_Merge_Stabilization.md)
 
 ---
 
@@ -109,6 +115,11 @@
     - **Insight**: Agent logic can fail if test data violates domain constraints (e.g., death probability > 1.0). Newborn agents were being created with random adult ages because `initial_age` was not explicitly passed in tests.
     - **Principle**: Test configurations and mock data must accurately reflect the domain constraints and data types expected by the system under test.
     - [Insight Report](../_archive/insights/2026-02-11_Legacy_Test_Refactor_Summary.md)
+- **[2026-02-14] Async Isolation in Pytest**
+    - Enforced `function` loop scope for `pytest-asyncio` and pinned version `>= 0.24.0`. This prevents cross-test state leakage in the event loop and ensures compatibility with Python 3.13's stricter async rules.
+- **[2026-02-14] Snapshot Fidelity & Mock Leaks**
+    - Identified that `CommandService` undo snapshots were capturing `MagicMock` objects instead of concrete values. Standardized on using `registry.get_entry()` to provide real `RegistryEntry` objects during snapshotting to preserve rollback provenance.
+    - [Insight Report](../_archive/insights/2026-02-14_Post_Merge_Stabilization.md)
 
 ---
 
