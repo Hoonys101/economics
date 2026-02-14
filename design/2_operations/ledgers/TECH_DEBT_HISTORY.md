@@ -55,6 +55,9 @@ This document archives resolved technical debt items to keep the primary ledger 
 | **TD-QE-MISSING** | Financials | **Logic Gap**: QE Bond Issuance logic restoration. | PH15.2 | [Insight](../../communications/insights/MS-Finance-Purity-QE.md) |
 | **TD-FIN-001** | Finance | **Purity**: Refactored `DebtServicing` & `LoanBooking` to functional pattern. | PH15.2 | [Insight](../../communications/insights/MS-Finance-Purity-QE.md) |
 | **TD-PH15-SEO** | Architecture | **Hardening**: Eliminated direct Agent handle leaks in core engines (Tax/Solvency). | PH15.2 | [Insight](../../communications/insights/MS-0128-Tax-Engine-Refactor.md) |
+| **TD-INT-STRESS-SCALE** | System | **O(N) Stress Scan**: Bank -> Depositor reverse index implemented. | 2026-02-14 | [Insight](../../design/_archive/insights/2026-02-14_Settlement_Stress_Scale_Optimization.md) |
+| **TD-INT-WS-SYNC** | System | **WS Polling**: Event-driven broadcast via TelemetryExchange implemented. | 2026-02-14 | [Insight](../../design/_archive/insights/2026-02-14_WebSocket_Event_Driven_Optimization.md) |
+| **TD-ARCH-PROTO-LOCATION** | System | **Bleeding Protocols**: Refactored to `modules/api/protocols.py`. | 2026-02-14 | [Insight](../../design/_archive/insights/2026-02-14_Post_Merge_Stabilization.md) |
 
 ## 📓 Implementation Lessons (Resolved Path)
 

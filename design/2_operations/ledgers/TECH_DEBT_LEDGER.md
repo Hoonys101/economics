@@ -4,9 +4,9 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **TD-ARCH-SEC-GOD** | System | **Auth Missing**: God-Mode WebSocket commands (`GodCommandDTO`) lack authentication/tokens. | **High**: Security Risk. | Identified |
 | **TD-INT-PENNIES-FRAGILITY** | System | **Penny-Float Duality**: Widespread `hasattr`/`getattr` for `xxx_pennies` vs `xxx`. Needs Unified API. | **High**: Logic Inconsistency. | Identified |
-| **TD-INT-STRESS-SCALE** | System | **O(N) Stress Scan**: `FORCE_WITHDRAW_ALL` iterates all agents. Needs Bank-to-Depositor index. | **Medium**: Performance (Scale). | Open |
-| **TD-INT-WS-SYNC** | System | **WS Polling**: WebSocket broadcast uses fixed `sleep(0.1)` instead of Tick-synced events. | **Medium**: Efficiency. | Identified |
-| **TD-ARCH-PROTO-LOCATION** | System | **Bleeding Protocols**: `ISectorAgent` locally defined in `command_service.py`. Needs `api.py` move. | **Low**: Type Consistency. | Identified |
+| **TD-INT-STRESS-SCALE** | System | **O(N) Stress Scan**: Bank -> Depositor reverse index implemented. | **Low** | ✅ Resolved |
+| **TD-INT-WS-SYNC** | System | **WS Polling**: Event-driven broadcast via TelemetryExchange implemented. | **Low** | ✅ Resolved |
+| **TD-ARCH-PROTO-LOCATION** | System | **Bleeding Protocols**: Refactored to `modules/api/protocols.py`. | **Low** | ✅ Resolved |
 | **TD-INT-BANK-ROLLBACK** | Finance | **Rollback Coupling**: Bank rollback logic dependent on `hasattr` implementation details. | **Low**: Abstraction Leak. | Identified |
 | **TD-DATA-01-MOCK** | Finance | **Protocol/Mock Drift**: `ISettlementSystem` lacks `audit_total_m2`. Manual mocking in tests. | **High**: Regression Risk. | Open |
 | **TD-STR-GOD-DECOMP** | Architecture | **Residual God Classes**: `Firm` (1276 lines) and `Household` (1042 lines) exceed 800-line limit. | **Medium**: Maintenance friction. | Open |
