@@ -23,7 +23,7 @@ from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IOrchest
 from simulation.ai.household_ai import HouseholdAI
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.systems.api import LifecycleContext, MarketInteractionContext, LearningUpdateContext, ILearningAgent
-from modules.finance.api import IFinancialAgent, ICreditFrozen
+from modules.finance.api import IFinancialAgent, IFinancialEntity, ICreditFrozen
 from modules.simulation.api import IEducated
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.finance.wallet.wallet import Wallet
@@ -65,6 +65,7 @@ class Household(
     ILearningAgent,
     IEmployeeDataProvider,
     IEducated,
+    IFinancialEntity,
     IFinancialAgent,
     IOrchestratorAgent,
     ICreditFrozen,
@@ -727,13 +728,17 @@ class Household(
     def assets(self) -> int:
         return self._econ_state.wallet.get_balance(DEFAULT_CURRENCY)
 
-    @override
-    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        raise NotImplementedError("Direct deposit is deprecated. Use SettlementSystem.transfer.")
+    @property
+    def balance_pennies(self) -> int:
+        return self._econ_state.wallet.get_balance(DEFAULT_CURRENCY)
 
     @override
-    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        raise NotImplementedError("Direct withdraw is deprecated. Use SettlementSystem.transfer.")
+    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._econ_state.wallet.add(amount_pennies, currency=currency, memo="Deposit")
+
+    @override
+    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._econ_state.wallet.subtract(amount_pennies, currency=currency, memo="Withdraw")
 
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         self._econ_state.wallet.add(amount, currency=currency, memo="Deposit")

@@ -43,7 +43,7 @@ from modules.firm.api import (
 )
 
 from simulation.utils.shadow_logger import log_shadow
-from modules.finance.api import InsufficientFundsError, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake
+from modules.finance.api import InsufficientFundsError, IFinancialEntity, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake
 from modules.common.interfaces import IPropertyOwner
 from modules.common.dtos import Claim
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
@@ -64,7 +64,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner, IFirmStateProvider):
+class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner, IFirmStateProvider):
     """
     Firm Agent (Orchestrator).
     Manages state and delegates logic to stateless engines.
@@ -1286,6 +1286,23 @@ class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, I
     def remove_property(self, property_id: int) -> None:
         if property_id in self.finance_state.owned_properties:
             self.finance_state.owned_properties.remove(property_id)
+
+    # --- IFinancialEntity Implementation ---
+
+    @property
+    def balance_pennies(self) -> int:
+        return self.wallet.get_balance(DEFAULT_CURRENCY)
+
+    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         self.wallet.add(amount_pennies, currency)
+
+    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+         current_bal = self.wallet.get_balance(currency)
+         if current_bal < amount_pennies:
+            raise InsufficientFundsError(
+                f"Insufficient funds", required=MoneyDTO(amount_pennies=amount_pennies, currency=currency), available=MoneyDTO(amount_pennies=current_bal, currency=currency)
+            )
+         self.wallet.subtract(amount_pennies, currency)
 
     # --- IFinancialAgent Implementation ---
 

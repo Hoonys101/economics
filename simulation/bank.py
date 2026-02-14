@@ -7,6 +7,7 @@ from modules.finance.api import (
     LoanInfoDTO,
     DebtStatusDTO,
     BorrowerProfileDTO,
+    IFinancialEntity,
     IFinancialAgent,
     IFinanceSystem
 )
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_TICKS_PER_YEAR = 365.0
 _DEFAULT_INITIAL_BASE_ANNUAL_RATE = 0.03
 
-class Bank(IBank, ICurrencyHolder):
+class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     """
     Refactored Bank Agent (Stateless Wrapper).
     Delegates all financial logic to FinanceSystem (FinancialLedgerDTO).
@@ -82,6 +83,19 @@ class Bank(IBank, ICurrencyHolder):
 
     def set_finance_system(self, finance_system: IFinanceSystem) -> None:
         self.finance_system = finance_system
+
+    # --- IFinancialEntity Implementation ---
+
+    @property
+    def balance_pennies(self) -> int:
+        return self._wallet.get_balance(DEFAULT_CURRENCY)
+
+    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        # Bank's own funds
+        self._wallet.add(amount_pennies, currency, memo="Deposit")
+
+    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._wallet.subtract(amount_pennies, currency, memo="Withdraw")
 
     # --- IFinancialAgent Implementation ---
 

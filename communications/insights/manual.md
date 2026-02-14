@@ -1,37 +1,35 @@
-# Manual Insight Report
+# Insight Report: Standardize Financial Entity Protocol
 
-## Architectural Insights
+## 1. Architectural Insights
+*   **Protocol Standardization**: The introduction of `IFinancialEntity` provides a standardized, type-safe interface for financial interactions (`balance_pennies`, `deposit`, `withdraw`). This eliminates fragility associated with `hasattr` checks and enforcing "penny-first" operations.
+*   **Dual-Interface Strategy**: While transitioning to `IFinancialEntity`, the existing `IFinancialAgent` interface was retained in `SettlementSystem` to support multi-currency operations that `IFinancialEntity` (focused on default currency pennies) does not explicitly cover in its property accessor. This ensures backward compatibility and supports complex financial agents while prioritizing the new protocol for standard transactions.
+*   **Elimination of Fragile Checks**: All implicit attribute checks (e.g., `hasattr(agent, 'balance_pennies')`) in the Settlement System have been replaced with explicit `isinstance(agent, IFinancialEntity)` checks, enhancing system stability and type safety.
 
-### 1. Restoration of Sales ROI Logic
-The "Dynamic Marketing Budget" feature, where marketing spend rate adjusts based on ROI (Return On Investment), was identified as missing from the stateless `SalesEngine`.
-- **Logic Restoration**: The logic was reintroduced into `SalesEngine.adjust_marketing_budget`. It now calculates ROI using `(revenue_this_turn - last_revenue) / last_marketing_spend`.
-- **State Updates**: `Firm` (the state orchestrator) now passes `last_revenue` and `last_marketing_spend` from `FinanceState` to the engine, and updates `SalesState.marketing_budget_rate` based on the engine's return value.
-- **DTO Update**: `MarketingAdjustmentResultDTO` was extended to include `new_marketing_rate`.
-- **Testing**: `tests/unit/test_marketing_roi.py` was restored by removing `@unittest.skip`, updating attribute names to match the "Pennies Migration" (e.g., `last_revenue_pennies`), and verifying the integration of `Firm` and `SalesEngine`.
+## 2. Test Evidence
+The changes were verified using the existing unit test suite for the Settlement System, ensuring no regressions in financial logic.
 
-### 2. Integration Test Mock Hardening
-The regression in `tests/integration/mission_int_02_stress_test.py` highlighted a mismatch between the `CommandService` requirements and the test mocks.
-- **Interface Compliance**: `MockSettlementSystem` was updated to implement `get_account_holders(bank_id)`, mirroring the reverse-index lookup required by `FORCE_WITHDRAW_ALL` commands.
-- **Strict Mocking**: The `registry` mock was updated to use `create_autospec(IGlobalRegistry, instance=True)` instead of `MagicMock(spec=...)`. This ensures stricter adherence to the Protocol definition, preventing future interface drift from going unnoticed in tests.
-
-### 3. Test Suite Status
-- **Targeted Fixes**: `tests/unit/test_marketing_roi.py` and `tests/integration/mission_int_02_stress_test.py` are now passing.
-- **Clarification on `test_household_ai.py`**: The mission mandate requested analysis of skipped tests in `tests/unit/test_household_ai.py`. Upon inspection, **no tests were found skipped** in this file (all passed). It is likely the instruction referred to `tests/unit/decisions/test_household_integration_new.py` (which contains skips) or was based on outdated information. Given the strict scope of "Restore behavioral tests... in `test_marketing_roi.py`, `test_household_ai.py`", and finding no skips in the latter, no changes were made to `test_household_ai.py` to avoid regressions in working code.
-
-## Test Evidence
-
-### Unit Tests (`tests/unit/test_marketing_roi.py`)
 ```
-tests/unit/test_marketing_roi.py::TestMarketingROI::test_budget_decrease_on_low_efficiency PASSED [ 25%]
-tests/unit/test_marketing_roi.py::TestMarketingROI::test_budget_increase_on_high_efficiency PASSED [ 50%]
-tests/unit/test_marketing_roi.py::TestMarketingROI::test_budget_stable_on_saturation PASSED [ 75%]
-tests/unit/test_marketing_roi.py::TestMarketingROI::test_first_tick_skip PASSED [100%]
-```
+tests/unit/systems/test_settlement_system.py::test_transfer_success PASSED [  4%]
+tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_funds PASSED [  9%]
+tests/unit/systems/test_settlement_system.py::test_create_and_transfer_minting PASSED [ 14%]
+tests/unit/systems/test_settlement_system.py::test_create_and_transfer_government_grant PASSED [ 19%]
+tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_burning PASSED [ 23%]
+tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_tax PASSED [ 28%]
+tests/unit/systems/test_settlement_system.py::test_record_liquidation PASSED [ 33%]
+tests/unit/systems/test_settlement_system.py::test_record_liquidation_escheatment PASSED [ 38%]
+tests/unit/systems/test_settlement_system.py::test_transfer_rollback PASSED [ 42%]
+tests/unit/systems/test_settlement_system.py::test_atomic_settlement_success PASSED [ 47%]
+tests/unit/systems/test_settlement_system.py::test_atomic_settlement_leak_prevention PASSED [ 52%]
+tests/unit/systems/test_settlement_system.py::test_atomic_settlement_overdraft_protection PASSED [ 57%]
+tests/unit/systems/test_settlement_system.py::test_transfer_seamless_success PASSED [ 61%]
+tests/unit/systems/test_settlement_system.py::test_transfer_seamless_fail_bank PASSED [ 66%]
+tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_success PASSED [ 71%]
+tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_rollback PASSED [ 76%]
+tests/unit/systems/test_settlement_system.py::test_settle_atomic_success PASSED [ 80%]
+tests/unit/systems/test_settlement_system.py::test_settle_atomic_rollback PASSED [ 85%]
+tests/unit/systems/test_settlement_system.py::test_settle_atomic_credit_fail_rollback PASSED [ 90%]
+tests/unit/systems/test_settlement_system.py::test_inheritance_portfolio_transfer PASSED [ 95%]
+tests/unit/systems/test_settlement_system.py::test_escheatment_portfolio_transfer PASSED [100%]
 
-### Integration Tests (`tests/integration/mission_int_02_stress_test.py`)
-```
-tests/integration/mission_int_02_stress_test.py::test_hyperinflation_scenario PASSED [ 25%]
-tests/integration/mission_int_02_stress_test.py::test_bank_run_scenario PASSED [ 50%]
-tests/integration/mission_int_02_stress_test.py::test_inventory_destruction_scenario PASSED [ 75%]
-tests/integration/mission_int_02_stress_test.py::test_parameter_rollback PASSED [100%]
+======================== 21 passed, 2 warnings in 0.57s ========================
 ```
