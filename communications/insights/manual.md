@@ -65,3 +65,29 @@ $ pytest tests/integration/test_server_integration.py
 ```
 ======================== 2 passed, 2 warnings in 0.19s =========================
 ```
+
+---
+
+## 5. PublicManager DTO Signature Mismatch
+### Architectural Insights
+- **Liquidity Analysis**: `MarketSignalDTO` now includes `total_bid_quantity` and `total_ask_quantity`.
+- **Fixture Sync**: Updated `PublicManager` tests to provide these required liquidity fields.
+
+### Test Evidence
+```bash
+$ pytest tests/unit/modules/system/execution/test_public_manager_compliance.py
+============================== 4 passed in 0.18s ===============================
+```
+
+---
+
+## 6. Stress Test Rollback Assertion
+### Architectural Insights
+- **Snapshot Fidelity**: `CommandService` requires `registry.get_entry()` to be mocked with a concrete `RegistryEntry`, not a `MagicMock`, to prevent "Mock Leaks" into the undo history.
+- **Rollback Provenance**: Rollback logic correctly restores the *original* origin (e.g., `OriginType.CONFIG`), not the intervention origin (`GOD_MODE`).
+
+### Test Evidence
+```bash
+$ pytest tests/integration/mission_int_02_stress_test.py
+============================== 4 passed in 0.23s ===============================
+```
