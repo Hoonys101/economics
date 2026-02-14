@@ -152,6 +152,13 @@ class ISettlementSystem(ABC):
         ...
 
     @abstractmethod
+    def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = "god_mode_injection") -> bool:
+        """
+        Minting capability for God Mode.
+        """
+        ...
+
+    @abstractmethod
     def audit_total_m2(self, expected_total: Optional[int] = None) -> bool:
         """
         Audits the total M2 money supply in the system.

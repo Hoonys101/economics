@@ -138,7 +138,7 @@ class TestLiquidationManager(unittest.TestCase):
         self.mock_settlement.transfer.assert_any_call(
             self.mock_public,
             self.firm,
-            40.0,
+            4000, # 40.0 * 100 pennies
             "Asset Liquidation (Inventory) - Agent 1",
             currency=DEFAULT_CURRENCY
         )

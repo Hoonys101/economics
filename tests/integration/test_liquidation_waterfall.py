@@ -300,11 +300,11 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         self.manager.initiate_liquidation(self.firm, self.state)
 
         # Verify
-        # 1. PublicManager -> Firm Transfer (800.0)
+        # 1. PublicManager -> Firm Transfer (800.0 dollars -> 80000 pennies)
         self.mock_settlement.transfer.assert_any_call(
             self.mock_public_manager,
             self.firm,
-            800.0,
+            80000,
             "Asset Liquidation (Inventory) - Agent 1",
             currency=DEFAULT_CURRENCY
         )

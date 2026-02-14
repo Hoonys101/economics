@@ -1,12 +1,13 @@
 import pytest
-from unittest.mock import Mock, MagicMock
-from modules.household.connectors.housing_connector import HousingConnector
+from unittest.mock import Mock, MagicMock, create_autospec
+from modules.household.connectors.housing_connector import HousingConnector, IHousingSystem
 from modules.household.api import HousingActionDTO
 
 class TestHousingConnector:
     def test_initiate_purchase(self):
         connector = HousingConnector()
-        system = Mock()
+        # Use create_autospec so isinstance(system, IHousingSystem) returns True
+        system = create_autospec(IHousingSystem, instance=True)
 
         action = HousingActionDTO(
             action_type="INITIATE_PURCHASE",
