@@ -33,6 +33,7 @@ class MockGovernment:
         return 0.5
     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self._assets += amount
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self._assets -= amount
+    def get_all_balances(self): return {DEFAULT_CURRENCY: self._assets}
 
 class MockCentralBank:
     def __init__(self, initial_cash):
@@ -49,6 +50,7 @@ class MockCentralBank:
         self.assets["bonds"].append(bond)
     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self.assets['cash'] += amount
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self.assets['cash'] -= amount
+    def get_all_balances(self): return {DEFAULT_CURRENCY: self.assets['cash']}
 
 class MockBank:
     def __init__(self, initial_assets, id=1):
@@ -66,6 +68,7 @@ class MockBank:
     def get_balance(self, currency=DEFAULT_CURRENCY): return self._assets
     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self._assets += amount
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self._assets -= amount
+    def get_all_balances(self): return {DEFAULT_CURRENCY: self._assets}
 
 class MockFirm:
     def __init__(self, id, initial_cash_reserve):
@@ -82,6 +85,7 @@ class MockFirm:
     def get_balance(self, currency=DEFAULT_CURRENCY): return self.cash_reserve
     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self.cash_reserve += amount
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self.cash_reserve -= amount
+    def get_all_balances(self): return {DEFAULT_CURRENCY: self.cash_reserve}
 
 class MockConfig:
     QE_INTERVENTION_YIELD_THRESHOLD = 0.05

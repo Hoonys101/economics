@@ -358,10 +358,13 @@ class TestSimulation:
             + [f.id for f in mock_firms]
             + [simulation_instance.bank.id]
             + [simulation_instance.government.id]
-            + [simulation_instance.escrow_agent.id] # Added Escrow Agent
+            # + [simulation_instance.escrow_agent.id] # Added Escrow Agent (Handled below)
         )
-        if hasattr(simulation_instance, "escrow_agent") and simulation_instance.escrow_agent:
-            expected_agent_ids.append(simulation_instance.escrow_agent.id)
+
+        # CHANGED: Use getattr with default instead of hasattr for optional components
+        escrow_agent = getattr(simulation_instance, "escrow_agent", None)
+        if escrow_agent:
+            expected_agent_ids.append(escrow_agent.id)
 
         assert set(simulation_instance.agents.keys()) == set(expected_agent_ids)
 
@@ -788,6 +791,7 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
     assert household_active in firm_active.hr_state.employees
     assert household_employed_by_inactive_firm in firm_inactive.hr_state.employees
 
+    # CHANGED: Replaced hasattr with direct access where safe, and getattr for optional components
     state = SimulationState(
         time=sim.time,
         households=sim.households,
@@ -796,19 +800,19 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
         markets=sim.markets,
         government=sim.government,
         bank=sim.bank,
-        central_bank=sim.central_bank if hasattr(sim, 'central_bank') else None,
-            escrow_agent=getattr(sim, 'escrow_agent', None),
-        stock_market=sim.stock_market if hasattr(sim, 'stock_market') else None,
-        stock_tracker=sim.stock_tracker if hasattr(sim, 'stock_tracker') else None,
+        central_bank=sim.central_bank, # Direct access
+        escrow_agent=getattr(sim, 'escrow_agent', None), # Keep getattr for optional/dynamic
+        stock_market=sim.stock_market, # Direct access
+        stock_tracker=sim.stock_tracker, # Direct access
         goods_data=sim.goods_data,
         market_data={},
         config_module=sim.config_module,
         tracker=sim.tracker,
         logger=sim.logger,
-        ai_training_manager=getattr(sim, 'ai_training_manager', None),
-        ai_trainer=getattr(sim, 'ai_trainer', None),
-        next_agent_id=getattr(sim, 'next_agent_id', 0),
-        real_estate_units=getattr(sim, 'real_estate_units', []),
+        ai_training_manager=sim.ai_training_manager, # Direct access
+        ai_trainer=sim.ai_trainer, # Direct access
+        next_agent_id=sim.next_agent_id, # Direct access
+        real_estate_units=sim.real_estate_units, # Direct access
         transaction_processor=sim.transaction_processor, # Inject processor
     )
 

@@ -4,6 +4,8 @@ import pytest
 
 # Mock missing dependencies for CI/Sandbox environments
 for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit"]:
+    if module_name in sys.modules:
+        continue
     try:
         __import__(module_name)
     except ImportError:
@@ -11,6 +13,8 @@ for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model"
         # IMPORTANT: Setting __path__ = [] allows the mock to be treated as a package,
         # supporting submodule imports like 'websockets.asyncio'.
         mock.__path__ = []  # Ensure it is treated as a package
+        mock.__spec__ = None # Ensure it satisfies import system expectations
+
         if module_name == "numpy":
             mock.bool_ = bool
             mock.float64 = float
@@ -28,8 +32,10 @@ for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model"
             mock.safe_load.return_value = {}
         sys.modules[module_name] = mock
 
+import config
 from simulation.agents.government import Government
 from modules.finance.system import FinanceSystem
+from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
 
 @pytest.fixture(autouse=True)
 def mock_fcntl():
@@ -47,33 +53,35 @@ def mock_fcntl():
 @pytest.fixture
 def mock_config():
     """Provides a mock config object for testing."""
-    config = Mock()
-    config.GOVERNMENT_INITIAL_ASSETS = 1000000.0
-    config.INCOME_TAX_RATE = 0.1
-    config.CORPORATE_TAX_RATE = 0.2
-    config.SALES_TAX_RATE = 0.05
-    config.WEALTH_TAX_BRACKETS = [(100000, 0.01)]
-    config.CAPITAL_GAINS_TAX_RATE = 0.1
-    config.GOVERNMENT_SPENDING_INTERVAL = 10
-    config.DEBT_CEILING_GDP_RATIO = 2.0
-    config.FISCAL_POLICY_ADJUSTMENT_SPEED = 0.1
-    config.AUTO_COUNTER_CYCLICAL_ENABLED = True
-    config.TICKS_PER_YEAR = 100
-    config.FISCAL_SENSITIVITY_ALPHA = 0.5
-    config.CB_INFLATION_TARGET = 0.02
-    config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
-    config.TAX_BRACKETS = []
+    # Use MagicMock with spec=config to enforce interface fidelity
+    mock_config = MagicMock(spec=config)
 
-    # For FinanceSystem
-    config.STARTUP_GRACE_PERIOD_TICKS = 24
-    config.ALTMAN_Z_SCORE_THRESHOLD = 1.81
-    config.DEBT_RISK_PREMIUM_TIERS = {1.2: 0.05, 0.9: 0.02, 0.6: 0.005}
-    config.BOND_MATURITY_TICKS = 400
-    config.QE_INTERVENTION_YIELD_THRESHOLD = 0.10
-    config.BAILOUT_PENALTY_PREMIUM = 0.05
-    config.BAILOUT_REPAYMENT_RATIO = 0.5
+    # Attributes existing in config.py (verified or assumed based on usage)
+    mock_config.INCOME_TAX_RATE = 0.1
+    mock_config.CORPORATE_TAX_RATE = 0.2
+    mock_config.SALES_TAX_RATE = 0.05
+    mock_config.TICKS_PER_YEAR = 100
+    mock_config.CB_INFLATION_TARGET = 0.02
+    mock_config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
+    mock_config.TAX_BRACKETS = []
+    mock_config.STARTUP_GRACE_PERIOD_TICKS = 24
+    mock_config.ALTMAN_Z_SCORE_THRESHOLD = 1.81
+    mock_config.BAILOUT_REPAYMENT_RATIO = 0.5
 
-    return config
+    # Attributes likely not in config.py (Legacy/Hidden)
+    mock_config.WEALTH_TAX_BRACKETS = [(100000, 0.01)]
+    mock_config.CAPITAL_GAINS_TAX_RATE = 0.1
+    mock_config.GOVERNMENT_SPENDING_INTERVAL = 10
+    mock_config.DEBT_CEILING_GDP_RATIO = 2.0
+    mock_config.FISCAL_POLICY_ADJUSTMENT_SPEED = 0.1
+    mock_config.AUTO_COUNTER_CYCLICAL_ENABLED = True
+    mock_config.FISCAL_SENSITIVITY_ALPHA = 0.5
+    mock_config.DEBT_RISK_PREMIUM_TIERS = {1.2: 0.05, 0.9: 0.02, 0.6: 0.005}
+    mock_config.BOND_MATURITY_TICKS = 400
+    mock_config.QE_INTERVENTION_YIELD_THRESHOLD = 0.10
+    mock_config.BAILOUT_PENALTY_PREMIUM = 0.05
+
+    return mock_config
 
 @pytest.fixture
 def mock_tracker():
@@ -105,9 +113,8 @@ def finance_system(mock_central_bank, mock_bank, mock_config):
     system = FinanceSystem(mock_gov_shell, mock_central_bank, mock_bank, mock_config)
     # Spy on the real methods so we can assert calls if needed
     system.issue_treasury_bonds = MagicMock(wraps=system.issue_treasury_bonds)
-    # system.grant_bailout_loan is deprecated and might cause AttributeError if not present
-    if hasattr(system, 'grant_bailout_loan'):
-        system.grant_bailout_loan = MagicMock(wraps=system.grant_bailout_loan)
+    # Unconditionally wrap grant_bailout_loan (it exists, deprecated or not)
+    system.grant_bailout_loan = MagicMock(wraps=system.grant_bailout_loan)
     system.evaluate_solvency = MagicMock(wraps=system.evaluate_solvency)
     return system
 
@@ -119,7 +126,8 @@ def government(mock_config, mock_tracker, finance_system):
     """
     # Refactored Government constructor no longer takes tracker or initial_assets
     gov = Government(id=1, config_module=mock_config)
-    gov._assets = mock_config.GOVERNMENT_INITIAL_ASSETS
+    # Set initial assets directly using a literal, avoiding non-existent config attribute
+    gov._assets = 1000000.0
 
     # Replace the real finance system with our mocked one
     gov.finance_system = finance_system
@@ -147,11 +155,10 @@ def config_manager(mock_config, tmp_path):
 @pytest.fixture
 def default_market_context():
     """Provides a default MarketContextDTO fixture."""
-    from modules.system.api import DEFAULT_CURRENCY
-    return {
-        "exchange_rates": {DEFAULT_CURRENCY: 1.0, "EUR": 1.1},
-        "benchmark_rates": {"cpi": 1.0, "central_bank_rate": 0.05}
-    }
+    return MarketContextDTO(
+        exchange_rates={DEFAULT_CURRENCY: 1.0, "EUR": 1.1},
+        benchmark_rates={"cpi": 1.0, "central_bank_rate": 0.05}
+    )
 
 # ============================================================================
 # 🌟 Golden Fixture Support (Auto-Generated Mocks from Real Data)
