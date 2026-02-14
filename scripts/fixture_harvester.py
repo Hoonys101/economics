@@ -243,6 +243,7 @@ class GoldenLoader:
     def create_household_mocks(self, mock_class=None):
         """
         Create mock households from golden data.
+        Enforces integer precision for monetary values (MIGRATION).
         """
         mocks = []
         for h_data in self.households_data:
@@ -253,6 +254,9 @@ class GoldenLoader:
             else:
                 mock = SimpleNamespace()
             for key, value in h_data.items():
+                # Force assets to be int
+                if key == 'assets':
+                    value = int(value)
                 setattr(mock, key, value)
 
             mock.make_decision = MagicMock(return_value=([], MagicMock()))
@@ -296,7 +300,10 @@ class GoldenLoader:
         return dtos
     
     def create_firm_mocks(self, mock_class=None):
-        """Create mock firms from golden data."""
+        """
+        Create mock firms from golden data.
+        Enforces integer precision for monetary values (MIGRATION).
+        """
         mocks = []
         for f_data in self.firms_data:
             from types import SimpleNamespace
@@ -305,6 +312,9 @@ class GoldenLoader:
             else:
                 mock = SimpleNamespace()
             for key, value in f_data.items():
+                # Force assets to be int
+                if key == 'assets':
+                    value = int(value)
                 setattr(mock, key, value)
             
             mock.make_decision = MagicMock(return_value=([], MagicMock()))
@@ -319,18 +329,18 @@ class GoldenLoader:
             # Mock Finance & Wallet for multi-currency
             mock.finance = MagicMock()
             mock.wallet = MagicMock()
-            assets_val = f_data.get("assets", 0.0)
+            assets_val = int(f_data.get("assets", 0.0)) # Enforce int
             mock.finance.balance = {DEFAULT_CURRENCY: assets_val}
-            mock.finance.get_balance.side_effect = lambda c: assets_val if c == DEFAULT_CURRENCY else 0.0
-            mock.wallet.get_balance.side_effect = lambda c: assets_val if c == DEFAULT_CURRENCY else 0.0
+            mock.finance.get_balance.side_effect = lambda c: assets_val if c == DEFAULT_CURRENCY else 0
+            mock.wallet.get_balance.side_effect = lambda c: assets_val if c == DEFAULT_CURRENCY else 0
             mock.wallet.get_all_balances.return_value = {DEFAULT_CURRENCY: assets_val}
 
             mock.get_financial_snapshot = MagicMock(return_value={
-                "total_assets": f_data.get("assets", 0),
-                "working_capital": f_data.get("assets", 0),
-                "retained_earnings": f_data.get("retained_earnings", 0),
-                "average_profit": f_data.get("current_profit", 0),
-                "total_debt": f_data.get("total_debt", 0)
+                "total_assets": int(f_data.get("assets", 0)),
+                "working_capital": int(f_data.get("assets", 0)),
+                "retained_earnings": int(f_data.get("retained_earnings", 0)),
+                "average_profit": int(f_data.get("current_profit", 0)),
+                "total_debt": int(f_data.get("total_debt", 0))
             })
             mocks.append(mock)
         return mocks
@@ -411,7 +421,7 @@ if __name__ == "__main__":
     class DummyHousehold:
         def __init__(self, id):
             self.id = id
-            self.assets = 1000.0 + id * 100
+            self.assets = int(1000.0 + id * 100)
             self.is_active = True
             self.is_employed = id % 2 == 0
             self.employer_id = 100 if self.is_employed else None
@@ -425,7 +435,7 @@ if __name__ == "__main__":
     class DummyFirm:
         def __init__(self, id):
             self.id = id
-            self.assets = 5000.0 + id * 500
+            self.assets = int(5000.0 + id * 500)
             self.is_active = True
             self.specialization = "food" if id % 2 == 0 else "electronics"
             self.productivity_factor = 1.0

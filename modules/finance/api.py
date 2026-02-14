@@ -430,8 +430,46 @@ class ISettlementSystem(Protocol):
     Interface for the centralized settlement system.
     """
 
-    def transfer(self, sender: IFinancialAgent, receiver: IFinancialAgent, amount_pennies: int, memo: str, currency: CurrencyCode = DEFAULT_CURRENCY) -> Optional[ITransaction]:
+    def transfer(
+        self,
+        debit_agent: IFinancialAgent,
+        credit_agent: IFinancialAgent,
+        amount: int,
+        memo: str,
+        debit_context: Optional[Dict[str, Any]] = None,
+        credit_context: Optional[Dict[str, Any]] = None,
+        tick: int = 0,
+        currency: CurrencyCode = DEFAULT_CURRENCY
+    ) -> Optional[ITransaction]:
         """Executes an immediate, single transfer. Returns transaction or None."""
+        ...
+
+    def create_and_transfer(
+        self,
+        source_authority: IFinancialAgent,
+        destination: IFinancialAgent,
+        amount: int,
+        reason: str,
+        tick: int,
+        currency: CurrencyCode = DEFAULT_CURRENCY
+    ) -> Optional[ITransaction]:
+        """Creates new money (or grants) and transfers it to an agent."""
+        ...
+
+    def transfer_and_destroy(
+        self,
+        source: IFinancialAgent,
+        sink_authority: IFinancialAgent,
+        amount: int,
+        reason: str,
+        tick: int,
+        currency: CurrencyCode = DEFAULT_CURRENCY
+    ) -> Optional[ITransaction]:
+        """Transfers money from an agent to an authority to be destroyed."""
+        ...
+
+    def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = "god_mode_injection") -> bool:
+        """Minting capability for God Mode."""
         ...
 
     def get_balance(self, agent_id: AgentID, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
@@ -439,6 +477,10 @@ class ISettlementSystem(Protocol):
         Queries the Single Source of Truth for an agent's current balance.
         This is the ONLY permissible way to check another agent's funds.
         """
+        ...
+
+    def get_account_holders(self, bank_id: int) -> List[int]:
+        """Returns a list of all agents holding accounts at the specified bank."""
         ...
 
     def audit_total_m2(self, expected_total: Optional[int] = None) -> bool:

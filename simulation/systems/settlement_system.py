@@ -231,8 +231,7 @@ class SettlementSystem(ISettlementSystem):
 
         for recipient, amount, memo, tx_type in distribution_plan:
             if not isinstance(amount, int):
-                 self.logger.critical(f"SETTLEMENT_TYPE_ERROR | Amount must be int, got {type(amount)} in distribution plan.")
-                 continue
+                 raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)} in distribution plan.")
 
             if amount <= 0:
                 continue
@@ -389,8 +388,7 @@ class SettlementSystem(ISettlementSystem):
             return False
 
         if not isinstance(amount, int):
-             self.logger.critical(f"SETTLEMENT_TYPE_ERROR | Amount must be int, got {type(amount)}. Memo: {memo}")
-             return False
+             raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)}. Memo: {memo}")
 
         is_central_bank = isinstance(agent, ICentralBank) or (agent.id == ID_CENTRAL_BANK)
 
@@ -544,8 +542,7 @@ class SettlementSystem(ISettlementSystem):
         # 0. Validate Credits (No negative transfers allowed in this atomic mode)
         for _, amount, memo in credits_list:
              if not isinstance(amount, int):
-                 self.logger.error(f"SETTLEMENT_TYPE_ERROR | Amount must be int in atomic batch. Memo: {memo}")
-                 return False
+                 raise TypeError(f"Settlement integrity violation: Amount must be int in atomic batch. Memo: {memo}")
              if amount < 0:
                  self.logger.error(f"SETTLEMENT_FAIL | Negative credit amount {amount} in atomic batch. Memo: {memo}")
                  return False
@@ -617,8 +614,7 @@ class SettlementSystem(ISettlementSystem):
         Returns a Transaction object (truthy) on success, None (falsy) on failure.
         """
         if not isinstance(amount, int):
-             self.logger.critical(f"SETTLEMENT_TYPE_ERROR | Amount must be int, got {type(amount)}. Memo: {memo}")
-             return None
+             raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)}. Memo: {memo}")
 
         if amount <= 0:
             self.logger.warning(f"Transfer of non-positive amount ({amount}) attempted. Memo: {memo}")
@@ -695,8 +691,7 @@ class SettlementSystem(ISettlementSystem):
         Creates new money (or grants) and transfers it to an agent.
         """
         if not isinstance(amount, int):
-             self.logger.critical(f"SETTLEMENT_TYPE_ERROR | Amount must be int, got {type(amount)}.")
-             return None
+             raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)}.")
 
         if amount <= 0:
             return None
@@ -738,8 +733,7 @@ class SettlementSystem(ISettlementSystem):
         Transfers money from an agent to an authority to be destroyed.
         """
         if not isinstance(amount, int):
-             self.logger.critical(f"SETTLEMENT_TYPE_ERROR | Amount must be int, got {type(amount)}.")
-             return None
+             raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)}.")
 
         if amount <= 0:
             return None
