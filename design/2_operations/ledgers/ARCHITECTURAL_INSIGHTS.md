@@ -124,6 +124,14 @@
     - **Problem**: Manually patching `sys.modules` with `MagicMock` for packages like `websockets` caused sub-import failures because mocks lack the `__path__` attribute.
     - **Principle**: When mocking a package in `sys.modules`, always set `mock.__path__ = []` to emulate a package structure. Centralize these mocks in `conftest.py` to avoid global namespace pollution in individual test files.
     - [Insight Report](../_archive/insights/2026-02-14_Websockets_Shadowing_Fix.md)
+- **[2026-02-14] The Protocol Purity Paradox (Mock `isinstance` check)**
+    - **Problem**: `@runtime_checkable` protocols fail `isinstance(mock, Protocol)` checks if the mock doesn't implement the required methods, leading to false-positive test results when using `hasattr`.
+    - **Decision**: Enforce `isinstance` checks and ensure mocks explicitly implement the required methods (e.g., `get_all_balances`). This prevents "Mock Drift" where tests pass despite interface violations.
+- **[2026-02-14] sys.modules Patching and `__spec__`**
+    - **Fix**: When inject mocks into `sys.modules` (e.g., for missing dependencies like `numpy`), set `mock.__spec__ = None`. Modern Python import machinery inspects `__spec__`, and a raw `MagicMock` will cause an `AttributeError`.
+- **[2026-02-14] The "Mock Spec" Trap (Global Modules)**
+    - **Decision**: Use `MagicMock(spec=module)` to ensure mocks only expose attributes present in the real module. This identified test-only "magic numbers" that were polluting the shared `mock_config` fixture.
+    - [Insight Report](../_archive/insights/2026-02-14_Test_Fidelity_Protocol_Purity.md)
 
 ---
 
