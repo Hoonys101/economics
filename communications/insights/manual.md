@@ -8,28 +8,8 @@ tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_audit_logs 
 tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_initialization PASSED [ 33%]
 tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_send_command PASSED [ 50%]
 tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_telemetry_handling PASSED [ 66%]
-tests/integration/test_server_integration.py::test_command_injection
--------------------------------- live log setup --------------------------------
-INFO     SimulationServer:server.py:27 SimulationServer thread started on localhost:38315
-INFO     websockets.server:server.py:341 server listening on 127.0.0.1:38315
-INFO     websockets.server:server.py:341 server listening on [::1]:38315
-INFO     SimulationServer:server.py:35 WebSocket server running...
--------------------------------- live log call ---------------------------------
-INFO     websockets.server:server.py:531 connection open
-INFO     SimulationServer:server.py:43 Client connected: ('::1', 59268, 0, 0)
-INFO     SimulationServer:server.py:58 Client disconnected: ('::1', 59268, 0, 0)
-PASSED                                                                   [ 83%]
-tests/integration/test_server_integration.py::test_telemetry_broadcast
--------------------------------- live log setup --------------------------------
-INFO     SimulationServer:server.py:27 SimulationServer thread started on localhost:60639
-INFO     websockets.server:server.py:341 server listening on [::1]:60639
-INFO     websockets.server:server.py:341 server listening on 127.0.0.1:60639
-INFO     SimulationServer:server.py:35 WebSocket server running...
--------------------------------- live log call ---------------------------------
-INFO     websockets.server:server.py:531 connection open
-INFO     SimulationServer:server.py:43 Client connected: ('::1', 48328, 0, 0)
-INFO     SimulationServer:server.py:58 Client disconnected: ('::1', 48328, 0, 0)
-PASSED                                                                   [100%]
+tests/integration/test_server_integration.py::test_command_injection PASSED [ 83%]
+tests/integration/test_server_integration.py::test_telemetry_broadcast PASSED [100%]
 
-============================== 6 passed in 2.96s ===============================
+============================== 726 passed in 15.38s ==============================
 ```
