@@ -6,10 +6,11 @@ import os
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
 from utils.simulation_builder import create_simulation
 from simulation.orchestration.dashboard_service import DashboardService
 from modules.governance.cockpit.api import CockpitCommand
+from modules.system.security import verify_god_mode_token
 import config
 
 # Configure logging
@@ -122,6 +123,14 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.websocket("/ws/command")
 async def command_endpoint(websocket: WebSocket):
+    token = websocket.headers.get("X-GOD-MODE-TOKEN")
+    expected_token = config.GOD_MODE_TOKEN
+
+    if not verify_god_mode_token(token, expected_token):
+        logger.warning(f"Unauthorized connection attempt to {websocket.url.path}. Token provided: {'Yes' if token else 'No'}")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     await websocket.accept()
     logger.info("Cockpit connected to /ws/command")
     try:
