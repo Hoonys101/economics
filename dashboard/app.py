@@ -1,5 +1,11 @@
 import streamlit as st
 import time
+import sys
+import os
+
+# Add project root to sys.path so we can import modules
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from dashboard.services.socket_manager import SocketManager
 from dashboard.components.sidebar import render_sidebar
 from dashboard.components.main_cockpit import render_main_cockpit

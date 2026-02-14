@@ -1,59 +1,62 @@
-# Architectural Handover Report: Session 2026-02-13
+# Architectural Handover Report: System Stability & "God Mode" Integration
 
 ## Executive Summary
-This session focused on hardening the financial core through strict integer type enforcement, restoring the testing suite using protocol-compliant "Golden Agents," and optimizing high-frequency transaction processing. The system has moved from a stateful, mutation-heavy tax logic to a functional, DTO-driven engine.
+This report summarizes the major architectural evolution and stability hardening performed between **2026-02-13** and **2026-02-18**. The primary focus was the implementation of the **Phase 0 Intercept (Sovereign Slot)**, the decomposition of "God-Classes" (Government, Firm, Household), and the integration of the **Watchtower V2** WebSocket telemetry system. The system has shifted from a fragile, float-based state to a robust, integer-penny-unified architecture with atomic rollback capabilities.
 
-## Detailed Analysis
+---
 
-### 1. Accomplishments & Architectural Changes
-- **Monetary Integrity (Penny Standard)**: 
-    - Enforced strict integer arithmetic across the `SettlementSystem` to resolve `SETTLEMENT_TYPE_ERROR` crashes.
-    - **Evidence**: `MS-Finance-Purity-QE.md` confirms explicit `int()` casting in `FinanceSystem`, `HousingSystem`, and `MonetaryTransactionHandler`.
-- **Test Restoration & Protocol Compliance**: 
-    - Introduced `simulation.factories.golden_agents.GoldenAgent` to replace brittle `MagicMocks`. 
-    - **Status**: ✅ Implemented.
-    - **Evidence**: `fix-golden-sample-tests.md` shows 100% pass rate (11/11) for Government and Protocol tests.
-- **Stateless Tax Architecture**: 
-    - Refactored `TaxService` (God Object) into a purely functional `TaxEngine`.
-    - **Change**: Separation of tax calculation (Engine) from tax collection (Orchestrator via `SettlementSystem`).
-    - **Evidence**: `MS-0128-Tax-Engine-Refactor.md`.
-- **Performance Optimization**: 
-    - Replaced list concatenation with `itertools.chain` in transaction execution.
-    - **Metric**: Measured **33% - 40%** reduction in execution time for the combination step.
-    - **Evidence**: `optimize-transaction-lists.md`.
-- **Registry Integration**:
-    - Decoupled `MarketSnapshotFactory` from hardcoded values by integrating $O(1)$ Registry lookups for housing quality.
-    - **Evidence**: `fetch-housing-quality.md`.
-- **Audit System Repair & Collection**:
-    - **Diagnosed** 3-dot diff failure in harvester. **Fixed** with 2-dot diff + `--diff-filter=A`.
-    - **Harvested** `PROJECT_PARITY_AUDIT_REPORT` and `AUDIT_ECONOMIC_INTEGRITY`.
-- **Insight Ledger Separation**:
-    - **Split** `ECONOMIC_INSIGHTS.md` into Domain Logic and `ARCHITECTURAL_INSIGHTS.md` (Engineering Patterns).
-    - **Outcome**: Clear separation of concerns for Planning vs Implementation manuals.
+## 1. Accomplishments
 
-### 2. Economic Insights
-- **Conservative Liquidation Valuation**: Solvency assessments for Firms and Households should value non-cash assets at a **50% discount** to market price to ensure systemic stability during liquidation events.
-- **Taxable Income Ambiguity**: Identified inconsistent definitions of "taxable income" across agent types. The system now requires pre-aggregated `TaxPayerDetailsDTO` to handle this complexity at the orchestrator level.
-- **Systemic Stimulus Triggers**: Verification of `WelfareManager` confirmed that stimulus requests are correctly generated upon GDP drop detection.
+### 1.1 The "Sovereign Slot" (Phase 0 Intercept)
+- **God-Mode Protocol**: Implemented `Phase0_Intercept` as the mandatory first step in the `TickOrchestrator`. It ensures all external interventions occur before simulation causality begins.
+- **Atomic Rollback & M2 Audit**: Created `CommandService` to handle `SET_PARAM` and `INJECT_ASSET`. It features an atomic execution model: if `SettlementSystem.audit_total_m2` fails after a batch, the entire state is rolled back to a pre-tick snapshot.
+- **Single Source of Truth**: `GlobalRegistry` now manages all simulation parameters with a priority hierarchy: `SYSTEM` < `CONFIG` < `GOD_MODE`.
 
-### 3. Pending Tasks & Technical Debt
-- **[High] Solvency Engine Implementation**: The `SolvencyCheckEngine` remains a pending implementation item, requiring the aggregation logic defined in `MS-0128-Solvency-Data-Aggregation.md`.
-- **[Medium] ID Utility Refactor**: Duplicated ID parsing logic (`item_id.split("_")[1]`) exists across multiple handlers. A unified `HousingIDUtility` is required to prevent regressions.
-- **[Low] Multi-pass Iterator Safety**: The use of `itertools.chain` introduces "single-pass" constraints. Future developers must be cautioned not to use `len()` or indexing on transaction iterables.
+### 1.2 Agent & System Decomposition
+- **Government Hardening**: Decomposed the `Government` agent into stateless services: `TaxService`, `WelfareService`, and `FiscalBondService`.
+- **Agent Orchestration**: Refactored `Firm` and `Household` agents to use `ActionExecutors` and `Connectors`. This removes imperative logic from state containers, adhering to the Orchestrator-Engine pattern.
+- **Penny Unification**: Enforced strict `int` (pennies) typing across `SettlementSystem` and `FinanceSystem`, eliminating floating-point drift in monetary transfers.
 
-### 4. Verification Status
+### 1.3 Telemetry & Infrastructure
+- **Watchtower V2**: Established a WebSocket-based server-bridge (`server_bridge.py`) for real-time telemetry (`WatchtowerV2DTO`) and non-blocking command injection.
+- **On-Demand Telemetry**: Implemented a dynamic subscription engine in `TelemetryCollector`, allowing the UI to request specific data masks (e.g., micro-data for heatmaps) without increasing default overhead.
+- **Test Suite Restoration**: Resolved a "Broken Collection" state by normalizing the `tests/` package structure and fixing circular dependencies involving `MarketSnapshotDTO`.
 
-#### Unit & Integration Tests (`pytest`)
-- **Status**: ✅ All target tests passing.
-- **Summary**:
-    - `tests/common/test_protocol.py`: **Passed** (3/3)
-    - `tests/modules/government/`: **Passed** (6/6)
-    - `tests/system/test_audit_integrity.py`: **Passed** (3/3)
-    - `tests/test_wo_4_1_protocols.py`: **Passed** (2/2)
+---
 
-#### System Integrity (`main.py` / Simulation)
-- **Status**: ✅ Operational.
-- **Observation**: The `DemographicManager` now features lazy initialization for `HouseholdFactory`, resolving silent birth failures previously caught during audits. High-stress "Phase 29" scenarios no longer trigger settlement type errors due to quantized ingress points.
+## 2. Economic Insights
 
-## Conclusion
-The architectural "Wiring" for finance and government is now significantly more robust. The transition to integer pennies and functional engines reduces the risk of floating-point drift and hidden side effects. The next session should prioritize the completion of the `SolvencyCheckEngine` using the established DTO patterns.
+- **M2 Neutrality in Bank Runs**: Verified that a "Bank Run" shock (`FORCE_WITHDRAW_ALL`) must reduce both Bank Liabilities (Deposits) and Bank Assets (Cash) simultaneously to maintain M2 integrity. Failure to do so results in accidental equity creation.
+- **Monetary Sovereignty**: The Central Bank is now excluded from M2 calculations. Minting is treated as a transfer from a non-M2 entity (CB) to a circulation entity, correctly reflecting money supply expansion.
+- **Fiscal-Monetary Link**: Bond yields now dynamically adjust based on Debt-to-GDP ratios. The `FiscalBondService` automatically triggers Quantitative Easing (QE) via the Central Bank if Debt/GDP exceeds 1.5.
+
+---
+
+## 3. Pending Tasks & Tech Debt
+
+### 3.1 Critical Technical Debt
+- **Shadow Values**: Many agents still store parameters as local attributes initialized at startup. If `GlobalRegistry` is updated, these "Shadow Values" remain stale unless the agent explicitly re-reads from the registry.
+- **Import Fragility**: The pattern `from config import PARAM` remains a risk. The system must transition to `import config; config.PARAM` to benefit from registry hot-swapping.
+- **Performance Bottleneck**: `IAgentRegistry` iteration for M2 audits and Bank Runs is $O(N)$. This will require indexing (e.g., `account_holders` list) as population scales.
+
+### 3.2 Immediate Tasks
+- **UI Metadata Sync**: The `GlobalRegistry` needs to fully ingest `registry_schema.yaml` to serve metadata (min/max/labels) to the Streamlit dashboard automatically.
+- **Validation Enforcement**: `GlobalRegistry.set()` needs to strictly enforce bounds defined in the metadata schema to prevent invalid state injections.
+
+---
+
+## 4. Verification Status
+
+### 4.1 System Integrity
+- **M2 Consistency**: ✅ Verified via `test_m2_integrity.py` (Zero-sum maintained during credit creation/destruction).
+- **Atomic Command Execution**: ✅ Verified via `test_god_command_protocol.py` (Rollback successful on audit failure).
+
+### 4.2 Test Summary
+| Suite | Result | Note |
+| :--- | :--- | :--- |
+| `tests/system/test_engine.py` | ✅ PASSED | Core loop and lifecycle stable. |
+| `tests/integration/test_fiscal_policy.py` | ✅ PASSED | Debt ceiling and tax adjustments verified. |
+| `tests/integration/test_server_integration.py` | ✅ PASSED | WebSocket command/telemetry flow functional. |
+| `tests/unit/modules/finance/` | ✅ PASSED | Settlement and Double-Entry logic verified. |
+
+**Conclusion**: The system is in a "Stable-Hardened" state. The architectural boundaries between UI, Command Orchestration, and Simulation Logic are now clearly defined and guarded by protocols.

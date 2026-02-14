@@ -39,6 +39,21 @@ A real-time, bidirectional cockpit allows operators to observe the economy's "ne
 
 ---
 
+## 📘 The Economic Narrative
+
+The "Soul" of the simulation is documented not as code, but as a series of philosophical imperatives.
+
+| Concept Node | Description |
+|---|---|
+| **[The Digital Soul](./docs/concepts/LOGIC_AGENTS.md)** | How agents feel hunger, ambition, and the fear of death (Maslow's Hierarchy). |
+| **[The Nervous System](./docs/concepts/MARKET_DYNAMICS.md)** | How the market synthesizes chaotic intent into a single signal: Price. |
+| **[The Physics of Value](./docs/concepts/CORE_FINANCE.md)** | Why money is a conserved quantity and the "Penny" is the indivisible atom. |
+| **[The Pure Laboratory](./docs/concepts/ARCH_SEO.md)** | The "Stateless" architecture that allows for forensic determinism. |
+| **[The Heartbeat](./docs/concepts/WATCHTOWER.md)** | Observability as a non-invasive scientific necessity. |
+| **[Economic Evolution](./docs/concepts/ECONOMIC_INSIGHTS.md)** | Lessons learned: The "Solvency Mirage" and "Animal Spirits". |
+
+---
+
 ## 📂 Project Structure
 
 ```text

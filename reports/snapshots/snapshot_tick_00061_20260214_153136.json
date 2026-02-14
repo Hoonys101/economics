@@ -1,0 +1,60 @@
+{
+  "tick": 61,
+  "timestamp": 1771050696.427589,
+  "status": "RUNNING",
+  "integrity": {
+    "m2_leak": 0.0,
+    "fps": 0.7331372924213398
+  },
+  "macro": {
+    "gdp": 691.8830834038652,
+    "cpi": 0.19936305984133096,
+    "unemploy": 80.0,
+    "gini": 0.16422267656211728
+  },
+  "finance": {
+    "rates": {
+      "base": 0.0,
+      "call": 0.0,
+      "loan": 0.0,
+      "savings": 0.0
+    },
+    "supply": {
+      "m0": 41100050.0,
+      "m1": 40100050.0,
+      "m2": 40100050.0,
+      "velocity": 0.0
+    }
+  },
+  "politics": {
+    "approval": {
+      "total": 0.0,
+      "low": 0.0,
+      "mid": 0.0,
+      "high": 0.0
+    },
+    "status": {
+      "ruling_party": "NEUTRAL",
+      "cohesion": 0.7065437895759097
+    },
+    "fiscal": {
+      "revenue": 0.0,
+      "welfare": 0.0,
+      "debt": 0.0
+    }
+  },
+  "population": {
+    "distribution": {
+      "q1": 19780.75,
+      "q2": 52681.75,
+      "q3": 67338.5,
+      "q4": 68177.25,
+      "q5": 68613.5
+    },
+    "active_count": 20,
+    "metrics": {
+      "birth": 0.0,
+      "death": 0.0
+    }
+  }
+}

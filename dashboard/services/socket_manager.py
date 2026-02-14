@@ -30,7 +30,7 @@ class SocketManager:
             return
 
         self._initialized = True
-        self._uri = "ws://localhost:8765"
+        self._uri = "ws://localhost:8000/ws/live"
         self._stop_event = threading.Event()
         self._connection_status = "Disconnected"
 

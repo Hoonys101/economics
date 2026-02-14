@@ -36,8 +36,8 @@ class Phase_ScenarioAnalysis(IPhaseStrategy):
             telemetry_snapshot = telemetry_collector.harvest(state.time)
 
             # 2. Verify Scenarios
-            # harvest returns a dict with "data" key
-            reports = scenario_verifier.verify_tick(telemetry_snapshot["data"])
+            # harvest returns TelemetrySnapshotDTO
+            reports = scenario_verifier.verify_tick(telemetry_snapshot.data)
 
             # 3. Log/Report Results
             if reports:
@@ -80,7 +80,7 @@ class Phase_ScenarioAnalysis(IPhaseStrategy):
                     politics=base_snapshot.politics,
                     population=base_snapshot.population,
                     scenario_reports=reports,
-                    custom_data=telemetry_snapshot.get("data", {})
+                    custom_data=telemetry_snapshot.data
                 )
 
                 # Update Exchange

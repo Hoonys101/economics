@@ -16,6 +16,15 @@
 - **[2026-02-13] Baseline M2 Accountability in Mixed-Intervention Models**
     - Established that external state changes (e.g., injecting stimulus) must be mathematically reconciled with the 'Baseline M2'. In a mixed-intervention tick (automatic policy + manual injection), the audit system now distinguishes between legitimate credit expansion and corrupting "Magic Money," ensuring the simulation remains a valid environment for economic hypothesis testing.
     - [Insight Report](../../communications/insights/mission-data-01.md)
+- **[2026-02-14] GlobalRegistry Architecture & Origin Priority**
+    - Established a formal parameter hierarchy: `SYSTEM (0)` < `CONFIG (10)` < `GOD_MODE (20)`. This ensures user configuration properly overrides system defaults while God Mode interventions maintain absolute authority via a locking mechanism.
+    - [Insight Report](../_archive/insights/2026-02-14_GlobalRegistry_Architecture.md)
+- **[2026-02-14] Orchestrator-Engine Decomposition**
+    - Transitioned complex Agents (Household, Firm) from Monolithic "God Classes" to the Orchestrator-Engine pattern. Decision logic (Beliefs, Crisis) is now handled by stateless, swappable components, while the Agent class focuses on state retention and routing.
+    - [Insight Report](../_archive/insights/2026-02-14_Household_Decomposition.md)
+- **[2026-02-14] Phase 0 Intercept & Command Atomicity**
+    - Formalized the "Phase 0" slot in the Tick Orchestrator for handling external interventions. Implemented "Immediate Batch Execution" where commands are drained and executed atomically *before* simulation causality begins, preventing race conditions and double-execution bugs.
+    - [Insight Report](../_archive/insights/2026-02-13_Phase0_Intercept_M2_Integrity.md)
 
 ---
 
@@ -49,6 +58,12 @@
 - **[2026-02-13] Solvency & Asset Liquidation Discounting**
     - Established the principle of conservative valuation for solvency checks. Inventory and illiquid assets should be valued at a "liquidation discount" (e.g., 50%) to prevent over-leveraging and systemic collapse.
     - [Insight Report](../_archive/insights/2026-02-13_Solvency_Aggregation_Challenges.md)
+- **[2026-02-13] M2 Integrity in God Mode**
+    - Defined strict rules for "God Mode" injections. `INJECT_MONEY` must use the Central Bank as the counter-party (minting) and is subject to an immediate `audit_total_m2` check. The Central Bank's holdings are explicitly excluded from the M2 calculation to ensure correct fractional reserve modeling.
+    - [Insight Report](../_archive/insights/2026-02-13_GodCommand_Protocol_M2_Audit.md)
+- **[2026-02-14] Zero-Sum Bank Runs**
+    - Validated that `FORCE_WITHDRAW_ALL` events must strictly follow a two-step process: 1) Liability Reduction (Deposit write-down), 2) Asset Transfer (Cash payout). This prevents "Magic Money" creation where agent cash increases without a corresponding bank liability decrease.
+    - [Insight Report](../_archive/insights/2026-02-14_Macro_Shock_Stress_Test.md)
 
 ---
 
