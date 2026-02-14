@@ -1,37 +1,25 @@
-# Manual Insight Report
+# Insight Report: God Mode Authentication
 
-## Architectural Insights
+## 1. Architectural Insights
+*   **Target Server Identification**: `SimulationServer` in `modules/system/server.py` is identified as the core engine interface handling raw `GodCommandDTO` packets via WebSockets. This is distinct from the root `server.py` (Watchtower, FastAPI). Security measures were applied to `SimulationServer` as it provides direct system manipulation capabilities.
+*   **WebSockets 16.0 Compatibility**: The project uses `websockets>=11.0` (installed 16.0). The `process_request` hook signature and return type have changed significantly in recent versions:
+    *   Signature: `(connection, request)` instead of `(path, request_headers)`.
+    *   Return Type: Must return a `Response` object (from `websockets.http11`) to reject connections, rather than a `(status, headers, body)` tuple.
+    *   Client: `websockets.connect` now uses `additional_headers` instead of `extra_headers`.
+*   **Security Implementation**:
+    *   Implemented `X-GOD-MODE-TOKEN` header validation using `secrets.compare_digest` for timing attack resistance.
+    *   The token is sourced from `SecurityConfigDTO` via `GlobalRegistry`.
+    *   Updated production entry point `scripts/run_watchtower.py` to inject the token.
 
-### 1. Restoration of Sales ROI Logic
-The "Dynamic Marketing Budget" feature, where marketing spend rate adjusts based on ROI (Return On Investment), was identified as missing from the stateless `SalesEngine`.
-- **Logic Restoration**: The logic was reintroduced into `SalesEngine.adjust_marketing_budget`. It now calculates ROI using `(revenue_this_turn - last_revenue) / last_marketing_spend`.
-- **State Updates**: `Firm` (the state orchestrator) now passes `last_revenue` and `last_marketing_spend` from `FinanceState` to the engine, and updates `SalesState.marketing_budget_rate` based on the engine's return value.
-- **DTO Update**: `MarketingAdjustmentResultDTO` was extended to include `new_marketing_rate`.
-- **Testing**: `tests/unit/test_marketing_roi.py` was restored by removing `@unittest.skip`, updating attribute names to match the "Pennies Migration" (e.g., `last_revenue_pennies`), and verifying the integration of `Firm` and `SalesEngine`.
+## 2. Test Evidence
+Executed: `python -m pytest tests/security/test_websocket_auth.py tests/integration/test_server_integration.py`
 
-### 2. Integration Test Mock Hardening
-The regression in `tests/integration/mission_int_02_stress_test.py` highlighted a mismatch between the `CommandService` requirements and the test mocks.
-- **Interface Compliance**: `MockSettlementSystem` was updated to implement `get_account_holders(bank_id)`, mirroring the reverse-index lookup required by `FORCE_WITHDRAW_ALL` commands.
-- **Strict Mocking**: The `registry` mock was updated to use `create_autospec(IGlobalRegistry, instance=True)` instead of `MagicMock(spec=...)`. This ensures stricter adherence to the Protocol definition, preventing future interface drift from going unnoticed in tests.
-
-### 3. Test Suite Status
-- **Targeted Fixes**: `tests/unit/test_marketing_roi.py` and `tests/integration/mission_int_02_stress_test.py` are now passing.
-- **Clarification on `test_household_ai.py`**: The mission mandate requested analysis of skipped tests in `tests/unit/test_household_ai.py`. Upon inspection, **no tests were found skipped** in this file (all passed). It is likely the instruction referred to `tests/unit/decisions/test_household_integration_new.py` (which contains skips) or was based on outdated information. Given the strict scope of "Restore behavioral tests... in `test_marketing_roi.py`, `test_household_ai.py`", and finding no skips in the latter, no changes were made to `test_household_ai.py` to avoid regressions in working code.
-
-## Test Evidence
-
-### Unit Tests (`tests/unit/test_marketing_roi.py`)
 ```
-tests/unit/test_marketing_roi.py::TestMarketingROI::test_budget_decrease_on_low_efficiency PASSED [ 25%]
-tests/unit/test_marketing_roi.py::TestMarketingROI::test_budget_increase_on_high_efficiency PASSED [ 50%]
-tests/unit/test_marketing_roi.py::TestMarketingROI::test_budget_stable_on_saturation PASSED [ 75%]
-tests/unit/test_marketing_roi.py::TestMarketingROI::test_first_tick_skip PASSED [100%]
-```
+tests/security/test_websocket_auth.py::test_auth_success PASSED                                                                   [ 20%]
+tests/security/test_websocket_auth.py::test_auth_missing_token PASSED                                                                   [ 40%]
+tests/security/test_websocket_auth.py::test_auth_invalid_token PASSED                                                                   [ 60%]
+tests/integration/test_server_integration.py::test_command_injection PASSED                                                                   [ 80%]
+tests/integration/test_server_integration.py::test_telemetry_broadcast PASSED                                                                   [100%]
 
-### Integration Tests (`tests/integration/mission_int_02_stress_test.py`)
-```
-tests/integration/mission_int_02_stress_test.py::test_hyperinflation_scenario PASSED [ 25%]
-tests/integration/mission_int_02_stress_test.py::test_bank_run_scenario PASSED [ 50%]
-tests/integration/mission_int_02_stress_test.py::test_inventory_destruction_scenario PASSED [ 75%]
-tests/integration/mission_int_02_stress_test.py::test_parameter_rollback PASSED [100%]
+============================== 5 passed in 6.11s ===============================
 ```

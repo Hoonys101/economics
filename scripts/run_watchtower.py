@@ -26,7 +26,7 @@ def main():
     # 3. Start Server
     HOST = "0.0.0.0"
     PORT = 8765
-    server = SimulationServer(HOST, PORT, cmd_queue, telemetry_exchange)
+    server = SimulationServer(HOST, PORT, cmd_queue, telemetry_exchange, god_mode_token=config.GOD_MODE_TOKEN)
     server.start()
 
     # 4. Initialize Simulation
