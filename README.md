@@ -1,76 +1,131 @@
-# 🦅 Project Apex: The Living Economic Laboratory
+# Living Economic Laboratory (LEL)
 
-**Project Apex** is a state-of-the-art, AI-driven macro-economic simulation engine. Unlike traditional formulaic models, Apex treats the economy as a **complex adaptive system** where thousands of autonomous agents—households, firms, banks, and governments—interact in real-time to create emergent economic phenomena.
+![Project Phase](https://img.shields.io/badge/Phase-16_God--Mode_Watchtower-blueviolet?style=for-the-badge)
+![Build Status](https://img.shields.io/badge/Build-PASSING_(580/580)-success?style=for-the-badge)
+![Architecture](https://img.shields.io/badge/Architecture-SEO_Pattern-orange?style=for-the-badge)
+![Integrity](https://img.shields.io/badge/Integrity-Zero--Sum-forestgreen?style=for-the-badge)
 
-> "We don't just calculate numbers; we simulate behavior."
+> **"Arm the Tool, Do not be the Tool."**
 
----
-
-## 🌟 Vision: Why Project Apex?
-The global economy is too complex for static equations. Project Apex was built to:
-- **Analyze Emergent Behavior**: Observe how individual greed, fear, and Maslow-inspired needs translate into inflation, cycles, and crises.
-- **Stress-Test Policy**: Inject radical fiscal/monetary shocks to verify the resilience of the "Great Moderator" stabilizer system.
-- **Bridge AI & Economics**: Use Reinforcement Learning (Q-Learning) to give agents "intelligence," allowing them to adapt their strategies as markets evolve.
+The **Living Economic Laboratory** is a high-fidelity multi-agent simulation designed to reconstruct complex macroeconomic phenomena from the bottom up. Unlike traditional econometric models that rely on static equations, LEL generates economic laws (inflation, recession, growth) as emergent properties of interacting, intelligent agents.
 
 ---
 
-## 🚀 Quick Start
+## 🏛️ Architecture & Philosophy
 
-### 1. Installation
-```powershell
-# Clone and install dependencies
-git clone https://github.com/Hoonys101/economics.git
-cd economics
-pip install -r requirements.txt
+This project is built on a strict 5-layer architecture designed to ensure data purity, causal traceability, and zero-sum financial integrity.
+
+### 1. The Sacred Sequence (Time)
+Time is treated as a physical constraint. The simulation advances through a rigid 8-step "Sacred Sequence" (`Phase 0` to `Phase 7`), ensuring that **Cognition** always precedes **Action**, and **Settlement** always follows **Execution**. This prevents causal paradoxes and race conditions.
+
+### 2. SEO Pattern (Stateless Engine & Orchestrator)
+We strictly separate concerns to prevent "God Classes":
+- **State (Repository)**: Dumb data containers (Dataclasses/DTOs).
+- **Logic (Engine)**: Pure, stateless functions that transform input DTOs to output DTOs.
+- **Orchestration (Service)**: The glue that pulls data, invokes engines, and updates state.
+
+### 3. Financial Fortress (Zero-Sum)
+Money is never created or destroyed, only transferred. The `SettlementSystem` acts as the Single Source of Truth (SSoT) for all value exchange. Any discrepancy in the global ledger triggers an immediate `SystemHalt`.
+
+### 4. Agent Intelligence (Dual-Layer)
+Agents are not simple scripts. They possess:
+- **Maslow's Hierarchy**: A prioritized needs system (Survival > Comfort > Luxury).
+- **Q-Learning Strategy**: Adaptive behaviors that evolve based on market feedback.
+
+### 5. God-Mode Watchtower
+A real-time, bidirectional cockpit allows operators to observe the economy's "nervous system" and inject shocks (e.g., hyperinflation, harvest failure) to stress-test system resilience.
+
+👉 **[Deep Dive: Platform Architecture](./design/1_governance/platform_architecture.md)**
+
+---
+
+## 📂 Project Structure
+
+```text
+C:\CODING\ECONOMICS
+├── analysis_report/       # Generated visual artifacts & forensic reports
+├── config/                # Simulation parameters (YAML) & Domain Configs
+├── design/                # Architectural Decision Records (ADRs) & Specifications
+│   └── 1_governance/      # Core protocols and master roadmap
+├── modules/               # Source Code (Domain-Driven Design)
+│   ├── api/               # Public Interfaces (Protocols)
+│   ├── finance/           # Settlement, Tax, & Banking Engines
+│   ├── market/            # Stateless Matching Engines (OrderBooks)
+│   └── ...
+├── tests/                 # Pytest Suite (Mirroring modules structure)
+└── main.py                # Simulation Entry Point
 ```
 
-### 2. Run Headless Simulation
-Execute the core engine to see a standard run:
-```powershell
-python main.py
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Python 3.13+
+- `uv` or `pip`
+
+### Installation
+
+1.  **Clone the Repository**
+    ```bash
+    git clone https://github.com/your-org/economics.git
+    cd economics
+    ```
+
+2.  **Install Dependencies**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3.  **Run the Simulation**
+    ```bash
+    # Run a standard 365-day simulation
+    python main.py --days 365
+    ```
+
+4.  **Run the Dashboard (Watchtower)**
+    ```bash
+    # Launch the God-Mode Cockpit
+    streamlit run dashboard/app.py
+    ```
+
+---
+
+## 🧪 Verification & Testing
+
+The project maintains a strict **100% Pass Rate** policy.
+
+```bash
+# Run the full test suite
+pytest
+
+# Run specific domain tests
+pytest tests/finance
 ```
 
-### 3. Launch the Web Dashboard
-Visualize the economy in real-time (GDP, Volume, Inflation graphs):
-```powershell
-streamlit run dashboard/app.py
-```
-*Access via `http://localhost:8501`*
+**Key Testing Concepts:**
+- **Golden Data**: We use pre-validated "Golden" fixtures for deterministic testing.
+- **Mock Purity**: Mocks must strictly adhere to Protocols (`@runtime_checkable`).
 
 ---
 
-## 🧪 Injecting Scenarios & Stress Tests
-Project Apex uses a **Scenario-Driven** approach. You can inject specific macro-economic shocks (e.g., hyperinflation, labor strikes, tech revolutions) via YAML/JSON configurations.
+## 📜 Documentation Map
 
-### How to Run a Specific Scenario:
-```powershell
-# Example: Run a Perfect Storm stress test
-python scripts/run_phenomena_analysis.py --scenario config/scenarios/stress_test_phenomena.yaml
-```
-
-**Available Scenarios (`config/scenarios/`):**
-- `golden_era_init.json`: A baseline state of stable growth.
-- `phase29_depression.json`: A liquidity-starved crisis scenario.
-- `stress_test_phenomena.yaml`: A modular reporting run focusing on Resilience Indices.
+| Document | Purpose |
+|---|---|
+| [**PROJECT_STATUS.md**](./PROJECT_STATUS.md) | Current phase, active tracks, and recent achievements. |
+| [**HANDOVER.md**](./HANDOVER.md) | Critical context for new developers or session handover. |
+| [**TECH_DEBT_LEDGER.md**](./design/2_operations/ledgers/TECH_DEBT_LEDGER.md) | Tracked technical debt and liquidation plans. |
+| [**QUICKSTART.md**](./design/QUICKSTART.md) | Detailed setup and contribution guide. |
 
 ---
 
-## 📊 Observation: Phenomena Reporting
-We have moved beyond simple "Pass/Fail" unit tests. Apex utilizes **Phenomena Detectors** to report on the "health" of the simulation:
-- **Resilience Index**: A composite score of the economy's ability to bounce back from shocks.
-- **Liquidity Crisis Detector**: Identifies credit crunches at the bank-reserve level.
-- **Policy Synergy Analysis**: Measures how fiscal and monetary stabilizers interfere or harmonize.
+## 🤝 Contribution Guidelines
 
-Reports are saved in `design/3_work_artifacts/reports/` for deep forensic analysis.
+1.  **Protocol First**: Never bypass `api.py`. Use defined DTOs.
+2.  **No Magic Money**: Ensure every transaction balances (`Debit == Credit`).
+3.  **Test Driven**: Verify changes with `pytest` before submission.
 
 ---
 
-## 📂 Deep Dive: Documentation
-For contributors and architects, the project's "Source of Truth" is contained within the `design/` directory:
-
-- **[QUICKSTART Guide](design/QUICKSTART.md)**: Detailed onboarding for AI Agents (Gemini/Jules) and human architects.
-- **[Platform Architecture](design/1_governance/platform_architecture.md)**: The "Sacred Sequence" (Orchestration) and Agent Value Systems (Maslow).
-- **[Technical Debt Ledger](design/2_operations/ledgers/TECH_DEBT_LEDGER.md)**: Transparent tracking of architectural compromises and repayment plans.
-
----
-*Developed by the Apex Collective. "Arm the tool, do not be the tool."*
+*Generated by Gemini CLI (Scribe) - Phase 16*
