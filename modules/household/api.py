@@ -1,6 +1,7 @@
 from __future__ import annotations
-from typing import Protocol, List, Dict, Optional, Any, TypedDict, Tuple
+from typing import Protocol, List, Dict, Optional, Any, TypedDict, Tuple, Deque, DefaultDict, runtime_checkable
 from dataclasses import dataclass, field
+from collections import deque
 
 from simulation.models import Order
 from modules.household.dtos import (
@@ -91,6 +92,25 @@ class ConsumptionInputDTO:
     current_tick: int
     stress_scenario_config: Optional[StressScenarioConfig] = None # For panic selling
 
+@dataclass
+class BeliefInputDTO:
+    current_tick: int
+    perceived_prices: Dict[str, float]
+    expected_inflation: Dict[str, float]
+    price_history: DefaultDict[str, Deque[float]]
+    adaptation_rate: float
+    goods_info_map: Dict[str, Any]
+    config: HouseholdConfigDTO
+    market_data: Dict[str, Any]
+    stress_scenario_config: Optional[StressScenarioConfig] = None
+
+@dataclass
+class PanicSellingInputDTO:
+    owner_id: int
+    portfolio_holdings: Dict[int, Any] # Using Any for Share to avoid circular imports if needed, but imported Share from models in core_agents. Here we can use Any or Import Share locally/globally.
+    inventory: Dict[str, float]
+    market_data: Optional[Dict[str, Any]] = None
+
 # --- Engine Output DTOs ---
 
 @dataclass
@@ -120,24 +140,40 @@ class ConsumptionOutputDTO:
     orders: List[Order] # The final, concrete orders to be placed
     social_state: Optional[SocialStateDTO] = None # Updated if leisure consumption affects social state
 
+@dataclass
+class BeliefResultDTO:
+    new_perceived_prices: Dict[str, float]
+    new_expected_inflation: Dict[str, float]
+    # Price history is mutable (deque), but we return reference or updated structure.
+    # Ideally we wouldn't return deque if we want strict DTO, but for efficiency we keep it.
+
+@dataclass
+class PanicSellingResultDTO:
+    orders: List[Order]
+
 # --- Stateless Engine Interfaces (Protocols) ---
 
+@runtime_checkable
 class ILifecycleEngine(Protocol):
     """Manages aging, death, and reproduction."""
     def process_tick(self, input_dto: LifecycleInputDTO) -> LifecycleOutputDTO: ...
 
+@runtime_checkable
 class INeedsEngine(Protocol):
     """Calculates need decay, satisfaction, and prioritizes needs."""
     def evaluate_needs(self, input_dto: NeedsInputDTO) -> NeedsOutputDTO: ...
 
+@runtime_checkable
 class ISocialEngine(Protocol):
     """Manages social status, discontent, and other social metrics."""
     def update_status(self, input_dto: SocialInputDTO) -> SocialOutputDTO: ...
 
+@runtime_checkable
 class IBudgetEngine(Protocol):
     """Allocates financial resources based on needs and strategic goals."""
     def allocate_budget(self, input_dto: BudgetInputDTO) -> BudgetOutputDTO: ...
 
+@runtime_checkable
 class IConsumptionEngine(Protocol):
     """Transforms a budget plan into concrete consumption and market orders."""
     def generate_orders(self, input_dto: ConsumptionInputDTO) -> ConsumptionOutputDTO: ...
@@ -151,6 +187,16 @@ class IConsumptionEngine(Protocol):
         bio_state: BioStateDTO,
         config: HouseholdConfigDTO
     ) -> Tuple[SocialStateDTO, EconStateDTO, LeisureEffectDTO]: ...
+
+@runtime_checkable
+class IBeliefEngine(Protocol):
+    """Updates agent beliefs about prices and inflation."""
+    def update_beliefs(self, input_dto: BeliefInputDTO) -> BeliefResultDTO: ...
+
+@runtime_checkable
+class ICrisisEngine(Protocol):
+    """Handles emergency situations like panic selling."""
+    def evaluate_distress(self, input_dto: PanicSellingInputDTO) -> PanicSellingResultDTO: ...
 
 # --- Deprecated / Legacy Support ---
 # OrchestrationContextDTO is kept if needed for transition, but Engines use specific inputs.

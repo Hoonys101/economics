@@ -36,10 +36,13 @@ from modules.household.engines.needs import NeedsEngine
 from modules.household.engines.social import SocialEngine
 from modules.household.engines.budget import BudgetEngine
 from modules.household.engines.consumption_engine import ConsumptionEngine
+from modules.household.engines.belief_engine import BeliefEngine
+from modules.household.engines.crisis_engine import CrisisEngine
 
 # API & DTOs
 from modules.household.api import (
     LifecycleInputDTO, NeedsInputDTO, SocialInputDTO, BudgetInputDTO, ConsumptionInputDTO,
+    BeliefInputDTO, PanicSellingInputDTO,
     PrioritizedNeed, BudgetPlan, HousingActionDTO, CloningRequestDTO
 )
 from modules.household.dtos import (
@@ -108,6 +111,8 @@ class Household(
         self.social_engine = SocialEngine()
         self.budget_engine = BudgetEngine()
         self.consumption_engine = ConsumptionEngine()
+        self.belief_engine = BeliefEngine()
+        self.crisis_engine = CrisisEngine()
 
         # --- Initialize Internal State DTOs ---
 
@@ -933,37 +938,28 @@ class Household(
     def add_durable_asset(self, asset: Dict[str, Any]) -> None:
         self._econ_state.durable_assets.append(asset)
 
-    def update_perceived_prices(self, market_data: Dict[str, Any], stress_scenario_config: Optional[StressScenarioConfig] = None) -> None:
-        # Legacy EconComponent.update_perceived_prices logic.
-        # Ideally should be in BudgetEngine or similar.
-        # Implementing here for now to avoid breakage.
-        goods_market = market_data.get("goods_market")
-        if not goods_market: return
+    def update_perceived_prices(self, market_data: Dict[str, Any], stress_scenario_config: Optional[StressScenarioConfig] = None, current_tick: int = 0) -> None:
+        """
+        Delegates to BeliefEngine for updating price beliefs.
+        """
+        input_dto = BeliefInputDTO(
+            current_tick=current_tick,
+            perceived_prices=self._econ_state.perceived_avg_prices,
+            expected_inflation=self._econ_state.expected_inflation,
+            price_history=self._econ_state.price_history,
+            adaptation_rate=self._econ_state.adaptation_rate,
+            goods_info_map=self.goods_info_map,
+            config=self.config,
+            market_data=market_data,
+            stress_scenario_config=stress_scenario_config
+        )
 
-        adaptive_rate = self._econ_state.adaptation_rate
-        if stress_scenario_config and stress_scenario_config.is_active:
-            if stress_scenario_config.scenario_name == 'hyperinflation':
-                if hasattr(stress_scenario_config, "inflation_expectation_multiplier"):
-                     adaptive_rate *= stress_scenario_config.inflation_expectation_multiplier
+        result = self.belief_engine.update_beliefs(input_dto)
 
-        for item_id, good in self.goods_info_map.items():
-            actual_price = goods_market.get(f"{item_id}_avg_traded_price")
-            if actual_price is not None and actual_price > 0:
-                history = self._econ_state.price_history[item_id]
-                if history:
-                    last_price = history[-1]
-                    if last_price > 0:
-                        inflation_t = (actual_price - last_price) / last_price
-                        old_expect = self._econ_state.expected_inflation.get(item_id, 0.0)
-                        new_expect = old_expect + adaptive_rate * (inflation_t - old_expect)
-                        self._econ_state.expected_inflation[item_id] = new_expect
-
-                history.append(actual_price)
-
-                old_perceived_price = self._econ_state.perceived_avg_prices.get(item_id, actual_price)
-                update_factor = self.config.perceived_price_update_factor
-                new_perceived_price = (update_factor * actual_price) + ((1 - update_factor) * old_perceived_price)
-                self._econ_state.perceived_avg_prices[item_id] = new_perceived_price
+        # Update state with results
+        self._econ_state.perceived_avg_prices = result.new_perceived_prices
+        self._econ_state.expected_inflation = result.new_expected_inflation
+        # price_history is updated in-place by the engine via the DTO reference
 
     def apply_leisure_effect(self, leisure_hours: float, consumed_items: Dict[str, float]) -> LeisureEffectDTO:
         # Delegate to ConsumptionEngine
@@ -1014,26 +1010,15 @@ class Household(
         WO-167: Trigger panic selling/liquidation for distress.
         Used by LifecycleManager.
         """
-        # Logic similar to ConsumptionEngine Panic Selling, but triggered externally.
-        orders = []
-        # Sell stocks
-        for firm_id, share in self._econ_state.portfolio.holdings.items():
-             if share.quantity > 0:
-                 stock_order = Order(
-                     agent_id=self._econ_state.portfolio.owner_id,
-                     side="SELL",
-                     item_id=f"stock_{firm_id}",
-                     quantity=share.quantity,
-                     price_limit=0.0,
-                     market_id="stock_market"
-                 )
-                 orders.append(stock_order)
-        # Sell Inventory?
-        for item_id, qty in self._econ_state.inventory.items():
-            if qty > 0:
-                # Assuming can sell goods
-                pass
-        return orders
+        input_dto = PanicSellingInputDTO(
+            owner_id=self.id,
+            portfolio_holdings=self._econ_state.portfolio.holdings,
+            inventory=self._econ_state.inventory,
+            market_data=None # Not strictly needed for market sell orders in current implementation
+        )
+
+        result = self.crisis_engine.evaluate_distress(input_dto)
+        return result.orders
 
     def reset_tick_state(self) -> None:
         """
