@@ -1,35 +1,52 @@
-# Architectural Insights
-1. **Global `sys.modules` Patching in Tests is Harmful:** Manually modifying `sys.modules` in a test file (e.g., `sys.modules["websockets"] = Mock()`) affects the entire test process, including subsequent tests that rely on the real module. This leads to confusing failures like `ModuleNotFoundError` for submodules because the Mock object is not a package.
-2. **Conditional Mocking in `conftest.py` is Robust:** Centralizing mocks for optional dependencies in `conftest.py` ensures that tests can run in minimal environments while still allowing integration tests to use real libraries when available. Adding `mock.__path__ = []` is crucial for mimicking packages to support submodule imports.
+# Architectural Insights: Event-Driven WebSocket Broadcast
 
-# Test Evidence
+## Technical Debt & Architectural Decisions
+
+1.  **Event-Driven vs Polling**: Transitioned `SimulationServer` from a 10Hz polling loop to an event-driven architecture using the Observer pattern. This was achieved by adding `subscribe`/`unsubscribe` methods to the `TelemetryExchange` bridge. This reduces CPU usage during idle times and ensures immediate broadcast upon simulation ticks.
+
+2.  **Thread Safety**: The `TelemetryExchange` bridge manages data updates from the Simulation Thread (Thread A) and notifications to the Server Loop (Thread B). We utilized `asyncio.loop.call_soon_threadsafe` to safely schedule broadcast tasks on the server's event loop from the simulation thread.
+
+3.  **Client State Management**: Initially considered monkey-patching the `websocket` object to store `last_sent_tick`, but refactored to use a dedicated `self.client_states` dictionary in `SimulationServer`. This avoids potential issues with `__slots__` optimization in the `websockets` library and provides a cleaner separation of concerns.
+
+4.  **Race Condition Handling**: Implemented logic to handle the race condition where a client connects and receives an initial snapshot concurrently with a tick broadcast. By tracking `last_sent_tick` per client, we ensure clients receive strictly monotonically increasing ticks and no duplicates.
+
+## Test Evidence
+
+### Unit Tests (`tests/unit/modules/system/test_server_bridge.py`)
+
 ```
-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_audit_logs PASSED [ 16%]
-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_initialization PASSED [ 33%]
-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_send_command PASSED [ 50%]
-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_telemetry_handling PASSED [ 66%]
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.120s
+
+OK
+```
+
+### Integration Tests (`tests/integration/test_server_integration.py`)
+
+```
 tests/integration/test_server_integration.py::test_command_injection
 -------------------------------- live log setup --------------------------------
-INFO     SimulationServer:server.py:27 SimulationServer thread started on localhost:38315
-INFO     websockets.server:server.py:341 server listening on 127.0.0.1:38315
-INFO     websockets.server:server.py:341 server listening on [::1]:38315
-INFO     SimulationServer:server.py:35 WebSocket server running...
+INFO     SimulationServer:server.py:28 SimulationServer thread started on localhost:43739
+INFO     websockets.server:server.py:341 server listening on 127.0.0.1:43739
+INFO     websockets.server:server.py:341 server listening on [::1]:43739
+INFO     SimulationServer:server.py:48 WebSocket server running...
 -------------------------------- live log call ---------------------------------
 INFO     websockets.server:server.py:531 connection open
-INFO     SimulationServer:server.py:43 Client connected: ('::1', 59268, 0, 0)
-INFO     SimulationServer:server.py:58 Client disconnected: ('::1', 59268, 0, 0)
-PASSED                                                                   [ 83%]
+INFO     SimulationServer:server.py:58 Client connected: ('::1', 36568, 0, 0)
+INFO     SimulationServer:server.py:80 Client disconnected: ('::1', 36568, 0, 0)
+PASSED                                                                   [ 50%]
 tests/integration/test_server_integration.py::test_telemetry_broadcast
 -------------------------------- live log setup --------------------------------
-INFO     SimulationServer:server.py:27 SimulationServer thread started on localhost:60639
-INFO     websockets.server:server.py:341 server listening on [::1]:60639
-INFO     websockets.server:server.py:341 server listening on 127.0.0.1:60639
-INFO     SimulationServer:server.py:35 WebSocket server running...
+INFO     SimulationServer:server.py:28 SimulationServer thread started on localhost:34493
+INFO     websockets.server:server.py:341 server listening on 127.0.0.1:34493
+INFO     websockets.server:server.py:341 server listening on [::1]:34493
+INFO     SimulationServer:server.py:48 WebSocket server running...
 -------------------------------- live log call ---------------------------------
 INFO     websockets.server:server.py:531 connection open
-INFO     SimulationServer:server.py:43 Client connected: ('::1', 48328, 0, 0)
-INFO     SimulationServer:server.py:58 Client disconnected: ('::1', 48328, 0, 0)
+INFO     SimulationServer:server.py:58 Client connected: ('::1', 35414, 0, 0)
+INFO     SimulationServer:server.py:80 Client disconnected: ('::1', 35414, 0, 0)
 PASSED                                                                   [100%]
 
-============================== 6 passed in 2.96s ===============================
+============================== 2 passed in 2.88s ===============================
 ```
