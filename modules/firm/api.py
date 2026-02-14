@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from simulation.dtos.config_dtos import FirmConfigDTO
 from simulation.dtos.department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
+from modules.system.api import MarketSnapshotDTO
 
 # ==============================================================================
 # 1. ARCHITECTURAL RESOLUTION: ASSET PROTOCOLS
@@ -94,6 +95,23 @@ class AssetManagementResultDTO:
     actual_cost: float = 0.0
     message: Optional[str] = None
 
+# --- Liquidation DTOs (Asset Management) ---
+
+@dataclass(frozen=True)
+class LiquidationExecutionDTO:
+    """Input for liquidation calculation."""
+    firm_snapshot: FirmSnapshotDTO
+    current_tick: int
+
+@dataclass(frozen=True)
+class LiquidationResultDTO:
+    """Result of liquidation calculation."""
+    assets_returned: Dict[str, int]
+    inventory_to_remove: Dict[str, float]
+    capital_stock_to_write_off: float
+    automation_level_to_write_off: float
+    is_bankrupt: bool = True
+
 # --- R&D Engine DTOs ---
 
 @dataclass(frozen=True)
@@ -111,6 +129,28 @@ class RDResultDTO:
     productivity_multiplier_change: float = 1.0 # Multiplier (e.g. 1.05 for 5% increase)
     actual_cost: float = 0.0
     message: Optional[str] = None
+
+# --- Pricing Engine DTOs ---
+
+@dataclass(frozen=True)
+class PricingInputDTO:
+    """Input for PricingEngine."""
+    item_id: str
+    current_price: float
+    market_snapshot: MarketSnapshotDTO
+    config: FirmConfigDTO
+    unit_cost_estimate: float = 0.0
+    inventory_level: float = 0.0
+    production_target: float = 0.0
+
+@dataclass(frozen=True)
+class PricingResultDTO:
+    """Result from PricingEngine."""
+    new_price: float
+    shadow_price: float
+    demand: float
+    supply: float
+    excess_demand_ratio: float
 
 # ==============================================================================
 # 3. ENGINE PROTOCOLS
@@ -136,6 +176,23 @@ class IAssetManagementEngine(Protocol):
         """
         Calculates the outcome of an investment in CAPEX or Automation.
         Returns a DTO describing the resulting state changes.
+        """
+        ...
+
+    def calculate_liquidation(self, input_dto: LiquidationExecutionDTO) -> LiquidationResultDTO:
+        """
+        Calculates the result of liquidating the firm.
+        """
+        ...
+
+
+class IPricingEngine(Protocol):
+    """
+    Stateless engine for handling product pricing logic.
+    """
+    def calculate_price(self, input_dto: PricingInputDTO) -> PricingResultDTO:
+        """
+        Calculates the new price based on market signals and internal state.
         """
         ...
 

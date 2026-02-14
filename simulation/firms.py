@@ -27,6 +27,7 @@ from simulation.components.engines.sales_engine import SalesEngine
 from simulation.components.engines.asset_management_engine import AssetManagementEngine
 from simulation.components.engines.rd_engine import RDEngine
 from modules.firm.engines.brand_engine import BrandEngine
+from modules.firm.engines.pricing_engine import PricingEngine
 from simulation.components.engines.real_estate_component import RealEstateUtilizationComponent
 
 from simulation.dtos.context_dtos import PayrollProcessingContext, FinancialTransactionContext, SalesContext
@@ -39,7 +40,9 @@ from modules.firm.api import (
     ProductionInputDTO, ProductionResultDTO,
     AssetManagementInputDTO, AssetManagementResultDTO,
     RDInputDTO, RDResultDTO,
-    IProductionEngine, IAssetManagementEngine, IRDEngine
+    PricingInputDTO, PricingResultDTO,
+    LiquidationExecutionDTO, LiquidationResultDTO,
+    IProductionEngine, IAssetManagementEngine, IRDEngine, IPricingEngine
 )
 
 from simulation.utils.shadow_logger import log_shadow
@@ -120,6 +123,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         self.asset_management_engine: IAssetManagementEngine = AssetManagementEngine()
         self.rd_engine: IRDEngine = RDEngine()
         self.brand_engine = BrandEngine()
+        self.pricing_engine: IPricingEngine = PricingEngine()
 
         # Initialize core attributes in State
         self.production_state.specialization = specialization
@@ -521,22 +525,31 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         ]
 
     def liquidate_assets(self, current_tick: int = -1) -> Dict[CurrencyCode, int]:
-        """Liquidate assets using Protocol Purity."""
-        # 1. Write off Inventory
-        for item_id in list(self.get_all_items(slot=InventorySlot.MAIN).keys()):
-            self.remove_item(item_id, self.get_quantity(item_id, slot=InventorySlot.MAIN), slot=InventorySlot.MAIN)
-        for item_id in list(self.get_all_items(slot=InventorySlot.INPUT).keys()):
-            self.remove_item(item_id, self.get_quantity(item_id, slot=InventorySlot.INPUT), slot=InventorySlot.INPUT)
+        """Liquidate assets using Protocol Purity and AssetManagementEngine."""
         
-        # 2. Write off Capital Stock
-        self.capital_stock = 0.0
+        # 1. Construct Input DTO
+        snapshot = self.get_snapshot_dto()
+        input_dto = LiquidationExecutionDTO(
+            firm_snapshot=snapshot,
+            current_tick=current_tick
+        )
         
-        # 3. Write off Automation
-        self.automation_level = 0.0
+        # 2. Call Engine
+        result: LiquidationResultDTO = self.asset_management_engine.calculate_liquidation(input_dto)
 
-        self.is_bankrupt = True
+        # 3. Apply Result (Agent Responsibility)
 
-        assets_to_return = self.wallet.get_all_balances().copy()
+        # Write off Inventory
+        self.clear_inventory(InventorySlot.MAIN)
+        self.clear_inventory(InventorySlot.INPUT)
+
+        # Write off Capital & Automation
+        self.capital_stock = max(0.0, self.capital_stock - result.capital_stock_to_write_off)
+        self.automation_level = max(0.0, self.automation_level - result.automation_level_to_write_off)
+
+        self.is_bankrupt = result.is_bankrupt
+
+        assets_to_return = result.assets_returned
 
         if self.memory_v2:
             from modules.memory.V2.dtos import MemoryRecordDTO
@@ -1101,19 +1114,26 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
 
     def _calculate_invisible_hand_price(self, market_snapshot: MarketSnapshotDTO, current_tick: int) -> None:
         if not market_snapshot.market_signals: return
-        signal = market_snapshot.market_signals.get(self.specialization)
-        if not signal: return
-        demand = signal.total_bid_quantity
-        supply = signal.total_ask_quantity
-        if supply > 0:
-            excess_demand_ratio = (demand - supply) / supply
-        else:
-            excess_demand_ratio = 1.0 if demand > 0 else 0.0
 
-        sensitivity = self.config.invisible_hand_sensitivity
-        current_price = self.last_prices.get(self.specialization, 10.0)
-        candidate_price = current_price * (1.0 + (sensitivity * excess_demand_ratio))
-        shadow_price = (candidate_price * 0.2) + (current_price * 0.8)
+        # 1. Construct Input DTO
+        item_id = self.specialization
+        current_price = self.last_prices.get(item_id, 10.0)
+
+        input_dto = PricingInputDTO(
+            item_id=item_id,
+            current_price=current_price,
+            market_snapshot=market_snapshot,
+            config=self.config,
+            unit_cost_estimate=self.finance_engine.get_estimated_unit_cost(self.finance_state, item_id, self.config),
+            inventory_level=self.get_quantity(item_id, InventorySlot.MAIN),
+            production_target=self.production_target
+        )
+
+        # 2. Call Engine
+        result = self.pricing_engine.calculate_price(input_dto)
+
+        # 3. Update State (As per spec)
+        self.sales_state.last_prices[item_id] = result.new_price
 
         log_shadow(
             tick=current_tick,
@@ -1121,8 +1141,8 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
             agent_type="Firm",
             metric="shadow_price",
             current_value=current_price,
-            shadow_value=shadow_price,
-            details=f"Item={self.specialization}, D={demand:.1f}, S={supply:.1f}, Ratio={excess_demand_ratio:.2f}"
+            shadow_value=result.shadow_price,
+            details=f"Item={item_id}, D={result.demand:.1f}, S={result.supply:.1f}, Ratio={result.excess_demand_ratio:.2f}, NewPrice={result.new_price:.2f}"
         )
 
     def _build_payroll_context(self, current_time: int, government: Optional[Any], market_context: MarketContextDTO) -> HRPayrollContextDTO:

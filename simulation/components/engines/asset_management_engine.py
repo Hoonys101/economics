@@ -1,6 +1,12 @@
 from __future__ import annotations
 import logging
-from modules.firm.api import IAssetManagementEngine, AssetManagementInputDTO, AssetManagementResultDTO
+from modules.firm.api import (
+    IAssetManagementEngine,
+    AssetManagementInputDTO,
+    AssetManagementResultDTO,
+    LiquidationExecutionDTO,
+    LiquidationResultDTO
+)
 
 logger = logging.getLogger(__name__)
 
@@ -78,3 +84,33 @@ class AssetManagementEngine(IAssetManagementEngine):
                 success=False,
                 message=str(e)
             )
+
+    def calculate_liquidation(self, input_dto: LiquidationExecutionDTO) -> LiquidationResultDTO:
+        """
+        Calculates the result of liquidating the firm.
+        Implements IAssetManagementEngine.calculate_liquidation.
+        """
+        firm_snapshot = input_dto.firm_snapshot
+
+        # 1. Gather all assets to be returned (Wallet Balance)
+        assets_to_return = firm_snapshot.finance.balance.copy()
+
+        # 2. Identify Inventory to remove (Write-off)
+        inventory_to_remove = firm_snapshot.production.inventory.copy()
+        # Add input inventory if needed, merging keys
+        for k, v in firm_snapshot.production.input_inventory.items():
+            inventory_to_remove[k] = inventory_to_remove.get(k, 0.0) + v
+
+        # 3. Capital Stock to write off
+        capital_stock_to_write_off = firm_snapshot.production.capital_stock
+
+        # 4. Automation Level to write off
+        automation_level_to_write_off = firm_snapshot.production.automation_level
+
+        return LiquidationResultDTO(
+            assets_returned=assets_to_return,
+            inventory_to_remove=inventory_to_remove,
+            capital_stock_to_write_off=capital_stock_to_write_off,
+            automation_level_to_write_off=automation_level_to_write_off,
+            is_bankrupt=True
+        )
