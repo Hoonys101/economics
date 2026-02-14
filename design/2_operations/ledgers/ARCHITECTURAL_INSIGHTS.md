@@ -81,6 +81,12 @@
 - **[2026-02-14] Protocol Centralization (TD-ARCH-PROTO-LOCATION)**
     - Moved locally defined protocols `ISectorAgent` and `ICommandService` to a centralized `modules/api/protocols.py`. This reduces circular dependency risks and defines a clear 'Public API' layer for the simulation engines.
     - [Insight Report](../_archive/insights/2026-02-14_Protocol_Centralization.md)
+- **[2026-02-14] UI DTO Pydantic Enforcement (TD-UI-DTO-PURITY)**
+    - Refactored `TelemetrySnapshotDTO` from `TypedDict` to Pydantic `BaseModel`. This enforces strong typing and validation at the simulation boundary and simplifies serialization in `SimulationServer` using `model_dump(mode='json')`.
+    - [Insight Report](../_archive/insights/2026-02-14_UI_DTO_Pydantic_Enforcement.md)
+- **[2026-02-14] Financial Entity Protocol Standardization (TD-INT-PENNIES-FRAGILITY)**
+    - Introduced `IFinancialEntity` to standardize `balance_pennies` operations across all agents. Replaced fragile `hasattr` checks with explicit `isinstance` checks, eliminating duck-typing risks in the `SettlementSystem`.
+    - [Insight Report](../_archive/insights/2026-02-14_Financial_Entity_Protocol_Standardization.md)
 - **[2026-02-14] System Registry Priority Inversion**
     - Inverted registry priority to `SYSTEM=0`, `CONFIG=10`. This allows configuration files and God-mode interventions to override system defaults, providing a structured hierarchy for parameter control.
     - [Insight Report](../_archive/insights/2026-02-14_Post_Merge_Stabilization.md)
@@ -141,6 +147,10 @@
     - **Optimization**: Transitioned `SimulationServer` from 10Hz polling to an event-driven model using the Observer pattern via `TelemetryExchange`. This eliminates idle CPU wake-ups and provides sub-tick latency for UI updates.
     - **Implementation**: Used `asyncio.loop.call_soon_threadsafe` for thread-safe cross-loop notifications and per-client `last_sent_tick` tracking to prevent race conditions during connection/broadcast overlaps.
     - [Insight Report](../_archive/insights/2026-02-14_WebSocket_Event_Driven_Optimization.md)
+- **[2026-02-14] God-Mode WebSocket Security (TD-ARCH-SEC-GOD)**
+    - **Security**: Implemented `X-GOD-MODE-TOKEN` header validation using `secrets.compare_digest`. SOURCE: `SecurityConfigDTO`.
+    - **Compatibility**: Patched `SimulationServer` for `websockets 16.0` (`process_request` signature and `Response` object return type requirements).
+    - [Insight Report](../_archive/insights/2026-02-14_God_Mode_Authentication_Security.md)
 - **[2026-02-09] Tick-Level State Reset Best Practices**
     - **Problem**: Tick-level state variables (e.g., `expenses_this_tick`) were being reset mid-lifecycle, causing data loss for later-stage processes like learning and analysis.
     - **Principle**: All agent tick-level state resets must occur uniformly at the end of the simulation cycle (e.g., a "Post-Sequence" phase). This ensures that all phases within the tick have access to a consistent, complete dataset.

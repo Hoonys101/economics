@@ -28,7 +28,7 @@ def server(bridge):
     port = sock.getsockname()[1]
     sock.close()
 
-    srv = SimulationServer("localhost", port, cq, te)
+    srv = SimulationServer("localhost", port, cq, te, god_mode_token="test-token")
     srv.start()
     # Wait for server startup
     time.sleep(1)
@@ -50,7 +50,7 @@ async def test_command_injection(server, bridge):
         "command_type": "SET_PARAM"
     }
 
-    async with websockets.connect(uri) as ws:
+    async with websockets.connect(uri, additional_headers={"X-GOD-MODE-TOKEN": "test-token"}) as ws:
         await ws.send(json.dumps(payload))
         # Give server time to process
         await asyncio.sleep(0.2)
@@ -72,7 +72,7 @@ async def test_telemetry_broadcast(server, bridge):
 
     te.update(SimpleDTO(tick=10, data="test"))
 
-    async with websockets.connect(uri) as ws:
+    async with websockets.connect(uri, additional_headers={"X-GOD-MODE-TOKEN": "test-token"}) as ws:
         # Wait for broadcast (Server sends latest on connect or loop)
         # Our loop waits for update. But if update happened before connect?
         # Server loop: while True: snapshot = get(); if snapshot.tick > last_tick: send().

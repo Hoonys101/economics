@@ -2,7 +2,11 @@ import asyncio
 import threading
 import json
 import logging
+import http
+import secrets
 import websockets
+from websockets.http11 import Response
+from websockets.datastructures import Headers
 from dataclasses import asdict, is_dataclass
 from typing import Optional, List, Dict
 from uuid import UUID
@@ -13,11 +17,12 @@ from modules.system.server_bridge import CommandQueue, TelemetryExchange
 logger = logging.getLogger("SimulationServer")
 
 class SimulationServer:
-    def __init__(self, host: str, port: int, command_queue: CommandQueue, telemetry_exchange: TelemetryExchange):
+    def __init__(self, host: str, port: int, command_queue: CommandQueue, telemetry_exchange: TelemetryExchange, god_mode_token: str):
         self.host = host
         self.port = port
         self.command_queue = command_queue
         self.telemetry_exchange = telemetry_exchange
+        self.god_mode_token = god_mode_token
         self.connected_clients = set()
         self.client_states: Dict[websockets.WebSocketServerProtocol, int] = {}
         self._stop_event = asyncio.Event()
@@ -45,7 +50,7 @@ class SimulationServer:
         self.telemetry_exchange.subscribe(on_tick)
 
         try:
-            async with websockets.serve(self._handler, self.host, self.port):
+            async with websockets.serve(self._handler, self.host, self.port, process_request=self._process_request):
                 logger.info("WebSocket server running...")
                 # Keep running until stop event or indefinitely
                 await asyncio.Future() # run forever
@@ -53,6 +58,17 @@ class SimulationServer:
             logger.error(f"Failed to start WebSocket server: {e}")
         finally:
             self.telemetry_exchange.unsubscribe(on_tick)
+
+    async def _process_request(self, connection, request):
+        """
+        Intercepts the handshake to validate the God Mode Token.
+        Returns None to accept the connection, or an HTTP response (status, headers, body) to reject it.
+        """
+        token = request.headers.get("X-GOD-MODE-TOKEN")
+        if not token or not secrets.compare_digest(token, self.god_mode_token):
+            logger.warning(f"Unauthorized connection attempt to {request.path}. Token provided: {'Yes' if token else 'No'}")
+            return Response(http.HTTPStatus.UNAUTHORIZED, "Unauthorized", Headers(), b"Unauthorized: Invalid God Token")
+        return None
 
     async def _handler(self, websocket):
         self.connected_clients.add(websocket)

@@ -404,6 +404,7 @@ ROOT_LOGGER_LEVEL = "INFO"
 
 # --- Security ---
 SECRET_TOKEN = os.getenv("SECRET_TOKEN", "default-secret-token")
+GOD_MODE_TOKEN = os.getenv("GOD_MODE_TOKEN", "default-god-token")
 
 
 

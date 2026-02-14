@@ -190,3 +190,8 @@ class FirmConfigDTO:
     ai_reward_brand_value_multiplier: float
     default_unit_cost: float = 5.0
     space_utility_factor: float = 100.0
+
+@dataclass
+class SecurityConfigDTO:
+    """Configuration for system security and access control."""
+    god_mode_token: str
