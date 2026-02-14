@@ -653,8 +653,15 @@ class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, I
              rate = exchange_rates.get(cur, 1.0) if cur != DEFAULT_CURRENCY else 1.0
              total_revenue += float(amount) * rate
 
-        result = self.sales_engine.adjust_marketing_budget(self.sales_state, market_context, total_revenue)
+        result = self.sales_engine.adjust_marketing_budget(
+            self.sales_state,
+            market_context,
+            total_revenue,
+            last_revenue=float(self.finance_state.last_revenue_pennies),
+            last_marketing_spend=float(self.finance_state.last_marketing_spend_pennies)
+        )
         self.sales_state.marketing_budget_pennies = int(result.new_budget)
+        self.sales_state.marketing_budget_rate = result.new_marketing_rate
 
     def get_snapshot_dto(self) -> FirmSnapshotDTO:
         """Helper to create FirmSnapshotDTO for engines."""
@@ -1223,11 +1230,23 @@ class Firm(ILearningAgent, IFinancialAgent, ILiquidatable, IOrchestratorAgent, I
 
         # 3. Marketing
         # Adjust budget first (ask Engine what the budget should be)
+        # Calculate total revenue for this turn
+        exchange_rates = market_context.get("exchange_rates", {DEFAULT_CURRENCY: 1.0})
+        total_revenue_this_turn = 0.0
+        for cur, amount in self.finance_state.revenue_this_turn.items():
+             rate = exchange_rates.get(cur, 1.0) if cur != DEFAULT_CURRENCY else 1.0
+             total_revenue_this_turn += float(amount) * rate
+
         marketing_result = self.sales_engine.adjust_marketing_budget(
-            self.sales_state, market_context, float(self.finance_state.last_revenue_pennies) # Engine uses float revenue?
+            self.sales_state,
+            market_context,
+            total_revenue_this_turn,
+            last_revenue=float(self.finance_state.last_revenue_pennies),
+            last_marketing_spend=float(self.finance_state.last_marketing_spend_pennies)
         )
         # Apply result
         self.sales_state.marketing_budget_pennies = marketing_result.new_budget
+        self.sales_state.marketing_budget_rate = marketing_result.new_marketing_rate
 
         # Then generate transaction using the updated state
         marketing_context = self._build_sales_marketing_context(current_time, government)

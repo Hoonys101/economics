@@ -1,6 +1,6 @@
 
 import pytest
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, create_autospec
 from uuid import uuid4
 from typing import Dict, Any, List
 
@@ -147,6 +147,13 @@ class MockSettlementSystem:
         except Exception:
             return None
 
+    def get_account_holders(self, bank_id):
+        # ST-002: Mock reverse index logic
+        # For this test, we assume we can just look at the bank attached to this mock.
+        if hasattr(self, 'bank') and self.bank.id == bank_id:
+            return list(self.bank.customer_balances.keys())
+        return []
+
 # --- Fixtures ---
 
 @pytest.fixture
@@ -172,7 +179,7 @@ def test_env():
     agent_registry.get_agent = lambda id: next((a for a in agents if a.id == id or str(a.id) == str(id)), None)
     agent_registry.get_all_financial_agents.return_value = agents
 
-    registry = MagicMock(spec=IGlobalRegistry)
+    registry = create_autospec(IGlobalRegistry, instance=True)
     registry.get.return_value = 1.0
     registry.set.return_value = True
 
