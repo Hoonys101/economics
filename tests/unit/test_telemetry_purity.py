@@ -43,7 +43,7 @@ class TestTelemetryPurity:
         command_queue = CommandQueue()
         telemetry_exchange = TelemetryExchange()
 
-        server = SimulationServer("localhost", 0, command_queue, telemetry_exchange)
+        server = SimulationServer("localhost", 0, command_queue, telemetry_exchange, god_mode_token="dummy_token")
 
         # Create a dummy Pydantic model representing the future TelemetrySnapshotDTO
         class DummySnapshot(BaseModel):
