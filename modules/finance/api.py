@@ -19,6 +19,25 @@ if TYPE_CHECKING:
 class Firm: pass
 class Household: pass # Assuming Household agent also interacts with the bank
 
+@runtime_checkable
+class IFinancialEntity(Protocol):
+    """
+    Standard interface for any entity capable of holding and transferring financial value.
+    Replaces legacy `hasattr` checks and standardizes on integer pennies.
+    """
+    @property
+    def balance_pennies(self) -> int:
+        """Returns the balance in the default currency (pennies)."""
+        ...
+
+    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Deposits funds into the entity's wallet."""
+        ...
+
+    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Withdraws funds from the entity's wallet."""
+        ...
+
 class IFinanceDepartment(Protocol):
     """
     Interface for a Firm's financial operations, designed for a multi-currency environment.
