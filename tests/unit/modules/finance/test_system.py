@@ -142,7 +142,61 @@ class StubFirm:
         self.finance_state.profit_history = [100000, 100000] # Pennies
         self.has_bailout_loan = False
         self.last_prices = {}
+        # Backing fields for IFinancialFirm properties
+        self._capital_stock_pennies = 0
+        self._inventory_value_pennies = 0
 
+    # IFinancialEntity
+    @property
+    def balance_pennies(self) -> int:
+        return self.cash_reserve
+
+    def deposit(self, amount_pennies: int, currency: str = DEFAULT_CURRENCY) -> None:
+        self.cash_reserve += amount_pennies
+
+    def withdraw(self, amount_pennies: int, currency: str = DEFAULT_CURRENCY) -> None:
+        if self.cash_reserve < amount_pennies:
+            raise InsufficientFundsError()
+        self.cash_reserve -= amount_pennies
+
+    # IFinancialFirm
+    @property
+    def capital_stock_pennies(self) -> int:
+        return self._capital_stock_pennies
+
+    @capital_stock_pennies.setter
+    def capital_stock_pennies(self, value: int):
+        self._capital_stock_pennies = value
+
+    @property
+    def inventory_value_pennies(self) -> int:
+        return self._inventory_value_pennies
+
+    @inventory_value_pennies.setter
+    def inventory_value_pennies(self, value: int):
+        self._inventory_value_pennies = value
+
+    @property
+    def monthly_wage_bill_pennies(self) -> int:
+        if not self.hr_state.employee_wages:
+            return 0
+        return sum(self.hr_state.employee_wages.values())
+
+    @property
+    def total_debt_pennies(self) -> int:
+        return int(self.total_debt)
+
+    @property
+    def retained_earnings_pennies(self) -> int:
+        return self.finance_state.retained_earnings_pennies
+
+    @property
+    def average_profit_pennies(self) -> int:
+        if not self.finance_state.profit_history:
+            return 0
+        return int(sum(self.finance_state.profit_history) / len(self.finance_state.profit_history))
+
+    # Legacy Compatibility
     @property
     def assets(self):
         return self._assets
@@ -156,25 +210,19 @@ class StubFirm:
     def get_quantity(self, item):
         return 0.0
 
-    def deposit(self, amount): self.cash_reserve += amount
-    def withdraw(self, amount):
-        if self.cash_reserve < amount:
-            raise InsufficientFundsError()
-        self.cash_reserve -= amount
-
 @pytest.fixture
 def mock_firm():
     return StubFirm()
 
 def test_evaluate_solvency_startup_pass(finance_system, mock_firm):
     mock_firm.age = 10
-    # Required runway = 3 * (100000 * 4) = 1200000 pennies
-    mock_firm._assets = 1200000
+    # Required runway = 3 * 100000 = 300000 pennies
+    mock_firm.cash_reserve = 1200000
     assert finance_system.evaluate_solvency(mock_firm, 100) is True
 
 def test_evaluate_solvency_startup_fail(finance_system, mock_firm):
     mock_firm.age = 10
-    mock_firm._assets = 100000
+    mock_firm.cash_reserve = 100000
     assert finance_system.evaluate_solvency(mock_firm, 100) is False
 
 def test_evaluate_solvency_established_pass(finance_system, mock_firm):
