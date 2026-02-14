@@ -28,9 +28,21 @@ def server_instance(server_port):
     srv = SimulationServer("localhost", server_port, cq, te, god_mode_token=token)
     srv.start()
 
-    # Wait for server to start accepting connections
-    # Simple retry logic or sleep
-    time.sleep(1)
+    # Wait for server to start accepting connections using polling
+    start_time = time.time()
+    while time.time() - start_time < 5.0:
+        try:
+            # Try to connect with a dummy socket to check if port is open
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            result = sock.connect_ex(('localhost', server_port))
+            sock.close()
+            if result == 0:
+                break
+        except Exception:
+            pass
+        time.sleep(0.1)
+    else:
+        pytest.fail("Server failed to start within timeout")
 
     yield srv, token
 

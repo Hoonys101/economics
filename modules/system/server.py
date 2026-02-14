@@ -68,6 +68,9 @@ class SimulationServer:
         if not token or not secrets.compare_digest(token, self.god_mode_token):
             logger.warning(f"Unauthorized connection attempt to {request.path}. Token provided: {'Yes' if token else 'No'}")
             return Response(http.HTTPStatus.UNAUTHORIZED, "Unauthorized", Headers(), b"Unauthorized: Invalid God Token")
+
+        # Log successful authentication
+        logger.debug(f"Authorized connection established for {request.path}")
         return None
 
     async def _handler(self, websocket):
