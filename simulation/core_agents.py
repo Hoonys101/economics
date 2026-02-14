@@ -38,6 +38,7 @@ from modules.household.engines.budget import BudgetEngine
 from modules.household.engines.consumption_engine import ConsumptionEngine
 from modules.household.engines.belief_engine import BeliefEngine
 from modules.household.engines.crisis_engine import CrisisEngine
+from modules.household.connectors.housing_connector import HousingConnector
 
 # API & DTOs
 from modules.household.api import (
@@ -113,6 +114,7 @@ class Household(
         self.consumption_engine = ConsumptionEngine()
         self.belief_engine = BeliefEngine()
         self.crisis_engine = CrisisEngine()
+        self.housing_connector = HousingConnector()
 
         # --- Initialize Internal State DTOs ---
 
@@ -656,21 +658,8 @@ class Household(
         return refined_orders, chosen_tactic_tuple
 
     def _execute_housing_action(self, action: HousingActionDTO, housing_system: Any):
-        """Helper to execute housing actions via system."""
-        # Convert back to dict expected by system if needed, or update system to accept DTO
-        # Existing HousingSystem likely expects specific method calls.
-        if action.action_type == "INITIATE_PURCHASE":
-            if hasattr(housing_system, 'initiate_purchase'):
-                # Assuming initiate_purchase takes a dict similar to HousingPurchaseDecisionDTO
-                # logic in HousingPlanner returns HousingPurchaseDecisionDTO (TypedDict).
-                # housing_system.initiate_purchase expects HousingPurchaseDecisionDTO.
-                decision_dict = {
-                    "decision_type": "INITIATE_PURCHASE",
-                    "target_property_id": int(action.property_id),
-                    "offer_price": int(action.offer_price), # Ensure int pennies
-                    "down_payment_amount": int(action.down_payment_amount) # Ensure int pennies
-                }
-                housing_system.initiate_purchase(decision_dict, buyer_id=self.id)
+        """Helper to execute housing actions via connector."""
+        self.housing_connector.execute_action(action, housing_system, self.id)
 
     # --- Other Interface Implementations ---
 

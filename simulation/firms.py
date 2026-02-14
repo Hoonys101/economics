@@ -28,6 +28,7 @@ from simulation.components.engines.asset_management_engine import AssetManagemen
 from simulation.components.engines.rd_engine import RDEngine
 from modules.firm.engines.brand_engine import BrandEngine
 from modules.firm.engines.pricing_engine import PricingEngine
+from modules.firm.orchestrators.firm_action_executor import FirmActionExecutor
 from simulation.components.engines.real_estate_component import RealEstateUtilizationComponent
 
 from simulation.dtos.context_dtos import PayrollProcessingContext, FinancialTransactionContext, SalesContext
@@ -124,6 +125,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         self.rd_engine: IRDEngine = RDEngine()
         self.brand_engine = BrandEngine()
         self.pricing_engine: IPricingEngine = PricingEngine()
+        self.action_executor = FirmActionExecutor()
 
         # Initialize core attributes in State
         self.production_state.specialization = specialization
@@ -994,123 +996,7 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         Orchestrates internal orders by delegating to specialized engines.
         Replaces _execute_internal_order.
         """
-        snapshot = self.get_snapshot_dto()
-        government = fiscal_context.government if fiscal_context else None
-        gov_id = government.id if government else None
-
-        fin_ctx = FinancialTransactionContext(
-            government_id=gov_id,
-            tax_rates={},
-            market_context=market_context or {},
-            shareholder_registry=None
-        )
-
-        def get_amount(o: Order) -> int:
-            val = o.monetary_amount['amount_pennies'] if o.monetary_amount else o.quantity
-            return int(val)
-
-        def get_currency(o: Order) -> CurrencyCode:
-             return o.monetary_amount['currency'] if o.monetary_amount else DEFAULT_CURRENCY
-
-        for order in orders:
-            if order.market_id != "internal":
-                continue
-
-            amount = get_amount(order)
-
-            # --- Delegate to AssetManagementEngine ---
-            if order.order_type in ["INVEST_AUTOMATION", "INVEST_CAPEX"]:
-                investment_type = "AUTOMATION" if order.order_type == "INVEST_AUTOMATION" else "CAPEX"
-
-                # Check funds first via FinanceEngine simulation or just check wallet
-                # The engine doesn't check funds in wallet, it checks logical possibility.
-                # But we should check if we can pay.
-                # Old code used self.finance_engine.invest_in_automation which checked funds/created tx.
-                # Now we want to separate logic.
-
-                # Payment flow:
-                # 1. Check if we have funds.
-                if self.wallet.get_balance(DEFAULT_CURRENCY) < amount:
-                    self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed to invest {amount} (Insufficient Funds).")
-                    continue
-
-                asset_input = AssetManagementInputDTO(
-                    firm_snapshot=snapshot,
-                    investment_type=investment_type,
-                    investment_amount=amount
-                )
-                asset_result: AssetManagementResultDTO = self.asset_management_engine.invest(asset_input)
-
-                if asset_result.success:
-                    # Transfer funds
-                    if self.settlement_system and self.settlement_system.transfer(self, government, int(asset_result.actual_cost), order.order_type):
-                        # Apply state changes
-                        self.production_state.automation_level += asset_result.automation_level_increase
-                        self.production_state.capital_stock += asset_result.capital_stock_increase
-
-                        self.record_expense(int(asset_result.actual_cost), DEFAULT_CURRENCY)
-                        self.logger.info(f"INTERNAL_EXEC | Firm {self.id} invested {asset_result.actual_cost} in {order.order_type}.")
-                    else:
-                         self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed transfer for {order.order_type}.")
-                else:
-                    self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed {order.order_type}: {asset_result.message}")
-
-            # --- Delegate to RDEngine ---
-            elif order.order_type == "INVEST_RD":
-                # Check funds
-                if self.wallet.get_balance(DEFAULT_CURRENCY) < amount:
-                    self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed to invest R&D {amount} (Insufficient Funds).")
-                    continue
-
-                rd_input = RDInputDTO(firm_snapshot=snapshot, investment_amount=amount, current_time=current_time)
-                rd_result: RDResultDTO = self.rd_engine.research(rd_input)
-
-                if self.settlement_system and self.settlement_system.transfer(self, government, amount, "R&D"):
-                    self.record_expense(amount, DEFAULT_CURRENCY)
-
-                    if rd_result.success:
-                         self.production_state.base_quality += rd_result.quality_improvement
-                         self.production_state.productivity_factor *= rd_result.productivity_multiplier_change
-                         self.production_state.research_history["success_count"] += 1
-                         self.production_state.research_history["last_success_tick"] = current_time
-                         self.logger.info(f"INTERNAL_EXEC | Firm {self.id} R&D SUCCESS (Budget: {amount:.1f})")
-
-                    self.production_state.research_history["total_spent"] += amount
-
-            # --- Existing Handlers (HR, Finance) ---
-            elif order.order_type == "SET_TARGET":
-                self.production_state.production_target = order.quantity
-                self.logger.info(f"INTERNAL_EXEC | Firm {self.id} set production target to {order.quantity:.1f}")
-
-            elif order.order_type == "PAY_TAX":
-                amount = get_amount(order)
-                currency = get_currency(order)
-                reason = order.item_id
-
-                tx = self.finance_engine.pay_ad_hoc_tax(
-                    self.finance_state, self.id, self.wallet.get_all_balances(), amount, currency, reason, fin_ctx, current_time
-                )
-                if tx:
-                    if self.settlement_system and self.settlement_system.transfer(self, government, amount, reason, currency=currency):
-                        self.finance_engine.record_expense(self.finance_state, amount, currency)
-
-            elif order.order_type == "SET_DIVIDEND":
-                self.finance_state.dividend_rate = order.quantity
-
-            elif order.order_type == "SET_PRICE":
-                pass
-
-            elif order.order_type == "FIRE":
-                 tx = self.hr_engine.create_fire_transaction(
-                    self.hr_state, self.id, self.wallet.get_balance(DEFAULT_CURRENCY), order.target_agent_id, order.price, current_time
-                 )
-                 if tx:
-                    employee = next((e for e in self.hr_state.employees if e.id == order.target_agent_id), None)
-                    if employee and self.settlement_system and self.settlement_system.transfer(self, employee, int(tx.price), "Severance", currency=tx.currency):
-                        self.hr_engine.finalize_firing(self.hr_state, order.target_agent_id)
-                        self.logger.info(f"INTERNAL_EXEC | Firm {self.id} fired employee {order.target_agent_id}.")
-                    else:
-                        self.logger.warning(f"INTERNAL_EXEC | Firm {self.id} failed to fire {order.target_agent_id} (transfer failed).")
+        self.action_executor.execute(self, orders, fiscal_context, current_time, market_context)
 
     def _calculate_invisible_hand_price(self, market_snapshot: MarketSnapshotDTO, current_tick: int) -> None:
         if not market_snapshot.market_signals: return
