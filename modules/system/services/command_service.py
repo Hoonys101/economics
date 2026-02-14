@@ -14,15 +14,7 @@ from collections import deque
 
 logger = logging.getLogger(__name__)
 
-class ICommandService(Protocol):
-    def execute_command_batch(self, commands: List[GodCommandDTO], tick: int, baseline_m2: int) -> List[GodResponseDTO]:
-        ...
-    def commit_last_tick(self) -> None:
-        ...
-
-@runtime_checkable
-class ISectorAgent(Protocol):
-    sector: str
+from modules.api.protocols import ICommandService, ISectorAgent
 
 @dataclass
 class UndoRecord:
