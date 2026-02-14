@@ -2,7 +2,7 @@ from typing import List, Dict, Optional, Any, Tuple, Union
 import logging
 import uuid
 from modules.finance.api import (
-    IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialAgent,
+    IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialAgent, IFinancialFirm,
     InsufficientFundsError, GrantBailoutCommand, BorrowerProfileDTO, LoanInfoDTO
 )
 from modules.finance.domain import AltmanZScoreCalculator
@@ -194,40 +194,31 @@ class FinanceSystem(IFinanceSystem):
 
     # --- IFinanceSystem Implementation ---
 
-    def evaluate_solvency(self, firm: 'Firm', current_tick: int) -> bool:
+    def evaluate_solvency(self, firm: IFinancialFirm, current_tick: int) -> bool:
         """Evaluates a firm's solvency to determine bailout eligibility."""
         startup_grace_period = self.config_module.get("economy_params.STARTUP_GRACE_PERIOD_TICKS", 24)
         z_score_threshold = self.config_module.get("economy_params.ALTMAN_Z_SCORE_THRESHOLD", 1.81)
 
         if firm.age < startup_grace_period:
-            if hasattr(firm, 'hr_state'):
-                # Re-implement using state
-                total_wages = sum(firm.hr_state.employee_wages.values())
-                monthly_wage_bill = total_wages * 4
-                required_runway = monthly_wage_bill * 3
-                return firm.assets >= required_runway
-            return True
+            monthly_wage_bill = firm.monthly_wage_bill_pennies
+            required_runway = monthly_wage_bill * 3
+            return firm.balance_pennies >= required_runway
         else:
             # Altman Z-Score for established firms
             # All inputs should be int pennies. Ratios will be same.
-            # inventory_value: Firm.get_inventory_value() calculates qty * price. Price is float. So value is float dollars.
-            # We need to convert inventory value to pennies.
-            inventory_value = sum(firm.get_quantity(i) * firm.last_prices.get(i, 10.0) for i in firm.get_all_items())
-            inventory_value_pennies = int(inventory_value * 100)
 
-            capital_stock_pennies = int(firm.capital_stock * 100)
+            inventory_value_pennies = firm.inventory_value_pennies
+            capital_stock_pennies = firm.capital_stock_pennies
 
-            total_assets = firm.assets + capital_stock_pennies + inventory_value_pennies
-            working_capital = firm.assets - getattr(firm, 'total_debt', 0)
+            # Total Assets = Cash + Inventory + Capital
+            total_assets = firm.balance_pennies + capital_stock_pennies + inventory_value_pennies
 
-            retained_earnings = 0
-            if hasattr(firm, 'finance_state'):
-                retained_earnings = firm.finance_state.retained_earnings_pennies
+            # Working Capital = Current Assets - Current Liabilities
+            # Simplified: Cash + Inventory - Debt
+            working_capital = (firm.balance_pennies + inventory_value_pennies) - firm.total_debt_pennies
 
-            # Safe calculation of average profit
-            average_profit = 0
-            if hasattr(firm, 'finance_state') and firm.finance_state.profit_history:
-                average_profit = sum(firm.finance_state.profit_history) / len(firm.finance_state.profit_history)
+            retained_earnings = firm.retained_earnings_pennies
+            average_profit = firm.average_profit_pennies
 
             z_score = AltmanZScoreCalculator.calculate(
                 total_assets=float(total_assets),

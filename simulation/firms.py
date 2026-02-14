@@ -47,7 +47,7 @@ from modules.firm.api import (
 )
 
 from simulation.utils.shadow_logger import log_shadow
-from modules.finance.api import InsufficientFundsError, IFinancialEntity, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake
+from modules.finance.api import InsufficientFundsError, IFinancialFirm, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake
 from modules.common.interfaces import IPropertyOwner
 from modules.common.dtos import Claim
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
@@ -68,12 +68,15 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner, IFirmStateProvider):
+class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner, IFirmStateProvider):
     """
     Firm Agent (Orchestrator).
     Manages state and delegates logic to stateless engines.
     Refactored to Composition (No BaseAgent).
     """
+
+    # Explicitly override age property from Protocol to allow instance attribute usage
+    age: int = 0
 
     def __init__(
         self,
@@ -1193,11 +1196,40 @@ class Firm(ILearningAgent, IFinancialEntity, IFinancialAgent, ILiquidatable, IOr
         if property_id in self.finance_state.owned_properties:
             self.finance_state.owned_properties.remove(property_id)
 
-    # --- IFinancialEntity Implementation ---
+    # --- IFinancialEntity & IFinancialFirm Implementation ---
 
     @property
     def balance_pennies(self) -> int:
         return self.wallet.get_balance(DEFAULT_CURRENCY)
+
+    @property
+    def capital_stock_pennies(self) -> int:
+        return int(self.production_state.capital_stock * 100)
+
+    @property
+    def inventory_value_pennies(self) -> int:
+        val = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self.get_all_items())
+        return int(val * 100)
+
+    @property
+    def monthly_wage_bill_pennies(self) -> int:
+        total_wages = sum(self.hr_state.employee_wages.values())
+        return int(total_wages * 4 * 100)
+
+    @property
+    def total_debt_pennies(self) -> int:
+        return self.finance_state.total_debt_pennies
+
+    @property
+    def retained_earnings_pennies(self) -> int:
+        return self.finance_state.retained_earnings_pennies
+
+    @property
+    def average_profit_pennies(self) -> int:
+        history = self.finance_state.profit_history
+        if not history:
+            return 0
+        return int(sum(history) / len(history))
 
     def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
          self.wallet.add(amount_pennies, currency)

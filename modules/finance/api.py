@@ -38,6 +38,51 @@ class IFinancialEntity(Protocol):
         """Withdraws funds from the entity's wallet."""
         ...
 
+@runtime_checkable
+class IFinancialFirm(IFinancialEntity, Protocol):
+    """
+    Interface for a Firm entity used in financial analysis (e.g., Solvency).
+    Ensures strict typing for solvency checks and financial reporting.
+    """
+    @property
+    def age(self) -> int:
+        """The age of the firm in ticks."""
+        ...
+
+    @age.setter
+    def age(self, value: int) -> None:
+        ...
+
+    @property
+    def capital_stock_pennies(self) -> int:
+        """The capital stock value in pennies."""
+        ...
+
+    @property
+    def inventory_value_pennies(self) -> int:
+        """The total value of inventory in pennies."""
+        ...
+
+    @property
+    def monthly_wage_bill_pennies(self) -> int:
+        """The total monthly wage bill in pennies."""
+        ...
+
+    @property
+    def total_debt_pennies(self) -> int:
+        """The total outstanding debt in pennies."""
+        ...
+
+    @property
+    def retained_earnings_pennies(self) -> int:
+        """The retained earnings in pennies."""
+        ...
+
+    @property
+    def average_profit_pennies(self) -> int:
+        """The average profit over the relevant history in pennies."""
+        ...
+
 class IFinanceDepartment(Protocol):
     """
     Interface for a Firm's financial operations, designed for a multi-currency environment.
