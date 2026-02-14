@@ -144,3 +144,7 @@
 - **[2026-02-13] Iterator Efficiency in Transaction Streams**
     - Migrated high-volume transaction combinations from list concatenation to `itertools.chain`. Achieved ~40% reduction in execution time and eliminated intermediate memory allocations.
     - [Insight Report](../_archive/insights/2026-02-13_Transaction_List_Optimization.md)
+- **[2026-02-14] Settlement Reverse Index Optimization (O(N) -> O(1))**
+    - **Optimization**: Introduced a dual-index system (Bank -> Set[Agents], Agent -> Set[Banks]) in `SettlementSystem` to accelerate bank-run and liquidation scenarios. Avoids global registry scans during God-mode interventions.
+    - **Implementation**: Synchronized index updates with `AgentLifecycleManager` and `FinanceSystem` to maintain SSoT integrity. Updated `ISettlementSystem` protocol to enforce these stateful registry contracts.
+    - [Insight Report](../_archive/insights/2026-02-14_Settlement_Stress_Scale_Optimization.md)
