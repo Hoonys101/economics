@@ -1,0 +1,330 @@
+diff --git a/communications/insights/manual.md b/communications/insights/manual.md
+index 210526b6..7d044745 100644
+--- a/communications/insights/manual.md
++++ b/communications/insights/manual.md
+@@ -1,35 +1,38 @@
+-# Architectural Insights
+-1. **Global `sys.modules` Patching in Tests is Harmful:** Manually modifying `sys.modules` in a test file (e.g., `sys.modules["websockets"] = Mock()`) affects the entire test process, including subsequent tests that rely on the real module. This leads to confusing failures like `ModuleNotFoundError` for submodules because the Mock object is not a package.
+-2. **Conditional Mocking in `conftest.py` is Robust:** Centralizing mocks for optional dependencies in `conftest.py` ensures that tests can run in minimal environments while still allowing integration tests to use real libraries when available. Adding `mock.__path__ = []` is crucial for mimicking packages to support submodule imports.
++# Insight Report: Optimize Bank Stress Scan (O(N) -> O(1))
+ 
+-# Test Evidence
++## Architectural Insights
++
++### 1. Reverse Index Implementation
++To address the O(N) performance bottleneck in `FORCE_WITHDRAW_ALL`, a reverse index `Bank -> List[Depositors]` was introduced in the `SettlementSystem`. This transforms the complexity of finding account holders for a bank run simulation from linear (scanning all agents) to constant/proportional (accessing a cached list).
++
++### 2. Synchronization Strategy
++The index is synchronized at three key lifecycle events:
++- **Account Creation**: When a loan is booked (via `FinanceSystem`) or a manual deposit occurs (via `Bank`), `SettlementSystem.register_account` is called.
++- **Account Closure**: When an agent is liquidated (via `AgentLifecycleManager`), `SettlementSystem.remove_agent_from_all_accounts` is called.
++- **Index Storage**: The index uses `Dict[BankID, Set[AgentID]]` for efficient O(1) insertions and lookups, while also maintaining a forward index `Dict[AgentID, Set[BankID]]` to enable fast O(1) removal of agents upon death.
++
++### 3. Protocol Updates
++The `ISettlementSystem` protocol was updated to formally include `register_account`, `deregister_account`, `get_account_holders`, and `remove_agent_from_all_accounts`, ensuring type safety and architectural compliance.
++
++## Test Evidence
++
++### Manual Verification Script (`test_settlement_index.py`)
++A dedicated verification script was created to test the index logic in isolation.
++
++**Script Output:**
+ ```
+-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_audit_logs PASSED [ 16%]
+-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_initialization PASSED [ 33%]
+-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_send_command PASSED [ 50%]
+-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_telemetry_handling PASSED [ 66%]
+-tests/integration/test_server_integration.py::test_command_injection
+--------------------------------- live log setup --------------------------------
+-INFO     SimulationServer:server.py:27 SimulationServer thread started on localhost:38315
+-INFO     websockets.server:server.py:341 server listening on 127.0.0.1:38315
+-INFO     websockets.server:server.py:341 server listening on [::1]:38315
+-INFO     SimulationServer:server.py:35 WebSocket server running...
+--------------------------------- live log call ---------------------------------
+-INFO     websockets.server:server.py:531 connection open
+-INFO     SimulationServer:server.py:43 Client connected: ('::1', 59268, 0, 0)
+-INFO     SimulationServer:server.py:58 Client disconnected: ('::1', 59268, 0, 0)
+-PASSED                                                                   [ 83%]
+-tests/integration/test_server_integration.py::test_telemetry_broadcast
+--------------------------------- live log setup --------------------------------
+-INFO     SimulationServer:server.py:27 SimulationServer thread started on localhost:60639
+-INFO     websockets.server:server.py:341 server listening on [::1]:60639
+-INFO     websockets.server:server.py:341 server listening on 127.0.0.1:60639
+-INFO     SimulationServer:server.py:35 WebSocket server running...
+--------------------------------- live log call ---------------------------------
+-INFO     websockets.server:server.py:531 connection open
+-INFO     SimulationServer:server.py:43 Client connected: ('::1', 48328, 0, 0)
+-INFO     SimulationServer:server.py:58 Client disconnected: ('::1', 48328, 0, 0)
+-PASSED                                                                   [100%]
+-
+-============================== 6 passed in 2.96s ===============================
++Holders 101: [1, 2]
++Holders 102: [3]
++Holders 103: []
++Holders 101 after deregister 1: [2]
++Holders 101 before removal: [2, 4]
++Holders 101 after removal: [2]
++Verification Passed!
+ ```
++
++### Integration Logic Verification
++- `modules/system/services/command_service.py` was updated to use `settlement_system.get_account_holders(bank_id)` instead of iterating `agent_registry.get_all_agents()`.
++- `modules/finance/system.py` and `simulation/bank.py` were updated to call `register_account` on deposit creation.
++- `simulation/systems/lifecycle_manager.py` was updated to call `remove_agent_from_all_accounts` on agent liquidation.
++
++These changes ensure the index remains accurate throughout the simulation lifecycle.
+diff --git a/modules/finance/system.py b/modules/finance/system.py
+index a97f99ee..a6fe42b8 100644
+--- a/modules/finance/system.py
++++ b/modules/finance/system.py
+@@ -149,6 +149,12 @@ class FinanceSystem(IFinanceSystem):
+         if not loan_state:
+             return None, result.generated_transactions
+ 
++        # TD-INT-STRESS-SCALE: Sync SettlementSystem Reverse Index
++        if self.settlement_system:
++             # Using register_account to ensure the borrower is tracked as a depositor
++             # since loan creation triggers deposit creation (credit money).
++             self.settlement_system.register_account(lender_id, borrower_id)
++
+         info_dto = LoanInfoDTO(
+             loan_id=loan_state.loan_id,
+             borrower_id=loan_state.borrower_id,
+diff --git a/modules/system/services/command_service.py b/modules/system/services/command_service.py
+index 6c702390..014aea84 100644
+--- a/modules/system/services/command_service.py
++++ b/modules/system/services/command_service.py
+@@ -405,21 +405,21 @@ class CommandService:
+ 
+         logger.info(f"FORCE_WITHDRAW_ALL: Targeting Bank {bank_agent.id}")
+ 
+-        # Iterate all agents and withdraw
+-        agents = self.agent_registry.get_all_agents()
++        # TD-INT-STRESS-SCALE: Use Reverse Index for O(1) access
++        depositor_ids = self.settlement_system.get_account_holders(bank_agent.id)
+         withdrawal_count = 0
+         total_withdrawn = 0
+ 
+-        for agent in agents:
++        for agent_id in depositor_ids:
+             # Skip the bank itself and central bank
+-            if agent.id == bank_agent.id or agent.id == ID_CENTRAL_BANK:
++            if agent_id == bank_agent.id or agent_id == ID_CENTRAL_BANK:
++                continue
++
++            agent = self.agent_registry.get_agent(agent_id)
++            if not agent:
+                 continue
+ 
+             # Check Balance
+-            # Since IBank doesn't expose get_balance_of(agent), we use seamless withdraw check or custom method
+-            # Bank.get_customer_balance is available in the implementation we read earlier
+-            # Check Balance
+-            # Since IBank doesn't expose get_balance_of(agent), we use seamless withdraw check or custom method
+             if isinstance(bank_agent, IBank): # Protocol check
+                  balance = bank_agent.get_customer_balance(agent.id)
+                  if balance > 0:
+diff --git a/simulation/bank.py b/simulation/bank.py
+index bf3cd795..05393614 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -248,6 +248,9 @@ class Bank(IBank, ICurrencyHolder):
+                  from modules.finance.engine_api import DepositStateDTO
+                  if dep_id not in bank_state.deposits:
+                      bank_state.deposits[dep_id] = DepositStateDTO(dep_id, depositor_id, 0, 0.0, currency)
++                     # TD-INT-STRESS-SCALE: Sync SettlementSystem Reverse Index
++                     if self.settlement_system:
++                         self.settlement_system.register_account(self.id, depositor_id)
+                  bank_state.deposits[dep_id].balance_pennies += int(amount)
+                  return dep_id
+         return None
+diff --git a/simulation/finance/api.py b/simulation/finance/api.py
+index d7a3a621..cc0133bd 100644
+--- a/simulation/finance/api.py
++++ b/simulation/finance/api.py
+@@ -1,4 +1,4 @@
+-from typing import Protocol, runtime_checkable, Optional, Dict, Any, TypedDict, Union
++from typing import Protocol, runtime_checkable, Optional, Dict, Any, TypedDict, Union, List
+ from abc import ABC, abstractmethod
+ from modules.finance.api import IFinancialAgent
+ from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
+@@ -119,3 +119,34 @@ class ISettlementSystem(ABC):
+         to `government_agent` (Escheatment), ensuring zero-sum integrity.
+         """
+         ...
++
++    @abstractmethod
++    def register_account(self, bank_id: int, agent_id: int) -> None:
++        """
++        Registers an account link between a bank and an agent.
++        Used to maintain the reverse index for bank runs.
++        """
++        ...
++
++    @abstractmethod
++    def deregister_account(self, bank_id: int, agent_id: int) -> None:
++        """
++        Removes an account link between a bank and an agent.
++        """
++        ...
++
++    @abstractmethod
++    def get_account_holders(self, bank_id: int) -> List[int]:
++        """
++        Returns a list of all agents holding accounts at the specified bank.
++        This provides O(1) access to depositors for bank run simulation.
++        """
++        ...
++
++    @abstractmethod
++    def remove_agent_from_all_accounts(self, agent_id: int) -> None:
++        """
++        Removes an agent from all bank account indices.
++        Called upon agent liquidation/deletion.
++        """
++        ...
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index 6d3654fa..bf5be735 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -408,6 +408,10 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+             if isinstance(firm, ICurrencyHolder):
+                 state.unregister_currency_holder(firm)
+ 
++            # TD-INT-STRESS-SCALE: Clean up settlement index
++            if self.settlement_system:
++                self.settlement_system.remove_agent_from_all_accounts(firm.id)
++
+         # --- Household Liquidation (Inheritance) ---
+         inactive_households = [h for h in state.households if not h._bio_state.is_active]
+         for household in inactive_households:
+@@ -462,6 +466,10 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+             if isinstance(household, ICurrencyHolder):
+                 state.unregister_currency_holder(household)
+ 
++            # TD-INT-STRESS-SCALE: Clean up settlement index
++            if self.settlement_system:
++                self.settlement_system.remove_agent_from_all_accounts(household.id)
++
+         # Cleanup Global Lists
+         state.households[:] = [h for h in state.households if h._bio_state.is_active]
+         state.firms[:] = [f for f in state.firms if f.is_active]
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index 3c7d6c80..53cb9d1d 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -1,6 +1,7 @@
+-from typing import Optional, Dict, Any, cast, TYPE_CHECKING, Tuple, List
++from typing import Optional, Dict, Any, cast, TYPE_CHECKING, Tuple, List, Set
+ import logging
+ from uuid import UUID
++from collections import defaultdict
+ 
+ from simulation.finance.api import ISettlementSystem, ITransaction
+ from modules.finance.api import (
+@@ -37,6 +38,54 @@ class SettlementSystem(ISettlementSystem):
+         self.settlement_accounts: Dict[int, LegacySettlementAccount] = {} # TD-160
+         self.agent_registry: Optional[Any] = None # Injected by SimulationInitializer
+ 
++        # TD-INT-STRESS-SCALE: Reverse Index for Bank Accounts
++        # BankID -> Set[AgentID]
++        self._bank_depositors: Dict[int, Set[int]] = defaultdict(set)
++        # AgentID -> Set[BankID] (for fast removal)
++        self._agent_banks: Dict[int, Set[int]] = defaultdict(set)
++
++    def register_account(self, bank_id: int, agent_id: int) -> None:
++        """
++        Registers an account link between a bank and an agent.
++        Used to maintain the reverse index for bank runs.
++        """
++        self._bank_depositors[bank_id].add(agent_id)
++        self._agent_banks[agent_id].add(bank_id)
++
++    def deregister_account(self, bank_id: int, agent_id: int) -> None:
++        """
++        Removes an account link between a bank and an agent.
++        """
++        if bank_id in self._bank_depositors:
++            self._bank_depositors[bank_id].discard(agent_id)
++            if not self._bank_depositors[bank_id]:
++                del self._bank_depositors[bank_id]
++
++        if agent_id in self._agent_banks:
++            self._agent_banks[agent_id].discard(bank_id)
++            if not self._agent_banks[agent_id]:
++                del self._agent_banks[agent_id]
++
++    def get_account_holders(self, bank_id: int) -> List[int]:
++        """
++        Returns a list of all agents holding accounts at the specified bank.
++        This provides O(1) access to depositors for bank run simulation.
++        """
++        if bank_id in self._bank_depositors:
++            return list(self._bank_depositors[bank_id])
++        return []
++
++    def remove_agent_from_all_accounts(self, agent_id: int) -> None:
++        """
++        Removes an agent from all bank account indices.
++        Called upon agent liquidation/deletion.
++        """
++        if agent_id in self._agent_banks:
++            # Copy to avoid modification during iteration
++            banks = list(self._agent_banks[agent_id])
++            for bank_id in banks:
++                self.deregister_account(bank_id, agent_id)
++
+     def get_balance(self, agent_id: AgentID, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+         """
+         Queries the Single Source of Truth for an agent's current balance.
+diff --git a/test_settlement_index.py b/test_settlement_index.py
+new file mode 100644
+index 00000000..3e62103c
+--- /dev/null
++++ b/test_settlement_index.py
+@@ -0,0 +1,45 @@
++from simulation.systems.settlement_system import SettlementSystem
++
++def test_index():
++    ss = SettlementSystem()
++
++    # Test register
++    ss.register_account(101, 1)
++    ss.register_account(101, 2)
++    ss.register_account(102, 3)
++
++    holders_101 = ss.get_account_holders(101)
++    holders_102 = ss.get_account_holders(102)
++    holders_103 = ss.get_account_holders(103)
++
++    print(f"Holders 101: {sorted(holders_101)}")
++    assert sorted(holders_101) == [1, 2]
++    print(f"Holders 102: {holders_102}")
++    assert holders_102 == [3]
++    print(f"Holders 103: {holders_103}")
++    assert holders_103 == []
++
++    # Test deregister
++    ss.deregister_account(101, 1)
++    holders_101 = ss.get_account_holders(101)
++    print(f"Holders 101 after deregister 1: {holders_101}")
++    assert holders_101 == [2]
++
++    # Test remove agent from all
++    ss.register_account(101, 4)
++    ss.register_account(102, 4)
++    ss.register_account(103, 4)
++
++    print(f"Holders 101 before removal: {sorted(ss.get_account_holders(101))}")
++
++    ss.remove_agent_from_all_accounts(4)
++
++    print(f"Holders 101 after removal: {ss.get_account_holders(101)}")
++    assert 4 not in ss.get_account_holders(101)
++    assert 4 not in ss.get_account_holders(102)
++    assert 4 not in ss.get_account_holders(103)
++
++    print("Verification Passed!")
++
++if __name__ == "__main__":
++    test_index()

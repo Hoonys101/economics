@@ -129,6 +129,10 @@
 
 ## ⚡ [Performance] Optimization & Efficiency
 
+- **[2026-02-14] Event-Driven WebSocket Broadcast (Observer Pattern)**
+    - **Optimization**: Transitioned `SimulationServer` from 10Hz polling to an event-driven model using the Observer pattern via `TelemetryExchange`. This eliminates idle CPU wake-ups and provides sub-tick latency for UI updates.
+    - **Implementation**: Used `asyncio.loop.call_soon_threadsafe` for thread-safe cross-loop notifications and per-client `last_sent_tick` tracking to prevent race conditions during connection/broadcast overlaps.
+    - [Insight Report](../_archive/insights/2026-02-14_WebSocket_Event_Driven_Optimization.md)
 - **[2026-02-09] Tick-Level State Reset Best Practices**
     - **Problem**: Tick-level state variables (e.g., `expenses_this_tick`) were being reset mid-lifecycle, causing data loss for later-stage processes like learning and analysis.
     - **Principle**: All agent tick-level state resets must occur uniformly at the end of the simulation cycle (e.g., a "Post-Sequence" phase). This ensures that all phases within the tick have access to a consistent, complete dataset.
