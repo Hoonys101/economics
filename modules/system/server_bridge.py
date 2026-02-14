@@ -1,6 +1,8 @@
 import queue
-from typing import Any, Optional, List, Callable
+from typing import Any, Optional, List, Callable, Union
 import threading
+from simulation.dtos.telemetry import TelemetrySnapshotDTO
+from modules.system.api import MarketSnapshotDTO
 
 # Bridge Types
 CommandQueue = queue.Queue
@@ -11,12 +13,16 @@ class TelemetryExchange:
     Supports observer pattern for event-driven updates.
     """
     def __init__(self):
-        self._data: Any = None
+        self._data: Optional[Union[TelemetrySnapshotDTO, MarketSnapshotDTO]] = None
         self._lock = threading.Lock()
         self._listeners: List[Callable[[], None]] = []
 
-    def update(self, data: Any) -> None:
+    def update(self, data: Union[TelemetrySnapshotDTO, MarketSnapshotDTO]) -> None:
         """Atomically updates the snapshot and notifies listeners."""
+        if not isinstance(data, (TelemetrySnapshotDTO, MarketSnapshotDTO)):
+             # Allow None? Probably not for update.
+             raise TypeError(f"Invalid telemetry data type: {type(data)}. Expected TelemetrySnapshotDTO or MarketSnapshotDTO.")
+
         with self._lock:
             self._data = data
 
@@ -32,7 +38,7 @@ class TelemetryExchange:
                 # Suppress listener errors to avoid breaking the update loop
                 pass
 
-    def get(self) -> Optional[Any]:
+    def get(self) -> Optional[Union[TelemetrySnapshotDTO, MarketSnapshotDTO]]:
         """Atomically retrieves the latest snapshot."""
         with self._lock:
             return self._data

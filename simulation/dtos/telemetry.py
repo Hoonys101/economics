@@ -3,11 +3,18 @@ from pydantic import BaseModel
 
 class TelemetrySnapshotDTO(BaseModel):
     """
-    실시간 데이터 스냅샷 구조.
+    Real-time data snapshot structure for telemetry broadcasting.
     Represents a snapshot of telemetry data collected at a specific tick.
+
+    Fields:
+        timestamp: Unix timestamp of when the snapshot was taken.
+        tick: The simulation tick this snapshot corresponds to.
+        data: A dictionary of collected data fields, where keys are dot-notation paths (e.g., 'firm.101.profit').
+        errors: A list of field paths that failed to be collected.
+        metadata: Additional metadata such as sampling frequency or collector stats.
     """
-    timestamp: float      # 실제 시간 (Unix)
-    tick: int            # 시뮬레이션 틱
-    data: Dict[str, Any] # 수집된 데이터 필드 (Dot-notation key)
-    errors: List[str]    # 조회 실패한 필드 목록
-    metadata: Dict[str, Any] # 샘플링 빈도 등 부가 정보
+    timestamp: float      # Unix Timestamp
+    tick: int            # Simulation Tick
+    data: Dict[str, Any] # Collected Data Fields (Dot-notation key)
+    errors: List[str]    # List of failed field paths
+    metadata: Dict[str, Any] # Metadata (e.g., sampling stats)

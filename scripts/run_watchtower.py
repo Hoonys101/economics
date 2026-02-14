@@ -43,6 +43,13 @@ def main():
         while True:
             start_time = time.time()
             sim.run_tick()
+
+            # Harvest and Broadcast Telemetry (DTO Purity Enforced)
+            if hasattr(sim, 'telemetry_collector'):
+                snapshot = sim.telemetry_collector.harvest(sim.time)
+                if snapshot:
+                    telemetry_exchange.update(snapshot)
+
             duration = time.time() - start_time
 
             # Cap at 10 TPS roughly for visual sanity

@@ -62,15 +62,20 @@ async def test_command_injection(server, bridge):
 
 @pytest.mark.asyncio
 async def test_telemetry_broadcast(server, bridge):
+    from simulation.dtos.telemetry import TelemetrySnapshotDTO
+
     cq, te = bridge
     uri = f"ws://{server.host}:{server.port}"
 
-    @dataclass
-    class SimpleDTO:
-        tick: int
-        data: str
+    snapshot_10 = TelemetrySnapshotDTO(
+        timestamp=100.0,
+        tick=10,
+        data={"message": "test"},
+        errors=[],
+        metadata={}
+    )
 
-    te.update(SimpleDTO(tick=10, data="test"))
+    te.update(snapshot_10)
 
     async with websockets.connect(uri, additional_headers={"X-GOD-MODE-TOKEN": "test-token"}) as ws:
         # Wait for broadcast (Server sends latest on connect or loop)
@@ -82,10 +87,18 @@ async def test_telemetry_broadcast(server, bridge):
         msg = await asyncio.wait_for(ws.recv(), timeout=2.0)
         data = json.loads(msg)
         assert data["tick"] == 10
-        assert data["data"] == "test"
+        assert data["data"]["message"] == "test"
 
         # Test Duplicate Tick Suppression
-        te.update(SimpleDTO(tick=10, data="test_dup"))
+        # Create a new object with same tick (different content to verify it's NOT sent)
+        snapshot_10_dup = TelemetrySnapshotDTO(
+            timestamp=100.1,
+            tick=10,
+            data={"message": "test_dup"},
+            errors=[],
+            metadata={}
+        )
+        te.update(snapshot_10_dup)
         try:
              await asyncio.wait_for(ws.recv(), timeout=0.5)
              assert False, "Should not receive duplicate tick"
@@ -93,9 +106,16 @@ async def test_telemetry_broadcast(server, bridge):
              pass
 
         # Test New Tick
-        te.update(SimpleDTO(tick=11, data="update"))
+        snapshot_11 = TelemetrySnapshotDTO(
+            timestamp=101.0,
+            tick=11,
+            data={"message": "update"},
+            errors=[],
+            metadata={}
+        )
+        te.update(snapshot_11)
 
         msg = await asyncio.wait_for(ws.recv(), timeout=2.0)
         data = json.loads(msg)
         assert data["tick"] == 11
-        assert data["data"] == "update"
+        assert data["data"]["message"] == "update"
