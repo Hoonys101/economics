@@ -29,9 +29,9 @@ class TestTelemetryRobustness(unittest.TestCase):
         # Harvest
         snapshot = collector.harvest(1)
 
-        self.assertIn("government.tax_rate", snapshot["data"])
-        self.assertEqual(snapshot["data"]["government.tax_rate"], 0.25)
-        self.assertEqual(len(snapshot["errors"]), 0)
+        self.assertIn("government.tax_rate", snapshot.data)
+        self.assertEqual(snapshot.data["government.tax_rate"], 0.25)
+        self.assertEqual(len(snapshot.errors), 0)
 
     def test_mixed_resolution(self):
         """
@@ -56,5 +56,5 @@ class TestTelemetryRobustness(unittest.TestCase):
 
         snapshot = collector.harvest(1)
 
-        self.assertEqual(snapshot["data"]["government.tax_rate"], 0.25)
-        self.assertEqual(snapshot["data"]["government.policy"], "growth")
+        self.assertEqual(snapshot.data["government.tax_rate"], 0.25)
+        self.assertEqual(snapshot.data["government.policy"], "growth")

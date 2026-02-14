@@ -53,8 +53,8 @@ class TestTelemetryPipeline:
 
         # Verify harvest
         snapshot = telemetry_collector.harvest(current_tick=1)
-        assert snapshot["data"]["econ.gdp"] == 1000
-        assert snapshot["data"]["pop.count"] == 50
+        assert snapshot.data["econ.gdp"] == 1000
+        assert snapshot.data["pop.count"] == 50
 
     def test_update_telemetry_command_replaces_subscriptions(self, command_service, telemetry_collector, registry):
         # Arrange
@@ -80,7 +80,7 @@ class TestTelemetryPipeline:
         assert "new.metric" in telemetry_collector._subscriptions
 
         snapshot = telemetry_collector.harvest(current_tick=1)
-        assert snapshot["data"]["new.metric"] == 123
+        assert snapshot.data["new.metric"] == 123
 
     def test_update_telemetry_invalid_value_type(self, command_service):
         # Arrange
