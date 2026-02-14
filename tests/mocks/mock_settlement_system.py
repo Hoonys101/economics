@@ -67,3 +67,20 @@ class MockSettlementSystem(ISettlementSystem):
 
     def get_recorded_transfers(self) -> List[SettlementOrder]:
         return self.recorded_transfers
+
+    def audit_total_m2(self, expected_total: Optional[int] = None) -> bool:
+        """
+        Mock implementation of M2 audit.
+        """
+        # For mock purposes, just return True or check if expected matches sum of balances
+        if expected_total is None:
+            return True
+
+        total = sum(
+            sum(agent_bals.values())
+            for agent_bals in self.balances.values()
+        )
+        # Note: Default currency only? Or all?
+        # Real impl uses DEFAULT_CURRENCY + deposits.
+        # Mock simplifies.
+        return total == expected_total

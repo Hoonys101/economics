@@ -852,7 +852,9 @@ class SettlementSystem(ISettlementSystem):
                 continue
 
             current_balance = 0
-            if isinstance(agent, IFinancialAgent):
+            if isinstance(agent, IFinancialEntity):
+                current_balance = agent.balance_pennies
+            elif isinstance(agent, IFinancialAgent):
                 current_balance = agent.get_balance(DEFAULT_CURRENCY)
             elif hasattr(agent, "get_assets_by_currency"):
                 assets = agent.get_assets_by_currency()

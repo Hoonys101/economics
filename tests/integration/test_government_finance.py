@@ -51,6 +51,9 @@ class MockSettlementSystem(ISettlementSystem):
         # but here we just need a dummy implementation.
         return True
 
+    def audit_total_m2(self, expected_total: Optional[int] = None) -> bool:
+        return True
+
 class MockConfig:
     INFRASTRUCTURE_INVESTMENT_COST = 1000.0
     TICKS_PER_YEAR = 100

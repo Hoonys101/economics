@@ -441,6 +441,13 @@ class ISettlementSystem(Protocol):
         """
         ...
 
+    def audit_total_m2(self, expected_total: Optional[int] = None) -> bool:
+        """
+        Audits the total M2 money supply in the system.
+        Returns True if the audit passes (or no expectation set), False otherwise.
+        """
+        ...
+
 class IFinanceSystem(Protocol):
     """Interface for the sovereign debt and corporate bailout system."""
 
