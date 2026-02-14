@@ -120,6 +120,10 @@
 - **[2026-02-14] Snapshot Fidelity & Mock Leaks**
     - Identified that `CommandService` undo snapshots were capturing `MagicMock` objects instead of concrete values. Standardized on using `registry.get_entry()` to provide real `RegistryEntry` objects during snapshotting to preserve rollback provenance.
     - [Insight Report](../_archive/insights/2026-02-14_Post_Merge_Stabilization.md)
+- **[2026-02-14] Async Websocket Mocking Strategy (Shadowing Fix)**
+    - **Problem**: Manually patching `sys.modules` with `MagicMock` for packages like `websockets` caused sub-import failures because mocks lack the `__path__` attribute.
+    - **Principle**: When mocking a package in `sys.modules`, always set `mock.__path__ = []` to emulate a package structure. Centralize these mocks in `conftest.py` to avoid global namespace pollution in individual test files.
+    - [Insight Report](../_archive/insights/2026-02-14_Websockets_Shadowing_Fix.md)
 
 ---
 
