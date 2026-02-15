@@ -83,16 +83,13 @@ class DemographicsComponent:
         ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100)
         self._age += 1.0 / ticks_per_year
 
-        if self.handle_death(current_tick):
-            self.logger.info(f"DEATH | Household {self.owner.id} has died at age {self._age:.1f}.")
+        self.handle_death(current_tick)
 
     def handle_death(self, current_tick: int) -> bool:
         """
-        There is a chance of death, which increases with age.
-        If the agent dies, its is_active status is set to False.
+        Calculates death probability. If death occurs, registers with the DemographicManager.
+        This provides a Push notification to the system for O(1) stats updates.
         """
-
-        # The chance of death per year, based on age.
         default_probs = {
             60: 0.01,
             70: 0.02,
@@ -102,26 +99,25 @@ class DemographicsComponent:
         }
         age_death_probabilities = getattr(self.config_module, "AGE_DEATH_PROBABILITIES", default_probs)
 
-        # Find the highest age threshold that the agent's age has surpassed
-        # and get the corresponding death probability.
         death_prob_per_year = 0
-        # Iterate in sorted order to find the highest applicable threshold
         for age_threshold, prob in sorted(age_death_probabilities.items()):
             if self._age >= age_threshold:
                 death_prob_per_year = prob
 
-        # If the agent's age has not surpassed any of the thresholds,
-        # there is no chance of death.
         if death_prob_per_year == 0:
             return False
 
-        # Convert the annual probability to a per-tick probability.
         ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100)
         death_prob_per_tick = death_prob_per_year / ticks_per_year
 
-        # Check if the agent dies.
         if random.random() < death_prob_per_tick:
-            self.owner.is_active = False
+            # ✅ DELEGATION: Register death via DemographicManager (Single Source of Truth)
+            # This triggers the cache decrement in O(1).
+            manager = getattr(self.owner, "demographic_manager", None)
+            if manager:
+                manager.register_death(self.owner, cause="OLD_AGE")
+            else:
+                self.owner.is_active = False
             return True
 
         return False
