@@ -1,117 +1,74 @@
-# 📁 프로젝트 구조 및 업무 지침서 (v2)
+# 📁 프로젝트 구조 및 업무 지침서 (v3.0)
 
 ---
 
-## 📦 1. 프로젝트 파일 시스템 구조
+## 📦 1. 프로젝트 파일 시스템 구조 (Antigravity Era)
 
 ```bash
 /project-root/
 │
-├── communications/         # 💬 팀 소통 채널
-│   ├── announcements/      # PL -> 전체 공지
-│   └── requests/           # 개발자 -> PL 요청
+├── _internal/              # ⚙️ 시스템 핵심 로직 및 백엔드 서비스
+│   ├── registry/           # 미션 매니페스트 및 서비스 등록부
+│   ├── scripts/            # Gemini/Jules 워커 실행 및 도구 스크립트
+│   └── manuals/            # 각 워커별 페르소나 매뉴얼 (.md)
 │
-├── docs/                   # 📘 설계 및 API 문서 (설계자 전담)
-│   └── spec.md
+├── design/                 # 🏛️ 거버넌스 및 설계 (설계자/PL 전담)
+│   ├── 1_governance/       # 아키텍처 원칙, 프로젝트 구조, 로드맵
+│   ├── 2_operations/       # 기술 부채 관리, 세션 원장, 운영 가이드
+│   ├── 3_work_artifacts/   # 미션 결과물 (Spec, Audit reports, Drafts)
+│   └── 4_hard_planning/    # 위기 관리 및 중장기 전략 기획
 │
-├── core/                   # ⚙️ 공통 기능 모듈 (설계자 전담)
-│   └── utils.py
+├── modules/                # 🧱 비즈니스 도메인 모듈 (개발자 전담)
+│   ├── finance/            # 금융 시스템, 은행, 정산
+│   ├── government/         # 조세, 재정 정책
+│   ├── household/          # 가계 소비, 노동 공급
+│   └── ...                 # 기타 도메인별 기능
 │
-├── interface/              # 🔌 모듈 간 인터페이스 정의 (설계자 전담)
-│   └── stock_interface.py
+├── simulation/             # 🌍 시뮬레이션 엔진 및 공통 프레임워크
+│   ├── core_agents.py      # 에이전트 베이스 클래스
+│   ├── systems/            # 월드 시스템 (Settlement, Sensory 등)
+│   └── components/         # 에이전트 부품 (Lifecycle, Demographics)
 │
-├── modules/                # 🧱 각 개발자 전담 모듈 디렉토리
-│   ├── user/               # 사용자 관리 모듈 (개발자 A)
-│   ├── stock/              # 주식 데이터 모듈 (개발자 B)
-│   └── ...                 # 기타 기능별 모듈
+├── communications/         # 💬 팀 소통 및 로그 기록
+│   ├── insights/           # 주요 의사결정 기록 (AID)
+│   └── jules_logs/         # Jules 실행 상세 로그
 │
-├── tests/                  # ✅ 단위 테스트 디렉토리
-│   ├── user_test.py
-│   └── ...
+├── tests/                  # ✅ 품질 검증 (Unit, Integration)
 │
-├── config/                 # ⚙️ 설정 파일 (설계자/PL 전담)
-│   └── settings.py
-│
-├── main.py                 # 🚀 실행 진입점 (PL이 관리)
-├── README.md               # 🗂️ 프로젝트 개요
-└── requirements.txt        # 📦 의존 패키지 리스트
+├── README.md               # 🗂️ 프로젝트 개요 및 운영 철학
+├── main.py                 # 🚀 시뮬레이션 서버 진입점
+└── *-go.bat                # ⚡ Antigravity 운영 런처 (gemini-go, jules-go 등)
 ```
 
 ---
 
-## 🧭 2. 역할별 업무 가이드
+## 🧭 2. 주요 디렉토리 책임
 
-### 🔷 설계자
-- `/docs/spec.md`: 전체 시스템 설계 명세 관리
-- `/interface/`: 각 모듈 간 인터페이스 정의 및 유지
-- `/core/`: 공통 기능 모듈 (예: 로깅, 예외 처리, 유틸리티)
-- `/config/`: 설정 값, 환경 변수 관리
+### 🔷 `_internal/` (System Core)
+- **registry**: 미션의 장착(Mounting)과 상태 관리를 담당합니다.
+- **scripts**: AI 에이전트와의 브릿지 역할을 하며, 자동화된 도구들을 포함합니다.
+- **manuals**: 각 AI 워커가 수행해야 할 업무의 페르소나와 표준 절차를 규정합니다.
 
-### 🔶 개발자
-- `/modules/<module>/` 폴더 내 기능 개발 전담
-- 해당 모듈의 테스트 코드 `/tests/<module>_test.py` 작성
-- **소통**: `/communications/requests/` 를 통해 PL에게 질문 및 리뷰 요청
+### 🔶 `design/` (Governance & Artifacts)
+- **1_governance**: 프로젝트의 헌법과 같은 아키텍처 규칙이 보관됩니다.
+- **2_operations**: **기술 부채(Tech Debt)** 및 **인사이트(Insights)**를 관리하여 지식의 영속성을 보장합니다.
+- **3_work_artifacts**: 모든 협업 결과물(Spec, Audit)이 저장되는 '작업장'입니다.
 
-### 🟩 PL
-- 구조 설계 및 파일 시스템 통제
-- `/main.py`, `README.md` 작성 및 통합 관리
-- 코드 리뷰, 브랜치 병합, 배포/운영 관리
-- **소통**: `/communications/announcements/` 를 통해 공지사항 전파
+### 📂 `modules/` & `simulation/` (Implementation)
+- **modules**: 경제 도메인별 구체적 로직이 구현됩니다.
+- **simulation**: 시뮬레이션의 인프라와 에이전트의 공통 행동 양식을 정의합니다.
 
 ---
 
-## 📋 3. 개발자 업무 프로세스
+## 📋 3. 운영 원칙 (Antigravity Protocol)
 
-### ✅ 시작 전
-- `/docs/spec.md` 및 `/interface/` 내 문서 숙지
-- `/communications/announcements/` 공지 확인
-
-### ✅ 개발 중
-- 자신의 모듈 디렉토리 외 **타 영역 수정 금지**
-- 함수/클래스에는 **docstring 작성 필수**
-- 테스트 코드 동반 작성
-
-### ✅ 완료 후
-- `/communications/requests/` 에 리뷰 요청 파일 작성
-  - `[To_PL_From_DevX]_[module]_리뷰요청.md`
-
----
-
-## 🔐 4. Commit & Branching 전략
-
-### Branching
-- **`main`**: 최종 릴리즈 버전. 직접적인 commit 금지.
-- **`develop`**: 개발 통합 브랜치. 모든 기능 브랜치의 최종 목적지.
-- **`feature/<module>/<description>`**: 기능 개발 브랜치.
-  - 예: `feature/stock/realtime-data-fetcher`
-
-### Committing
-- **커밋 메시지 형식**: `[<module>] <Subject>`
-  - 예: `[stock] 실시간 데이터 Fetcher 클래스 구현`
-- **PR (Pull Request)**: `feature` 브랜치에서 `develop` 브랜치로 요청.
-  - PR 제목: `[<module>] 기능명 요약`
-  - PR 본문: 변경 내용, 테스트 결과, 인터페이스 영향 여부 명시
-
----
-
-## 📌 5. 핵심 원칙
-
-- **모듈 책임 분리**: 자신이 맡은 디렉토리만 수정
-- **문서 우선**: 명세 > 코드 > 통합
-- **인터페이스 절대 준수**: 함부로 구조 변경 금지
-- **단위 테스트 필수**: 모든 기능에 대한 테스트 작성
-- **소통 기록**: 모든 요청과 공지는 `communications` 디렉토리에 기록
-
----
-
-## 📎 참고
-
-- 인터페이스 명세서: `/interface/`
-- 전체 시스템 설계: `/docs/spec.md`
-- 테스트 실행 방법: `pytest tests/`
+1. **Hierarchy of Truth**: `design/1_governance`의 원칙은 코드 구현보다 상위에 존재합니다.
+2. **Artifact-Driven Development**: 모든 개발 작업은 `design/3_work_artifacts` 내의 `MISSION_spec`에서 시작되어야 합니다.
+3. **Debt Second, Quality First**: 모든 작업 완료 후 발생하는 잔여 부채는 반드시 `design/2_operations/ledgers/TECH_DEBT_LEDGER.md`에 기록됩니다.
+4. **Internal Isolation**: `_internal/` 폴더 내의 로직은 사용자가 직접 수정하기보다 AI 도구를 통해 관리되는 것을 지향합니다.
 
 ---
 
 ## 🧠 교훈
 
-> "명확한 책임 분리와 통합 기준이 있는 프로젝트는 팀 생산성을 극대화한다. 각자의 경계를 존중하되, 공통 기준은 강제하라."
+> "구조가 지능을 결정한다. 정리된 파일 시스템은 AI 에이전트의 맥락 파악 능력을 비약적으로 향상시킨다."

@@ -17,31 +17,9 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
-    "fix-dto-integrity": {
-        "title": "DTO 정합성 수정 (Float 제거 및 Purity 복구)",
+    "testing-repair": {
+        "title": "테스트 수트 복구 및 프로토콜 정렬 구현",
         "command": "create",
-        "instruction": """
-첨부된 감사 보고서(MISSION_dto-audit_AUDIT.md)의 'Recommended Actions'를 수행하여 아키텍처 위반 사항을 수정하라.
-
-1. **Int Migration (Pennies)**:
-   - `simulation/dtos/api.py`의 `EconomicIndicatorData` 내 화폐 필드를 `Dict[CurrencyCode, float]` -> `Dict[CurrencyCode, int]`로 변경.
-   - `department_dtos.py`의 `FinanceStateDTO`도 동일하게 변경.
-
-2. **Restore Purity (Assembler Extraction)**:
-   - `simulation/dtos/firm_state_dto.py`에 있는 `from_firm` 메서드의 로직을 제거하고 순수 데이터 클래스로 복구.
-   - 해당 로직은 `simulation/assemblers/firm_assembler.py` (신규 생성)의 `FirmSnapshotAssembler`로 이동.
-
-3. **Cleanup Dead Code**:
-   - `modules/household/dtos.py`의 `HouseholdStateDTO` (Deprecated) 삭제.
-""",
-        "file": "design/3_work_artifacts/audits/MISSION_dto-audit_AUDIT.md",
-        "context_files": [
-            "simulation/dtos/api.py",
-            "simulation/dtos/department_dtos.py",
-            "simulation/dtos/firm_state_dto.py",
-            "modules/household/dtos.py"
-        ],
-        "wait": False
+        "file": "design/3_work_artifacts/specs/MISSION_test-repair_SPEC.md"
     }
 }

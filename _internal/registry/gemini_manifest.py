@@ -23,68 +23,54 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "worker-concept-audit": {
-        "title": "워커별 역할 개념 정의 및 문서 참조 능력 검증 (장착됨)",
-        "worker": "audit",
+    "test-repair-specs": {
+        "title": "테스트 결함 원인 분석 및 수리 명세서(Spec) 작성",
+        "worker": "spec",
         "instruction": """
-사용자의 혼란을 해소하기 위해 다음 개념적/실무적 질문에 대해 명확한 답변과 개선 가이드를 작성하라.
+다음 테스트 에러 로그를 분석하고, 각 모듈별 원인을 규명한 뒤 `MISSION_test-repair_SPEC.md`를 작성하라.
 
-1. 'git' vs 'review' 워커의 차이점:
-   - 각 워커의 주된 책임(Operator vs Reviewer)과 결과물의 차이를 기술하라.
-2. 'verify' 및 'context' 워커의 실무 활용 시나리오:
-   - 사용자가 이들을 언제, 어떻게 사용해야 하는지 구체적인 예시를 제시하라. (예: 설계 변경 전 context 요약, 구현 후 verify 검증 등)
-3. 'spec' 및 'review' 워커의 문서 참조 능력 분석:
-   - Gemini가 명세서 작성이나 리뷰 시 'context_files'에 포함된 대량의 문서를 어떻게 찾아 읽는지(RAG 또는 Full Context 활용 방식) 설명하라.
-   - 사용자가 별도의 명령 없이도 Gemini에게 "관련 문서를 알아서 찾아 읽으라"고 지시했을 때 이것이 가능한지, 혹은 어떤 제약이 있는지 기술하라.
+[Error Log Summary]
+1. **MockBank Protocol Mismatch (High Critical)**
+   - `TypeError: Can't instantiate abstract class MockBank without an implementation for abstract method 'get_total_deposits'`
+   - Affects: `test_circular_imports_fix.py`, `test_settlement_system.py`, etc.
+   - Cause: `IBank` interface updated but `MockBank` (in tests) missed the implementation.
 
-[결과물]
-- 사용자가 한눈에 이해할 수 있는 '워커 활용 퀵 가이드'를 포함하라.
+2. **Solvency Logic Assertion Failure**
+   - `tests/finance/test_solvency_logic.py:106: AssertionError: assert 10000 == 1000000`
+   - Cause: Likely unit mismatch (Pennies vs Dollars) or scale factor error.
+
+3. **Asset Management Precision Failure**
+   - `tests/simulation/components/engines/test_asset_management_engine.py:41: assert 0.0001 == 0.01`
+   - Cause: Expected value (0.01) vs Actual (0.0001) suggests logic using 1bps instead of 1% (or vice versa).
+
+4. **Production Engine Attribute Error**
+   - `tests/simulation/components/engines/test_production_engine.py: AttributeError: Mock object has no attribute 'id'`
+   - Cause: Mock setup incomplete.
+
+5. **Command Service Rollback Failure**
+   - `tests/unit/modules/system/test_command_service_unit.py:130: AssertionError: expected call not found`
+   - Cause: Mock verification drift.
+
+[Deliverables]
+1. **Root Cause Analysis**: 각 에러 그룹별로 코드 레벨 원인 분석.
+2. **Repair Plan**:
+   - `MockBank`에 `get_total_deposits` 메서드 추가 (return 0 or meaningful dummy value).
+   - `test_solvency_logic.py`의 assertion 값 수정 또는 로직 수정 (단위 통일).
+   - `AssetManagementEngine` 또는 테스트의 기대값 보정.
+   - 기타 Mock 객체 설정 보완.
+3. **Validation Strategy**: `pytest` 재실행을 통한 검증 절차 기술.
 """,
         "context_files": [
-            "_internal/scripts/gemini_worker.py",
-            "_internal/registry/mission_protocol.py",
-            "_internal/manuals/",
-            "design/3_work_artifacts/specs/",
-            "design/3_work_artifacts/audits/"
-        ]
-    },
-    "dto-audit": {
-        "title": "DTO 및 API 데이터 흐름 정합성 정밀 감사",
-        "worker": "audit",
-        "instruction": """
-프로젝트 내 데이터 흐름의 혈관인 DTO(Data Transfer Object)와 신경망인 API(Interface) 간의 계약(Contract) 정합성을 면밀히 감사하라.
-
-1. **DTO 무결성 분석**:
-   - 정의된 DTO 필드들이 실제 비즈니스 로직(Service/API)에서 빠짐없이 소비되고 있는지, 혹은 불필요한 필드(Dead Data)가 존재하는지 확인하라.
-   - `simulation/dtos/`의 공용 DTO와 `modules/*/dtos.py`의 모듈 전용 DTO 간의 관계가 명확한지, 중복 정의나 타입 불일치가 없는지 점검하라.
-
-2. **API 계약 이행 분석**:
-   - `api.py` (Interface)에 정의된 시그니처가 `service.py` (Implementation)에서 정확히 구현되고 있는지 확인하라.
-   - 데이터 생산자(Producer)와 소비자(Consumer) 사이의 파이프라인에서 데이터가 누락되거나 변질될 가능성이 있는 구간을 식별하라.
-
-3. **Layer Violation Check**:
-   - DTO가 엔티티(Entity)나 로직을 포함하고 있지는 않은지(순수 데이터 컨테이너 원칙 위배) 확인하라.
-   - 상위 모듈이 하위 모듈의 DTO를 직접 참조하는 등의 의존성 역전 원칙 위반 사례를 찾아라.
-
-[결과물]
-- 위반 사항이 발견된 파일과 라인을 구체적으로 명시한 감사 보고서를 작성하라.
-- 개선 권고 사항을 리스크 레벨(Critical, High, Medium, Low)로 분류하여 제시하라.
-""",
-        "context_files": [
-            # Core Shared DTOs
-            "simulation/dtos/",
-            "modules/common/dtos.py",
-            
-            # Module DTOs & APIs (Focus on Flow)
-            "modules/finance/dtos.py", "modules/finance/api.py",
-            "modules/household/dtos.py", "modules/household/api.py",
-            "modules/government/dtos.py", "modules/government/api.py",
-            "modules/firm/api.py", # Firm DTO might be in simulation/dtos
-            
-            # Service Implementations (Sample for usage check)
-            "modules/finance/service.py",
-            "modules/household/services.py",
-            "modules/system/services/command_service.py" 
-        ]
+            "tests/finance/test_circular_imports_fix.py",
+            "tests/unit/systems/test_settlement_system.py",
+            "tests/finance/test_solvency_logic.py",
+            "tests/simulation/components/engines/test_asset_management_engine.py",
+            "tests/simulation/components/engines/test_production_engine.py",
+            "tests/unit/modules/system/test_command_service_unit.py",
+            "modules/finance/api.py", # For IBank definition
+            "simulation/components/engines/asset_management_engine.py",
+            "modules/finance/system.py"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_test-repair_SPEC.md"
     }
 }

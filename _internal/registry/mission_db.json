@@ -72,6 +72,50 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "test-repair-specs": {
+      "key": "test-repair-specs",
+      "title": "\ud14c\uc2a4\ud2b8 \uacb0\ud568 \uc6d0\uc778 \ubd84\uc11d \ubc0f \uc218\ub9ac \uba85\uc138\uc11c(Spec) \uc791\uc131",
+      "type": "gemini",
+      "instruction_raw": "\n\ub2e4\uc74c \ud14c\uc2a4\ud2b8 \uc5d0\ub7ec \ub85c\uadf8\ub97c \ubd84\uc11d\ud558\uace0, \uac01 \ubaa8\ub4c8\ubcc4 \uc6d0\uc778\uc744 \uaddc\uba85\ud55c \ub4a4 `MISSION_test-repair_SPEC.md`\ub97c \uc791\uc131\ud558\ub77c.\n\n[Error Log Summary]\n1. **MockBank Protocol Mismatch (High Critical)**\n   - `TypeError: Can't instantiate abstract class MockBank without an implementation for abstract method 'get_total_deposits'`\n   - Affects: `test_circular_imports_fix.py`, `test_settlement_system.py`, etc.\n   - Cause: `IBank` interface updated but `MockBank` (in tests) missed the implementation.\n\n2. **Solvency Logic Assertion Failure**\n   - `tests/finance/test_solvency_logic.py:106: AssertionError: assert 10000 == 1000000`\n   - Cause: Likely unit mismatch (Pennies vs Dollars) or scale factor error.\n\n3. **Asset Management Precision Failure**\n   - `tests/simulation/components/engines/test_asset_management_engine.py:41: assert 0.0001 == 0.01`\n   - Cause: Expected value (0.01) vs Actual (0.0001) suggests logic using 1bps instead of 1% (or vice versa).\n\n4. **Production Engine Attribute Error**\n   - `tests/simulation/components/engines/test_production_engine.py: AttributeError: Mock object has no attribute 'id'`\n   - Cause: Mock setup incomplete.\n\n5. **Command Service Rollback Failure**\n   - `tests/unit/modules/system/test_command_service_unit.py:130: AssertionError: expected call not found`\n   - Cause: Mock verification drift.\n\n[Deliverables]\n1. **Root Cause Analysis**: \uac01 \uc5d0\ub7ec \uadf8\ub8f9\ubcc4\ub85c \ucf54\ub4dc \ub808\ubca8 \uc6d0\uc778 \ubd84\uc11d.\n2. **Repair Plan**:\n   - `MockBank`\uc5d0 `get_total_deposits` \uba54\uc11c\ub4dc \ucd94\uac00 (return 0 or meaningful dummy value).\n   - `test_solvency_logic.py`\uc758 assertion \uac12 \uc218\uc815 \ub610\ub294 \ub85c\uc9c1 \uc218\uc815 (\ub2e8\uc704 \ud1b5\uc77c).\n   - `AssetManagementEngine` \ub610\ub294 \ud14c\uc2a4\ud2b8\uc758 \uae30\ub300\uac12 \ubcf4\uc815.\n   - \uae30\ud0c0 Mock \uac1d\uccb4 \uc124\uc815 \ubcf4\uc644.\n3. **Validation Strategy**: `pytest` \uc7ac\uc2e4\ud589\uc744 \ud1b5\ud55c \uac80\uc99d \uc808\ucc28 \uae30\uc220.\n",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "tests/finance/test_circular_imports_fix.py",
+        "tests/unit/systems/test_settlement_system.py",
+        "tests/finance/test_solvency_logic.py",
+        "tests/simulation/components/engines/test_asset_management_engine.py",
+        "tests/simulation/components/engines/test_production_engine.py",
+        "tests/unit/modules/system/test_command_service_unit.py",
+        "modules/finance/api.py",
+        "simulation/components/engines/asset_management_engine.py",
+        "modules/finance/system.py"
+      ],
+      "output_path": "design/3_work_artifacts/specs/MISSION_test-repair_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "testing-repair": {
+      "key": "testing-repair",
+      "title": "\ud14c\uc2a4\ud2b8 \uc218\ud2b8 \ubcf5\uad6c \ubc0f \ud504\ub85c\ud1a0\ucf5c \uc815\ub82c \uad6c\ud604",
+      "type": "jules",
+      "instruction_raw": "",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_test-repair_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }

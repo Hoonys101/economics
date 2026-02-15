@@ -34,8 +34,8 @@ At the end of every work session, the Architect MUST execute the following "Clea
 ### 4.1. Knowledge Absorption (Farming)
 1.  **Insight Farming**:
     - Harvest `communications/insights/*.md` -> Merge into `design/2_operations/ledgers/TECH_DEBT_LEDGER.md`.
-    - **Post-Action**: MOVE processed files to `communications/insights/archived/`.
-2.  **Handover**: Update `design/_archive/handovers/HANDOVER_YYYY-MM-DD.md`.
+    - **Post-Action**: MOVE processed files to `design/_archive/insights/`.
+2.  **Handover**: Update `HANDOVER.md` in root or `design/HANDOVER.md`.
 
 ### 4.2. Tactical Sanitation (The Purge)
 *Delete ephemeral artifacts to maintain a "Cold Boot" state.*

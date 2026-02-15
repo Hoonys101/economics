@@ -16,7 +16,7 @@ The **Structured Command Registry (SCR)** is the central hub for mission delegat
 Gemini handles planning, auditing, and log analysis.
 
 ### Standard Workflow (Direct Edit)
-Add an entry to the `REGISTRY` dict in `command_registry.py`. Use the `# --- CHOICE REFERENCE ---` block to ensure valid worker selection.
+Add an entry to the `GEMINI_MISSIONS` dict in `gemini_manifest.py`.
 
 ### Legacy Command
 ```powershell
@@ -63,9 +63,9 @@ python _internal/scripts/cmd_ops.py del <mission_key>
 ---
 
 ## 🚨 Guidelines & Anti-Patterns
-1.  **No Absolute Paths**: All paths must be relative to the root. Do not use `C:\...`.
-2.  **Instruction Quality**: Be specific. Reference work orders (e.g., `design/work_orders/WO-124.md`).
-3.  **Verification**: After saving `command_registry.py`, run the corresponding `.bat` file (e.g., `.\gemini-go.bat <key>`).
+2.  **No Absolute Paths**: All paths must be relative to the root. Do not use `C:\...`.
+2.  **Instruction Quality**: Be specific. Reference specs (e.g., `design/3_work_artifacts/specs/MISSION_spec-XYZ_SPEC.md`).
+3.  **Verification**: After saving the manifest, run the corresponding `.bat` file (e.g., `.\gemini-go.bat <key>`).
 4.  **Choice Adherence**: Always consult the `# --- CHOICE REFERENCE ---` in the registry file before selecting a worker or command.
 
 ---
