@@ -500,6 +500,16 @@ class SimulationInitializer(SimulationInitializerInterface):
         )
         sim.demographic_manager.settlement_system = sim.settlement_system # Inject SettlementSystem
 
+        # Post-Construction Injection: Provide Manager to Factory and existing Agents
+        household_factory.context.demographic_manager = sim.demographic_manager
+
+        for hh in sim.households:
+            if hasattr(hh, "demographic_manager"):
+                hh.demographic_manager = sim.demographic_manager
+
+        # Initial stats sync (O(N) startup cost)
+        sim.demographic_manager.sync_stats(sim.households)
+
         # DATA-03: Inject WorldState and Register for Telemetry
         sim.demographic_manager.set_world_state(sim.world_state)
         sim.world_state.global_registry.set("demographics", sim.demographic_manager, origin=OriginType.SYSTEM)

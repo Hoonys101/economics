@@ -101,10 +101,13 @@ class Household(
         parent_id: Optional[int] = None,
         generation: Optional[int] = None,
         initial_assets_record: Optional[int] = None,  # MIGRATION: int pennies
+        demographic_manager: Optional[Any] = None,
         **kwargs,
     ) -> None:
         self.config = config_dto
         self.logger = core_config.logger
+        self.demographic_manager = demographic_manager
+        self.last_labor_allocation = 0.0
 
         # --- Initialize Engines (Stateless) ---
         self.lifecycle_engine = LifecycleEngine()
@@ -544,6 +547,15 @@ class Household(
         self._bio_state = lifecycle_output.bio_state
         self._cloning_requests = lifecycle_output.cloning_requests # Buffer requests
 
+        # Death Handling (Push Model)
+        if lifecycle_output.death_occurred:
+            if self.demographic_manager:
+                self.demographic_manager.register_death(self, cause="NATURAL")
+                # Clear labor hours on death
+                self.demographic_manager.update_labor_hours(self.gender, -self.last_labor_allocation)
+            self.last_labor_allocation = 0.0
+            self.is_active = False
+
         # 2. Needs Engine (Needs Decay & Prioritization)
         needs_input = NeedsInputDTO(
             bio_state=self._bio_state,
@@ -654,6 +666,18 @@ class Household(
              self._social_state = consumption_output.social_state
 
         refined_orders = consumption_output.orders
+
+        # Labor Hour Tracking (Push Model)
+        current_labor_hours = 0.0
+        for order in refined_orders:
+            if order.side == "SELL" and order.item_id == "labor":
+                current_labor_hours += order.quantity
+
+        delta = current_labor_hours - self.last_labor_allocation
+        if delta != 0:
+            if self.demographic_manager:
+                self.demographic_manager.update_labor_hours(self.gender, delta)
+            self.last_labor_allocation = current_labor_hours
 
         return refined_orders, chosen_tactic_tuple
 

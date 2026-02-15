@@ -113,11 +113,16 @@ class DemographicsComponent:
         if random.random() < death_prob_per_tick:
             # ✅ DELEGATION: Register death via DemographicManager (Single Source of Truth)
             # This triggers the cache decrement in O(1).
+            # MIGRATION: Removed direct is_active=False assignment.
+            # If manager is missing, we log error but do not drift state.
             manager = getattr(self.owner, "demographic_manager", None)
             if manager:
                 manager.register_death(self.owner, cause="OLD_AGE")
             else:
-                self.owner.is_active = False
+                self.logger.error("DemographicManager not found on agent. Death event lost.")
+                # Fallback only if absolutely necessary for legacy tests, but strict spec says remove it.
+                # However, if we remove it, legacy tests without manager will fail to kill agents.
+                # Given strict SSoT mandate, we remove it.
             return True
 
         return False

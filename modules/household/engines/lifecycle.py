@@ -47,10 +47,12 @@ class LifecycleEngine(ILifecycleEngine):
                 break # Since sorted, if age < threshold, break
 
         # Also check hard max age if defined, or just rely on prob
+        death_occurred = False
         if death_prob_per_year > 0:
             death_prob_per_tick = death_prob_per_year / ticks_per_year
             if random.random() < death_prob_per_tick:
-                new_bio_state.is_active = False
+                death_occurred = True
+                # MIGRATION: Do not set is_active=False here. Return flag so Household can notify Manager.
                 logger.info(f"BIO_DEATH | Agent {new_bio_state.id} died of natural causes at age {new_bio_state.age:.1f}")
 
         # 3. Reproduction Decision
@@ -70,7 +72,8 @@ class LifecycleEngine(ILifecycleEngine):
 
         return LifecycleOutputDTO(
             bio_state=new_bio_state,
-            cloning_requests=cloning_requests
+            cloning_requests=cloning_requests,
+            death_occurred=death_occurred
         )
 
     def create_offspring_demographics(self, state: BioStateDTO, new_id: int, current_tick: int) -> Dict[str, Any]:

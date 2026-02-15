@@ -1,6 +1,7 @@
 import unittest
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock, PropertyMock, patch
 import pytest
+import random
 from simulation.components.demographics_component import DemographicsComponent
 
 class TestDemographicsComponent(unittest.TestCase):
@@ -15,8 +16,21 @@ class TestDemographicsComponent(unittest.TestCase):
         self.mock_owner.talent.base_learning_rate = 0.5
         self.mock_owner.is_active = True
 
+        # Mock demographic manager
+        self.mock_manager = MagicMock()
+        self.mock_owner.demographic_manager = self.mock_manager
+
         self.mock_config = MagicMock()
         self.mock_config.TICKS_PER_YEAR = 100
+
+        # Setup default death probabilities
+        self.mock_config.AGE_DEATH_PROBABILITIES = {
+            60: 0.01,
+            70: 0.02,
+            80: 0.05,
+            90: 0.15,
+            100: 0.50,
+        }
 
         self.component = DemographicsComponent(
             owner=self.mock_owner,
@@ -38,35 +52,37 @@ class TestDemographicsComponent(unittest.TestCase):
     def test_age_one_tick(self):
         """Test that the age increases correctly after one tick."""
         initial_age = self.component.age
-        self.component.age_one_tick(current_tick=1)
+        # We need to ensure handle_death doesn't trigger unexpectedly or fail
+        with patch('simulation.components.demographics_component.random.random', return_value=0.99):
+            self.component.age_one_tick(current_tick=1)
         self.assertAlmostEqual(self.component.age, initial_age + 0.01)
 
     def test_handle_death_under_threshold(self):
         """Test that the agent does not die if below the age threshold."""
         self.component._age = 50 # Below the first threshold of 60
         self.assertFalse(self.component.handle_death(current_tick=1))
-        self.assertTrue(self.mock_owner.is_active)
+        # Verify manager NOT called
+        self.mock_manager.register_death.assert_not_called()
 
     def test_handle_death_above_threshold(self):
         """Test that the agent has a chance to die if above the age threshold."""
         self.component._age = 85
 
-        # Ensure configuration has moderate probability for testing
-        self.mock_config.AGE_DEATH_PROBABILITIES = {80: 50.0} # 50% per year if >= 80 -> 0.5 per tick
+        # Override config for this test
+        self.mock_config.AGE_DEATH_PROBABILITIES = {80: 50.0} # High prob
 
-        # Since death is probabilistic, we can't guarantee it.
-        # Instead, we check if the logic runs without error and returns a boolean.
-        # To make it deterministic for a test, we could mock random.random
-        # We patch the random module used in the component file
-        with unittest.mock.patch('simulation.components.demographics_component.random.random', return_value=0.0): # Force death
-            self.assertTrue(self.component.handle_death(current_tick=1))
-            self.assertFalse(self.mock_owner.is_active)
+        # Force death
+        with patch('simulation.components.demographics_component.random.random', return_value=0.0):
+            result = self.component.handle_death(current_tick=1)
+            self.assertTrue(result)
+            self.mock_manager.register_death.assert_called_once_with(self.mock_owner, cause="OLD_AGE")
 
         # Reset and test the case where it doesn't die
-        self.mock_owner.is_active = True
-        with unittest.mock.patch('simulation.components.demographics_component.random.random', return_value=0.99): # Prevent death
-            self.assertFalse(self.component.handle_death(current_tick=1))
-            self.assertTrue(self.mock_owner.is_active)
+        self.mock_manager.reset_mock()
+        with patch('simulation.components.demographics_component.random.random', return_value=0.99): # Prevent death
+            result = self.component.handle_death(current_tick=1)
+            self.assertFalse(result)
+            self.mock_manager.register_death.assert_not_called()
 
     def test_set_spouse(self):
         """Test setting a spouse."""

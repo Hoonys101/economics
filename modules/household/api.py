@@ -117,6 +117,7 @@ class PanicSellingInputDTO:
 class LifecycleOutputDTO:
     bio_state: BioStateDTO
     cloning_requests: List[CloningRequestDTO]
+    death_occurred: bool = False
 
 @dataclass
 class NeedsOutputDTO:
@@ -284,6 +285,7 @@ class HouseholdFactoryContext:
     markets: Dict[str, Any]
     memory_system: Optional[Any] = None
     central_bank: Optional[Any] = None
+    demographic_manager: Optional[Any] = None
 
 
 class IHouseholdFactory(Protocol):

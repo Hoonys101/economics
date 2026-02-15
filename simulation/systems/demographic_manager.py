@@ -6,7 +6,7 @@ import random
 from simulation.core_agents import Household
 from simulation.utils.config_factory import create_config_dto
 from modules.system.api import DEFAULT_CURRENCY
-from modules.simulation.api import IHouseholdFactory, HouseholdFactoryContext
+from modules.household.api import IHouseholdFactory, HouseholdFactoryContext
 from simulation.factories.household_factory import HouseholdFactory
 from modules.demographics.api import IDemographicManager, DemographicStatsDTO, GenderStatsDTO
 
@@ -118,20 +118,14 @@ class DemographicManager(IDemographicManager):
         self.logger.info(f"Stats cache synchronized. Total M: {self._stats_cache['M']['count']}, Total F: {self._stats_cache['F']['count']}")
 
     def process_aging(self, agents: List[Household], current_tick: int, market_data: Optional[Dict[str, Any]] = None) -> None:
-        ticks_per_year = getattr(self.config_module, "TICKS_PER_YEAR", 100.0)
-
+        # MIGRATION: Logic migrated to LifecycleEngine/Household.update_needs
+        # DemographicManager no longer drives aging logic directly, it delegates to agent update.
         for agent in agents:
             if not agent.is_active:
                 continue
 
+            # This call triggers LifecycleEngine -> death check -> register_death
             agent.update_needs(current_tick, market_data)
-
-            if agent.age > 80:
-                death_prob = 0.05 + (agent.age - 80) * 0.01
-                death_prob_per_tick = death_prob / ticks_per_year
-                if random.random() < death_prob_per_tick:
-                    # Use register_death instead of local logic
-                    self.register_death(agent, cause="OLD_AGE")
 
     def process_births(self, simulation: Any, birth_requests: List[Household]) -> List[Household]:
         new_children = []
@@ -163,7 +157,8 @@ class DemographicManager(IDemographicManager):
                         settlement_system=getattr(simulation, 'settlement_system', None),
                         markets=getattr(simulation, 'markets', {}),
                         memory_system=getattr(simulation, 'memory_system', None),
-                        central_bank=getattr(simulation, 'central_bank', None)
+                        central_bank=getattr(simulation, 'central_bank', None),
+                        demographic_manager=self
                     )
                     self.household_factory = HouseholdFactory(context)
 
