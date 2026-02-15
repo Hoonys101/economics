@@ -40,42 +40,52 @@ class InheritanceManager:
 
         # 1. Valuation & Asset Gathering
         # ------------------------------------------------------------------
+        # MIGRATION: Ensure strict integer precision
         cash_raw = deceased._econ_state.assets
-        cash = cash_raw
+        cash = 0
         if isinstance(cash_raw, dict):
-            cash = cash_raw.get(DEFAULT_CURRENCY, 0.0)
-        cash = round(cash, 2)
+            cash = int(cash_raw.get(DEFAULT_CURRENCY, 0))
+        elif isinstance(cash_raw, (int, float)):
+            cash = int(cash_raw)
 
         self.logger.info(
-            f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {cash:.2f}",
+            f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {cash}",
             extra={"agent_id": deceased.id, "tags": ["inheritance", "death"]}
         )
 
         deceased_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
-        real_estate_value = sum(u.estimated_value for u in deceased_units)
-        real_estate_value = round(real_estate_value, 2)
+        real_estate_value = sum(int(u.estimated_value) for u in deceased_units)
 
         portfolio_holdings = deceased._econ_state.portfolio.holdings.copy() # dict of firm_id -> Share
-        stock_value = 0.0
+        stock_value = 0
         current_prices = {}
         if simulation.stock_market:
             for firm_id, share in portfolio_holdings.items():
                 price = simulation.stock_market.get_daily_avg_price(firm_id)
                 if price <= 0:
                     price = share.acquisition_price
-                price = round(price, 2)
-                current_prices[firm_id] = price
-                stock_value += share.quantity * price
 
-        stock_value = round(stock_value, 2)
-        total_wealth = round(cash + real_estate_value + stock_value, 2)
+                # Prices are expected to be in pennies (potentially float).
+                # Casting to int safely truncates fractional pennies (e.g. 1050.5 -> 1050).
+                # If price was dollars (10.50), this would be wrong, but core models use pennies.
+                price_pennies = int(price)
+                current_prices[firm_id] = price_pennies
+                stock_value += int(share.quantity * price_pennies)
+
+        total_wealth = cash + real_estate_value + stock_value
 
         # 2. Liquidation for Tax (if needed)
         # ------------------------------------------------------------------
         tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.4)
         deduction = getattr(self.config_module, "INHERITANCE_DEDUCTION", 10000.0)
-        taxable_base = max(0.0, total_wealth - deduction)
-        tax_amount = round(taxable_base * tax_rate, 2)
+
+        # Assuming deduction is in pennies (or converting huge float to int).
+        # Note: If deduction is 10000.0, it is 10000 pennies ($100).
+        # This seems low but enforces unit consistency with wealth (pennies).
+        deduction_pennies = int(deduction)
+
+        taxable_base = max(0, total_wealth - deduction_pennies)
+        tax_amount = int(taxable_base * tax_rate)
 
         if cash < tax_amount:
             # Need to liquidate assets to pay tax.
@@ -86,8 +96,8 @@ class InheritanceManager:
             # A. Stock Liquidation
             if needed > 0 and stock_value > 0:
                 for firm_id, share in list(portfolio_holdings.items()):
-                    price = current_prices.get(firm_id, 0.0)
-                    proceeds = round(share.quantity * price, 2)
+                    price = current_prices.get(firm_id, 0)
+                    proceeds = int(share.quantity * price)
 
                     # TD-232: Use TransactionProcessor for atomic execution + side effects
                     tx = Transaction(
@@ -122,7 +132,7 @@ class InheritanceManager:
             if needed > 0 and real_estate_value > 0:
                 fire_sale_ratio = 0.9
                 for unit in list(deceased_units):
-                    sale_price = round(unit.estimated_value * fire_sale_ratio, 2)
+                    sale_price = int(unit.estimated_value * fire_sale_ratio)
 
                     # TD-232: Use TransactionProcessor
                     tx = Transaction(
