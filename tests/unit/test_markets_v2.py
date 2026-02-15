@@ -1,7 +1,7 @@
 import pytest
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.models import Order
-from utils.logger import Logger
+from modules.common.utils.logger import Logger
 from modules.system.api import DEFAULT_CURRENCY
 
 

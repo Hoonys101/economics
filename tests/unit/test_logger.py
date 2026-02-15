@@ -5,7 +5,7 @@ import unittest
 import sys
 import logging
 
-from utils.logger import Logger
+from modules.common.utils.logger import Logger
 
 
 class TestLogger(unittest.TestCase):
