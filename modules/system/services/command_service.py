@@ -262,8 +262,10 @@ class CommandService:
             try:
                 if record.command_type == "SET_PARAM":
                      # 1. Remove the layer added by the command (if we tracked the origin)
+                     layer_removed = False
                      if record.origin is not None and hasattr(self.registry, 'delete_layer'):
                          self.registry.delete_layer(record.parameter_key, record.origin)
+                         layer_removed = True
 
                      # 2. Restore previous entry state if needed
                      # If previous_entry is None, delete_layer might have been enough if it was a new key.
@@ -276,7 +278,7 @@ class CommandService:
                          if record.previous_entry is None:
                              # If we deleted the layer, we are good.
                              # But if delete_layer didn't happen (e.g. no origin recorded), fallback to delete_entry?
-                             if record.origin is None:
+                             if not layer_removed:
                                  self.registry.delete_entry(record.parameter_key)
                                  logger.info(f"ROLLBACK: Deleted {record.parameter_key}")
                          else:

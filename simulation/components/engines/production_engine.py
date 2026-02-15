@@ -57,7 +57,7 @@ class ProductionEngine(IProductionEngine):
                     quantity_produced=0.0,
                     quality=0.0,
                     specialization=production_state.specialization,
-                    capital_depreciation=capital_depreciation,
+                    capital_depreciation=int(capital_depreciation_val),
                     automation_decay=automation_decay
                 )
 

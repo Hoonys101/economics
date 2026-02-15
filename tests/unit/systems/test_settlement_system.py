@@ -101,6 +101,9 @@ class MockBank(IBank):
         return 0
 
     # IBank impl
+    def get_total_deposits(self) -> int:
+        return sum(self.accounts.values())
+
     def get_customer_balance(self, agent_id: str) -> int:
         return self.accounts.get(str(agent_id), 0)
 

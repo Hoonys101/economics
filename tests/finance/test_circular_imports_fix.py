@@ -36,6 +36,9 @@ class MockBank(IBank):
     def get_all_balances(self) -> Dict[str, int]:
         return {DEFAULT_CURRENCY: 1000000000}
 
+    def get_total_deposits(self) -> int:
+        return 0
+
     def _deposit(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None: pass
     def _withdraw(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None: pass
 

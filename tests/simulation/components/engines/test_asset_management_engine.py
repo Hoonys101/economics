@@ -31,13 +31,13 @@ def test_invest_automation_success(asset_mgmt_engine, firm_snapshot):
     input_dto = AssetManagementInputDTO(
         firm_snapshot=firm_snapshot,
         investment_type="AUTOMATION",
-        investment_amount=100.0 # Should give 1% automation (0.01)
+        investment_amount=10000 # Should give 1% automation (0.01)
     )
 
     result = asset_mgmt_engine.invest(input_dto)
 
     assert result.success
-    assert result.actual_cost == 100.0
+    assert result.actual_cost == 10000
     assert result.automation_level_increase == pytest.approx(0.01)
     assert result.capital_stock_increase == 0.0
 
@@ -47,7 +47,7 @@ def test_invest_automation_max_cap(asset_mgmt_engine, firm_snapshot):
     input_dto = AssetManagementInputDTO(
         firm_snapshot=firm_snapshot,
         investment_type="AUTOMATION",
-        investment_amount=200.0 # 2% -> exceed 1.0
+        investment_amount=20000 # 2% -> exceed 1.0
     )
 
     result = asset_mgmt_engine.invest(input_dto)
@@ -55,7 +55,7 @@ def test_invest_automation_max_cap(asset_mgmt_engine, firm_snapshot):
     assert result.success
     assert result.automation_level_increase == pytest.approx(0.01) # Capped at 1.0 - 0.99
     # In my implementation, I capped the increase but consumed full amount.
-    assert result.actual_cost == 200.0
+    assert result.actual_cost == 20000
 
 def test_invest_capex_success(asset_mgmt_engine, firm_snapshot):
     # efficiency = 1.0 / 2.0 = 0.5

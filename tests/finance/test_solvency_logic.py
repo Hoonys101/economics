@@ -103,7 +103,7 @@ class TestSolvencyLogic:
         # Check properties return int
         # Default initialization values
         assert isinstance(firm.capital_stock_pennies, int)
-        assert firm.capital_stock_pennies == int(firm.production_state.capital_stock * 100)
+        assert firm.capital_stock_pennies == firm.production_state.capital_stock
 
         assert isinstance(firm.inventory_value_pennies, int)
         assert firm.inventory_value_pennies == 0 # No inventory
