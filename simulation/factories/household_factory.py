@@ -85,7 +85,8 @@ class HouseholdFactory(IHouseholdFactory):
             gender=gender,
             parent_id=parent_id,
             generation=generation,
-            initial_assets_record=int(initial_assets)
+            initial_assets_record=int(initial_assets),
+            demographic_manager=self.context.demographic_manager
         )
 
         # 5. Hydrate State (Assets)
