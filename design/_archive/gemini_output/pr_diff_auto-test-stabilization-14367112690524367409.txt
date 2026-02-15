@@ -1,0 +1,253 @@
+diff --git a/_internal/registry/service.py b/_internal/registry/service.py
+index 6b2db417..1a62a73a 100644
+--- a/_internal/registry/service.py
++++ b/_internal/registry/service.py
+@@ -205,3 +205,68 @@ class MissionRegistryService:
+             shutil.move(str(manifest_path), str(manifest_path.with_suffix('.py.bak')))
+ 
+         return count
++
++    def migrate_from_legacy(self, legacy_file_path: str) -> int:
++        """
++        Migrates missions from a legacy manifest file.
++        """
++        path = Path(legacy_file_path)
++        if not path.exists():
++            return 0
++
++        count = 0
++        import importlib.util
++        import sys
++
++        # Ensure we can import from the directory
++        parent_dir = str(path.parent)
++        if parent_dir not in sys.path:
++            sys.path.append(parent_dir)
++
++        spec = importlib.util.spec_from_file_location(path.stem, path)
++        if spec is None or spec.loader is None:
++            return 0
++
++        module = importlib.util.module_from_spec(spec)
++        try:
++            spec.loader.exec_module(module)
++        except Exception:
++            return 0
++
++        # JULES
++        if hasattr(module, "JULES_MISSIONS"):
++            for key, m_data in module.JULES_MISSIONS.items():
++                dto = MissionDTO(
++                    key=key,
++                    title=m_data.get("title", key),
++                    type=MissionType.JULES,
++                    instruction_raw=m_data.get("instruction", ""),
++                    command=m_data.get("command"),
++                    file_path=m_data.get("file"),
++                    wait=m_data.get("wait", False),
++                    session_id=m_data.get("session_id")
++                )
++                self.register_mission(dto)
++                count += 1
++
++        # GEMINI
++        if hasattr(module, "GEMINI_MISSIONS"):
++            for key, m_data in module.GEMINI_MISSIONS.items():
++                dto = MissionDTO(
++                    key=key,
++                    title=m_data.get("title", key),
++                    type=MissionType.GEMINI,
++                    instruction_raw=m_data.get("instruction", ""),
++                    worker=m_data.get("worker"),
++                    context_files=m_data.get("context_files", []),
++                    output_path=m_data.get("output_path"),
++                    model=m_data.get("model"),
++                    audit_requirements=m_data.get("audit_requirements")
++                )
++                self.register_mission(dto)
++                count += 1
++
++        # Move to .bak to avoid re-migration
++        shutil.move(str(path), str(path.with_suffix('.py.bak')))
++
++        return count
+diff --git a/communications/insights/auto-test-stabilization.md b/communications/insights/auto-test-stabilization.md
+new file mode 100644
+index 00000000..808a801f
+--- /dev/null
++++ b/communications/insights/auto-test-stabilization.md
+@@ -0,0 +1,31 @@
++# Auto Test Stabilization Report
++
++## Architectural Insights
++1. **Registry Granularity**: The `GlobalRegistry` now supports granular `delete_layer(key, origin)` method. This allows precise rollback of specific configuration layers without affecting lower-priority layers (e.g., reverting a GOD_MODE override to reveal SYSTEM default).
++2. **Command Service Rollback**: The `CommandService` was modified to explicitly track the `OriginType` of the command being executed. This ensures that during rollback, we remove *exactly* the layer we added, rather than blindly restoring previous values (which is safer and cleaner).
++3. **Config Bridge**: The `config` module proxy now correctly exposes `registry` in its `__dir__`, ensuring introspection tools and tests can discover it.
++4. **Mission Migration**: The `MissionRegistryService` now supports legacy migration via `migrate_from_legacy`, bridging the gap between old manifest files and the new database-backed registry.
++
++## Test Evidence
++```
++tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_set_and_get_basic PASSED [  5%]
++tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_origin_priority PASSED [ 10%]
++tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_locking_mechanism PASSED [ 15%]
++tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_observer_notification PASSED [ 20%]
++tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_key_specific_observer PASSED [ 25%]
++tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_direct_access PASSED [ 30%]
++tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_registry_integration PASSED [ 35%]
++tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_missing_attribute PASSED [ 40%]
++tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_dir_listing PASSED [ 45%]
++tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_enum_access PASSED [ 50%]
++tests/unit/registry/test_service.py::test_load_missions_empty PASSED     [ 55%]
++tests/unit/registry/test_service.py::test_register_and_get_mission PASSED [ 60%]
++tests/unit/registry/test_service.py::test_delete_mission PASSED          [ 65%]
++tests/unit/registry/test_service.py::test_get_mission_prompt PASSED      [ 70%]
++tests/unit/registry/test_service.py::test_migration PASSED               [ 75%]
++tests/unit/registry/test_service.py::test_lock_timeout PASSED            [ 80%]
++tests/unit/registry/test_service.py::test_lock_success PASSED            [ 85%]
++tests/system/test_command_service_rollback.py::test_rollback_set_param_preserves_origin PASSED [ 90%]
++tests/system/test_command_service_rollback.py::test_rollback_set_param_deletes_new_key PASSED [ 95%]
++tests/system/test_command_service_rollback.py::test_rollback_inject_asset PASSED [100%]
++```
+diff --git a/config/__init__.py b/config/__init__.py
+index 4a15e8a3..091fad8f 100644
+--- a/config/__init__.py
++++ b/config/__init__.py
+@@ -54,7 +54,7 @@ def __getattr__(name):
+     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+ 
+ def __dir__():
+-    return list(_registry.snapshot().keys())
++    return list(_registry.snapshot().keys()) + ["registry"]
+ 
+ # Expose registry instance for advanced usage
+ registry = _registry
+diff --git a/modules/system/registry.py b/modules/system/registry.py
+index 641bbbcc..753db0c9 100644
+--- a/modules/system/registry.py
++++ b/modules/system/registry.py
+@@ -89,20 +89,11 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
+             # If locked, only GOD_MODE (or equivalent high privilege) can modify
+             if active_entry.is_locked:
+                 if origin < OriginType.GOD_MODE:
+-                     # raise PermissionError(f"Target '{key}' is locked by {active_entry.origin.name}")
+-                     # For compatibility with bool return type, return False or raise?
+-                     # Existing code raised PermissionError in some branches but spec says -> bool.
+-                     # I will stick to raising if locked, or returning False if priority is low.
+-                     # But if locked, it's a hard stop.
+-                     return False
+-
+-            # Priority Check is implicit in layers, but we shouldn't allow overwriting a higher layer
+-            # from a lower layer call (conceptually).
+-            # But `set` adds a layer. If I add a USER layer, it overrides SYSTEM.
+-            # If I add a CONFIG layer but USER exists, USER wins.
+-            # So `set` should succeed in updating the *layer*, but the *active value* might not change
+-            # if a higher layer exists.
+-            pass
++                     raise PermissionError(f"Target '{key}' is locked by {active_entry.origin.name}")
++
++            # Priority Check: Lower origin cannot overwrite higher active origin
++            if origin < active_entry.origin:
++                return False
+ 
+         # 2. Phase 0 Intercept (TODO: Implement when Scheduler is available)
+         # ...
+@@ -198,6 +189,18 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
+             return True
+         return False
+ 
++    def delete_layer(self, key: str, origin: OriginType) -> bool:
++        """Removes a specific layer for a key, exposing lower layers if any."""
++        if key in self._layers and origin in self._layers[key]:
++            del self._layers[key][origin]
++            # Notify potential change
++            active = self._get_active_entry(key)
++            val = active.value if active else None
++            origin_active = active.origin if active else OriginType.SYSTEM
++            self._notify(key, val, origin_active)
++            return True
++        return False
++
+     def restore_entry(self, key: str, entry: RegistryEntry) -> None:
+         """Restores a full entry state (for rollback purposes)."""
+         if key not in self._layers:
+diff --git a/modules/system/services/command_service.py b/modules/system/services/command_service.py
+index 38f94a85..2462b176 100644
+--- a/modules/system/services/command_service.py
++++ b/modules/system/services/command_service.py
+@@ -26,6 +26,7 @@ class UndoRecord:
+     target_agent_id: Optional[Union[int, str]] = None
+     amount: Optional[int] = None
+     new_value: Any = None
++    origin: Optional[OriginType] = None
+ 
+ class UndoStack:
+     def __init__(self, maxlen: int = 50):
+@@ -175,19 +176,21 @@ class CommandService:
+         # Use get_entry to capture full state (origin, is_locked)
+         previous_entry = self.registry.get_entry(cmd.parameter_key)
+ 
++        # Execute
++        # Assuming origin is GOD_MODE (from DTO property or similar)
++        origin = getattr(cmd, 'origin', OriginType.GOD_MODE)
++
+         record = UndoRecord(
+             command_id=cmd.command_id,
+             command_type="SET_PARAM",
+             target_domain=cmd.target_domain,
+             parameter_key=cmd.parameter_key,
+             previous_entry=previous_entry,
+-            new_value=cmd.new_value
++            new_value=cmd.new_value,
++            origin=origin
+         )
+         self.undo_stack.push(record)
+ 
+-        # Execute
+-        # Assuming origin is GOD_MODE (from DTO property or similar)
+-        origin = getattr(cmd, 'origin', OriginType.GOD_MODE)
+         success = self.registry.set(cmd.parameter_key, cmd.new_value, origin=origin)
+         if not success:
+             raise RuntimeError(f"GlobalRegistry rejected update for {cmd.parameter_key}")
+@@ -258,14 +261,26 @@ class CommandService:
+         for record in reversed(records):
+             try:
+                 if record.command_type == "SET_PARAM":
+-                     # Restore previous entry state directly to preserve origin/locks
++                     # 1. Remove the layer added by the command (if we tracked the origin)
++                     if record.origin is not None and hasattr(self.registry, 'delete_layer'):
++                         self.registry.delete_layer(record.parameter_key, record.origin)
++
++                     # 2. Restore previous entry state if needed
++                     # If previous_entry is None, delete_layer might have been enough if it was a new key.
++                     # But if the key didn't exist at all, delete_layer logic (which only deletes one layer)
++                     # implies we might need to be sure no other layers exist if it was truly new?
++                     # No, if it was new, set() added one layer. delete_layer removes it. Done.
++
++                     # However, for robustness, we restore previous_entry if available.
+                      if isinstance(self.registry, IRestorableRegistry):
+                          if record.previous_entry is None:
+-                             # Key didn't exist before, so delete it
+-                             self.registry.delete_entry(record.parameter_key)
+-                             logger.info(f"ROLLBACK: Deleted {record.parameter_key}")
++                             # If we deleted the layer, we are good.
++                             # But if delete_layer didn't happen (e.g. no origin recorded), fallback to delete_entry?
++                             if record.origin is None:
++                                 self.registry.delete_entry(record.parameter_key)
++                                 logger.info(f"ROLLBACK: Deleted {record.parameter_key}")
+                          else:
+-                             # Restore entry
++                             # Restore entry (re-writes the previous layer)
+                              self.registry.restore_entry(record.parameter_key, record.previous_entry)
+                              logger.info(f"ROLLBACK: Restored {record.parameter_key} to {record.previous_entry.value} (Origin: {record.previous_entry.origin})")
+                      else:
+@@ -278,7 +293,9 @@ class CommandService:
+                              )
+                              logger.warning(f"ROLLBACK: Used set() fallback for {record.parameter_key} (Registry not IRestorableRegistry). Lock state might be incorrect.")
+                          else:
+-                             logger.warning(f"ROLLBACK_FAIL: Cannot delete {record.parameter_key} because registry is not IRestorableRegistry")
++                             # If it was new and we can't delete...
++                             if record.origin is None:
++                                  logger.warning(f"ROLLBACK_FAIL: Cannot delete {record.parameter_key} because registry is not IRestorableRegistry")
+ 
+                 elif record.command_type in ["INJECT_ASSET", "INJECT_MONEY"]:
+                      self._rollback_injection(record)

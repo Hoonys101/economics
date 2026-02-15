@@ -201,14 +201,16 @@ class MissionRegistryService:
                     self.register_mission(dto)
                     count += 1
 
-            # Move to .bak to avoid re-migration
-            shutil.move(str(manifest_path), str(manifest_path.with_suffix('.py.bak')))
+            # Move to .bak to avoid re-migration, except for standard manifests
+            if manifest_path.name not in ["gemini_manifest.py", "jules_manifest.py"]:
+                shutil.move(str(manifest_path), str(manifest_path.with_suffix('.py.bak')))
 
         return count
 
-    def migrate_from_legacy(self, legacy_file_path: str) -> int:
+    def migrate_from_legacy(self, legacy_file_path: str, archive: bool = True) -> int:
         """
         Migrates missions from a legacy manifest file.
+        If archive is True, moves the file to .bak.
         """
         path = Path(legacy_file_path)
         if not path.exists():
@@ -229,8 +231,12 @@ class MissionRegistryService:
 
         module = importlib.util.module_from_spec(spec)
         try:
+            # Force re-import to pick up changes in manifest files
+            if path.stem in sys.modules:
+                del sys.modules[path.stem]
             spec.loader.exec_module(module)
-        except Exception:
+        except Exception as e:
+            print(f"Error loading manifest {path}: {e}")
             return 0
 
         # JULES
@@ -266,7 +272,8 @@ class MissionRegistryService:
                 self.register_mission(dto)
                 count += 1
 
-        # Move to .bak to avoid re-migration
-        shutil.move(str(path), str(path.with_suffix('.py.bak')))
+        # Move to .bak if requested and not a standard manifest
+        if archive and path.name not in ["gemini_manifest.py", "jules_manifest.py"]:
+            shutil.move(str(path), str(path.with_suffix('.py.bak')))
 
         return count

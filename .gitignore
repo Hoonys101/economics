@@ -167,6 +167,7 @@ simulation_results/
 # gemini.md
 # gemini.md.bak
 # design/JULES_DOCUMENTATION_GUIDE.md
+design/QUICKSTART.md
 .agent/
 reports/*.csv
 reports/*.json
