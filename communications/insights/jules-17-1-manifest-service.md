@@ -8,6 +8,7 @@
 ## 2. Architectural Decisions
 -   **Protocol Injection Pattern**: Implemented `MissionRegistryService.get_mission_prompt` to dynamically inject `META`, `GUARDRAILS`, and `OUTPUT_DISCIPLINE` into mission prompts. This ensures that even old pending missions use the latest safety protocols.
 -   **Service-Based Locking**: Implemented `MissionLock` within the service to ensure transactional integrity during mission registration and deletion.
+    -   *Update*: Fixed a potential race condition in `MissionLock` by using atomic `touch(exist_ok=False)` creation instead of checking `exists()`.
 -   **Launcher Replacement**: Since the original `launcher.py` was not present in the repository, a new `scripts/mission_launcher.py` was created to interface with the `MissionRegistryService`. This script provides `list`, `create`, `run`, `delete`, and `migrate` commands.
 -   **DTO Purity**: Defined strict `MissionDTO` and `MissionType` in `_internal.registry.api` to ensure data consistency across boundaries.
 
@@ -36,7 +37,7 @@ tests/unit/registry/test_service.py::test_migration PASSED               [ 71%]
 tests/unit/registry/test_service.py::test_lock_timeout PASSED            [ 85%]
 tests/unit/registry/test_service.py::test_lock_success PASSED            [100%]
 
-============================== 7 passed in 0.50s ===============================
+============================== 7 passed in 0.60s ===============================
 ```
 
 ## 5. Usage Guide

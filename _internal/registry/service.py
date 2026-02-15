@@ -19,21 +19,25 @@ class MissionLock:
 
     def __enter__(self):
         start_time = time.time()
-        while self.lock_file.exists():
-            if time.time() - start_time > self.timeout:
-                # Check if lock is stale (e.g. > 30 seconds old)
-                try:
-                    stat = self.lock_file.stat()
-                    if time.time() - stat.st_mtime > 30:
-                        print(f"Breaking stale lock: {self.lock_file}")
-                        self.lock_file.unlink(missing_ok=True)
-                        break
-                except FileNotFoundError:
-                    pass # Lock gone
+        while True:
+            try:
+                # Atomic creation (exclusive creation)
+                self.lock_file.touch(exist_ok=False)
+                break
+            except FileExistsError:
+                if time.time() - start_time > self.timeout:
+                    # Check if lock is stale (e.g. > 30 seconds old)
+                    try:
+                        stat = self.lock_file.stat()
+                        if time.time() - stat.st_mtime > 30:
+                            print(f"Breaking stale lock: {self.lock_file}")
+                            self.lock_file.unlink(missing_ok=True)
+                            continue # Retry immediately
+                    except FileNotFoundError:
+                        pass # Lock gone, retry
 
-                raise TimeoutError(f"Could not acquire lock after {self.timeout} seconds")
-            time.sleep(0.1)
-        self.lock_file.touch()
+                    raise TimeoutError(f"Could not acquire lock after {self.timeout} seconds")
+                time.sleep(0.1)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.lock_file.exists():
