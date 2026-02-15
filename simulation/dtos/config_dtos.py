@@ -192,6 +192,8 @@ class FirmConfigDTO:
     space_utility_factor: float = 100.0
 
 @dataclass
-class SecurityConfigDTO:
+class ServerConfigDTO:
     """Configuration for system security and access control."""
     god_mode_token: str
+    host: str = "127.0.0.1"
+    port: int = 8000

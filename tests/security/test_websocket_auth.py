@@ -5,6 +5,7 @@ import time
 import socket
 from modules.system.server import SimulationServer
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
+from simulation.dtos.config_dtos import ServerConfigDTO
 
 @pytest.fixture
 def bridge():
@@ -21,7 +22,8 @@ def server(bridge):
     port = sock.getsockname()[1]
     sock.close()
 
-    srv = SimulationServer("localhost", port, cq, te, god_mode_token="secret-token-123")
+    config = ServerConfigDTO(host="127.0.0.1", port=port, god_mode_token="secret-token-123")
+    srv = SimulationServer(config, cq, te)
     srv.start()
     # Wait for server startup
     time.sleep(1)

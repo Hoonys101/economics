@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
 from modules.system.server import SimulationServer
 from unittest.mock import MagicMock
+from simulation.dtos.config_dtos import ServerConfigDTO
 
 # --- Fixtures ---
 
@@ -28,7 +29,8 @@ def server(bridge):
     port = sock.getsockname()[1]
     sock.close()
 
-    srv = SimulationServer("localhost", port, cq, te, god_mode_token="test-token")
+    config = ServerConfigDTO(host="127.0.0.1", port=port, god_mode_token="test-token")
+    srv = SimulationServer(config, cq, te)
     srv.start()
     # Wait for server startup
     time.sleep(1)
@@ -50,19 +52,26 @@ async def test_command_injection(server, bridge):
         "command_type": "SET_PARAM"
     }
 
+    # Wait for server to be fully ready
+    await asyncio.sleep(0.5)
+
     async with websockets.connect(uri, additional_headers={"X-GOD-MODE-TOKEN": "test-token"}) as ws:
         await ws.send(json.dumps(payload))
         # Give server time to process
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(0.5)
 
     assert not cq.empty()
     cmd = cq.get()
     assert str(cmd.command_id) == cmd_id
     assert cmd.parameter_key == "tax_rate"
+    assert cmd.new_value == 0.15
 
 @pytest.mark.asyncio
 async def test_telemetry_broadcast(server, bridge):
     from simulation.dtos.telemetry import TelemetrySnapshotDTO
+
+    # Wait for server to be fully ready
+    await asyncio.sleep(0.5)
 
     cq, te = bridge
     uri = f"ws://{server.host}:{server.port}"
@@ -79,11 +88,6 @@ async def test_telemetry_broadcast(server, bridge):
 
     async with websockets.connect(uri, additional_headers={"X-GOD-MODE-TOKEN": "test-token"}) as ws:
         # Wait for broadcast (Server sends latest on connect or loop)
-        # Our loop waits for update. But if update happened before connect?
-        # Server loop: while True: snapshot = get(); if snapshot.tick > last_tick: send().
-        # last_tick starts at -1.
-        # So if we update before connect, the server loop (running for that client) will pick it up immediately.
-
         msg = await asyncio.wait_for(ws.recv(), timeout=2.0)
         data = json.loads(msg)
         assert data["tick"] == 10
@@ -101,7 +105,8 @@ async def test_telemetry_broadcast(server, bridge):
         te.update(snapshot_10_dup)
         try:
              await asyncio.wait_for(ws.recv(), timeout=0.5)
-             assert False, "Should not receive duplicate tick"
+             received = json.loads(await ws.recv()) # consume if any
+             assert False, f"Should not receive duplicate tick: {received}"
         except asyncio.TimeoutError:
              pass
 

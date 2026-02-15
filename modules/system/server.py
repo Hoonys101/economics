@@ -13,20 +13,36 @@ from typing import Optional, List, Dict
 from uuid import UUID
 from pydantic import BaseModel
 from simulation.dtos.commands import GodCommandDTO
+from simulation.dtos.config_dtos import ServerConfigDTO
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
 
 logger = logging.getLogger("SimulationServer")
 
 class SimulationServer:
-    def __init__(self, host: str, port: int, command_queue: CommandQueue, telemetry_exchange: TelemetryExchange, god_mode_token: str):
-        self.host = host
-        self.port = port
+    def __init__(self, config: ServerConfigDTO, command_queue: CommandQueue, telemetry_exchange: TelemetryExchange):
+        self.config = config
         self.command_queue = command_queue
         self.telemetry_exchange = telemetry_exchange
-        self.god_mode_token = god_mode_token
+
+        # Security Hardening: Check Host Binding
+        if self.config.host not in ["127.0.0.1", "localhost"]:
+            logger.critical(f"SECURITY ALERT: Server binding to non-local host '{self.config.host}'. This exposes the simulation to the network.")
+
         self.connected_clients = set()
         self.client_states: Dict[websockets.WebSocketServerProtocol, int] = {}
         self._stop_event = asyncio.Event()
+
+    @property
+    def host(self) -> str:
+        return self.config.host
+
+    @property
+    def port(self) -> int:
+        return self.config.port
+
+    @property
+    def god_mode_token(self) -> str:
+        return self.config.god_mode_token
 
     def start(self):
         """Starts the server in a separate thread."""
