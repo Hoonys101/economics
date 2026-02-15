@@ -1,0 +1,21 @@
+
+JULES_MISSIONS = {
+    "jules-track-a-settlement": {
+        "title": "Track A: Settlement & Logic Purity (TD-CRIT-FLOAT-SETTLE)",
+        "instruction": "Refactor engines to return int pennies and update Firm protocols. Follow SPEC_TRACK_A_SETTLEMENT.md.",
+        "command": "create",
+        "file": "design/3_work_artifacts/specs/SPEC_TRACK_A_SETTLEMENT.md",
+        "wait": True
+    },
+    "jules-track-b-security": {
+        "title": "Track B: Security & Infra Hardening (TD-ARCH-SEC-GOD)",
+        "instruction": "Update ServerConfigDTO and SimulationServer for localhost binding. Follow SPEC_TRACK_B_SECURITY.md.",
+        "command": "create",
+        "file": "design/3_work_artifacts/specs/SPEC_TRACK_B_SECURITY.md",
+        "wait": True
+    }
+}
+
+GEMINI_MISSIONS = {
+    # Finished: spec-td-resolution
+}

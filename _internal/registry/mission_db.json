@@ -1,0 +1,92 @@
+{
+  "_meta": {
+    "version": "1.0"
+  },
+  "missions": {
+    "td-crit-float-settle": {
+      "key": "td-crit-float-settle",
+      "title": "TD-CRIT-FLOAT-SETTLE: Fix Critical Float Leak in Settlement",
+      "type": "jules",
+      "instruction_raw": "Analyze and fix the critical float leak in SettlementSystem. Ensure all inputs to transfers are cast to int. Reference SPEC_TD_CRIT_FLOAT_SETTLE.md.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/SPEC_TD_CRIT_FLOAT_SETTLE.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "td-arch-sec-god": {
+      "key": "td-arch-sec-god",
+      "title": "TD-ARCH-SEC-GOD: Implement God-Mode Authentication",
+      "type": "jules",
+      "instruction_raw": "Implement mandatory token-based authentication for all GodCommandDTO inputs in the WebSocket server. Reference SPEC_TD_ARCH_SEC_GOD.md.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/SPEC_TD_ARCH_SEC_GOD.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "td-int-pennies-fragility": {
+      "key": "td-int-pennies-fragility",
+      "title": "TD-INT-PENNIES-FRAGILITY: Remove Penny-Float Duality",
+      "type": "jules",
+      "instruction_raw": "Complete the Penny migration for all Telemetry DTOs. Remove hasattr(agent, 'xxx_pennies') wrappers and enforce strict integer usage. Reference SPEC_TD_INT_PENNIES_FRAGILITY.md.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/SPEC_TD_INT_PENNIES_FRAGILITY.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "jules-track-a-settlement": {
+      "key": "jules-track-a-settlement",
+      "title": "Track A: Settlement & Logic Purity (TD-CRIT-FLOAT-SETTLE)",
+      "type": "jules",
+      "instruction_raw": "Refactor engines to return int pennies and update Firm protocols. Follow SPEC_TRACK_A_SETTLEMENT.md.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/SPEC_TRACK_A_SETTLEMENT.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "jules-track-b-security": {
+      "key": "jules-track-b-security",
+      "title": "Track B: Security & Infra Hardening (TD-ARCH-SEC-GOD)",
+      "type": "jules",
+      "instruction_raw": "Update ServerConfigDTO and SimulationServer for localhost binding. Follow SPEC_TRACK_B_SECURITY.md.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/SPEC_TRACK_B_SECURITY.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    }
+  }
+}

@@ -38,6 +38,13 @@ class MissionDTO:
     model: Optional[str] = None
     audit_requirements: Optional[str] = None
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Converts DTO to dictionary for legacy compatibility."""
+        from dataclasses import asdict
+        d = asdict(self)
+        d["type"] = self.type.value
+        return d
+
 @runtime_checkable
 class IMissionRegistryService(Protocol):
     """
@@ -76,7 +83,7 @@ class IMissionRegistryService(Protocol):
         """
         ...
 
-    def migrate_from_legacy(self, legacy_file_path: str) -> int:
+    def migrate_from_legacy(self, legacy_file_path: str = "_internal/registry/command_manifest.py") -> int:
         """
         One-time migration from legacy command_manifest.py to mission_db.json.
         Returns the number of missions migrated.

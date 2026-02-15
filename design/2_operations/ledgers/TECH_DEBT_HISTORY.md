@@ -58,6 +58,11 @@ This document archives resolved technical debt items to keep the primary ledger 
 | **TD-INT-STRESS-SCALE** | System | **O(N) Stress Scan**: Bank -> Depositor reverse index implemented. | 2026-02-14 | [Insight](../../design/_archive/insights/2026-02-14_Settlement_Stress_Scale_Optimization.md) |
 | **TD-INT-WS-SYNC** | System | **WS Polling**: Event-driven broadcast via TelemetryExchange implemented. | 2026-02-14 | [Insight](../../design/_archive/insights/2026-02-14_WebSocket_Event_Driven_Optimization.md) |
 | **TD-ARCH-PROTO-LOCATION** | System | **Bleeding Protocols**: Refactored to `modules/api/protocols.py`. | 2026-02-14 | [Insight](../../design/_archive/insights/2026-02-14_Post_Merge_Stabilization.md) |
+| **TD-SYS-BATCH-FRAGILITY** | System | **Manifest Persistence**: Replaced `command_manifest.py` with `MissionRegistryService`. | 2026-02-15 | [Mission Review](./pr_review_jules-17-1-manifest-service-15689901827980789950.md) |
+| **TD-DATA-03-PERF** | Performance | **Demographics O(1)**: Event-driven stats for birth/death. | 2026-02-15 | [Mission Review](./pr_review_jules-17-2-event-demographics-18407633892604030203.md) |
+| **TD-SYS-GHOST-CONSTANTS** | Architecture | **Config Proxy**: Solved import-time binding (Ghost Constants). | 2026-02-15 | [Mission Review](./pr_review_jules-17-3-config-proxy-purity-7306288639511283426.md) |
+| **TD-MON-SETTLEMENT-DRIFT** | Protocol | **Interface Segregation**: Split `ISettlementSystem` and `IMonetaryAuthority`. | 2026-02-15 | [Mission Review](./pr_review_jules-17-3-config-proxy-purity-7306288639511283426.md) |
+| **TD-DATA-01-MOCK** | Finance | **Strict Mocking**: Added `assert_implements_protocol` and segregrated interfaces. | 2026-02-15 | [Mission Review](./pr_review_jules-17-3-config-proxy-purity-7306288639511283426.md) |
 
 ## 📓 Implementation Lessons (Resolved Path)
 
@@ -97,3 +102,28 @@ This document archives resolved technical debt items to keep the primary ledger 
 - **Symptom**: `Household` agents lack a `reset()` method.
 - **Solution**: Implemented `Household.reset_tick_state()` and orchestrated via `AgentLifecycleManager`.
 - **Reported**: `audit_lifecycle_hygiene_20260211.md`
+
+---
+
+### ID: TD-SYS-BATCH-FRAGILITY
+### Title: Brittle Manifest Persistence (command_manifest.py)
+- **Symptom**: `command_manifest.py` was being edited via Regex pattern matching, which was prone to corruption.
+- **Resolution**: Migrated to `MissionRegistryService` using a structured JSON backend (`command_registry.json`) and AST-based migration logic.
+- **Resolved in**: `jules-17-1-manifest-service`
+
+---
+
+### ID: TD-DATA-03-PERF
+### Title: Demographic Statistics Performance (O(N) to O(1))
+- **Symptom**: `DemographicManager` iterated thousands of agents every tick to find gender/age/labor totals.
+- **Resolution**: Implemented a "Push" model where agents notify the manager on birth/death events, maintaining cached counters.
+- **Resolved in**: `jules-17-2-event-demographics`
+
+---
+
+### ID: TD-SYS-GHOST-CONSTANTS
+### Title: Ghost Constants & Import-Time Binding
+- **Symptom**: `from config import X` bound values at import time, ignoring runtime registry updates (e.g., God Mode tweaks).
+- **Resolution**: Refactored `config` to a `sys.modules` Proxy pattern that routes all access to a layered `GlobalRegistry`.
+- **Resolved in**: `jules-17-3-config-proxy-purity`
+

@@ -120,15 +120,42 @@ class MissionRegistryService:
             instruction_raw=mission.instruction_raw
         )
 
-    def migrate_from_legacy(self, legacy_file_path: str) -> int:
+    def sync_to_legacy_json(self, target_path: Optional[Path] = None):
+        """
+        Exports current missions to command_registry.json for legacy tool compatibility.
+        """
+        target = target_path or Path("_internal/registry/command_registry.json")
+        missions = self.load_missions()
+        
+        # Format for command_registry.json
+        output_data = {
+            "_meta": {
+                "updated": time.strftime("%Y-%m-%dT%H:%M:%S")
+            }
+        }
+        
+        # Merge missions into root for legacy compatibility if needed, 
+        # or keep them under 'missions' key. 
+        # Based on launcher.py, it seems it expects missions in the registry.
+        for key, m in missions.items():
+            m_dict = asdict(m)
+            m_dict["type"] = m.type.value
+            output_data[key] = m_dict
+            
+        with open(target, 'w', encoding='utf-8') as f:
+            json.dump(output_data, f, indent=4)
+
+    def migrate_from_legacy(self, legacy_file_path: str = "_internal/registry/command_manifest.py") -> int:
         legacy_path = Path(legacy_file_path)
         if not legacy_path.exists():
-            # If the file doesn't exist, we can't migrate.
-            # But we should check if it's maybe just a path issue.
-            # Assuming absolute path or relative to CWD.
             return 0
 
         import importlib.util
+        import sys
+        
+        # Ensure we can import from the directory
+        sys.path.append(str(legacy_path.parent))
+        
         spec = importlib.util.spec_from_file_location("legacy_manifest", legacy_path)
         if spec is None or spec.loader is None:
              return 0
@@ -147,7 +174,7 @@ class MissionRegistryService:
                     type=MissionType.JULES,
                     instruction_raw=m_data.get("instruction", ""),
                     command=m_data.get("command"),
-                    file_path=m_data.get("file_path"),
+                    file_path=m_data.get("file"), # Compatibility with 'file' key in manifest
                     wait=m_data.get("wait", False),
                     session_id=m_data.get("session_id")
                 )
