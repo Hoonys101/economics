@@ -33,11 +33,12 @@ class AssetManagementEngine(IAssetManagementEngine):
 
         try:
             if input_dto.investment_type == "AUTOMATION":
-                cost_per_pct = config.automation_cost_per_pct
-                if cost_per_pct <= 0:
+                # Convert config cost (dollars) to pennies
+                cost_per_pct_pennies = int(config.automation_cost_per_pct * 100)
+                if cost_per_pct_pennies <= 0:
                      return AssetManagementResultDTO(success=False, message="Invalid automation cost configuration.")
 
-                gained_automation = (input_dto.investment_amount / cost_per_pct) / 100.0
+                gained_automation = (input_dto.investment_amount / cost_per_pct_pennies) / 100.0
 
                 # Check for max automation (1.0)
                 current_automation = state.automation_level
@@ -64,7 +65,7 @@ class AssetManagementEngine(IAssetManagementEngine):
                      return AssetManagementResultDTO(success=False, message="Invalid capital to output ratio.")
 
                 efficiency = 1.0 / capital_to_output_ratio
-                added_capital = input_dto.investment_amount * efficiency
+                added_capital = int(input_dto.investment_amount * efficiency)
 
                 return AssetManagementResultDTO(
                     success=True,

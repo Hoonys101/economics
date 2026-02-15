@@ -72,8 +72,9 @@ class ProductionResultDTO:
     quality: float
     specialization: str
     inputs_consumed: Dict[str, float] = field(default_factory=dict)
-    production_cost: float = 0.0
-    capital_depreciation: float = 0.0
+    production_cost: int = 0 # MIGRATION: int pennies
+    capital_depreciation: int = 0 # MIGRATION: int pennies (monetary value lost)
+
     automation_decay: float = 0.0
     error_message: Optional[str] = None
 
@@ -84,15 +85,15 @@ class AssetManagementInputDTO:
     """Input for the AssetManagementEngine."""
     firm_snapshot: FirmSnapshotDTO
     investment_type: Literal["CAPEX", "AUTOMATION"]
-    investment_amount: float
+    investment_amount: int # MIGRATION: int pennies
 
 @dataclass(frozen=True)
 class AssetManagementResultDTO:
     """Result from the AssetManagementEngine."""
     success: bool
-    capital_stock_increase: float = 0.0
+    capital_stock_increase: int = 0 # MIGRATION: int pennies
     automation_level_increase: float = 0.0
-    actual_cost: float = 0.0
+    actual_cost: int = 0 # MIGRATION: int pennies
     message: Optional[str] = None
 
 # --- Liquidation DTOs (Asset Management) ---
@@ -108,7 +109,7 @@ class LiquidationResultDTO:
     """Result of liquidation calculation."""
     assets_returned: Dict[str, int]
     inventory_to_remove: Dict[str, float]
-    capital_stock_to_write_off: float
+    capital_stock_to_write_off: int # MIGRATION: int pennies
     automation_level_to_write_off: float
     is_bankrupt: bool = True
 
@@ -118,7 +119,7 @@ class LiquidationResultDTO:
 class RDInputDTO:
     """Input for the R&D Engine."""
     firm_snapshot: FirmSnapshotDTO
-    investment_amount: float
+    investment_amount: int # MIGRATION: int pennies
     current_time: int
 
 @dataclass(frozen=True)
@@ -127,7 +128,7 @@ class RDResultDTO:
     success: bool
     quality_improvement: float = 0.0
     productivity_multiplier_change: float = 1.0 # Multiplier (e.g. 1.05 for 5% increase)
-    actual_cost: float = 0.0
+    actual_cost: int = 0 # MIGRATION: int pennies
     message: Optional[str] = None
 
 # --- Pricing Engine DTOs ---
@@ -136,18 +137,18 @@ class RDResultDTO:
 class PricingInputDTO:
     """Input for PricingEngine."""
     item_id: str
-    current_price: float
+    current_price: int # MIGRATION: int pennies
     market_snapshot: MarketSnapshotDTO
     config: FirmConfigDTO
-    unit_cost_estimate: float = 0.0
+    unit_cost_estimate: int = 0 # MIGRATION: int pennies
     inventory_level: float = 0.0
     production_target: float = 0.0
 
 @dataclass(frozen=True)
 class PricingResultDTO:
     """Result from PricingEngine."""
-    new_price: float
-    shadow_price: float
+    new_price: int # MIGRATION: int pennies
+    shadow_price: float # Shadow price can remain float for analysis? Or int?
     demand: float
     supply: float
     excess_demand_ratio: float

@@ -777,7 +777,7 @@ class SettlementSystem(IMonetaryAuthority):
             seller_id=seller_id,
             item_id="currency",
             quantity=amount, # Int amount as quantity
-            price=1.0, # Nominal price 1.0 for currency transfer
+            price=1, # Nominal price 1 for currency transfer (Int)
             market_id="settlement",
             transaction_type="transfer",
             time=tick,
@@ -843,7 +843,9 @@ class SettlementSystem(IMonetaryAuthority):
         for agent in agents:
             # Exclude Central Bank from M2 calculation to align with WorldState.calculate_total_money
             # M2 is money in circulation, not held by the issuer.
-            if hasattr(agent, 'id') and (agent.id == ID_CENTRAL_BANK or str(agent.id) == str(ID_CENTRAL_BANK)):
+            # IFinancialAgent requires 'id'.
+            agent_id = getattr(agent, 'id', None)
+            if agent_id == ID_CENTRAL_BANK or str(agent_id) == str(ID_CENTRAL_BANK):
                 continue
 
             current_balance = 0
@@ -859,9 +861,11 @@ class SettlementSystem(IMonetaryAuthority):
 
             # Bank Logic: Reserves and Deposits
             # Identify if agent is a Bank to adjust for M2 (Fractional Reserve)
-            is_bank = isinstance(agent, IBank) or (hasattr(agent, '__class__') and agent.__class__.__name__ == "Bank")
-
-            if is_bank:
+            if isinstance(agent, IBank):
+                bank_reserves += current_balance
+                total_deposits += agent.get_total_deposits()
+            elif hasattr(agent, '__class__') and agent.__class__.__name__ == "Bank":
+                # Fallback for legacy bank not implementing IBank properly
                 bank_reserves += current_balance
                 if hasattr(agent, 'get_total_deposits'):
                     total_deposits += agent.get_total_deposits()

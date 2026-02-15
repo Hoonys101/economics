@@ -28,7 +28,7 @@ class FinanceEngine:
         config: FirmConfigDTO,
         current_time: int,
         context: FinancialTransactionContext,
-        inventory_value: float # Float dollars passed from orchestrator
+        inventory_value: int # MIGRATION: Int pennies
     ) -> List[Transaction]:
         """
         Consolidates all financial outflow generation logic.
@@ -37,10 +37,9 @@ class FinanceEngine:
         gov_id = context.government_id
 
         # 1. Holding Cost
-        # Inventory value is float dollars. Rate is float. Cost is float dollars.
-        # Convert to pennies.
+        # Inventory value is int pennies. Rate is float.
         holding_cost_float = inventory_value * config.inventory_holding_cost_rate
-        holding_cost_pennies = int(holding_cost_float * 100)
+        holding_cost_pennies = int(holding_cost_float)
 
         if holding_cost_pennies > 0 and gov_id is not None:
             self._record_expense(state, holding_cost_pennies, DEFAULT_CURRENCY)
@@ -60,6 +59,8 @@ class FinanceEngine:
 
         # 2. Maintenance Fee
         fee_float = config.firm_maintenance_fee
+        # Assuming config is still dollars/units?
+        # If config fee is dollars, convert to pennies.
         fee_pennies = int(fee_float * 100)
 
         current_balance = balances.get(DEFAULT_CURRENCY, 0)
@@ -215,8 +216,8 @@ class FinanceEngine:
         state: FinanceState,
         balances: Dict[CurrencyCode, int],
         config: FirmConfigDTO,
-        inventory_value: float,
-        capital_stock: float,
+        inventory_value: int, # MIGRATION: Int pennies
+        capital_stock: int, # MIGRATION: Int pennies
         context: Optional[FinancialTransactionContext]
     ) -> int:
         """
@@ -232,9 +233,9 @@ class FinanceEngine:
         for cur, amount in balances.items():
              total_assets_val += convert(amount, cur)
 
-        # Add Inventory & Capital (convert from float dollars to pennies)
-        total_assets_val += int(inventory_value * 100)
-        total_assets_val += int(capital_stock * 100)
+        # Add Inventory & Capital (Already in pennies)
+        total_assets_val += inventory_value
+        total_assets_val += capital_stock
 
         # Profit is int pennies
         avg_profit = sum(state.profit_history) / len(state.profit_history) if state.profit_history else 0.0

@@ -1006,14 +1006,15 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         # 1. Construct Input DTO
         item_id = self.specialization
-        current_price = self.last_prices.get(item_id, 10.0)
+        current_price = self.last_prices.get(item_id, 1000) # int pennies
 
         input_dto = PricingInputDTO(
             item_id=item_id,
             current_price=current_price,
             market_snapshot=market_snapshot,
             config=self.config,
-            unit_cost_estimate=self.finance_engine.get_estimated_unit_cost(self.finance_state, item_id, self.config),
+            # unit_cost_estimate needs to be int. FinanceEngine returns float.
+            unit_cost_estimate=int(self.finance_engine.get_estimated_unit_cost(self.finance_state, item_id, self.config) * 100),
             inventory_level=self.get_quantity(item_id, InventorySlot.MAIN),
             production_target=self.production_target
         )
@@ -1120,10 +1121,10 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         # 2. Finance
         # Calculate inventory value for holding cost
-        inventory_value = 0.0
+        inventory_value = 0
         for item, qty in self.get_all_items().items():
-            price = self.last_prices.get(item, 10.0)
-            inventory_value += qty * price
+            price = self.last_prices.get(item, 1000) # Default 10.00 pennies
+            inventory_value += int(qty * price)
 
         fin_ctx = FinancialTransactionContext(
             government_id=gov_id,
@@ -1204,17 +1205,18 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
     @property
     def capital_stock_pennies(self) -> int:
-        return int(self.production_state.capital_stock * 100)
+        return int(self.production_state.capital_stock)
 
     @property
     def inventory_value_pennies(self) -> int:
-        val = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self.get_all_items())
-        return int(val * 100)
+        # last_prices are now int pennies
+        val = sum(self.get_quantity(i) * self.last_prices.get(i, 1000) for i in self.get_all_items())
+        return int(val)
 
     @property
     def monthly_wage_bill_pennies(self) -> int:
         total_wages = sum(self.hr_state.employee_wages.values())
-        return int(total_wages * 4 * 100)
+        return int(total_wages * 4)
 
     @property
     def total_debt_pennies(self) -> int:
@@ -1296,7 +1298,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         return (self.total_shares - self.treasury_shares) * stock_price
 
     def calculate_valuation(self, market_context: MarketContextDTO = None) -> int:
-        inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self.get_all_items())
+        inventory_value = int(sum(self.get_quantity(i) * self.last_prices.get(i, 1000) for i in self.get_all_items()))
         # Wrap market_context in FinancialTransactionContext if needed, or update Engine to accept optional context
         # Engine expects FinancialTransactionContext.
         fin_ctx = None
@@ -1309,11 +1311,11 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             )
 
         return int(self.finance_engine.calculate_valuation(
-            self.finance_state, self.wallet.get_all_balances(), self.config, inventory_value, self.capital_stock, fin_ctx
+            self.finance_state, self.wallet.get_all_balances(), self.config, inventory_value, int(self.capital_stock), fin_ctx
         ))
 
     def get_financial_snapshot(self) -> Dict[str, Any]:
-        inventory_value = sum(self.get_quantity(i) * self.last_prices.get(i, 10.0) for i in self.get_all_items())
+        inventory_value = int(sum(self.get_quantity(i) * self.last_prices.get(i, 1000) for i in self.get_all_items()))
         cash = self.wallet.get_balance(DEFAULT_CURRENCY)
         total_assets = cash + inventory_value + self.capital_stock
         working_capital = cash + inventory_value # Simplified: Current Assets

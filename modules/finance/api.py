@@ -414,6 +414,7 @@ class IFinancialAgent(Protocol):
         ...
 
 
+@runtime_checkable
 class IBank(IFinancialAgent, Protocol):
     """
     Interface for commercial and central banks, providing core banking services.
@@ -469,6 +470,13 @@ class IBank(IFinancialAgent, Protocol):
     def withdraw_for_customer(self, agent_id: AgentID, amount: int) -> bool:
         """
         Withdraws funds from a customer's deposit account.
+        """
+        ...
+
+    @abc.abstractmethod
+    def get_total_deposits(self) -> int:
+        """
+        Returns the sum of all customer deposits held by the bank.
         """
         ...
 

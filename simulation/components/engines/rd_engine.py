@@ -41,7 +41,8 @@ class RDEngine(IRDEngine):
             # I'll use sum of all revenues for now as simplistic approach, or just USD.
             total_revenue = sum(input_dto.firm_snapshot.finance.revenue_this_turn.values())
 
-            denominator = max(total_revenue * 0.2, 100.0)
+            # Denominator logic: 20% of revenue or min 10000 pennies (100.00)
+            denominator = max(total_revenue * 0.2, 10000.0)
             base_chance = min(1.0, input_dto.investment_amount / denominator)
 
             # Skill Modifier

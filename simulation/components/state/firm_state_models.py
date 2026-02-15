@@ -9,8 +9,8 @@ from modules.hr.api import IEmployeeDataProvider
 class HRState:
     """State for HR operations."""
     employees: List[IEmployeeDataProvider] = field(default_factory=list)
-    employee_wages: Dict[int, float] = field(default_factory=dict) # Should wages be pennies? Ideally yes, but might break HR Engine. Leaving as float for now until HR Engine phase.
-    unpaid_wages: Dict[int, List[Tuple[int, float]]] = field(default_factory=dict)
+    employee_wages: Dict[int, int] = field(default_factory=dict) # MIGRATION: Wages in int pennies
+    unpaid_wages: Dict[int, List[Tuple[int, int]]] = field(default_factory=dict) # MIGRATION: Wages in int pennies
     hires_last_tick: int = 0
 
 @dataclass
@@ -65,7 +65,7 @@ class FinanceState:
 @dataclass
 class ProductionState:
     """State for Production operations."""
-    capital_stock: float = 100.0
+    capital_stock: int = 10000 # MIGRATION: int pennies. Default 100.00
     production_target: float = 0.0
     current_production: float = 0.0
     productivity_factor: float = 1.0
@@ -103,10 +103,7 @@ class SalesState:
     brand_awareness: float = 0.0
     perceived_quality: float = 0.0
 
-    last_prices: Dict[str, float] = field(default_factory=dict) # Prices remain float? Spec says prices can be Decimal/float but transactions are int.
-    # Wait, spec says: "Price determination... store as high-precision Decimal".
-    # But last_prices is mostly for memory.
-    # I will keep prices as float for now as they are ratios (money/unit).
+    last_prices: Dict[str, int] = field(default_factory=dict) # MIGRATION: int pennies.
 
     inventory_last_sale_tick: Dict[str, int] = field(default_factory=dict)
 

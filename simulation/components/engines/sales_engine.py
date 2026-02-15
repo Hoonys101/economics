@@ -49,9 +49,9 @@ class SalesEngine:
         self,
         state: SalesState,
         market_context: MarketContextDTO,
-        revenue_this_turn: float, # MIGRATION: Input is float dollars (from Firm calculation), or int pennies?
-        last_revenue: float = 0.0,
-        last_marketing_spend: float = 0.0
+        revenue_this_turn: int, # MIGRATION: Input is int pennies
+        last_revenue: int = 0,
+        last_marketing_spend: int = 0
     ) -> MarketingAdjustmentResultDTO:
         """
         Adjusts marketing budget based on ROI or simple heuristic.
@@ -74,7 +74,7 @@ class SalesEngine:
                 new_rate *= 0.9 # Decrease by 10%
 
         # 2. Target Budget
-        # revenue_this_turn is pennies (float).
+        # revenue_this_turn is pennies (int).
         target_budget = revenue_this_turn * new_rate
 
         # 3. Smoothing
@@ -141,7 +141,7 @@ class SalesEngine:
                 # Check Staleness
                 if (current_time - last_sale) > sale_timeout:
                     # Apply Discount
-                    original_price = getattr(order, "price_limit", getattr(order, "price", 0.0))
+                    original_price = getattr(order, "price_limit", getattr(order, "price", 0))
                     discounted_price = original_price * reduction_factor
 
                     # Check Cost Floor if estimator provided
@@ -150,10 +150,13 @@ class SalesEngine:
                         unit_cost = unit_cost_estimator(item_id)
                         final_price = max(discounted_price, unit_cost)
 
+                    # Cast to int
+                    final_price_int = int(final_price)
+
                     # Apply if lower
-                    if final_price < original_price:
-                        new_order = replace(order, price_limit=final_price)
+                    if final_price_int < original_price:
+                        new_order = replace(order, price_limit=final_price_int)
                         orders[i] = new_order
 
                         # Update price memory
-                        state.last_prices[item_id] = final_price
+                        state.last_prices[item_id] = final_price_int

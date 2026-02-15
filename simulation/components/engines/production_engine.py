@@ -29,8 +29,8 @@ class ProductionEngine(IProductionEngine):
         try:
             # 1. Depreciation & Decay (Calculation, NO mutation)
             capital_depreciation_rate = config.capital_depreciation_rate
-            capital_depreciation = production_state.capital_stock * capital_depreciation_rate
-            effective_capital = max(production_state.capital_stock - capital_depreciation, 0.01)
+            capital_depreciation_val = production_state.capital_stock * capital_depreciation_rate
+            effective_capital = max(production_state.capital_stock - capital_depreciation_val, 0.01)
 
             # Automation Decay
             # Original: state.automation_level *= 0.995
@@ -88,7 +88,7 @@ class ProductionEngine(IProductionEngine):
             actual_produced = 0.0
             consumed_inputs = {}
 
-            production_cost = 0.0
+            production_cost = 0
 
             if produced_quantity > 0:
                 # Input Constraints
@@ -117,8 +117,8 @@ class ProductionEngine(IProductionEngine):
                 quality=actual_quality,
                 specialization=production_state.specialization,
                 inputs_consumed=consumed_inputs,
-                production_cost=production_cost,
-                capital_depreciation=capital_depreciation,
+                production_cost=int(production_cost),
+                capital_depreciation=int(capital_depreciation_val),
                 automation_decay=automation_decay
             )
 
@@ -129,5 +129,7 @@ class ProductionEngine(IProductionEngine):
                 quantity_produced=0.0,
                 quality=0.0,
                 specialization=production_state.specialization,
-                error_message=str(e)
+                error_message=str(e),
+                production_cost=0,
+                capital_depreciation=0
             )

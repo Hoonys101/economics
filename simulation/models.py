@@ -17,7 +17,7 @@ class Transaction:
     seller_id: int | str
     item_id: str
     quantity: float
-    price: float
+    price: int  # Changed from float to int (pennies) for DTO integrity
     market_id: str  # Added market_id
     transaction_type: str  # 'goods', 'labor', 'dividend', 'stock' 등 거래 유형
     time: int  # 거래가 발생한 시뮬레이션 틱
@@ -37,7 +37,7 @@ class StockOrder:
     order_type: str        # "BUY" or "SELL"
     firm_id: int           # 대상 기업 ID
     quantity: float        # 주문 수량
-    price: float           # 호가 (주당 가격)
+    price: int             # Changed from float to int (pennies)
     market_id: str = "stock_market"
     id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
 
@@ -52,7 +52,7 @@ class Share:
     firm_id: int               # 발행 기업 ID
     holder_id: int             # 보유자 ID (가계 또는 기업)
     quantity: float            # 보유 수량
-    acquisition_price: float   # 평균 매입 가격
+    acquisition_price: int     # Changed from float to int (pennies)
 
 
 @dataclass
@@ -62,8 +62,8 @@ class RealEstateUnit:
     owner_id: Optional[int] = None  # None = Government
     occupant_id: Optional[int] = None  # Tenant
     condition: float = 1.0
-    estimated_value: float = 10000.0
-    rent_price: float = 100.0
+    estimated_value: int = 10000  # Changed from float to int (pennies)
+    rent_price: int = 100         # Changed from float to int (pennies)
 
     # New field for tracking all liens against the property
     liens: List[LienDTO] = field(default_factory=list)

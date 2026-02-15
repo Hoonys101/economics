@@ -9,7 +9,7 @@ class SalesPostAskContextDTO:
     """
     firm_id: int
     item_id: str
-    price: float
+    price: int # Changed to int (pennies)
     quantity: float
     market_id: str
     current_tick: int
@@ -23,12 +23,12 @@ class SalesMarketingContextDTO:
     Groups all necessary information for the SalesEngine to generate marketing spend.
     """
     firm_id: int
-    wallet_balance: float
+    wallet_balance: int # Changed to int (pennies)
     government_id: Optional[Union[int, str]]
     current_time: int
 
 @dataclass(frozen=True)
 class MarketingAdjustmentResultDTO:
     """Result from a marketing budget calculation."""
-    new_budget: float
+    new_budget: int # Changed to int (pennies)
     new_marketing_rate: float

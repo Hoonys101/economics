@@ -21,7 +21,7 @@ class CanonicalOrderDTO:
     side: str  # "BUY" or "SELL" (formerly order_type)
     item_id: str
     quantity: float
-    price_limit: float # (formerly price) - Max for BUY, Min for SELL
+    price_limit: int # (formerly price) - Max for BUY, Min for SELL - Changed to int (pennies)
     market_id: str
 
     # Phase 6/7 Extensions
@@ -37,7 +37,7 @@ class CanonicalOrderDTO:
     id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
 
     @property
-    def price(self) -> float:
+    def price(self) -> int:
         """Alias for legacy compatibility during migration."""
         return self.price_limit
 
@@ -68,7 +68,7 @@ def convert_legacy_order_to_canonical(order: Any) -> CanonicalOrderDTO:
             side=order.get("side") or order.get("order_type"),
             item_id=item_id,
             quantity=order.get("quantity"),
-            price_limit=order.get("price_limit") or order.get("price"),
+            price_limit=int(order.get("price_limit") or order.get("price", 0)), # Force int
             market_id=order.get("market_id", "stock_market"),
             target_agent_id=order.get("target_agent_id"),
             brand_info=order.get("brand_info"),
@@ -84,7 +84,7 @@ def convert_legacy_order_to_canonical(order: Any) -> CanonicalOrderDTO:
             side=order.order_type,
             item_id=f"stock_{order.firm_id}",
             quantity=order.quantity,
-            price_limit=order.price,
+            price_limit=int(order.price), # Force int
             market_id=getattr(order, "market_id", "stock_market"),
         )
 
@@ -157,7 +157,7 @@ class IHousingTransactionParticipant(IPropertyOwner, IFinancialAgent, Protocol):
     Combines financial capabilities with property ownership and income verification.
     """
     @property
-    def current_wage(self) -> float:
+    def current_wage(self) -> int: # Changed to int (pennies) for consistency
         """Current wage for mortgage eligibility calculation."""
         ...
 

@@ -18,9 +18,9 @@ class HREngine:
     Manages employees, calculates wages (skill + halo), and handles insolvency firing.
     """
 
-    def calculate_wage(self, employee: IEmployeeDataProvider, base_wage: float, config: FirmConfigDTO) -> float:
+    def calculate_wage(self, employee: IEmployeeDataProvider, base_wage: int, config: FirmConfigDTO) -> int:
         """
-        Calculates wage based on skill and halo effect.
+        Calculates wage based on skill and halo effect. Returns int pennies.
         """
         # WO-023-B: Skill-based Wage Bonus
         actual_skill = employee.labor_skill
@@ -29,7 +29,7 @@ class HREngine:
         education_level = employee.education_level
         halo_modifier = 1.0 + (education_level * config.halo_effect)
 
-        return base_wage * actual_skill * halo_modifier
+        return int(base_wage * actual_skill * halo_modifier)
 
     def process_payroll(
         self,
@@ -49,7 +49,7 @@ class HREngine:
         current_time = context.current_time
 
         # Calculate survival cost for tax logic
-        survival_cost = 10.0 # Default fallback
+        survival_cost = 1000 # Default fallback (10.00)
         if context.tax_policy:
             survival_cost = context.tax_policy.survival_cost
 
@@ -80,13 +80,14 @@ class HREngine:
             for cur, amount in simulated_balances.items():
                 total_liquid_assets += convert(amount, cur)
 
-            current_balance = simulated_balances.get(DEFAULT_CURRENCY, 0.0)
+            current_balance = simulated_balances.get(DEFAULT_CURRENCY, 0)
 
             if current_balance >= wage:
                 # Calculate Tax
-                income_tax = 0.0
+                income_tax = 0
                 if context.tax_policy:
-                    income_tax = wage * context.tax_policy.income_tax_rate if wage > survival_cost else 0.0
+                    # Cast to int for pennies
+                    income_tax = int(wage * context.tax_policy.income_tax_rate) if wage > survival_cost else 0
 
                 net_wage = wage - income_tax
 
@@ -137,7 +138,7 @@ class HREngine:
 
         return HRPayrollResultDTO(transactions=transactions, employee_updates=employee_updates)
 
-    def _record_zombie_wage(self, hr_state: HRState, firm_id: int, employee: IEmployeeDataProvider, wage: float, current_time: int, current_balance: float, config: FirmConfigDTO) -> None:
+    def _record_zombie_wage(self, hr_state: HRState, firm_id: int, employee: IEmployeeDataProvider, wage: int, current_time: int, current_balance: int, config: FirmConfigDTO) -> None:
         """Records an unpaid wage without firing the employee."""
         if employee.id not in hr_state.unpaid_wages:
             hr_state.unpaid_wages[employee.id] = []
@@ -164,18 +165,18 @@ class HREngine:
         firm_id: int,
         config: FirmConfigDTO,
         employee: IEmployeeDataProvider,
-        wage: float,
+        wage: int,
         current_time: int,
         tx_list: List[Transaction],
         updates_list: List[EmployeeUpdateDTO],
-        current_balance: float
+        current_balance: int
     ):
         """
         Handles case where firm cannot afford wage.
         Attempts severance pay; if fails, zombie state.
         """
         severance_weeks = config.severance_pay_weeks
-        severance_pay = wage * severance_weeks
+        severance_pay = int(wage * severance_weeks)
 
         if current_balance >= severance_pay:
             # Fire with severance
@@ -192,7 +193,7 @@ class HREngine:
             tx_list.append(tx)
 
             logger.info(
-                f"SEVERANCE | Firm {firm_id} paying severance {severance_pay:.2f} to Household {employee.id}. Scheduled for firing.",
+                f"SEVERANCE | Firm {firm_id} paying severance {severance_pay} to Household {employee.id}. Scheduled for firing.",
                 extra={"tick": current_time, "agent_id": firm_id, "severance_pay": severance_pay}
             )
 
@@ -204,7 +205,7 @@ class HREngine:
             # Fallback to Zombie
             self._record_zombie_wage(hr_state, firm_id, employee, wage, current_time, current_balance, config)
 
-    def hire(self, hr_state: HRState, employee: IEmployeeDataProvider, wage: float, current_tick: int = 0):
+    def hire(self, hr_state: HRState, employee: IEmployeeDataProvider, wage: int, current_tick: int = 0):
         hr_state.employees.append(employee)
         hr_state.employee_wages[employee.id] = wage
         hr_state.hires_last_tick += 1
@@ -216,7 +217,7 @@ class HREngine:
         if employee.id in hr_state.employee_wages:
             del hr_state.employee_wages[employee.id]
 
-    def create_fire_transaction(self, hr_state: HRState, firm_id: int, wallet_balance: float, employee_id: int, severance_pay: float, current_time: int) -> Optional[Transaction]:
+    def create_fire_transaction(self, hr_state: HRState, firm_id: int, wallet_balance: int, employee_id: int, severance_pay: int, current_time: int) -> Optional[Transaction]:
         """
         Creates a severance transaction to fire an employee.
         Does NOT execute transfer or remove employee.

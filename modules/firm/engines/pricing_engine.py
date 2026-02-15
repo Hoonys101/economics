@@ -9,6 +9,7 @@ class PricingEngine(IPricingEngine):
         """
         Calculates the new price based on excess demand/supply ratio.
         Logic adapted from Firm._calculate_invisible_hand_price.
+        Input/Output prices are int pennies.
         """
         market_snapshot = input_dto.market_snapshot
         item_id = input_dto.item_id
@@ -28,22 +29,24 @@ class PricingEngine(IPricingEngine):
                     excess_demand_ratio = 1.0 if demand > 0 else 0.0
 
         sensitivity = input_dto.config.invisible_hand_sensitivity
-        current_price = input_dto.current_price
+        current_price = input_dto.current_price # int pennies
 
         # Guard against zero or negative price
         if current_price <= 0:
-            current_price = 10.0
+            current_price = 1000 # Default 10.00 pennies
 
-        candidate_price = current_price * (1.0 + (sensitivity * excess_demand_ratio))
+        # Calculate float intermediate
+        candidate_price_float = float(current_price) * (1.0 + (sensitivity * excess_demand_ratio))
 
         # Ensure price doesn't drop too low or become negative
-        if candidate_price < 0.01:
-            candidate_price = 0.01
+        # Min price 1 penny
+        if candidate_price_float < 1.0:
+            candidate_price_float = 1.0
 
-        shadow_price = (candidate_price * 0.2) + (current_price * 0.8)
+        shadow_price = (candidate_price_float * 0.2) + (float(current_price) * 0.8)
 
         return PricingResultDTO(
-            new_price=candidate_price,
+            new_price=int(candidate_price_float),
             shadow_price=shadow_price,
             demand=demand,
             supply=supply,

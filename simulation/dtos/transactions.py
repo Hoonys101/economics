@@ -17,7 +17,7 @@ class TransactionResult:
     success: bool
     transaction_id: Optional[str] = None
     error_message: Optional[str] = None
-    amount_processed: float = 0.0
+    amount_processed: int = 0 # Changed to int (pennies)
 
 class TransactionContext(TypedDict):
     """Context passed to transaction handlers."""
