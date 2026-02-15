@@ -76,23 +76,6 @@ async def test_telemetry_broadcast(server, bridge):
     cq, te = bridge
     uri = f"ws://{server.host}:{server.port}"
 
-    # We need to construct a valid TelemetrySnapshotDTO
-    # Since existing tests pass, we assume import works.
-    # But wait, snapshot_10 uses named args, but TelemetrySnapshotDTO is a Pydantic model now?
-    # Or dataclass?
-    # Let's check TelemetrySnapshotDTO definition if needed.
-    # Assuming the test code was valid before, I just update server init.
-
-    # Wait, I am overwriting the file. I should preserve imports and logic.
-    # The read output had:
-    # from simulation.dtos.telemetry import TelemetrySnapshotDTO
-    # inside the function.
-
-    # Just reusing the logic from the read file with server init fix.
-
-    # Re-reading to ensure I don't miss anything.
-    # The previous file content has valid imports.
-
     snapshot_10 = TelemetrySnapshotDTO(
         timestamp=100.0,
         tick=10,
@@ -105,11 +88,6 @@ async def test_telemetry_broadcast(server, bridge):
 
     async with websockets.connect(uri, additional_headers={"X-GOD-MODE-TOKEN": "test-token"}) as ws:
         # Wait for broadcast (Server sends latest on connect or loop)
-        # Our loop waits for update. But if update happened before connect?
-        # Server loop: while True: snapshot = get(); if snapshot.tick > last_tick: send().
-        # last_tick starts at -1.
-        # So if we update before connect, the server loop (running for that client) will pick it up immediately.
-
         msg = await asyncio.wait_for(ws.recv(), timeout=2.0)
         data = json.loads(msg)
         assert data["tick"] == 10
@@ -127,12 +105,6 @@ async def test_telemetry_broadcast(server, bridge):
         te.update(snapshot_10_dup)
         try:
              await asyncio.wait_for(ws.recv(), timeout=0.5)
-             # If we receive something, it's a failure (duplicate sent)
-             # But wait, we might receive the previous one again if we reconnected? No, we are in same session.
-             # The server checks last_sent_tick.
-             # If last_sent_tick is 10, and new snapshot is 10, it won't send.
-             # So timeout is expected.
-             # If we receive, assert False.
              received = json.loads(await ws.recv()) # consume if any
              assert False, f"Should not receive duplicate tick: {received}"
         except asyncio.TimeoutError:
