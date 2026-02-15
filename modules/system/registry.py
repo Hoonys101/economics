@@ -89,20 +89,11 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
             # If locked, only GOD_MODE (or equivalent high privilege) can modify
             if active_entry.is_locked:
                 if origin < OriginType.GOD_MODE:
-                     # raise PermissionError(f"Target '{key}' is locked by {active_entry.origin.name}")
-                     # For compatibility with bool return type, return False or raise?
-                     # Existing code raised PermissionError in some branches but spec says -> bool.
-                     # I will stick to raising if locked, or returning False if priority is low.
-                     # But if locked, it's a hard stop.
-                     return False
+                     raise PermissionError(f"Target '{key}' is locked by {active_entry.origin.name}")
 
-            # Priority Check is implicit in layers, but we shouldn't allow overwriting a higher layer
-            # from a lower layer call (conceptually).
-            # But `set` adds a layer. If I add a USER layer, it overrides SYSTEM.
-            # If I add a CONFIG layer but USER exists, USER wins.
-            # So `set` should succeed in updating the *layer*, but the *active value* might not change
-            # if a higher layer exists.
-            pass
+            # Priority Check: Lower origin cannot overwrite higher active origin
+            if origin < active_entry.origin:
+                return False
 
         # 2. Phase 0 Intercept (TODO: Implement when Scheduler is available)
         # ...
@@ -195,6 +186,18 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
         """Deletes an entry completely (for rollback purposes)."""
         if key in self._layers:
             del self._layers[key]
+            return True
+        return False
+
+    def delete_layer(self, key: str, origin: OriginType) -> bool:
+        """Removes a specific layer for a key, exposing lower layers if any."""
+        if key in self._layers and origin in self._layers[key]:
+            del self._layers[key][origin]
+            # Notify potential change
+            active = self._get_active_entry(key)
+            val = active.value if active else None
+            origin_active = active.origin if active else OriginType.SYSTEM
+            self._notify(key, val, origin_active)
             return True
         return False
 

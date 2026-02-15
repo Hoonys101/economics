@@ -205,3 +205,68 @@ class MissionRegistryService:
             shutil.move(str(manifest_path), str(manifest_path.with_suffix('.py.bak')))
 
         return count
+
+    def migrate_from_legacy(self, legacy_file_path: str) -> int:
+        """
+        Migrates missions from a legacy manifest file.
+        """
+        path = Path(legacy_file_path)
+        if not path.exists():
+            return 0
+
+        count = 0
+        import importlib.util
+        import sys
+
+        # Ensure we can import from the directory
+        parent_dir = str(path.parent)
+        if parent_dir not in sys.path:
+            sys.path.append(parent_dir)
+
+        spec = importlib.util.spec_from_file_location(path.stem, path)
+        if spec is None or spec.loader is None:
+            return 0
+
+        module = importlib.util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(module)
+        except Exception:
+            return 0
+
+        # JULES
+        if hasattr(module, "JULES_MISSIONS"):
+            for key, m_data in module.JULES_MISSIONS.items():
+                dto = MissionDTO(
+                    key=key,
+                    title=m_data.get("title", key),
+                    type=MissionType.JULES,
+                    instruction_raw=m_data.get("instruction", ""),
+                    command=m_data.get("command"),
+                    file_path=m_data.get("file"),
+                    wait=m_data.get("wait", False),
+                    session_id=m_data.get("session_id")
+                )
+                self.register_mission(dto)
+                count += 1
+
+        # GEMINI
+        if hasattr(module, "GEMINI_MISSIONS"):
+            for key, m_data in module.GEMINI_MISSIONS.items():
+                dto = MissionDTO(
+                    key=key,
+                    title=m_data.get("title", key),
+                    type=MissionType.GEMINI,
+                    instruction_raw=m_data.get("instruction", ""),
+                    worker=m_data.get("worker"),
+                    context_files=m_data.get("context_files", []),
+                    output_path=m_data.get("output_path"),
+                    model=m_data.get("model"),
+                    audit_requirements=m_data.get("audit_requirements")
+                )
+                self.register_mission(dto)
+                count += 1
+
+        # Move to .bak to avoid re-migration
+        shutil.move(str(path), str(path.with_suffix('.py.bak')))
+
+        return count

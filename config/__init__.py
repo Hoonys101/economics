@@ -54,7 +54,7 @@ def __getattr__(name):
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 def __dir__():
-    return list(_registry.snapshot().keys())
+    return list(_registry.snapshot().keys()) + ["registry"]
 
 # Expose registry instance for advanced usage
 registry = _registry

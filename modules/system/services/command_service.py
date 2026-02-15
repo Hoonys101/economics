@@ -26,6 +26,7 @@ class UndoRecord:
     target_agent_id: Optional[Union[int, str]] = None
     amount: Optional[int] = None
     new_value: Any = None
+    origin: Optional[OriginType] = None
 
 class UndoStack:
     def __init__(self, maxlen: int = 50):
@@ -175,19 +176,21 @@ class CommandService:
         # Use get_entry to capture full state (origin, is_locked)
         previous_entry = self.registry.get_entry(cmd.parameter_key)
 
+        # Execute
+        # Assuming origin is GOD_MODE (from DTO property or similar)
+        origin = getattr(cmd, 'origin', OriginType.GOD_MODE)
+
         record = UndoRecord(
             command_id=cmd.command_id,
             command_type="SET_PARAM",
             target_domain=cmd.target_domain,
             parameter_key=cmd.parameter_key,
             previous_entry=previous_entry,
-            new_value=cmd.new_value
+            new_value=cmd.new_value,
+            origin=origin
         )
         self.undo_stack.push(record)
 
-        # Execute
-        # Assuming origin is GOD_MODE (from DTO property or similar)
-        origin = getattr(cmd, 'origin', OriginType.GOD_MODE)
         success = self.registry.set(cmd.parameter_key, cmd.new_value, origin=origin)
         if not success:
             raise RuntimeError(f"GlobalRegistry rejected update for {cmd.parameter_key}")
@@ -258,14 +261,26 @@ class CommandService:
         for record in reversed(records):
             try:
                 if record.command_type == "SET_PARAM":
-                     # Restore previous entry state directly to preserve origin/locks
+                     # 1. Remove the layer added by the command (if we tracked the origin)
+                     if record.origin is not None and hasattr(self.registry, 'delete_layer'):
+                         self.registry.delete_layer(record.parameter_key, record.origin)
+
+                     # 2. Restore previous entry state if needed
+                     # If previous_entry is None, delete_layer might have been enough if it was a new key.
+                     # But if the key didn't exist at all, delete_layer logic (which only deletes one layer)
+                     # implies we might need to be sure no other layers exist if it was truly new?
+                     # No, if it was new, set() added one layer. delete_layer removes it. Done.
+
+                     # However, for robustness, we restore previous_entry if available.
                      if isinstance(self.registry, IRestorableRegistry):
                          if record.previous_entry is None:
-                             # Key didn't exist before, so delete it
-                             self.registry.delete_entry(record.parameter_key)
-                             logger.info(f"ROLLBACK: Deleted {record.parameter_key}")
+                             # If we deleted the layer, we are good.
+                             # But if delete_layer didn't happen (e.g. no origin recorded), fallback to delete_entry?
+                             if record.origin is None:
+                                 self.registry.delete_entry(record.parameter_key)
+                                 logger.info(f"ROLLBACK: Deleted {record.parameter_key}")
                          else:
-                             # Restore entry
+                             # Restore entry (re-writes the previous layer)
                              self.registry.restore_entry(record.parameter_key, record.previous_entry)
                              logger.info(f"ROLLBACK: Restored {record.parameter_key} to {record.previous_entry.value} (Origin: {record.previous_entry.origin})")
                      else:
@@ -278,7 +293,9 @@ class CommandService:
                              )
                              logger.warning(f"ROLLBACK: Used set() fallback for {record.parameter_key} (Registry not IRestorableRegistry). Lock state might be incorrect.")
                          else:
-                             logger.warning(f"ROLLBACK_FAIL: Cannot delete {record.parameter_key} because registry is not IRestorableRegistry")
+                             # If it was new and we can't delete...
+                             if record.origin is None:
+                                  logger.warning(f"ROLLBACK_FAIL: Cannot delete {record.parameter_key} because registry is not IRestorableRegistry")
 
                 elif record.command_type in ["INJECT_ASSET", "INJECT_MONEY"]:
                      self._rollback_injection(record)
