@@ -11,6 +11,7 @@ from utils.logging_manager import setup_logging
 from utils.simulation_builder import create_simulation
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
 from modules.system.server import SimulationServer
+from simulation.dtos.config_dtos import ServerConfigDTO
 import config
 
 def main():
@@ -24,9 +25,11 @@ def main():
     telemetry_exchange = TelemetryExchange()
 
     # 3. Start Server
-    HOST = "0.0.0.0"
+    # TD-ARCH-SEC-GOD: Enforce localhost binding
+    HOST = "127.0.0.1"
     PORT = 8765
-    server = SimulationServer(HOST, PORT, cmd_queue, telemetry_exchange, god_mode_token=config.GOD_MODE_TOKEN)
+    server_config = ServerConfigDTO(host=HOST, port=PORT, god_mode_token=config.GOD_MODE_TOKEN)
+    server = SimulationServer(server_config, cmd_queue, telemetry_exchange)
     server.start()
 
     # 4. Initialize Simulation

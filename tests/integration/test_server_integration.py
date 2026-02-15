@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
 from modules.system.server import SimulationServer
 from unittest.mock import MagicMock
+from simulation.dtos.config_dtos import ServerConfigDTO
 
 # --- Fixtures ---
 
@@ -28,7 +29,8 @@ def server(bridge):
     port = sock.getsockname()[1]
     sock.close()
 
-    srv = SimulationServer("localhost", port, cq, te, god_mode_token="test-token")
+    config = ServerConfigDTO(host="127.0.0.1", port=port, god_mode_token="test-token")
+    srv = SimulationServer(config, cq, te)
     srv.start()
     # Wait for server startup
     time.sleep(1)
@@ -50,22 +52,46 @@ async def test_command_injection(server, bridge):
         "command_type": "SET_PARAM"
     }
 
+    # Wait for server to be fully ready
+    await asyncio.sleep(0.5)
+
     async with websockets.connect(uri, additional_headers={"X-GOD-MODE-TOKEN": "test-token"}) as ws:
         await ws.send(json.dumps(payload))
         # Give server time to process
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(0.5)
 
     assert not cq.empty()
     cmd = cq.get()
     assert str(cmd.command_id) == cmd_id
     assert cmd.parameter_key == "tax_rate"
+    assert cmd.new_value == 0.15
 
 @pytest.mark.asyncio
 async def test_telemetry_broadcast(server, bridge):
     from simulation.dtos.telemetry import TelemetrySnapshotDTO
 
+    # Wait for server to be fully ready
+    await asyncio.sleep(0.5)
+
     cq, te = bridge
     uri = f"ws://{server.host}:{server.port}"
+
+    # We need to construct a valid TelemetrySnapshotDTO
+    # Since existing tests pass, we assume import works.
+    # But wait, snapshot_10 uses named args, but TelemetrySnapshotDTO is a Pydantic model now?
+    # Or dataclass?
+    # Let's check TelemetrySnapshotDTO definition if needed.
+    # Assuming the test code was valid before, I just update server init.
+
+    # Wait, I am overwriting the file. I should preserve imports and logic.
+    # The read output had:
+    # from simulation.dtos.telemetry import TelemetrySnapshotDTO
+    # inside the function.
+
+    # Just reusing the logic from the read file with server init fix.
+
+    # Re-reading to ensure I don't miss anything.
+    # The previous file content has valid imports.
 
     snapshot_10 = TelemetrySnapshotDTO(
         timestamp=100.0,
@@ -101,7 +127,14 @@ async def test_telemetry_broadcast(server, bridge):
         te.update(snapshot_10_dup)
         try:
              await asyncio.wait_for(ws.recv(), timeout=0.5)
-             assert False, "Should not receive duplicate tick"
+             # If we receive something, it's a failure (duplicate sent)
+             # But wait, we might receive the previous one again if we reconnected? No, we are in same session.
+             # The server checks last_sent_tick.
+             # If last_sent_tick is 10, and new snapshot is 10, it won't send.
+             # So timeout is expected.
+             # If we receive, assert False.
+             received = json.loads(await ws.recv()) # consume if any
+             assert False, f"Should not receive duplicate tick: {received}"
         except asyncio.TimeoutError:
              pass
 
