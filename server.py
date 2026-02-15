@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from dataclasses import asdict
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
-from utils.simulation_builder import create_simulation
+from modules.system.builders.simulation_builder import create_simulation
 from simulation.orchestration.dashboard_service import DashboardService
 from modules.governance.cockpit.api import CockpitCommand
 from modules.system.security import verify_god_mode_token

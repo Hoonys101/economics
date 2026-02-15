@@ -59,6 +59,7 @@ WORKER_MODEL_MAP = {
     "analyze": "gemini-3-flash-preview",
     "risk": "gemini-3-flash-preview",
     "report": "gemini-3-flash-preview",
+    "crystallizer": "gemini-3-pro-preview",
 }
 
 def construct_mission_prompt(key: str, title: str, instruction_raw: str) -> str:
@@ -70,3 +71,31 @@ def construct_mission_prompt(key: str, title: str, instruction_raw: str) -> str:
     prompt += GUARDRAILS.format(key=key)
     prompt += OUTPUT_DISCIPLINE
     return prompt
+
+from pathlib import Path
+from enum import Enum
+
+class ArtifactType(Enum):
+    SPEC = "spec"
+    AUDIT = "audit"
+    REVIEW = "review"
+    REPORT = "report"
+
+def get_artifact_path(mission_key: str, artifact_type: ArtifactType) -> Path:
+    """
+    Centralized resolver for mission artifacts.
+    Enforces UPS-4.2 Directory Structure.
+    """
+    # Base is relative to where this script is imported, usually project root
+    # But safer to use relative paths from CWD if running from root
+    
+    if artifact_type == ArtifactType.SPEC:
+        return Path(f"design/3_work_artifacts/specs/MISSION_{mission_key}_SPEC.md")
+    elif artifact_type == ArtifactType.AUDIT:
+        return Path(f"design/3_work_artifacts/audits/MISSION_{mission_key}_AUDIT.md")
+    elif artifact_type == ArtifactType.REVIEW:
+        return Path(f"design/_archive/reviews/MISSION_{mission_key}_REVIEW.md")
+    elif artifact_type == ArtifactType.REPORT:
+        return Path(f"design/3_work_artifacts/reports/active/REPORT_{mission_key}.md")
+    
+    raise ValueError(f"Unknown artifact type: {artifact_type}")

@@ -17,5 +17,22 @@ JULES_MISSIONS = {
 }
 
 GEMINI_MISSIONS = {
-    # Finished: spec-td-resolution
+    "spec-doc-standardization": {
+        "title": "Documentation & Folder Structure Standardization (UPS-4.2)",
+        "worker": "spec",
+        "instruction": """
+Analyze project_structure.txt and md_files_inventory.txt to propose a unified Documentation Governance Standard.
+1. Define standardized folder hierarchy for spec, audit, report, and insight files.
+2. Create mandatory Markdown Templates for Jules (Implementation Report) and Gemini (Resolution Spec).
+3. Simplify 'design/3_work_artifacts/reports/inbound/' to prevent document fragmentation.
+Output a new Governance Document: design/1_governance/STANDARD_DOC_PROTOCOL.md
+""",
+        "context_files": [
+            "project_structure.txt",
+            "md_files_inventory.txt",
+            "_internal/registry/mission_protocol.py",
+            "design/QUICKSTART.md"
+        ],
+        "model": "gemini-3-pro-preview"
+    }
 }

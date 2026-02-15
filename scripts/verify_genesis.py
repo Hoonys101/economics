@@ -8,7 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from main import create_simulation
 import config
-from utils.logging_manager import setup_logging
+from modules.common.utils.logging_manager import setup_logging
 from scripts.operation_forensics import ForensicLogHandler
 
 def run_genesis_verification():

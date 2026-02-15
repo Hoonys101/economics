@@ -179,15 +179,11 @@ design/command_registry.json
 !_internal/
 _internal/*
 !_internal/registry/
-audit-go.bat
-session-go.bat
-reset-go.bat
-cleanup-go.bat
-cleanup-session.bat
-agent-go.bat
-flash_git.bat
-gemini-go.bat
-jules-go.bat
-git-go.bat
-merge-go.bat
-harvest-go.bat
+# Internal Infrastructure (Lockdown)
+*.bat
+_internal/scripts/
+_internal/manuals/
+_internal/registry/*.bak
+
+# Allow manifest files explicitly if needed (we will rename them later)
+!_internal/registry/

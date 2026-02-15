@@ -145,60 +145,63 @@ class MissionRegistryService:
         with open(target, 'w', encoding='utf-8') as f:
             json.dump(output_data, f, indent=4)
 
-    def migrate_from_legacy(self, legacy_file_path: str = "_internal/registry/command_manifest.py") -> int:
-        legacy_path = Path(legacy_file_path)
-        if not legacy_path.exists():
-            return 0
-
+    def migrate_from_registry_dir(self) -> int:
+        """
+        Scans _internal/registry/ for any *_manifest.py files and migrates missions.
+        """
+        registry_dir = Path("_internal/registry")
+        manifest_files = list(registry_dir.glob("*_manifest.py"))
+        
+        count = 0
         import importlib.util
         import sys
         
         # Ensure we can import from the directory
-        sys.path.append(str(legacy_path.parent))
-        
-        spec = importlib.util.spec_from_file_location("legacy_manifest", legacy_path)
-        if spec is None or spec.loader is None:
-             return 0
+        if str(registry_dir) not in sys.path:
+            sys.path.append(str(registry_dir))
 
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        for manifest_path in manifest_files:
+            spec = importlib.util.spec_from_file_location(manifest_path.stem, manifest_path)
+            if spec is None or spec.loader is None:
+                continue
 
-        count = 0
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
 
-        # JULES
-        if hasattr(module, "JULES_MISSIONS"):
-            for key, m_data in module.JULES_MISSIONS.items():
-                dto = MissionDTO(
-                    key=key,
-                    title=m_data.get("title", key),
-                    type=MissionType.JULES,
-                    instruction_raw=m_data.get("instruction", ""),
-                    command=m_data.get("command"),
-                    file_path=m_data.get("file"), # Compatibility with 'file' key in manifest
-                    wait=m_data.get("wait", False),
-                    session_id=m_data.get("session_id")
-                )
-                self.register_mission(dto)
-                count += 1
+            # JULES
+            if hasattr(module, "JULES_MISSIONS"):
+                for key, m_data in module.JULES_MISSIONS.items():
+                    dto = MissionDTO(
+                        key=key,
+                        title=m_data.get("title", key),
+                        type=MissionType.JULES,
+                        instruction_raw=m_data.get("instruction", ""),
+                        command=m_data.get("command"),
+                        file_path=m_data.get("file"),
+                        wait=m_data.get("wait", False),
+                        session_id=m_data.get("session_id")
+                    )
+                    self.register_mission(dto)
+                    count += 1
 
-        # GEMINI
-        if hasattr(module, "GEMINI_MISSIONS"):
-            for key, m_data in module.GEMINI_MISSIONS.items():
-                dto = MissionDTO(
-                    key=key,
-                    title=m_data.get("title", key),
-                    type=MissionType.GEMINI,
-                    instruction_raw=m_data.get("instruction", ""),
-                    worker=m_data.get("worker"),
-                    context_files=m_data.get("context_files", []),
-                    output_path=m_data.get("output_path"),
-                    model=m_data.get("model"),
-                    audit_requirements=m_data.get("audit_requirements")
-                )
-                self.register_mission(dto)
-                count += 1
+            # GEMINI
+            if hasattr(module, "GEMINI_MISSIONS"):
+                for key, m_data in module.GEMINI_MISSIONS.items():
+                    dto = MissionDTO(
+                        key=key,
+                        title=m_data.get("title", key),
+                        type=MissionType.GEMINI,
+                        instruction_raw=m_data.get("instruction", ""),
+                        worker=m_data.get("worker"),
+                        context_files=m_data.get("context_files", []),
+                        output_path=m_data.get("output_path"),
+                        model=m_data.get("model"),
+                        audit_requirements=m_data.get("audit_requirements")
+                    )
+                    self.register_mission(dto)
+                    count += 1
 
-        # Rename legacy file
-        shutil.move(str(legacy_path), str(legacy_path.with_suffix('.py.bak')))
+            # Move to .bak to avoid re-migration
+            shutil.move(str(manifest_path), str(manifest_path.with_suffix('.py.bak')))
 
         return count

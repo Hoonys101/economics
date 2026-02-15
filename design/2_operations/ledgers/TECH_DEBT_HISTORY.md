@@ -63,6 +63,8 @@ This document archives resolved technical debt items to keep the primary ledger 
 | **TD-SYS-GHOST-CONSTANTS** | Architecture | **Config Proxy**: Solved import-time binding (Ghost Constants). | 2026-02-15 | [Mission Review](./pr_review_jules-17-3-config-proxy-purity-7306288639511283426.md) |
 | **TD-MON-SETTLEMENT-DRIFT** | Protocol | **Interface Segregation**: Split `ISettlementSystem` and `IMonetaryAuthority`. | 2026-02-15 | [Mission Review](./pr_review_jules-17-3-config-proxy-purity-7306288639511283426.md) |
 | **TD-DATA-01-MOCK** | Finance | **Strict Mocking**: Added `assert_implements_protocol` and segregrated interfaces. | 2026-02-15 | [Mission Review](./pr_review_jules-17-3-config-proxy-purity-7306288639511283426.md) |
+| **TD-CRIT-FLOAT-SETTLE** | Settlement | **Protocol Purity**: Enforced strict typing for Settlement System interactions. | 2026-02-15 | [Mission Review](./pr_review_jules-track-a-settlement-12072150354750025434.md) |
+| **TD-ARCH-SEC-GOD** | Security | **Hardening**: Enforced Localhost binding and Config DTOs for SimulationServer. | 2026-02-15 | [Mission Review](./pr_review_jules-track-b-security-11612781887738691353.md) |
 
 ## 📓 Implementation Lessons (Resolved Path)
 

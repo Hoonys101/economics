@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 from main import create_simulation
-from utils.logging_manager import setup_logging
+from modules.common.utils.logging_manager import setup_logging
 import config
 
 def run_malthusian_experiment():

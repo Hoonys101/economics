@@ -1,0 +1,613 @@
+diff --git a/communications/insights/jules-track-b-security.md b/communications/insights/jules-track-b-security.md
+new file mode 100644
+index 00000000..3b732034
+--- /dev/null
++++ b/communications/insights/jules-track-b-security.md
+@@ -0,0 +1,29 @@
++# Insight Report: Track B - Security & Infra Hardening
++
++## 1. Architectural Insights
++**TD-ARCH-SEC-GOD: SimulationServer Hardening**
++- **Decision**: Enforce strictly typed configuration for `SimulationServer` using `ServerConfigDTO`.
++- **Decision**: Renamed `SecurityConfigDTO` to `ServerConfigDTO` to better reflect its scope (host, port, security tokens).
++- **Security**: Enforced `localhost` (127.0.0.1) binding by default to prevent accidental exposure of the God Mode interface to external networks.
++- **Security**: Added a critical log alert if the server is configured to bind to non-local interfaces (e.g., `0.0.0.0`).
++- **Refactoring**: Updated `SimulationServer` to accept a configuration object instead of loose parameters, improving signature stability and type safety.
++
++## 2. Test Evidence
++Verified with `pytest tests/system/test_server_security.py tests/system/test_server_auth.py tests/security/test_websocket_auth.py tests/integration/test_server_integration.py`
++
++```
++tests/system/test_server_security.py::test_server_config_dto_defaults PASSED [  8%]
++tests/system/test_server_security.py::test_server_binding_check_secure PASSED [ 16%]
++tests/system/test_server_security.py::test_server_binding_check_insecure PASSED [ 25%]
++tests/system/test_server_security.py::test_server_properties_proxied PASSED [ 33%]
++tests/system/test_server_auth.py::test_auth_success PASSED                      [ 41%]
++tests/system/test_server_auth.py::test_auth_failure_invalid_token PASSED        [ 50%]
++tests/system/test_server_auth.py::test_auth_failure_missing_token PASSED        [ 58%]
++tests/security/test_websocket_auth.py::test_auth_success PASSED                 [ 66%]
++tests/security/test_websocket_auth.py::test_auth_missing_token PASSED           [ 75%]
++tests/security/test_websocket_auth.py::test_auth_invalid_token PASSED           [ 83%]
++tests/integration/test_server_integration.py::test_command_injection PASSED     [ 91%]
++tests/integration/test_server_integration.py::test_telemetry_broadcast PASSED   [100%]
++
++============================== 12 passed in 7.71s ==============================
++```
+diff --git a/modules/system/server.py b/modules/system/server.py
+index 46958f59..5f6e44db 100644
+--- a/modules/system/server.py
++++ b/modules/system/server.py
+@@ -13,21 +13,37 @@ from typing import Optional, List, Dict
+ from uuid import UUID
+ from pydantic import BaseModel
+ from simulation.dtos.commands import GodCommandDTO
++from simulation.dtos.config_dtos import ServerConfigDTO
+ from modules.system.server_bridge import CommandQueue, TelemetryExchange
+ 
+ logger = logging.getLogger("SimulationServer")
+ 
+ class SimulationServer:
+-    def __init__(self, host: str, port: int, command_queue: CommandQueue, telemetry_exchange: TelemetryExchange, god_mode_token: str):
+-        self.host = host
+-        self.port = port
++    def __init__(self, config: ServerConfigDTO, command_queue: CommandQueue, telemetry_exchange: TelemetryExchange):
++        self.config = config
+         self.command_queue = command_queue
+         self.telemetry_exchange = telemetry_exchange
+-        self.god_mode_token = god_mode_token
++
++        # Security Hardening: Check Host Binding
++        if self.config.host not in ["127.0.0.1", "localhost"]:
++            logger.critical(f"SECURITY ALERT: Server binding to non-local host '{self.config.host}'. This exposes the simulation to the network.")
++
+         self.connected_clients = set()
+         self.client_states: Dict[websockets.WebSocketServerProtocol, int] = {}
+         self._stop_event = asyncio.Event()
+ 
++    @property
++    def host(self) -> str:
++        return self.config.host
++
++    @property
++    def port(self) -> int:
++        return self.config.port
++
++    @property
++    def god_mode_token(self) -> str:
++        return self.config.god_mode_token
++
+     def start(self):
+         """Starts the server in a separate thread."""
+         self.thread = threading.Thread(target=self._run, daemon=True)
+diff --git a/reports/snapshots/snapshot_tick_00001_20260215_053200.json b/reports/snapshots/snapshot_tick_00001_20260215_053200.json
+new file mode 100644
+index 00000000..5c8794a7
+--- /dev/null
++++ b/reports/snapshots/snapshot_tick_00001_20260215_053200.json
+@@ -0,0 +1,60 @@
++{
++  "tick": 1,
++  "timestamp": 1771133520.580476,
++  "status": "RUNNING",
++  "integrity": {
++    "m2_leak": 0.0,
++    "fps": 239.9232245681382
++  },
++  "macro": {
++    "gdp": 0.0,
++    "cpi": 1.0,
++    "unemploy": 5.0,
++    "gini": 0.0
++  },
++  "finance": {
++    "rates": {
++      "base": 5.0,
++      "call": 0.0,
++      "loan": 0.0,
++      "savings": 0.0
++    },
++    "supply": {
++      "m0": 100.0,
++      "m1": 500.0,
++      "m2": 1000.0,
++      "velocity": 0.0
++    }
++  },
++  "politics": {
++    "approval": {
++      "total": 0.6,
++      "low": 0.6,
++      "mid": 0.6,
++      "high": 0.6
++    },
++    "status": {
++      "ruling_party": "BLUE",
++      "cohesion": 0.5
++    },
++    "fiscal": {
++      "revenue": 100.0,
++      "welfare": 0.0,
++      "debt": 0.0
++    }
++  },
++  "population": {
++    "distribution": {
++      "q1": 0.0,
++      "q2": 0.0,
++      "q3": 0.0,
++      "q4": 0.0,
++      "q5": 0.0
++    },
++    "active_count": 0,
++    "metrics": {
++      "birth": 0.0,
++      "death": 0.0
++    }
++  }
++}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260215_053603.json b/reports/snapshots/snapshot_tick_00001_20260215_053603.json
+new file mode 100644
+index 00000000..ab578ed3
+--- /dev/null
++++ b/reports/snapshots/snapshot_tick_00001_20260215_053603.json
+@@ -0,0 +1,60 @@
++{
++  "tick": 1,
++  "timestamp": 1771133763.70717,
++  "status": "RUNNING",
++  "integrity": {
++    "m2_leak": 0.0,
++    "fps": 186.39328984156572
++  },
++  "macro": {
++    "gdp": 0.0,
++    "cpi": 1.0,
++    "unemploy": 5.0,
++    "gini": 0.0
++  },
++  "finance": {
++    "rates": {
++      "base": 5.0,
++      "call": 0.0,
++      "loan": 0.0,
++      "savings": 0.0
++    },
++    "supply": {
++      "m0": 100.0,
++      "m1": 500.0,
++      "m2": 1000.0,
++      "velocity": 0.0
++    }
++  },
++  "politics": {
++    "approval": {
++      "total": 0.6,
++      "low": 0.6,
++      "mid": 0.6,
++      "high": 0.6
++    },
++    "status": {
++      "ruling_party": "BLUE",
++      "cohesion": 0.5
++    },
++    "fiscal": {
++      "revenue": 100.0,
++      "welfare": 0.0,
++      "debt": 0.0
++    }
++  },
++  "population": {
++    "distribution": {
++      "q1": 0.0,
++      "q2": 0.0,
++      "q3": 0.0,
++      "q4": 0.0,
++      "q5": 0.0
++    },
++    "active_count": 0,
++    "metrics": {
++      "birth": 0.0,
++      "death": 0.0
++    }
++  }
++}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260215_053149.json b/reports/snapshots/snapshot_tick_00042_20260215_053149.json
+new file mode 100644
+index 00000000..e8b96227
+--- /dev/null
++++ b/reports/snapshots/snapshot_tick_00042_20260215_053149.json
+@@ -0,0 +1,60 @@
++{
++  "tick": 42,
++  "timestamp": 1771133509.947321,
++  "status": "RUNNING",
++  "integrity": {
++    "m2_leak": 0.0,
++    "fps": 233333.3333333333
++  },
++  "macro": {
++    "gdp": 1000.0,
++    "cpi": 1.0,
++    "unemploy": 5.0,
++    "gini": 0.3
++  },
++  "finance": {
++    "rates": {
++      "base": 0.0,
++      "call": 0.0,
++      "loan": 0.0,
++      "savings": 0.0
++    },
++    "supply": {
++      "m0": 100.0,
++      "m1": 500.0,
++      "m2": 600.0,
++      "velocity": 1.5
++    }
++  },
++  "politics": {
++    "approval": {
++      "total": 0.0,
++      "low": 0.0,
++      "mid": 0.0,
++      "high": 0.0
++    },
++    "status": {
++      "ruling_party": "NEUTRAL",
++      "cohesion": 0.7
++    },
++    "fiscal": {
++      "revenue": 0.0,
++      "welfare": 0.0,
++      "debt": 0.0
++    }
++  },
++  "population": {
++    "distribution": {
++      "q1": 100.0,
++      "q2": 200.0,
++      "q3": 300.0,
++      "q4": 400.0,
++      "q5": 500.0
++    },
++    "active_count": 100,
++    "metrics": {
++      "birth": 0.0,
++      "death": 0.0
++    }
++  }
++}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260215_053550.json b/reports/snapshots/snapshot_tick_00042_20260215_053550.json
+new file mode 100644
+index 00000000..bb637aa2
+--- /dev/null
++++ b/reports/snapshots/snapshot_tick_00042_20260215_053550.json
+@@ -0,0 +1,60 @@
++{
++  "tick": 42,
++  "timestamp": 1771133750.638314,
++  "status": "RUNNING",
++  "integrity": {
++    "m2_leak": 0.0,
++    "fps": 90712.74298056155
++  },
++  "macro": {
++    "gdp": 1000.0,
++    "cpi": 1.0,
++    "unemploy": 5.0,
++    "gini": 0.3
++  },
++  "finance": {
++    "rates": {
++      "base": 0.0,
++      "call": 0.0,
++      "loan": 0.0,
++      "savings": 0.0
++    },
++    "supply": {
++      "m0": 100.0,
++      "m1": 500.0,
++      "m2": 600.0,
++      "velocity": 1.5
++    }
++  },
++  "politics": {
++    "approval": {
++      "total": 0.0,
++      "low": 0.0,
++      "mid": 0.0,
++      "high": 0.0
++    },
++    "status": {
++      "ruling_party": "NEUTRAL",
++      "cohesion": 0.7
++    },
++    "fiscal": {
++      "revenue": 0.0,
++      "welfare": 0.0,
++      "debt": 0.0
++    }
++  },
++  "population": {
++    "distribution": {
++      "q1": 100.0,
++      "q2": 200.0,
++      "q3": 300.0,
++      "q4": 400.0,
++      "q5": 500.0
++    },
++    "active_count": 100,
++    "metrics": {
++      "birth": 0.0,
++      "death": 0.0
++    }
++  }
++}
+\ No newline at end of file
+diff --git a/scripts/run_watchtower.py b/scripts/run_watchtower.py
+index 83a1e630..e11ef5b9 100644
+--- a/scripts/run_watchtower.py
++++ b/scripts/run_watchtower.py
+@@ -11,6 +11,7 @@ from utils.logging_manager import setup_logging
+ from utils.simulation_builder import create_simulation
+ from modules.system.server_bridge import CommandQueue, TelemetryExchange
+ from modules.system.server import SimulationServer
++from simulation.dtos.config_dtos import ServerConfigDTO
+ import config
+ 
+ def main():
+@@ -24,9 +25,11 @@ def main():
+     telemetry_exchange = TelemetryExchange()
+ 
+     # 3. Start Server
+-    HOST = "0.0.0.0"
++    # TD-ARCH-SEC-GOD: Enforce localhost binding
++    HOST = "127.0.0.1"
+     PORT = 8765
+-    server = SimulationServer(HOST, PORT, cmd_queue, telemetry_exchange, god_mode_token=config.GOD_MODE_TOKEN)
++    server_config = ServerConfigDTO(host=HOST, port=PORT, god_mode_token=config.GOD_MODE_TOKEN)
++    server = SimulationServer(server_config, cmd_queue, telemetry_exchange)
+     server.start()
+ 
+     # 4. Initialize Simulation
+diff --git a/simulation/dtos/config_dtos.py b/simulation/dtos/config_dtos.py
+index b2e42972..3df20006 100644
+--- a/simulation/dtos/config_dtos.py
++++ b/simulation/dtos/config_dtos.py
+@@ -192,6 +192,8 @@ class FirmConfigDTO:
+     space_utility_factor: float = 100.0
+ 
+ @dataclass
+-class SecurityConfigDTO:
++class ServerConfigDTO:
+     """Configuration for system security and access control."""
+     god_mode_token: str
++    host: str = "127.0.0.1"
++    port: int = 8000
+diff --git a/tests/integration/test_server_integration.py b/tests/integration/test_server_integration.py
+index 82a049af..f74e83c3 100644
+--- a/tests/integration/test_server_integration.py
++++ b/tests/integration/test_server_integration.py
+@@ -9,6 +9,7 @@ from dataclasses import dataclass
+ from modules.system.server_bridge import CommandQueue, TelemetryExchange
+ from modules.system.server import SimulationServer
+ from unittest.mock import MagicMock
++from simulation.dtos.config_dtos import ServerConfigDTO
+ 
+ # --- Fixtures ---
+ 
+@@ -28,7 +29,8 @@ def server(bridge):
+     port = sock.getsockname()[1]
+     sock.close()
+ 
+-    srv = SimulationServer("localhost", port, cq, te, god_mode_token="test-token")
++    config = ServerConfigDTO(host="127.0.0.1", port=port, god_mode_token="test-token")
++    srv = SimulationServer(config, cq, te)
+     srv.start()
+     # Wait for server startup
+     time.sleep(1)
+@@ -50,20 +52,27 @@ async def test_command_injection(server, bridge):
+         "command_type": "SET_PARAM"
+     }
+ 
++    # Wait for server to be fully ready
++    await asyncio.sleep(0.5)
++
+     async with websockets.connect(uri, additional_headers={"X-GOD-MODE-TOKEN": "test-token"}) as ws:
+         await ws.send(json.dumps(payload))
+         # Give server time to process
+-        await asyncio.sleep(0.2)
++        await asyncio.sleep(0.5)
+ 
+     assert not cq.empty()
+     cmd = cq.get()
+     assert str(cmd.command_id) == cmd_id
+     assert cmd.parameter_key == "tax_rate"
++    assert cmd.new_value == 0.15
+ 
+ @pytest.mark.asyncio
+ async def test_telemetry_broadcast(server, bridge):
+     from simulation.dtos.telemetry import TelemetrySnapshotDTO
+ 
++    # Wait for server to be fully ready
++    await asyncio.sleep(0.5)
++
+     cq, te = bridge
+     uri = f"ws://{server.host}:{server.port}"
+ 
+@@ -79,11 +88,6 @@ async def test_telemetry_broadcast(server, bridge):
+ 
+     async with websockets.connect(uri, additional_headers={"X-GOD-MODE-TOKEN": "test-token"}) as ws:
+         # Wait for broadcast (Server sends latest on connect or loop)
+-        # Our loop waits for update. But if update happened before connect?
+-        # Server loop: while True: snapshot = get(); if snapshot.tick > last_tick: send().
+-        # last_tick starts at -1.
+-        # So if we update before connect, the server loop (running for that client) will pick it up immediately.
+-
+         msg = await asyncio.wait_for(ws.recv(), timeout=2.0)
+         data = json.loads(msg)
+         assert data["tick"] == 10
+@@ -101,7 +105,8 @@ async def test_telemetry_broadcast(server, bridge):
+         te.update(snapshot_10_dup)
+         try:
+              await asyncio.wait_for(ws.recv(), timeout=0.5)
+-             assert False, "Should not receive duplicate tick"
++             received = json.loads(await ws.recv()) # consume if any
++             assert False, f"Should not receive duplicate tick: {received}"
+         except asyncio.TimeoutError:
+              pass
+ 
+diff --git a/tests/security/test_websocket_auth.py b/tests/security/test_websocket_auth.py
+index 288b5003..b2100a03 100644
+--- a/tests/security/test_websocket_auth.py
++++ b/tests/security/test_websocket_auth.py
+@@ -5,6 +5,7 @@ import time
+ import socket
+ from modules.system.server import SimulationServer
+ from modules.system.server_bridge import CommandQueue, TelemetryExchange
++from simulation.dtos.config_dtos import ServerConfigDTO
+ 
+ @pytest.fixture
+ def bridge():
+@@ -21,7 +22,8 @@ def server(bridge):
+     port = sock.getsockname()[1]
+     sock.close()
+ 
+-    srv = SimulationServer("localhost", port, cq, te, god_mode_token="secret-token-123")
++    config = ServerConfigDTO(host="127.0.0.1", port=port, god_mode_token="secret-token-123")
++    srv = SimulationServer(config, cq, te)
+     srv.start()
+     # Wait for server startup
+     time.sleep(1)
+diff --git a/tests/system/test_server_auth.py b/tests/system/test_server_auth.py
+index d790bf19..62a3bc83 100644
+--- a/tests/system/test_server_auth.py
++++ b/tests/system/test_server_auth.py
+@@ -6,6 +6,7 @@ import time
+ import socket
+ from modules.system.server import SimulationServer
+ from modules.system.server_bridge import CommandQueue, TelemetryExchange
++from simulation.dtos.config_dtos import ServerConfigDTO
+ 
+ # --- Fixtures ---
+ 
+@@ -25,16 +26,19 @@ def server_instance(server_port):
+     te = TelemetryExchange()
+     token = "secret-token-123"
+ 
+-    srv = SimulationServer("localhost", server_port, cq, te, god_mode_token=token)
++    config = ServerConfigDTO(host="127.0.0.1", port=server_port, god_mode_token=token)
++    srv = SimulationServer(config, cq, te)
+     srv.start()
+ 
+     # Wait for server to start accepting connections using polling
+     start_time = time.time()
++    # Wait for server thread to actually bind and listen
++    # We can try connecting to verify it's up
+     while time.time() - start_time < 5.0:
+         try:
+             # Try to connect with a dummy socket to check if port is open
+             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+-            result = sock.connect_ex(('localhost', server_port))
++            result = sock.connect_ex(('127.0.0.1', server_port))
+             sock.close()
+             if result == 0:
+                 break
+@@ -44,13 +48,17 @@ def server_instance(server_port):
+     else:
+         pytest.fail("Server failed to start within timeout")
+ 
++    # Yield server and token
+     yield srv, token
+ 
++    # Ideally stop server here but SimulationServer doesn't have a clean stop yet in tests
++
+ # --- Tests ---
+ 
+ @pytest.mark.asyncio
+ async def test_auth_success(server_instance):
+     server, token = server_instance
++    # server.host is now a property returning config.host
+     uri = f"ws://{server.host}:{server.port}"
+ 
+     headers = {"X-GOD-MODE-TOKEN": token}
+@@ -70,10 +78,9 @@ async def test_auth_failure_invalid_token(server_instance):
+     headers = {"X-GOD-MODE-TOKEN": "wrong-token"}
+     # Use InvalidStatus for newer websockets versions
+     with pytest.raises(websockets.exceptions.InvalidStatus) as excinfo:
+-        async with websockets.connect(uri, additional_headers=headers) as ws:
++        async with websockets.connect(uri, additional_headers=headers):
+             pass
+-    # InvalidStatus stores the response object, check status_code on it (or just the exception itself has it depending on version)
+-    # response attribute has status_code
++    # InvalidStatus stores the response object
+     assert excinfo.value.response.status_code == 401
+ 
+ @pytest.mark.asyncio
+@@ -83,6 +90,6 @@ async def test_auth_failure_missing_token(server_instance):
+ 
+     # No headers
+     with pytest.raises(websockets.exceptions.InvalidStatus) as excinfo:
+-        async with websockets.connect(uri) as ws:
++        async with websockets.connect(uri):
+             pass
+     assert excinfo.value.response.status_code == 401
+diff --git a/tests/system/test_server_security.py b/tests/system/test_server_security.py
+new file mode 100644
+index 00000000..642e97bc
+--- /dev/null
++++ b/tests/system/test_server_security.py
+@@ -0,0 +1,50 @@
++import pytest
++import logging
++from unittest.mock import MagicMock, patch
++from simulation.dtos.config_dtos import ServerConfigDTO
++from modules.system.server import SimulationServer
++from modules.system.server_bridge import CommandQueue, TelemetryExchange
++
++def test_server_config_dto_defaults():
++    """Verify ServerConfigDTO defaults to secure settings."""
++    config = ServerConfigDTO(god_mode_token="test")
++    assert config.host == "127.0.0.1"
++    assert config.port == 8000
++    assert config.god_mode_token == "test"
++
++def test_server_binding_check_secure():
++    """Verify SimulationServer accepts localhost binding without critical log."""
++    config = ServerConfigDTO(host="127.0.0.1", port=8000, god_mode_token="test")
++    cq = CommandQueue()
++    te = TelemetryExchange()
++
++    with patch("modules.system.server.logger") as mock_logger:
++        server = SimulationServer(config, cq, te)
++        # Should NOT log critical
++        mock_logger.critical.assert_not_called()
++        assert server.host == "127.0.0.1"
++
++def test_server_binding_check_insecure():
++    """Verify SimulationServer logs critical warning for non-localhost binding."""
++    config = ServerConfigDTO(host="0.0.0.0", port=8000, god_mode_token="test")
++    cq = CommandQueue()
++    te = TelemetryExchange()
++
++    with patch("modules.system.server.logger") as mock_logger:
++        server = SimulationServer(config, cq, te)
++        # Should log critical
++        mock_logger.critical.assert_called_once()
++        args, _ = mock_logger.critical.call_args
++        assert "SECURITY ALERT" in args[0]
++        assert "0.0.0.0" in args[0]
++
++def test_server_properties_proxied():
++    """Verify SimulationServer properties correctly proxy config values."""
++    config = ServerConfigDTO(host="localhost", port=9000, god_mode_token="secret")
++    cq = CommandQueue()
++    te = TelemetryExchange()
++    server = SimulationServer(config, cq, te)
++
++    assert server.host == "localhost"
++    assert server.port == 9000
++    assert server.god_mode_token == "secret"

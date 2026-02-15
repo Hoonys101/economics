@@ -3,6 +3,23 @@
     "version": "1.0"
   },
   "missions": {
+    "jules-arch-cleanup": {
+      "key": "jules-arch-cleanup",
+      "title": "Codebase Architecture Cleanup (Phase 1 Fixes)",
+      "type": "jules",
+      "instruction_raw": "Execute the immediate actions defined in Section 8 of the spec: Fix `utils.logger` imports in tests and scan for other breakages.",
+      "status": "pending",
+      "created_at": "",
+      "command": "test",
+      "file_path": "design/3_work_artifacts/specs/MISSION_spec-arch-cleanup_SPEC.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
     "td-crit-float-settle": {
       "key": "td-crit-float-settle",
       "title": "TD-CRIT-FLOAT-SETTLE: Fix Critical Float Leak in Settlement",
@@ -54,6 +71,23 @@
       "model": null,
       "audit_requirements": null
     },
+    "jules-track-a-settlement": {
+      "key": "jules-track-a-settlement",
+      "title": "Track A: Settlement & Logic Purity (TD-CRIT-FLOAT-SETTLE)",
+      "type": "jules",
+      "instruction_raw": "Refactor engines to return int pennies and update Firm protocols. Follow SPEC_TRACK_A_SETTLEMENT.md.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/SPEC_TRACK_A_SETTLEMENT.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
     "jules-track-b-security": {
       "key": "jules-track-b-security",
       "title": "Track B: Security & Infra Hardening (TD-ARCH-SEC-GOD)",
@@ -63,6 +97,23 @@
       "created_at": "",
       "command": "create",
       "file_path": "design/3_work_artifacts/specs/SPEC_TRACK_B_SECURITY.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "jules-arch-cleanup": {
+      "key": "jules-arch-cleanup",
+      "title": "Codebase Architecture Cleanup (Phase 1 Fixes)",
+      "type": "jules",
+      "instruction_raw": "Execute the immediate actions defined in Section 8 of the spec: Fix `utils.logger` imports in tests and scan for other breakages.",
+      "status": "pending",
+      "created_at": "",
+      "command": "test",
+      "file_path": "design/3_work_artifacts/specs/MISSION_spec-arch-cleanup_SPEC.md",
       "wait": true,
       "session_id": null,
       "worker": null,

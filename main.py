@@ -1,12 +1,12 @@
 import sys
 import logging
 from typing import Dict, Any
-from utils.logging_manager import (
+from modules.common.utils.logging_manager import (
     setup_logging,
     SamplingFilter,
 )
 import config
-from utils.simulation_builder import create_simulation
+from modules.system.builders.simulation_builder import create_simulation
 
 main_logger = logging.getLogger(__name__)
 

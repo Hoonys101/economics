@@ -11,7 +11,7 @@ from simulation.policies.adaptive_gov_policy import AdaptiveGovPolicy
 
 from simulation.dtos import GovernmentSensoryDTO
 from simulation.dtos.api import MarketSnapshotDTO
-from simulation.utils.shadow_logger import log_shadow
+from modules.common.utils.shadow_logger import log_shadow
 from simulation.models import Transaction
 from simulation.systems.ministry_of_education import MinistryOfEducation
 from simulation.portfolio import Portfolio

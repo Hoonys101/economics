@@ -8,7 +8,7 @@ import json
 sys.path.append(os.getcwd())
 
 import config
-from utils.simulation_builder import create_simulation
+from modules.system.builders.simulation_builder import create_simulation
 from modules.simulation.api import ShockConfigDTO
 from modules.simulation.shock_injector import ShockInjector
 from modules.analysis.phenomena_analyzer import PhenomenaAnalyzer

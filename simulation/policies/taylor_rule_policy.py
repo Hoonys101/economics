@@ -1,7 +1,7 @@
 from typing import Dict, Any, Deque, TYPE_CHECKING
 from collections import deque
 from simulation.interfaces.policy_interface import IGovernmentPolicy
-from simulation.utils.shadow_logger import log_shadow
+from modules.common.utils.shadow_logger import log_shadow
 
 if TYPE_CHECKING:
     from simulation.dtos import GovernmentStateDTO

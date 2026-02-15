@@ -9,7 +9,7 @@ sys.path.append(os.getcwd())
 
 import config
 import simulation.db.database
-from utils.simulation_builder import create_simulation
+from modules.system.builders.simulation_builder import create_simulation
 
 # Configure logging
 logging.basicConfig(level=logging.ERROR) # Suppress info/debug logs

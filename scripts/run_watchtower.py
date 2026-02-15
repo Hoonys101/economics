@@ -7,8 +7,8 @@ import queue
 # Add project root to sys.path
 sys.path.append(os.getcwd())
 
-from utils.logging_manager import setup_logging
-from utils.simulation_builder import create_simulation
+from modules.common.utils.logging_manager import setup_logging
+from modules.system.builders.simulation_builder import create_simulation
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
 from modules.system.server import SimulationServer
 from simulation.dtos.config_dtos import ServerConfigDTO

@@ -15,7 +15,7 @@ sys.path.append(os.getcwd())
 load_dotenv()
 
 import config
-from utils.simulation_builder import create_simulation
+from modules.system.builders.simulation_builder import create_simulation
 from modules.simulation.api import ShockConfigDTO
 from modules.simulation.shock_injector import ShockInjector
 from simulation.db.schema import create_tables

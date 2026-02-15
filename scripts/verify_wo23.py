@@ -15,7 +15,7 @@ from modules.analytics.loader import DataLoader
 import config
 
 # Setup Logging
-from utils.logging_manager import setup_logging
+from modules.common.utils.logging_manager import setup_logging
 setup_logging()
 logger = logging.getLogger("VERIFY_WO23")
 

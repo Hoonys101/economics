@@ -46,7 +46,7 @@ from modules.firm.api import (
     IProductionEngine, IAssetManagementEngine, IRDEngine, IPricingEngine
 )
 
-from simulation.utils.shadow_logger import log_shadow
+from modules.common.utils.shadow_logger import log_shadow
 from modules.finance.api import InsufficientFundsError, IFinancialFirm, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake
 from modules.common.interfaces import IPropertyOwner
 from modules.common.dtos import Claim

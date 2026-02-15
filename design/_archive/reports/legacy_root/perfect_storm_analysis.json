@@ -1,0 +1,8 @@
+{
+    "metrics": {
+        "gdp_volatility_reduction": "0.00%",
+        "max_starvation_rate_stabilized": "12.28%",
+        "peak_debt_to_gdp": "0.00"
+    },
+    "success": false
+}
