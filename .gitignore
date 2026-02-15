@@ -176,7 +176,9 @@ test_error.txt
 
 *.pyc
 design/command_registry.json
-_internal/
+!_internal/
+_internal/*
+!_internal/registry/
 audit-go.bat
 session-go.bat
 reset-go.bat
