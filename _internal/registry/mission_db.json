@@ -54,23 +54,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "jules-track-a-settlement": {
-      "key": "jules-track-a-settlement",
-      "title": "Track A: Settlement & Logic Purity (TD-CRIT-FLOAT-SETTLE)",
-      "type": "jules",
-      "instruction_raw": "Refactor engines to return int pennies and update Firm protocols. Follow SPEC_TRACK_A_SETTLEMENT.md.",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/SPEC_TRACK_A_SETTLEMENT.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "jules-track-b-security": {
       "key": "jules-track-b-security",
       "title": "Track B: Security & Infra Hardening (TD-ARCH-SEC-GOD)",
