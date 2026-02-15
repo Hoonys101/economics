@@ -6,7 +6,7 @@ import random
 from simulation.core_agents import Household
 from simulation.utils.config_factory import create_config_dto
 from modules.system.api import DEFAULT_CURRENCY
-from modules.simulation.api import IHouseholdFactory, HouseholdFactoryContext
+from modules.household.api import IHouseholdFactory, HouseholdFactoryContext
 from simulation.factories.household_factory import HouseholdFactory
 from modules.demographics.api import IDemographicManager, DemographicStatsDTO, GenderStatsDTO
 

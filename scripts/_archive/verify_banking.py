@@ -10,13 +10,7 @@ from typing import Dict, Any
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from main import create_simulation
-from config import (
-    NUM_HOUSEHOLDS,
-    NUM_FIRMS,
-    INITIAL_HOUSEHOLD_ASSETS_MEAN,
-    INITIAL_FIRM_CAPITAL_MEAN,
-    GOLD_STANDARD_MODE
-)
+import config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

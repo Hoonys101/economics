@@ -485,9 +485,11 @@ class IGovernmentFinance(IFinancialAgent, Protocol):
     total_debt: int
     sensory_data: Optional[GovernmentSensoryDTO]
 
+@runtime_checkable
 class ISettlementSystem(Protocol):
     """
     Interface for the centralized settlement system.
+    Basic financial operations for Households and Firms.
     """
 
     def transfer(
@@ -503,6 +505,24 @@ class ISettlementSystem(Protocol):
     ) -> Optional[ITransaction]:
         """Executes an immediate, single transfer. Returns transaction or None."""
         ...
+
+    def get_balance(self, agent_id: AgentID, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """
+        Queries the Single Source of Truth for an agent's current balance.
+        This is the ONLY permissible way to check another agent's funds.
+        """
+        ...
+
+    def get_account_holders(self, bank_id: int) -> List[int]:
+        """Returns a list of all agents holding accounts at the specified bank."""
+        ...
+
+@runtime_checkable
+class IMonetaryAuthority(ISettlementSystem, Protocol):
+    """
+    Interface for monetary authority operations (Central Bank, Government, God Mode).
+    Extends ISettlementSystem with money creation/destruction capabilities.
+    """
 
     def create_and_transfer(
         self,
@@ -530,17 +550,6 @@ class ISettlementSystem(Protocol):
 
     def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = "god_mode_injection") -> bool:
         """Minting capability for God Mode."""
-        ...
-
-    def get_balance(self, agent_id: AgentID, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
-        """
-        Queries the Single Source of Truth for an agent's current balance.
-        This is the ONLY permissible way to check another agent's funds.
-        """
-        ...
-
-    def get_account_holders(self, bank_id: int) -> List[int]:
-        """Returns a list of all agents holding accounts at the specified bank."""
         ...
 
     def audit_total_m2(self, expected_total: Optional[int] = None) -> bool:

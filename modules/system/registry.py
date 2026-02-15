@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional, Any, TYPE_CHECKING, Dict, List
-from modules.system.api import IAgentRegistry, IGlobalRegistry, OriginType, RegistryEntry, RegistryObserver
+from modules.system.api import IAgentRegistry, IGlobalRegistry, IConfigurationRegistry, OriginType, RegistryEntry, RegistryObserver
 from modules.system.services.schema_loader import SchemaLoader
 from simulation.dtos.registry_dtos import ParameterSchemaDTO
 
@@ -48,13 +48,14 @@ class AgentRegistry(IAgentRegistry):
 
         return all_agents
 
-class GlobalRegistry(IGlobalRegistry):
+class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
     """
     Central repository for simulation parameters with priority and locking mechanisms.
-    FOUND-01: Implements Origin-based access control and observer pattern.
+    FOUND-01: Implements Origin-based access control and observer pattern using Layered Storage.
     """
     def __init__(self):
-        self._storage: Dict[str, RegistryEntry] = {}
+        # Layered storage: Key -> {Origin -> Entry}
+        self._layers: Dict[str, Dict[OriginType, RegistryEntry]] = {}
         self._observers: List[RegistryObserver] = []
         self._key_observers: Dict[str, List[RegistryObserver]] = {}
         # Placeholder for scheduler injection (Phase 0 Intercept)
@@ -68,37 +69,46 @@ class GlobalRegistry(IGlobalRegistry):
         for schema in schemas:
             self._metadata_map[schema['key']] = schema
 
+    def _get_active_entry(self, key: str) -> Optional[RegistryEntry]:
+        layers = self._layers.get(key)
+        if not layers:
+            return None
+        # Return entry with highest origin priority
+        max_origin = max(layers.keys(), key=lambda o: o.value)
+        return layers[max_origin]
+
     def get(self, key: str, default: Any = None) -> Any:
-        entry = self._storage.get(key)
+        entry = self._get_active_entry(key)
         return entry.value if entry else default
 
     def set(self, key: str, value: Any, origin: OriginType = OriginType.CONFIG) -> bool:
-        current_entry = self._storage.get(key)
+        active_entry = self._get_active_entry(key)
 
         # 1. Authority Check
-        if current_entry:
+        if active_entry:
             # If locked, only GOD_MODE (or equivalent high privilege) can modify
-            if current_entry.is_locked:
+            if active_entry.is_locked:
                 if origin < OriginType.GOD_MODE:
-                     raise PermissionError(f"Target '{key}' is locked by {current_entry.origin.name}")
+                     # raise PermissionError(f"Target '{key}' is locked by {active_entry.origin.name}")
+                     # For compatibility with bool return type, return False or raise?
+                     # Existing code raised PermissionError in some branches but spec says -> bool.
+                     # I will stick to raising if locked, or returning False if priority is low.
+                     # But if locked, it's a hard stop.
+                     return False
 
-            # Priority Check: Lower priority cannot overwrite higher priority
-            if origin < current_entry.origin:
-                return False
+            # Priority Check is implicit in layers, but we shouldn't allow overwriting a higher layer
+            # from a lower layer call (conceptually).
+            # But `set` adds a layer. If I add a USER layer, it overrides SYSTEM.
+            # If I add a CONFIG layer but USER exists, USER wins.
+            # So `set` should succeed in updating the *layer*, but the *active value* might not change
+            # if a higher layer exists.
+            pass
 
         # 2. Phase 0 Intercept (TODO: Implement when Scheduler is available)
-        # if self._scheduler and not self._scheduler.is_in_phase_0():
-        #     self._pending_updates.append((key, value, origin))
-        #     return False
+        # ...
 
-        # 3. Update
-        # If origin is GOD_MODE, we implicitly lock it unless explicitly managed?
-        # Spec says "is_locked=(origin == OriginType.GOD_MODE)"
+        # 3. Update Layer
         is_locked = (origin == OriginType.GOD_MODE)
-
-        # If currently locked and we are GOD_MODE, preserve lock unless unlock() called?
-        # If GOD_MODE calls set(), it sets is_locked=True.
-        # This aligns with "Force Lock" concept for God Mode intervention.
 
         new_entry = RegistryEntry(
             value=value,
@@ -106,31 +116,46 @@ class GlobalRegistry(IGlobalRegistry):
             is_locked=is_locked,
             last_updated_tick=0 # TODO: Inject scheduler.current_tick
         )
-        self._storage[key] = new_entry
-        self._notify(key, value, origin)
+
+        if key not in self._layers:
+            self._layers[key] = {}
+
+        self._layers[key][origin] = new_entry
+
+        # Notify if the active value effectively changed or if it was the active layer updated
+        current_active = self._get_active_entry(key)
+        if current_active and current_active.origin == origin:
+             self._notify(key, value, origin)
+
         return True
 
     def lock(self, key: str) -> None:
         """Locks a specific parameter with God-Mode authority."""
-        entry = self._storage.get(key)
-        if entry:
-            self._storage[key] = RegistryEntry(
-                value=entry.value,
-                origin=OriginType.GOD_MODE, # Escalates origin to GOD_MODE
-                is_locked=True,
-                last_updated_tick=entry.last_updated_tick
-            )
+        # Locking is essentially setting a GOD_MODE entry with lock=True
+        # We preserve the *current active value* but elevate it to GOD_MODE
+        active = self._get_active_entry(key)
+        value = active.value if active else None
+
+        # If no value exists, we can't lock 'nothing', or we lock 'None'?
+        if active:
+            self.set(key, value, OriginType.GOD_MODE)
+            # Ensure lock flag is set (set() does this for GOD_MODE)
+            # Note: set() above sets is_locked=True for GOD_MODE.
 
     def unlock(self, key: str) -> None:
         """Unlocks a parameter, allowing updates from equal or higher origin."""
-        entry = self._storage.get(key)
-        if entry:
-             self._storage[key] = RegistryEntry(
-                 value=entry.value,
-                 origin=entry.origin, # Keep origin (likely GOD_MODE from lock)
-                 is_locked=False,
-                 last_updated_tick=entry.last_updated_tick
-             )
+        # Unlocking means removing the lock.
+        # If the lock was at GOD_MODE layer, we might want to downgrade it or just unset is_locked.
+        # But if we just unset is_locked, it's still GOD_MODE origin (highest).
+        # Usually unlock implies removing the GOD_MODE override?
+        # Or just allowing changes.
+        # If I remove the GOD_MODE layer, it reverts to USER/CONFIG.
+        if key in self._layers and OriginType.GOD_MODE in self._layers[key]:
+            del self._layers[key][OriginType.GOD_MODE]
+            # Notify potential change
+            active = self._get_active_entry(key)
+            if active:
+                self._notify(key, active.value, active.origin)
 
     def subscribe(self, observer: RegistryObserver, keys: Optional[List[str]] = None) -> None:
         if keys is None:
@@ -152,26 +177,54 @@ class GlobalRegistry(IGlobalRegistry):
                 observer.on_registry_update(key, value, origin)
 
     def snapshot(self) -> Dict[str, RegistryEntry]:
-        return self._storage.copy()
+        """Returns snapshot of ACTIVE entries."""
+        result = {}
+        for key in self._layers:
+            entry = self._get_active_entry(key)
+            if entry:
+                result[key] = entry
+        return result
 
     def get_metadata(self, key: str) -> Optional[ParameterSchemaDTO]:
         return self._metadata_map.get(key)
 
     def get_entry(self, key: str) -> Optional[RegistryEntry]:
-        return self._storage.get(key)
+        return self._get_active_entry(key)
 
     def delete_entry(self, key: str) -> bool:
         """Deletes an entry completely (for rollback purposes)."""
-        if key in self._storage:
-            del self._storage[key]
-            # Notify deletion? Or just silent?
-            # Notification with None value might be appropriate
-            # self._notify(key, None, OriginType.SYSTEM)
+        if key in self._layers:
+            del self._layers[key]
             return True
         return False
 
     def restore_entry(self, key: str, entry: RegistryEntry) -> None:
         """Restores a full entry state (for rollback purposes)."""
-        self._storage[key] = entry
-        # Notify restoration
-        self._notify(key, entry.value, entry.origin)
+        if key not in self._layers:
+            self._layers[key] = {}
+        self._layers[key][entry.origin] = entry
+        # Notify restoration if it becomes active
+        active = self._get_active_entry(key)
+        if active and active == entry:
+            self._notify(key, entry.value, entry.origin)
+
+    def reset_to_defaults(self) -> None:
+        """
+        Resets all configuration values to their SYSTEM or CONFIG defaults,
+        clearing USER overrides.
+        """
+        keys = list(self._layers.keys())
+        for key in keys:
+            layers = self._layers[key]
+            # Remove USER and GOD_MODE layers
+            changed = False
+            for origin in [OriginType.USER, OriginType.GOD_MODE]:
+                if origin in layers:
+                    del layers[origin]
+                    changed = True
+
+            if changed:
+                active = self._get_active_entry(key)
+                val = active.value if active else None
+                origin = active.origin if active else OriginType.SYSTEM
+                self._notify(key, val, origin)

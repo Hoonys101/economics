@@ -3,10 +3,11 @@ import logging
 from uuid import UUID
 from collections import defaultdict
 
-from simulation.finance.api import ISettlementSystem, ITransaction
+from simulation.finance.api import ITransaction
 from modules.finance.api import (
     IFinancialAgent, IFinancialEntity, IBank, InsufficientFundsError,
-    IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID
+    IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID,
+    IMonetaryAuthority
 )
 from simulation.dtos.settlement_dtos import LegacySettlementAccount
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder
@@ -19,7 +20,7 @@ from modules.common.protocol import enforce_purity
 if TYPE_CHECKING:
     from simulation.firms import Firm
 
-class SettlementSystem(ISettlementSystem):
+class SettlementSystem(IMonetaryAuthority):
     """
     Centralized system for handling all financial transfers between entities.
     Enforces atomicity and zero-sum integrity.

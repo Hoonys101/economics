@@ -36,6 +36,7 @@ import config
 from simulation.agents.government import Government
 from modules.finance.system import FinanceSystem
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
+from modules.finance.api import ISettlementSystem, IMonetaryAuthority
 
 @pytest.fixture(autouse=True)
 def mock_fcntl():
@@ -134,8 +135,9 @@ def government(mock_config, mock_tracker, finance_system):
     # The FinanceSystem was created with a shell, now we link it to the real government instance
     gov.finance_system.government = gov
 
-    # Inject Mock SettlementSystem
-    gov.settlement_system = Mock()
+    # Inject Mock SettlementSystem (Strict)
+    # Uses ISettlementSystem to ensure Government only accesses standard methods
+    gov.settlement_system = MagicMock(spec=ISettlementSystem)
     gov.settlement_system.transfer.return_value = True
 
     return gov
@@ -145,6 +147,16 @@ def settlement_system():
     """Provides a SettlementSystem instance."""
     from simulation.systems.settlement_system import SettlementSystem
     return SettlementSystem()
+
+@pytest.fixture
+def strict_settlement_mock():
+    """Provides a strict mock of the basic Settlement System."""
+    return MagicMock(spec=ISettlementSystem)
+
+@pytest.fixture
+def strict_monetary_authority_mock():
+    """Provides a strict mock of the Monetary Authority."""
+    return MagicMock(spec=IMonetaryAuthority)
 
 @pytest.fixture
 def config_manager(mock_config, tmp_path):

@@ -106,6 +106,41 @@ class RegistryObserver(Protocol):
         ...
 
 @runtime_checkable
+class IConfigurationRegistry(Protocol):
+    """
+    Interface for the Global Registry acting as the Single Source of Truth (SSoT)
+    for all simulation parameters.
+    """
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        Retrieves a configuration value.
+        Must support dynamic resolution (always fetch current value).
+        """
+        ...
+
+    def set(self, key: str, value: Any, origin: OriginType = OriginType.USER) -> None:
+        """
+        Updates a configuration value with a specified origin.
+        Should trigger any registered listeners for this key.
+        """
+        ...
+
+    def snapshot(self) -> Dict[str, Any]:
+        """
+        Returns a complete snapshot of the current configuration state.
+        Useful for serialization or debugging.
+        """
+        ...
+
+    def reset_to_defaults(self) -> None:
+        """
+        Resets all configuration values to their SYSTEM or CONFIG defaults,
+        clearing USER overrides.
+        """
+        ...
+
+@runtime_checkable
 class IGlobalRegistry(Protocol):
     """
     Interface for the Global Parameter Registry.
@@ -153,6 +188,19 @@ class IRestorableRegistry(IGlobalRegistry, Protocol):
         Restores a specific entry state (value + origin + lock).
         Used when rolling back a modification.
         Returns True if successful.
+        """
+        ...
+
+@runtime_checkable
+class IProtocolEnforcer(Protocol):
+    """
+    Interface for test utilities that enforce strict protocol adherence.
+    """
+
+    def assert_implements_protocol(self, instance: Any, protocol: Any) -> None:
+        """
+        Verifies that an instance implements all methods and attributes
+        defined in the protocol. Raises AssertionError if not.
         """
         ...
 
