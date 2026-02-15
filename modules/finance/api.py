@@ -559,6 +559,19 @@ class IMonetaryAuthority(ISettlementSystem, Protocol):
         """
         ...
 
+    def register_account(self, bank_id: int, agent_id: int) -> None:
+        """
+        Registers an account link between a bank and an agent.
+        Used to maintain the reverse index for bank runs.
+        """
+        ...
+
+    def deregister_account(self, bank_id: int, agent_id: int) -> None:
+        """
+        Removes an account link between a bank and an agent.
+        """
+        ...
+
 class IFinanceSystem(Protocol):
     """Interface for the sovereign debt and corporate bailout system."""
 

@@ -4,7 +4,7 @@ import uuid
 from modules.finance.api import (
     IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialAgent, IFinancialFirm,
     InsufficientFundsError, GrantBailoutCommand, BorrowerProfileDTO, LoanInfoDTO,
-    IConfig, IBank, IGovernmentFinance
+    IConfig, IBank, IGovernmentFinance, IMonetaryAuthority
 )
 from modules.finance.domain import AltmanZScoreCalculator
 from modules.analysis.fiscal_monitor import FiscalMonitor
@@ -39,7 +39,7 @@ class FinanceSystem(IFinanceSystem):
     MIGRATION: Uses integer pennies.
     """
 
-    def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Any = None):
+    def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Optional[IMonetaryAuthority] = None):
         self.government = government
         self.central_bank = central_bank
         self.bank = bank
