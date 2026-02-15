@@ -11,7 +11,6 @@ sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 from main import create_simulation
 from utils.logging_manager import setup_logging
 import config
-from config import EngineType
 
 def run_malthusian_experiment():
     # 1. Setup Logging
@@ -28,7 +27,7 @@ def run_malthusian_experiment():
         "GOVERNMENT_STIMULUS_ENABLED": False,
         "NUM_HOUSEHOLDS": 20, # Start small to allow growth
         "SIMULATION_TICKS": 1000,
-        "DEFAULT_ENGINE_TYPE": EngineType.AI_DRIVEN
+        "DEFAULT_ENGINE_TYPE": config.EngineType.AI_DRIVEN
     }
 
     print("Initializing Malthusian Trap Experiment...")

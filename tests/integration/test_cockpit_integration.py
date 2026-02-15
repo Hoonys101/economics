@@ -5,7 +5,7 @@ from simulation.engine import Simulation
 from simulation.dtos.commands import GodCommandDTO
 from modules.system.services.command_service import CommandService
 from modules.system.api import IGlobalRegistry, IAgentRegistry, OriginType
-from simulation.finance.api import ISettlementSystem
+from simulation.finance.api import ISettlementSystem, IMonetaryAuthority
 from modules.system.server_bridge import CommandQueue
 from uuid import uuid4
 
@@ -51,7 +51,7 @@ def test_simulation_processes_pause_resume(mock_simulation_deps):
 
         # Mocks for new dependencies
         reg = MagicMock(spec=IGlobalRegistry)
-        settle = MagicMock(spec=ISettlementSystem)
+        settle = MagicMock(spec=IMonetaryAuthority)
         agent_reg = MagicMock(spec=IAgentRegistry)
         cmd_service = MagicMock(spec=CommandService)
 

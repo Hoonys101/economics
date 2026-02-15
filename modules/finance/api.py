@@ -488,6 +488,7 @@ class IGovernmentFinance(IFinancialAgent, Protocol):
 class ISettlementSystem(Protocol):
     """
     Interface for the centralized settlement system.
+    Basic interface for Households and Firms.
     """
 
     def transfer(
@@ -503,6 +504,19 @@ class ISettlementSystem(Protocol):
     ) -> Optional[ITransaction]:
         """Executes an immediate, single transfer. Returns transaction or None."""
         ...
+
+    def get_balance(self, agent_id: AgentID, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """
+        Queries the Single Source of Truth for an agent's current balance.
+        This is the ONLY permissible way to check another agent's funds.
+        """
+        ...
+
+class IMonetaryAuthority(ISettlementSystem, Protocol):
+    """
+    Interface for the Monetary Authority (Government/Central Bank/God Mode).
+    Extends ISettlementSystem with money creation/destruction and auditing capabilities.
+    """
 
     def create_and_transfer(
         self,
@@ -528,19 +542,37 @@ class ISettlementSystem(Protocol):
         """Transfers money from an agent to an authority to be destroyed."""
         ...
 
+    def record_liquidation(
+        self,
+        agent: IFinancialAgent,
+        inventory_value: int,
+        capital_value: int,
+        recovered_cash: int,
+        reason: str,
+        tick: int,
+        government_agent: Optional[IFinancialAgent] = None
+    ) -> None:
+        """Records liquidation and handles escheatment."""
+        ...
+
     def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = "god_mode_injection") -> bool:
         """Minting capability for God Mode."""
         ...
 
-    def get_balance(self, agent_id: AgentID, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
-        """
-        Queries the Single Source of Truth for an agent's current balance.
-        This is the ONLY permissible way to check another agent's funds.
-        """
-        ...
-
     def get_account_holders(self, bank_id: int) -> List[int]:
         """Returns a list of all agents holding accounts at the specified bank."""
+        ...
+
+    def register_account(self, bank_id: int, account_holder_id: int) -> None:
+        """Registers a new account holder in the reverse index."""
+        ...
+
+    def deregister_account(self, bank_id: int, account_holder_id: int) -> None:
+        """Removes an account holder from the reverse index."""
+        ...
+
+    def remove_agent_from_all_accounts(self, agent_id: int) -> None:
+        """Removes an agent from all bank indices."""
         ...
 
     def audit_total_m2(self, expected_total: Optional[int] = None) -> bool:

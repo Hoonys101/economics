@@ -4,7 +4,7 @@ from uuid import uuid4
 from simulation.dtos.commands import GodCommandDTO, GodResponseDTO
 from modules.system.services.command_service import CommandService
 from modules.system.api import IGlobalRegistry, IAgentRegistry, OriginType, RegistryEntry, IRestorableRegistry
-from simulation.finance.api import ISettlementSystem, IFinancialAgent
+from simulation.finance.api import ISettlementSystem, IMonetaryAuthority, IFinancialAgent
 from modules.system.constants import ID_CENTRAL_BANK
 
 class MockRegistry(IRestorableRegistry):
@@ -66,7 +66,7 @@ def mock_settlement():
     # OR just use MagicMock and attach methods.
     # The issue before was spec=ISettlementSystem which hid audit_total_m2.
     # Let's just use a plain MagicMock and configure it.
-    settlement = MagicMock()
+    settlement = MagicMock(spec=IMonetaryAuthority)
     settlement.audit_total_m2.return_value = True
     settlement.mint_and_distribute.return_value = True
     settlement.transfer_and_destroy.return_value = True

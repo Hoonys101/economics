@@ -5,7 +5,7 @@ from modules.system.services.command_service import CommandService, UndoRecord
 from modules.system.registry import GlobalRegistry, RegistryEntry
 from modules.system.api import OriginType
 from simulation.dtos.commands import GodCommandDTO
-from simulation.finance.api import ISettlementSystem
+from simulation.finance.api import ISettlementSystem, IMonetaryAuthority
 from modules.system.api import IAgentRegistry
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.finance.api import IFinancialAgent
@@ -16,7 +16,7 @@ def mock_registry():
 
 @pytest.fixture
 def mock_settlement_system():
-    mock = Mock(spec=ISettlementSystem)
+    mock = Mock(spec=IMonetaryAuthority)
     mock.mint_and_distribute = Mock()
     mock.transfer_and_destroy = Mock()
     return mock

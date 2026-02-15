@@ -285,3 +285,19 @@ class IShockInjector(Protocol):
         This method is expected to be called every tick.
         """
         ...
+
+@dataclass
+class HouseholdFactoryContext:
+    core_config_module: Any
+    household_config_dto: Any
+    goods_data: List[Dict[str, Any]]
+    loan_market: Any
+    ai_training_manager: Any
+    settlement_system: Any
+    markets: Dict[str, Any]
+    memory_system: Any
+    central_bank: Any
+
+class IHouseholdFactory(Protocol):
+    """Interface for creating household agents."""
+    def create_newborn(self, parent: Any, simulation: Any, child_id: int) -> IHousehold: ...
