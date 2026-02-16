@@ -18,6 +18,7 @@ from modules.finance.wallet.api import IWallet
 from modules.system.event_bus.api import IEventBus
 from modules.events.dtos import LoanDefaultedEvent
 from simulation.models import Transaction
+from dataclasses import replace, is_dataclass
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -143,8 +144,6 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     # --- IBank Implementation ---
 
     def grant_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanInfoDTO, Transaction]]:
-        from dataclasses import replace, is_dataclass
-
         # Resolve borrower object vs ID
         borrower_obj = None
         borrower_agent_id = borrower_id
@@ -165,11 +164,26 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         # Enhance profile with preferred lender (self)
         if borrower_profile and is_dataclass(borrower_profile):
             profile = replace(borrower_profile, preferred_lender_id=self.id)
+        elif isinstance(borrower_profile, dict):
+            # Convert dict to BorrowerProfileDTO
+            # Helper to safely extract int fields
+            def safe_int(val):
+                try:
+                    return int(val) if val is not None else 0
+                except (ValueError, TypeError):
+                    return 0
+
+            profile = BorrowerProfileDTO(
+                gross_income=safe_int(borrower_profile.get('gross_income', 0)),
+                existing_debt_payments=safe_int(borrower_profile.get('existing_debt_payments', 0)),
+                collateral_value=safe_int(borrower_profile.get('collateral_value', 0)),
+                credit_score=borrower_profile.get('credit_score'),
+                employment_status=borrower_profile.get('employment_status', "UNKNOWN"),
+                preferred_lender_id=self.id
+            )
         else:
-            profile = borrower_profile or {}
-            if isinstance(profile, dict):
-                profile['preferred_lender_id'] = self.id
-            # If we were passed a dataclass but failed check, or passed something else, we let process_loan_application handle conversion or failure
+            # Fallback: create empty/default DTO
+            profile = BorrowerProfileDTO(0, 0, 0, preferred_lender_id=self.id)
 
         # Call FinanceSystem
         loan_dto, txs = self.finance_system.process_loan_application(
@@ -182,11 +196,10 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         if not loan_dto:
             return None
 
-        # MIGRATION: Ensure loan_dto is handled as an object (if it's a dict, convert it)
+        # Strict DTO enforcement: loan_dto must be an object (dataclass)
         if isinstance(loan_dto, dict):
-             from types import SimpleNamespace
-             # Use SimpleNamespace to allow dot notation and be lenient with missing fields in legacy mocks
-             loan_dto = SimpleNamespace(**loan_dto)
+             logger.error("FinanceSystem returned a dict instead of LoanInfoDTO! This violates DTO purity.")
+             return None
 
         # Extract credit creation tx and EXECUTE settlement
         credit_tx = None
@@ -239,7 +252,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
         if self.finance_system and hasattr(self.finance_system, 'get_customer_debt_status'):
              loans = self.finance_system.get_customer_debt_status(self.id, borrower_id)
-             total_debt = sum(l['outstanding_balance'] for l in loans)
+             total_debt = sum(l.outstanding_balance for l in loans)
              return DebtStatusDTO(
                  borrower_id=borrower_id,
                  total_outstanding_debt=total_debt,

@@ -159,7 +159,7 @@ class LoanMarket(Market, ILoanMarket):
         )
 
         if loan_info:
-            return loan_info['loan_id']
+            return loan_info.loan_id
         return None
 
     def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
@@ -236,9 +236,9 @@ class LoanMarket(Market, ILoanMarket):
              loan_info, _ = grant_result
 
              try:
-                 loan_id_int = int(loan_info['loan_id'].split('_')[1])
+                 loan_id_int = int(loan_info.loan_id.split('_')[1])
              except (IndexError, ValueError):
-                 loan_id_int = hash(loan_info['loan_id']) % 10000000
+                 loan_id_int = hash(loan_info.loan_id) % 10000000
 
              # Recalculate monthly payment for DTO
              monthly_rate = interest_rate / 12.0
@@ -249,7 +249,7 @@ class LoanMarket(Market, ILoanMarket):
 
              return MortgageApprovalDTO(
                  loan_id=loan_id_int,
-                 approved_principal=loan_info['original_amount'],
+                 approved_principal=loan_info.original_amount,
                  monthly_payment=pmt
              )
 
@@ -300,8 +300,8 @@ class LoanMarket(Market, ILoanMarket):
                     transactions.append(credit_tx)
 
                 logger.info(
-                    f"Loan granted to {order.agent_id} for {loan_amount:.2f}. Loan ID: {loan_info['loan_id']}",
-                    extra={**log_extra, "loan_id": loan_info['loan_id']},
+                    f"Loan granted to {order.agent_id} for {loan_amount:.2f}. Loan ID: {loan_info.loan_id}",
+                    extra={**log_extra, "loan_id": loan_info.loan_id},
                 )
             else:
                 logger.warning(

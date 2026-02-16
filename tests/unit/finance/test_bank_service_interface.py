@@ -51,7 +51,9 @@ class TestBankServiceInterface:
             outstanding_balance=amount,
             interest_rate=interest_rate,
             origination_tick=0,
-            due_tick=100
+            due_tick=100,
+            status="ACTIVE",
+            term_ticks=360
         )
         tx = Transaction(
             buyer_id=bank.id,
@@ -69,11 +71,11 @@ class TestBankServiceInterface:
         assert result is not None
         loan_info, transaction = result
 
-        assert loan_info['borrower_id'] == borrower_id
-        assert loan_info['original_amount'] == amount
-        assert loan_info['outstanding_balance'] == amount
-        assert loan_info['interest_rate'] == interest_rate
-        assert loan_info['loan_id'] == "loan_1"
+        assert loan_info.borrower_id == borrower_id
+        assert loan_info.original_amount == amount
+        assert loan_info.outstanding_balance == amount
+        assert loan_info.interest_rate == interest_rate
+        assert loan_info.loan_id == "loan_1"
 
         # Transaction verification
         assert transaction is not None
@@ -101,21 +103,23 @@ class TestBankServiceInterface:
         loans = [
             LoanInfoDTO(
                 loan_id="l1", borrower_id=borrower_id, original_amount=100000,
-                outstanding_balance=100000, interest_rate=0.05, origination_tick=0, due_tick=100
+                outstanding_balance=100000, interest_rate=0.05, origination_tick=0, due_tick=100,
+                status="ACTIVE", term_ticks=360
             ),
             LoanInfoDTO(
                 loan_id="l2", borrower_id=borrower_id, original_amount=50000,
-                outstanding_balance=50000, interest_rate=0.06, origination_tick=0, due_tick=100
+                outstanding_balance=50000, interest_rate=0.06, origination_tick=0, due_tick=100,
+                status="ACTIVE", term_ticks=360
             )
         ]
         mock_finance_system.get_customer_debt_status.return_value = loans
 
         status = bank.get_debt_status(borrower_id)
 
-        assert status['borrower_id'] == borrower_id
-        assert status['total_outstanding_debt'] == 150000
-        assert len(status['loans']) == 2
-        assert status['is_insolvent'] is False
+        assert status.borrower_id == borrower_id
+        assert status.total_outstanding_debt == 150000
+        assert len(status.loans) == 2
+        assert status.is_insolvent is False
 
     def test_interface_compliance_mypy(self):
         pass

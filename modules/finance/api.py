@@ -236,6 +236,8 @@ class LoanInfoDTO:
     interest_rate: float
     origination_tick: int
     due_tick: Optional[int]
+    status: str = "ACTIVE"
+    term_ticks: int = 360
 
 @dataclass(frozen=True)
 class DebtStatusDTO:
@@ -280,17 +282,16 @@ class BorrowerProfileDTO:
     Data Transfer Object holding all financial data for a borrower
     needed for credit assessment. Anonymized from the concrete agent.
     """
-    borrower_id: AgentID
     gross_income: int
     existing_debt_payments: int
     collateral_value: int # Value of the asset being purchased, if any
-    existing_assets: int
     # Optional fields for extended profiles
     credit_score: Optional[int] = None
-    is_bailout: Optional[bool] = False
+    employment_status: str = "UNKNOWN"
     preferred_lender_id: Optional[AgentID] = None
 
-class CreditAssessmentResultDTO(TypedDict):
+@dataclass(frozen=True)
+class CreditAssessmentResultDTO:
     """
     The result of a credit check from the CreditScoringService.
     """
