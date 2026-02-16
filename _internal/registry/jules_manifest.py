@@ -22,5 +22,23 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "command": "create",
         "file": "design/3_work_artifacts/specs/MISSION_dto-api-repair_SPEC.md",
         "instruction": "Execute the DTO and API repair as specified in the MISSION_dto-api-repair_SPEC.md. Secure the 'Integer Pennies' standard in Config DTOs and enforce IFirmStateProvider protocol in FirmStateDTO."
+    },
+    "agent-decomposition": {
+        "title": "Agent Shell Refactor: Firm & Household Decomposition",
+        "command": "create",
+        "file": "design/3_work_artifacts/specs/MISSION_agent-decomposition_SPEC.md",
+        "instruction": "Refactor Firm and Household classes into 'Agent Shells'. Implement InventoryComponent and FinancialComponent to reduce God Class bloat and enforce CES Lite patterns."
+    },
+    "mock-automation": {
+        "title": "Mock Drift Automation & Strict Protocol Enforcement",
+        "command": "create",
+        "file": "design/3_work_artifacts/specs/MISSION_mock-automation_SPEC.md",
+        "instruction": "Implement StrictMockFactory and ProtocolInspector to eliminate Mock Drift. Setup Pytest plugin for automated drift detection."
+    },
+    "test-unit-scale": {
+        "title": "Test Suite Standardization: Dollar to Penny Migration",
+        "command": "create",
+        "file": "design/3_work_artifacts/specs/MISSION_test-unit-scale_SPEC.md",
+        "instruction": "Migrate the test suite from Float Dollars to Integer Pennies. Use P() helper and enforce Penny Standard in all financial mocks."
     }
 }

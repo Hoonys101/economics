@@ -23,5 +23,39 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "firm-household-decomp-spec": {
+        "title": "God Class Decomposition: Firm & Household",
+        "worker": "spec",
+        "instruction": "Firm(1200+줄)과 Household(1000+줄) 거대 클래스를 추가 분해하여 Stateless Orchestrator 패턴을 완성하십시오. 로직은 이미 엔진으로 분리되었으나, 클래스 자체가 여전히 비대합니다. 병렬 실행 가능성을 분석하여 Firm과 Household 작업을 독립적으로 수행할 수 있는 설계를 제안하십시오.",
+        "context_files": [
+            "simulation/firms.py",
+            "simulation/core_agents.py",
+            "PROJECT_STATUS.md",
+            "design/4_hard_planning/PARALLEL_CLEARANCE_STRATEGY.md"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_agent-decomposition_SPEC.md"
+    },
+    "test-unit-standardization-spec": {
+        "title": "Test Unit Scale Standardization (Dollar -> Penny)",
+        "worker": "spec",
+        "instruction": "테스트 코드 전반의 'Dollar'(float) 단위를 'Penny'(int)로 표준화하십시오. Naming convention(`amount_pennies`)이나 helper function 도입을 포함한 전환 스펙을 작성하십시오. Agent 분해 작업과 병렬 진행 시의 충돌 위험을 평가하십시오.",
+        "context_files": [
+            "tests/unit/test_firms.py",
+            "tests/integration/test_fiscal_integrity.py",
+            "modules/finance/api.py",
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_test-unit-scale_SPEC.md"
+    },
+    "mock-drift-automation-spec": {
+        "title": "Mock Drift Automation & Protocol Enforcement",
+        "worker": "spec",
+        "instruction": "Protocol 변경 시 Mock이 자동으로 동기화되거나 정지(Fail)되도록 하는 자동화 체계를 설계하십시오. `create_autospec` 활용 또는 MockRegistry 도입 방안을 포함하십시오.",
+        "context_files": [
+            "modules/common/protocol.py",
+            "modules/finance/api.py",
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_mock-automation_SPEC.md"
+    }
 }
