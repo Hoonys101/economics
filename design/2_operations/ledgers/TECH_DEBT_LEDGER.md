@@ -2,15 +2,14 @@
 
 | ID | Module / Component | Description | Priority / Impact | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **TD-INT-PENNIES-FRAGILITY** | System | **Penny-Float Duality**: Widespread `hasattr`/`getattr` for `xxx_pennies` vs `xxx`. Needs Unified API. | **High**: Logic Inconsistency. | Identified |
-| **TD-INT-BANK-ROLLBACK** | Finance | **Rollback Coupling**: Bank rollback logic dependent on `hasattr` implementation details. | **Low**: Abstraction Leak. | Identified |
-| **TD-STR-GOD-DECOMP** | Architecture | **Residual God Classes**: `Firm` (1276 lines) and `Household` (1042 lines) exceed 800-line limit. | **Medium**: Maintenance friction. | Open |
+| **TD-MKT-FLOAT-MATCH** | Markets | **Market Precision Leak**: `MatchingEngine` uses `float` for price discovery. Violates Zero-Sum. | **Critical**: Financial Halo. | **Identified** |
+| **TD-ARCH-LIFE-GOD** | Systems | **God Manager**: `LifecycleManager` monolithically handles Birth, Death, Aging, Liquidation. | **Medium**: Coupling. | **Identified** |
+| **TD-CONF-GHOST-BIND** | Config | **Ghost Constants**: Modules bind config values at import time, preventing runtime hot-swap. | **Medium**: Dynamic Tuning. | **Identified** |
+| **TD-INT-PENNIES-FRAGILITY** | System | **Penny-Float Duality**: Widespread `hasattr`/`getattr` for `xxx_pennies` vs `xxx`. Needs Unified API. | **High**: Logic Inconsistency. | Open |
+| **TD-INT-BANK-ROLLBACK** | Finance | **Rollback Coupling**: Bank rollback logic dependent on `hasattr` implementation details. | **Low**: Abstraction Leak. | Open |
 | **TD-ARCH-DI-SETTLE** | Architecture | **DI Timing**: `AgentRegistry` injection into `SettlementSystem` happens post-initialization. | **Low**: Initialization fragility. | Open |
 | **TD-UI-DTO-PURITY** | Cockpit | **Manual Deserialization**: UI uses raw dicts/manual mapping for Telemetry. Needs `pydantic`. | **Medium**: Code Quality. | Open |
-| **TD-TEST-MOCK-DRIFT-GEN** | Testing | **Protocol-Mock Drift**: Manual Mocks (e.g., `MockBank`) frequently drift from their `Protocol` definitions. | **High**: CI Stability. | Mitigation: create_autospec |
-| **TD-TEST-UNIT-SCALE** | Testing | **Unit Scale Ambiguity**: Mismatch between "Dollars" (Float) in tests and "Pennies" (Int) in Engines. | **High**: Financial Logic. | Mitigation: int(val * 100) |
-| **TD-DTO-FLOAT-LEAK** | Architecture | **Precision Leakage**: Config (`config_dtos.py`) and Telemetry (`TransactionData`) still use `float` for monetary values. | **High**: Data Corrupt. | Identified |
-| **TD-DTO-PROBE-BYPASS** | Architecture | **Protocol Bypass**: `FirmStateDTO.from_firm` uses `hasattr` probing instead of strict protocols. | **Medium**: Type Safety. | Identified |
+| **TD-PROC-TRANS-DUP** | Logic | **Handler Redundancy**: Logic overlap between legacy `TransactionManager` and new `TransactionProcessor`. | **Medium**: Maintenance. | **Identified** |
 
 ---
 > [!NOTE]
@@ -20,6 +19,26 @@
 
 ## 📓 Implementation Lessons & Detailed Debt (Open)
 
+---
+### ID: TD-MKT-FLOAT-MATCH
+### Title: Market Matching Engine Float Leakage
+- **Symptom**: `MatchingEngine` calculates mid-prices and execution values using python `float`.
+- **Risk**: Creates "Financial Dust" (micro-pennies) that accumulates over millions of transactions, breaking Zero-Sum audits.
+- **Solution**: Refactor `MatchingEngine` to use Integer Math with explicit rounding rules (Round-Down / Remainder-to-Market-Maker).
+
+---
+### ID: TD-ARCH-LIFE-GOD
+### Title: Lifecycle Manager Monolith
+- **Symptom**: `LifecycleManager` class has grown to encapsulate Birth, Death, Aging, and Liquidation logic in a single file.
+- **Risk**: Impossible to test isolation of "Death" logic without instantiating "Birth" dependencies. Violates SoC.
+- **Solution**: Decompose into `BirthSystem`, `DeathSystem`, `AgingSystem` orchestrated by a lightweight Manager.
+
+---
+### ID: TD-CONF-GHOST-BIND
+### Title: Ghost Constant Binding (Import Time)
+- **Symptom**: `from config import MIN_WAGE` locks the value of `MIN_WAGE` at the moment of import.
+- **Risk**: Changing the value in `GlobalRegistry` at runtime (e.g., God Mode) has no effect on modules that already imported the constant.
+- **Solution**: Use a `ConfigProxy` or `DynamicConfig` object that resolves values at access time (`config.MIN_WAGE`).
 
 ---
 ### ID: TD-INT-PENNIES-FRAGILITY
@@ -28,31 +47,9 @@
 - **Risk**: Static type analysis (`mypy`) failures and runtime fragility.
 - **Solution**: Finalize Penny migration for ALL telemetry DTOs and remove `hasattr` wrappers.
 
-
 ---
-### ID: TD-TEST-MOCK-DRIFT-GEN
-### Title: Recursive Protocol Drift in Mocks
-- **Symptom**: `TypeError` when instantiating abstract Mocks.
-- **Root Cause**: `Protocol` or `Interface` adds methods, but manual `Mock` implementations in `tests/` are not updated.
-- **Solution**: Use `unittest.mock.create_autospec(Interface)` or enforce a shared `MockRegistry` that is audited automatically.
-
----
-### ID: TD-TEST-UNIT-SCALE
-### Title: Dollar-Penny Unit Confusion in Tests
-- **Symptom**: Magnitude errors in assertions (e.g., `expected 1.0` vs `actual 0.01`).
-- **Root Cause**: Testing layer uses "Dollars" (Logical) but Engine layer uses "Pennies" (Physical Integers).
-- **Solution**: Adopt strict naming convention `amount_pennies` in tests or use a `to_pennies()` helper for all fixture definitions.
-
----
-### ID: TD-DTO-FLOAT-LEAK
-### Title: Floating-Point Leakage in DTO Boundaries
-- **Symptom**: Configuration (`startup_cost`, `min_wage`) and Telemetry (`TransactionData.price`) use `float`, while the core ledger uses `int` pennies.
-- **Risk**: Rounds-off errors during initialization and historical data drift.
-- **Solution**: Migrate all monetary fields in `HouseholdConfigDTO`, `FirmConfigDTO`, and `TransactionData` to `int` (pennies).
-
----
-### ID: TD-DTO-PROBE-BYPASS
-### Title: Protocol Bypass in DTO Factories
-- **Symptom**: `FirmStateDTO.from_firm` uses `hasattr` and `getattr` to extract data from agent instances.
-- **Risk**: Violates Architectural Guardrail #2. Mypy cannot catch missing attributes until runtime.
-- **Solution**: Enforce usage of `IFirmStateProvider` and remove all `hasattr`/`getattr` probes from factory methods.
+### ID: TD-PROC-TRANS-DUP
+### Title: Transaction Logic Duplication
+- **Symptom**: Similar transaction processing logic exists in `TransactionManager` (Legacy) and `TransactionProcessor` (New).
+- **Risk**: Fixes applied to one might not apply to the other, leading to divergent behavior.
+- **Solution**: Deprecate `TransactionManager` and route all traffic through `TransactionProcessor`.

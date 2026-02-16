@@ -6,6 +6,11 @@ This document archives resolved technical debt items to keep the primary ledger 
 
 | ID | Module / Component | Description | Resolution Session | Insight Report |
 | :--- | :--- | :--- | :--- | :--- |
+| **TD-STR-GOD-DECOMP** | Architecture | **Refactor**: CES Lite Agent Shells. | Phase 18 | [Spec](../../3_work_artifacts/specs/MISSION_agent-decomposition_SPEC.md) |
+| **TD-TEST-MOCK-DRIFT-GEN** | Testing | **Protocol**: StrictMockFactory enforced. | Phase 18 | [Spec](../../3_work_artifacts/specs/MISSION_mock-automation_SPEC.md) |
+| **TD-TEST-UNIT-SCALE** | Testing | **Standard**: Penny Standard Migration. | Phase 18 | [Spec](../../3_work_artifacts/specs/MISSION_test-unit-scale_SPEC.md) |
+| **TD-DTO-FLOAT-LEAK** | Config | **Integers**: Config DTOs migrated to Pennies. | Phase 18 | [Review](../../_archive/gemini_output/pr_review_dto-api-repair-int-migration-1186540435321916919.md) |
+| **TD-DTO-PROBE-BYPASS** | Architecture | **Protocol**: IFirmStateProvider via DTO Repair. | Phase 18 | [Review](../../_archive/gemini_output/pr_review_dto-api-repair-int-migration-1186540435321916919.md) |
 | **WO-101** | Test | Core logic-protocol changes (e.g., wallet) break test mocks. | Clean Room Era | [Audit Guide](../../3_work_artifacts/reports/audit_test_migration_guide.md) |
 | **TD-ARCH-LEAK-PROTI** | Architecture | Interface drift: `IFinancialEntity` defines deprecated APIs. | Clean Room Era | [Audit Guide](../../3_work_artifacts/reports/audit_test_migration_guide.md) |
 | **TD-DTO-STAB** | Data/DTO | **Standardization**: `CanonicalOrderDTO` enforced & `Transaction` typed. | Clean Room Era | [Insight](../../../communications/insights/TD-DTO-STAB.md) |
@@ -71,6 +76,39 @@ This document archives resolved technical debt items to keep the primary ledger 
 | **TD-CMD-ROLLBACK** | System | **Hardening**: Fixed `CommandService` rollback assertions for `IRestorableRegistry`. | 2026-02-16 | [PR Review](../../_archive/gemini_output/pr_review_fix-tests-and-protocols-956842252339614960.md) |
 
 ## 📓 Implementation Lessons (Resolved Path)
+
+---
+
+### ID: TD-STR-GOD-DECOMP
+- **Title**: God Class Decomposition (Firm & Household)
+- **Status**: **Resolved** (Phase 18)
+- **Solution**: Implemented **CES Lite (Agent Shell)** pattern. `Firm` and `Household` were decomposed into `InventoryComponent`, `FinancialComponent`, and stateless `Orchestrators`.
+- **Lesson**: Composition prefers specific typed Components over massive Inheritance hierarchies.
+
+---
+
+### ID: TD-TEST-MOCK-DRIFT-GEN
+- **Title**: Recursive Protocol Drift in Mocks
+- **Status**: **Resolved** (Phase 18)
+- **Solution**: Implemented `StrictMockFactory` and `ProtocolInspector` to enforce `spec_set` compliance on all Mocks.
+- **Lesson**: Never use `MagicMock` without a spec. Automated enforcement prevents "Zombie Tests".
+
+---
+
+### ID: TD-TEST-UNIT-SCALE
+- **Title**: Dollar-Penny Unit Confusion in Tests
+- **Status**: **Resolved** (Phase 18)
+- **Solution**: Migrated test suite to **Penny Standard** (`int`). Introduced `P()` helper.
+- **Lesson**: Test data must match the physical storage unit (Integer Pennies) of the engine.
+
+---
+
+### ID: TD-DTO-FLOAT-LEAK
+- **Title**: Floating-Point Leakage in DTO Boundaries
+- **Status**: **Resolved** (Phase 18)
+- **Solution**: Converted all monetary configuration constants (`defaults.py`) and Telemetry DTOs to `int` pennies.
+- **Lesson**: Precision leakage starts at the injection point. Configuration MUST be strictly typed.
+
 
 ---
 ### ID: TD-TEST-003

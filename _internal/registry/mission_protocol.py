@@ -49,17 +49,15 @@ OUTPUT_DISCIPLINE = """
 WORKER_MODEL_MAP = {
     # Reasoning Tier: gemini-3-pro-preview
     "spec": "gemini-3-pro-preview",
-    "scribe": "gemini-3-pro-preview",
-    "writer": "gemini-3-pro-preview",
-    "reviewer": "gemini-3-pro-preview",
+    "git": "gemini-3-pro-preview",
     "git-review": "gemini-3-pro-preview",
+    "context": "gemini-3-pro-preview",
+    "crystallizer": "gemini-3-pro-preview",
     
     # High-Volume Tier: gemini-3-flash-preview
-    "audit": "gemini-3-flash-preview",
-    "analyze": "gemini-3-flash-preview",
-    "risk": "gemini-3-flash-preview",
     "report": "gemini-3-flash-preview",
-    "crystallizer": "gemini-3-pro-preview",
+    "verify": "gemini-3-flash-preview",
+    "audit": "gemini-3-flash-preview",
 }
 
 def construct_mission_prompt(key: str, title: str, instruction_raw: str) -> str:

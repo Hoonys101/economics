@@ -1,0 +1,726 @@
+diff --git a/communications/insights/agent-decomposition.md b/communications/insights/agent-decomposition.md
+new file mode 100644
+index 00000000..ec08cab0
+--- /dev/null
++++ b/communications/insights/agent-decomposition.md
+@@ -0,0 +1,52 @@
++# Insight Report: Agent Shell Decomposition
++
++**Mission**: `agent-decomposition`
++**Date**: 2026-02-16
++**Author**: Jules (Agent)
++**Status**: COMPONENTS IMPLEMENTED
++
++## 1. Architectural Insights
++
++### Component-Entity-System (CES) Lite
++We have successfully implemented the foundational components for the "Agent Shell" pattern, enabling the decomposition of `Firm` and `Household` God Classes.
++
++1.  **Protocol-Driven Design**:
++    -   `IInventoryComponent` enforces strict typing for inventory operations (`MAIN` vs `INPUT` slots), replacing loose dictionary manipulation.
++    -   `IFinancialComponent` wraps the `Wallet` and exposes a penny-based interface (`balance_pennies`), ensuring zero-sum integrity and simplifying currency management.
++
++2.  **Stateless Orchestration Enablers**:
++    -   The `ITransactionOrchestrator` protocol sets the stage for extracting complex transaction pipelines (e.g., `generate_transactions`) out of the Agent class.
++
++3.  **Strict Typing & DTOs**:
++    -   `InventoryStateDTO` and `FinancialStateDTO` provide clear contracts for state serialization, reducing the risk of "state drift" during save/load cycles.
++
++### Technical Debt Addressed
++-   **TD-STR-GOD-DECOMP**: Components are now available to strip ~40% of the code from `Firm` and `Household`.
++-   **Protocol Purity**: `RuntimeCheckable` protocols enable robust `isinstance()` checks, moving away from `hasattr()`.
++
++## 2. Test Evidence
++
++The following unit tests verify the correctness of the new components:
++
++```
++tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_add_remove_item_main PASSED [  8%]
++tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_add_remove_item_input PASSED [ 16%]
++tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_quality_weighted_average PASSED [ 25%]
++tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_insufficient_remove PASSED [ 33%]
++tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_snapshot_restore PASSED [ 41%]
++tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_get_inventory_value PASSED [ 50%]
++tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_initial_balance PASSED [ 58%]
++tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_deposit_withdraw PASSED [ 66%]
++tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_insufficient_funds PASSED [ 75%]
++tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_credit_frozen PASSED [ 83%]
++tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_net_worth PASSED [ 91%]
++tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_owner_id_parsing PASSED [100%]
++
++============================== 12 passed in 0.68s ==============================
++```
++
++## 3. Next Steps
++
++1.  **Refactor Firm**: Inject `InventoryComponent` and `FinancialComponent` into `Firm` and delegate calls.
++2.  **Refactor Household**: Apply the same pattern to `Household`.
++3.  **Implement TransactionOrchestrator**: Extract the `generate_transactions` logic into a concrete `FirmTransactionOrchestrator`.
+diff --git a/communications/insights/firm-household-decomp-spec.md b/communications/insights/firm-household-decomp-spec.md
+new file mode 100644
+index 00000000..0fde4d7d
+--- /dev/null
++++ b/communications/insights/firm-household-decomp-spec.md
+@@ -0,0 +1,35 @@
++# Insight Report: God Class Decomposition Specification
++
++**Mission**: `firm-household-decomp-spec`
++**Date**: 2026-02-16
++**Author**: Gemini (Scribe)
++**Status**: SPECIFICATION COMPLETE
++
++## 1. Architectural Strategy: CES Lite (Agent Shell)
++We have defined a **Component-Entity-System (CES) Lite** approach to decompose the `Firm` and `Household` God Classes.
++-   **Agent = Shell**: The Agent class becomes a thin wrapper (Shell) that aggregates reusable **Components**.
++-   **Composition over Inheritance**: Instead of inheriting `InventoryMixin` or implementing protocols directly in the class body, the Agent holds `InventoryComponent`, `FinancialComponent`, etc.
++-   **Orchestrators**: Complex procedural logic (e.g., transaction generation pipelines) is extracted into stateless **TransactionOrchestrators**.
++
++## 2. Defined Interfaces
++The following interfaces have been defined in `modules/agent_framework/api.py`:
++-   `IAgentComponent`: Lifecycle management (init, reset).
++-   `IInventoryComponent`: Typed inventory management (replaces dicts).
++-   `IFinancialComponent`: Strict penny-based financial operations (replaces `Wallet` direct usage).
++-   `ITransactionOrchestrator`: Pipeline encapsulation.
++
++## 3. SEO Pattern Adherence
++This decomposition **strictly adheres** to the Stateless Engine & Orchestrator (SEO) pattern:
++-   **Engines** remain pure and stateless.
++-   **Components** hold the state (Data) and provide atomic mutation methods (Logic for data integrity, e.g., "cannot remove more than you have").
++-   **Agents (Orchestrators)** wire Components and Engines together. The Agent is the "Owner" of the state but delegates the "How" to Components and Engines.
++
++## 4. Technical Debt Resolution
++This specification directly addresses `TD-STR-GOD-DECOMP` by:
++-   Reducing `Firm` class size by estimated 40-50% (removing boilerplate).
++-   Centralizing inventory/finance logic, eliminating duplication between Firm/Household.
++-   Enabling isolated unit testing of storage logic.
++
++## 5. Next Steps
++-   **Lane 3 Execution**: Proceed with Component implementation and iterative refactoring of Agents.
++-   **Audit**: Verify that no circular dependencies are introduced between `simulation.agents` and `modules.agent_framework`.
+diff --git a/design/3_work_artifacts/specs/god_class_decomposition_spec.md b/design/3_work_artifacts/specs/god_class_decomposition_spec.md
+new file mode 100644
+index 00000000..5502919c
+--- /dev/null
++++ b/design/3_work_artifacts/specs/god_class_decomposition_spec.md
+@@ -0,0 +1,127 @@
++# Spec: God Class Decomposition (Firm & Household)
++
++**Mission Key**: `firm-household-decomp-spec`
++**Status**: DRAFT
++**Owner**: Gemini (Scribe)
++**Target Phase**: Phase 16.1 (Lane 3)
++
++## 1. Executive Summary
++
++The `Firm` and `Household` classes have accumulated excessive responsibilities, acting as "God Orchestrators" that directly manage state, implement numerous protocols, and orchestrate complex engine pipelines. This specification outlines a structural refactoring using the **Component-Entity-System (CES) Lite** pattern to reduce code volume, improve testability, and enforce strict separation of concerns without altering public APIs.
++
++## 2. Problem Statement
++
++1.  **Protocol Bloat**: `Firm` implements 10+ interfaces directly (`IInventoryHandler`, `IFinancialAgent`, etc.), resulting in hundreds of lines of getter/setter boilerplate.
++2.  **State Exposure**: Internal state (e.g., `_inventory`, `_wallet`) is manipulated directly by the Agent, bypassing encapsulation and making it hard to enforce invariants (e.g., negative inventory checks).
++3.  **Orchestration Coupling**: Complex methods like `generate_transactions` (Firm) and `update_needs` (Household) mix logic with orchestration, making them hard to unit test without full agent instantiation.
++4.  **Testing Fragility**: Tests rely on mocking the entire Agent, leading to "Mock Hell" when internal implementations change.
++
++## 3. Solution Architecture: Agent Shell Pattern
++
++We will transform `Firm` and `Household` into **Agent Shells**. A Shell is a lightweight container that:
++1.  **Holds Components**: Owns `InventoryComponent`, `FinancialComponent`, etc.
++2.  **Delegates Protocols**: Implements public interfaces by forwarding calls to components.
++3.  **Orchestrates Engines**: Uses `TransactionOrchestrator` to wire stateless engines together.
++
++### 3.1. New Components (`modules/agent_framework/components/`)
++
++#### A. `InventoryComponent`
++-   **Responsibility**: Manages `main` and `input` inventory slots, quality tracking, and serialization.
++-   **Implements**: `IInventoryHandler`, `IInventoryComponent`.
++-   **State**: Holds `InventoryStateDTO`.
++
++#### B. `FinancialComponent`
++-   **Responsibility**: Wraps `Wallet`, enforces `IFinancialEntity` (Penny Standard), tracks `credit_frozen` state.
++-   **Implements**: `IFinancialEntity`, `ICreditFrozen`, `IFinancialComponent`.
++-   **State**: Holds `Wallet` instance.
++
++#### C. `FirmTransactionOrchestrator` (Service)
++-   **Responsibility**: Encapsulates the `generate_transactions` pipeline.
++-   **Input**: `FirmStateDTO`, `FiscalContext`, `MarketContext`.
++-   **Output**: `List[Transaction]`.
++-   **Logic**: Calls `HREngine`, `FinanceEngine`, `SalesEngine` in sequence.
++
++### 3.2. Refactored Agent Structure (Pseudo-Code)
++
++```python
++class Firm(ILearningAgent, IFinancialFirm, ...):
++    def __init__(self, ...):
++        # Composition
++        self.inventory_comp = InventoryComponent()
++        self.financial_comp = FinancialComponent()
++        self.txn_orchestrator = FirmTransactionOrchestrator()
++
++        # ... Engines ...
++
++    # Protocol Delegation (Boilerplate Reducer)
++    @property
++    def inventory(self): return self.inventory_comp.get_all_items()
++
++    def add_item(self, *args): return self.inventory_comp.add_item(*args)
++
++    @property
++    def balance_pennies(self): return self.financial_comp.balance_pennies
++
++    # Simplified Orchestration
++    def generate_transactions(self, ...):
++        # Delegate complex wiring to the orchestrator
++        return self.txn_orchestrator.orchestrate(
++            state=self.get_snapshot_dto(),
++            engines=(self.hr_engine, self.finance_engine, self.sales_engine),
++            context=...
++        )
++```
++
++## 4. Implementation Plan (Parallel Lane 3)
++
++This work is assigned to **Lane 3** of the Parallel Technical Debt Clearance Strategy.
++
++### Step 1: Component Creation (Safe)
++-   Create `modules/agent_framework/components/inventory_component.py`.
++-   Create `modules/agent_framework/components/financial_component.py`.
++-   Create `modules/firm/orchestrators/transaction_orchestrator.py`.
++-   **Verification**: Unit test components in isolation.
++
++### Step 2: Firm Refactoring (Lane 3A)
++-   Replace `Firm._inventory` with `Firm.inventory_comp`.
++-   Replace `Firm._wallet` usage with `Firm.financial_comp`.
++-   Delegate protocol methods.
++-   **Verification**: Run `tests/simulation/agents/test_firm.py` (Must pass without modification to tests).
++
++### Step 3: Household Refactoring (Lane 3B)
++-   Follow similar pattern for `Household`.
++-   Extract `HouseholdLifecycleOrchestrator` to handle the `update_needs` pipeline.
++-   **Verification**: Run `tests/simulation/agents/test_household.py`.
++
++## 5. Verification Strategy
++
++### 5.1. Component Tests
++-   **Test**: `tests/modules/agent_framework/test_inventory_component.py`
++-   **Scenario**: Add item, Remove item, Check Quality, Snapshot/Restore.
++-   **Success**: 100% logic coverage of inventory math.
++
++### 5.2. Integration Tests (Regression)
++-   **Test**: `tests/simulation/agents/test_firm_decomposition.py`
++-   **Scenario**:
++    1.  Instantiate Refactored Firm.
++    2.  Perform `add_item`.
++    3.  Verify item is in `firm.inventory_comp`.
++    4.  Verify `firm.get_quantity()` returns correct value.
++    5.  Run full `make_decision` cycle to ensure orchestration wiring holds.
++
++## 6. Risk Analysis
++
++-   **Risk**: `load_state` / `get_current_state` logic drift.
++    -   *Mitigation*: The `Component` must provide `to_dto()` and `from_dto()` methods. The Agent's `load_state` must explicitly call these.
++-   **Risk**: Performance overhead of delegation.
++    -   *Mitigation*: Python method calls are cheap enough for this simulation scale. The structural clarity outweighs micro-optimization.
++-   **Risk**: Circular Imports.
++    -   *Mitigation*: Components must NOT import the Agent class. They only import DTOs and Protocols.
++
++## 7. Mandatory Reporting Instruction
++
++**[INSTRUCTION FOR ASSIGNED AGENT]**
++Upon drafting this spec, you MUST create the insight report at `communications/insights/firm-household-decomp-spec.md` with the following content:
++1.  Confirmation of Decomposition Strategy (CES Lite).
++2.  List of created Component Interfaces.
++3.  Verification that this approach adheres to SEO Pattern (Components are stateful helpers, Engines remain stateless).
+diff --git a/modules/agent_framework/api.py b/modules/agent_framework/api.py
+new file mode 100644
+index 00000000..480ed834
+--- /dev/null
++++ b/modules/agent_framework/api.py
+@@ -0,0 +1,100 @@
++"""
++modules/agent_framework/api.py
++
++Defines the reusable Component Interfaces for the "Agent Shell" pattern.
++This module facilitates the decomposition of God Class Agents (Firm/Household)
++into lightweight orchestrators composed of specialized components.
++"""
++from typing import Protocol, Dict, Any, Optional, List, TypeVar, runtime_checkable
++from abc import abstractmethod
++from dataclasses import dataclass
++
++from modules.simulation.api import InventorySlot, ItemDTO, IInventoryHandler
++from modules.finance.api import CurrencyCode, IFinancialEntity
++
++@dataclass(frozen=True)
++class ComponentConfigDTO:
++    """Base configuration for agent components."""
++    owner_id: str
++    debug_mode: bool = False
++
++@runtime_checkable
++class IAgentComponent(Protocol):
++    """Base protocol for all agent components."""
++
++    @abstractmethod
++    def initialize(self, config: Dict[str, Any]) -> None:
++        """Initialize the component with specific config."""
++        ...
++
++    @abstractmethod
++    def reset(self) -> None:
++        """Reset component state for a new tick/cycle."""
++        ...
++
++@runtime_checkable
++class IInventoryComponent(IInventoryHandler, Protocol):
++    """
++    Component responsible for managing agent inventory storage and quality.
++    Strictly typed to replace ad-hoc dictionary manipulation.
++    """
++
++    @abstractmethod
++    def load_from_state(self, inventory_data: Dict[str, Any]) -> None:
++        """Restores inventory state from a snapshot/DTO."""
++        ...
++
++    @abstractmethod
++    def snapshot(self) -> Dict[str, Any]:
++        """Returns a serializable snapshot of the inventory."""
++        ...
++
++    @abstractmethod
++    def get_inventory_value(self, price_map: Dict[str, int]) -> int:
++        """Calculates total value based on provided prices (pennies)."""
++        ...
++
++@runtime_checkable
++class IFinancialComponent(IFinancialEntity, Protocol):
++    """
++    Component responsible for wrapping the Wallet and enforcing financial protocols.
++    Handles strict integer arithmetic and currency management.
++    """
++
++    @property
++    @abstractmethod
++    def wallet_balance(self) -> int:
++        """Primary currency balance in pennies."""
++        ...
++
++    @abstractmethod
++    def get_net_worth(self, valuation_func: Optional[Any] = None) -> int:
++        """Calculates total agent net worth (assets - liabilities)."""
++        ...
++
++@runtime_checkable
++class ITransactionOrchestrator(Protocol):
++    """
++    Encapsulates complex transaction generation logic previously embedded in Agents.
++    """
++
++    @abstractmethod
++    def orchestrate(self, context: Any) -> List[Any]:
++        """
++        Executes the transaction generation pipeline.
++        Returns a list of Transaction objects (opaque Any for loose coupling here).
++        """
++        ...
++
++# DTOs for Component State
++@dataclass
++class InventoryStateDTO:
++    main_slot: Dict[str, float]
++    main_quality: Dict[str, float]
++    input_slot: Dict[str, float]
++    input_quality: Dict[str, float]
++
++@dataclass
++class FinancialStateDTO:
++    balances: Dict[CurrencyCode, int]
++    credit_frozen_until: int
+diff --git a/modules/agent_framework/components/financial_component.py b/modules/agent_framework/components/financial_component.py
+new file mode 100644
+index 00000000..d9448b24
+--- /dev/null
++++ b/modules/agent_framework/components/financial_component.py
+@@ -0,0 +1,73 @@
++"""
++modules/agent_framework/components/financial_component.py
++
++Implementation of the IFinancialComponent.
++Wraps the Wallet and enforces strict penny-based arithmetic.
++"""
++from typing import Dict, Any, Optional
++import logging
++
++from modules.finance.api import IFinancialEntity, ICreditFrozen, CurrencyCode, DEFAULT_CURRENCY
++from modules.finance.wallet.wallet import Wallet
++from modules.agent_framework.api import IFinancialComponent, ComponentConfigDTO
++
++logger = logging.getLogger(__name__)
++
++class FinancialComponent(IFinancialComponent, ICreditFrozen):
++    """
++    Component handling financial state and operations.
++    Delegates storage to Wallet but exposes strict typed interfaces.
++    """
++
++    def __init__(self, owner_id: str, allow_negative_balance: bool = False):
++        self.owner_id = owner_id
++        # Ensure owner_id is int for Wallet as per its type hint, fallback to 0 if not
++        wallet_owner_id = int(owner_id) if owner_id.isdigit() else 0
++        self._wallet = Wallet(wallet_owner_id, allow_negative_balance=allow_negative_balance)
++        self._credit_frozen_until_tick: int = 0
++
++    def initialize(self, config: Dict[str, Any]) -> None:
++        """Initialize wallet with starting balance."""
++        initial_balance = config.get("initial_balance", 0)
++        if initial_balance > 0:
++            self._wallet.add(initial_balance, DEFAULT_CURRENCY, memo="Initial Balance")
++
++    def reset(self) -> None:
++        """Reset tick-based counters or caches if any."""
++        pass
++
++    @property
++    def credit_frozen_until_tick(self) -> int:
++        return self._credit_frozen_until_tick
++
++    @credit_frozen_until_tick.setter
++    def credit_frozen_until_tick(self, value: int) -> None:
++        self._credit_frozen_until_tick = value
++
++    @property
++    def balance_pennies(self) -> int:
++        return self._wallet.get_balance(DEFAULT_CURRENCY)
++
++    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        """Deposits funds into the wallet."""
++        self._wallet.add(amount_pennies, currency, memo="FinancialComponent Deposit")
++
++    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        """Withdraws funds from the wallet."""
++        # Wallet raises InsufficientFundsError if needed
++        self._wallet.subtract(amount_pennies, currency, memo="FinancialComponent Withdrawal")
++
++    @property
++    def wallet_balance(self) -> int:
++        return self.balance_pennies
++
++    def get_net_worth(self, valuation_func: Optional[Any] = None) -> int:
++        """
++        Calculates total net worth.
++        If valuation_func is provided, it should return the value of non-cash assets (pennies).
++        """
++        cash = self.balance_pennies
++        non_cash = 0
++        if valuation_func:
++            non_cash = int(valuation_func())
++        return cash + non_cash
+diff --git a/modules/agent_framework/components/inventory_component.py b/modules/agent_framework/components/inventory_component.py
+new file mode 100644
+index 00000000..60febc84
+--- /dev/null
++++ b/modules/agent_framework/components/inventory_component.py
+@@ -0,0 +1,170 @@
++"""
++modules/agent_framework/components/inventory_component.py
++
++Implementation of the IInventoryComponent.
++Manages inventory slots (MAIN, INPUT), quality tracking, and serialization.
++"""
++from typing import Dict, Any, Optional, List
++import logging
++
++from modules.simulation.api import InventorySlot, ItemDTO
++from modules.agent_framework.api import IInventoryComponent, ComponentConfigDTO, InventoryStateDTO
++
++logger = logging.getLogger(__name__)
++
++class InventoryComponent(IInventoryComponent):
++    """
++    Component handling inventory management with quality tracking.
++    Supports MAIN and INPUT slots.
++    """
++
++    def __init__(self, owner_id: str):
++        self.owner_id = owner_id
++        # State
++        self._main_inventory: Dict[str, float] = {}
++        self._main_quality: Dict[str, float] = {}
++        self._input_inventory: Dict[str, float] = {}
++        self._input_quality: Dict[str, float] = {}
++
++    def initialize(self, config: Dict[str, Any]) -> None:
++        """Initialize with optional starting inventory."""
++        # Config might contain 'initial_inventory'
++        initial_inv = config.get("initial_inventory")
++        if initial_inv and isinstance(initial_inv, dict):
++            for item_id, qty in initial_inv.items():
++                self.add_item(item_id, float(qty))
++
++    def reset(self) -> None:
++        """
++        Reset logic if needed.
++        Inventory usually persists across ticks, so this might be no-op
++        or strictly for tick-based counters if we had any.
++        """
++        pass
++
++    def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0, slot: InventorySlot = InventorySlot.MAIN) -> bool:
++        """
++        Adds item to the specified slot, updating weighted average quality.
++        """
++        if quantity < 0:
++            return False
++
++        current_qty = self.get_quantity(item_id, slot)
++        current_quality = self.get_quality(item_id, slot)
++
++        total_qty = current_qty + quantity
++
++        # Select target references
++        if slot == InventorySlot.MAIN:
++            inv_ref = self._main_inventory
++            qual_ref = self._main_quality
++        elif slot == InventorySlot.INPUT:
++            inv_ref = self._input_inventory
++            qual_ref = self._input_quality
++        else:
++            return False
++
++        # Update Quality (Weighted Average)
++        if total_qty > 0:
++            new_avg_quality = ((current_qty * current_quality) + (quantity * quality)) / total_qty
++            qual_ref[item_id] = new_avg_quality
++
++        # Update Quantity
++        inv_ref[item_id] = total_qty
++        return True
++
++    def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, slot: InventorySlot = InventorySlot.MAIN) -> bool:
++        """
++        Removes item from the specified slot. Returns False if insufficient quantity.
++        """
++        if quantity < 0:
++            return False
++
++        if slot == InventorySlot.MAIN:
++            inv_ref = self._main_inventory
++        elif slot == InventorySlot.INPUT:
++            inv_ref = self._input_inventory
++        else:
++            return False
++
++        current = inv_ref.get(item_id, 0.0)
++        if current < quantity:
++            return False
++
++        new_qty = current - quantity
++        inv_ref[item_id] = new_qty
++
++        # Cleanup small floating point residuals
++        if inv_ref[item_id] <= 1e-9:
++            if item_id in inv_ref:
++                del inv_ref[item_id]
++            # We don't necessarily delete quality info, keeping it for history or future adds is fine,
++            # but usually we can clean it up to save memory if needed.
++            # Firm implementation didn't seem to explicitly delete quality on empty,
++            # but usually it's safer to keep it or let it be overwritten on next add.
++
++        return True
++
++    def get_quantity(self, item_id: str, slot: InventorySlot = InventorySlot.MAIN) -> float:
++        if slot == InventorySlot.MAIN:
++            return self._main_inventory.get(item_id, 0.0)
++        elif slot == InventorySlot.INPUT:
++            return self._input_inventory.get(item_id, 0.0)
++        return 0.0
++
++    def get_quality(self, item_id: str, slot: InventorySlot = InventorySlot.MAIN) -> float:
++        if slot == InventorySlot.MAIN:
++            return self._main_quality.get(item_id, 1.0)
++        elif slot == InventorySlot.INPUT:
++            return self._input_quality.get(item_id, 1.0)
++        return 1.0
++
++    def get_all_items(self, slot: InventorySlot = InventorySlot.MAIN) -> Dict[str, float]:
++        if slot == InventorySlot.MAIN:
++            return self._main_inventory.copy()
++        elif slot == InventorySlot.INPUT:
++            return self._input_inventory.copy()
++        return {}
++
++    def clear_inventory(self, slot: InventorySlot = InventorySlot.MAIN) -> None:
++        if slot == InventorySlot.MAIN:
++            self._main_inventory.clear()
++            self._main_quality.clear()
++        elif slot == InventorySlot.INPUT:
++            self._input_inventory.clear()
++            self._input_quality.clear()
++
++    def load_from_state(self, inventory_data: Dict[str, Any]) -> None:
++        """
++        Restores state from a dictionary (typically from AgentStateDTO.inventories or similar).
++        The format expected is DTO-like or raw dicts depending on usage.
++        For now, assuming generic dict structure compatible with `InventoryStateDTO`.
++        """
++        # If input is InventoryStateDTO (as dict)
++        if "main_slot" in inventory_data:
++            self._main_inventory = inventory_data.get("main_slot", {}).copy()
++            self._main_quality = inventory_data.get("main_quality", {}).copy()
++            self._input_inventory = inventory_data.get("input_slot", {}).copy()
++            self._input_quality = inventory_data.get("input_quality", {}).copy()
++        else:
++            # Fallback or other format handling
++            pass
++
++    def snapshot(self) -> Dict[str, Any]:
++        """Returns the internal state as a dictionary fitting InventoryStateDTO."""
++        return {
++            "main_slot": self._main_inventory.copy(),
++            "main_quality": self._main_quality.copy(),
++            "input_slot": self._input_inventory.copy(),
++            "input_quality": self._input_quality.copy()
++        }
++
++    def get_inventory_value(self, price_map: Dict[str, int]) -> int:
++        """
++        Calculates total value of MAIN inventory based on price map (pennies).
++        """
++        total_val = 0
++        for item_id, qty in self._main_inventory.items():
++            price = price_map.get(item_id, 0)
++            total_val += int(qty * price)
++        return total_val
+diff --git a/tests/modules/agent_framework/test_components.py b/tests/modules/agent_framework/test_components.py
+new file mode 100644
+index 00000000..61b4acbb
+--- /dev/null
++++ b/tests/modules/agent_framework/test_components.py
+@@ -0,0 +1,127 @@
++"""
++tests/modules/agent_framework/test_components.py
++
++Unit tests for Agent Framework Components.
++Verifies IInventoryComponent and IFinancialComponent implementations.
++"""
++import pytest
++from unittest.mock import MagicMock, ANY
++
++from modules.agent_framework.components.inventory_component import InventoryComponent
++from modules.agent_framework.components.financial_component import FinancialComponent
++from modules.simulation.api import InventorySlot
++from modules.finance.api import DEFAULT_CURRENCY, InsufficientFundsError
++
++class TestInventoryComponent:
++
++    @pytest.fixture
++    def inventory(self):
++        return InventoryComponent(owner_id="test_agent")
++
++    def test_add_remove_item_main(self, inventory):
++        # Add item
++        assert inventory.add_item("item_a", 10.0, quality=1.0)
++        assert inventory.get_quantity("item_a") == 10.0
++        assert inventory.get_quality("item_a") == 1.0
++
++        # Remove partial
++        assert inventory.remove_item("item_a", 4.0)
++        assert inventory.get_quantity("item_a") == 6.0
++
++        # Remove remainder
++        assert inventory.remove_item("item_a", 6.0)
++        assert inventory.get_quantity("item_a") == 0.0
++
++    def test_add_remove_item_input(self, inventory):
++        # Add item to INPUT slot
++        assert inventory.add_item("raw_mat", 50.0, slot=InventorySlot.INPUT, quality=0.8)
++        assert inventory.get_quantity("raw_mat", slot=InventorySlot.INPUT) == 50.0
++        assert inventory.get_quality("raw_mat", slot=InventorySlot.INPUT) == 0.8
++
++        # Verify isolation from MAIN
++        assert inventory.get_quantity("raw_mat", slot=InventorySlot.MAIN) == 0.0
++
++    def test_quality_weighted_average(self, inventory):
++        # Add 10 @ 1.0
++        inventory.add_item("item_b", 10.0, quality=1.0)
++        # Add 10 @ 0.5
++        inventory.add_item("item_b", 10.0, quality=0.5)
++
++        # Expected: (10*1.0 + 10*0.5) / 20 = 15/20 = 0.75
++        assert inventory.get_quantity("item_b") == 20.0
++        assert inventory.get_quality("item_b") == 0.75
++
++    def test_insufficient_remove(self, inventory):
++        inventory.add_item("item_c", 5.0)
++        assert not inventory.remove_item("item_c", 10.0)
++        assert inventory.get_quantity("item_c") == 5.0
++
++    def test_snapshot_restore(self, inventory):
++        inventory.add_item("item_d", 10.0, quality=0.9)
++        inventory.add_item("item_e", 5.0, slot=InventorySlot.INPUT)
++
++        snapshot = inventory.snapshot()
++
++        new_inventory = InventoryComponent("restored_agent")
++        new_inventory.load_from_state(snapshot)
++
++        assert new_inventory.get_quantity("item_d") == 10.0
++        assert new_inventory.get_quality("item_d") == 0.9
++        assert new_inventory.get_quantity("item_e", slot=InventorySlot.INPUT) == 5.0
++
++    def test_get_inventory_value(self, inventory):
++        inventory.add_item("apple", 10.0)
++        inventory.add_item("banana", 5.0)
++
++        price_map = {"apple": 100, "banana": 200} # pennies
++        # 10*100 + 5*200 = 1000 + 1000 = 2000
++        assert inventory.get_inventory_value(price_map) == 2000
++
++
++class TestFinancialComponent:
++
++    @pytest.fixture
++    def finance(self):
++        return FinancialComponent(owner_id="101")
++
++    def test_initial_balance(self):
++        comp = FinancialComponent("102")
++        comp.initialize({"initial_balance": 5000})
++        assert comp.balance_pennies == 5000
++
++    def test_deposit_withdraw(self, finance):
++        finance.deposit(1000)
++        assert finance.balance_pennies == 1000
++
++        finance.withdraw(400)
++        assert finance.balance_pennies == 600
++
++    def test_insufficient_funds(self, finance):
++        finance.deposit(100)
++        with pytest.raises(InsufficientFundsError):
++            finance.withdraw(200)
++        assert finance.balance_pennies == 100
++
++    def test_credit_frozen(self, finance):
++        assert finance.credit_frozen_until_tick == 0
++        finance.credit_frozen_until_tick = 100
++        assert finance.credit_frozen_until_tick == 100
++
++    def test_net_worth(self, finance):
++        finance.deposit(1000)
++
++        # Simple valuation mock
++        valuation_func = MagicMock(return_value=500) # 500 pennies assets
++
++        nw = finance.get_net_worth(valuation_func)
++        assert nw == 1500
++        valuation_func.assert_called_once()
++
++    def test_owner_id_parsing(self):
++        # Should handle string ID "123" -> int 123 for Wallet
++        f = FinancialComponent("123")
++        assert f._wallet.owner_id == 123
++
++        # Should fallback for non-digit
++        f2 = FinancialComponent("FIRM_A")
++        assert f2._wallet.owner_id == 0

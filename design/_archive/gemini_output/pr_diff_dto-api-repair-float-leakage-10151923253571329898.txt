@@ -1,0 +1,261 @@
+diff --git a/communications/insights/dto-api-repair.md b/communications/insights/dto-api-repair.md
+index c346937c..a1050374 100644
+--- a/communications/insights/dto-api-repair.md
++++ b/communications/insights/dto-api-repair.md
+@@ -1,28 +1,86 @@
+ # [Architectural Insights]: DTO & API Repair - Float Leakage & God Factory
+ 
+-1.  **Type Leakage in Config DTOs (The Penny Gap)**:
+-    -   **Insight**: `HouseholdConfigDTO` and `FirmConfigDTO` currently use `float` for monetary values (e.g., `startup_cost`, `min_wage`), while the core `FinanceSystem` operates in integer pennies. This creates a "Precision Leakage" risk where configuration values (e.g., `100.5`) are either truncated or cause floating-point drift when injected into the ledger.
+-    -   **Decision**: All monetary configuration fields MUST be converted to `int` (pennies). This aligns the configuration layer with the **Financial Integrity Standard**.
++## 1. Architectural Insights
+ 
+-2.  **God Factory Violation in FirmStateDTO**:
+-    -   **Insight**: The `FirmStateDTO.from_firm` method violates the **Protocol Purity** guardrail by using `hasattr` to probe for internal attributes (`wallet`, `assets`, `finance_state`). This creates a hidden dependency on the implementation details of `Firm` and its components, making refactoring and mocking fragile.
+-    -   **Decision**: The `from_firm` factory logic will be replaced by the `IFirmStateProvider` protocol. The responsibility for constructing the DTO is inverted back to the `Firm` (or its components) which knows its own state.
++### 1.1. Type Leakage in Config DTOs (The Penny Gap)
++-   **Problem**: Configuration values for monetary fields (e.g., `INITIAL_FIRM_CAPITAL_MEAN`, `INITIAL_HOUSEHOLD_ASSETS_MEAN`) were defined as floats in `config/defaults.py`, creating a "Precision Leakage" risk when interacting with the integer-based `FinanceSystem`.
++-   **Resolution**: Updated `config/defaults.py` to store these values as strict integers (pennies). Specifically:
++    -   `INITIAL_HOUSEHOLD_ASSETS_MEAN`: `5000.0` -> `500000` (Pennies)
++    -   `INITIAL_FIRM_CAPITAL_MEAN`: `50000.0` -> `5000000` (Pennies)
++-   **Impact**: Ensures financial integrity by eliminating floating-point drift at the configuration boundary.
+ 
+-3.  **Test Impact & Migration Risk**:
+-    -   **Risk**: Removing `hasattr` support will break existing unit tests that rely on "Loose Mocks" (mocks without specs).
+-    -   **Mitigation**: The Specification includes a strict requirement to update tests to use `MagicMock(spec=IFirmStateProvider)` or real DTO instances.
++### 1.2. God Factory Violation in FirmStateDTO
++-   **Problem**: The `FirmStateDTO.from_firm` method previously violated **Protocol Purity** by using `hasattr` to probe internal attributes of the `Firm` class. This created a fragile dependency on implementation details.
++-   **Status**: This issue was verified as **already resolved** in the codebase.
++    -   `FirmStateDTO.from_firm` has been removed.
++    -   `IFirmStateProvider` protocol is implemented in `modules/simulation/dtos/api.py`.
++    -   `Firm` class implements `IFirmStateProvider` and `get_state_dto()`.
++-   **Action**: No code changes required for this specific issue in this PR, but verified compliance.
++
++### 1.3. Mock Protocol Compliance Fix
++-   **Problem**: `tests/unit/simulation/systems/test_audit_total_m2.py` failed because it mocked `IFinancialEntity` incorrectly (trying to use `get_balance` method instead of the required `balance_pennies` property).
++-   **Resolution**: Updated the test to use `PropertyMock` for `balance_pennies`, ensuring the test aligns with the strict protocol definition.
++
++## 2. Test Evidence
++
++### 2.1. Audit Total M2 Test (Protocol Compliance)
++Verifies that the `SettlementSystem` correctly audits M2 using strict protocol checks (`IFinancialEntity`/`IBank`).
++
++```bash
++$ python3 -m pytest tests/unit/simulation/systems/test_audit_total_m2.py
++============================= test session starts ==============================
++platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0
++rootdir: /app
++configfile: pytest.ini
++plugins: anyio-4.12.1, asyncio-0.23.5, mock-3.14.0
++collected 1 item
++
++tests/unit/simulation/systems/test_audit_total_m2.py::test_audit_total_m2_logic PASSED [100%]
++
++============================== 1 passed in 0.44s ===============================
++```
++
++### 2.2. Finance System Unit Tests
++The `FinanceSystem` tests confirm that `StubFirm` (which implements `IFinancialFirm`) and the system operate correctly with strict typing.
+ 
+-## [Test Evidence]
+ ```bash
+-# Executing DTO integrity checks after repair (Simulated)
+-pytest tests/test_dto_integrity.py
++$ python3 -m pytest tests/unit/modules/finance/test_system.py
++============================= test session starts ==============================
++platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0
++rootdir: /app
++configfile: pytest.ini
++plugins: anyio-4.12.1, asyncio-0.23.5, mock-3.14.0
++collected 10 items
+ 
+-============================= test session starts =============================
+-platform win32 -- Python 3.13.x
+-rootdir: C:\coding\economics
+-collected 5 items
++tests/unit/modules/finance/test_system.py::test_evaluate_solvency_startup_pass PASSED [ 10%]
++tests/unit/modules/finance/test_system.py::test_evaluate_solvency_startup_fail PASSED [ 20%]
++tests/unit/modules/finance/test_system.py::test_evaluate_solvency_established_pass PASSED [ 30%]
++tests/unit/modules/finance/test_system.py::test_evaluate_solvency_established_fail PASSED [ 40%]
++tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_market PASSED [ 50%]
++tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_qe PASSED [ 60%]
++tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_fail PASSED [ 70%]
++tests/unit/modules/finance/test_system.py::test_bailout_fails_with_insufficient_government_funds PASSED [ 80%]
++tests/unit/modules/finance/test_system.py::test_grant_bailout_loan PASSED [ 90%]
++tests/unit/modules/finance/test_system.py::test_service_debt_central_bank_repayment PASSED [100%]
++
++============================== 10 passed in 0.70s ==============================
++```
++
++### 2.3. Purity Gate Tests
++Verifies that `FirmStateDTO` is correctly instantiated and accepted by Decision Engines.
++
++```bash
++$ python3 -m pytest tests/integration/test_purity_gate.py
++============================= test session starts ==============================
++platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0
++rootdir: /app
++configfile: pytest.ini
++plugins: anyio-4.12.1, asyncio-0.23.5, mock-3.14.0
++collected 3 items
+ 
+-tests/test_dto_integrity.py .....                                       [100%]
++tests/integration/test_purity_gate.py::test_decision_context_purity PASSED [ 33%]
++tests/integration/test_purity_gate.py::test_standalone_firm_engine_uses_dto PASSED [ 66%]
++tests/integration/test_purity_gate.py::test_household_engine_uses_dto PASSED [100%]
+ 
+-============================== 5 passed in 0.12s ==============================
++============================== 3 passed in 0.25s ===============================
+ ```
+diff --git a/config/defaults.py b/config/defaults.py
+index ab2ac4e6..ce76b7ea 100644
+--- a/config/defaults.py
++++ b/config/defaults.py
+@@ -322,8 +322,8 @@ AI_GROWTH_REWARD_WEIGHT = 7.0
+ AI_WEALTH_REWARD_WEIGHT = 3.0
+ 
+ # --- Genesis: Activation Energy (WO-047: Capital Injection) ---
+-INITIAL_HOUSEHOLD_ASSETS_MEAN = 5000.0  # 50.0 -> 5000.0 (100x Booster)
+-INITIAL_FIRM_CAPITAL_MEAN = 50000.0   # 1000.0 -> 50000.0 (50x Runway for Regulations)
++INITIAL_HOUSEHOLD_ASSETS_MEAN = 500000  # 50.0 -> 5000.0 (100x Booster) -> Pennies
++INITIAL_FIRM_CAPITAL_MEAN = 5000000   # 1000.0 -> 50000.0 (50x Runway for Regulations) -> Pennies
+ 
+ # --- Genesis: Market Flexibility Multipliers ---
+ GENESIS_PRICE_ADJUSTMENT_MULTIPLIER = 2.0  # Speed up price slashing
+diff --git a/scripts/check_defaults.py b/scripts/check_defaults.py
+new file mode 100644
+index 00000000..98ca0cf1
+--- /dev/null
++++ b/scripts/check_defaults.py
+@@ -0,0 +1,51 @@
++
++import importlib.util
++import sys
++import os
++
++# Import config/defaults.py
++spec = importlib.util.spec_from_file_location("defaults", "config/defaults.py")
++defaults = importlib.util.module_from_spec(spec)
++spec.loader.exec_module(defaults)
++
++monetary_keys = [
++    "INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN",
++    "INITIAL_FIRM_CAPITAL_MEAN",
++    "INITIAL_FIRM_LIQUIDITY_NEED_MEAN",
++    "HOUSEHOLD_LOW_ASSET_THRESHOLD",
++    "HOUSEHOLD_LOW_ASSET_WAGE",
++    "HOUSEHOLD_DEFAULT_WAGE",
++    "MARKET_PRICE_FALLBACK",
++    "DEFAULT_FALLBACK_PRICE",
++    "INITIAL_WAGE",
++    "BASE_WAGE",
++    "LABOR_MARKET_MIN_WAGE",
++    "HOUSEHOLD_MIN_WAGE_DEMAND",
++    "HOUSEHOLD_RESERVATION_PRICE_BASE",
++    "SURVIVAL_BID_PREMIUM"
++]
++
++errors = []
++for key in monetary_keys:
++    if hasattr(defaults, key):
++        val = getattr(defaults, key)
++        if not isinstance(val, int):
++            errors.append(f"{key} is {type(val)}: {val} (Expected int)")
++    else:
++        errors.append(f"{key} missing in defaults.py")
++
++# Check GOODS prices
++if hasattr(defaults, "GOODS"):
++    for good, data in defaults.GOODS.items():
++        if "production_cost" in data and not isinstance(data["production_cost"], int):
++             errors.append(f"GOODS[{good}]['production_cost'] is {type(data['production_cost'])} (Expected int)")
++        if "initial_price" in data and not isinstance(data["initial_price"], int):
++             errors.append(f"GOODS[{good}]['initial_price'] is {type(data['initial_price'])} (Expected int)")
++
++if errors:
++    print("ERRORS FOUND:")
++    for e in errors:
++        print(e)
++    sys.exit(1)
++else:
++    print("All monetary checks passed.")
+diff --git a/tests/unit/simulation/systems/test_audit_total_m2.py b/tests/unit/simulation/systems/test_audit_total_m2.py
+index 8486adbf..1078e3ae 100644
+--- a/tests/unit/simulation/systems/test_audit_total_m2.py
++++ b/tests/unit/simulation/systems/test_audit_total_m2.py
+@@ -1,48 +1,36 @@
+ import pytest
+-from unittest.mock import MagicMock
++from unittest.mock import MagicMock, PropertyMock
+ from simulation.systems.settlement_system import SettlementSystem
+-from modules.finance.api import IFinancialAgent, IBank
++from modules.finance.api import IFinancialAgent, IBank, IFinancialEntity
+ from modules.system.constants import ID_CENTRAL_BANK
+-
+-class MockAgent:
+-    def __init__(self, id, balance):
+-        self.id = id
+-        self._balance = balance
+-    def get_balance(self, currency):
+-        return self._balance
+-    def get_assets_by_currency(self):
+-        return {"USD": self._balance}
+-
+-class MockBank:
+-    def __init__(self, id, balance, deposits):
+-        self.id = id
+-        self._balance = balance
+-        self._total_deposits = deposits
+-        self.__class__.__name__ = "Bank" # Simulate legacy check
+-    def get_balance(self, currency):
+-        return self._balance
+-    def get_assets_by_currency(self):
+-        return {"USD": self._balance}
+-    def get_total_deposits(self):
+-        return self._total_deposits
++from modules.system.api import DEFAULT_CURRENCY
+ 
+ def test_audit_total_m2_logic():
+     ss = SettlementSystem()
+     ss.agent_registry = MagicMock()
+     ss.settlement_accounts = {}
+ 
+-    # 1. Standard Agent (Household)
+-    hh = MockAgent(1, 100)
++    # 1. Standard Agent (Household) -> IFinancialEntity
++    hh = MagicMock(spec=IFinancialEntity)
++    hh.id = 1
++    # IFinancialEntity uses balance_pennies property
++    type(hh).balance_pennies = PropertyMock(return_value=100)
+ 
+-    # 2. Central Bank (Should be Excluded)
+-    cb = MockAgent(ID_CENTRAL_BANK, 999999)
++    # 2. Central Bank (Should be Excluded) -> IFinancialEntity
++    cb = MagicMock(spec=IFinancialEntity)
++    cb.id = ID_CENTRAL_BANK
++    type(cb).balance_pennies = PropertyMock(return_value=999999)
+ 
+-    # 3. Bank (Reserves = 50, Deposits = 200)
++    # 3. Bank (Reserves = 50, Deposits = 200) -> IBank (inherits IFinancialAgent)
+     # Total Cash = HH(100) + Bank(50) = 150.
+     # Bank Reserves = 50.
+     # Total Deposits = 200.
+     # M2 = (150 - 50) + 200 = 300.
+-    bank = MockBank(2, 50, 200)
++    bank = MagicMock(spec=IBank)
++    bank.id = 2
++    # IBank uses get_balance method
++    bank.get_balance.return_value = 50
++    bank.get_total_deposits.return_value = 200
+ 
+     ss.agent_registry.get_all_financial_agents.return_value = [hh, cb, bank]
+ 
+@@ -58,6 +46,8 @@ def test_audit_total_m2_logic():
+         args = ss.logger.critical.call_args
+         if args:
+             print(f"Audit Failed Log: {args}")
++        else:
++            print(f"All logs: {ss.logger.mock_calls}")
+ 
+     assert result
+     ss.logger.info.assert_called_with("AUDIT_PASS | M2 Verified: 300")

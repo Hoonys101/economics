@@ -17,28 +17,10 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "dto-api-repair": {
-        "title": "DTO & API Repair: Float Leakage & God Factory",
+    "fix-and-run-diagnostics": {
+        "title": "Forensic Execution: Repair and Run Leak Diagnostics",
         "command": "create",
-        "file": "design/3_work_artifacts/specs/MISSION_dto-api-repair_SPEC.md",
-        "instruction": "Execute the DTO and API repair as specified in the MISSION_dto-api-repair_SPEC.md. Secure the 'Integer Pennies' standard in Config DTOs and enforce IFirmStateProvider protocol in FirmStateDTO."
-    },
-    "agent-decomposition": {
-        "title": "Agent Shell Refactor: Firm & Household Decomposition",
-        "command": "create",
-        "file": "design/3_work_artifacts/specs/MISSION_agent-decomposition_SPEC.md",
-        "instruction": "Refactor Firm and Household classes into 'Agent Shells'. Implement InventoryComponent and FinancialComponent to reduce God Class bloat and enforce CES Lite patterns."
-    },
-    "mock-automation": {
-        "title": "Mock Drift Automation & Strict Protocol Enforcement",
-        "command": "create",
-        "file": "design/3_work_artifacts/specs/MISSION_mock-automation_SPEC.md",
-        "instruction": "Implement StrictMockFactory and ProtocolInspector to eliminate Mock Drift. Setup Pytest plugin for automated drift detection."
-    },
-    "test-unit-scale": {
-        "title": "Test Suite Standardization: Dollar to Penny Migration",
-        "command": "create",
-        "file": "design/3_work_artifacts/specs/MISSION_test-unit-scale_SPEC.md",
-        "instruction": "Migrate the test suite from Float Dollars to Integer Pennies. Use P() helper and enforce Penny Standard in all financial mocks."
+        "instruction": "`scripts/diagnose_money_leak.py` 스크립트가 최신 엔진 코드(특히 `Bank` 클래스의 `.assets` 참조 오류)와 호환되도록 수정하고 실행하십시오. 실행 결과(Transaction Summary 포함)를 `reports/temp/tick1_diagnostics.log`로 저장하여 Gemini의 후속 분석을 위한 데이터를 확보하십시오.",
+        "wait": True
     }
 }
