@@ -143,6 +143,17 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     # --- IBank Implementation ---
 
     def grant_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanInfoDTO, Transaction]]:
+        from dataclasses import replace, is_dataclass
+
+        # Resolve borrower object vs ID
+        borrower_obj = None
+        borrower_agent_id = borrower_id
+
+        # Check if borrower_id is actually an agent object (duck typing or protocol check)
+        if hasattr(borrower_id, 'id'):
+             borrower_obj = borrower_id
+             borrower_agent_id = borrower_id.id
+
         if not self.finance_system:
             logger.error("Bank: FinanceSystem not set. Cannot grant loan.")
             return None
@@ -152,12 +163,17 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
             return None
 
         # Enhance profile with preferred lender (self)
-        profile = borrower_profile or {}
-        profile['preferred_lender_id'] = self.id
+        if borrower_profile and is_dataclass(borrower_profile):
+            profile = replace(borrower_profile, preferred_lender_id=self.id)
+        else:
+            profile = borrower_profile or {}
+            if isinstance(profile, dict):
+                profile['preferred_lender_id'] = self.id
+            # If we were passed a dataclass but failed check, or passed something else, we let process_loan_application handle conversion or failure
 
         # Call FinanceSystem
         loan_dto, txs = self.finance_system.process_loan_application(
-            borrower_id=borrower_id,
+            borrower_id=borrower_agent_id,
             amount=amount,
             borrower_profile=profile,
             current_tick=self.current_tick_tracker
@@ -166,12 +182,28 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         if not loan_dto:
             return None
 
-        # Extract credit creation tx
+        # Extract credit creation tx and EXECUTE settlement
         credit_tx = None
         for tx in txs:
             if tx.transaction_type == "credit_creation":
                 credit_tx = tx
                 break
+
+        # Execute the transfer (Wallet Update) to match Ledger Update
+        # Bank transfers to Borrower. M2 increases (because Bank balance is subtracted from M2).
+        if self.settlement_system:
+             if borrower_obj:
+                 # We use 'transfer' effectively swapping Reserves (Bank) for Deposit (Borrower).
+                 # If Bank runs out of Reserves, it stops lending (Capital Constraint).
+                 self.settlement_system.transfer(
+                     self,
+                     borrower_obj, # Target Object
+                     amount,
+                     memo=f"loan_disbursement_{loan_dto.loan_id}",
+                     currency=DEFAULT_CURRENCY
+                 )
+             else:
+                 logger.warning(f"Bank {self.id} cannot transfer loan funds: Borrower object not provided for ID {borrower_agent_id}")
 
         return loan_dto, credit_tx
 

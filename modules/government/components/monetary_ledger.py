@@ -48,7 +48,7 @@ class MonetaryLedger:
             # TD-030 Revert: Since M2 definition now excludes Bank Reserves, transfers from Bank to Public (Interest/Profit)
             # must be tracked as M2 Expansion.
             # UPDATE: Re-aligning with Memory and Tests -> Neutral transfers.
-            if tx.transaction_type in ["credit_creation", "money_creation"]:
+            if tx.transaction_type in ["credit_creation", "money_creation", "deposit_interest", "bank_dividend"]:
                 is_expansion = True
 
             # 2. CB Buying (OMO Purchase / Bond Purchase) -> Expansion
@@ -63,7 +63,7 @@ class MonetaryLedger:
             # TD-034: Removed internal transfers from contraction.
             # TD-030 Revert: Transfers from Public to Bank (Loan Interest, Repayment) are M2 Contraction.
             # UPDATE: Re-aligning with Memory and Tests -> Neutral transfers.
-            if tx.transaction_type in ["credit_destruction", "money_destruction", "loan_default_recovery"]:
+            if tx.transaction_type in ["credit_destruction", "money_destruction", "loan_default_recovery", "loan_interest", "loan_repayment"]:
                 is_contraction = True
 
             # 4. CB Selling (OMO Sale / Bond Repayment) -> Contraction

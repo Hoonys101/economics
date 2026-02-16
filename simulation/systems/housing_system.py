@@ -148,16 +148,30 @@ class HousingSystem:
         Helper to calculate total monthly debt payments for an agent.
         Iterates over all loans and sums their monthly obligations.
         """
+        from dataclasses import is_dataclass
         existing_debt_payments = 0.0
         if bank_service and hasattr(bank_service, 'get_debt_status'):
              try:
                  debt_status = bank_service.get_debt_status(str(agent_id))
+
+                 loans = []
+                 if is_dataclass(debt_status):
+                     loans = debt_status.loans
+                 elif isinstance(debt_status, dict):
+                     loans = debt_status.get('loans', [])
+
                  # Calculate total monthly payment from loans
-                 # Assuming loans have 'outstanding_balance' and 'interest_rate'
-                 for loan in debt_status.get('loans', []):
-                     # Estimate monthly payment
-                     balance = loan.get('outstanding_balance', 0.0)
-                     rate = loan.get('interest_rate', 0.05)
+                 for loan in loans:
+                     balance = 0.0
+                     rate = 0.05
+
+                     if is_dataclass(loan):
+                         balance = loan.outstanding_balance
+                         rate = loan.interest_rate
+                     elif isinstance(loan, dict):
+                         balance = loan.get('outstanding_balance', 0.0)
+                         rate = loan.get('interest_rate', 0.05)
+
                      # Default assumption if not available (ideally loan DTO has remaining ticks)
                      # Using 300 (30 years * 10 ticks/year?) or just a standard constant.
                      # Let's use 360 ticks (standard 30 year monthly).

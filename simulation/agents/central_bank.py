@@ -1,7 +1,7 @@
 import logging
 from typing import Any, List, Optional, Dict, TYPE_CHECKING
 import numpy as np
-from modules.finance.api import InsufficientFundsError
+from modules.finance.api import InsufficientFundsError, IFinancialAgent, IFinancialEntity, IBank
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
 from modules.system.api import ICurrencyHolder, CurrencyCode, DEFAULT_CURRENCY
@@ -12,11 +12,10 @@ from modules.finance.engines.api import MonetaryStateDTO, MarketSnapshotDTO
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
     from simulation.dtos.strategy import ScenarioStrategy
-from modules.finance.api import IFinancialAgent, IBank
 
 logger = logging.getLogger(__name__)
 
-class CentralBank(ICurrencyHolder, IFinancialAgent):
+class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity):
     """
     Phase 10: Central Bank Agent.
     Implements Taylor Rule to dynamically adjust interest rates.
@@ -57,13 +56,29 @@ class CentralBank(ICurrencyHolder, IFinancialAgent):
         )
 
     @property
-    def assets(self) -> Dict[CurrencyCode, float]:
+    def assets(self) -> Dict[CurrencyCode, int]:
         """Legacy compatibility accessor."""
         return self.wallet.get_all_balances()
 
-    def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
+    @property
+    def balance_pennies(self) -> int:
+        return self.wallet.get_balance(DEFAULT_CURRENCY)
+
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        return self.wallet.get_balance(currency)
+
+    def get_all_balances(self) -> Dict[CurrencyCode, int]:
+        return self.wallet.get_all_balances()
+
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, int]:
         """Implementation of ICurrencyHolder."""
         return self.wallet.get_all_balances()
+
+    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self.wallet.add(amount, currency, memo="Deposit")
+
+    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self.wallet.subtract(amount, currency, memo="Withdraw")
 
     def purchase_bonds(self, bond: Any) -> None:
         """
@@ -191,19 +206,19 @@ class CentralBank(ICurrencyHolder, IFinancialAgent):
         # This represents expansion of the monetary base.
         self.wallet.subtract(amount, memo="Internal Sub")
 
-    def deposit(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Deposits a given amount into the central bank's cash reserves."""
         if amount > 0:
             self.wallet.add(amount, currency, memo="Deposit")
 
-    def mint(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def mint(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         Mints new currency (adds to cash reserves).
         Alias for deposit but semantically distinct for Genesis Protocol.
         """
         self.deposit(amount, currency)
 
-    def withdraw(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
         Withdraws a given amount from the central bank's cash reserves.
         As a Fiat Currency Issuer, the Central Bank can have a negative balance (creating money).

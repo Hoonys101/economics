@@ -1,0 +1,759 @@
+2026-02-16 07:32:55 [INFO] root: Logging setup complete with basic configuration (config file not found). Standard format applied.
+2026-02-16 07:32:55 [WARNING] root: SamplingFilter not found in logging handlers. Sampling rates not applied.
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: Initializing simulation.
+2026-02-16 07:32:55 [DEBUG] simulation.db.market_repository: Cleared transactions and market_history tables.
+2026-02-16 07:32:55 [DEBUG] simulation.db.agent_repository: Cleared agent_states table.
+2026-02-16 07:32:55 [DEBUG] simulation.db.analytics_repository: Cleared economic_indicators and ai_decisions_history tables.
+2026-02-16 07:32:55 [INFO] simulation.db.repository: All simulation data cleared and VACUUMed database.
+2026-02-16 07:32:55 [DEBUG] modules.common.config.impl: Loaded config domain: government
+2026-02-16 07:32:55 [DEBUG] modules.common.config.impl: Loaded config domain: finance
+2026-02-16 07:32:55 [DEBUG] modules.common.config.impl: Loaded config domain: stock_market
+2026-02-16 07:32:55 [DEBUG] modules.common.config.impl: Loaded config domain: household
+2026-02-16 07:32:55 [INFO] simulation.ai.model_wrapper: No existing model found for wealth_and_needs.
+2026-02-16 07:32:55 [INFO] simulation.ai.model_wrapper: No existing model found for needs_and_growth.
+2026-02-16 07:32:55 [INFO] simulation.ai.model_wrapper: No existing model found for needs_and_social_status.
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 100 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 101 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 102 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 103 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 104 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 105 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 106 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 107 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 108 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 109 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 110 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 111 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 112 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 113 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 114 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 115 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 116 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 117 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 118 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_household_engine: AIDrivenHouseholdDecisionEngine initialized (Modularized).
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: HOUSEHOLD_INIT | Household 119 initialized (Engine-based).
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_firm_engine: AIDrivenFirmDecisionEngine initialized with CorporateManager.
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: Firm 120 initially hired Household 117.
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: Firm 120 initially hired Household 101.
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: Firm 121 initially hired Household 102.
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: Firm 121 initially hired Household 113.
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: Firm 122 initially hired Household 119.
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: Firm 122 initially hired Household 118.
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: Firm 123 initially hired Household 110.
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: Firm 123 initially hired Household 111.
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: Acquired exclusive lock on simulation.lock
+2026-02-16 07:32:55 [INFO] simulation.agents.central_bank: CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: GENESIS | Central Bank minted M0: 10,000,000.00
+2026-02-16 07:32:55 [INFO] simulation.bank: Bank 24 initialized (Stateless Proxy).
+2026-02-16 07:32:55 [INFO] simulation.agents.government: Government 25 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+2026-02-16 07:32:55 [INFO] Market_basic_food: OrderBookMarket basic_food initialized.
+2026-02-16 07:32:55 [INFO] Market_clothing: OrderBookMarket clothing initialized.
+2026-02-16 07:32:55 [INFO] Market_luxury_food: OrderBookMarket luxury_food initialized.
+2026-02-16 07:32:55 [INFO] Market_education_service: OrderBookMarket education_service initialized.
+2026-02-16 07:32:55 [INFO] Market_iron: OrderBookMarket iron initialized.
+2026-02-16 07:32:55 [INFO] Market_consumer_goods: OrderBookMarket consumer_goods initialized.
+2026-02-16 07:32:55 [INFO] Market_luxury_bag: OrderBookMarket luxury_bag initialized.
+2026-02-16 07:32:55 [INFO] Market_labor: OrderBookMarket labor initialized.
+2026-02-16 07:32:55 [INFO] Market_security_market: OrderBookMarket security_market initialized.
+2026-02-16 07:32:55 [INFO] simulation.loan_market: LoanMarket loan_market initialized with bank service: 24
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: IPO | Firm 120 initialized IPO with 1000.0 shares. Par value: 0.00
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: IPO | Firm 121 initialized IPO with 1000.0 shares. Par value: 0.00
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: IPO | Firm 122 initialized IPO with 1000.0 shares. Par value: 0.00
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: IPO | Firm 123 initialized IPO with 1000.0 shares. Par value: 0.00
+2026-02-16 07:32:55 [INFO] Market_housing: OrderBookMarket housing initialized.
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_4.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_4 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_5.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_5 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_6.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_6 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_7.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_7 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_8.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_8 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_9.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_9 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_10.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_10 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_11.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_11 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_12.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_12 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_13.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_13 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_14.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_14 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_15.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_15 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_16.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_16 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_17.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_17 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_18.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_18 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_19.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_19 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_20.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_20 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_21.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_21 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_22.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_22 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_23.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_23 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_24.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_24 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_25.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_25 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_26.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_26 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_27.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_27 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_28.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_28 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_29.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_29 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_30.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_30 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_31.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_31 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_32.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_32 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_33.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_33 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_34.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_34 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_35.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_35 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_36.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_36 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_37.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_37 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_38.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_38 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_39.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_39 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_40.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_40 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_41.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_41 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_42.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_42 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_43.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_43 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_44.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_44 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_45.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_45 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_46.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_46 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_47.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_47 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_48.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_48 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_49.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_49 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_50.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_50 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_51.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_51 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_52.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_52 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_53.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_53 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_54.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_54 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_55.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_55 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_56.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_56 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_57.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_57 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_58.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_58 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_59.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_59 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_60.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_60 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_61.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_61 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_62.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_62 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_63.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_63 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_64.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_64 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_65.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_65 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_66.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_66 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_67.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_67 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_68.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_68 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_69.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_69 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_70.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_70 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_71.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_71 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_72.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_72 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_73.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_73 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_74.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_74 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_75.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_75 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_76.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_76 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_77.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_77 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_78.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_78 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_79.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_79 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_80.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_80 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_81.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_81 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_82.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_82 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_83.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_83 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_84.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_84 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_85.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_85 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_86.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_86 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_87.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_87 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_88.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_88 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_89.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_89 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_90.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_90 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_91.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_91 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_92.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_92 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_93.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_93 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_94.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_94 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_95.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_95 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_96.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_96 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_97.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_97 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_98.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_98 at 1000000 by 25
+2026-02-16 07:32:55 [DEBUG] Market_housing: History-Free Discovery: Widening bounds for unit_99.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Placing order: SELL 1.0 of unit_99 at 1000000 by 25
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: GENESIS | Starting initial wealth distribution...
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 455230 from 0 to 100. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 455230 to Agent 100
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 457870 from 0 to 101. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 457870 to Agent 101
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 582809 from 0 to 102. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 582809 to Agent 102
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 545601 from 0 to 103. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 545601 to Agent 103
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 504734 from 0 to 104. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 504734 to Agent 104
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 476739 from 0 to 105. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 476739 to Agent 105
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 524962 from 0 to 106. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 524962 to Agent 106
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 471710 from 0 to 107. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 471710 to Agent 107
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 482937 from 0 to 108. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 482937 to Agent 108
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 513484 from 0 to 109. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 513484 to Agent 109
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 505828 from 0 to 110. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 505828 to Agent 110
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 572976 from 0 to 111. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 572976 to Agent 111
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 538772 from 0 to 112. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 538772 to Agent 112
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 599848 from 0 to 113. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 599848 to Agent 113
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 410064 from 0 to 114. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 410064 to Agent 114
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 409681 from 0 to 115. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 409681 to Agent 115
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 579556 from 0 to 116. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 579556 to Agent 116
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 421291 from 0 to 117. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 421291 to Agent 117
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 400273 from 0 to 118. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 400273 to Agent 118
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 454867 from 0 to 119. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 454867 to Agent 119
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4192353 from 0 to 120. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4192353 to Agent 120
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4273202 from 0 to 121. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4273202 to Agent 121
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 5869476 from 0 to 122. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 5869476 to Agent 122
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4715893 from 0 to 123. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 4715893 to Agent 123
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 1000000 from 0 to 24. Memo: GENESIS_GRANT
+2026-02-16 07:32:55 [DEBUG] simulation.systems.bootstrapper: GENESIS_GRANT | Transferred 1000000 to Agent 24
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: GENESIS | Distributed wealth to 25 agents.
+2026-02-16 07:32:55 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 50.0 units to Firm 120
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 5807647 from 0 to 120. Memo: BOOTSTRAP_INJECTION
+2026-02-16 07:32:55 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 5807647 capital to Firm 120 via Settlement.
+2026-02-16 07:32:55 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 50.0 units to Firm 121
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 5726798 from 0 to 121. Memo: BOOTSTRAP_INJECTION
+2026-02-16 07:32:55 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 5726798 capital to Firm 121 via Settlement.
+2026-02-16 07:32:55 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 50.0 units to Firm 122
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4130524 from 0 to 122. Memo: BOOTSTRAP_INJECTION
+2026-02-16 07:32:55 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 4130524 capital to Firm 122 via Settlement.
+2026-02-16 07:32:55 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 50.0 units to Firm 123
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 5284107 from 0 to 123. Memo: BOOTSTRAP_INJECTION
+2026-02-16 07:32:55 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected 5284107 capital to Firm 123 via Settlement.
+2026-02-16 07:32:55 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Injected resources into 0 firms.
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: Initial baseline money supply established: 0.00
+2026-02-16 07:32:55 [INFO] simulation.systems.bootstrapper: BOOTSTRAPPER | Total force-assigned workers: 0
+2026-02-16 07:32:55 [INFO] simulation.ai.ai_training_manager: AITrainingManager initialized.
+2026-02-16 07:32:55 [INFO] simulation.systems.demographic_manager: DemographicManager initialized with O(1) cache.
+2026-02-16 07:32:55 [INFO] simulation.systems.demographic_manager: Stats cache synchronized. Total M: 8, Total F: 12
+2026-02-16 07:32:55 [DEBUG] modules.system.event_bus.event_bus: EventBus: Subscribed handler to LOAN_DEFAULTED
+2026-02-16 07:32:55 [INFO] simulation.db.run_repository: Started new simulation run with ID: 23
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: Simulation run started with run_id: 23
+2026-02-16 07:32:55 [INFO] modules.analysis.scenario_verifier.engine: ScenarioVerifier initialized with 1 judges: ['FemaleLaborParticipationJudge']
+2026-02-16 07:32:55 [DEBUG] modules.analysis.scenario_verifier.engine: Judge FemaleLaborParticipationJudge subscribed to ['demographics.gender_stats']
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: Simulation fully initialized with run_id: 23
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 500000 from 24 to 120. Memo: loan_disbursement_33eb5288-5f6a-4a32-807c-d1c239cc5f98
+2026-02-16 07:32:55 [DEBUG] modules.government.components.monetary_ledger: MONETARY_EXPANSION | credit_creation: 1.00 USD
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: MONEY_SUPPLY_BASELINE | Baseline Money Supply set to: 50409232.00
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: --- Starting Tick 1 ---
+2026-02-16 07:32:55 [DEBUG] simulation.agents.government: FISCAL_POLICY_EXECUTED | Tick: 1 | IncomeTax: 0.00 | CorpTax: 0.00
+2026-02-16 07:32:55 [INFO] modules.common.utils.shadow_logger: ShadowLogger initialized at logs/shadow_hand_stage1.csv
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: FIRM_DECISION_START | Firm 120 before decision: Assets=10500000, Employees=2, is_active=True
+2026-02-16 07:32:55 [DEBUG] simulation.ai.firm_ai: FIRM_AI_V2 | Firm 120 | Vector: FirmActionVector(sales_aggressiveness=0.5, hiring_aggressiveness=0.5, rd_aggressiveness=0.0, capital_aggressiveness=1.0, dividend_aggressiveness=1.0, debt_aggressiveness=0.25)
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 120 repricing basic_food from 150.00 to 18.00 (Cost: 15.00)
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 120 repricing basic_food from 150.00 to 18.00 (Cost: 15.00)
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 120 withdrew 4000. Memo: Severance
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4000 from 120 to 117. Memo: Severance
+2026-02-16 07:32:55 [INFO] modules.firm.orchestrators.firm_action_executor: INTERNAL_EXEC | Firm 120 fired employee 117.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 120 withdrew 5150000. Memo: INVEST_CAPEX
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 5150000 from 120 to 25. Memo: INVEST_CAPEX
+2026-02-16 07:32:55 [INFO] modules.firm.orchestrators.firm_action_executor: INTERNAL_EXEC | Firm 120 invested 5150000 in INVEST_CAPEX.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: FIRM_DECISION_END | Firm 120 after decision: Assets=5346000, Employees=1, is_active=True, Decisions=2
+2026-02-16 07:32:55 [DEBUG] Market_basic_food: History-Free Discovery: Widening bounds for basic_food.
+2026-02-16 07:32:55 [DEBUG] Market_basic_food: Placing order: SELL 50.0 of basic_food at 18.0 by 120
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: FIRM_DECISION_START | Firm 121 before decision: Assets=10000000, Employees=2, is_active=True
+2026-02-16 07:32:55 [DEBUG] simulation.ai.firm_ai: FIRM_AI_V2 | Firm 121 | Vector: FirmActionVector(sales_aggressiveness=0.25, hiring_aggressiveness=0.25, rd_aggressiveness=1.0, capital_aggressiveness=0.5, dividend_aggressiveness=0.0, debt_aggressiveness=0.5)
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 121 repricing basic_food from 165.00 to 18.00 (Cost: 15.00)
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 121 repricing basic_food from 165.00 to 18.00 (Cost: 15.00)
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 121 withdrew 4000. Memo: Severance
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4000 from 121 to 102. Memo: Severance
+2026-02-16 07:32:55 [INFO] modules.firm.orchestrators.firm_action_executor: INTERNAL_EXEC | Firm 121 fired employee 102.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 121 withdrew 100000. Memo: R&D
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 100000 from 121 to 25. Memo: R&D
+2026-02-16 07:32:55 [INFO] modules.firm.orchestrators.firm_action_executor: INTERNAL_EXEC | Firm 121 R&D SUCCESS (Budget: 100000.0)
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 121 withdrew 2450000. Memo: INVEST_CAPEX
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 2450000 from 121 to 25. Memo: INVEST_CAPEX
+2026-02-16 07:32:55 [INFO] modules.firm.orchestrators.firm_action_executor: INTERNAL_EXEC | Firm 121 invested 2450000 in INVEST_CAPEX.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: FIRM_DECISION_END | Firm 121 after decision: Assets=7446000, Employees=1, is_active=True, Decisions=2
+2026-02-16 07:32:55 [DEBUG] Market_basic_food: History-Free Discovery: Widening bounds for basic_food.
+2026-02-16 07:32:55 [DEBUG] Market_basic_food: Placing order: SELL 50.0 of basic_food at 18.0 by 121
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: FIRM_DECISION_START | Firm 122 before decision: Assets=10000000, Employees=2, is_active=True
+2026-02-16 07:32:55 [DEBUG] simulation.ai.firm_ai: FIRM_AI_V2 | Firm 122 | Vector: FirmActionVector(sales_aggressiveness=1.0, hiring_aggressiveness=0.0, rd_aggressiveness=0.75, capital_aggressiveness=0.75, dividend_aggressiveness=0.25, debt_aggressiveness=0.25)
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 122 repricing basic_food from 120.00 to 18.00 (Cost: 15.00)
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 122 repricing basic_food from 120.00 to 18.00 (Cost: 15.00)
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 122 withdrew 4000. Memo: Severance
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4000 from 122 to 119. Memo: Severance
+2026-02-16 07:32:55 [INFO] modules.firm.orchestrators.firm_action_executor: INTERNAL_EXEC | Firm 122 fired employee 119.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 122 withdrew 75000. Memo: R&D
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 75000 from 122 to 25. Memo: R&D
+2026-02-16 07:32:55 [INFO] modules.firm.orchestrators.firm_action_executor: INTERNAL_EXEC | Firm 122 R&D SUCCESS (Budget: 75000.0)
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 122 withdrew 3675000. Memo: INVEST_CAPEX
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 3675000 from 122 to 25. Memo: INVEST_CAPEX
+2026-02-16 07:32:55 [INFO] modules.firm.orchestrators.firm_action_executor: INTERNAL_EXEC | Firm 122 invested 3675000 in INVEST_CAPEX.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: FIRM_DECISION_END | Firm 122 after decision: Assets=6246000, Employees=1, is_active=True, Decisions=2
+2026-02-16 07:32:55 [DEBUG] Market_basic_food: History-Free Discovery: Widening bounds for basic_food.
+2026-02-16 07:32:55 [DEBUG] Market_basic_food: Placing order: SELL 50.0 of basic_food at 18.0 by 122
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: FIRM_DECISION_START | Firm 123 before decision: Assets=10000000, Employees=2, is_active=True
+2026-02-16 07:32:55 [DEBUG] simulation.ai.firm_ai: FIRM_AI_V2 | Firm 123 | Vector: FirmActionVector(sales_aggressiveness=0.75, hiring_aggressiveness=1.0, rd_aggressiveness=0.75, capital_aggressiveness=0.25, dividend_aggressiveness=0.5, debt_aggressiveness=0.25)
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 123 repricing clothing from 225.00 to 30.00 (Cost: 25.00)
+2026-02-16 07:32:55 [INFO] simulation.decisions.ai_driven_firm_engine: COST_PLUS_FALLBACK | Firm 123 repricing clothing from 225.00 to 30.00 (Cost: 25.00)
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 123 withdrew 4000. Memo: Severance
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 4000 from 123 to 110. Memo: Severance
+2026-02-16 07:32:55 [INFO] modules.firm.orchestrators.firm_action_executor: INTERNAL_EXEC | Firm 123 fired employee 110.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 123 withdrew 75000. Memo: R&D
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 75000 from 123 to 25. Memo: R&D
+2026-02-16 07:32:55 [INFO] modules.firm.orchestrators.firm_action_executor: INTERNAL_EXEC | Firm 123 R&D SUCCESS (Budget: 75000.0)
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 123 withdrew 1225000. Memo: INVEST_CAPEX
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 1225000 from 123 to 25. Memo: INVEST_CAPEX
+2026-02-16 07:32:55 [INFO] modules.firm.orchestrators.firm_action_executor: INTERNAL_EXEC | Firm 123 invested 1225000 in INVEST_CAPEX.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: FIRM_DECISION_END | Firm 123 after decision: Assets=8696000, Employees=1, is_active=True, Decisions=2
+2026-02-16 07:32:55 [DEBUG] Market_clothing: History-Free Discovery: Widening bounds for clothing.
+2026-02-16 07:32:55 [DEBUG] Market_clothing: Placing order: SELL 50.0 of clothing at 30.0 by 123
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 58.117266928900236, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 100
+2026-02-16 07:32:55 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-16 07:32:55 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 800.0 by 100
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 55.74787372241722, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 101
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 66.79499722082558, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 102
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 62.23202031654704, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 103
+2026-02-16 07:32:55 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-16 07:32:55 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 800.0 by 103
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 62.96521407371906, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 104 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 104
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 104
+2026-02-16 07:32:55 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-16 07:32:55 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 800.0 by 104
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 57.00503051476262, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 105 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 105
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 105
+2026-02-16 07:32:55 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-16 07:32:55 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 800.0 by 105
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 56.65159309631075, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 106 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 106
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 106
+2026-02-16 07:32:55 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-16 07:32:55 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 800.0 by 106
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 61.70016366362015, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 107 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 107
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 107
+2026-02-16 07:32:55 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-16 07:32:55 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 800.0 by 107
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 64.3186881553483, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 108 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 108
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 108
+2026-02-16 07:32:55 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-16 07:32:55 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 800.0 by 108
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 58.34912251037613, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 109 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 109
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 109
+2026-02-16 07:32:55 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-16 07:32:55 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 800.0 by 109
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 64.56021821285145, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 110 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 110
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 110
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 66.85750189562461, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 111 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 111
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 111
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 66.31191443563291, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 112 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 112
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 112
+2026-02-16 07:32:55 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-16 07:32:55 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 800.0 by 112
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 60.01212179342676, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 113 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 113
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 113
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 62.97028263223497, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 114 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 114
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 114
+2026-02-16 07:32:55 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-16 07:32:55 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 800.0 by 114
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 65.05829758113424, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 115 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 115
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 115
+2026-02-16 07:32:55 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-16 07:32:55 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 800.0 by 115
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 57.89418311977502, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 116 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 116
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 116
+2026-02-16 07:32:55 [DEBUG] Market_labor: History-Free Discovery: Widening bounds for labor.
+2026-02-16 07:32:55 [DEBUG] Market_labor: Placing order: SELL 1.0 of labor at 800.0 by 116
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 66.8629218832706, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 117 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 117
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 117
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 58.351194705103495, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 118 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 118
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 118
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: SURVIVAL_CHECK | Need: 58.002633010829506, Threshold: 80.0, Food: basic_food
+2026-02-16 07:32:55 [INFO] simulation.systems.housing_system: SAGA_QUEUED | Saga queued for buyer 119 property 4
+2026-02-16 07:32:55 [INFO] modules.household.connectors.housing_connector: HOUSING_CONNECTOR | Initiated purchase for property 4 by agent 119
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: History-Free Discovery: Widening bounds for consumer_goods.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Placing order: BUY 1 of consumer_goods at 1575.0 by 119
+2026-02-16 07:32:55 [INFO] Market_basic_food: Starting order matching for items: ['basic_food']
+2026-02-16 07:32:55 [INFO] Market_clothing: Starting order matching for items: ['clothing']
+2026-02-16 07:32:55 [INFO] Market_luxury_food: No items to match in market luxury_food at tick 1
+2026-02-16 07:32:55 [INFO] Market_education_service: No items to match in market education_service at tick 1
+2026-02-16 07:32:55 [INFO] Market_iron: No items to match in market iron at tick 1
+2026-02-16 07:32:55 [INFO] Market_consumer_goods: Starting order matching for items: ['consumer_goods']
+2026-02-16 07:32:55 [INFO] Market_luxury_bag: No items to match in market luxury_bag at tick 1
+2026-02-16 07:32:55 [INFO] Market_labor: Starting order matching for items: ['labor']
+2026-02-16 07:32:55 [INFO] Market_security_market: No items to match in market security_market at tick 1
+2026-02-16 07:32:55 [INFO] Market_housing: Starting order matching for items: ['unit_75', 'unit_99', 'unit_60', 'unit_59', 'unit_45', 'unit_5', 'unit_22', 'unit_15', 'unit_7', 'unit_87', 'unit_72', 'unit_21', 'unit_17', 'unit_11', 'unit_89', 'unit_51', 'unit_8', 'unit_23', 'unit_10', 'unit_93', 'unit_34', 'unit_24', 'unit_90', 'unit_83', 'unit_29', 'unit_73', 'unit_78', 'unit_57', 'unit_88', 'unit_37', 'unit_4', 'unit_46', 'unit_33', 'unit_39', 'unit_36', 'unit_71', 'unit_26', 'unit_48', 'unit_84', 'unit_96', 'unit_55', 'unit_20', 'unit_27', 'unit_81', 'unit_13', 'unit_54', 'unit_64', 'unit_31', 'unit_44', 'unit_19', 'unit_38', 'unit_79', 'unit_68', 'unit_74', 'unit_66', 'unit_50', 'unit_49', 'unit_85', 'unit_35', 'unit_70', 'unit_40', 'unit_58', 'unit_18', 'unit_63', 'unit_61', 'unit_52', 'unit_95', 'unit_16', 'unit_77', 'unit_25', 'unit_53', 'unit_98', 'unit_47', 'unit_97', 'unit_65', 'unit_28', 'unit_62', 'unit_86', 'unit_9', 'unit_41', 'unit_82', 'unit_42', 'unit_94', 'unit_6', 'unit_69', 'unit_92', 'unit_91', 'unit_43', 'unit_14', 'unit_12', 'unit_30', 'unit_80', 'unit_32', 'unit_56', 'unit_67', 'unit_76']
+2026-02-16 07:32:55 [INFO] Market_housing: Starting order matching for items: ['unit_75', 'unit_60', 'unit_15', 'unit_7', 'unit_87', 'unit_17', 'unit_89', 'unit_8', 'unit_23', 'unit_24', 'unit_90', 'unit_57', 'unit_88', 'unit_37', 'unit_4', 'unit_46', 'unit_36', 'unit_71', 'unit_48', 'unit_84', 'unit_96', 'unit_55', 'unit_13', 'unit_54', 'unit_44', 'unit_19', 'unit_38', 'unit_68', 'unit_85', 'unit_35', 'unit_58', 'unit_61', 'unit_52', 'unit_95', 'unit_77', 'unit_53', 'unit_47', 'unit_65', 'unit_62', 'unit_86', 'unit_82', 'unit_6', 'unit_69', 'unit_92', 'unit_91', 'unit_43', 'unit_12', 'unit_80', 'unit_76', 'unit_99', 'unit_59', 'unit_45', 'unit_5', 'unit_22', 'unit_72', 'unit_21', 'unit_51', 'unit_11', 'unit_10', 'unit_93', 'unit_34', 'unit_83', 'unit_29', 'unit_73', 'unit_78', 'unit_33', 'unit_39', 'unit_26', 'unit_20', 'unit_27', 'unit_81', 'unit_64', 'unit_31', 'unit_79', 'unit_74', 'unit_66', 'unit_50', 'unit_49', 'unit_70', 'unit_40', 'unit_18', 'unit_63', 'unit_16', 'unit_25', 'unit_98', 'unit_97', 'unit_28', 'unit_9', 'unit_41', 'unit_42', 'unit_94', 'unit_14', 'unit_30', 'unit_32', 'unit_56', 'unit_67']
+2026-02-16 07:32:55 [DEBUG] modules.firm.engines.brand_engine: BRAND_UPDATE | Firm 120: Spend=0.0, Adstock=0.000, Awareness=0.000, ActQ=2.00, PercQ=0.40
+2026-02-16 07:32:55 [DEBUG] modules.firm.engines.brand_engine: BRAND_UPDATE | Firm 121: Spend=0.0, Adstock=0.000, Awareness=0.000, ActQ=2.10, PercQ=0.42
+2026-02-16 07:32:55 [DEBUG] modules.firm.engines.brand_engine: BRAND_UPDATE | Firm 122: Spend=0.0, Adstock=0.000, Awareness=0.000, ActQ=2.10, PercQ=0.42
+2026-02-16 07:32:55 [DEBUG] modules.firm.engines.brand_engine: BRAND_UPDATE | Firm 123: Spend=0.0, Adstock=0.000, Awareness=0.000, ActQ=2.10, PercQ=0.42
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 800. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 800 from 25 to 100. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 800. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 800 from 25 to 103. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 800. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 800 from 25 to 104. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 800. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 800 from 25 to 105. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 800. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 800 from 25 to 106. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 800. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 800 from 25 to 107. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 800. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 800 from 25 to 108. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 800. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 800 from 25 to 109. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 800. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 800 from 25 to 112. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 800. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 800 from 25 to 114. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 800. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 800 from 25 to 115. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 800. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 800 from 25 to 116. Memo: welfare_support_unemployment
+2026-02-16 07:32:55 [DEBUG] modules.government.components.infrastructure_manager: INFRA_DEBUG | Active HH: 20, Cost: 500000, AmountPerHH: 25000
+2026-02-16 07:32:55 [DEBUG] modules.government.components.infrastructure_manager: INFRA_RECIPIENTS | IDs: [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119]
+2026-02-16 07:32:55 [INFO] modules.government.components.infrastructure_manager: INFRASTRUCTURE_PENDING | Level 1 initiated. Cost: 500000. Distributed to 20 households.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 120 withdrew 110. Memo: loan_interest
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 110 from 120 to 24. Memo: loan_interest
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 120 withdrew 110. Memo: loan_interest
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 110 from 120 to 24. Memo: loan_interest
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 120 withdrew 1000. Memo: atomic_batch_1_txs
+2026-02-16 07:32:55 [WARNING] modules.system.builders.simulation_builder: No handler for tx type: holding_cost
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 120 withdrew 5000. Memo: atomic_batch_1_txs
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 121 withdrew 1000. Memo: atomic_batch_1_txs
+2026-02-16 07:32:55 [WARNING] modules.system.builders.simulation_builder: No handler for tx type: holding_cost
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 121 withdrew 5000. Memo: atomic_batch_1_txs
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 122 withdrew 1000. Memo: atomic_batch_1_txs
+2026-02-16 07:32:55 [WARNING] modules.system.builders.simulation_builder: No handler for tx type: holding_cost
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 122 withdrew 5000. Memo: atomic_batch_1_txs
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 123 withdrew 1000. Memo: atomic_batch_1_txs
+2026-02-16 07:32:55 [WARNING] modules.system.builders.simulation_builder: No handler for tx type: holding_cost
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 123 withdrew 5000. Memo: atomic_batch_1_txs
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 100. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 101. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 102. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 103. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 104. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 105. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 106. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 107. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 108. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 109. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 110. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 111. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 112. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 113. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 114. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 115. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 116. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 117. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 118. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 25 withdrew 25000. Memo: infrastructure_spending
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 25000 from 25 to 119. Memo: infrastructure_spending
+2026-02-16 07:32:55 [INFO] modules.government.taxation.system: TAXATION_RECORD | Recorded 20000 revenue from 4 transactions.
+2026-02-16 07:32:55 [DEBUG] modules.government.components.monetary_ledger: MONETARY_CONTRACTION | loan_interest: 110.00 USD
+2026-02-16 07:32:55 [DEBUG] modules.government.components.monetary_ledger: MONETARY_CONTRACTION | loan_interest: 110.00 USD
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga a014c00c-5479-4564-8698-424d79c26620 submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga 77615576-01a4-4030-b64a-b4bbf3912db7 submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga 4dd20845-68e8-4374-83ac-717246f6cbd5 submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga 44ac736a-931b-4c2d-8b25-5bbe83beb4dc submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga 226902b3-7d3e-414b-83c8-ba33cfeffa4b submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga 3919149b-36e9-4d1c-ad89-d95a412974d5 submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga 27d6cd28-f5ef-4b14-9835-591383709e7a submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga 242bd2ec-927e-4fa4-befb-4233c071e38c submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga c0d342eb-eade-43c6-9f7f-0cdec15a74b0 submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga 0ad434a9-5781-432b-bafd-43bfbda2ce13 submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga 638095b9-40b4-484a-99b5-ce1d90a741c1 submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga 66e20d9d-eca6-4608-bc3f-0f1d0773aca8 submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga 7a87d856-508c-46e1-8bce-86e1fb07c403 submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga f03d7c86-e99f-47b0-a056-83aa0af11b0c submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga 2313c6f5-6e45-45dd-823a-51c1f3d6764d submitted.
+2026-02-16 07:32:55 [INFO] modules.finance.sagas.orchestrator: SAGA_SUBMITTED | Saga c7dc651d-4170-4198-9c7e-6ad4508bda07 submitted.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 100 withdrew 1000. Memo: housing_maintenance
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 1000 from 100 to 25. Memo: housing_maintenance
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 101 withdrew 1000. Memo: housing_maintenance
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 1000 from 101 to 25. Memo: housing_maintenance
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 102 withdrew 1000. Memo: housing_maintenance
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 1000 from 102 to 25. Memo: housing_maintenance
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: DEBUG_WITHDRAW | Agent 103 withdrew 1000. Memo: housing_maintenance
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: SETTLEMENT_SUCCESS | Transferred 1000 from 103 to 25. Memo: housing_maintenance
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 104 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 105 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 106 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 107 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 108 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 109 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 110 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 111 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 112 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 113 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 114 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 115 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 116 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 117 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 118 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.systems.housing_system: HOMELESS_PENALTY | Household 119 survival need increased.
+2026-02-16 07:32:55 [DEBUG] simulation.ai.firm_ai: FIRM_REWARD | Firm 120 (BALANCED) | Reward=-5160220.00
+2026-02-16 07:32:55 [DEBUG] simulation.ai.firm_ai: FIRM_REWARD | Firm 121 (BALANCED) | Reward=-2560000.00
+2026-02-16 07:32:55 [DEBUG] simulation.ai.firm_ai: FIRM_REWARD | Firm 122 (BALANCED) | Reward=-3760000.00
+2026-02-16 07:32:55 [DEBUG] simulation.ai.firm_ai: FIRM_REWARD | Firm 123 (BALANCED) | Reward=-1310000.00
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: CRISIS_MONITOR | Tick: 1 | Safe: 0, Gray: 0, Distress: 4 | Active: 4
+2026-02-16 07:32:55 [DEBUG] Market_basic_food: Market basic_food orders cleared for new tick.
+2026-02-16 07:32:55 [DEBUG] Market_clothing: Market clothing orders cleared for new tick.
+2026-02-16 07:32:55 [DEBUG] Market_luxury_food: Market luxury_food orders cleared for new tick.
+2026-02-16 07:32:55 [DEBUG] Market_education_service: Market education_service orders cleared for new tick.
+2026-02-16 07:32:55 [DEBUG] Market_iron: Market iron orders cleared for new tick.
+2026-02-16 07:32:55 [DEBUG] Market_consumer_goods: Market consumer_goods orders cleared for new tick.
+2026-02-16 07:32:55 [DEBUG] Market_luxury_bag: Market luxury_bag orders cleared for new tick.
+2026-02-16 07:32:55 [DEBUG] Market_labor: Market labor orders cleared for new tick.
+2026-02-16 07:32:55 [DEBUG] Market_security_market: Market security_market orders cleared for new tick.
+2026-02-16 07:32:55 [DEBUG] Market_housing: Market housing orders cleared for new tick.
+2026-02-16 07:32:55 [INFO] simulation.orchestration.phases.scenario_analysis: SCENARIO_REPORT | SC-001 [PENDING] Progress: 0.0% | KPI: 0.00/0.9 | Data not available yet
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: LIFECYCLE_PULSE | Resetting tick-level state for all agents.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 100 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 101 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 102 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 103 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 104 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 105 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 106 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 107 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 108 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 109 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 110 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 111 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 112 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 113 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 114 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 115 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 116 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 117 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 118 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: TICK_RESET | Agent 119 tick state has been reset.
+2026-02-16 07:32:55 [DEBUG] modules.system.builders.simulation_builder: M2_BREAKDOWN | HH: 10434832.00, Firms: 27709780.00, Gov: 12264400.00, CB: -40909232.00, Bank: 500220.00
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: MONEY_SUPPLY_CHECK | Current: 50409012.00, Expected: 50409012.00, Delta: 0.0000
+2026-02-16 07:32:55 [DEBUG] simulation.metrics.economic_tracker: TRACKER_UPDATE | Starting tracker update for tick 1
+2026-02-16 07:32:55 [INFO] modules.system.builders.simulation_builder: --- Ending Tick 1 ---
+--- TRACE START ---
+Tick 0 (START) Total Money (USD): 499,092.32
+Firm 120: Assets=100,000.00, Active=True
+Firm 121: Assets=100,000.00, Active=True
+Firm 122: Assets=100,000.00, Active=True
+Firm 123: Assets=100,000.00, Active=True
+Loan granted to Firm 120 for 5,000.00. Credit TX processed.
+DEBUG: Found 34 transactions.
+Detected Loan Interest (M2 Destruction) (Should be in Ledger): 2.20
+Detected Infrastructure Spending: 5,000.00
+
+Tick 1 (END) Total Money: 504,090.12
+Baseline: 499,092.32
+Authorized Delta (Minted - Destroyed + Credit): 4,997.80
+Actual Delta: 4,997.80
+
+--- Agent Asset Deltas (Dollars) ---
+Government 25: 122,644.00
+Household 110: 290.00
+Household 117: 290.00
+Household 119: 290.00
+Household 102: 280.00
+Household 111: 260.00
+Household 113: 260.00
+Household 118: 260.00
+Household 104: 258.00
+Household 105: 258.00
+...
+Bank 24: -4,997.80
+Firm 123: -13,100.00
+Firm 121: -25,600.00
+Firm 122: -37,600.00
+Firm 120: -46,602.20
+✅ INTEGRITY CONFIRMED (Leak: 0.0000)
+Firm 120: Assets=53,397.80, Active=True
+Firm 121: Assets=74,400.00, Active=True
+Firm 122: Assets=62,400.00, Active=True
+Firm 123: Assets=86,900.00, Active=True
+
+All Active Agent IDs: 24

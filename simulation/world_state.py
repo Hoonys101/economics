@@ -154,13 +154,14 @@ class WorldState:
 
         self.baseline_money_supply: float = 0.0
 
-    def calculate_base_money(self) -> Dict[CurrencyCode, float]:
+    def calculate_base_money(self) -> Dict[CurrencyCode, int]:
         """
         Calculates M0 (Base Money) for each currency.
         M0 = Sum of assets held by all agents EXCEPT Central Bank.
         (Central Bank assets represented as negative would cancel out creation).
+        MIGRATION: Returns int (pennies).
         """
-        totals: Dict[CurrencyCode, float] = {}
+        totals: Dict[CurrencyCode, int] = {}
         for holder in self.currency_holders:
             # Exclude CentralBank from M0 summation (Source of Money)
             if hasattr(holder, 'id') and holder.id == ID_CENTRAL_BANK:
@@ -170,14 +171,15 @@ class WorldState:
 
             assets_dict = holder.get_assets_by_currency()
             for cur, amount in assets_dict.items():
-                totals[cur] = totals.get(cur, 0.0) + amount
+                totals[cur] = totals.get(cur, 0) + int(amount)
         return totals
 
-    def calculate_total_money(self) -> Dict[CurrencyCode, float]:
+    def calculate_total_money(self) -> Dict[CurrencyCode, int]:
         """
         Calculates M2 (Total Money Supply).
         M2 = M0 - Bank Reserves + Bank Deposits.
         (Currency in Circulation + Deposits).
+        MIGRATION: Returns int (pennies).
         """
         m2_totals = self.calculate_base_money()
 
@@ -200,22 +202,17 @@ class WorldState:
                  is_bank = True
 
             if is_bank:
-                # 1. Deduct Reserves
+                # 1. Deduct Reserves (Bank Wallets are not Circulation)
                 reserves = holder.get_assets_by_currency()
                 for cur, amount in reserves.items():
-                    m2_totals[cur] = m2_totals.get(cur, 0.0) - amount
+                    m2_totals[cur] = m2_totals.get(cur, 0) - int(amount)
 
-                # 2. Add Deposits
-                if hasattr(holder, 'get_total_deposits'):
-                    # New Architecture: DepositManager Facade
-                    total_dep = holder.get_total_deposits()
-                    # Assuming DepositManager aggregates to DEFAULT_CURRENCY or we should expand this for MC later
-                    m2_totals["USD"] = m2_totals.get("USD", 0.0) + total_dep
-                elif hasattr(holder, 'deposits'):
-                    # Legacy
-                    for deposit in holder.deposits.values():
-                        cur = getattr(deposit, 'currency', "USD")
-                        m2_totals[cur] = m2_totals.get(cur, 0.0) + deposit.amount
+                # 2. Add Deposits - REMOVED
+                # M2 = Currency + Deposits.
+                # In this simulation, Agent Wallets ARE Deposits (or Cash).
+                # calculate_base_money() already sums Agent Wallets.
+                # Adding Bank.get_total_deposits() double-counts the money supply.
+                # (Unless Agent Wallets were strictly Physical Cash and Deposits were invisible, which is not the case here).
 
         return m2_totals
 
@@ -235,7 +232,7 @@ class WorldState:
             return total
 
         # Fallback if no exchange engine: just return the target currency balance
-        return all_money.get(target_currency, 0.0)
+        return float(all_money.get(target_currency, 0))
 
     def resolve_agent_id(self, role: str) -> Optional[AgentID]:
         """

@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from simulation.bank import Bank
-from modules.finance.api import IFinanceSystem, LoanInfoDTO
+from modules.finance.api import IFinanceSystem, LoanInfoDTO, ISettlementSystem
 from modules.simulation.api import AgentID
 from modules.finance.engine_api import FinancialLedgerDTO, BankStateDTO, DepositStateDTO
 from modules.system.api import DEFAULT_CURRENCY
@@ -20,14 +20,19 @@ def mock_finance_system():
     return fs
 
 @pytest.fixture
-def bank(mock_finance_system):
+def mock_settlement_system():
+    return MagicMock(spec=ISettlementSystem)
+
+@pytest.fixture
+def bank(mock_finance_system, mock_settlement_system):
     config_manager = MagicMock()
     config_manager.get.return_value = 0.03
 
     bank = Bank(
         id=1,
         initial_assets=100000, # 1000.00 -> 100000 pennies
-        config_manager=config_manager
+        config_manager=config_manager,
+        settlement_system=mock_settlement_system
     )
     bank.set_finance_system(mock_finance_system)
 
@@ -110,3 +115,44 @@ def test_run_tick_delegates_to_service_debt(bank, mock_finance_system):
 
     mock_finance_system.service_debt.assert_called_with(10)
     assert mock_tx in txs
+
+def test_grant_loan_with_object_calls_transfer(bank, mock_finance_system, mock_settlement_system):
+    # Setup Mock Return
+    mock_loan = LoanInfoDTO(
+        loan_id="L1", borrower_id=2, original_amount=10000, outstanding_balance=10000,
+        interest_rate=0.05, origination_tick=0, due_tick=10
+    )
+    mock_tx = MagicMock(spec=Transaction)
+    mock_tx.transaction_type = "credit_creation"
+
+    mock_finance_system.process_loan_application.return_value = (mock_loan, [mock_tx])
+
+    # Act: Pass agent object
+    borrower_agent = MagicMock()
+    borrower_agent.id = 2
+
+    bank.grant_loan(borrower_id=borrower_agent, amount=10000, interest_rate=0.05)
+
+    # Assert: Transfer called with object
+    mock_settlement_system.transfer.assert_called_once()
+    args, _ = mock_settlement_system.transfer.call_args
+    assert args[0] == bank
+    assert args[1] == borrower_agent # The object
+    assert args[2] == 10000
+
+def test_grant_loan_with_id_skips_transfer(bank, mock_finance_system, mock_settlement_system):
+    # Setup Mock Return
+    mock_loan = LoanInfoDTO(
+        loan_id="L1", borrower_id=2, original_amount=10000, outstanding_balance=10000,
+        interest_rate=0.05, origination_tick=0, due_tick=10
+    )
+    mock_tx = MagicMock(spec=Transaction)
+    mock_tx.transaction_type = "credit_creation"
+
+    mock_finance_system.process_loan_application.return_value = (mock_loan, [mock_tx])
+
+    # Act: Pass int ID
+    bank.grant_loan(borrower_id=2, amount=10000, interest_rate=0.05)
+
+    # Assert: Transfer NOT called
+    mock_settlement_system.transfer.assert_not_called()

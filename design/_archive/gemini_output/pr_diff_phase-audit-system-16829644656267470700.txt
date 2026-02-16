@@ -1,0 +1,248 @@
+diff --git a/communications/insights/build-phase-audit-system.md b/communications/insights/build-phase-audit-system.md
+new file mode 100644
+index 00000000..1933e80d
+--- /dev/null
++++ b/communications/insights/build-phase-audit-system.md
+@@ -0,0 +1,76 @@
++# Phase Audit System Insight Report
++
++## Architectural Insights
++
++### TickOrchestrator Manual Execution
++The `TickOrchestrator` is designed to be driven by `sim.run_tick()`, which handles time increment, state DTO creation, and phase execution in a loop. To manually execute phases for a specific tick (Tick 1) as requested, we had to:
++1.  Manually advance `world_state.time` to 1, as `create_simulation()` leaves it at 0.
++2.  Replicate the setup logic (resetting flow counters, creating the initial `SimulationState` DTO).
++3.  Manually iterate through `sim.tick_orchestrator.phases`, executing each and synchronizing state back to `WorldState` using `_drain_and_sync_state`.
++
++This approach confirms that the `TickOrchestrator` logic is decoupled enough to allow granular audit of each phase's impact on the system state.
++
++### Zero-Sum Integrity Verification
++The audit script calculates "Total Assets" by summing the liquid assets (Wallet balance) of all major agents: Households, Firms, Government, and Bank.
++-   **Households/Firms/Government**: `get_balance()` returns the cash in their Wallet.
++-   **Bank**: `get_balance()` returns the Bank's own liquid reserves/equity.
++
++By summing these values, we effectively track the Base Money (M0) circulating among these agents (excluding Central Bank). The audit confirms that this sum remains constant across all phases of Tick 1 ("Delta Assets" = 0.00), proving that no phase "leaks" or "creates" cash magicallly. Transfers move money but preserve the total.
++
++### M2 Tracking
++The `world_state.calculate_total_money()` method tracks M2 (Money Supply), which includes Bank Deposits. The audit shows M2 is also stable (Delta = 0.00) during Tick 1.
++
++### Dependency Management
++The `PyYAML` library was required by `schema_loader.py` but was missing in the execution environment despite being in `requirements.txt`. It was installed to allow the simulation builder to function.
++
++## Test Evidence
++
++### Audit Script Output (`scripts/run_phase_audit.py`)
++```text
++Phase                                    | Total Assets         | Delta Assets    | M2                   | Delta M2
++--------------------------------------------------------------------------------------------------------------------------
++Start                                    | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase0_Intercept                         | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase0_PreSequence                       | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase_SystemCommands                     | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase_Production                         | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase1_Decision                          | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase_Bankruptcy                         | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase_HousingSaga                        | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase_SystemicLiquidation                | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase2_Matching                          | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase_BankAndDebt                        | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase_FirmProductionAndSalaries          | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase_GovernmentPrograms                 | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase_TaxationIntents                    | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase_MonetaryProcessing                 | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase3_Transaction                       | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase_Consumption                        | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase5_PostSequence                      | 50940692.00          | 0.00            | 49940692.00          | 0.00
++Phase_ScenarioAnalysis                   | 50940692.00          | 0.00            | 49940692.00          | 0.00
++```
++
++### Pytest Output (Settlement System Integrity)
++```text
++tests/unit/systems/test_settlement_system.py::test_transfer_success PASSED [  4%]
++tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_funds PASSED [  9%]
++tests/unit/systems/test_settlement_system.py::test_create_and_transfer_minting PASSED [ 14%]
++tests/unit/systems/test_settlement_system.py::test_create_and_transfer_government_grant PASSED [ 19%]
++tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_burning PASSED [ 23%]
++tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_tax PASSED [ 28%]
++tests/unit/systems/test_settlement_system.py::test_record_liquidation PASSED [ 33%]
++tests/unit/systems/test_settlement_system.py::test_record_liquidation_escheatment PASSED [ 38%]
++tests/unit/systems/test_settlement_system.py::test_transfer_rollback PASSED [ 42%]
++tests/unit/systems/test_settlement_system.py::test_transfer_seamless_success PASSED [ 47%]
++tests/unit/systems/test_settlement_system.py::test_transfer_seamless_fail_bank PASSED [ 52%]
++tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_success PASSED [ 57%]
++tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_rollback PASSED [ 61%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_success PASSED [ 66%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_rollback PASSED [ 71%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_credit_fail_rollback PASSED [ 76%]
++tests/unit/systems/test_settlement_security.py::test_audit_total_m2_strict_protocol PASSED [ 80%]
++tests/unit/systems/test_settlement_security.py::test_transfer_memo_validation PASSED [ 85%]
++tests/unit/systems/test_settlement_security.py::test_transfer_invalid_agent PASSED [ 90%]
++tests/unit/systems/test_settlement_security.py::test_mint_and_distribute_security PASSED [ 95%]
++tests/unit/systems/test_settlement_security.py::test_settle_atomic_logging PASSED [100%]
++```
+diff --git a/scripts/run_phase_audit.py b/scripts/run_phase_audit.py
+new file mode 100644
+index 00000000..3c32244f
+--- /dev/null
++++ b/scripts/run_phase_audit.py
+@@ -0,0 +1,160 @@
++
++import sys
++import os
++import logging
++import json
++
++# Ensure the root directory is in sys.path
++sys.path.append(os.getcwd())
++
++from modules.system.builders.simulation_builder import create_simulation
++from simulation.orchestration.phases import (
++    Phase0_PreSequence, Phase_Production, Phase1_Decision, Phase2_Matching,
++    Phase3_Transaction, Phase_Bankruptcy, Phase_HousingSaga, Phase_Consumption, Phase5_PostSequence,
++    Phase_BankAndDebt, Phase_FirmProductionAndSalaries, Phase_GovernmentPrograms, Phase_TaxationIntents,
++    Phase_MonetaryProcessing
++)
++from modules.system.api import DEFAULT_CURRENCY
++
++# Setup logging
++logging.basicConfig(level=logging.INFO)
++logger = logging.getLogger(__name__)
++
++def calculate_total_assets(sim):
++    """
++    Calculate Total Assets (Sum of Balances for HH + Firm + Gov + Bank).
++    Using get_balance(DEFAULT_CURRENCY).
++    This effectively tracks M0 (Base Money) in circulation among these agents.
++    """
++    total = 0.0
++
++    # Households
++    for hh in sim.households:
++        total += hh.get_balance(DEFAULT_CURRENCY)
++
++    # Firms
++    for firm in sim.firms:
++        total += firm.get_balance(DEFAULT_CURRENCY)
++
++    # Government
++    if sim.government:
++        total += sim.government.get_balance(DEFAULT_CURRENCY)
++
++    # Bank
++    if sim.bank:
++        # Bank's get_balance usually returns Reserves (Assets)
++        total += sim.bank.get_balance(DEFAULT_CURRENCY)
++
++    return total
++
++def calculate_m2(sim):
++    """
++    Calculate M2 Money Supply using WorldState.calculate_total_money().
++    """
++    m2_dict = sim.world_state.calculate_total_money()
++    return m2_dict.get(DEFAULT_CURRENCY, 0.0)
++
++def main():
++    logger.info("Initializing Simulation...")
++    sim = create_simulation()
++
++    # Run Tick 0 to initialize everything properly
++    # This advances time to 1 and runs phases for Tick 1 implicitly?
++    # No, sim.run_tick() advances time then runs.
++    # Init state: time=0.
++    # We want to manually execute Tick 1.
++    # So we should skip sim.run_tick().
++
++    # However, create_simulation leaves time=0.
++    # To run Tick 1 manually:
++
++    # 1. Advance Time
++    sim.world_state.time = 1
++    logger.info(f"--- Starting Audit for Tick {sim.world_state.time} ---")
++
++    # 2. Tick Setup (Replicating TickOrchestrator.run_tick logic)
++    # Reset flow counters
++    if sim.world_state.government and hasattr(sim.world_state.government, "reset_tick_flow"):
++        sim.world_state.government.reset_tick_flow()
++
++    # Create SimulationState DTO
++    # passing None for injectable_sensory_dto as per normal tick start without intervention
++    sim_state = sim.tick_orchestrator._create_simulation_state_dto(None)
++
++    # Prepare Audit Log
++    results = []
++
++    # Initial State
++    initial_assets = calculate_total_assets(sim)
++    initial_m2 = calculate_m2(sim)
++    results.append({
++        "Phase": "Start",
++        "Total Assets": initial_assets,
++        "Delta Assets": 0.0,
++        "M2": initial_m2,
++        "Delta M2": 0.0
++    })
++
++    prev_assets = initial_assets
++    prev_m2 = initial_m2
++
++    # 3. Execute Phases
++    phases = sim.tick_orchestrator.phases
++
++    for phase in phases:
++        phase_name = phase.__class__.__name__
++        logger.info(f"Executing Phase: {phase_name}")
++
++        # Execute
++        sim_state = phase.execute(sim_state)
++
++        # Sync
++        sim.tick_orchestrator._drain_and_sync_state(sim_state)
++
++        # Audit
++        current_assets = calculate_total_assets(sim)
++        current_m2 = calculate_m2(sim)
++
++        delta_assets = current_assets - prev_assets
++        delta_m2 = current_m2 - prev_m2
++
++        results.append({
++            "Phase": phase_name,
++            "Total Assets": current_assets,
++            "Delta Assets": delta_assets,
++            "M2": current_m2,
++            "Delta M2": delta_m2
++        })
++
++        prev_assets = current_assets
++        prev_m2 = current_m2
++
++    # 4. Output Results
++    # Create directory
++    output_dir = "reports/temp"
++    os.makedirs(output_dir, exist_ok=True)
++    output_file = os.path.join(output_dir, "phase_audit.log")
++
++    # Table Header
++    header = f"{'Phase':<40} | {'Total Assets':<20} | {'Delta Assets':<15} | {'M2':<20} | {'Delta M2':<15}"
++    separator = "-" * len(header)
++
++    output_lines = []
++    output_lines.append(header)
++    output_lines.append(separator)
++
++    for row in results:
++        line = f"{row['Phase']:<40} | {row['Total Assets']:<20.2f} | {row['Delta Assets']:<15.2f} | {row['M2']:<20.2f} | {row['Delta M2']:<15.2f}"
++        output_lines.append(line)
++
++    output_text = "\n".join(output_lines)
++
++    print("\n" + output_text + "\n")
++
++    with open(output_file, "w") as f:
++        f.write(output_text)
++
++    logger.info(f"Audit saved to {output_file}")
++
++if __name__ == "__main__":
++    main()

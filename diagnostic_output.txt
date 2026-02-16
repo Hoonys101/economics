@@ -1,0 +1,261 @@
+2026-02-16 05:32:43 [INFO] root: Logging setup complete with basic configuration (config file not found). Standard format applied.
+2026-02-16 05:32:43 [WARNING] root: SamplingFilter not found in logging handlers. Sampling rates not applied.
+2026-02-16 05:32:43 [INFO] root: Logging setup complete with basic configuration (config file not found). Standard format applied.
+START | Total: 498,066.25
+TICK:   1 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga ebb0eccc-6204-4d3c-a3e3-c379e0079b44 failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga 839d022c-ceec-480b-ac3c-cf8884d52dc0 failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga b3bea837-def7-4522-8ef7-20329868ecd5 failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga 463430ce-7579-4a47-9e2e-06757e8cde31 failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga 713a6e38-d4e5-4d34-9e35-740f08c523dd failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga 1c5e261e-f036-4ae6-96af-65b874828997 failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga 71b9c7e6-ca87-4903-9393-e78be8341827 failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga a242f30d-2e96-445c-9bba-91cdc3c58536 failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga ea81a859-cffc-4bff-9a3b-acdc21fcb123 failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga 749223d8-5866-444c-ab3f-81bd4f4993ea failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga 2957efa3-49fc-4c98-9d87-0bebe32bf674 failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga 2d8f7e96-3b8f-4982-91c0-94f9300f614c failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga 2084d923-0fac-4fa8-850f-d26446de9d8d failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga 4dc3927c-847e-4ffd-b828-805460e17fe5 failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga 314108bf-411c-4bdb-af0c-707edf14ce02 failed. 'buyer_id'
+2026-02-16 05:32:43 [ERROR] modules.finance.sagas.orchestrator: SAGA_PROCESS_ERROR | Saga 537f39d3-23cb-41f1-a47c-723649681d31 failed. 'buyer_id'
+TICK:   2 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:   3 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:   4 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:   5 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:   6 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:   7 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:   8 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:   9 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  10 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  11 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  12 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  13 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  14 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  15 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  16 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  17 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  18 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  19 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+2026-02-16 05:32:50 [ERROR] modules.system.builders.simulation_builder: SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 999999. Cash: 0, Bank: 0, Total: 0. Required: 4049797413. Memo: Asset Liquidation (Inventory) - Agent 120
+2026-02-16 05:32:50 [ERROR] simulation.systems.liquidation_handlers: LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 40497974.14 to Agent 120.
+2026-02-16 05:32:50 [ERROR] modules.system.builders.simulation_builder: SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 999999. Cash: 0, Bank: 0, Total: 0. Required: 4168999074. Memo: Asset Liquidation (Inventory) - Agent 121
+2026-02-16 05:32:50 [ERROR] simulation.systems.liquidation_handlers: LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 41689990.75 to Agent 121.
+2026-02-16 05:32:50 [ERROR] modules.system.builders.simulation_builder: SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 999999. Cash: 0, Bank: 0, Total: 0. Required: 4429959340. Memo: Asset Liquidation (Inventory) - Agent 122
+2026-02-16 05:32:50 [ERROR] simulation.systems.liquidation_handlers: LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 44299593.41 to Agent 122.
+2026-02-16 05:32:50 [ERROR] modules.system.builders.simulation_builder: SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 999999. Cash: 0, Bank: 0, Total: 0. Required: 4376472193. Memo: Asset Liquidation (Inventory) - Agent 123
+2026-02-16 05:32:50 [ERROR] simulation.systems.liquidation_handlers: LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 43764721.93 to Agent 123.
+TICK:  20 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  21 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  22 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  23 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  24 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  25 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  26 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  27 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  28 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  29 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  30 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  31 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  32 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  33 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  34 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  35 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  36 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  37 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  38 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  39 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  40 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  41 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  42 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  43 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  44 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  45 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  46 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  47 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  48 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  49 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  50 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  51 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  52 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  53 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  54 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  55 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  56 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  57 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  58 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  59 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  60 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  61 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  62 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  63 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  64 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  65 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  66 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  67 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  68 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  69 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  70 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  71 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  72 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  73 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  74 | LEAK:     0.0000 | TOTAL:      498,066.25 | DELTA:     0.0000 | AUTH:     0.0000
+TICK:  75 | LEAK:  8433.0000 | TOTAL:      506,499.25 | DELTA:  8433.0000 | AUTH:     0.0000
+  [FORENSIC] Significant Leak Detected at Tick 75
+  Reconciliation Check:
+    - System Asset Delta:         8,433.0000
+    - Money Supply Delta:             0.0000
+    - Unexplained (Leak):         8,433.0000
+TICK:  76 | LEAK:  1179.1800 | TOTAL:      508,857.61 | DELTA:  2358.3600 | AUTH:  1179.1800
+  [FORENSIC] Significant Leak Detected at Tick 76
+  Reconciliation Check:
+    - System Asset Delta:         2,358.3600
+    - Money Supply Delta:         1,179.1800
+    - Unexplained (Leak):         1,179.1800
+TICK:  77 | LEAK:  4216.5000 | TOTAL:      517,290.61 | DELTA:  8433.0000 | AUTH:  4216.5000
+  [FORENSIC] Significant Leak Detected at Tick 77
+  Reconciliation Check:
+    - System Asset Delta:         8,433.0000
+    - Money Supply Delta:         4,216.5000
+    - Unexplained (Leak):         4,216.5000
+TICK:  78 | LEAK:  1179.1800 | TOTAL:      519,648.97 | DELTA:  2358.3600 | AUTH:  1179.1800
+  [FORENSIC] Significant Leak Detected at Tick 78
+  Reconciliation Check:
+    - System Asset Delta:         2,358.3600
+    - Money Supply Delta:         1,179.1800
+    - Unexplained (Leak):         1,179.1800
+TICK:  79 | LEAK:  4216.5000 | TOTAL:      528,081.97 | DELTA:  8433.0000 | AUTH:  4216.5000
+  [FORENSIC] Significant Leak Detected at Tick 79
+  Reconciliation Check:
+    - System Asset Delta:         8,433.0000
+    - Money Supply Delta:         4,216.5000
+    - Unexplained (Leak):         4,216.5000
+TICK:  80 | LEAK:  1179.1800 | TOTAL:      530,440.33 | DELTA:  2358.3600 | AUTH:  1179.1800
+  [FORENSIC] Significant Leak Detected at Tick 80
+  Reconciliation Check:
+    - System Asset Delta:         2,358.3600
+    - Money Supply Delta:         1,179.1800
+    - Unexplained (Leak):         1,179.1800
+TICK:  81 | LEAK:  4055.0000 | TOTAL:      538,550.33 | DELTA:  8110.0000 | AUTH:  4055.0000
+  [FORENSIC] Significant Leak Detected at Tick 81
+  Reconciliation Check:
+    - System Asset Delta:         8,110.0000
+    - Money Supply Delta:         4,055.0000
+    - Unexplained (Leak):         4,055.0000
+TICK:  82 | LEAK:  1340.6800 | TOTAL:      541,231.69 | DELTA:  2681.3600 | AUTH:  1340.6800
+  [FORENSIC] Significant Leak Detected at Tick 82
+  Reconciliation Check:
+    - System Asset Delta:         2,681.3600
+    - Money Supply Delta:         1,340.6800
+    - Unexplained (Leak):         1,340.6800
+TICK:  83 | LEAK:  4055.0000 | TOTAL:      549,341.69 | DELTA:  8110.0000 | AUTH:  4055.0000
+  [FORENSIC] Significant Leak Detected at Tick 83
+  Reconciliation Check:
+    - System Asset Delta:         8,110.0000
+    - Money Supply Delta:         4,055.0000
+    - Unexplained (Leak):         4,055.0000
+TICK:  84 | LEAK:  1340.6800 | TOTAL:      552,023.05 | DELTA:  2681.3600 | AUTH:  1340.6800
+  [FORENSIC] Significant Leak Detected at Tick 84
+  Reconciliation Check:
+    - System Asset Delta:         2,681.3600
+    - Money Supply Delta:         1,340.6800
+    - Unexplained (Leak):         1,340.6800
+TICK:  85 | LEAK:  4055.0000 | TOTAL:      560,133.05 | DELTA:  8110.0000 | AUTH:  4055.0000
+  [FORENSIC] Significant Leak Detected at Tick 85
+  Reconciliation Check:
+    - System Asset Delta:         8,110.0000
+    - Money Supply Delta:         4,055.0000
+    - Unexplained (Leak):         4,055.0000
+TICK:  86 | LEAK:  1340.6800 | TOTAL:      562,814.41 | DELTA:  2681.3600 | AUTH:  1340.6800
+  [FORENSIC] Significant Leak Detected at Tick 86
+  Reconciliation Check:
+    - System Asset Delta:         2,681.3600
+    - Money Supply Delta:         1,340.6800
+    - Unexplained (Leak):         1,340.6800
+TICK:  87 | LEAK:  4055.0000 | TOTAL:      570,924.41 | DELTA:  8110.0000 | AUTH:  4055.0000
+  [FORENSIC] Significant Leak Detected at Tick 87
+  Reconciliation Check:
+    - System Asset Delta:         8,110.0000
+    - Money Supply Delta:         4,055.0000
+    - Unexplained (Leak):         4,055.0000
+TICK:  88 | LEAK:  1340.6800 | TOTAL:      573,605.77 | DELTA:  2681.3600 | AUTH:  1340.6800
+  [FORENSIC] Significant Leak Detected at Tick 88
+  Reconciliation Check:
+    - System Asset Delta:         2,681.3600
+    - Money Supply Delta:         1,340.6800
+    - Unexplained (Leak):         1,340.6800
+TICK:  89 | LEAK:  4055.0000 | TOTAL:      581,715.77 | DELTA:  8110.0000 | AUTH:  4055.0000
+  [FORENSIC] Significant Leak Detected at Tick 89
+  Reconciliation Check:
+    - System Asset Delta:         8,110.0000
+    - Money Supply Delta:         4,055.0000
+    - Unexplained (Leak):         4,055.0000
+TICK:  90 | LEAK:  1340.6800 | TOTAL:      584,397.13 | DELTA:  2681.3600 | AUTH:  1340.6800
+  [FORENSIC] Significant Leak Detected at Tick 90
+  Reconciliation Check:
+    - System Asset Delta:         2,681.3600
+    - Money Supply Delta:         1,340.6800
+    - Unexplained (Leak):         1,340.6800
+TICK:  91 | LEAK:  4055.0000 | TOTAL:      592,507.13 | DELTA:  8110.0000 | AUTH:  4055.0000
+  [FORENSIC] Significant Leak Detected at Tick 91
+  Reconciliation Check:
+    - System Asset Delta:         8,110.0000
+    - Money Supply Delta:         4,055.0000
+    - Unexplained (Leak):         4,055.0000
+TICK:  92 | LEAK:  1340.6800 | TOTAL:      595,188.49 | DELTA:  2681.3600 | AUTH:  1340.6800
+  [FORENSIC] Significant Leak Detected at Tick 92
+  Reconciliation Check:
+    - System Asset Delta:         2,681.3600
+    - Money Supply Delta:         1,340.6800
+    - Unexplained (Leak):         1,340.6800
+TICK:  93 | LEAK:  4055.0000 | TOTAL:      603,298.49 | DELTA:  8110.0000 | AUTH:  4055.0000
+  [FORENSIC] Significant Leak Detected at Tick 93
+  Reconciliation Check:
+    - System Asset Delta:         8,110.0000
+    - Money Supply Delta:         4,055.0000
+    - Unexplained (Leak):         4,055.0000
+TICK:  94 | LEAK:  1340.6800 | TOTAL:      605,979.85 | DELTA:  2681.3600 | AUTH:  1340.6800
+  [FORENSIC] Significant Leak Detected at Tick 94
+  Reconciliation Check:
+    - System Asset Delta:         2,681.3600
+    - Money Supply Delta:         1,340.6800
+    - Unexplained (Leak):         1,340.6800
+TICK:  95 | LEAK:  4055.0000 | TOTAL:      614,089.85 | DELTA:  8110.0000 | AUTH:  4055.0000
+  [FORENSIC] Significant Leak Detected at Tick 95
+  Reconciliation Check:
+    - System Asset Delta:         8,110.0000
+    - Money Supply Delta:         4,055.0000
+    - Unexplained (Leak):         4,055.0000
+TICK:  96 | LEAK:  1340.6800 | TOTAL:      616,771.21 | DELTA:  2681.3600 | AUTH:  1340.6800
+  [FORENSIC] Significant Leak Detected at Tick 96
+  Reconciliation Check:
+    - System Asset Delta:         2,681.3600
+    - Money Supply Delta:         1,340.6800
+    - Unexplained (Leak):         1,340.6800
+TICK:  97 | LEAK:  4055.0000 | TOTAL:      624,881.21 | DELTA:  8110.0000 | AUTH:  4055.0000
+  [FORENSIC] Significant Leak Detected at Tick 97
+  Reconciliation Check:
+    - System Asset Delta:         8,110.0000
+    - Money Supply Delta:         4,055.0000
+    - Unexplained (Leak):         4,055.0000
+TICK:  98 | LEAK:  1340.6800 | TOTAL:      627,562.57 | DELTA:  2681.3600 | AUTH:  1340.6800
+  [FORENSIC] Significant Leak Detected at Tick 98
+  Reconciliation Check:
+    - System Asset Delta:         2,681.3600
+    - Money Supply Delta:         1,340.6800
+    - Unexplained (Leak):         1,340.6800
+TICK:  99 | LEAK:  4046.5000 | TOTAL:      635,655.57 | DELTA:  8093.0000 | AUTH:  4046.5000
+  [FORENSIC] Significant Leak Detected at Tick 99
+  Reconciliation Check:
+    - System Asset Delta:         8,093.0000
+    - Money Supply Delta:         4,046.5000
+    - Unexplained (Leak):         4,046.5000
+TICK: 100 | LEAK:  1349.1800 | TOTAL:      638,353.93 | DELTA:  2698.3600 | AUTH:  1349.1800
+  [FORENSIC] Significant Leak Detected at Tick 100
+  Reconciliation Check:
+    - System Asset Delta:         2,698.3600
+    - Money Supply Delta:         1,349.1800
+    - Unexplained (Leak):         1,349.1800
+--------------------------------------------------
+MAX LEAK: 8433.0000
+[FAIL] Significant Leak Detected

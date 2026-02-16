@@ -224,7 +224,8 @@ class TaxCollectionResult(TypedDict):
     payee_id: AgentID
     error_message: Optional[str]
 
-class LoanInfoDTO(TypedDict):
+@dataclass(frozen=True)
+class LoanInfoDTO:
     """
     Data Transfer Object for individual loan information.
     """
@@ -236,7 +237,8 @@ class LoanInfoDTO(TypedDict):
     origination_tick: int
     due_tick: Optional[int]
 
-class DebtStatusDTO(TypedDict):
+@dataclass(frozen=True)
+class DebtStatusDTO:
     """
     Comprehensive data transfer object for a borrower's overall debt status.
     """
@@ -272,7 +274,8 @@ class LoanRollbackError(Exception):
     """Raised when a loan cancellation fails to reverse the associated deposit."""
     pass
 
-class BorrowerProfileDTO(TypedDict):
+@dataclass(frozen=True)
+class BorrowerProfileDTO:
     """
     Data Transfer Object holding all financial data for a borrower
     needed for credit assessment. Anonymized from the concrete agent.
@@ -282,6 +285,10 @@ class BorrowerProfileDTO(TypedDict):
     existing_debt_payments: int
     collateral_value: int # Value of the asset being purchased, if any
     existing_assets: int
+    # Optional fields for extended profiles
+    credit_score: Optional[int] = None
+    is_bailout: Optional[bool] = False
+    preferred_lender_id: Optional[AgentID] = None
 
 class CreditAssessmentResultDTO(TypedDict):
     """

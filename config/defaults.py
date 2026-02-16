@@ -193,6 +193,9 @@ GOODS_INITIAL_PRICE = {
 
 
 # --- Firm Specialization ---
+DEFAULT_UNIT_COST = 500  # Default unit cost for firms (pennies)
+SPACE_UTILITY_FACTOR = 1.0 # Utility factor for space
+
 # Assigns which firms produce which goods. Assumes NUM_FIRMS = 5 (for multi-good test)
 FIRM_SPECIALIZATIONS = {
     0: "basic_food",
@@ -399,6 +402,8 @@ SURVIVAL_TO_LABOR_NEED_FACTOR = 0.5
 
 # --- Household Consumption ---
 # TARGET_FOOD_BUFFER_QUANTITY is already defined above
+SURVIVAL_BUDGET_ALLOCATION = 0.6  # Default 60% of budget for survival
+FOOD_CONSUMPTION_UTILITY = 10.0   # Utility per unit of food
 PERCEIVED_FAIR_PRICE_THRESHOLD_FACTOR = 0.9
 SURVIVAL_NEED_CONSUMPTION_THRESHOLD = (
     50.0  # Consume earlier (when hungry > 50)
@@ -566,6 +571,7 @@ HOUSEHOLD_DEFAULT_WAGE = 1000          # 기본 희망 임금
 # 시장 가격 폴백 (시장 데이터 없을 때 사용)
 MARKET_PRICE_FALLBACK = 1000
 DEFAULT_FALLBACK_PRICE = 500
+DEFAULT_FOOD_PRICE_ESTIMATE = 500 # MIGRATION: Int pennies (Default estimate for food)
 
 # ------------------------------------------------------------------------------
 # 🏢 FIRM DECISION LOGIC (기업 의사결정 로직)

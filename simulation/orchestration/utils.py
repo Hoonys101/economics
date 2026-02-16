@@ -18,6 +18,7 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
     deposit_data_map = {}
 
     # 1. Debt & Deposit Data
+    from dataclasses import asdict, is_dataclass
     if state.bank:
         for agent_id, agent in state.agents.items():
             if isinstance(agent, (Household, Firm)):
@@ -28,12 +29,29 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
                 if hasattr(state.bank, "_get_config"):
                      ticks_per_year = state.bank._get_config("bank_defaults.ticks_per_year", 100)
 
-                for loan in debt_status.get("loans", []):
-                    total_burden += (loan["outstanding_balance"] * loan["interest_rate"]) / ticks_per_year
+                loans = []
+                if is_dataclass(debt_status):
+                    loans = debt_status.loans
+                elif isinstance(debt_status, dict):
+                    loans = debt_status.get("loans", [])
 
-                debt_data_entry = dict(debt_status)
+                for loan in loans:
+                    if is_dataclass(loan):
+                         total_burden += (loan.outstanding_balance * loan.interest_rate) / ticks_per_year
+                    else:
+                         total_burden += (loan["outstanding_balance"] * loan["interest_rate"]) / ticks_per_year
+
+                if is_dataclass(debt_status):
+                    debt_data_entry = asdict(debt_status)
+                else:
+                    debt_data_entry = dict(debt_status)
+
                 debt_data_entry["daily_interest_burden"] = total_burden
-                debt_data_entry["total_principal"] = debt_status["total_outstanding_debt"]
+
+                if is_dataclass(debt_status):
+                    debt_data_entry["total_principal"] = debt_status.total_outstanding_debt
+                else:
+                    debt_data_entry["total_principal"] = debt_status["total_outstanding_debt"]
 
                 debt_data_map[agent_id] = debt_data_entry
                 deposit_data_map[agent_id] = state.bank.get_balance(str(agent_id))

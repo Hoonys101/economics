@@ -1,6 +1,6 @@
 {
     "_meta": {
-        "updated": "2026-02-16T14:36:49"
+        "updated": "2026-02-16T14:36:55"
     },
     "audit-tick1-leak": {
         "key": "audit-tick1-leak",
@@ -48,23 +48,6 @@
             "design/HANDOVER.md"
         ],
         "output_path": "design/3_work_artifacts/specs/MISSION_tick-loop-sequence_SPEC.md",
-        "model": null,
-        "audit_requirements": null
-    },
-    "build-phase-audit-system": {
-        "key": "build-phase-audit-system",
-        "title": "build-phase-audit-system",
-        "type": "jules",
-        "instruction_raw": "Create 'scripts/run_phase_audit.py'. This script must: 1. Initialize simulation. 2. Manually execute each phase of TickOrchestrator for Tick 1. 3. Output a table showing 'Total Assets' (HH+Firm+Gov+Bank) and the 'Delta' after each phase. 4. Save output to 'reports/temp/phase_audit.log'. Avoid using sim.run_tick(), orchestrate phases manually and handle sim_state sync.",
-        "status": "pending",
-        "created_at": "",
-        "command": "create",
-        "file_path": null,
-        "wait": false,
-        "session_id": null,
-        "worker": null,
-        "context_files": [],
-        "output_path": null,
         "model": null,
         "audit_requirements": null
     },
