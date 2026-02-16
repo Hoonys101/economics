@@ -182,6 +182,12 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         if not loan_dto:
             return None
 
+        # MIGRATION: Ensure loan_dto is handled as an object (if it's a dict, convert it)
+        if isinstance(loan_dto, dict):
+             from types import SimpleNamespace
+             # Use SimpleNamespace to allow dot notation and be lenient with missing fields in legacy mocks
+             loan_dto = SimpleNamespace(**loan_dto)
+
         # Extract credit creation tx and EXECUTE settlement
         credit_tx = None
         for tx in txs:

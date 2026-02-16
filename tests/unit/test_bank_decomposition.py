@@ -66,8 +66,9 @@ class TestBankDecomposition(unittest.TestCase):
         dto, tx = self.bank.grant_loan(borrower_id, amount, interest_rate)
 
         self.assertIsNotNone(dto)
-        self.assertEqual(dto['borrower_id'], borrower_id)
-        self.assertEqual(dto['original_amount'], amount)
+        # MIGRATION: Bank now returns objects (SimpleNamespace or DTO), not dicts
+        self.assertEqual(dto.borrower_id, borrower_id)
+        self.assertEqual(dto.original_amount, amount)
 
         # Verify delegation
         self.finance_system.process_loan_application.assert_called_with(

@@ -105,6 +105,9 @@ def create_household_config_dto(**kwargs) -> HouseholdConfigDTO:
         "age_death_probabilities": {60: 0.01, 70: 0.02, 80: 0.05, 90: 0.15, 100: 0.50},
         "fallback_survival_cost": 1000,
         "base_labor_skill": 1.0,
+        "default_food_price_estimate": 1000,
+        "survival_budget_allocation": 5000.0,
+        "food_consumption_utility": 20.0,
     }
     defaults.update(kwargs)
     return HouseholdConfigDTO(**defaults)
