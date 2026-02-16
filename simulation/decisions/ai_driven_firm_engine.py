@@ -165,6 +165,8 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
                                  signal = signals.get(item_id)
                                  best_bid = getattr(signal, 'best_bid', None)
                                  if best_bid is not None:
+                                      if not isinstance(best_bid, (int, float)):
+                                          best_bid = 0.0
                                       discount = getattr(config, 'fire_sale_discount', 0.2)
                                       if not isinstance(discount, (int, float)): discount = 0.2
                                       fire_sale_price = best_bid * (1.0 - discount)

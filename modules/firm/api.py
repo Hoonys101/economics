@@ -1,14 +1,17 @@
 from __future__ import annotations
-from typing import Protocol, Any, Optional, Dict, List, Literal
+from typing import Protocol, Any, Optional, Dict, List, Literal, runtime_checkable
 from dataclasses import dataclass, field
 
 from modules.simulation.dtos.api import FirmConfigDTO, FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from modules.system.api import MarketSnapshotDTO
+from modules.simulation.api import IInventoryHandler
+from modules.finance.api import IFinancialAgent
 
 # ==============================================================================
 # 1. ARCHITECTURAL RESOLUTION: ASSET PROTOCOLS
 # ==============================================================================
 
+@runtime_checkable
 class ICollateralizableAsset(Protocol):
     """
     NEW DEFINITION: Interface for assets that can be locked, have liens placed
@@ -156,6 +159,7 @@ class PricingResultDTO:
 # 3. ENGINE PROTOCOLS
 # ==============================================================================
 
+@runtime_checkable
 class IProductionEngine(Protocol):
     """
     Stateless engine for handling the firm's production process.
@@ -168,6 +172,7 @@ class IProductionEngine(Protocol):
         ...
 
 
+@runtime_checkable
 class IAssetManagementEngine(Protocol):
     """
     Stateless engine for handling investments in capital and automation.
@@ -186,6 +191,7 @@ class IAssetManagementEngine(Protocol):
         ...
 
 
+@runtime_checkable
 class IPricingEngine(Protocol):
     """
     Stateless engine for handling product pricing logic.
@@ -197,6 +203,7 @@ class IPricingEngine(Protocol):
         ...
 
 
+@runtime_checkable
 class IRDEngine(Protocol):
     """
     Stateless engine for handling investments in Research and Development.
@@ -207,3 +214,78 @@ class IRDEngine(Protocol):
         Returns a DTO describing improvements to quality or technology.
         """
         ...
+
+# ==============================================================================
+# 4. COMPONENT PROTOCOLS (NEW)
+# ==============================================================================
+
+@runtime_checkable
+class IFirmComponent(Protocol):
+    """Base protocol for Firm components."""
+    def attach(self, owner: Any) -> None: ...
+
+@dataclass
+class InventoryComponentConfigDTO:
+    initial_inventory: Optional[Dict[str, float]] = None
+
+@runtime_checkable
+class IInventoryComponent(IInventoryHandler, IFirmComponent, Protocol):
+    """
+    Component responsible for managing physical goods.
+    Encapsulates raw inventory dictionaries.
+    """
+    @property
+    def main_inventory(self) -> Dict[str, float]: ...
+
+    @property
+    def input_inventory(self) -> Dict[str, float]: ...
+
+    @property
+    def inventory_quality(self) -> Dict[str, float]: ...
+
+@dataclass
+class FinancialComponentConfigDTO:
+    initial_balance: int = 0
+    initial_shares: float = 1000.0
+
+@runtime_checkable
+class IFinancialComponent(IFinancialAgent, IFirmComponent, Protocol):
+    """
+    Component responsible for managing monetary assets (Wallet).
+    Encapsulates Wallet instance.
+    """
+    @property
+    def wallet_balance(self) -> int: ...
+
+    def force_reset_wallet(self) -> None: ...
+
+# Re-exporting existing DTOs for completeness in this refactor context
+__all__ = [
+    'ICollateralizableAsset',
+    'FirmSnapshotDTO',
+    'ProductionInputDTO',
+    'ProductionResultDTO',
+    'AssetManagementInputDTO',
+    'AssetManagementResultDTO',
+    'LiquidationExecutionDTO',
+    'LiquidationResultDTO',
+    'RDInputDTO',
+    'RDResultDTO',
+    'PricingInputDTO',
+    'PricingResultDTO',
+    'IProductionEngine',
+    'IAssetManagementEngine',
+    'IPricingEngine',
+    'IRDEngine',
+    'IFirmComponent',
+    'IInventoryComponent',
+    'InventoryComponentConfigDTO',
+    'IFinancialComponent',
+    'FinancialComponentConfigDTO',
+    'FirmConfigDTO',
+    'FirmStateDTO',
+    'FinanceStateDTO',
+    'ProductionStateDTO',
+    'SalesStateDTO',
+    'HRStateDTO'
+]

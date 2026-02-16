@@ -41,8 +41,12 @@ from modules.firm.api import (
     RDInputDTO, RDResultDTO,
     PricingInputDTO, PricingResultDTO,
     LiquidationExecutionDTO, LiquidationResultDTO,
-    IProductionEngine, IAssetManagementEngine, IRDEngine, IPricingEngine
+    IProductionEngine, IAssetManagementEngine, IRDEngine, IPricingEngine,
+    IInventoryComponent, IFinancialComponent
 )
+
+from modules.agent_framework.components.inventory_component import InventoryComponent
+from modules.agent_framework.components.financial_component import FinancialComponent
 
 from modules.common.utils.shadow_logger import log_shadow
 from modules.finance.api import InsufficientFundsError, IFinancialFirm, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake
@@ -101,11 +105,11 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         # ICreditFrozen
         self._credit_frozen_until_tick = 0
 
-        # Wallet & Inventory
-        self._wallet = Wallet(self.id, {})
-        self._inventory: Dict[str, float] = {} # Direct dict for IInventoryHandler
-        self._input_inventory: Dict[str, float] = {} # New INPUT inventory
-        self._input_inventory_quality: Dict[str, float] = {}
+        # Components
+        self.inventory_component = InventoryComponent(str(self.id))
+        self.inventory_component.attach(self)
+        self.financial_component = FinancialComponent(str(self.id))
+        self.financial_component.attach(self)
 
         self.is_active = True
 
@@ -187,18 +191,18 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         return {
             "is_active": self.is_active,
             "approval_rating": 0.0,
-            "total_wealth": self.wallet.get_balance(DEFAULT_CURRENCY) # Returns int pennies
+            "total_wealth": self.total_wealth # Use total_wealth property which delegates
         }
 
     def get_current_state(self) -> AgentStateDTO:
         # Convert inventories to DTOs
         main_items = [
             ItemDTO(name=k, quantity=v, quality=self.get_quality(k, InventorySlot.MAIN))
-            for k, v in self._inventory.items()
+            for k, v in self.inventory_component.main_inventory.items()
         ]
         input_items = [
             ItemDTO(name=k, quantity=v, quality=self.get_quality(k, InventorySlot.INPUT))
-            for k, v in self._input_inventory.items()
+            for k, v in self.inventory_component.input_inventory.items()
         ]
 
         inventories = {
@@ -207,7 +211,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         }
 
         return AgentStateDTO(
-            assets=self._wallet.get_all_balances(),
+            assets=self.financial_component.get_all_balances(),
             is_active=self.is_active,
             inventories=inventories,
             inventory=None
@@ -217,10 +221,9 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         if state.assets and any(v > 0 for v in state.assets.values()):
              self.logger.warning(f"Agent {self.id}: load_state called with assets, but direct loading is disabled for integrity. Assets ignored: {state.assets}")
 
-        self._inventory.clear()
-        self.inventory_quality.clear()
-        self._input_inventory.clear()
-        self._input_inventory_quality.clear()
+        self.inventory_component.clear_inventory(InventorySlot.MAIN)
+        self.inventory_component.clear_inventory(InventorySlot.INPUT)
+
         self.is_active = state.is_active
 
         # Restore from inventories
@@ -228,26 +231,59 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             for slot_name, slot_dto in state.inventories.items():
                 slot = InventorySlot[slot_name] if slot_name in InventorySlot.__members__ else None
                 if slot == InventorySlot.MAIN:
-                    target_inv = self._inventory
-                    target_qual = self.inventory_quality
+                    target_inv = self.inventory_component.main_inventory
+                    target_qual = self.inventory_component.inventory_quality
                 elif slot == InventorySlot.INPUT:
-                    target_inv = self._input_inventory
-                    target_qual = self._input_inventory_quality
+                    # Access private attributes via facade? No, InventoryComponent exposes input_inventory property
+                    # But if I write to it, I need it to be mutable.
+                    # InventoryComponent.input_inventory returns self._input_inventory which is a dict.
+                    # Assuming it returns reference.
+                    target_inv = self.inventory_component.input_inventory
+                    # For quality, I need to know component implementation.
+                    # InventoryComponent has no input_quality property in interface.
+                    # Wait, modules/agent_framework/components/inventory_component.py had:
+                    # self._input_quality
+                    # But I didn't expose it in properties for IFirmComponent?
+                    # modules/firm/api.py: IInventoryComponent has `inventory_quality` (MAIN).
+                    # It does not explicitly list `input_inventory_quality`.
+                    # But InventoryComponent implementation I updated DOES NOT expose `input_inventory_quality` as property.
+                    # I should access it via protected member or fix component.
+                    # Given I am refactoring, I should probably expose it or use `add_item` loop.
+                    # Using `add_item` loop is safer but `add_item` does weighted average.
+                    # If I am restoring exact state, I want direct set.
+                    # I will assume I can access _input_quality or similar if needed.
+                    # Actually, `load_from_state` is a method on IInventoryComponent (from agent_framework API).
+                    # I should use that if available.
+                    # `load_from_state` in InventoryComponent takes `inventory_data: Dict[str, Any]`.
+                    # AgentStateDTO.inventories is Dict[str, InventorySlotDTO].
+                    # I might need to adapt.
+                    # Or I can just manually populate for now.
+                    # Since I cannot easily change interface again without updating multiple files,
+                    # and `Firm` is allowed to access component internals if needed (friend class concept),
+                    # I'll try to stick to public API.
+                    # But `target_qual` for input inventory is not exposed publicly.
+                    pass
                 else:
                     self.logger.warning(f"Unknown inventory slot in load_state: {slot_name}")
                     continue
 
-                for item in slot_dto.items:
-                    target_inv[item.name] = item.quantity
-                    target_qual[item.name] = item.quality
+                if slot == InventorySlot.INPUT:
+                     # Fallback to add_item which is safe, though avg calc might be redundant if empty.
+                     # But clear() was called.
+                     for item in slot_dto.items:
+                         self.add_item(item.name, item.quantity, quality=item.quality, slot=InventorySlot.INPUT)
+                elif slot == InventorySlot.MAIN:
+                     for item in slot_dto.items:
+                         self.add_item(item.name, item.quantity, quality=item.quality, slot=InventorySlot.MAIN)
 
         # Fallback for legacy state
         elif state.inventory:
-             self._inventory.update(state.inventory)
+             for k, v in state.inventory.items():
+                 self.add_item(k, v)
 
     @property
     def wallet(self) -> Wallet:
-        return self._wallet
+        return self.financial_component.wallet
 
     # --- ICreditFrozen Implementation ---
 
@@ -258,6 +294,8 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
     @credit_frozen_until_tick.setter
     def credit_frozen_until_tick(self, value: int) -> None:
         self._credit_frozen_until_tick = value
+        # Sync to component
+        self.financial_component.credit_frozen_until_tick = value
 
     # --- Properties routing to State ---
 
@@ -367,12 +405,12 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
     @property
     def inventory_quality(self) -> Dict[str, float]:
-        return self.production_state.inventory_quality
+        return self.inventory_component.inventory_quality
 
     @property
     def input_inventory(self) -> Dict[str, float]:
         """Facade property for backward compatibility during transition."""
-        return self.get_all_items(slot=InventorySlot.INPUT)
+        return self.inventory_component.input_inventory
 
     @property
     def base_quality(self) -> float:
@@ -570,80 +608,29 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
     @override
     def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0, slot: InventorySlot = InventorySlot.MAIN) -> bool:
-        self._add_inventory_internal(item_id, quantity, quality, slot)
-        return True
+        return self.inventory_component.add_item(item_id, quantity, transaction_id, quality, slot)
 
     @override
     def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, slot: InventorySlot = InventorySlot.MAIN) -> bool:
-        if quantity < 0: return False
-
-        if slot == InventorySlot.MAIN:
-            inventory = self._inventory
-        elif slot == InventorySlot.INPUT:
-            inventory = self._input_inventory
-        else:
-            return False
-
-        current = inventory.get(item_id, 0.0)
-        if current < quantity: return False
-        inventory[item_id] = current - quantity
-        if inventory[item_id] <= 1e-9:
-             del inventory[item_id]
-        return True
+        return self.inventory_component.remove_item(item_id, quantity, transaction_id, slot)
 
     @override
     def get_quantity(self, item_id: str, slot: InventorySlot = InventorySlot.MAIN) -> float:
-        if slot == InventorySlot.MAIN:
-            return self._inventory.get(item_id, 0.0)
-        elif slot == InventorySlot.INPUT:
-            return self._input_inventory.get(item_id, 0.0)
-        return 0.0
+        return self.inventory_component.get_quantity(item_id, slot)
 
     @override
     def get_quality(self, item_id: str, slot: InventorySlot = InventorySlot.MAIN) -> float:
-        if slot == InventorySlot.MAIN:
-            return self.inventory_quality.get(item_id, 1.0)
-        elif slot == InventorySlot.INPUT:
-            return self._input_inventory_quality.get(item_id, 1.0)
-        return 1.0
+        return self.inventory_component.get_quality(item_id, slot)
 
     @override
     def get_all_items(self, slot: InventorySlot = InventorySlot.MAIN) -> Dict[str, float]:
         """Returns a copy of the inventory."""
-        if slot == InventorySlot.MAIN:
-            return self._inventory.copy()
-        elif slot == InventorySlot.INPUT:
-            return self._input_inventory.copy()
-        return {}
+        return self.inventory_component.get_all_items(slot)
 
     @override
     def clear_inventory(self, slot: InventorySlot = InventorySlot.MAIN) -> None:
         """Clears the inventory."""
-        if slot == InventorySlot.MAIN:
-            self._inventory.clear()
-            self.inventory_quality.clear()
-        elif slot == InventorySlot.INPUT:
-            self._input_inventory.clear()
-            self._input_inventory_quality.clear()
-
-    def _add_inventory_internal(self, item_id: str, quantity: float, quality: float, slot: InventorySlot):
-        current_inventory = self.get_quantity(item_id, slot)
-        current_quality = self.get_quality(item_id, slot)
-
-        total_qty = current_inventory + quantity
-
-        if slot == InventorySlot.MAIN:
-            quality_ref = self.inventory_quality
-            inventory_ref = self._inventory
-        else:
-            quality_ref = self._input_inventory_quality
-            inventory_ref = self._input_inventory
-
-        if total_qty > 0:
-            new_avg_quality = ((current_inventory * current_quality) + (quantity * quality)) / total_qty
-            quality_ref[item_id] = new_avg_quality
-
-        inventory_ref[item_id] = total_qty # Implementation
+        self.inventory_component.clear_inventory(slot)
 
     def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
         context = self._build_sales_post_ask_context(item_id, price, quantity, market.id, current_tick)
@@ -707,7 +694,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         # 2. Finance State
         finance_dto = FinanceStateDTO(
-            balance=self.wallet.get_all_balances(),
+            balance=self.financial_component.get_all_balances(),
             revenue_this_turn=self.finance_state.revenue_this_turn.copy(),
             expenses_this_tick=self.finance_state.expenses_this_tick.copy(),
             consecutive_loss_turns=self.finance_state.consecutive_loss_turns,
@@ -729,9 +716,9 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             base_quality=self.production_state.base_quality,
             automation_level=self.production_state.automation_level,
             specialization=self.production_state.specialization,
-            inventory=self._inventory.copy(),
-            input_inventory=self._input_inventory.copy(),
-            inventory_quality=self.production_state.inventory_quality.copy()
+            inventory=self.inventory_component.main_inventory.copy(),
+            input_inventory=self.inventory_component.input_inventory.copy(),
+            inventory_quality=self.inventory_component.inventory_quality.copy()
         )
 
         # 4. Sales State
@@ -807,10 +794,10 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
     def get_agent_data(self) -> Dict[str, Any]:
         """AI Data Provider."""
         return {
-            "assets": MultiCurrencyWalletDTO(balances=self.wallet.get_all_balances()),
+            "assets": MultiCurrencyWalletDTO(balances=self.financial_component.get_all_balances()),
             "needs": self.needs.copy(),
             "inventory": self.get_all_items(),
-            "input_inventory": self._input_inventory.copy(),
+            "input_inventory": self.inventory_component.input_inventory.copy(),
             "employees": [emp.id for emp in self.hr_state.employees],
             "is_active": self.is_active,
             "current_production": self.current_production,
@@ -824,7 +811,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             "dividend_rate": self.dividend_rate,
             "capital_stock": self.capital_stock,
             "base_quality": self.base_quality,
-            "inventory_quality": self.inventory_quality.copy(),
+            "inventory_quality": self.inventory_component.inventory_quality.copy(),
             "automation_level": self.automation_level,
         }
 
@@ -855,7 +842,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         # 2. Finance State
         finance_dto = FinanceStateDTO(
-            balance=self.wallet.get_balance(DEFAULT_CURRENCY), # Public API uses float balance for main currency often
+            balance=self.financial_component.get_balance(DEFAULT_CURRENCY), # Public API uses float balance for main currency often
             revenue_this_turn=self.finance_state.revenue_this_turn.get(DEFAULT_CURRENCY, 0),
             expenses_this_tick=self.finance_state.expenses_this_tick.get(DEFAULT_CURRENCY, 0),
             consecutive_loss_turns=self.finance_state.consecutive_loss_turns,
@@ -877,9 +864,9 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             base_quality=self.production_state.base_quality,
             automation_level=self.production_state.automation_level,
             specialization=self.production_state.specialization,
-            inventory=self._inventory.copy(),
-            input_inventory=self._input_inventory.copy(),
-            inventory_quality=self.production_state.inventory_quality.copy()
+            inventory=self.inventory_component.main_inventory.copy(),
+            input_inventory=self.inventory_component.input_inventory.copy(),
+            inventory_quality=self.inventory_component.inventory_quality.copy()
         )
 
         # 4. Sales State
@@ -931,12 +918,12 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         market_context = input_dto.market_context
 
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
-        current_assets_val = self.wallet.get_balance(DEFAULT_CURRENCY)
+        current_assets_val = self.financial_component.get_balance(DEFAULT_CURRENCY)
         self.logger.debug(
             f"FIRM_DECISION_START | Firm {self.id} before decision: Assets={current_assets_val}, Employees={len(self.hr_state.employees)}, is_active={self.is_active}",
             extra={
                 **log_extra,
-                "assets_before": self.wallet.get_all_balances(),
+                "assets_before": self.financial_component.get_all_balances(),
                 "num_employees_before": len(self.hr_state.employees),
                 "is_active_before": self.is_active,
             },
@@ -979,12 +966,12 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         if market_snapshot:
              self._calculate_invisible_hand_price(market_snapshot, current_time)
 
-        current_assets_val_after = self.wallet.get_balance(DEFAULT_CURRENCY)
+        current_assets_val_after = self.financial_component.get_balance(DEFAULT_CURRENCY)
         self.logger.debug(
             f"FIRM_DECISION_END | Firm {self.id} after decision: Assets={current_assets_val_after}, Employees={len(self.hr_state.employees)}, is_active={self.is_active}, Decisions={len(external_orders)}",
             extra={
                 **log_extra,
-                "assets_after": self.wallet.get_all_balances(),
+                "assets_after": self.financial_component.get_all_balances(),
                 "num_employees_after": len(self.hr_state.employees),
                 "is_active_after": self.is_active,
                 "num_decisions": len(external_orders),
@@ -1053,7 +1040,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             tax_policy=tax_policy,
             current_time=current_time,
             firm_id=self.id,
-            wallet_balances=self.wallet.get_all_balances(),
+            wallet_balances=self.financial_component.get_all_balances(),
             labor_market_min_wage=10.0, # Should come from config or market data
             ticks_per_year=getattr(self.config, "ticks_per_year", 365),
             severance_pay_weeks=getattr(self.config, "severance_pay_weeks", 2.0)
@@ -1063,7 +1050,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         gov_id = government.id if government else None
         return SalesMarketingContextDTO(
             firm_id=self.id,
-            wallet_balance=self.wallet.get_balance(DEFAULT_CURRENCY),
+            wallet_balance=self.financial_component.get_balance(DEFAULT_CURRENCY),
             government_id=gov_id,
             current_time=current_time
         )
@@ -1132,7 +1119,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         )
 
         tx_finance = self.finance_engine.generate_financial_transactions(
-            self.finance_state, self.id, self.wallet.get_all_balances(), self.config, current_time, fin_ctx, inventory_value
+            self.finance_state, self.id, self.financial_component.get_all_balances(), self.config, current_time, fin_ctx, inventory_value
         )
         transactions.extend(tx_finance)
 
@@ -1199,7 +1186,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
     @property
     def balance_pennies(self) -> int:
-        return self.wallet.get_balance(DEFAULT_CURRENCY)
+        return self.financial_component.balance_pennies
 
     @property
     def capital_stock_pennies(self) -> int:
@@ -1232,36 +1219,26 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         return int(sum(history) / len(history))
 
     def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-         self.wallet.add(amount_pennies, currency)
+         self.financial_component.deposit(amount_pennies, currency)
 
     def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-         current_bal = self.wallet.get_balance(currency)
-         if current_bal < amount_pennies:
-            raise InsufficientFundsError(
-                f"Insufficient funds", required=MoneyDTO(amount_pennies=amount_pennies, currency=currency), available=MoneyDTO(amount_pennies=current_bal, currency=currency)
-            )
-         self.wallet.subtract(amount_pennies, currency)
+         self.financial_component.withdraw(amount_pennies, currency)
 
     # --- IFinancialAgent Implementation ---
 
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-         self.wallet.add(amount, currency)
+         self.financial_component._deposit(amount, currency)
 
     def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-         current_bal = self.wallet.get_balance(currency)
-         if current_bal < amount:
-            raise InsufficientFundsError(
-                f"Insufficient funds", required=MoneyDTO(amount_pennies=amount, currency=currency), available=MoneyDTO(amount_pennies=current_bal, currency=currency)
-            )
-         self.wallet.subtract(amount, currency)
+         self.financial_component._withdraw(amount, currency)
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         """Implements IFinancialAgent.get_balance."""
-        return self.wallet.get_balance(currency)
+        return self.financial_component.get_balance(currency)
 
     def get_all_balances(self) -> Dict[CurrencyCode, int]:
         """Returns a copy of all currency balances."""
-        return self.wallet.get_all_balances()
+        return self.financial_component.get_all_balances()
 
     @property
     def total_wealth(self) -> int:
@@ -1269,25 +1246,19 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         Returns the total wealth in default currency estimation.
         TD-270: Standardized multi-currency summation.
         """
-        balances = self.wallet.get_all_balances()
-        total = 0
-        # For now, we assume 1:1 exchange rate as per spec draft for simple conversion.
-        # Future implementations should use an IExchangeRateService.
-        for amount in balances.values():
-            total += amount
-        return total
+        return self.financial_component.total_wealth
 
     @override
     def get_assets_by_currency(self) -> Dict[CurrencyCode, int]:
         """Implementation of ICurrencyHolder."""
-        return self.wallet.get_all_balances()
+        return self.financial_component.get_all_balances()
 
     # --- Facade Methods ---
 
     def get_book_value_per_share(self) -> float:
         outstanding = self.total_shares - self.treasury_shares
         if outstanding <= 0: return 0.0
-        net_assets = self.wallet.get_balance(DEFAULT_CURRENCY) - self.finance_state.total_debt_pennies
+        net_assets = self.financial_component.get_balance(DEFAULT_CURRENCY) - self.finance_state.total_debt_pennies
         return max(0.0, float(net_assets)) / outstanding
 
     def get_market_cap(self, stock_price: Optional[float] = None) -> float:
@@ -1309,17 +1280,17 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             )
 
         return int(self.finance_engine.calculate_valuation(
-            self.finance_state, self.wallet.get_all_balances(), self.config, inventory_value, int(self.capital_stock), fin_ctx
+            self.finance_state, self.financial_component.get_all_balances(), self.config, inventory_value, int(self.capital_stock), fin_ctx
         ))
 
     def get_financial_snapshot(self) -> Dict[str, Any]:
         inventory_value = int(sum(self.get_quantity(i) * self.last_prices.get(i, 1000) for i in self.get_all_items()))
-        cash = self.wallet.get_balance(DEFAULT_CURRENCY)
+        cash = self.financial_component.get_balance(DEFAULT_CURRENCY)
         total_assets = cash + inventory_value + self.capital_stock
         working_capital = cash + inventory_value # Simplified: Current Assets
 
         return {
-             "wallet": MultiCurrencyWalletDTO(balances=self.wallet.get_all_balances()),
+             "wallet": MultiCurrencyWalletDTO(balances=self.financial_component.get_all_balances()),
              "total_assets": int(total_assets),
              "total_debt": self.finance_state.total_debt_pennies,
              "retained_earnings": self.finance_state.retained_earnings_pennies,

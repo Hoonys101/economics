@@ -34,6 +34,26 @@ class InventoryComponent(IInventoryComponent):
             for item_id, qty in initial_inv.items():
                 self.add_item(item_id, float(qty))
 
+    def attach(self, owner: Any) -> None:
+        """Attaches the component to an owner."""
+        # No-op for now, or store owner reference if needed.
+        pass
+
+    @property
+    def main_inventory(self) -> Dict[str, float]:
+        """Exposes the main inventory dict (as in Firm legacy)."""
+        return self._main_inventory
+
+    @property
+    def input_inventory(self) -> Dict[str, float]:
+        """Exposes the input inventory dict (as in Firm legacy)."""
+        return self._input_inventory
+
+    @property
+    def inventory_quality(self) -> Dict[str, float]:
+        """Exposes the main inventory quality map (as in Firm legacy)."""
+        return self._main_quality
+
     def reset(self) -> None:
         """
         Reset logic if needed.

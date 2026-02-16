@@ -32,6 +32,14 @@ class FinancialComponent(IFinancialComponent, ICreditFrozen):
         if initial_balance > 0:
             self._wallet.add(initial_balance, DEFAULT_CURRENCY, memo="Initial Balance")
 
+    def attach(self, owner: Any) -> None:
+        """Attaches the component to an owner."""
+        pass
+
+    def force_reset_wallet(self) -> None:
+        """Resets the wallet state."""
+        self._wallet.load_balances({})
+
     def reset(self) -> None:
         """Reset tick-based counters or caches if any."""
         pass
@@ -56,6 +64,33 @@ class FinancialComponent(IFinancialComponent, ICreditFrozen):
         """Withdraws funds from the wallet."""
         # Wallet raises InsufficientFundsError if needed
         self._wallet.subtract(amount_pennies, currency, memo="FinancialComponent Withdrawal")
+
+    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Internal deposit implementation."""
+        self.deposit(amount, currency)
+
+    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Internal withdraw implementation."""
+        self.withdraw(amount, currency)
+
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """Returns the current balance for the specified currency."""
+        return self._wallet.get_balance(currency)
+
+    def get_all_balances(self) -> Dict[CurrencyCode, int]:
+        """Returns a copy of all currency balances."""
+        return self._wallet.get_all_balances()
+
+    @property
+    def total_wealth(self) -> int:
+        """Returns the total wealth in default currency estimation."""
+        balances = self._wallet.get_all_balances()
+        return sum(balances.values())
+
+    @property
+    def wallet(self) -> Wallet:
+        """Exposes the underlying Wallet instance."""
+        return self._wallet
 
     @property
     def wallet_balance(self) -> int:

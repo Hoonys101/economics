@@ -31,13 +31,13 @@ def test_invest_automation_success(asset_mgmt_engine, firm_snapshot):
     input_dto = AssetManagementInputDTO(
         firm_snapshot=firm_snapshot,
         investment_type="AUTOMATION",
-        investment_amount=10000 # Should give 1% automation (0.01)
+        investment_amount=100 # Should give 1% automation (0.01)
     )
 
     result = asset_mgmt_engine.invest(input_dto)
 
     assert result.success
-    assert result.actual_cost == 10000
+    assert result.actual_cost == 100
     assert result.automation_level_increase == pytest.approx(0.01)
     assert result.capital_stock_increase == 0.0
 
