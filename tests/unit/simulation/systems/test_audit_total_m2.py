@@ -1,48 +1,36 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 from simulation.systems.settlement_system import SettlementSystem
-from modules.finance.api import IFinancialAgent, IBank
+from modules.finance.api import IFinancialAgent, IBank, IFinancialEntity
 from modules.system.constants import ID_CENTRAL_BANK
-
-class MockAgent:
-    def __init__(self, id, balance):
-        self.id = id
-        self._balance = balance
-    def get_balance(self, currency):
-        return self._balance
-    def get_assets_by_currency(self):
-        return {"USD": self._balance}
-
-class MockBank:
-    def __init__(self, id, balance, deposits):
-        self.id = id
-        self._balance = balance
-        self._total_deposits = deposits
-        self.__class__.__name__ = "Bank" # Simulate legacy check
-    def get_balance(self, currency):
-        return self._balance
-    def get_assets_by_currency(self):
-        return {"USD": self._balance}
-    def get_total_deposits(self):
-        return self._total_deposits
+from modules.system.api import DEFAULT_CURRENCY
 
 def test_audit_total_m2_logic():
     ss = SettlementSystem()
     ss.agent_registry = MagicMock()
     ss.settlement_accounts = {}
 
-    # 1. Standard Agent (Household)
-    hh = MockAgent(1, 100)
+    # 1. Standard Agent (Household) -> IFinancialEntity
+    hh = MagicMock(spec=IFinancialEntity)
+    hh.id = 1
+    # IFinancialEntity uses balance_pennies property
+    type(hh).balance_pennies = PropertyMock(return_value=100)
 
-    # 2. Central Bank (Should be Excluded)
-    cb = MockAgent(ID_CENTRAL_BANK, 999999)
+    # 2. Central Bank (Should be Excluded) -> IFinancialEntity
+    cb = MagicMock(spec=IFinancialEntity)
+    cb.id = ID_CENTRAL_BANK
+    type(cb).balance_pennies = PropertyMock(return_value=999999)
 
-    # 3. Bank (Reserves = 50, Deposits = 200)
+    # 3. Bank (Reserves = 50, Deposits = 200) -> IBank (inherits IFinancialAgent)
     # Total Cash = HH(100) + Bank(50) = 150.
     # Bank Reserves = 50.
     # Total Deposits = 200.
     # M2 = (150 - 50) + 200 = 300.
-    bank = MockBank(2, 50, 200)
+    bank = MagicMock(spec=IBank)
+    bank.id = 2
+    # IBank uses get_balance method
+    bank.get_balance.return_value = 50
+    bank.get_total_deposits.return_value = 200
 
     ss.agent_registry.get_all_financial_agents.return_value = [hh, cb, bank]
 
@@ -58,6 +46,8 @@ def test_audit_total_m2_logic():
         args = ss.logger.critical.call_args
         if args:
             print(f"Audit Failed Log: {args}")
+        else:
+            print(f"All logs: {ss.logger.mock_calls}")
 
     assert result
     ss.logger.info.assert_called_with("AUDIT_PASS | M2 Verified: 300")

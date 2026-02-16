@@ -322,8 +322,8 @@ AI_GROWTH_REWARD_WEIGHT = 7.0
 AI_WEALTH_REWARD_WEIGHT = 3.0
 
 # --- Genesis: Activation Energy (WO-047: Capital Injection) ---
-INITIAL_HOUSEHOLD_ASSETS_MEAN = 5000.0  # 50.0 -> 5000.0 (100x Booster)
-INITIAL_FIRM_CAPITAL_MEAN = 50000.0   # 1000.0 -> 50000.0 (50x Runway for Regulations)
+INITIAL_HOUSEHOLD_ASSETS_MEAN = 500000  # 50.0 -> 5000.0 (100x Booster) -> Pennies
+INITIAL_FIRM_CAPITAL_MEAN = 5000000   # 1000.0 -> 50000.0 (50x Runway for Regulations) -> Pennies
 
 # --- Genesis: Market Flexibility Multipliers ---
 GENESIS_PRICE_ADJUSTMENT_MULTIPLIER = 2.0  # Speed up price slashing
