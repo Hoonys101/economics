@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.dtos import DecisionContext, FirmStateDTO
-from simulation.dtos.department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
+from modules.simulation.dtos.api import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from modules.household.dtos import HouseholdStateDTO
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.decisions.standalone_rule_based_firm_engine import StandaloneRuleBasedFirmDecisionEngine

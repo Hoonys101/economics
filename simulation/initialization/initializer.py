@@ -96,7 +96,7 @@ from modules.system.registry import AgentRegistry, GlobalRegistry
 from modules.household.api import HouseholdFactoryContext
 from simulation.factories.household_factory import HouseholdFactory
 from simulation.utils.config_factory import create_config_dto
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 
 
 class SimulationInitializer(SimulationInitializerInterface):

@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from modules.household.api import IConsumptionManager
 from modules.household.dtos import EconStateDTO
 from simulation.dtos import ConsumptionResult
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 
 class ConsumptionManager(IConsumptionManager):
     """

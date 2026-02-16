@@ -2,8 +2,7 @@ from __future__ import annotations
 from typing import Protocol, Any, Optional, Dict, List, Literal
 from dataclasses import dataclass, field
 
-from simulation.dtos.config_dtos import FirmConfigDTO
-from simulation.dtos.department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
+from modules.simulation.dtos.api import FirmConfigDTO, FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from modules.system.api import MarketSnapshotDTO
 
 # ==============================================================================

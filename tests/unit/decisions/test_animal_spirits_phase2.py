@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, Mock
 from simulation.models import Order
 from simulation.dtos import DecisionContext, MarketSnapshotDTO, HouseholdConfigDTO, FirmConfigDTO
 from modules.household.dtos import HouseholdStateDTO
-from simulation.dtos.firm_state_dto import FirmStateDTO
+from modules.simulation.dtos.api import FirmStateDTO
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 

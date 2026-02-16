@@ -11,7 +11,7 @@ from modules.household.dtos import (
     CloningRequestDTO,
     HouseholdSnapshotDTO
 )
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 from modules.system.api import MarketSnapshotDTO
 from simulation.dtos import StressScenarioConfig, LaborResult, ConsumptionResult
 

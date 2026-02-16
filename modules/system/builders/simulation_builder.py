@@ -7,7 +7,7 @@ from pathlib import Path
 import config
 from modules.common.config.impl import ConfigManagerImpl
 from simulation.utils.config_factory import create_config_dto
-from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO, FirmConfigDTO
 from simulation.core_agents import Household, Talent
 from simulation.firms import Firm
 from simulation.ai.firm_ai import FirmAI

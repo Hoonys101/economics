@@ -10,9 +10,7 @@ from simulation.core_agents import Household
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.decisions.base_decision_engine import BaseDecisionEngine
 from simulation.dtos import DecisionContext, FiscalContext, DecisionInputDTO
-from simulation.dtos.config_dtos import FirmConfigDTO
-from simulation.dtos.firm_state_dto import FirmStateDTO, IFirmStateProvider
-from simulation.dtos.department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
+from modules.simulation.dtos.api import FirmConfigDTO, FirmStateDTO, IFirmStateProvider, FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from simulation.ai.enums import Personality
 from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO, ICurrencyHolder
 from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, IConfigurable, LiquidationConfigDTO, InventorySlot, ItemDTO, InventorySlotDTO
@@ -742,7 +740,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             price_history=self.sales_state.last_prices.copy(),
             brand_awareness=self.sales_state.brand_awareness,
             perceived_quality=self.sales_state.perceived_quality,
-            marketing_budget=float(self.sales_state.marketing_budget_pennies)
+            marketing_budget=self.sales_state.marketing_budget_pennies # MIGRATION: int pennies
         )
         
         return FirmSnapshotDTO(
@@ -890,7 +888,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             price_history=self.sales_state.last_prices.copy(),
             brand_awareness=self.sales_state.brand_awareness,
             perceived_quality=self.sales_state.perceived_quality,
-            marketing_budget=float(self.sales_state.marketing_budget_pennies)
+            marketing_budget=self.sales_state.marketing_budget_pennies # MIGRATION: int pennies
         )
 
         sentiment = 1.0 / (1.0 + self.finance_state.consecutive_loss_turns)
@@ -1013,8 +1011,8 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             current_price=current_price,
             market_snapshot=market_snapshot,
             config=self.config,
-            # unit_cost_estimate needs to be int. FinanceEngine returns float.
-            unit_cost_estimate=int(self.finance_engine.get_estimated_unit_cost(self.finance_state, item_id, self.config) * 100),
+            # unit_cost_estimate needs to be int. FinanceEngine now returns int pennies.
+            unit_cost_estimate=self.finance_engine.get_estimated_unit_cost(self.finance_state, item_id, self.config),
             inventory_level=self.get_quantity(item_id, InventorySlot.MAIN),
             production_target=self.production_target
         )

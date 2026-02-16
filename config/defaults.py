@@ -3,7 +3,7 @@ import os
 
 # --- Phase 21: Corporate Empires ---
 AUTOMATION_LABOR_REDUCTION = 0.1  # Max 50% reduction in labor alpha
-AUTOMATION_COST_PER_PCT = 10000.0  # Base cost to increase automation by 1% (scaled by assets)
+AUTOMATION_COST_PER_PCT = 1000000  # Base cost to increase automation by 1% (scaled by assets) - MIGRATION: Int pennies
 HOSTILE_TAKEOVER_DISCOUNT_THRESHOLD = 0.7  # Target if Market Cap < 70% of Intrinsic Value
 
 # --- Phase 21.5: Stabilization (WO-044) ---
@@ -50,7 +50,7 @@ CONFORMITY_RANGES = {
 # --- Gold Standard Mode (WO-016) ---
 GOLD_STANDARD_MODE = False  # True: 금본위 (Full Reserve), False: 현대 금융 (Credit Creation)
 RESERVE_REQ_RATIO = 0.1    # 지급준비율 (10%) - WO-064
-INITIAL_MONEY_SUPPLY = 100_000.0  # 초기 화폐 총량 (검증용 기준값)
+INITIAL_MONEY_SUPPLY = 10000000  # 초기 화폐 총량 (검증용 기준값) - MIGRATION: Int pennies
 
 # --- Simulation Parameters ---
 NUM_HOUSEHOLDS = 20
@@ -68,7 +68,7 @@ NEWBORN_ENGINE_TYPE = "AIDriven"  # Default engine for newborns: "AIDriven" or "
 
 # --- Initial Agent Configuration ---
 INITIAL_HOUSEHOLD_ASSETS_RANGE = 0.2
-INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 50.0
+INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 5000 # MIGRATION: Int pennies
 INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE = 0.2
 INITIAL_HOUSEHOLD_NEEDS_MEAN = {
     "survival": 60.0,
@@ -88,9 +88,9 @@ INITIAL_HOUSEHOLD_NEEDS_MEAN = {
 INITIAL_HOUSEHOLD_NEEDS_RANGE = 0.1
 INITIAL_EMPLOYMENT_RATE = 0.5  # 초기 고용률
 
-INITIAL_FIRM_CAPITAL_MEAN = 10000.0 # High Initial Capital for Laissez-Faire Runway
+INITIAL_FIRM_CAPITAL_MEAN = 1000000 # High Initial Capital for Laissez-Faire Runway - MIGRATION: Int pennies
 INITIAL_FIRM_CAPITAL_RANGE = 0.2
-INITIAL_FIRM_LIQUIDITY_NEED_MEAN = 200.0
+INITIAL_FIRM_LIQUIDITY_NEED_MEAN = 20000 # MIGRATION: Int pennies
 INITIAL_FIRM_LIQUIDITY_NEED_RANGE = 0.2
 INITIAL_FIRM_INVENTORY_MEAN = 0.0  # Operation Empty Warehouse: No initial safety net
 INITIAL_FIRM_INVENTORY_RANGE = 0.2
@@ -99,29 +99,29 @@ FIRM_PRODUCTIVITY_FACTOR = 20.0 # Laissez-Faire: Double Output
 # --- Goods Configuration ---
 GOODS = {
     "basic_food": {
-        "production_cost": 3,
-        "initial_price": 5.0,
+        "production_cost": 300, # MIGRATION: Int pennies
+        "initial_price": 500, # MIGRATION: Int pennies
         "utility_effects": {"survival": 10},
         "is_luxury": False,
         "sector": "FOOD",
     },
     "clothing": {
-        "production_cost": 5,
-        "initial_price": 15.0,
+        "production_cost": 500, # MIGRATION: Int pennies
+        "initial_price": 1500, # MIGRATION: Int pennies
         "utility_effects": {"survival": 2, "social": 8},
         "is_luxury": True,
         "sector": "GOODS",
     },
     "luxury_food": {
-        "production_cost": 10,
-        "initial_price": 30.0,
+        "production_cost": 1000, # MIGRATION: Int pennies
+        "initial_price": 3000, # MIGRATION: Int pennies
         "utility_effects": {"survival": 12, "social": 5},
         "is_luxury": True,
         "sector": "FOOD",
     },
     "education_service": {
-        "production_cost": 20,
-        "initial_price": 50.0,
+        "production_cost": 2000, # MIGRATION: Int pennies
+        "initial_price": 5000, # MIGRATION: Int pennies
         "utility_effects": {"improvement": 15},
         "is_service": True,
         "is_luxury": False,
@@ -129,16 +129,16 @@ GOODS = {
     },
     # WO-030: Iron (Raw Material)
     "iron": {
-        "production_cost": 2.0,
-        "initial_price": 8.0,
+        "production_cost": 200, # MIGRATION: Int pennies
+        "initial_price": 800, # MIGRATION: Int pennies
         "utility_effects": {},
         "is_luxury": False,
         "sector": "MATERIAL",
     },
     # WO-023: Consumer Goods (Industrial Product)
     "consumer_goods": {
-        "production_cost": 5.0,
-        "initial_price": 15.0,
+        "production_cost": 500, # MIGRATION: Int pennies
+        "initial_price": 1500, # MIGRATION: Int pennies
         "utility_effects": {"quality": 10},
         "is_luxury": True, # Treated as luxury/higher tier need
         "sector": "GOODS",
@@ -148,8 +148,8 @@ GOODS = {
         "inputs": {"iron": 1.0}, # WO-030: 1 unit of iron per unit of consumer_goods
     },
     "luxury_bag": {
-        "production_cost": 500,
-        "initial_price": 2000.0,
+        "production_cost": 50000, # MIGRATION: Int pennies
+        "initial_price": 200000, # MIGRATION: Int pennies
         "utility_effects": {"social": 50},
         "is_luxury": True,
         "is_veblen": True,  # 가격↑ → 수요↑
@@ -164,8 +164,8 @@ HOUSEHOLD_CONSUMABLE_GOODS = ["basic_food", "luxury_food"]
 
 # Added for explicit reference
 GOODS_INITIAL_PRICE = {
-    "basic_food": 5.0,
-    "stock": 50.0
+    "basic_food": 500, # MIGRATION: Int pennies
+    "stock": 5000 # MIGRATION: Int pennies
 }
 
 
@@ -209,18 +209,18 @@ VALUE_ORIENTATION_MAPPING = {
 }
 
 # --- Market & Decision Logic ---
-INITIAL_WAGE = 10.0  # Renamed from LABOR_MARKET_OFFERED_WAGE
-BASE_WAGE = 20.0
+INITIAL_WAGE = 1000  # Renamed from LABOR_MARKET_OFFERED_WAGE
+BASE_WAGE = 2000
 WAGE_INFLATION_ADJUSTMENT_FACTOR = 0.1
-LABOR_MARKET_MIN_WAGE = 8.0
-HOUSEHOLD_MIN_WAGE_DEMAND = 10.0
-HOUSEHOLD_RESERVATION_PRICE_BASE = 5.0
+LABOR_MARKET_MIN_WAGE = 800
+HOUSEHOLD_MIN_WAGE_DEMAND = 1000
+HOUSEHOLD_RESERVATION_PRICE_BASE = 500
 HOUSEHOLD_NEED_PRICE_MULTIPLIER = 1.0
 HOUSEHOLD_ASSET_PRICE_MULTIPLIER = 0.1
 HOUSEHOLD_PRICE_ELASTICITY_FACTOR = 0.5
 HOUSEHOLD_STOCKPILING_BONUS_FACTOR = 0.2
-MIN_SELL_PRICE = 1.0
-MAX_SELL_PRICE = 100.0
+MIN_SELL_PRICE = 100
+MAX_SELL_PRICE = 10000
 MAX_SELL_QUANTITY = 50.0
 PERCEIVED_PRICE_UPDATE_FACTOR = 0.1
 INVENTORY_HOLDING_COST_RATE = 0.005
@@ -439,13 +439,13 @@ LEISURE_COEFFS = {
 # 📊 HOUSEHOLD DECISION LOGIC (가계 의사결정 로직)
 # ------------------------------------------------------------------------------
 # 가계의 희망 임금 결정에 사용되는 값들
-HOUSEHOLD_LOW_ASSET_THRESHOLD = 100.0  # 자산이 이 값 미만이면 낮은 임금 수용
-HOUSEHOLD_LOW_ASSET_WAGE = 8.0         # 자산이 낮을 때 희망 임금
-HOUSEHOLD_DEFAULT_WAGE = 10.0          # 기본 희망 임금
+HOUSEHOLD_LOW_ASSET_THRESHOLD = 10000  # 자산이 이 값 미만이면 낮은 임금 수용
+HOUSEHOLD_LOW_ASSET_WAGE = 800         # 자산이 낮을 때 희망 임금
+HOUSEHOLD_DEFAULT_WAGE = 1000          # 기본 희망 임금
 
 # 시장 가격 폴백 (시장 데이터 없을 때 사용)
-MARKET_PRICE_FALLBACK = 10.0
-DEFAULT_FALLBACK_PRICE = 5.0
+MARKET_PRICE_FALLBACK = 1000
+DEFAULT_FALLBACK_PRICE = 500
 
 # ------------------------------------------------------------------------------
 # 🏢 FIRM DECISION LOGIC (기업 의사결정 로직)
@@ -504,7 +504,7 @@ TOP_PERFORMING_PERCENTILE = 0.1     # 상위 10% 에이전트 (모방 학습 대
 UNDER_PERFORMING_PERCENTILE = 0.5   # 하위 50% 에이전트 (학습 필요 대상)
 
 # --- 가격 결정 AI (AI Price Decision) ---
-AI_MIN_PRICE_FLOOR = 0.1            # AI가 설정 가능한 최저 가격 하한
+AI_MIN_PRICE_FLOOR = 10            # AI가 설정 가능한 최저 가격 하한
 
 # ------------------------------------------------------------------------------
 # 📈 STOCK MARKET PARAMETERS (주식 시장 파라미터)
@@ -526,14 +526,14 @@ STOCK_TRANSACTION_FEE_RATE = 0.001  # 거래 수수료율 (0.1%)
 
 # --- 투자 의사결정 ---
 HOUSEHOLD_INVESTMENT_BUDGET_RATIO = 0.2  # 자산 대비 최대 투자 비율
-HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT = 500.0  # 투자를 위한 최소 자산
+HOUSEHOLD_MIN_ASSETS_FOR_INVESTMENT = 50000  # 투자를 위한 최소 자산
 STOCK_SELL_PROFIT_THRESHOLD = 0.15  # 매도 고려 수익률 임계값 (15%)
 STOCK_BUY_DISCOUNT_THRESHOLD = 0.10 # 매수 고려 할인율 임계값 (10%)
 STOCK_INVESTMENT_DIVERSIFICATION_COUNT = 3 # Number of stocks to diversify into
 STOCK_INVESTMENT_EQUITY_DELTA_THRESHOLD = 10.0 # Threshold for buy/sell decisions based on portfolio optimization
 
 # --- Phase 28: Macro-Stability Stress Testing (Config) ---
-PANIC_SELLING_ASSET_THRESHOLD = 500.0  # 자산이 이 값 미만이면 주식 패닉 셀링 (생존 위협)
+PANIC_SELLING_ASSET_THRESHOLD = 50000  # 자산이 이 값 미만이면 주식 패닉 셀링 (생존 위협)
 DEBT_REPAYMENT_RATIO = 0.5             # 부채 상환 시 자산 대비 할당 비율 (기본 50%)
 DEBT_REPAYMENT_CAP = 1.1               # 부채 상환 상한선 (원금 * 1.1)
 DEBT_LIQUIDITY_RATIO = 0.9             # 부채 상환 후 최소 유동성 유지 비율 (자산의 90%까지만 상환)
@@ -552,20 +552,20 @@ SALES_TAX_RATE = 0.0                 # Laissez-Faire: Zero Tax
 INHERITANCE_TAX_RATE = 0.0            # Laissez-Faire: Zero Tax
 
 RD_SUBSIDY_RATE = 0.2                 # R&D(자본투자) 보조금 (투자액의 20%)
-INFRASTRUCTURE_INVESTMENT_COST = 5000.0  # 인프라 투자 1회당 비용
+INFRASTRUCTURE_INVESTMENT_COST = 500000  # 인프라 투자 1회당 비용
 INFRASTRUCTURE_TFP_BOOST = 0.05       # 인프라 투자 시 전체 생산성(TFP) 증가율
 
 # --- 배당 관련 (기존 DIVIDEND_RATE 참조) ---
 # DIVIDEND_RATE는 이미 위에서 정의됨
 
 # --- 창업 관련 ---
-STARTUP_MIN_CAPITAL = 5000.0        # 창업 최소 자본금
+STARTUP_MIN_CAPITAL = 500000        # 창업 최소 자본금
 STARTUP_INITIAL_SHARES = 100.0      # 창업 시 발행 주식 수
 STARTUP_PROBABILITY = 0.01          # 틱당 창업 시도 확률 (자격 충족 시)
 
 # --- Mitosis Configuration ---
 TARGET_POPULATION = 50
-MITOSIS_BASE_THRESHOLD = 2500.0  # 기본 분열 자산 요건 (5000.0 -> 2500.0 for Take 2)
+MITOSIS_BASE_THRESHOLD = 250000  # 기본 분열 자산 요건 (5000.0 -> 2500.0 for Take 2)
 MITOSIS_SENSITIVITY = 1.5       # 인구 압박 민감도
 MITOSIS_SURVIVAL_THRESHOLD = 20.0  # 배고픔 한계
 MITOSIS_MUTATION_PROBABILITY = 0.2  # 성격 돌연변이 확률
@@ -602,7 +602,7 @@ TAX_BRACKETS = [
 
 # 2. Wealth Tax
 # WEALTH_TAX_THRESHOLD is defined below
-WEALTH_TAX_THRESHOLD = 50000.0
+WEALTH_TAX_THRESHOLD = 5000000
 ANNUAL_WEALTH_TAX_RATE = 0.02   # Annual 2% wealth tax
 
 # 3. Welfare
@@ -642,8 +642,8 @@ QUALITY_PREF_MISER_MAX = 0.3      # Threshold for Miser behavior
 # Task #9: Entrepreneurship Constants
 # ==============================================================================
 MIN_FIRMS_THRESHOLD = 5          # 최소 기업 수 (이하로 떨어지면 창업 유도)
-STARTUP_COST = 30000.0           # 창업 비용 (30,000으로 상향)
-FIRM_MAINTENANCE_FEE = 50.0       # WO-021: 1/4 of legacy 200.0
+STARTUP_COST = 3000000           # 창업 비용 (30,000으로 상향)
+FIRM_MAINTENANCE_FEE = 5000       # WO-021: 1/4 of legacy 200.0
 CORPORATE_TAX_RATE = 0.0         # Laissez-Faire: Zero Tax
 ENTREPRENEURSHIP_SPIRIT = 0.05   # 자격 있는 가계의 창업 확률 (5%)
 STARTUP_CAPITAL_MULTIPLIER = 1.2 # 창업 자격: cash > STARTUP_COST * 이 값 (자격: 3600)
@@ -701,10 +701,10 @@ SERVICE_WASTE_PENALTY_FACTOR = 0.5
 # Phase 17-3A: Real Estate
 # ==============================================================================
 NUM_HOUSING_UNITS = 100
-INITIAL_PROPERTY_VALUE = 10000.0
-INITIAL_RENT_PRICE = 100.0
+INITIAL_PROPERTY_VALUE = 1000000
+INITIAL_RENT_PRICE = 10000
 MAINTENANCE_RATE_PER_TICK = 0.001  # 0.1%
-HOMELESS_PENALTY_PER_TICK = 50.0
+HOMELESS_PENALTY_PER_TICK = 5000
 
 # ==============================================================================
 # Phase 19: Population Dynamics
@@ -736,23 +736,23 @@ TECH_CONTRACEPTION_ENABLED = True   # True: System 2 (NPV), False: System 1 (Ran
 BIOLOGICAL_FERTILITY_RATE = 0.15    # 피임 없을 때의 월간 임신 확률
 
 # Cost Factors
-CHILD_MONTHLY_COST = 500.0          # 직접 양육비 (식비+교육비)
+CHILD_MONTHLY_COST = 50000          # 직접 양육비 (식비+교육비)
 OPPORTUNITY_COST_FACTOR = 0.2       # 육아로 인한 임금 감소율 (0.3 -> 0.2 for Take 2)
 RAISING_YEARS = 20                  # 양육 기간 (성인까지)
 
 # Benefit Factors
-CHILD_EMOTIONAL_VALUE_BASE = 500000.0 # 자녀 1명당 느끼는 정서적 가치의 총량 (500k로 상향 - Middle Income Trap 완화)
+CHILD_EMOTIONAL_VALUE_BASE = 50000000 # 자녀 1명당 느끼는 정서적 가치의 총량 (500k로 상향 - Middle Income Trap 완화)
 OLD_AGE_SUPPORT_RATE = 0.1          # 자녀 소득의 10%를 노후 용돈으로 받음
 SUPPORT_YEARS = 20                  # 은퇴 후 부양받는 기간
 
 # --- Phase 23: Public Education System (WO-054) ---
 PUBLIC_EDU_BUDGET_RATIO = 0.20  # 정부 예산의 20%를 교육에 투자
 EDUCATION_COST_PER_LEVEL = {
-    1: 500,    # 기초 교육
-    2: 2000,   # 중등 교육
-    3: 5000,   # 고등 교육
-    4: 15000,  # 대학
-    5: 50000   # 대학원/전문직
+    1: 50000,    # 기초 교육
+    2: 200000,   # 중등 교육
+    3: 500000,   # 고등 교육
+    4: 1500000,  # 대학
+    5: 5000000   # 대학원/전문직
 }
 SCHOLARSHIP_WEALTH_PERCENTILE = 0.20  # 하위 20%
 SCHOLARSHIP_POTENTIAL_THRESHOLD = 0.7  # 잠재력 상위 30%
@@ -799,11 +799,11 @@ AUTOMATION_TAX_RATE = 0.05
 ALTMAN_Z_SCORE_THRESHOLD = 1.81
 INVISIBLE_HAND_SENSITIVITY = 0.1
 CAPITAL_TO_OUTPUT_RATIO = 2.0
-FIRM_SAFETY_MARGIN = 2000.0
+FIRM_SAFETY_MARGIN = 200000
 
 # --- Added for DTO Parity (WO-135.2) ---
 CAPITAL_DEPRECIATION_RATE = 0.05
-INITIAL_FIRM_LIQUIDITY_NEED = 200.0
+INITIAL_FIRM_LIQUIDITY_NEED = 20000
 BANKRUPTCY_CONSECUTIVE_LOSS_THRESHOLD = 20
 HOUSING_EXPECTATION_CAP = 0.05
 
@@ -811,7 +811,7 @@ HOUSING_EXPECTATION_CAP = 0.05
 # WO-136: Tech Generalization & Market Safety
 # ==============================================================================
 MARKET_CIRCUIT_BREAKER_BASE_LIMIT = 0.15  # Base limit for market circuit breakers
-TECH_UNLOCK_COST_THRESHOLD = 5000.0       # R&D Investment threshold for tech unlock
+TECH_UNLOCK_COST_THRESHOLD = 500000       # R&D Investment threshold for tech unlock
 TECH_UNLOCK_PROB_CAP = 0.1                # Maximum probability per tick for tech unlock
 
 # ==============================================================================
@@ -820,7 +820,7 @@ TECH_UNLOCK_PROB_CAP = 0.1                # Maximum probability per tick for tec
 STARVATION_THRESHOLD = 1.0  # Food inventory threshold for starvation metrics
 PRIMARY_SURVIVAL_GOOD_ID = "basic_food" # Required by HouseholdConfigDTO
 SURVIVAL_NEED_EMERGENCY_THRESHOLD = 80.0 # Threshold for emergency behavior
-SURVIVAL_BID_PREMIUM = 0.2 # Premium paid for survival goods
+SURVIVAL_BID_PREMIUM = 20 # Premium paid for survival goods (Additive pennies)
 FIRE_SALE_INVENTORY_TARGET = 0.5 # Inventory level to trigger fire sale
 FIRE_SALE_PRICE_DISCOUNT = 0.2 # Discount during fire sale
 DEFAULT_TARGET_MARGIN = 0.2 # Default target margin for firms
@@ -828,7 +828,7 @@ MAX_PRICE_STALENESS_TICKS = 10 # Ticks before price is considered stale
 FIRE_SALE_INVENTORY_THRESHOLD = 0.5 # Threshold to start fire sale
 FIRE_SALE_DISCOUNT = 0.2 # Discount for fire sale
 FIRE_SALE_COST_DISCOUNT = 0.5 # Discount below cost for fire sale
-FIRE_SALE_ASSET_THRESHOLD = 500.0 # Asset threshold for fire sale
+FIRE_SALE_ASSET_THRESHOLD = 50000 # Asset threshold for fire sale
 
 # ==============================================================================
 # WO-157: Code Blue Implementation
@@ -855,14 +855,14 @@ BANK_DEPOSIT_MARGIN = 0.02
 BANK_CREDIT_SPREAD_BASE = 0.02
 # CREDIT_RECOVERY_TICKS is already defined as 100 in Phase 4 section, but reassuring.
 # BANKRUPTCY_XP_PENALTY is already defined as 0.2.
-BANK_SOLVENCY_BUFFER = 1000.0
+BANK_SOLVENCY_BUFFER = 100000
 DEFAULT_MORTGAGE_INTEREST_RATE = 0.05
 
 # Agent Behavior
 INITIAL_HOUSEHOLD_AGE_RANGE = (20.0, 60.0)
 INITIAL_APTITUDE_DISTRIBUTION = (0.5, 0.15)
 EMERGENCY_LIQUIDATION_DISCOUNT = 0.8
-EMERGENCY_STOCK_LIQUIDATION_FALLBACK_PRICE = 8.0
+EMERGENCY_STOCK_LIQUIDATION_FALLBACK_PRICE = 800
 DISTRESS_GRACE_PERIOD_TICKS = 5
 BASE_LABOR_SKILL = 1.0
 
@@ -894,6 +894,6 @@ AGE_DEATH_PROBABILITIES = {
     90: 0.15,
     100: 0.50
 }
-FALLBACK_SURVIVAL_COST = 10.0
+FALLBACK_SURVIVAL_COST = 1000
 PRICE_VOLATILITY_WINDOW_TICKS = 20
 HOUSING_ANNUAL_MAINTENANCE_RATE = 0.01

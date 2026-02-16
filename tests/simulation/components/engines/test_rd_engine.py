@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from simulation.components.engines.rd_engine import RDEngine
 from modules.firm.api import RDInputDTO, FirmSnapshotDTO
-from simulation.dtos.department_dtos import ProductionStateDTO, HRStateDTO, FinanceStateDTO
+from modules.simulation.dtos.api import ProductionStateDTO, HRStateDTO, FinanceStateDTO
 
 @pytest.fixture
 def rd_engine():

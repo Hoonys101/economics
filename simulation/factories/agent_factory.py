@@ -7,7 +7,7 @@ import copy
 from simulation.core_agents import Household
 from simulation.models import Talent
 from simulation.utils.config_factory import create_config_dto
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.ai.enums import Personality

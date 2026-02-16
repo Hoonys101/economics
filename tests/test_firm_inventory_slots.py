@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from simulation.firms import Firm
 from modules.simulation.api import InventorySlot, AgentCoreConfigDTO
-from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.dtos.api import FirmConfigDTO
 from simulation.components.state.firm_state_models import ProductionState
 
 @pytest.fixture

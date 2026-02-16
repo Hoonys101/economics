@@ -10,7 +10,7 @@ from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngin
 from simulation.ai.api import Personality
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from simulation.utils.config_factory import create_config_dto
-from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO, FirmConfigDTO
 from modules.simulation.api import AgentCoreConfigDTO
 import config as global_config
 

@@ -33,8 +33,8 @@ class AssetManagementEngine(IAssetManagementEngine):
 
         try:
             if input_dto.investment_type == "AUTOMATION":
-                # Convert config cost (dollars) to pennies
-                cost_per_pct_pennies = int(config.automation_cost_per_pct * 100)
+                # Config cost is now in pennies
+                cost_per_pct_pennies = config.automation_cost_per_pct
                 if cost_per_pct_pennies <= 0:
                      return AssetManagementResultDTO(success=False, message="Invalid automation cost configuration.")
 

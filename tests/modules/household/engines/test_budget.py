@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, Mock
 from modules.household.engines.budget import BudgetEngine
 from modules.household.api import BudgetInputDTO, PrioritizedNeed
 from modules.household.dtos import EconStateDTO
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.models import Order
 
@@ -14,9 +14,9 @@ def budget_engine():
 @pytest.fixture
 def mock_config():
     config = MagicMock(spec=HouseholdConfigDTO)
-    config.default_food_price_estimate = 10.0
-    config.survival_budget_allocation = 50.0
-    config.household_min_wage_demand = 10.0
+    config.default_food_price_estimate = 1000 # MIGRATION: int pennies
+    config.survival_budget_allocation = 5000 # MIGRATION: int pennies
+    config.household_min_wage_demand = 1000 # MIGRATION: int pennies
     return config
 
 @pytest.fixture

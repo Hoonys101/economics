@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from simulation.core_agents import Household
 from modules.household.dtos import EconStateDTO, BioStateDTO, SocialStateDTO
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 from simulation.ai.api import Personality
 from simulation.models import Talent
 from modules.simulation.api import AgentCoreConfigDTO

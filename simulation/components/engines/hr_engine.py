@@ -8,7 +8,7 @@ from simulation.components.state.firm_state_models import HRState
 from simulation.dtos.hr_dtos import HRPayrollContextDTO, HRPayrollResultDTO, EmployeeUpdateDTO
 
 if TYPE_CHECKING:
-    from simulation.dtos.config_dtos import FirmConfigDTO
+    from modules.simulation.dtos.api import FirmConfigDTO
 
 logger = logging.getLogger(__name__)
 

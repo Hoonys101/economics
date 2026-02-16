@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from simulation.core_agents import Household
 from simulation.ai.enums import Personality, PoliticalParty
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 from modules.household.dtos import SocialStateDTO
 from tests.utils.factories import create_household, create_household_config_dto
 

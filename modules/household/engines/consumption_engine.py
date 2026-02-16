@@ -5,7 +5,7 @@ import copy
 
 from modules.household.api import IConsumptionEngine, ConsumptionInputDTO, ConsumptionOutputDTO
 from modules.household.dtos import EconStateDTO, BioStateDTO, SocialStateDTO
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 from simulation.dtos import LeisureEffectDTO
 from simulation.models import Order
 from modules.system.api import DEFAULT_CURRENCY

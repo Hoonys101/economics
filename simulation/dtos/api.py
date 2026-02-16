@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union, TypedDict
-from simulation.dtos.firm_state_dto import FirmStateDTO
+from modules.simulation.dtos.api import FirmStateDTO, HouseholdConfigDTO, FirmConfigDTO
 from simulation.models import Order
 from simulation.dtos.decision_dtos import DecisionOutputDTO
 from modules.finance.api import IFinancialAgent
@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     from simulation.firms import Firm
     from simulation.dtos.scenario import StressScenarioConfig
     from modules.household.dtos import HouseholdStateDTO
-    from simulation.dtos.config_dtos import HouseholdConfigDTO, FirmConfigDTO
 
 @dataclass
 class TransactionData:

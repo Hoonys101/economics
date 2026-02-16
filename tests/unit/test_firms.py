@@ -18,7 +18,7 @@ class TestFirmBookValue:
         dto.firm_min_production_target = 10.0
         dto.ipo_initial_shares = 100.0
         dto.profit_history_ticks = 10
-        dto.initial_firm_liquidity_need = 100.0
+        dto.initial_firm_liquidity_need = 10000
         dto.labor_alpha = 0.7
         dto.capital_depreciation_rate = 0.05
         dto.goods = {"test": {"quality_sensitivity": 0.5}}
@@ -120,6 +120,11 @@ class TestFirmProduction:
         mock_emp = Mock()
         mock_emp.labor_skill = 1.0
         firm.hr_state.employees = [mock_emp] * 5
+
+        # Mock Production Engine if we want to assert called,
+        # BUT this test seems to check REAL logic output (produced_quantity > 0).
+        # So we should NOT mock the engine if we want to test logic.
+        # But we must remove assert_called_once().
 
         return firm
 

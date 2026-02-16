@@ -4,7 +4,7 @@ import math
 import logging
 
 if TYPE_CHECKING:
-    from simulation.dtos.config_dtos import FirmConfigDTO
+    from modules.simulation.dtos.api import FirmConfigDTO
     from simulation.components.state.firm_state_models import SalesState
 
 logger = logging.getLogger(__name__)

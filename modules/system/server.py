@@ -13,7 +13,7 @@ from typing import Optional, List, Dict
 from uuid import UUID
 from pydantic import BaseModel
 from simulation.dtos.commands import GodCommandDTO
-from simulation.dtos.config_dtos import ServerConfigDTO
+from modules.simulation.dtos.api import ServerConfigDTO
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
 
 logger = logging.getLogger("SimulationServer")

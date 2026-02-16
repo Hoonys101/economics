@@ -4,7 +4,7 @@ from simulation.factories.agent_factory import HouseholdFactory
 from simulation.core_agents import Household
 from simulation.models import Talent
 from simulation.ai.enums import Personality
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 
 @pytest.fixture
 def mock_config_module():

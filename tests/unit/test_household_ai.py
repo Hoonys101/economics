@@ -21,7 +21,7 @@ from simulation.ai.state_builder import StateBuilder
 from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDecisionEngine
 from simulation.ai.household_ai import HouseholdAI
 from simulation.utils.config_factory import create_config_dto
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 from simulation.ai.enums import Tactic
 from simulation.dtos.api import DecisionInputDTO
 from modules.simulation.api import AgentCoreConfigDTO

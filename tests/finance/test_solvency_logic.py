@@ -4,7 +4,7 @@ from modules.finance.system import FinanceSystem
 from modules.finance.api import IFinancialFirm
 from simulation.firms import Firm
 from modules.simulation.api import AgentCoreConfigDTO
-from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.dtos.api import FirmConfigDTO
 
 class TestSolvencyLogic:
     @pytest.fixture

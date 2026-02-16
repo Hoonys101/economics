@@ -9,7 +9,7 @@ from simulation.systems.api import LearningUpdateContext
 
 if TYPE_CHECKING:
     from modules.household.dtos import BioStateDTO, EconStateDTO, SocialStateDTO
-    from simulation.dtos.config_dtos import HouseholdConfigDTO
+    from modules.simulation.dtos.api import HouseholdConfigDTO
     from modules.household.consumption_manager import ConsumptionManager
     from modules.household.bio_component import BioComponent
     from modules.household.econ_component import EconComponent

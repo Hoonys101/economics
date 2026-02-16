@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
 from modules.system.server import SimulationServer
 from unittest.mock import MagicMock
-from simulation.dtos.config_dtos import ServerConfigDTO
+from modules.simulation.dtos.api import ServerConfigDTO
 
 # --- Fixtures ---
 

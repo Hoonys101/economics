@@ -5,7 +5,7 @@ import time
 import socket
 from modules.system.server import SimulationServer
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
-from simulation.dtos.config_dtos import ServerConfigDTO
+from modules.simulation.dtos.api import ServerConfigDTO
 
 @pytest.fixture
 def bridge():

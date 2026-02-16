@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional
 from simulation.ai.enums import Personality
 from modules.household.dtos import HouseholdStateDTO
-from simulation.dtos.firm_state_dto import FirmStateDTO
+from modules.simulation.dtos.api import FirmStateDTO
 from tests.unit.mocks.mock_factory import MockFactory
 
 def create_household_dto(

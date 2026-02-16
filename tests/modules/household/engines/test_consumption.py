@@ -4,7 +4,7 @@ from modules.household.engines.consumption_engine import ConsumptionEngine
 from modules.household.api import ConsumptionInputDTO, BudgetPlan
 from modules.household.dtos import EconStateDTO, BioStateDTO
 from simulation.models import Order
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 
 @pytest.fixture
 def consumption_engine():

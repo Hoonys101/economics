@@ -9,7 +9,7 @@ from simulation.decisions.ai_driven_household_engine import AIDrivenHouseholdDec
 from simulation.ai_model import AIEngineRegistry
 from simulation.finance.api import ISettlementSystem
 from simulation.utils.config_factory import create_config_dto
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 from modules.simulation.api import AgentCoreConfigDTO
 
 logger = logging.getLogger(__name__)

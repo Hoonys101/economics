@@ -16,7 +16,7 @@ from simulation.ai.api import (
 )
 from simulation.dtos import DecisionContext, FiscalContext, MacroFinancialContext, DecisionInputDTO, LeisureEffectDTO, ConsumptionResult
 
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 from simulation.portfolio import Portfolio
 from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, InventorySlot, ItemDTO, InventorySlotDTO, AgentStateDTO
 
@@ -224,10 +224,8 @@ class Household(
         c_min, c_max = conformity_ranges.get(personality.name, conformity_ranges.get(None, (0.3, 0.7)))
         conformity = random.uniform(c_min, c_max)
 
-        # Scale mean assets for check? Assuming config mean is in dollars, convert to pennies for check?
-        # Or assume config is updated? Config is usually external.
-        # Let's assume config remains float dollars for inputs, we convert to pennies.
-        mean_assets_pennies = int(self.config.initial_household_assets_mean * 100)
+        # Scale mean assets for check? Config is now in pennies.
+        mean_assets_pennies = self.config.initial_household_assets_mean
         effective_initial_assets = initial_assets_record if initial_assets_record is not None else 0
 
         is_wealthy = effective_initial_assets > mean_assets_pennies * 1.5

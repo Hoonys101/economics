@@ -1,7 +1,7 @@
 import pytest
 import logging
 from unittest.mock import MagicMock, patch
-from simulation.dtos.config_dtos import ServerConfigDTO
+from modules.simulation.dtos.api import ServerConfigDTO
 from modules.system.server import SimulationServer
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
 

@@ -1,8 +1,8 @@
 from typing import Dict, Any, Optional
 from unittest.mock import MagicMock
 
-from simulation.dtos.firm_state_dto import FirmStateDTO
-from simulation.dtos.department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
+from modules.simulation.dtos.api import FirmStateDTO
+from modules.simulation.dtos.api import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from modules.household.dtos import HouseholdStateDTO
 from simulation.ai.enums import Personality
 from tests.utils.factories import create_firm_config_dto, create_household_config_dto

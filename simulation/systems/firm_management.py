@@ -3,7 +3,7 @@ import logging
 import random
 from typing import TYPE_CHECKING, Optional, Dict, Any
 
-from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.dtos.api import FirmConfigDTO
 from simulation.utils.config_factory import create_config_dto
 from modules.system.api import DEFAULT_CURRENCY
 from modules.simulation.api import IAgent

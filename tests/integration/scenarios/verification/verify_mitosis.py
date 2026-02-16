@@ -9,7 +9,7 @@ from simulation.ai.household_ai import HouseholdAI
 from simulation.ai.ai_training_manager import AITrainingManager
 from simulation.ai.q_table_manager import QTableManager
 from modules.simulation.api import AgentCoreConfigDTO
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 from simulation.utils.config_factory import create_config_dto
 
 # Helper to force set primitive config

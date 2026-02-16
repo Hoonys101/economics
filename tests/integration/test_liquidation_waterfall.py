@@ -7,7 +7,7 @@ from modules.common.dtos import Claim
 from simulation.firms import Firm
 from simulation.core_agents import Household
 from simulation.dtos.api import SimulationState
-from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.dtos.api import FirmConfigDTO
 from modules.simulation.api import LiquidationConfigDTO
 from modules.finance.api import EquityStake
 from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY

@@ -13,7 +13,7 @@ from modules.market.loan_api import (
 
 if TYPE_CHECKING:
     from modules.household.dtos import BioStateDTO, EconStateDTO, SocialStateDTO
-    from simulation.dtos.config_dtos import HouseholdConfigDTO
+    from modules.simulation.dtos.api import HouseholdConfigDTO
 
 logger = logging.getLogger(__name__)
 

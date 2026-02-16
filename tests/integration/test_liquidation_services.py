@@ -5,7 +5,7 @@ from simulation.core_agents import Household
 from modules.hr.service import HRService
 from modules.finance.service import TaxService
 from modules.system.registry import AgentRegistry
-from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.dtos.api import FirmConfigDTO
 
 class TestLiquidationServices(unittest.TestCase):
     def setUp(self):

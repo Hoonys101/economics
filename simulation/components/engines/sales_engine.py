@@ -8,7 +8,7 @@ from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingCon
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
-    from simulation.dtos.config_dtos import FirmConfigDTO
+    from modules.simulation.dtos.api import FirmConfigDTO
 
 logger = logging.getLogger(__name__)
 

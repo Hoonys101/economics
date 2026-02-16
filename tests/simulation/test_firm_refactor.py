@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from simulation.firms import Firm
 from simulation.components.state.firm_state_models import HRState, FinanceState, ProductionState, SalesState
-from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.dtos.api import FirmConfigDTO
 from simulation.models import Order
 from modules.system.api import DEFAULT_CURRENCY, MarketContextDTO
 from modules.simulation.api import AgentCoreConfigDTO
@@ -21,7 +21,7 @@ def firm_config():
     config.ipo_initial_shares = 1000.0
     config.dividend_rate = 0.1
     config.bankruptcy_consecutive_loss_threshold = 20
-    config.labor_market_min_wage = 10.0
+    config.labor_market_min_wage = 1000
     config.halo_effect = 0.0
     config.labor_alpha = 0.7
     config.automation_labor_reduction = 0.5
@@ -29,13 +29,13 @@ def firm_config():
     config.capital_depreciation_rate = 0.01
     config.goods = {"FOOD": {"quality_sensitivity": 0.5, "inputs": {}}}
     config.inventory_holding_cost_rate = 0.01
-    config.firm_maintenance_fee = 5.0
+    config.firm_maintenance_fee = 500
     config.bailout_repayment_ratio = 0.1
     config.valuation_per_multiplier = 5.0
-    config.automation_cost_per_pct = 100.0
+    config.automation_cost_per_pct = 100
     config.capital_to_output_ratio = 2.0
     config.invisible_hand_sensitivity = 0.1
-    config.default_unit_cost = 5.0
+    config.default_unit_cost = 500
     config.marketing_decay_rate = 0.05
     config.marketing_efficiency = 1.0
     config.perceived_quality_alpha = 0.5

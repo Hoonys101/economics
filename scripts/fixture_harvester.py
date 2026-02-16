@@ -29,7 +29,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from modules.household.dtos import HouseholdStateDTO
-from simulation.dtos.firm_state_dto import FirmStateDTO
+from modules.simulation.dtos.api import FirmStateDTO
 from simulation.ai.api import Personality
 from modules.system.api import DEFAULT_CURRENCY
 

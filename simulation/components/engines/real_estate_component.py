@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional, Tuple
-from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.dtos.api import FirmConfigDTO
 
 class RealEstateUtilizationComponent:
     """

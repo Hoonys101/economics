@@ -5,7 +5,7 @@ import copy
 from dataclasses import replace
 
 from simulation.firms import Firm
-from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.dtos.api import FirmConfigDTO
 from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.ai.enums import Personality

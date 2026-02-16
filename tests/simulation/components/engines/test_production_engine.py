@@ -2,8 +2,8 @@ import pytest
 from unittest.mock import MagicMock
 from simulation.components.engines.production_engine import ProductionEngine
 from modules.firm.api import ProductionInputDTO, FirmSnapshotDTO
-from simulation.dtos.department_dtos import ProductionStateDTO, HRStateDTO
-from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.dtos.api import ProductionStateDTO, HRStateDTO
+from modules.simulation.dtos.api import FirmConfigDTO
 
 @pytest.fixture
 def production_engine():

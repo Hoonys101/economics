@@ -2,8 +2,8 @@ import pytest
 from unittest.mock import MagicMock
 from simulation.components.engines.asset_management_engine import AssetManagementEngine
 from modules.firm.api import AssetManagementInputDTO, FirmSnapshotDTO
-from simulation.dtos.config_dtos import FirmConfigDTO
-from simulation.dtos.department_dtos import ProductionStateDTO
+from modules.simulation.dtos.api import FirmConfigDTO
+from modules.simulation.dtos.api import ProductionStateDTO
 
 @pytest.fixture
 def asset_mgmt_engine():

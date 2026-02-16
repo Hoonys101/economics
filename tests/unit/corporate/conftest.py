@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
-from simulation.dtos.department_dtos import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
+from modules.simulation.dtos.api import FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from tests.utils.factories import create_firm_config_dto
 
 class MockConfig:

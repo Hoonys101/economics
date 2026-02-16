@@ -8,7 +8,7 @@ from simulation.components.state.firm_state_models import HRState, SalesState, F
 from simulation.dtos.hr_dtos import HRPayrollContextDTO, TaxPolicyDTO
 from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingContextDTO
 from simulation.dtos.context_dtos import FinancialTransactionContext
-from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.dtos.api import FirmConfigDTO
 from simulation.models import Transaction, Order
 from modules.system.api import DEFAULT_CURRENCY
 from modules.firm.api import FirmSnapshotDTO, ProductionInputDTO, ProductionResultDTO, FinanceStateDTO, HRStateDTO, SalesStateDTO, ProductionStateDTO

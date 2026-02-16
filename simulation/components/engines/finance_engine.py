@@ -9,7 +9,7 @@ from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
 from simulation.dtos.context_dtos import FinancialTransactionContext
 
 if TYPE_CHECKING:
-    from simulation.dtos.config_dtos import FirmConfigDTO
+    from modules.simulation.dtos.api import FirmConfigDTO
 
 logger = logging.getLogger(__name__)
 
@@ -58,10 +58,7 @@ class FinanceEngine:
             )
 
         # 2. Maintenance Fee
-        fee_float = config.firm_maintenance_fee
-        # Assuming config is still dollars/units?
-        # If config fee is dollars, convert to pennies.
-        fee_pennies = int(fee_float * 100)
+        fee_pennies = config.firm_maintenance_fee
 
         current_balance = balances.get(DEFAULT_CURRENCY, 0)
         payment = min(current_balance, fee_pennies)
@@ -375,13 +372,13 @@ class FinanceEngine:
         """Public method to record expense (e.g. after successful transaction execution)."""
         self._record_expense(state, amount, currency)
 
-    def get_estimated_unit_cost(self, state: FinanceState, item_id: str, config: FirmConfigDTO) -> float:
+    def get_estimated_unit_cost(self, state: FinanceState, item_id: str, config: FirmConfigDTO) -> int:
         """
-        Estimates unit cost for pricing floors (Returns float dollars).
+        Estimates unit cost for pricing floors (Returns int pennies).
         """
         # 1. Try Config Base Cost
         goods_config = config.goods.get(item_id, {})
-        base_cost = goods_config.get("base_cost", 0.0)
+        base_cost = goods_config.get("base_cost", 0) # MIGRATION: int
         if base_cost > 0:
             return base_cost
 

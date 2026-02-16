@@ -7,7 +7,7 @@ from modules.household.api import IBioComponent
 from modules.household.dtos import BioStateDTO
 
 if TYPE_CHECKING:
-    from simulation.dtos.config_dtos import HouseholdConfigDTO
+    from modules.simulation.dtos.api import HouseholdConfigDTO
 
 logger = logging.getLogger(__name__)
 

@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 sys.path.append(os.getcwd())
 
 from simulation.firms import Firm
-from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.dtos.api import FirmConfigDTO
 
 def test_firm_init():
     config = MagicMock(spec=FirmConfigDTO)

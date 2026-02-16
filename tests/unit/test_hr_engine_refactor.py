@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 from simulation.components.engines.hr_engine import HREngine
 from simulation.components.state.firm_state_models import HRState
 from simulation.dtos.hr_dtos import HRPayrollContextDTO, HRPayrollResultDTO, EmployeeUpdateDTO, TaxPolicyDTO
-from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.dtos.api import FirmConfigDTO
 from modules.system.api import DEFAULT_CURRENCY
 from modules.hr.api import IEmployeeDataProvider
 

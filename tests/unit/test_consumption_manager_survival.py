@@ -32,7 +32,7 @@ def base_config():
     config = Mock()
     config.survival_need_emergency_threshold = 0.8
     config.primary_survival_good_id = "basic_food"
-    config.survival_bid_premium = 0.1
+    config.survival_bid_premium = 100 # 100 pennies = $1.00 additive premium
     return config
 
 class TestConsumptionManagerSurvival:

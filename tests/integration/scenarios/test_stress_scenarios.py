@@ -6,7 +6,7 @@ from simulation.systems.commerce_system import CommerceSystem
 from simulation.dtos.scenario import StressScenarioConfig
 from simulation.core_agents import Household, Personality
 from simulation.systems.api import EventContext, CommerceContext
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 from modules.household.dtos import HouseholdStateDTO
 from simulation.models import Share
 from simulation.systems.settlement_system import SettlementSystem

@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from modules.household.factory import HouseholdFactory
 from modules.household.api import HouseholdFactoryContext
-from simulation.dtos.config_dtos import HouseholdConfigDTO
+from modules.simulation.dtos.api import HouseholdConfigDTO
 from modules.simulation.api import AgentCoreConfigDTO
 from simulation.core_agents import Household
 

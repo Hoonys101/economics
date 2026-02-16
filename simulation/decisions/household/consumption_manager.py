@@ -74,10 +74,13 @@ class ConsumptionManager:
                     household_assets = float(household_assets)
 
                 if household_assets >= ask_price:
-                     premium = getattr(config, 'survival_bid_premium', 0.1)
-                     if not isinstance(premium, (int, float)):
-                         premium = 0.1
-                     bid_price = ask_price * (1 + premium)
+                     premium_pennies = getattr(config, 'survival_bid_premium', 20)
+                     if not isinstance(premium_pennies, int):
+                         premium_pennies = 20
+
+                     # MIGRATION: Spec says additive premium in pennies.
+                     # Convert pennies to dollars (float) to match ask_price (float)
+                     bid_price = ask_price + (premium_pennies / 100.0)
 
                      if logger:
                          logger.warning(

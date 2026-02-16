@@ -6,7 +6,7 @@ from simulation.components.state.firm_state_models import SalesState
 from simulation.models import Order, Transaction
 from simulation.systems.transaction_processor import TransactionProcessor
 from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
-from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.dtos.api import FirmConfigDTO
 from modules.simulation.api import AgentCoreConfigDTO
 
 class TestWO157DynamicPricing:

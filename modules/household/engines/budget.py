@@ -82,9 +82,8 @@ class BudgetEngine(IBudgetEngine):
         else:
             state.shadow_reservation_wage_pennies = int(state.shadow_reservation_wage_pennies * (1.0 - SHADOW_WAGE_UNEMPLOYED_DECAY))
 
-            # Config min wage is likely dollars float
-            min_wage_float = config.household_min_wage_demand if hasattr(config, 'household_min_wage_demand') else 0.0
-            min_wage = int(min_wage_float * 100)
+            # Config min wage is now int pennies
+            min_wage = config.household_min_wage_demand if hasattr(config, 'household_min_wage_demand') else 0
 
             if state.shadow_reservation_wage_pennies < min_wage:
                 state.shadow_reservation_wage_pennies = min_wage
@@ -161,8 +160,12 @@ class BudgetEngine(IBudgetEngine):
                     food_price_float = getattr(m, "avg_price", food_price_float) or getattr(m, "current_price", food_price_float)
 
                 # Convert allocation config (dollars) to pennies
-                amount_allocation_float = config.survival_budget_allocation if config else DEFAULT_SURVIVAL_BUDGET
-                amount_to_allocate_pennies = int(amount_allocation_float * 100)
+                # Note: DEFAULT_SURVIVAL_BUDGET in this file is still 50.0 float.
+                # If config is present, it's int pennies. If not, we use default * 100.
+                if config:
+                    amount_to_allocate_pennies = config.survival_budget_allocation
+                else:
+                    amount_to_allocate_pennies = int(DEFAULT_SURVIVAL_BUDGET * 100)
 
                 allocated_cash = 0
 

@@ -6,7 +6,7 @@ from simulation.firms import Firm
 from simulation.ai.enums import Personality
 from simulation.models import Order
 from simulation.markets.order_book_market import OrderBookMarket
-from simulation.dtos.config_dtos import FirmConfigDTO
+from modules.simulation.dtos.api import FirmConfigDTO
 from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine
 
 if TYPE_CHECKING:

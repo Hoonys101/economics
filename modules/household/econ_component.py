@@ -11,7 +11,7 @@ from simulation.dtos import LaborResult, StressScenarioConfig
 from simulation.models import Skill
 
 if TYPE_CHECKING:
-    from simulation.dtos.config_dtos import HouseholdConfigDTO
+    from modules.simulation.dtos.api import HouseholdConfigDTO
 
 logger = logging.getLogger(__name__)
 

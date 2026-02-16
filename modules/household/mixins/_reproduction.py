@@ -9,7 +9,7 @@ from modules.system.api import DEFAULT_CURRENCY
 if TYPE_CHECKING:
     from simulation.core_agents import Household
     from modules.household.dtos import BioStateDTO, EconStateDTO, SocialStateDTO
-    from simulation.dtos.config_dtos import HouseholdConfigDTO
+    from modules.simulation.dtos.api import HouseholdConfigDTO
     from modules.household.bio_component import BioComponent
     from modules.household.econ_component import EconComponent
     from simulation.decisions.base_decision_engine import BaseDecisionEngine
