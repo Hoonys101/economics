@@ -1,6 +1,6 @@
 {
     "_meta": {
-        "updated": "2026-02-16T11:28:05"
+        "updated": "2026-02-16T11:28:11"
     },
     "firm-household-decomp-spec": {
         "key": "firm-household-decomp-spec",
@@ -64,23 +64,6 @@
             "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
         ],
         "output_path": "design/3_work_artifacts/specs/MISSION_mock-automation_SPEC.md",
-        "model": null,
-        "audit_requirements": null
-    },
-    "agent-decomposition": {
-        "key": "agent-decomposition",
-        "title": "Agent Shell Refactor: Firm & Household Decomposition",
-        "type": "jules",
-        "instruction_raw": "Refactor Firm and Household classes into 'Agent Shells'. Implement InventoryComponent and FinancialComponent to reduce God Class bloat and enforce CES Lite patterns.",
-        "status": "pending",
-        "created_at": "",
-        "command": "create",
-        "file_path": "design/3_work_artifacts/specs/MISSION_agent-decomposition_SPEC.md",
-        "wait": false,
-        "session_id": null,
-        "worker": null,
-        "context_files": [],
-        "output_path": null,
         "model": null,
         "audit_requirements": null
     },
