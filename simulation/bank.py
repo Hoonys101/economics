@@ -169,8 +169,6 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
         # Enhance profile with preferred lender (self)
         if borrower_profile and is_dataclass(borrower_profile):
-            # preferred_lender_id is deprecated in DTO, handled by system if dict.
-            # If DTO passed, we assume caller set it up or system defaults.
             profile = borrower_profile
         elif isinstance(borrower_profile, dict):
             # Convert dict to BorrowerProfileDTO
@@ -181,22 +179,22 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
                 except (ValueError, TypeError):
                     return 0.0
 
+            # MIGRATION: Updated to new BorrowerProfileDTO signature
             profile = BorrowerProfileDTO(
-                borrower_id=str(borrower_agent_id),
                 gross_income=safe_float(borrower_profile.get('gross_income', 0)),
                 existing_debt_payments=safe_float(borrower_profile.get('existing_debt_payments', 0)),
                 collateral_value=safe_float(borrower_profile.get('collateral_value', 0)),
-                existing_assets=safe_float(borrower_profile.get('existing_assets', 0)),
-                credit_score=borrower_profile.get('credit_score')
+                credit_score=borrower_profile.get('credit_score'),
+                employment_status=borrower_profile.get('employment_status', "UNKNOWN"),
+                preferred_lender_id=borrower_profile.get('preferred_lender_id')
             )
         else:
             # Fallback: create empty/default DTO
             profile = BorrowerProfileDTO(
-                borrower_id=str(borrower_agent_id),
                 gross_income=0.0,
                 existing_debt_payments=0.0,
                 collateral_value=0.0,
-                existing_assets=0.0
+                employment_status="UNKNOWN"
             )
 
         # Call FinanceSystem
@@ -266,17 +264,17 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
         if self.finance_system and hasattr(self.finance_system, 'get_customer_debt_status'):
              loans = self.finance_system.get_customer_debt_status(self.id, borrower_id)
-             # UPDATED: Use remaining_principal (float) and cast to int for legacy DebtStatusDTO compatibility
-             total_debt = sum(l.remaining_principal for l in loans)
+             # UPDATED: Use outstanding_balance (float) per new DTO spec
+             total_debt = sum(l.outstanding_balance for l in loans)
              return DebtStatusDTO(
-                 borrower_id=borrower_id,
-                 total_outstanding_debt=int(total_debt),
+                 borrower_id=int(borrower_id),
+                 total_outstanding_debt=total_debt,
                  loans=loans,
                  is_insolvent=False,
                  next_payment_due=None,
                  next_payment_due_tick=None
              )
-        return DebtStatusDTO(borrower_id=borrower_id, total_outstanding_debt=0, loans=[], is_insolvent=False, next_payment_due=None, next_payment_due_tick=None)
+        return DebtStatusDTO(borrower_id=int(borrower_id), total_outstanding_debt=0.0, loans=[], is_insolvent=False, next_payment_due=None, next_payment_due_tick=None)
 
     def terminate_loan(self, loan_id: str) -> Optional["Transaction"]:
         return None

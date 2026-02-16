@@ -225,33 +225,30 @@ class TaxCollectionResult(TypedDict):
     payee_id: AgentID
     error_message: Optional[str]
 
-@dataclass(frozen=True)
+@dataclass
 class LoanInfoDTO:
     """
-    Represents the details of an active or proposed loan.
+    Data Transfer Object for Loan Information.
+    Strictly used for passing loan data across boundaries.
     """
     loan_id: str
-    borrower_id: str
-    lender_id: str
+    borrower_id: int  # AgentID
     original_amount: float
-    remaining_principal: float
+    outstanding_balance: float
     interest_rate: float
-    term_ticks: int
-    start_tick: int
-    # Status tracking
-    status: str = "PENDING"  # PENDING, ACTIVE, DEFAULTED, CLOSED
-    covenants: Optional[Any] = None
+    origination_tick: int
+    due_tick: int
+    lender_id: Optional[int] = None
+    term_ticks: Optional[int] = None
+    status: str = "ACTIVE"
 
-@dataclass(frozen=True)
+@dataclass
 class DebtStatusDTO:
-    """
-    Comprehensive data transfer object for a borrower's overall debt status.
-    """
-    borrower_id: AgentID
-    total_outstanding_debt: int
+    borrower_id: int
+    total_outstanding_debt: float
     loans: List[LoanInfoDTO]
     is_insolvent: bool
-    next_payment_due: Optional[int]
+    next_payment_due: Optional[float]
     next_payment_due_tick: Optional[int]
 
 class InsufficientFundsError(Exception):
@@ -279,21 +276,17 @@ class LoanRollbackError(Exception):
     """Raised when a loan cancellation fails to reverse the associated deposit."""
     pass
 
-@dataclass(frozen=True)
+@dataclass
 class BorrowerProfileDTO:
     """
-    Standardized Data Transfer Object for Borrower Risk Assessment.
-    TD-DTO-DESYNC-2026: Fixed signature desynchronization.
+    Profile of a borrower for credit assessment.
     """
-    borrower_id: str
     gross_income: float
     existing_debt_payments: float
     collateral_value: float
-    existing_assets: float
-    # Optional fields for enhanced risk scoring (Future-proofing)
     credit_score: Optional[float] = None
-    industry_sector: Optional[str] = None
-    consecutive_loss_ticks: int = 0
+    employment_status: str = "UNKNOWN"
+    preferred_lender_id: Optional[int] = None
 
 @dataclass(frozen=True)
 class CreditAssessmentResultDTO:
@@ -318,18 +311,17 @@ class LienDTO(TypedDict):
 
 class MortgageApplicationDTO(TypedDict):
     """
-    Represents a formal mortgage application sent to the LoanMarket.
-    This is the primary instrument for the new credit pipeline.
-    [TD-206] Synced with MortgageApplicationRequestDTO for precision.
+    Application data for a mortgage.
+    TypedDict allows for flexible input construction before strict validation.
     """
-    applicant_id: AgentID
-    requested_principal: int
-    purpose: Literal["MORTGAGE"]
+    applicant_id: int
+    requested_principal: float
+    purpose: str
     property_id: int
-    property_value: int # Market value for LTV calculation
-    applicant_monthly_income: int # For DTI calculation
-    existing_monthly_debt_payments: int # For DTI calculation
-    loan_term: int # Added to support calculation (implied in logic)
+    property_value: float
+    applicant_monthly_income: float
+    existing_monthly_debt_payments: float
+    loan_term: int
 
 class ICreditScoringService(Protocol):
     """
@@ -431,36 +423,26 @@ class IFinancialAgent(Protocol):
         """Returns the total wealth in default currency estimation."""
         ...
 
+class IBankService(Protocol):
+    """
+    Interface for Bank Services used by Markets.
+    """
+    def get_interest_rate(self) -> float: ...
+
+    def grant_loan(self, borrower_id: int, amount: float, interest_rate: float, due_tick: int) -> Optional[Tuple[LoanInfoDTO, Any]]: ...
+
+    def stage_loan(self, borrower_id: int, amount: float, interest_rate: float, due_tick: Optional[int], borrower_profile: Optional[BorrowerProfileDTO]) -> Optional[LoanInfoDTO]: ...
+
+    def repay_loan(self, loan_id: str, amount: float) -> bool: ...
 
 @runtime_checkable
-class IBank(IFinancialAgent, Protocol):
+class IBank(IBankService, IFinancialAgent, Protocol):
     """
     Interface for commercial and central banks, providing core banking services.
     Designed to be used as a dependency for Household and Firm agents.
     Inherits IFinancialAgent for its own equity/reserves management.
     """
     base_rate: float
-
-    @abc.abstractmethod
-    def grant_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
-        """
-        Grants a loan to a borrower.
-        """
-        ...
-
-    @abc.abstractmethod
-    def stage_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
-        """
-        Creates a loan record but does not disburse funds (no deposit creation).
-        """
-        ...
-
-    @abc.abstractmethod
-    def repay_loan(self, loan_id: str, amount: int) -> bool:
-        """
-        Repays a portion or the full amount of a specific loan.
-        """
-        ...
 
     @abc.abstractmethod
     def get_customer_balance(self, agent_id: AgentID) -> int:
@@ -498,8 +480,7 @@ class IBank(IFinancialAgent, Protocol):
         """
         ...
 
-# Alias for backward compatibility during refactor
-IBankService = IBank
+# IBankService = IBank # Removed alias
 
 class IFiscalMonitor(Protocol):
     """Interface for the fiscal health analysis component."""

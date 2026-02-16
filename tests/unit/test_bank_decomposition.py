@@ -5,6 +5,7 @@ from modules.common.config_manager.api import ConfigManager
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.models import Transaction
 from modules.finance.system import FinanceSystem
+from modules.finance.api import LoanInfoDTO, BorrowerProfileDTO
 import config
 
 if not hasattr(config, 'TICKS_PER_YEAR'):
@@ -56,8 +57,19 @@ class TestBankDecomposition(unittest.TestCase):
         borrower_id = 101
 
         # Mock finance_system response
-        mock_dto = {"loan_id": "loan_1", "borrower_id": borrower_id, "original_amount": amount, "principal": amount}
+        # Create a real LoanInfoDTO or a mock with attributes
+        mock_dto = LoanInfoDTO(
+            loan_id="loan_1",
+            borrower_id=borrower_id,
+            original_amount=float(amount),
+            outstanding_balance=float(amount),
+            interest_rate=interest_rate,
+            origination_tick=0,
+            due_tick=100,
+            status="ACTIVE"
+        )
         mock_tx = MagicMock()
+        mock_tx.transaction_type = "credit_creation"
         self.finance_system.process_loan_application.return_value = (mock_dto, [mock_tx])
 
         # Also mock get_customer_balance to reflect the loan deposit if bank.get_customer_balance is called
@@ -68,15 +80,15 @@ class TestBankDecomposition(unittest.TestCase):
         self.assertIsNotNone(dto)
         # MIGRATION: Bank now returns objects (SimpleNamespace or DTO), not dicts
         self.assertEqual(dto.borrower_id, borrower_id)
-        self.assertEqual(dto.original_amount, amount)
+        self.assertEqual(dto.original_amount, float(amount))
 
         # Verify delegation
-        self.finance_system.process_loan_application.assert_called_with(
-            borrower_id=borrower_id,
-            amount=amount,
-            borrower_profile={'preferred_lender_id': self.bank.id},
-            current_tick=0
-        )
+        # Expect a BorrowerProfileDTO object now, not a dict
+        args, kwargs = self.finance_system.process_loan_application.call_args
+        self.assertEqual(kwargs['borrower_id'], borrower_id)
+        self.assertEqual(kwargs['amount'], amount)
+        self.assertIsInstance(kwargs['borrower_profile'], BorrowerProfileDTO)
+        self.assertEqual(kwargs['current_tick'], 0)
 
         # Use correct API for customer deposit balance
         balance = self.bank.get_customer_balance(borrower_id)

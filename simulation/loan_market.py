@@ -180,22 +180,25 @@ class LoanMarket(Market, ILoanMarket):
              return "APPROVED"
         return "REJECTED"
 
-    def convert_staged_to_loan(self, staged_loan_id: str) -> Optional[dict]:
+    def convert_staged_to_loan(self, staged_loan_id: str) -> Optional[LoanDTO]:
         """
         Finalizes an approved application.
-        Returns LoanInfoDTO dict.
+        Returns LoanInfoDTO object.
         """
         if hasattr(self.bank, 'loans') and staged_loan_id in self.bank.loans:
              loan = self.bank.loans[staged_loan_id]
-             return {
-                 "loan_id": staged_loan_id,
-                 "borrower_id": loan.borrower_id,
-                 "original_amount": loan.principal,
-                 "outstanding_balance": loan.remaining_balance,
-                 "interest_rate": loan.annual_interest_rate,
-                 "origination_tick": loan.origination_tick,
-                 "due_tick": loan.start_tick + loan.term_ticks
-             }
+             # MIGRATION: Ensure DTO purity by returning object
+             return LoanDTO(
+                 loan_id=staged_loan_id,
+                 borrower_id=int(loan.borrower_id),
+                 original_amount=float(loan.principal),
+                 outstanding_balance=float(loan.remaining_balance),
+                 interest_rate=float(loan.annual_interest_rate),
+                 origination_tick=int(loan.origination_tick),
+                 due_tick=int(loan.start_tick + loan.term_ticks),
+                 lender_id=int(self.bank.id) if hasattr(self.bank, 'id') else None,
+                 term_ticks=int(loan.term_ticks)
+             )
         return None
 
     def void_staged_application(self, staged_loan_id: str) -> bool:

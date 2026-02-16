@@ -164,12 +164,13 @@ class FinanceSystem(IFinanceSystem):
 
         info_dto = LoanInfoDTO(
             loan_id=loan_state.loan_id,
-            borrower_id=loan_state.borrower_id,
-            lender_id=loan_state.lender_id,
+            borrower_id=int(loan_state.borrower_id),
+            lender_id=int(loan_state.lender_id) if loan_state.lender_id else None,
             original_amount=float(loan_state.principal_pennies),
-            remaining_principal=float(loan_state.remaining_principal_pennies),
+            outstanding_balance=float(loan_state.remaining_principal_pennies),
             interest_rate=loan_state.interest_rate,
-            start_tick=loan_state.origination_tick,
+            origination_tick=loan_state.origination_tick,
+            due_tick=loan_state.due_tick,
             term_ticks=loan_state.due_tick - loan_state.origination_tick,
             status="ACTIVE"
         )
@@ -192,12 +193,13 @@ class FinanceSystem(IFinanceSystem):
                 if loan.borrower_id == customer_id and loan.remaining_principal_pennies > 0:
                     loans.append(LoanInfoDTO(
                         loan_id=loan.loan_id,
-                        borrower_id=loan.borrower_id,
-                        lender_id=loan.lender_id,
+                        borrower_id=int(loan.borrower_id),
+                        lender_id=int(loan.lender_id) if loan.lender_id else None,
                         original_amount=float(loan.principal_pennies),
-                        remaining_principal=float(loan.remaining_principal_pennies),
+                        outstanding_balance=float(loan.remaining_principal_pennies),
                         interest_rate=loan.interest_rate,
-                        start_tick=loan.origination_tick,
+                        origination_tick=loan.origination_tick,
+                        due_tick=loan.due_tick,
                         term_ticks=loan.due_tick - loan.origination_tick,
                         status="ACTIVE"
                     ))

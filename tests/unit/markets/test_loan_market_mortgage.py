@@ -64,16 +64,6 @@ class TestLoanMarketMortgage:
 
     def test_evaluate_mortgage_fail_dti(self, loan_market):
         # DTI limit 0.43
-        # Income 1000.
-        # Max obligation 430.
-        # Loan principal 80000. Rate 5% (0.00416/mo). Term 360.
-        # Payment approx 429.46
-        # If existing debt is 10, total 439.46 > 430. Fail.
-
-        # Let's use simpler numbers.
-        # Principal 100,000. Pmt ~536.
-        # Income 1000. DTI ~0.53 > 0.43. Fail.
-
         app = MortgageApplicationDTO(
             applicant_id=1,
             requested_principal=100000.0,
@@ -87,11 +77,6 @@ class TestLoanMarketMortgage:
         assert loan_market.evaluate_mortgage_application(app) is False
 
     def test_evaluate_mortgage_fail_dti_with_existing_debt(self, loan_market):
-        # Principal 50,000. Pmt ~268.
-        # Income 1000.
-        # Existing Debt Pmt 200.
-        # Total 468. Ratio 0.468 > 0.43. Fail.
-
         app = MortgageApplicationDTO(
             applicant_id=1,
             requested_principal=50000.0,
@@ -116,10 +101,18 @@ class TestLoanMarketMortgage:
             loan_term=360
         )
 
-        mock_bank.stage_loan.return_value = {
-            "loan_id": "loan_123",
-            "original_amount": 80000.0
-        }
+        mock_bank.stage_loan.return_value = LoanInfoDTO(
+            loan_id="loan_123",
+            borrower_id=1,
+            original_amount=80000.0,
+            outstanding_balance=80000.0,
+            interest_rate=0.05,
+            origination_tick=0,
+            due_tick=360,
+            term_ticks=360,
+            status="PENDING",
+            lender_id=None
+        )
 
         # Mock the loan existing in the bank for convert_staged_to_loan
         mock_loan = MagicMock()
@@ -132,10 +125,12 @@ class TestLoanMarketMortgage:
         mock_loan.term_ticks = 360
 
         mock_bank.loans = {"loan_123": mock_loan}
+        mock_bank.id = 999
 
         result = loan_market.stage_mortgage(app)
         assert result is not None
-        assert result["loan_id"] == "loan_123"
+        assert result.loan_id == "loan_123"
+        assert isinstance(result, LoanInfoDTO)
         mock_bank.stage_loan.assert_called_once()
 
     def test_stage_mortgage_fail_eval(self, loan_market, mock_bank):
@@ -153,3 +148,28 @@ class TestLoanMarketMortgage:
         result = loan_market.stage_mortgage(app)
         assert result is None
         mock_bank.stage_loan.assert_not_called()
+
+    def test_end_to_end_dto_purity(self, loan_market, mock_bank):
+        # Setup
+        mock_loan = MagicMock()
+        mock_loan.borrower_id = 1
+        mock_loan.principal = 100.0
+        mock_loan.remaining_balance = 100.0
+        mock_loan.annual_interest_rate = 0.05
+        mock_loan.origination_tick = 0
+        mock_loan.start_tick = 0
+        mock_loan.term_ticks = 360
+
+        mock_bank.loans = {
+            "loan_999": mock_loan
+        }
+        mock_bank.id = 1
+
+        # Execute
+        result = loan_market.convert_staged_to_loan("loan_999")
+
+        # Verify
+        assert isinstance(result, LoanInfoDTO)
+        assert result.loan_id == "loan_999"
+        assert result.original_amount == 100.0
+        assert result.outstanding_balance == 100.0
