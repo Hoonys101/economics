@@ -3,23 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "liquidate-loan-market": {
-      "key": "liquidate-loan-market",
-      "title": "Implement LoanMarket Dict-Leak Fix",
-      "type": "jules",
-      "instruction_raw": "Resolve the 'dict' object attribute error in loan_market.py by ensuring DTO objects are returned and used. Verify with loan market unit tests.",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_liquidate-loan-market_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "liquidate-regressions": {
       "key": "liquidate-regressions",
       "title": "Implement Behavioral Regression Fixes",
@@ -46,6 +29,23 @@
       "created_at": "",
       "command": "create",
       "file_path": "design/3_work_artifacts/specs/MISSION_liquidate-dto-contracts_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "liquidate-loan-market": {
+      "key": "liquidate-loan-market",
+      "title": "Implement LoanMarket Dict-Leak Fix",
+      "type": "jules",
+      "instruction_raw": "Resolve the 'dict' object attribute error in loan_market.py by ensuring DTO objects are returned and used. Verify with loan market unit tests.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_liquidate-loan-market_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,

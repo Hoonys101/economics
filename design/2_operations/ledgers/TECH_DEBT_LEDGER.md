@@ -10,7 +10,8 @@
 | **TD-ARCH-DI-SETTLE** | Architecture | **DI Timing**: `AgentRegistry` injection into `SettlementSystem` happens post-initialization. | **Low**: Initialization fragility. | Open |
 | **TD-UI-DTO-PURITY** | Cockpit | **Manual Deserialization**: UI uses raw dicts/manual mapping for Telemetry. Needs `pydantic`. | **Medium**: Code Quality. | Open |
 | **TD-PROC-TRANS-DUP** | Logic | **Handler Redundancy**: Logic overlap between legacy `TransactionManager` and new `TransactionProcessor`. | **Medium**: Maintenance. | **Identified** |
-| **TD-DTO-DESYNC-2026** | DTO/API | **Contract Fracture**: `BorrowerProfileDTO` desync across Firm logic & 700+ tests following Dataclass migration. | **Critical**: System Integrity. | **Liquidating** |
+| **TD-DTO-DESYNC-2026** | DTO/API | **Contract Fracture**: `BorrowerProfileDTO` desync across Firm logic & 700+ tests following Dataclass migration. | **Critical**: System Integrity. | **Liquidated** |
+| **TD-TEST-SSOT-SYNC** | Testing | **SSoT Balance Mismatch**: Tests assert against legacy `.assets` attributes instead of querying `SettlementSystem`. | **High**: Verification Validity. | **Identified** |
 
 ---
 > [!NOTE]
@@ -64,3 +65,9 @@
     1. Liquidate current 27 failures.
     2. **Protocol Update**: Every Mission SPEC must include an "API/DTO Impact" section.
     3. **Verification Update**: PR reviews must include a `full-suite-audit` check if DTOs are modified.
+---
+### ID: TD-TEST-SSOT-SYNC
+### Title: SSoT Balance Mismatch in Testing
+- **Symptom**: `test_fiscal_integrity.py` and others fail despite correct logic because they check `.assets` attributes which are no longer synchronized by `FinanceSystem`.
+- **Risk**: High maintenance cost and false negatives in CI/CD. Masked regressions in financial business logic.
+- **Solution**: Refactor test assertions to use `settlement_system.get_balance(agent_id)` instead of `agent.assets`. Remove legacy asset/liability attributes from base `Agent` class once full migration is complete.
