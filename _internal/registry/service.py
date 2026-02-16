@@ -10,11 +10,11 @@ from .api import IMissionRegistryService, MissionDTO, MissionType
 from .mission_protocol import construct_mission_prompt
 
 DB_PATH = Path("_internal/registry/mission_db.json")
-# LOCK_PATH is now derived per-instance in MissionRegistryService
+LOCK_PATH = Path("_internal/registry/mission_db.lock")
 
 class MissionLock:
-    def __init__(self, lock_file: Path, timeout: int = 10):
-        self.lock_file = lock_file
+    def __init__(self, lock_file: Optional[Path] = None, timeout: int = 10):
+        self.lock_file = lock_file or LOCK_PATH
         self.timeout = timeout
 
     def __enter__(self):
