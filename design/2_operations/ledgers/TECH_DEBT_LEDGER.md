@@ -10,6 +10,7 @@
 | **TD-ARCH-DI-SETTLE** | Architecture | **DI Timing**: `AgentRegistry` injection into `SettlementSystem` happens post-initialization. | **Low**: Initialization fragility. | Open |
 | **TD-UI-DTO-PURITY** | Cockpit | **Manual Deserialization**: UI uses raw dicts/manual mapping for Telemetry. Needs `pydantic`. | **Medium**: Code Quality. | Open |
 | **TD-PROC-TRANS-DUP** | Logic | **Handler Redundancy**: Logic overlap between legacy `TransactionManager` and new `TransactionProcessor`. | **Medium**: Maintenance. | **Identified** |
+| **TD-DTO-DESYNC-2026** | DTO/API | **Contract Fracture**: `BorrowerProfileDTO` desync across Firm logic & 700+ tests following Dataclass migration. | **Critical**: System Integrity. | **Liquidating** |
 
 ---
 > [!NOTE]
@@ -53,3 +54,13 @@
 - **Symptom**: Similar transaction processing logic exists in `TransactionManager` (Legacy) and `TransactionProcessor` (New).
 - **Risk**: Fixes applied to one might not apply to the other, leading to divergent behavior.
 - **Solution**: Deprecate `TransactionManager` and route all traffic through `TransactionProcessor`.
+
+---
+### ID: TD-DTO-DESYNC-2026
+### Title: Cross-Module DTO/API Contract Fracture
+- **Symptom**: `TypeError` (unexpected keyword 'borrower_id') in Firm logic and `Subscriptable` error in tests following Dataclass migration.
+- **Risk**: PR reviews pass based on local diffs but hidden global regressions persist. Systemic failure in loan assessments.
+- **Solution**: 
+    1. Liquidate current 27 failures.
+    2. **Protocol Update**: Every Mission SPEC must include an "API/DTO Impact" section.
+    3. **Verification Update**: PR reviews must include a `full-suite-audit` check if DTOs are modified.

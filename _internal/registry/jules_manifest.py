@@ -17,28 +17,22 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "fix-dto-subscripting": {
-        "title": "Finance & Credit Purity Implementation",
+    "liquidate-dto-contracts": {
+        "title": "Implement DTO Contract Liquidation",
         "command": "create",
-        "file": "design/3_work_artifacts/specs/MISSION_fix-dto-subscripting_SPEC.md",
-        "wait": True
+        "instruction": "Implement the fixes in BorrowerProfileDTO signature and Test Subscripting as defined in the SPEC. Run full finance unit tests to verify.",
+        "file": "design/3_work_artifacts/specs/MISSION_liquidate-dto-contracts_SPEC.md"
     },
-    "fix-firm-engine-logic": {
-        "title": "Firm Structure & Engine Implementation",
+    "liquidate-loan-market": {
+        "title": "Implement LoanMarket Dict-Leak Fix",
         "command": "create",
-        "file": "design/3_work_artifacts/specs/MISSION_fix-firm-struct-and-engines_SPEC.md",
-        "wait": True
+        "instruction": "Resolve the 'dict' object attribute error in loan_market.py by ensuring DTO objects are returned and used. Verify with loan market unit tests.",
+        "file": "design/3_work_artifacts/specs/MISSION_liquidate-loan-market_SPEC.md"
     },
-    "fix-system-integrity": {
-        "title": "System Integrity & Registry Repair",
+    "liquidate-regressions": {
+        "title": "Implement Behavioral Regression Fixes",
         "command": "create",
-        "file": "design/3_work_artifacts/audits/MISSION_fix-system-integrity_AUDIT.md",
-        "wait": True
-    },
-    "fix-behavioral-scenarios": {
-        "title": "Behavioral Logic Re-Calibration",
-        "command": "create",
-        "file": "design/3_work_artifacts/audits/MISSION_fix-behavioral-scenarios_AUDIT.md",
-        "wait": True
+        "instruction": "Fix firm inventory slots and housing transaction protocols to resolve residual test failures. Maintain zero-sum integrity.",
+        "file": "design/3_work_artifacts/specs/MISSION_liquidate-regressions_SPEC.md"
     }
 }

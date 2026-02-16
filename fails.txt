@@ -1,0 +1,99 @@
+======================================================== FAILURES ========================================================= 
+C:\coding\economics\simulation\decisions\firm\financial_strategy.py:93: TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+C:\coding\economics\tests\test_firm_inventory_slots.py:92: AssertionError: assert 0.0 == 50.0
+C:\coding\economics\tests\test_wo_4_1_protocols.py:77: assert False is True
+C:\coding\economics\tests\unit\components\test_engines.py:171: AssertionError: assert 10.0 == 1000
+C:\coding\economics\simulation\decisions\firm\financial_strategy.py:93: TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+C:\coding\economics\simulation\decisions\firm\financial_strategy.py:93: TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+C:\coding\economics\simulation\decisions\firm\financial_strategy.py:93: TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+C:\coding\economics\simulation\decisions\firm\financial_strategy.py:93: TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+C:\coding\economics\simulation\decisions\firm\financial_strategy.py:93: TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+C:\coding\economics\simulation\decisions\firm\financial_strategy.py:93: TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+C:\coding\economics\simulation\decisions\firm\financial_strategy.py:93: TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+C:\coding\economics\simulation\decisions\firm\financial_strategy.py:93: TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+C:\coding\economics\simulation\decisions\firm\financial_strategy.py:93: TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+C:\coding\economics\simulation\decisions\firm\financial_strategy.py:93: TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+C:\coding\economics\simulation\decisions\firm\financial_strategy.py:93: TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+C:\coding\economics\simulation\decisions\firm\financial_strategy.py:93: TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+C:\coding\economics\tests\unit\finance\test_finance_system_refactor.py:147: TypeError: 'LoanInfoDTO' object is not subscriptable
+C:\coding\economics\tests\unit\markets\test_housing_transaction_handler.py:118: assert False is True
+C:\coding\economics\tests\unit\markets\test_housing_transaction_handler.py:192: AssertionError: assert 1 >= 2
+C:\coding\economics\tests\unit\markets\test_housing_transaction_handler.py:219: AssertionError: expected call not found.    
+C:\coding\economics\simulation\loan_market.py:162: AttributeError: 'dict' object has no attribute 'loan_id'
+C:\coding\economics\tests\unit\systems\handlers\test_housing_handler.py:169: AssertionError: expected call not found.       
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\case.py:744: AssertionError: False is not true       
+C:\coding\economics\tests\unit\systems\handlers\test_housing_handler.py:203: AssertionError: expected call not found.       
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\case.py:744: AssertionError: False is not true       
+C:\coding\economics\simulation\decisions\firm\financial_strategy.py:93: TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+C:\coding\economics\tests\unit\test_bank_decomposition.py:66: TypeError: cannot unpack non-iterable NoneType object
+==================================================== warnings summary ===================================================== 
+tests/integration/test_government_fiscal_policy.py::test_tax_collection_and_bailouts
+  C:\coding\economics\tests\integration\test_government_fiscal_policy.py:14: DeprecationWarning: Government.collect_tax is deprecated. Use settlement.settle_atomic and government.record_revenue() instead.
+    government.collect_tax(100, "test_tax", 1, 1)
+
+tests/integration/test_government_refactor_behavior.py::TestGovernmentRefactor::test_decision_engine_taylor_rule
+  C:\coding\economics\tests\integration\test_government_refactor_behavior.py:48: DeprecationWarning: GovernmentDecisionEngine is deprecated. Use FiscalEngine instead.
+    engine = GovernmentDecisionEngine(mock_config)
+
+tests/simulation/factories/test_agent_factory.py::test_create_household
+  C:\coding\economics\tests\simulation\factories\test_agent_factory.py:28: DeprecationWarning: simulation.factories.agent_factory.HouseholdFactory is deprecated. Use simulation.factories.household_factory.HouseholdFactory instead.
+    factory = HouseholdFactory(mock_config_module)
+
+tests/simulation/factories/test_agent_factory.py::test_create_newborn
+  C:\coding\economics\tests\simulation\factories\test_agent_factory.py:52: DeprecationWarning: simulation.factories.agent_factory.HouseholdFactory is deprecated. Use simulation.factories.household_factory.HouseholdFactory instead.
+    factory = HouseholdFactory(mock_config_module)
+
+tests/unit/agents/test_government.py::test_collect_tax_delegation
+  C:\coding\economics\tests\unit\agents\test_government.py:102: DeprecationWarning: Government.collect_tax is deprecated. Use settlement.settle_atomic and government.record_revenue() instead.
+    env["government"].collect_tax(amount, tax_type, source_id, current_tick)
+
+tests/unit/test_market_adapter.py::TestMarketAdapter::test_convert_stock_order
+  <string>:10: DeprecationWarning: StockOrder is deprecated. Use CanonicalOrderDTO instead.
+
+tests/unit/test_tax_collection.py::test_government_collect_tax_adapter_success
+  C:\coding\economics\tests\unit\test_tax_collection.py:125: DeprecationWarning: Government.collect_tax is deprecated. Use settlement.settle_atomic and government.record_revenue() instead.
+    collected = gov.collect_tax(amount, "test_tax", payer, current_tick=1)
+
+tests/unit/test_tax_collection.py::test_government_collect_tax_adapter_failure
+  C:\coding\economics\tests\unit\test_tax_collection.py:143: DeprecationWarning: Government.collect_tax is deprecated. Use settlement.settle_atomic and government.record_revenue() instead.
+    collected = gov.collect_tax(amount, "test_tax", payer, current_tick=1)
+
+tests/unit/test_tax_incidence.py::TestTaxIncidence::test_firm_payer_scenario
+  C:\coding\economics\simulation\systems\transaction_manager.py:274: DeprecationWarning: Government.collect_tax is deprecated. Use settlement.settle_atomic and government.record_revenue() instead.
+    government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)
+
+tests/unit/test_tax_incidence.py::TestTaxIncidence::test_household_payer_scenario
+  C:\coding\economics\simulation\systems\transaction_manager.py:281: DeprecationWarning: Government.collect_tax is deprecated. Use settlement.settle_atomic and government.record_revenue() instead.
+    government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================================= short test summary info ================================================= 
+FAILED tests/integration/test_firm_decision_scenarios.py::test_growth_scenario_with_golden_firm - TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+FAILED tests/test_firm_inventory_slots.py::test_facade_property - AssertionError: assert 0.0 == 50.0
+FAILED tests/test_wo_4_1_protocols.py::test_housing_handler_with_protocol_agent - assert False is True
+FAILED tests/unit/components/test_engines.py::TestFinanceEngine::test_generate_financial_transactions - AssertionError: assert 10.0 == 1000
+FAILED tests/unit/corporate/test_financial_strategy.py::test_debt_logic_borrow - TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+FAILED tests/unit/decisions/test_finance_rules.py::TestFinanceRules::test_rd_investment - TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+FAILED tests/unit/decisions/test_finance_rules.py::TestFinanceRules::test_capex_investment - TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+FAILED tests/unit/decisions/test_finance_rules.py::TestFinanceRules::test_dividend_setting - TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+FAILED tests/unit/decisions/test_hr_rules.py::TestHRRules::test_make_decisions_hires_labor - TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+FAILED tests/unit/decisions/test_hr_rules.py::TestHRRules::test_make_decisions_does_not_hire_when_full - TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+FAILED tests/unit/decisions/test_hr_rules.py::TestHRRules::test_make_decisions_fires_excess_labor - TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+FAILED tests/unit/decisions/test_production_rules.py::TestProductionRules::test_make_decisions_overstock_reduces_target - TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+FAILED tests/unit/decisions/test_production_rules.py::TestProductionRules::test_make_decisions_understock_increases_target - TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+FAILED tests/unit/decisions/test_production_rules.py::TestProductionRules::test_make_decisions_target_within_bounds_no_change - TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+FAILED tests/unit/decisions/test_production_rules.py::TestProductionRules::test_make_decisions_target_min_max_bounds - TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+FAILED tests/unit/decisions/test_sales_rules.py::TestSalesRules::test_sales_aggressiveness_impact_on_price - TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+FAILED tests/unit/finance/test_finance_system_refactor.py::test_grant_bailout_loan_deprecated - TypeError: 'LoanInfoDTO' object is not subscriptable
+FAILED tests/unit/markets/test_housing_transaction_handler.py::test_housing_transaction_success - assert False is True      
+FAILED tests/unit/markets/test_housing_transaction_handler.py::test_housing_transaction_loan_rejected - AssertionError: assert 1 >= 2
+FAILED tests/unit/markets/test_housing_transaction_handler.py::test_housing_transaction_disbursement_failed - AssertionError: expected call not found.
+FAILED tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_stage_mortgage_success - AttributeError: 'dict' object has no attribute 'loan_id'
+FAILED tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_disbursement_failure - AssertionError: expected call not found.
+FAILED tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_government_seller - AssertionError: False is not true
+FAILED tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_payment_failure - AssertionError: expected call not found.
+FAILED tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_purchase_success - AssertionError: False is not true
+FAILED tests/unit/test_ai_driven_firm_engine.py::test_adjust_price_tactic - TypeError: BorrowerProfileDTO.__init__() got an unexpected keyword argument 'borrower_id'
+FAILED tests/unit/test_bank_decomposition.py::TestBankDecomposition::test_grant_loan_delegation - TypeError: cannot unpack non-iterable NoneType object
+================================= 27 failed, 774 passed, 1 skipped, 10 warnings in 18.00s ================================= 
+PS C:\coding\economics> 

@@ -23,53 +23,34 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "fix-dto-subscripting": {
-        "title": "Finance & Credit Purity Fix",
+    "liquidate-dto-contracts": {
+        "title": "Liquidate DTO Contract Desyncs",
         "worker": "spec",
-        "instruction": "Design the specific patches to fix DTO subscripting issues in Bank and Credit Scoring modules based on MISSION_fix-dto-subscripting_SPEC.md.",
+        "instruction": "Draft a SPEC to fix BorrowerProfileDTO signature errors and residual LoanInfoDTO subscripting across Firm logic and 700+ tests. Ensure all keyword arguments match the frozen dataclass definition. Refer to TD-DTO-DESYNC-2026.",
         "context_files": [
-            "design/3_work_artifacts/specs/MISSION_fix-dto-subscripting_SPEC.md",
-            "simulation/bank.py",
-            "modules/finance/credit_scoring.py",
+            "simulation/decisions/firm/financial_strategy.py",
+            "tests/unit/corporate/test_financial_strategy.py",
+            "tests/unit/finance/test_finance_system_refactor.py"
+        ]
+    },
+    "liquidate-loan-market": {
+        "title": "Liquidate LoanMarket Dict-Leak",
+        "worker": "spec",
+        "instruction": "Draft a SPEC to resolve the AttributeError in loan_market.py where a 'dict' is returned instead of a LoanInfoDTO object. Trace the origin in bank.stage_loan and ensure dot notation is used throughout.",
+        "context_files": [
             "simulation/loan_market.py",
-            "tests/unit/finance/test_bank_service_interface.py"
-        ],
-        "model": "gemini-3-pro-preview"
+            "simulation/bank.py",
+            "tests/unit/markets/test_loan_market_mortgage.py"
+        ]
     },
-    "fix-firm-engine-logic": {
-        "title": "Firm Structure & Engine Repair",
+    "liquidate-regressions": {
+        "title": "Liquidate Behavioral Regressions",
         "worker": "spec",
-        "instruction": "Analyze Firm agent decomposition and fix engine-level unit/type mismatches according to MISSION_fix-firm-struct-and-engines_SPEC.md.",
+        "instruction": "Draft a SPEC to resolve logic regressions in firm inventory, housing protocols, and scenario tests (27 total failures). Coordinate with recent DTO changes to ensure zero-sum integrity is maintained.",
         "context_files": [
-            "design/3_work_artifacts/specs/MISSION_fix-firm-struct-and-engines_SPEC.md",
-            "simulation/firms.py",
-            "simulation/decisions/ai_driven_firm_engine.py",
-            "tests/simulation/components/engines/test_asset_management_engine.py"
-        ],
-        "model": "gemini-3-pro-preview"
-    },
-    "fix-system-integrity": {
-        "title": "Registry & System Integrity Fix",
-        "worker": "reporter",
-        "instruction": "Investigate M2 leak (-100 mismatch) and Registry LOCK_PATH error as specified in MISSION_fix-system-integrity_SPEC.md.",
-        "context_files": [
-            "design/3_work_artifacts/specs/MISSION_fix-system-integrity_SPEC.md",
-            "_internal/registry/service.py",
-            "modules/government/components/monetary_ledger.py",
-            "tests/integration/test_m2_integrity.py"
-        ],
-        "model": "gemini-3-pro-preview"
-    },
-    "fix-behavioral-scenarios": {
-        "title": "Scenario & AI Behavior Alignment",
-        "worker": "audit",
-        "instruction": "Audit the breeding and survival override logic failures and propose calibration fixes per MISSION_fix-behavioral-scenarios_SPEC.md.",
-        "context_files": [
-            "design/3_work_artifacts/specs/MISSION_fix-behavioral-scenarios_SPEC.md",
-            "tests/integration/test_wo048_breeding.py",
-            "tests/unit/decisions/test_animal_spirits_phase2.py",
-            "simulation/ai/household_ai.py"
-        ],
-        "model": "gemini-3-pro-preview"
+            "tests/test_firm_inventory_slots.py",
+            "tests/unit/markets/test_housing_transaction_handler.py",
+            "tests/unit/systems/handlers/test_housing_handler.py"
+        ]
     }
 }
