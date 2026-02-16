@@ -47,13 +47,13 @@ class TestBankServiceInterface:
         loan_dto = LoanInfoDTO(
             loan_id="loan_1",
             borrower_id=borrower_id,
-            original_amount=amount,
-            outstanding_balance=amount,
+            lender_id=str(bank.id),
+            original_amount=float(amount),
+            remaining_principal=float(amount),
             interest_rate=interest_rate,
-            origination_tick=0,
-            due_tick=100,
-            status="ACTIVE",
-            term_ticks=360
+            start_tick=0,
+            term_ticks=360,
+            status="ACTIVE"
         )
         tx = Transaction(
             buyer_id=bank.id,
@@ -72,8 +72,8 @@ class TestBankServiceInterface:
         loan_info, transaction = result
 
         assert loan_info.borrower_id == borrower_id
-        assert loan_info.original_amount == amount
-        assert loan_info.outstanding_balance == amount
+        assert loan_info.original_amount == float(amount)
+        assert loan_info.remaining_principal == float(amount)
         assert loan_info.interest_rate == interest_rate
         assert loan_info.loan_id == "loan_1"
 
@@ -102,13 +102,13 @@ class TestBankServiceInterface:
 
         loans = [
             LoanInfoDTO(
-                loan_id="l1", borrower_id=borrower_id, original_amount=100000,
-                outstanding_balance=100000, interest_rate=0.05, origination_tick=0, due_tick=100,
+                loan_id="l1", borrower_id=borrower_id, lender_id="1", original_amount=100000.0,
+                remaining_principal=100000.0, interest_rate=0.05, start_tick=0,
                 status="ACTIVE", term_ticks=360
             ),
             LoanInfoDTO(
-                loan_id="l2", borrower_id=borrower_id, original_amount=50000,
-                outstanding_balance=50000, interest_rate=0.06, origination_tick=0, due_tick=100,
+                loan_id="l2", borrower_id=borrower_id, lender_id="1", original_amount=50000.0,
+                remaining_principal=50000.0, interest_rate=0.06, start_tick=0,
                 status="ACTIVE", term_ticks=360
             )
         ]

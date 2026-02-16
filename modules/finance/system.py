@@ -146,7 +146,8 @@ class FinanceSystem(IFinanceSystem):
             return None, result.generated_transactions
 
         # Construct LoanInfoDTO for the caller
-        lender_id = app_dto.borrower_profile.get("preferred_lender_id")
+        # lender_id was set in app_dto
+        lender_id = app_dto.lender_id
         if not lender_id and self.ledger.banks:
              lender_id = next(iter(self.ledger.banks.keys()))
 
@@ -164,11 +165,13 @@ class FinanceSystem(IFinanceSystem):
         info_dto = LoanInfoDTO(
             loan_id=loan_state.loan_id,
             borrower_id=loan_state.borrower_id,
-            original_amount=loan_state.principal_pennies,
-            outstanding_balance=loan_state.remaining_principal_pennies,
+            lender_id=loan_state.lender_id,
+            original_amount=float(loan_state.principal_pennies),
+            remaining_principal=float(loan_state.remaining_principal_pennies),
             interest_rate=loan_state.interest_rate,
-            origination_tick=loan_state.origination_tick,
-            due_tick=loan_state.due_tick
+            start_tick=loan_state.origination_tick,
+            term_ticks=loan_state.due_tick - loan_state.origination_tick,
+            status="ACTIVE"
         )
 
         return info_dto, result.generated_transactions
@@ -190,11 +193,13 @@ class FinanceSystem(IFinanceSystem):
                     loans.append(LoanInfoDTO(
                         loan_id=loan.loan_id,
                         borrower_id=loan.borrower_id,
-                        original_amount=loan.principal_pennies,
-                        outstanding_balance=loan.remaining_principal_pennies,
+                        lender_id=loan.lender_id,
+                        original_amount=float(loan.principal_pennies),
+                        remaining_principal=float(loan.remaining_principal_pennies),
                         interest_rate=loan.interest_rate,
-                        origination_tick=loan.origination_tick,
-                        due_tick=loan.due_tick
+                        start_tick=loan.origination_tick,
+                        term_ticks=loan.due_tick - loan.origination_tick,
+                        status="ACTIVE"
                     ))
         return loans
 
@@ -428,13 +433,13 @@ class FinanceSystem(IFinanceSystem):
 
         covenants = BailoutCovenant(
             dividends_allowed=False,
-            executive_salary_freeze=True,
-            mandatory_repayment=self.config_module.get("economy_params.BAILOUT_COVENANT_RATIO", 0.5)
+            executive_bonus_allowed=False,
+            min_employment_level=None
         )
 
         return GrantBailoutCommand(
             firm_id=firm.id,
-            amount=amount,
+            amount=float(amount),
             interest_rate=base_rate + penalty_premium,
             covenants=covenants
         )

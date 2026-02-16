@@ -118,6 +118,12 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     def total_wealth(self) -> int:
         return sum(self._wallet.get_all_balances().values())
 
+    def get_liquid_assets(self, currency: CurrencyCode = "USD") -> float:
+        return float(self.get_balance(currency))
+
+    def get_total_debt(self) -> float:
+        return 0.0 # Banks usually have liabilities (deposits), not debt in this context
+
     # --- ICurrencyHolder Implementation ---
 
     def get_assets_by_currency(self) -> Dict[CurrencyCode, int]:
@@ -163,27 +169,35 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
         # Enhance profile with preferred lender (self)
         if borrower_profile and is_dataclass(borrower_profile):
-            profile = replace(borrower_profile, preferred_lender_id=self.id)
+            # preferred_lender_id is deprecated in DTO, handled by system if dict.
+            # If DTO passed, we assume caller set it up or system defaults.
+            profile = borrower_profile
         elif isinstance(borrower_profile, dict):
             # Convert dict to BorrowerProfileDTO
             # Helper to safely extract int fields
-            def safe_int(val):
+            def safe_float(val):
                 try:
-                    return int(val) if val is not None else 0
+                    return float(val) if val is not None else 0.0
                 except (ValueError, TypeError):
-                    return 0
+                    return 0.0
 
             profile = BorrowerProfileDTO(
-                gross_income=safe_int(borrower_profile.get('gross_income', 0)),
-                existing_debt_payments=safe_int(borrower_profile.get('existing_debt_payments', 0)),
-                collateral_value=safe_int(borrower_profile.get('collateral_value', 0)),
-                credit_score=borrower_profile.get('credit_score'),
-                employment_status=borrower_profile.get('employment_status', "UNKNOWN"),
-                preferred_lender_id=self.id
+                borrower_id=str(borrower_agent_id),
+                gross_income=safe_float(borrower_profile.get('gross_income', 0)),
+                existing_debt_payments=safe_float(borrower_profile.get('existing_debt_payments', 0)),
+                collateral_value=safe_float(borrower_profile.get('collateral_value', 0)),
+                existing_assets=safe_float(borrower_profile.get('existing_assets', 0)),
+                credit_score=borrower_profile.get('credit_score')
             )
         else:
             # Fallback: create empty/default DTO
-            profile = BorrowerProfileDTO(0, 0, 0, preferred_lender_id=self.id)
+            profile = BorrowerProfileDTO(
+                borrower_id=str(borrower_agent_id),
+                gross_income=0.0,
+                existing_debt_payments=0.0,
+                collateral_value=0.0,
+                existing_assets=0.0
+            )
 
         # Call FinanceSystem
         loan_dto, txs = self.finance_system.process_loan_application(
@@ -252,10 +266,11 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
         if self.finance_system and hasattr(self.finance_system, 'get_customer_debt_status'):
              loans = self.finance_system.get_customer_debt_status(self.id, borrower_id)
-             total_debt = sum(l.outstanding_balance for l in loans)
+             # UPDATED: Use remaining_principal (float) and cast to int for legacy DebtStatusDTO compatibility
+             total_debt = sum(l.remaining_principal for l in loans)
              return DebtStatusDTO(
                  borrower_id=borrower_id,
-                 total_outstanding_debt=total_debt,
+                 total_outstanding_debt=int(total_debt),
                  loans=loans,
                  is_insolvent=False,
                  next_payment_due=None,

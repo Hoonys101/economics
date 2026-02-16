@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple, runtime_checkable, TYPE_CHECKING, Union, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import abc
 from abc import ABC, abstractmethod
 from uuid import UUID
@@ -164,12 +164,14 @@ class BondDTO:
     yield_rate: float
     maturity_date: int
 
-@dataclass
+@dataclass(frozen=True)
 class BailoutCovenant:
-    """Defines the restrictive conditions attached to a bailout loan."""
-    dividends_allowed: bool
-    executive_salary_freeze: bool
-    mandatory_repayment: float # Ratio of profit to be repaid
+    """
+    Restrictions applied to a bailout loan.
+    """
+    dividends_allowed: bool = False
+    executive_bonus_allowed: bool = False
+    min_employment_level: Optional[int] = None
 
 @dataclass
 class BailoutLoanDTO:
@@ -179,14 +181,13 @@ class BailoutLoanDTO:
     interest_rate: float
     covenants: BailoutCovenant
 
-@dataclass
+@dataclass(frozen=True)
 class GrantBailoutCommand:
     """
-    Command to grant a bailout loan.
-    Encapsulates all necessary parameters for execution by the PolicyExecutionEngine.
+    Command to grant a bailout loan to a distressed entity.
     """
     firm_id: AgentID
-    amount: int
+    amount: float
     interest_rate: float
     covenants: BailoutCovenant
 
@@ -227,17 +228,19 @@ class TaxCollectionResult(TypedDict):
 @dataclass(frozen=True)
 class LoanInfoDTO:
     """
-    Data Transfer Object for individual loan information.
+    Represents the details of an active or proposed loan.
     """
     loan_id: str
-    borrower_id: AgentID
-    original_amount: int
-    outstanding_balance: int
+    borrower_id: str
+    lender_id: str
+    original_amount: float
+    remaining_principal: float
     interest_rate: float
-    origination_tick: int
-    due_tick: Optional[int]
-    status: str = "ACTIVE"
-    term_ticks: int = 360
+    term_ticks: int
+    start_tick: int
+    # Status tracking
+    status: str = "PENDING"  # PENDING, ACTIVE, DEFAULTED, CLOSED
+    covenants: Optional[Any] = None
 
 @dataclass(frozen=True)
 class DebtStatusDTO:
@@ -279,16 +282,18 @@ class LoanRollbackError(Exception):
 @dataclass(frozen=True)
 class BorrowerProfileDTO:
     """
-    Data Transfer Object holding all financial data for a borrower
-    needed for credit assessment. Anonymized from the concrete agent.
+    Standardized Data Transfer Object for Borrower Risk Assessment.
+    TD-DTO-DESYNC-2026: Fixed signature desynchronization.
     """
-    gross_income: int
-    existing_debt_payments: int
-    collateral_value: int # Value of the asset being purchased, if any
-    # Optional fields for extended profiles
-    credit_score: Optional[int] = None
-    employment_status: str = "UNKNOWN"
-    preferred_lender_id: Optional[AgentID] = None
+    borrower_id: str
+    gross_income: float
+    existing_debt_payments: float
+    collateral_value: float
+    existing_assets: float
+    # Optional fields for enhanced risk scoring (Future-proofing)
+    credit_score: Optional[float] = None
+    industry_sector: Optional[str] = None
+    consecutive_loss_ticks: int = 0
 
 @dataclass(frozen=True)
 class CreditAssessmentResultDTO:
@@ -391,10 +396,15 @@ class ILiquidatable(Protocol):
 @runtime_checkable
 class IFinancialAgent(Protocol):
     """
-    Strict protocol for any agent participating in the financial system.
-    Supports multi-currency operations and replaces direct attribute access.
+    Protocol for agents participating in the financial system.
     """
     id: AgentID
+
+    def get_liquid_assets(self, currency: CurrencyCode = "USD") -> float:
+        ...
+
+    def get_total_debt(self) -> float:
+        ...
 
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Deposits a specific amount of a given currency. Internal use only."""

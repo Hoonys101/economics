@@ -69,10 +69,11 @@ def test_request_bailout_loan_success(mock_dependencies):
 
     assert isinstance(command, GrantBailoutCommand)
     assert command.firm_id == 1
-    assert command.amount == 500000
+    assert command.amount == 500000.0 # Float check
     assert command.interest_rate > 0.05 # Base rate + penalty
     assert isinstance(command.covenants, BailoutCovenant)
     assert command.covenants.dividends_allowed is False
+    assert command.covenants.executive_bonus_allowed is False
 
     # Verify State Purity: Firm state MUST NOT change
     assert firm.total_debt == 0.0
@@ -130,19 +131,8 @@ def test_grant_bailout_loan_deprecated(mock_dependencies):
     # result is (LoanInfoDTO, List[Transaction])
     loan, txs = result
 
-    # Since LoanRiskEngine likely approves (default), and BookingEngine creates it.
-    # We assert structure.
-
-    # Actually, earlier I expected None because of insufficient funds or whatever.
-    # But here we have funds.
-    # The original test asserted None because it expected deprecation warning/failure?
-    # No, it asserted None because it wasn't implemented or mocked to fail.
-
-    # If I restored it, it should work.
-    # Unless request_bailout_loan returns None (insufficient funds).
-    # Here funds are 1M. Amount 5k. Sufficient.
-
     # So it should return a loan.
     assert loan is not None
-    assert loan['original_amount'] == 500000
+    # Use dot notation as strictly typed
+    assert loan.original_amount == 500000.0
     assert len(txs) > 0
