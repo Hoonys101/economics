@@ -17,6 +17,10 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
+    "build-phase-audit-system": {
+        "description": "Create a diagnostic script that audits total money supply after every phase in TickOrchestrator to find leaks.",
+        "instruction": "Create 'scripts/run_phase_audit.py'. This script must: 1. Initialize simulation. 2. Manually execute each phase of TickOrchestrator for Tick 1. 3. Output a table showing 'Total Assets' (HH+Firm+Gov+Bank) and the 'Delta' after each phase. 4. Save output to 'reports/temp/phase_audit.log'. Avoid using sim.run_tick(), orchestrate phases manually and handle sim_state sync."
+    },
     "fix-and-run-diagnostics": {
         "title": "Forensic Execution: Repair and Run Leak Diagnostics",
         "command": "create",

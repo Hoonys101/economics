@@ -12,10 +12,11 @@ from modules.finance.engines.api import MonetaryStateDTO, MarketSnapshotDTO
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
     from simulation.dtos.strategy import ScenarioStrategy
+from modules.finance.api import IFinancialAgent, IBank
 
 logger = logging.getLogger(__name__)
 
-class CentralBank(ICurrencyHolder):
+class CentralBank(ICurrencyHolder, IFinancialAgent):
     """
     Phase 10: Central Bank Agent.
     Implements Taylor Rule to dynamically adjust interest rates.
@@ -209,3 +210,21 @@ class CentralBank(ICurrencyHolder):
         """
         if amount > 0:
             self.wallet.subtract(amount, currency, memo="Withdraw")
+
+    # --- IFinancialAgent Implementation ---
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        return self.wallet.get_balance(currency)
+
+    def get_all_balances(self) -> Dict[CurrencyCode, int]:
+        return self.wallet.get_all_balances()
+
+    @property
+    def total_wealth(self) -> int:
+        return sum(self.wallet.get_all_balances().values())
+
+    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self.wallet.add(amount, currency, memo="Protocol Deposit")
+
+    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        # Central Bank can always withdraw (create money)
+        self.wallet.subtract(amount, currency, memo="Protocol Withdraw")
