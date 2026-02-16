@@ -12,16 +12,17 @@ To achieve Zero-Sum Integrity, the simulation core (`world_state.py`) and diagno
 
 ### 3. Logic Integration
 *   **Ledger & Wallet Sync:** The `Phase_MonetaryProcessing` was removed as it was redundant. Ledger updates are now integrated into `Phase3_Transaction` and `Bank` operations, ensuring that every credit creation event (Ledger) has a corresponding wallet transfer (Settlement).
-*   **Orchestration Fixes:** `MonetaryLedger` now correctly tracks `loan_interest` as monetary contraction, preventing false positives in leak detection.
+*   **Bank Solvency & Liquidity:** `DebtServicingEngine` was patched to ensure loan repayments (`seller_id`) are directed to the lending Bank rather than the Central Bank. This prevents a capital drain on commercial banks (Reserves Replenishment) while still correctly registering as M2 contraction (since Bank Reserves are M0).
+*   **Orchestration Fixes:** `MonetaryLedger` now correctly tracks `loan_interest` as monetary contraction.
 
 ## Test Evidence
 
 ### Trace Leak Output
-The following output from `scripts/trace_leak.py` confirms that the system maintains perfect Zero-Sum Integrity after a loan grant and a full simulation tick.
+The following output from `scripts/trace_leak.py` confirms that the system maintains perfect Zero-Sum Integrity. Crucially, `Bank 24` delta is `-4,997.80` (Loan -5000 + Interest 2.20), proving it received the interest payment.
 
 ```text
 --- TRACE START ---
-Tick 0 (START) Total Money (USD): 496,633.90
+Tick 0 (START) Total Money (USD): 499,092.32
 Firm 120: Assets=100,000.00, Active=True
 Firm 121: Assets=100,000.00, Active=True
 Firm 122: Assets=100,000.00, Active=True
@@ -31,33 +32,33 @@ DEBUG: Found 34 transactions.
 Detected Loan Interest (M2 Destruction) (Should be in Ledger): 2.20
 Detected Infrastructure Spending: 5,000.00
 
-Tick 1 (END) Total Money: 501,631.70
-Baseline: 496,633.90
+Tick 1 (END) Total Money: 504,090.12
+Baseline: 499,092.32
 Authorized Delta (Minted - Destroyed + Credit): 4,997.80
 Actual Delta: 4,997.80
 
 --- Agent Asset Deltas (Dollars) ---
-Government 25: 109,269.00
-Household 106: 290.00
+Government 25: 122,644.00
 Household 110: 290.00
-Household 113: 290.00
-Household 100: 280.00
-Household 105: 260.00
-Household 109: 260.00
+Household 117: 290.00
+Household 119: 290.00
+Household 102: 280.00
 Household 111: 260.00
-Household 112: 260.00
+Household 113: 260.00
+Household 118: 260.00
 Household 104: 258.00
+Household 105: 258.00
 ...
-Firm 121: -350.00
-Bank 24: -5,000.00
-Firm 122: -25,600.00
-Firm 120: -33,727.20
-Firm 123: -49,850.00
+Bank 24: -4,997.80
+Firm 123: -13,100.00
+Firm 121: -25,600.00
+Firm 122: -37,600.00
+Firm 120: -46,602.20
 ✅ INTEGRITY CONFIRMED (Leak: 0.0000)
-Firm 120: Assets=66,272.80, Active=True
-Firm 121: Assets=99,650.00, Active=True
-Firm 122: Assets=74,400.00, Active=True
-Firm 123: Assets=50,150.00, Active=True
+Firm 120: Assets=53,397.80, Active=True
+Firm 121: Assets=74,400.00, Active=True
+Firm 122: Assets=62,400.00, Active=True
+Firm 123: Assets=86,900.00, Active=True
 
 All Active Agent IDs: 24
 ```

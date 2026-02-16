@@ -13,7 +13,6 @@ class DebtServicingEngine(IDebtServicingEngine):
 
     def service_all_debt(self, ledger: FinancialLedgerDTO) -> EngineOutputDTO:
         txs = []
-        from modules.system.constants import ID_CENTRAL_BANK
 
         # 1. Service Bank Loans
         for bank_id, bank in ledger.banks.items():
@@ -44,7 +43,7 @@ class DebtServicingEngine(IDebtServicingEngine):
 
                     txs.append(Transaction(
                         buyer_id=loan.borrower_id,
-                        seller_id=ID_CENTRAL_BANK, # Burn via CB to avoid Double Destruction in M2 (Liability Extinguishment)
+                        seller_id=bank_id, # Pay to Bank (Replenish Reserves)
                         item_id=loan_id,
                         quantity=1,
                         price=interest_pennies, # Int
@@ -63,7 +62,7 @@ class DebtServicingEngine(IDebtServicingEngine):
 
                             txs.append(Transaction(
                                 buyer_id=loan.borrower_id,
-                                seller_id=ID_CENTRAL_BANK, # Burn
+                                seller_id=bank_id, # Pay to Bank
                                 item_id=loan_id,
                                 quantity=1,
                                 price=principal_due,
@@ -79,7 +78,7 @@ class DebtServicingEngine(IDebtServicingEngine):
 
                             txs.append(Transaction(
                                 buyer_id=loan.borrower_id,
-                                seller_id=ID_CENTRAL_BANK, # Burn
+                                seller_id=bank_id, # Pay to Bank
                                 item_id=loan_id,
                                 quantity=1,
                                 price=pay,
