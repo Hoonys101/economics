@@ -1,23 +1,5 @@
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional
-from modules.finance.api import PortfolioDTO
-
-@dataclass
-class LegacySettlementAccount:
-    """
-    TD-160: Transient escrow account for atomic inheritance resolution.
-    Holds assets of a deceased agent during the settlement process.
-    MIGRATION: Monetary values are integers (pennies).
-    """
-    deceased_agent_id: int
-    escrow_cash: int
-    escrow_portfolio: PortfolioDTO  # Structurally holds all non-cash assets
-    escrow_real_estate: List[Any]  # List of RealEstateUnit objects
-    status: str  # OPEN, PROCESSING, CLOSED, ERROR
-    created_at: int
-    heir_id: Optional[int] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    is_escheatment: bool = False
+from dataclasses import dataclass
+from typing import Any, Optional
 
 @dataclass
 class SettlementResultDTO:
