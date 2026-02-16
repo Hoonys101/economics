@@ -3,23 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "liquidate-dto-contracts": {
-      "key": "liquidate-dto-contracts",
-      "title": "Implement DTO Contract Liquidation",
-      "type": "jules",
-      "instruction_raw": "Implement the fixes in BorrowerProfileDTO signature and Test Subscripting as defined in the SPEC. Run full finance unit tests to verify.",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_liquidate-dto-contracts_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "liquidate-loan-market": {
       "key": "liquidate-loan-market",
       "title": "Implement LoanMarket Dict-Leak Fix",
@@ -46,6 +29,23 @@
       "created_at": "",
       "command": "create",
       "file_path": "design/3_work_artifacts/specs/MISSION_liquidate-regressions_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "liquidate-dto-contracts": {
+      "key": "liquidate-dto-contracts",
+      "title": "Implement DTO Contract Liquidation",
+      "type": "jules",
+      "instruction_raw": "Implement the fixes in BorrowerProfileDTO signature and Test Subscripting as defined in the SPEC. Run full finance unit tests to verify.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_liquidate-dto-contracts_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,
