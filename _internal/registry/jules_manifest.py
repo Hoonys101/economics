@@ -17,10 +17,28 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "fix-runtime-errors-only": {
-        "title": "Clear Runtime Errors (DTO Sync & GrantLoan Fix)",
+    "fix-dto-subscripting": {
+        "title": "Finance & Credit Purity Implementation",
         "command": "create",
-        "instruction": "Fix critical runtime errors to stabilize the engine: 1. Update 'tests/utils/factories.py' and any other test setups causing 'TypeError' in 'HouseholdConfigDTO' by adding the 3 missing arguments ('default_food_price_estimate', 'survival_budget_allocation', 'food_consumption_utility'). 2. Fix 'AttributeError: dict has no attribute loan_id' in 'Bank.grant_loan' by ensuring 'LoanInfoDTO' is handled as an object. 3. Verify with 'pytest' that the error count is 0 (Fails/Assertions should be ignored for now).",
+        "file": "design/3_work_artifacts/specs/MISSION_fix-dto-subscripting_SPEC.md",
+        "wait": True
+    },
+    "fix-firm-engine-logic": {
+        "title": "Firm Structure & Engine Implementation",
+        "command": "create",
+        "file": "design/3_work_artifacts/specs/MISSION_fix-firm-struct-and-engines_SPEC.md",
+        "wait": True
+    },
+    "fix-system-integrity": {
+        "title": "System Integrity & Registry Repair",
+        "command": "create",
+        "file": "design/3_work_artifacts/audits/MISSION_fix-system-integrity_AUDIT.md",
+        "wait": True
+    },
+    "fix-behavioral-scenarios": {
+        "title": "Behavioral Logic Re-Calibration",
+        "command": "create",
+        "file": "design/3_work_artifacts/audits/MISSION_fix-behavioral-scenarios_AUDIT.md",
         "wait": True
     }
 }

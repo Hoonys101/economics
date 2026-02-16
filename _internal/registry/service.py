@@ -10,12 +10,12 @@ from .api import IMissionRegistryService, MissionDTO, MissionType
 from .mission_protocol import construct_mission_prompt
 
 DB_PATH = Path("_internal/registry/mission_db.json")
-LOCK_PATH = Path("_internal/registry/mission.lock")
+# LOCK_PATH is now derived per-instance in MissionRegistryService
 
 class MissionLock:
-    def __init__(self, timeout: int = 10):
+    def __init__(self, lock_file: Path, timeout: int = 10):
+        self.lock_file = lock_file
         self.timeout = timeout
-        self.lock_file = LOCK_PATH
 
     def __enter__(self):
         start_time = time.time()
@@ -46,6 +46,7 @@ class MissionLock:
 class MissionRegistryService:
     def __init__(self, db_path: Path = DB_PATH):
         self.db_path = db_path
+        self.lock_path = db_path.with_suffix('.lock')
         # Ensure directory exists
         if not self.db_path.parent.exists():
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -87,7 +88,7 @@ class MissionRegistryService:
         return missions.get(key)
 
     def register_mission(self, mission: MissionDTO) -> None:
-        with MissionLock():
+        with MissionLock(self.lock_path):
             data = self._load_db()
 
             # Serialize DTO
@@ -101,7 +102,7 @@ class MissionRegistryService:
             self._save_db(data)
 
     def delete_mission(self, key: str) -> bool:
-        with MissionLock():
+        with MissionLock(self.lock_path):
             data = self._load_db()
             if "missions" in data and key in data["missions"]:
                 del data["missions"][key]
@@ -121,29 +122,8 @@ class MissionRegistryService:
         )
 
     def sync_to_legacy_json(self, target_path: Optional[Path] = None):
-        """
-        Exports current missions to command_registry.json for legacy tool compatibility.
-        """
-        target = target_path or Path("_internal/registry/command_registry.json")
-        missions = self.load_missions()
-        
-        # Format for command_registry.json
-        output_data = {
-            "_meta": {
-                "updated": time.strftime("%Y-%m-%dT%H:%M:%S")
-            }
-        }
-        
-        # Merge missions into root for legacy compatibility if needed, 
-        # or keep them under 'missions' key. 
-        # Based on launcher.py, it seems it expects missions in the registry.
-        for key, m in missions.items():
-            m_dict = asdict(m)
-            m_dict["type"] = m.type.value
-            output_data[key] = m_dict
-            
-        with open(target, 'w', encoding='utf-8') as f:
-            json.dump(output_data, f, indent=4)
+        """DEPRECATED: Legacy command_registry.json is no longer used."""
+        pass
 
     def migrate_from_registry_dir(self) -> int:
         """

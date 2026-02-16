@@ -23,5 +23,53 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "fix-dto-subscripting": {
+        "title": "Finance & Credit Purity Fix",
+        "worker": "spec",
+        "instruction": "Design the specific patches to fix DTO subscripting issues in Bank and Credit Scoring modules based on MISSION_fix-dto-subscripting_SPEC.md.",
+        "context_files": [
+            "design/3_work_artifacts/specs/MISSION_fix-dto-subscripting_SPEC.md",
+            "simulation/bank.py",
+            "modules/finance/credit_scoring.py",
+            "simulation/loan_market.py",
+            "tests/unit/finance/test_bank_service_interface.py"
+        ],
+        "model": "gemini-3-pro-preview"
+    },
+    "fix-firm-engine-logic": {
+        "title": "Firm Structure & Engine Repair",
+        "worker": "spec",
+        "instruction": "Analyze Firm agent decomposition and fix engine-level unit/type mismatches according to MISSION_fix-firm-struct-and-engines_SPEC.md.",
+        "context_files": [
+            "design/3_work_artifacts/specs/MISSION_fix-firm-struct-and-engines_SPEC.md",
+            "simulation/firms.py",
+            "simulation/decisions/ai_driven_firm_engine.py",
+            "tests/simulation/components/engines/test_asset_management_engine.py"
+        ],
+        "model": "gemini-3-pro-preview"
+    },
+    "fix-system-integrity": {
+        "title": "Registry & System Integrity Fix",
+        "worker": "reporter",
+        "instruction": "Investigate M2 leak (-100 mismatch) and Registry LOCK_PATH error as specified in MISSION_fix-system-integrity_SPEC.md.",
+        "context_files": [
+            "design/3_work_artifacts/specs/MISSION_fix-system-integrity_SPEC.md",
+            "_internal/registry/service.py",
+            "modules/government/components/monetary_ledger.py",
+            "tests/integration/test_m2_integrity.py"
+        ],
+        "model": "gemini-3-pro-preview"
+    },
+    "fix-behavioral-scenarios": {
+        "title": "Scenario & AI Behavior Alignment",
+        "worker": "audit",
+        "instruction": "Audit the breeding and survival override logic failures and propose calibration fixes per MISSION_fix-behavioral-scenarios_SPEC.md.",
+        "context_files": [
+            "design/3_work_artifacts/specs/MISSION_fix-behavioral-scenarios_SPEC.md",
+            "tests/integration/test_wo048_breeding.py",
+            "tests/unit/decisions/test_animal_spirits_phase2.py",
+            "simulation/ai/household_ai.py"
+        ],
+        "model": "gemini-3-pro-preview"
+    }
 }

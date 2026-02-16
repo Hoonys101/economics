@@ -1,0 +1,75 @@
+{
+  "_meta": {
+    "version": "1.0"
+  },
+  "missions": {
+    "fix-dto-subscripting": {
+      "key": "fix-dto-subscripting",
+      "title": "Finance & Credit Purity Implementation",
+      "type": "jules",
+      "instruction_raw": "",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_fix-dto-subscripting_SPEC.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "fix-firm-engine-logic": {
+      "key": "fix-firm-engine-logic",
+      "title": "Firm Structure & Engine Implementation",
+      "type": "jules",
+      "instruction_raw": "",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_fix-firm-struct-and-engines_SPEC.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "fix-system-integrity": {
+      "key": "fix-system-integrity",
+      "title": "System Integrity & Registry Repair",
+      "type": "jules",
+      "instruction_raw": "",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/audits/MISSION_fix-system-integrity_AUDIT.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "fix-behavioral-scenarios": {
+      "key": "fix-behavioral-scenarios",
+      "title": "Behavioral Logic Re-Calibration",
+      "type": "jules",
+      "instruction_raw": "",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/audits/MISSION_fix-behavioral-scenarios_AUDIT.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    }
+  }
+}
