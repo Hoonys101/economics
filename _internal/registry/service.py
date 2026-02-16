@@ -176,7 +176,7 @@ class MissionRegistryService:
                         title=m_data.get("title", key),
                         type=MissionType.JULES,
                         instruction_raw=m_data.get("instruction", ""),
-                        command=m_data.get("command"),
+                        command=m_data.get("command", "create"),
                         file_path=m_data.get("file"),
                         wait=m_data.get("wait", False),
                         session_id=m_data.get("session_id")
@@ -247,7 +247,7 @@ class MissionRegistryService:
                     title=m_data.get("title", key),
                     type=MissionType.JULES,
                     instruction_raw=m_data.get("instruction", ""),
-                    command=m_data.get("command"),
+                    command=m_data.get("command", "create"),
                     file_path=m_data.get("file"),
                     wait=m_data.get("wait", False),
                     session_id=m_data.get("session_id")

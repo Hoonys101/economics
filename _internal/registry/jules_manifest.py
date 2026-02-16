@@ -17,5 +17,14 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "jules_track_a": {
+        "title": "Phase 18 Agent Decomposition: Settlement & Logic",
+        "file": "design/3_work_artifacts/specs/RESOLUTION_STRATEGY_PHASE_18.md",
+        "instruction": "Implement Section 2 (Strict Integer Arithmetic) and Section 4 (Protocol Standardization) for Firm logic."
+    },
+    "jules_track_b": {
+        "title": "Phase 18 Infrastructure: Security Hardening",
+        "file": "design/3_work_artifacts/specs/RESOLUTION_STRATEGY_PHASE_18.md",
+        "instruction": "Implement Section 3 (Security Hardening) for SimulationServer and Config DTOs."
+    }
 }

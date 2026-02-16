@@ -116,6 +116,40 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "jules_track_a": {
+      "key": "jules_track_a",
+      "title": "Phase 18 Agent Decomposition: Settlement & Logic",
+      "type": "jules",
+      "instruction_raw": "Implement Section 2 (Strict Integer Arithmetic) and Section 4 (Protocol Standardization) for Firm logic.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/RESOLUTION_STRATEGY_PHASE_18.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "jules_track_b": {
+      "key": "jules_track_b",
+      "title": "Phase 18 Infrastructure: Security Hardening",
+      "type": "jules",
+      "instruction_raw": "Implement Section 3 (Security Hardening) for SimulationServer and Config DTOs.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/RESOLUTION_STRATEGY_PHASE_18.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }
