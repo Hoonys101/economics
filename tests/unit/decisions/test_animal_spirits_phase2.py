@@ -20,7 +20,7 @@ class TestHouseholdSurvivalOverride:
         config = MagicMock()
         config.survival_need_emergency_threshold = 0.8
         config.primary_survival_good_id = "food"
-        config.survival_bid_premium = 0.1
+        config.survival_bid_premium = 1
 
         household_state = MagicMock(spec=HouseholdStateDTO)
         household_state.id = 1
@@ -57,7 +57,7 @@ class TestHouseholdSurvivalOverride:
         assert len(orders) == 1
         assert orders[0].order_type == "BUY"
         assert orders[0].item_id == "food"
-        assert orders[0].price == 11.0 # 10.0 * 1.1
+        assert orders[0].price == 11.0 # 10.0 + 1.0
         assert orders[0].quantity == 1.0
 
     def test_survival_override_insufficient_funds(self, mock_household_engine):

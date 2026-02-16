@@ -86,7 +86,9 @@ class TestWO048Breeding(unittest.TestCase):
         # Testing Monthly 4,000 -> Hourly = 4000 / (8 * 20) = 25.0
         self.agent_data["current_wage"] = 25.0
 
-        with patch.object(config, 'TECH_CONTRACEPTION_ENABLED', True):
+        with patch.object(config, 'TECH_CONTRACEPTION_ENABLED', True), \
+             patch.object(config, 'OPPORTUNITY_COST_FACTOR', 0.1), \
+             patch.object(config, 'CHILD_MONTHLY_COST', 500.0):
             decision = self.ai.decide_reproduction(self.agent_data, self.market_data, self.current_time)
 
             # Debugging info if failed
