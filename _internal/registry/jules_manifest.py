@@ -17,14 +17,10 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "jules_track_a": {
-        "title": "Phase 18 Agent Decomposition: Settlement & Logic",
-        "file": "design/3_work_artifacts/specs/RESOLUTION_STRATEGY_PHASE_18.md",
-        "instruction": "Implement Section 2 (Strict Integer Arithmetic) and Section 4 (Protocol Standardization) for Firm logic."
-    },
-    "jules_track_b": {
-        "title": "Phase 18 Infrastructure: Security Hardening",
-        "file": "design/3_work_artifacts/specs/RESOLUTION_STRATEGY_PHASE_18.md",
-        "instruction": "Implement Section 3 (Security Hardening) for SimulationServer and Config DTOs."
+    "dto-api-repair": {
+        "title": "DTO & API Repair: Float Leakage & God Factory",
+        "command": "create",
+        "file": "design/3_work_artifacts/specs/MISSION_dto-api-repair_SPEC.md",
+        "instruction": "Execute the DTO and API repair as specified in the MISSION_dto-api-repair_SPEC.md. Secure the 'Integer Pennies' standard in Config DTOs and enforce IFirmStateProvider protocol in FirmStateDTO."
     }
 }

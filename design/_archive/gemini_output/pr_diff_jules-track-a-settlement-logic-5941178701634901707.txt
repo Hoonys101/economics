@@ -1,0 +1,852 @@
+diff --git a/communications/insights/jules_track_a.md b/communications/insights/jules_track_a.md
+new file mode 100644
+index 00000000..22b0a48b
+--- /dev/null
++++ b/communications/insights/jules_track_a.md
+@@ -0,0 +1,107 @@
++# Jules Track A: Phase 18 Agent Decomposition - Settlement & Logic
++
++## Architectural Insights
++
++### Initial Assessment
++- **God Classes Detected**:
++    - `simulation/firms.py`: 1362 lines
++    - `simulation/core_agents.py`: 1048 lines
++    - `simulation/systems/settlement_system.py`: 896 lines
++- **Discrepancy**: `PROJECT_STATUS.md` claims Phase 14 completed "Total Transition" of agents, but file sizes suggest otherwise. Phase 16.1 explicitly lists "Decomposing Firms/Households" as pending. I will proceed with decomposition.
++
++### Plan Execution
++1.  **SettlementSystem Cleanup**:
++    - Identified that `create_settlement` and `execute_settlement` methods in `SettlementSystem` were **DEAD CODE**.
++    - Evidence: `simulation/systems/inheritance_manager.py` explicitly states `TD-232: Removed execute_settlement as we dispatched transactions directly` and does not call these methods.
++    - Removed `create_settlement`, `execute_settlement`, `verify_and_close` and `LegacySettlementAccount` state.
++    - Removed `LegacySettlementAccount` DTO.
++
++2.  **Protocol Enforcement**:
++    - Refactored `SettlementSystem.audit_total_m2` and `_execute_withdrawal` to use `isinstance` with `@runtime_checkable` protocols (`IFinancialEntity`, `IFinancialAgent`, `IBank`, `ICurrencyHolder`) instead of `hasattr`.
++    - This enforces **Protocol Purity**.
++
++3.  **Test Cleanup**:
++    - Deleted `tests/integration/test_settlement_system_atomic.py` as it tested the obsolete `LegacySettlementAccount` mechanism.
++    - Updated `tests/unit/systems/test_settlement_system.py` to remove tests for deleted methods.
++    - Updated `tests/unit/systems/test_inheritance_manager.py` to remove unused mocks of `settlement_system.execute_settlement`.
++
++## Test Evidence
++
++### `pytest tests/unit/systems/test_settlement_system.py tests/unit/systems/test_inheritance_manager.py`
++
++```
++tests/unit/systems/test_settlement_system.py::test_transfer_success PASSED [  4%]
++tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_funds
++-------------------------------- live log call ---------------------------------
++ERROR    simulation.systems.settlement_system:settlement_system.py:207 SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 1. Cash: 10, Bank: 0, Total: 10. Required: 20. Memo: Test Fail
++PASSED                                                                   [  9%]
++tests/unit/systems/test_settlement_system.py::test_create_and_transfer_minting
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:settlement_system.py:491 MINT_AND_TRANSFER | Created 100 USD from 0 to 1. Reason: Minting
++PASSED                                                                   [ 14%]
++tests/unit/systems/test_settlement_system.py::test_create_and_transfer_government_grant PASSED [ 19%]
++tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_burning
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:settlement_system.py:533 TRANSFER_AND_DESTROY | Destroyed 50 USD from 1 to 0. Reason: Burning
++PASSED                                                                   [ 23%]
++tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_tax PASSED [ 28%]
++tests/unit/systems/test_settlement_system.py::test_record_liquidation
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:settlement_system.py:139 LIQUIDATION: Agent 1 liquidated. Inventory: 100, Capital: 50, Recovered: 20. Net Destruction: 130. Total Destroyed: 130. Reason: Bankruptcy
++INFO     simulation.systems.settlement_system:settlement_system.py:139 LIQUIDATION: Agent 1 liquidated. Inventory: 10, Capital: 0, Recovered: 0. Net Destruction: 10. Total Destroyed: 140. Reason: More Loss
++PASSED                                                                   [ 33%]
++tests/unit/systems/test_settlement_system.py::test_record_liquidation_escheatment
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:settlement_system.py:139 LIQUIDATION: Agent 1 liquidated. Inventory: 10, Capital: 10, Recovered: 0. Net Destruction: 20. Total Destroyed: 20. Reason: Escheatment Test
++PASSED                                                                   [ 38%]
++tests/unit/systems/test_settlement_system.py::test_transfer_rollback
++-------------------------------- live log call ---------------------------------
++ERROR    simulation.systems.settlement_system:settlement_system.py:439 SETTLEMENT_ROLLBACK | Deposit failed for 2. Rolling back withdrawal of 20 from 1. Error: Deposit Failed
++INFO     simulation.systems.settlement_system:settlement_system.py:447 SETTLEMENT_ROLLBACK_SUCCESS | Rolled back 20 to 1.
++PASSED                                                                   [ 42%]
++tests/unit/systems/test_settlement_system.py::test_transfer_seamless_success
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:settlement_system.py:254 SEAMLESS_PAYMENT | Agent 1 paid 50 using 10 cash and 40 from bank.
++PASSED                                                                   [ 47%]
++tests/unit/systems/test_settlement_system.py::test_transfer_seamless_fail_bank
++-------------------------------- live log call ---------------------------------
++ERROR    simulation.systems.settlement_system:settlement_system.py:207 SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for 1. Cash: 10, Bank: 10, Total: 20. Required: 50. Memo: Seamless Fail
++PASSED                                                                   [ 52%]
++tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_success PASSED [ 57%]
++tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_rollback
++-------------------------------- live log call ---------------------------------
++ERROR    simulation.systems.settlement_system:settlement_system.py:207 SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for B. Cash: 150, Bank: 0, Total: 150. Required: 200. Memo: multiparty_seq_1
++WARNING  simulation.systems.settlement_system:settlement_system.py:291 MULTIPARTY_FAIL | Transfer 1 failed (B -> C). Rolling back 1 previous transfers.
++PASSED                                                                   [ 61%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_success PASSED [ 66%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_rollback
++-------------------------------- live log call ---------------------------------
++ERROR    simulation.systems.settlement_system:settlement_system.py:207 SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for A. Cash: 90, Bank: 0, Total: 90. Required: 100. Memo: atomic_batch_2_txs
++PASSED                                                                   [ 71%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_credit_fail_rollback
++-------------------------------- live log call ---------------------------------
++ERROR    simulation.systems.settlement_system:settlement_system.py:355 SETTLEMENT_ROLLBACK | Deposit failed for B. Rolling back atomic batch. Error: Deposit Fail
++PASSED                                                                   [ 76%]
++tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_distribution_transaction_generation
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.inheritance_manager:inheritance_manager.py:49 INHERITANCE_START | Processing death for Household 1. Assets: 10000.00
++PASSED                                                                   [ 80%]
++tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_multiple_heirs_metadata
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.inheritance_manager:inheritance_manager.py:49 INHERITANCE_START | Processing death for Household 1. Assets: 100.00
++PASSED                                                                   [ 85%]
++tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_escheatment_when_no_heirs
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.inheritance_manager:inheritance_manager.py:49 INHERITANCE_START | Processing death for Household 1. Assets: 1000.00
++PASSED                                                                   [ 90%]
++tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_zero_assets_distribution
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.inheritance_manager:inheritance_manager.py:49 INHERITANCE_START | Processing death for Household 1. Assets: 0.00
++PASSED                                                                   [ 95%]
++tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_tax_transaction_generation
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.inheritance_manager:inheritance_manager.py:49 INHERITANCE_START | Processing death for Household 1. Assets: 1000.00
++PASSED                                                                   [100%]
++
++============================== 21 passed in 0.83s ==============================
++```
+diff --git a/simulation/dtos/settlement_dtos.py b/simulation/dtos/settlement_dtos.py
+index 45e85fe7..d1652353 100644
+--- a/simulation/dtos/settlement_dtos.py
++++ b/simulation/dtos/settlement_dtos.py
+@@ -1,23 +1,5 @@
+-from dataclasses import dataclass, field
+-from typing import Dict, List, Any, Optional
+-from modules.finance.api import PortfolioDTO
+-
+-@dataclass
+-class LegacySettlementAccount:
+-    """
+-    TD-160: Transient escrow account for atomic inheritance resolution.
+-    Holds assets of a deceased agent during the settlement process.
+-    MIGRATION: Monetary values are integers (pennies).
+-    """
+-    deceased_agent_id: int
+-    escrow_cash: int
+-    escrow_portfolio: PortfolioDTO  # Structurally holds all non-cash assets
+-    escrow_real_estate: List[Any]  # List of RealEstateUnit objects
+-    status: str  # OPEN, PROCESSING, CLOSED, ERROR
+-    created_at: int
+-    heir_id: Optional[int] = None
+-    metadata: Dict[str, Any] = field(default_factory=dict)
+-    is_escheatment: bool = False
++from dataclasses import dataclass
++from typing import Any, Optional
+ 
+ @dataclass
+ class SettlementResultDTO:
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index 3b85fe85..ab6eb4ff 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -9,8 +9,7 @@ from modules.finance.api import (
+     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID,
+     IMonetaryAuthority
+ )
+-from simulation.dtos.settlement_dtos import LegacySettlementAccount
+-from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder
++from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry
+ from modules.system.constants import ID_CENTRAL_BANK
+ from modules.market.housing_planner_api import MortgageApplicationDTO
+ from simulation.models import Transaction
+@@ -36,8 +35,7 @@ class SettlementSystem(IMonetaryAuthority):
+         self.logger = logger if logger else logging.getLogger(__name__)
+         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
+         self.total_liquidation_losses: int = 0
+-        self.settlement_accounts: Dict[int, LegacySettlementAccount] = {} # TD-160
+-        self.agent_registry: Optional[Any] = None # Injected by SimulationInitializer
++        self.agent_registry: Optional[IAgentRegistry] = None # Injected by SimulationInitializer
+ 
+         # TD-INT-STRESS-SCALE: Reverse Index for Bank Accounts
+         # BankID -> Set[AgentID]
+@@ -106,230 +104,13 @@ class SettlementSystem(IMonetaryAuthority):
+         self.logger.warning(f"get_balance: Agent {agent_id} not found or Registry not linked or Agent not IFinancialAgent.")
+         return 0
+ 
+-    def create_settlement(
+-        self,
+-        agent: Any, # IPortfolioHandler & IHeirProvider & IFinancialAgent
+-        tick: int
+-    ) -> LegacySettlementAccount:
+-        """
+-        TD-160: Initiates the settlement process by creating an escrow account.
+-        Atomically transfers all assets (Cash + Portfolio) from the agent to the escrow.
+-        """
+-        agent_id = agent.id
+-
+-        # 1. Atomic Transfer: Portfolio
+-        if isinstance(agent, IPortfolioHandler):
+-            portfolio_dto = agent.get_portfolio()
+-            agent.clear_portfolio()
+-        else:
+-            # Fallback for non-compliant agents (should not happen with new Households)
+-            portfolio_dto = PortfolioDTO(assets=[])
+-            self.logger.warning(f"Agent {agent_id} does not implement IPortfolioHandler. Portfolio not captured.")
+-
+-        # 2. Atomic Transfer: Cash
+-        # IFinancialAgent protocol enforcement (was agent.assets)
+-        cash_balance = 0
+-        if isinstance(agent, IFinancialEntity):
+-            cash_balance = agent.balance_pennies
+-        elif isinstance(agent, IFinancialAgent):
+-            cash_balance = agent.get_balance(DEFAULT_CURRENCY)
+-
+-        if cash_balance > 0:
+-            if isinstance(agent, IFinancialEntity):
+-                agent.withdraw(cash_balance, currency=DEFAULT_CURRENCY)
+-            elif isinstance(agent, IFinancialAgent):
+-                agent._withdraw(cash_balance)
+-
+-        # 3. Determine Heir / Escheatment
+-        heir_id = None
+-        is_escheatment = True
+-
+-        if isinstance(agent, IHeirProvider):
+-            heir_id = agent.get_heir()
+-            if heir_id is not None:
+-                is_escheatment = False
+-
+-        account = LegacySettlementAccount(
+-            deceased_agent_id=agent_id,
+-            escrow_cash=cash_balance,
+-            escrow_portfolio=portfolio_dto,
+-            escrow_real_estate=[], # Placeholder
+-            status="OPEN",
+-            created_at=tick,
+-            heir_id=heir_id,
+-            is_escheatment=is_escheatment
+-        )
+-        self.settlement_accounts[agent_id] = account
+-
+-        self.logger.info(
+-            f"SETTLEMENT_CREATED | Escrow account created for Agent {agent_id}. Cash: {cash_balance}. Portfolio items: {len(portfolio_dto.assets)}. Heir: {heir_id if heir_id else 'NONE (Escheatment)'}",
+-            extra={"tick": tick, "agent_id": agent_id, "tags": ["settlement", "inheritance", "atomic"]}
+-        )
+-        return account
+-
+-    def execute_settlement(
+-        self,
+-        account_id: int,
+-        distribution_plan: List[Tuple[Any, int, str, str]], # (Recipient, Amount, Memo, TxType)
+-        tick: int
+-    ) -> List[ITransaction]:
+-        """
+-        TD-160: Executes the distribution of assets from the escrow account.
+-        Returns a list of executed transactions (receipts).
+-        """
+-        if account_id not in self.settlement_accounts:
+-            self.logger.error(f"SETTLEMENT_FAIL | Account {account_id} not found.")
+-            return []
+-
+-        account = self.settlement_accounts[account_id]
+-        if account.status != "OPEN":
+-            self.logger.error(f"SETTLEMENT_FAIL | Account {account_id} is not OPEN. Status: {account.status}")
+-            return []
+-
+-        account.status = "PROCESSING"
+-        transactions: List[ITransaction] = []
+-
+-        # --- 1. Portfolio Distribution (Priority) ---
+-        portfolio_transferred = False
+-        if account.escrow_portfolio.assets:
+-            # Attempt to find the correct recipient in the plan
+-            # If escheatment -> Government
+-            # If inheritance -> Heir (heir_id)
+-
+-            recipient_candidate = None
+-
+-            for recipient, _, _, _ in distribution_plan:
+-                # Check for Government (Escheatment)
+-                if account.is_escheatment:
+-                    # Heuristic: Check for Government protocol
+-                    if isinstance(recipient, IGovernment):
+-                        recipient_candidate = recipient
+-                        break
+-
+-                # Check for Heir
+-                else:
+-                    if recipient.id == account.heir_id:
+-                        recipient_candidate = recipient
+-                        break
+-
+-            if recipient_candidate and isinstance(recipient_candidate, IPortfolioHandler):
+-                recipient_candidate.receive_portfolio(account.escrow_portfolio)
+-                # Clear from escrow to prevent leak/duplication (Reassign to empty DTO to preserve passed reference)
+-                account.escrow_portfolio = PortfolioDTO(assets=[])
+-                portfolio_transferred = True
+-                self.logger.info(
+-                    f"PORTFOLIO_TRANSFER | Transferred portfolio to {recipient_candidate.id}",
+-                    extra={"tick": tick, "agent_id": account.deceased_agent_id}
+-                )
+-            else:
+-                self.logger.error(
+-                    f"PORTFOLIO_TRANSFER_FAIL | Could not find valid IPortfolioHandler recipient for {'Escheatment' if account.is_escheatment else f'Heir {account.heir_id}'}",
+-                    extra={"tick": tick, "agent_id": account.deceased_agent_id}
+-                )
+-
+-        # --- 2. Cash Distribution ---
+-        total_distributed = 0
+-
+-        for recipient, amount, memo, tx_type in distribution_plan:
+-            if not isinstance(amount, int):
+-                 raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)} in distribution plan.")
+-
+-            if amount <= 0:
+-                continue
+-
+-            # Strict Integer Check
+-            if total_distributed + amount > account.escrow_cash:
+-                 self.logger.critical(
+-                     f"SETTLEMENT_OVERDRAFT | Attempted to distribute more than escrow! "
+-                     f"Escrow: {account.escrow_cash}, Distributed: {total_distributed}, Requested: {amount}",
+-                     extra={"tick": tick, "agent_id": account_id}
+-                 )
+-                 continue
+-
+-            try:
+-                # Direct Deposit (Source is Void/Escrow)
+-                if isinstance(recipient, IFinancialEntity):
+-                    recipient.deposit(amount)
+-                elif isinstance(recipient, IFinancialAgent):
+-                    recipient._deposit(amount)
+-                else:
+-                     raise TypeError(f"Recipient {recipient.id} is not a valid financial agent.")
+-
+-                total_distributed += amount
+-
+-                # Create Receipt
+-                tx = self._create_transaction_record(
+-                    buyer_id=recipient.id, # Recipient
+-                    seller_id=account.deceased_agent_id, # Deceased
+-                    amount=amount,
+-                    memo=memo,
+-                    tick=tick
+-                )
+-                tx.transaction_type = tx_type
+-                if tx.metadata is None:
+-                    tx.metadata = {}
+-                tx.metadata["executed"] = True
+-                transactions.append(tx)
+-
+-            except Exception as e:
+-                self.logger.error(f"SETTLEMENT_DISTRIBUTION_FAIL | Failed to pay {recipient.id}. {e}")
+-
+-        # Update Account
+-        account.escrow_cash -= total_distributed
+-        # No float tolerance needed for int
+-
+-        return transactions
+-
+     def get_assets_by_currency(self) -> Dict[str, int]:
+         """
+         Implements ICurrencyHolder for M2 verification.
+         Returns total cash held in escrow accounts.
+         """
+-        total = 0
+-        for acc in self.settlement_accounts.values():
+-            # Count all cash in the system regardless of status, as it is withdrawn from circulation
+-            total += acc.escrow_cash
+-        return {DEFAULT_CURRENCY: total}
+-
+-    def verify_and_close(self, account_id: int, tick: int) -> bool:
+-        """
+-        TD-160: Verifies zero balance and closes the account.
+-        """
+-        if account_id not in self.settlement_accounts:
+-            return False
+-
+-        account = self.settlement_accounts[account_id]
+-
+-        has_error = False
+-
+-        # 1. Cash Check
+-        if account.escrow_cash != 0:
+-            self.logger.warning(
+-                f"SETTLEMENT_LEAK | Account {account_id} closed with remaining cash: {account.escrow_cash}. Burning it.",
+-                extra={"tick": tick, "agent_id": account_id}
+-            )
+-            account.escrow_cash = 0
+-            has_error = True
+-
+-        # 2. Portfolio Check (TD-160)
+-        if account.escrow_portfolio and account.escrow_portfolio.assets:
+-             self.logger.warning(
+-                f"SETTLEMENT_LEAK | Account {account_id} closed with remaining PORTFOLIO ASSETS: {len(account.escrow_portfolio.assets)} items.",
+-                extra={"tick": tick, "agent_id": account_id}
+-             )
+-             # Logic to burn/destroy portfolio assets? Just log for now.
+-             has_error = True
+-
+-        if has_error:
+-            account.status = "CLOSED_WITH_LEAK"
+-            return False
+-
+-        account.status = "CLOSED"
+-        self.logger.info(
+-            f"SETTLEMENT_CLOSED | Account {account_id} closed successfully.",
+-            extra={"tick": tick, "agent_id": account_id}
+-        )
+-        return True
++        # Since settlement_accounts are removed, SettlementSystem holds 0 assets.
++        return {DEFAULT_CURRENCY: 0}
+ 
+     def record_liquidation(
+         self,
+@@ -411,7 +192,7 @@ class SettlementSystem(IMonetaryAuthority):
+         elif isinstance(agent, IFinancialAgent):
+             current_cash = agent.get_balance(currency)
+         elif isinstance(agent, ICurrencyHolder):
+-             # Fallback if agent is ICurrencyHolder but not IFinancialAgent (unlikely now)
++             # Fallback if agent is ICurrencyHolder but not IFinancialAgent
+              current_cash = agent.get_assets_by_currency().get(currency, 0)
+ 
+         if current_cash < amount:
+@@ -631,8 +412,8 @@ class SettlementSystem(IMonetaryAuthority):
+              return None
+ 
+         # VALIDATION (Tech Debt Fix: Null IDs)
+-        debit_id = getattr(debit_agent, 'id', None)
+-        credit_id = getattr(credit_agent, 'id', None)
++        debit_id = debit_agent.id
++        credit_id = credit_agent.id
+ 
+         if debit_id is None or credit_id is None:
+              self.logger.critical(
+@@ -830,10 +611,11 @@ class SettlementSystem(IMonetaryAuthority):
+              self.logger.critical("AUDIT_FAIL | Agent registry not linked.")
+              return False
+ 
+-        # Use the enhanced registry method
+-        if not hasattr(self.agent_registry, "get_all_financial_agents"):
+-             self.logger.critical("AUDIT_FAIL | Agent registry does not support get_all_financial_agents.")
+-             return False
++        # Use the enhanced registry method (IAgentRegistry assumption via typing)
++        # Removed hasattr check for get_all_financial_agents as strict typing implies it should exist if valid registry.
++        # But for runtime safety with "Any", we might want to keep it or just try.
++        # Given mandates, I'll rely on correct registry injection.
++        # If registry is invalid, it will raise AttributeError, which is fine for "Protocol Enforcement".
+ 
+         agents = self.agent_registry.get_all_financial_agents()
+         total_cash = 0
+@@ -853,9 +635,10 @@ class SettlementSystem(IMonetaryAuthority):
+                 current_balance = agent.balance_pennies
+             elif isinstance(agent, IFinancialAgent):
+                 current_balance = agent.get_balance(DEFAULT_CURRENCY)
+-            elif hasattr(agent, "get_assets_by_currency"):
+-                assets = agent.get_assets_by_currency()
+-                current_balance = assets.get(DEFAULT_CURRENCY, 0)
++            elif isinstance(agent, ICurrencyHolder):
++                 # Protocol Fallback
++                 assets = agent.get_assets_by_currency()
++                 current_balance = assets.get(DEFAULT_CURRENCY, 0)
+ 
+             total_cash += current_balance
+ 
+@@ -864,22 +647,11 @@ class SettlementSystem(IMonetaryAuthority):
+             if isinstance(agent, IBank):
+                 bank_reserves += current_balance
+                 total_deposits += agent.get_total_deposits()
+-            elif hasattr(agent, '__class__') and agent.__class__.__name__ == "Bank":
+-                # Fallback for legacy bank not implementing IBank properly
+-                bank_reserves += current_balance
+-                if hasattr(agent, 'get_total_deposits'):
+-                    total_deposits += agent.get_total_deposits()
+-                elif hasattr(agent, 'deposits') and isinstance(agent.deposits, dict):
+-                     # Legacy Bank support
+-                     total_deposits += sum(d.amount for d in agent.deposits.values() if hasattr(d, 'amount'))
+-
+-        # Include escrow accounts (considered removed from circulation until settled, but part of system total)
+-        # Escrow is effectively "Cash in Limbo".
+-        escrow_cash = sum(acc.escrow_cash for acc in self.settlement_accounts.values())
+ 
+-        # M2 = (Total Cash - Bank Reserves) + Total Deposits + Escrow
++        # M2 = (Total Cash - Bank Reserves) + Total Deposits
+         # Currency in Circulation = Total Cash - Bank Reserves
+-        total_m2 = (total_cash - bank_reserves) + total_deposits + escrow_cash
++        # Removed Escrow (TD-232 Cleanup)
++        total_m2 = (total_cash - bank_reserves) + total_deposits
+ 
+         if expected_total is not None:
+             if total_m2 != expected_total:
+diff --git a/tests/integration/test_settlement_system_atomic.py b/tests/integration/test_settlement_system_atomic.py
+deleted file mode 100644
+index cda90048..00000000
+--- a/tests/integration/test_settlement_system_atomic.py
++++ /dev/null
+@@ -1,190 +0,0 @@
+-import pytest
+-from unittest.mock import MagicMock
+-from simulation.systems.settlement_system import SettlementSystem
+-from modules.finance.api import (
+-    PortfolioDTO, PortfolioAsset, IFinancialAgent, IPortfolioHandler,
+-    IHeirProvider
+-)
+-from simulation.core_agents import Household
+-from simulation.agents.government import Government
+-
+-class MockSettlementAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
+-    pass
+-
+-# Scenario 1: Standard Inheritance (Cash + Portfolio)
+-def test_settlement_scenario_1_standard_inheritance(settlement_system, golden_households, government):
+-    if not golden_households:
+-        pytest.skip("No golden households found. Please generate fixtures.")
+-
+-    deceased = MagicMock(spec=MockSettlementAgent)
+-    heir = MagicMock(spec=MockSettlementAgent)
+-
+-    # Setup Deceased Agent
+-    deceased.id = 101
+-
+-    portfolio_dto = PortfolioDTO(assets=[
+-        PortfolioAsset(asset_type="stock", asset_id="999", quantity=10.0)
+-    ])
+-
+-    # Setup Heir
+-    heir.id = 102
+-    heir.get_portfolio = MagicMock()
+-    heir.clear_portfolio = MagicMock()
+-    heir.receive_portfolio = MagicMock()
+-    heir.deposit = MagicMock()
+-    heir._deposit = MagicMock() # For IFinancialAgent
+-
+-    # Patch Deceased
+-    deceased.get_portfolio = MagicMock(return_value=portfolio_dto)
+-    deceased.clear_portfolio = MagicMock()
+-    deceased.receive_portfolio = MagicMock()
+-    deceased.get_heir = MagicMock(return_value=heir.id)
+-    deceased.withdraw = MagicMock()
+-    deceased._withdraw = MagicMock() # For IFinancialAgent
+-    # Mock get_balance for IFinancialAgent compliance
+-    deceased.get_balance = MagicMock(return_value=1000)
+-
+-    # Run Create
+-    account = settlement_system.create_settlement(deceased, tick=100)
+-
+-    assert account.escrow_cash == 1000
+-    assert len(account.escrow_portfolio.assets) == 1
+-    assert account.heir_id == heir.id
+-    assert not account.is_escheatment
+-
+-    # Execute
+-    distribution_plan = [(heir, 1000, "inheritance", "transfer")]
+-    settlement_system.execute_settlement(deceased.id, distribution_plan, tick=101)
+-
+-    # Verify
+-    heir.receive_portfolio.assert_called_once()
+-    # Verify portfolio passed matches
+-    received_dto = heir.receive_portfolio.call_args[0][0]
+-    assert received_dto.assets[0].asset_id == "999"
+-    assert received_dto.assets[0].quantity == 10.0
+-
+-    # Check _deposit (IFinancialAgent)
+-    heir._deposit.assert_called_with(1000)
+-
+-    # Close
+-    success = settlement_system.verify_and_close(deceased.id, tick=102)
+-    assert success
+-    assert settlement_system.settlement_accounts[deceased.id].status == "CLOSED"
+-
+-# Scenario 2: Escheatment (No Heir)
+-def test_settlement_scenario_2_escheatment(settlement_system, golden_households, government):
+-    if not golden_households:
+-        pytest.skip("No golden households found")
+-
+-    deceased = MagicMock(spec=MockSettlementAgent)
+-    deceased.id = 201
+-
+-    portfolio_dto = PortfolioDTO(assets=[
+-        PortfolioAsset(asset_type="stock", asset_id="123", quantity=50.0)
+-    ])
+-
+-    deceased.get_portfolio = MagicMock(return_value=portfolio_dto)
+-    deceased.clear_portfolio = MagicMock()
+-    deceased.receive_portfolio = MagicMock()
+-    deceased.get_heir = MagicMock(return_value=None)
+-    deceased.withdraw = MagicMock()
+-    deceased._withdraw = MagicMock()
+-    deceased.get_balance = MagicMock(return_value=1000)
+-
+-    # Mock Government behavior (spy/mock)
+-    # Government fixture is a real object with mocked deps.
+-    # We want to verify it receives portfolio.
+-    # Government implements receive_portfolio (which adds to self.portfolio).
+-    # We can check self.portfolio after.
+-    # But government in fixture has id=1.
+-    government.id = 1
+-    # Clear gov portfolio first
+-    government.portfolio.holdings.clear()
+-
+-    # Setup Registry for SettlementSystem
+-    registry = MagicMock()
+-    registry.get_agent.side_effect = lambda aid: government if aid == government.id else None
+-    settlement_system.agent_registry = registry
+-
+-    initial_balance = settlement_system.get_balance(government.id)
+-
+-    # Run Create
+-    account = settlement_system.create_settlement(deceased, tick=200)
+-
+-    assert account.is_escheatment
+-    assert account.heir_id is None
+-
+-    # Execute
+-    # Gov gets everything
+-    distribution_plan = [(government, 1000, "escheatment", "transfer")]
+-    settlement_system.execute_settlement(deceased.id, distribution_plan, tick=201)
+-
+-    # Verify Cash
+-    # Gov deposit increases assets. But gov fixture assets logic is tricky?
+-    # Government._add_assets is internal. deposit calls _assets += amount.
+-    # We can check verify call or just trust it.
+-
+-    # Verify Portfolio
+-    # Government should have received the assets
+-    assert 123 in government.portfolio.holdings
+-    assert government.portfolio.holdings[123].quantity == 50.0
+-
+-    # Verify Cash via SettlementSystem (SSoT)
+-    assert settlement_system.get_balance(government.id) == initial_balance + 1000
+-
+-    # Close
+-    success = settlement_system.verify_and_close(deceased.id, tick=202)
+-    assert success
+-
+-# Scenario 3: Insolvency (Cash < Claims)
+-def test_settlement_scenario_3_insolvency(settlement_system, golden_households, government):
+-    if not golden_households:
+-        pytest.skip("No golden households found")
+-
+-    deceased = MagicMock(spec=MockSettlementAgent)
+-    deceased.id = 301
+-
+-    portfolio_dto = PortfolioDTO(assets=[])
+-
+-    deceased.get_portfolio = MagicMock(return_value=portfolio_dto)
+-    deceased.clear_portfolio = MagicMock()
+-    deceased.receive_portfolio = MagicMock()
+-    deceased.get_heir = MagicMock(return_value=None)
+-    deceased.withdraw = MagicMock()
+-    deceased._withdraw = MagicMock()
+-    deceased.get_balance = MagicMock(return_value=100)
+-
+-    account = settlement_system.create_settlement(deceased, tick=300)
+-
+-    # Plan: Creditor wants 200, but we can only pay 100.
+-    # The PLAN must reflect reality (LiquidationManager responsibility).
+-    # But here we simulate that the plan is correctly capped at 100.
+-    # And verifying SettlementSystem processes it cleanly.
+-
+-    distribution_plan = [(government, 100, "tax", "transfer")]
+-
+-    settlement_system.execute_settlement(deceased.id, distribution_plan, tick=301)
+-
+-    assert account.escrow_cash == 0
+-    success = settlement_system.verify_and_close(deceased.id, tick=302)
+-    assert success
+-
+-    # Test Overdraft Protection
+-    # If we tried to pay 101...
+-    # Reset mock for new call
+-    deceased.get_balance = MagicMock(return_value=100)
+-    deceased._withdraw = MagicMock()
+-
+-    account_fail = settlement_system.create_settlement(deceased, tick=310)
+-    plan_fail = [(government, 101, "tax", "transfer")]
+-
+-    # Capture logs?
+-    settlement_system.execute_settlement(deceased.id, plan_fail, tick=311)
+-
+-    # Cash should remain 100 because transfer rejected
+-    assert account_fail.escrow_cash == 100
+-
+-    # Close fails because cash remains
+-    success = settlement_system.verify_and_close(deceased.id, tick=312)
+-    assert not success
+-    assert account_fail.status == "CLOSED_WITH_LEAK"
+diff --git a/tests/unit/systems/test_inheritance_manager.py b/tests/unit/systems/test_inheritance_manager.py
+index e8090033..f8953be9 100644
+--- a/tests/unit/systems/test_inheritance_manager.py
++++ b/tests/unit/systems/test_inheritance_manager.py
+@@ -54,20 +54,6 @@ class TestInheritanceManager:
+ 
+         mocks.agents = {2: heir1, 3: heir2}
+ 
+-        # Mock Settlement System Receipts
+-        mocks.settlement_system.execute_settlement.return_value = [
+-            {
+-                "buyer_id": 1, "seller_id": 2, "item_id": "inheritance_distribution",
+-                "quantity": 1.0, "price": 5000.0, "market_id": "system",
+-                "transaction_type": "inheritance_distribution", "time": 0, "metadata": {"heir_ids": [2, 3]}
+-            },
+-            {
+-                "buyer_id": 1, "seller_id": 3, "item_id": "inheritance_distribution",
+-                "quantity": 1.0, "price": 5000.0, "market_id": "system",
+-                "transaction_type": "inheritance_distribution", "time": 0, "metadata": {"heir_ids": [2, 3]}
+-            }
+-        ]
+-
+         txs = setup_manager.process_death(deceased, mocks.government, mocks)
+ 
+         # Check for distribution tx
+@@ -87,15 +73,6 @@ class TestInheritanceManager:
+         deceased._bio_state.children_ids = [2, 3, 4]
+         mocks.agents = {2: heir1, 3: heir2, 4: heir3}
+ 
+-        # Mock Settlement System Receipts
+-        mocks.settlement_system.execute_settlement.return_value = [
+-            {
+-                "buyer_id": 1, "seller_id": 2, "item_id": "inheritance_distribution",
+-                "quantity": 1.0, "price": 33.33, "market_id": "system",
+-                "transaction_type": "inheritance_distribution", "time": 0, "metadata": {"heir_ids": [2, 3, 4]}
+-            }
+-        ]
+-
+         txs = setup_manager.process_death(deceased, mocks.government, mocks)
+ 
+         dist_tx = next((t for t in txs if t.transaction_type == "inheritance_distribution"), None)
+@@ -139,15 +116,6 @@ class TestInheritanceManager:
+         deceased._bio_state.children_ids = [2]
+         mocks.agents = {2: heir1}
+ 
+-        # Mock Settlement System Receipts
+-        mocks.settlement_system.execute_settlement.return_value = [
+-            {
+-                "buyer_id": 1, "seller_id": mocks.government.id, "item_id": "inheritance_tax",
+-                "quantity": 1.0, "price": 500.0, "market_id": "system",
+-                "transaction_type": "tax", "time": 0, "metadata": {}
+-            }
+-        ]
+-
+         txs = setup_manager.process_death(deceased, mocks.government, mocks)
+ 
+         tax_tx = next((t for t in txs if t.transaction_type == "tax"), None)
+diff --git a/tests/unit/systems/test_settlement_system.py b/tests/unit/systems/test_settlement_system.py
+index ba8fccf0..a2a299d3 100644
+--- a/tests/unit/systems/test_settlement_system.py
++++ b/tests/unit/systems/test_settlement_system.py
+@@ -236,68 +236,6 @@ def test_transfer_rollback(settlement_system):
+     assert sender.assets == 100
+     assert receiver.assets == 50
+ 
+-def test_atomic_settlement_success(settlement_system):
+-    deceased_id = 101
+-    deceased_agent = MockAgent(deceased_id, 500)
+-    heir1 = MockAgent(201, 100)
+-    heir2 = MockAgent(202, 50)
+-
+-    account = settlement_system.create_settlement(deceased_agent, tick=1)
+-
+-    assert account.status == "OPEN"
+-    assert account.escrow_cash == 500
+-
+-    plan = [
+-        (heir1, 250, "Split 1", "inheritance"),
+-        (heir2, 250, "Split 2", "inheritance")
+-    ]
+-
+-    receipts = settlement_system.execute_settlement(deceased_id, plan, tick=2)
+-
+-    assert len(receipts) == 2
+-    assert receipts[0].quantity == 250
+-    assert heir1.assets == 350
+-    assert heir2.assets == 300
+-    assert account.escrow_cash == 0
+-
+-    success = settlement_system.verify_and_close(deceased_id, tick=3)
+-    assert success is True
+-    assert account.status == "CLOSED"
+-
+-def test_atomic_settlement_leak_prevention(settlement_system):
+-    deceased_id = 102
+-    deceased_agent = MockAgent(deceased_id, 100)
+-    heir = MockAgent(203, 0)
+-
+-    account = settlement_system.create_settlement(deceased_agent, 1)
+-
+-    plan = [(heir, 90, "Partial", "inheritance")]
+-    settlement_system.execute_settlement(deceased_id, plan, 1)
+-
+-    assert heir.assets == 90
+-    assert account.escrow_cash == 10
+-
+-    success = settlement_system.verify_and_close(deceased_id, 1)
+-
+-    assert success is False
+-    assert account.status == "CLOSED_WITH_LEAK"
+-    assert account.escrow_cash == 0
+-
+-def test_atomic_settlement_overdraft_protection(settlement_system):
+-    deceased_id = 103
+-    deceased_agent = MockAgent(deceased_id, 100)
+-    heir = MockAgent(204, 0)
+-
+-    account = settlement_system.create_settlement(deceased_agent, 1)
+-
+-    plan = [(heir, 150, "Overdraft", "inheritance")]
+-    receipts = settlement_system.execute_settlement(deceased_id, plan, 1)
+-
+-    assert len(receipts) == 0
+-    assert heir.assets == 0
+-    assert account.escrow_cash == 100
+-
+-
+ # --- NEW TESTS BELOW ---
+ 
+ def test_transfer_seamless_success(settlement_system, mock_bank):
+@@ -413,49 +351,3 @@ def test_settle_atomic_credit_fail_rollback(settlement_system):
+     assert success is False
+     assert agent_a.assets == 100 # Refunded
+     assert agent_b.assets == 0
+-
+-def test_inheritance_portfolio_transfer(settlement_system):
+-    heir_id = 900
+-    deceased = MockAgent(100, 0, heir_id=heir_id)
+-    deceased.portfolio.assets.append(PortfolioAsset(asset_type="stock", asset_id="TEST", quantity=10))
+-
+-    heir = MockAgent(heir_id, 0)
+-
+-    # 1. Create
+-    account = settlement_system.create_settlement(deceased, 1)
+-    assert len(account.escrow_portfolio.assets) == 1
+-    assert len(deceased.portfolio.assets) == 0 # Moved to escrow
+-
+-    # 2. Execute (Heir is recipient)
+-    plan = [(heir, 0, "Portfolio Transfer", "inheritance")]
+-    settlement_system.execute_settlement(100, plan, 2)
+-
+-    assert len(heir.portfolio.assets) == 1
+-    assert heir.portfolio.assets[0].asset_id == "TEST"
+-    assert len(account.escrow_portfolio.assets) == 0
+-
+-def test_escheatment_portfolio_transfer(settlement_system):
+-    deceased = MockAgent(100, 0, heir_id=None) # No heir
+-    deceased.portfolio.assets.append(PortfolioAsset(asset_type="bond", asset_id="GOV_TEST", quantity=5))
+-
+-    # Mock Government with required IGovernment fields
+-    class MockGovernment(MockAgent):
+-        def __init__(self, agent_id, assets=0):
+-            super().__init__(agent_id, assets)
+-            self.expenditure_this_tick = 0
+-            self.revenue_this_tick = 0
+-            self.total_debt = 0
+-
+-    gov = MockGovernment("GOVERNMENT", 0)
+-
+-    # 1. Create
+-    account = settlement_system.create_settlement(deceased, 1)
+-    assert account.is_escheatment is True
+-
+-    # 2. Execute (Gov is recipient)
+-    plan = [(gov, 0, "Escheatment", "inheritance")]
+-    settlement_system.execute_settlement(100, plan, 2)
+-
+-    assert len(gov.portfolio.assets) == 1
+-    assert gov.portfolio.assets[0].asset_id == "GOV_TEST"
+-    assert len(account.escrow_portfolio.assets) == 0

@@ -1,6 +1,6 @@
 {
     "_meta": {
-        "updated": "2026-02-16T09:35:35"
+        "updated": "2026-02-16T09:58:43"
     },
     "worker-concept-audit": {
         "key": "worker-concept-audit",
@@ -116,6 +116,23 @@
         "model": null,
         "audit_requirements": null
     },
+    "jules_track_a": {
+        "key": "jules_track_a",
+        "title": "Phase 18 Agent Decomposition: Settlement & Logic",
+        "type": "jules",
+        "instruction_raw": "Implement Section 2 (Strict Integer Arithmetic) and Section 4 (Protocol Standardization) for Firm logic.",
+        "status": "pending",
+        "created_at": "",
+        "command": "create",
+        "file_path": "design/3_work_artifacts/specs/RESOLUTION_STRATEGY_PHASE_18.md",
+        "wait": false,
+        "session_id": null,
+        "worker": null,
+        "context_files": [],
+        "output_path": null,
+        "model": null,
+        "audit_requirements": null
+    },
     "jules_track_b": {
         "key": "jules_track_b",
         "title": "Phase 18 Infrastructure: Security Hardening",
@@ -125,6 +142,48 @@
         "created_at": "",
         "command": "create",
         "file_path": "design/3_work_artifacts/specs/RESOLUTION_STRATEGY_PHASE_18.md",
+        "wait": false,
+        "session_id": null,
+        "worker": null,
+        "context_files": [],
+        "output_path": null,
+        "model": null,
+        "audit_requirements": null
+    },
+    "dto-api-flow-audit": {
+        "key": "dto-api-flow-audit",
+        "title": "DTO & API \ub370\uc774\ud130 \ud750\ub984 \ubc0f \uacc4\uc57d \uc815\ud569\uc131 \uac10\uc0ac",
+        "type": "gemini",
+        "instruction_raw": "DTO\uc640 API \uac04\uc758 \ub370\uc774\ud130 \ud750\ub984\uc744 \uba74\ubc00\ud788 \ubd84\uc11d\ud558\uc2ed\uc2dc\uc624. DTO \uacc4\uc57d\uc758 \ubd88\uc77c\uce58, \ub370\uc774\ud130 \uc0dd\uc0b0\uc790(Producer)\uc640 \uc18c\ube44\uc790(Consumer) \uac04\uc758 \uc815\ud569\uc131 \ubb38\uc81c, \ud2b9\ud788 \ud654\ud3d0 \ub2e8\uc704(Integer Pennies) \ubc0f \ud504\ub85c\ud1a0\ucf5c \uc21c\uc218\uc131\uc774 \uc720\uc9c0\ub418\uace0 \uc788\ub294\uc9c0 \ud655\uc778\ud558\uc2ed\uc2dc\uc624.",
+        "status": "pending",
+        "created_at": "",
+        "command": null,
+        "file_path": null,
+        "wait": false,
+        "session_id": null,
+        "worker": "audit",
+        "context_files": [
+            "simulation/dtos/",
+            "modules/common/dtos.py",
+            "modules/finance/api.py",
+            "modules/finance/system.py",
+            "modules/household/api.py",
+            "modules/government/api.py",
+            "modules/firm/api.py"
+        ],
+        "output_path": "design/3_work_artifacts/audits/MISSION_dto-api-flow-audit_AUDIT.md",
+        "model": null,
+        "audit_requirements": null
+    },
+    "dto-api-repair": {
+        "key": "dto-api-repair",
+        "title": "DTO & API Repair: Float Leakage & God Factory",
+        "type": "jules",
+        "instruction_raw": "Execute the DTO and API repair as specified in the MISSION_dto-api-repair_SPEC.md. Secure the 'Integer Pennies' standard in Config DTOs and enforce IFirmStateProvider protocol in FirmStateDTO.",
+        "status": "pending",
+        "created_at": "",
+        "command": "create",
+        "file_path": "design/3_work_artifacts/specs/MISSION_dto-api-repair_SPEC.md",
         "wait": false,
         "session_id": null,
         "worker": null,
