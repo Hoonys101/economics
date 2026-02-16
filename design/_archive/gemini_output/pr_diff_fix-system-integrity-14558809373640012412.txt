@@ -1,0 +1,78 @@
+diff --git a/_internal/registry/service.py b/_internal/registry/service.py
+index 7413054d..a5fb2e43 100644
+--- a/_internal/registry/service.py
++++ b/_internal/registry/service.py
+@@ -10,11 +10,11 @@ from .api import IMissionRegistryService, MissionDTO, MissionType
+ from .mission_protocol import construct_mission_prompt
+ 
+ DB_PATH = Path("_internal/registry/mission_db.json")
+-# LOCK_PATH is now derived per-instance in MissionRegistryService
++LOCK_PATH = Path("_internal/registry/mission_db.lock")
+ 
+ class MissionLock:
+-    def __init__(self, lock_file: Path, timeout: int = 10):
+-        self.lock_file = lock_file
++    def __init__(self, lock_file: Optional[Path] = None, timeout: int = 10):
++        self.lock_file = lock_file or LOCK_PATH
+         self.timeout = timeout
+ 
+     def __enter__(self):
+diff --git a/communications/insights/fix-system-integrity.md b/communications/insights/fix-system-integrity.md
+new file mode 100644
+index 00000000..3f8fe5bb
+--- /dev/null
++++ b/communications/insights/fix-system-integrity.md
+@@ -0,0 +1,31 @@
++# Insight Report: Registry & System Integrity Fixes
++
++## Architectural Insights
++
++### Registry Service Lock
++The `MissionRegistryService` was failing due to a missing `LOCK_PATH` module-level constant which was expected by tests and potentially other consumers.
++- **Fix**: Restored `LOCK_PATH` in `_internal/registry/service.py` pointing to `_internal/registry/mission_db.lock`.
++- **Improvement**: Updated `MissionLock.__init__` to use `LOCK_PATH` as a fallback via runtime lookup (`lock_file or LOCK_PATH`) rather than a bind-time default argument. This allows tests to patch `LOCK_PATH` effectively without needing to patch the class constructor, improving testability and robustness.
++
++### M2 Integrity Leak
++The `MonetaryLedger` was incorrectly classifying `loan_interest` as M2 contraction and `deposit_interest` as M2 expansion.
++- **Analysis**: While these transactions affect agent balances, they represent transfers of existing money (between Banks and Agents) rather than the creation or destruction of money supply (M2).
++- **Fix**: Removed `deposit_interest` from the expansion list and `loan_interest` from the contraction list in `modules/government/components/monetary_ledger.py`.
++- **Result**: Validated that internal transfers are now neutral (0.0 delta) in M2 calculations, adhering to the "Zero-Sum Integrity" guardrail.
++
++## Test Evidence
++
++```
++tests/unit/registry/test_service.py::test_load_missions_empty PASSED     [ 10%]
++tests/unit/registry/test_service.py::test_register_and_get_mission PASSED [ 20%]
++tests/unit/registry/test_service.py::test_delete_mission PASSED          [ 30%]
++tests/unit/registry/test_service.py::test_get_mission_prompt PASSED      [ 40%]
++tests/unit/registry/test_service.py::test_migration PASSED               [ 50%]
++tests/unit/registry/test_service.py::test_lock_timeout PASSED            [ 60%]
++tests/unit/registry/test_service.py::test_lock_success PASSED            [ 70%]
++tests/integration/test_m2_integrity.py::TestM2Integrity::test_credit_creation_expansion PASSED [ 80%]
++tests/integration/test_m2_integrity.py::TestM2Integrity::test_credit_destruction_contraction PASSED [ 90%]
++tests/integration/test_m2_integrity.py::TestM2Integrity::test_internal_transfers_are_neutral PASSED [100%]
++
++============================== 10 passed in 0.46s ==============================
++```
+diff --git a/modules/government/components/monetary_ledger.py b/modules/government/components/monetary_ledger.py
+index e7f0752e..bc618322 100644
+--- a/modules/government/components/monetary_ledger.py
++++ b/modules/government/components/monetary_ledger.py
+@@ -48,7 +48,7 @@ class MonetaryLedger:
+             # TD-030 Revert: Since M2 definition now excludes Bank Reserves, transfers from Bank to Public (Interest/Profit)
+             # must be tracked as M2 Expansion.
+             # UPDATE: Re-aligning with Memory and Tests -> Neutral transfers.
+-            if tx.transaction_type in ["credit_creation", "money_creation", "deposit_interest", "bank_dividend"]:
++            if tx.transaction_type in ["credit_creation", "money_creation", "bank_dividend"]:
+                 is_expansion = True
+ 
+             # 2. CB Buying (OMO Purchase / Bond Purchase) -> Expansion
+@@ -63,7 +63,7 @@ class MonetaryLedger:
+             # TD-034: Removed internal transfers from contraction.
+             # TD-030 Revert: Transfers from Public to Bank (Loan Interest, Repayment) are M2 Contraction.
+             # UPDATE: Re-aligning with Memory and Tests -> Neutral transfers.
+-            if tx.transaction_type in ["credit_destruction", "money_destruction", "loan_default_recovery", "loan_interest", "loan_repayment"]:
++            if tx.transaction_type in ["credit_destruction", "money_destruction", "loan_default_recovery", "loan_repayment"]:
+                 is_contraction = True
+ 
+             # 4. CB Selling (OMO Sale / Bond Repayment) -> Contraction
