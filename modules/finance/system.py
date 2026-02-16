@@ -94,12 +94,13 @@ class FinanceSystem(IFinanceSystem):
         self,
         borrower_id: AgentID,
         amount: int,
-        borrower_profile: Dict,
+        borrower_profile: Union[Dict, BorrowerProfileDTO],
         current_tick: int
     ) -> Tuple[Optional[LoanInfoDTO], List[Transaction]]:
         """
         Orchestrates the loan application process using Risk and Booking engines.
         """
+        from dataclasses import asdict, is_dataclass
         # Sync SSoT
         self._sync_ledger_balances()
 
@@ -107,14 +108,17 @@ class FinanceSystem(IFinanceSystem):
         self.ledger.current_tick = current_tick
 
         # 2. Construct Application DTO
+        # Adapter: Convert DTO to Dict for internal engines if needed
+        profile_dict = asdict(borrower_profile) if is_dataclass(borrower_profile) else borrower_profile
+
         # Determine lender (Default to self.bank for now as simpler orchestrator)
-        lender_id = borrower_profile.get("preferred_lender_id", self.bank.id)
+        lender_id = profile_dict.get("preferred_lender_id", self.bank.id)
 
         app_dto = LoanApplicationDTO(
             borrower_id=borrower_id,
             lender_id=lender_id,
             amount_pennies=amount,
-            borrower_profile=borrower_profile
+            borrower_profile=profile_dict
         )
 
         # 3. Risk Assessment

@@ -11,6 +11,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from main import create_simulation
 from modules.common.utils.logging_manager import setup_logging
 import config
+from modules.system.api import DEFAULT_CURRENCY
 
 def diagnose():
     setup_logging()
@@ -39,41 +40,44 @@ def diagnose():
     sim = create_simulation()
     
     def get_balances():
-        h_sum = sum(h._econ_state.assets for h in sim.households if h._bio_state.is_active)
-        f_sum = sum(f.assets for f in sim.firms if f.is_active)
-        # 소멸 과정에 있는 에이전트 포함 (Ghost check)
-        h_inactive = sum(h._econ_state.assets for h in sim.households if not h._bio_state.is_active)
-        f_inactive = sum(f.assets for f in sim.firms if not f.is_active)
+        # Use WorldState M2 calculation (pennies as float)
+        total_pennies_float = sim.world_state.get_total_system_money_for_diagnostics(DEFAULT_CURRENCY)
         
-        gov = sim.government.assets
-        bank = sim.bank.assets
+        # Breakdown for logging (optional, using float for display)
+        h_sum = sum(h.balance_pennies for h in sim.households if h._bio_state.is_active)
         
-        # M2 통계
-        total = h_sum + f_sum + gov + bank + h_inactive + f_inactive
+        # Monetary Policy Tracking
+        issued = 0.0
+        destroyed = 0.0
+        if hasattr(sim.government, "monetary_ledger"):
+             issued = sim.government.monetary_ledger.total_money_issued.get(DEFAULT_CURRENCY, 0.0)
+             destroyed = sim.government.monetary_ledger.total_money_destroyed.get(DEFAULT_CURRENCY, 0.0)
+
         return {
-            "total": total,
-            "h_active": h_sum,
-            "f_active": f_sum,
-            "h_ghost": h_inactive,
-            "f_ghost": f_inactive,
-            "gov": gov,
-            "bank": bank,
-            "issued": getattr(sim.government, "total_money_issued", 0.0),
-            "destroyed": getattr(sim.government, "total_money_destroyed", 0.0)
+            "total_pennies": total_pennies_float,
+            "total": total_pennies_float / 100.0, # Convert to dollars for display
+            "h_active": float(h_sum) / 100.0,
+            "issued": issued / 100.0, # Ledger tracks pennies (from tx.price)
+            "destroyed": destroyed / 100.0
         }
 
     last_b = get_balances()
-    logger.info(f"START | Total: {last_b['total']:,.2f} | H: {last_b['h_active']:,.2f} | Bank: {last_b['bank']:,.2f}")
+    logger.info(f"START | Total: {last_b['total']:,.2f}")
 
     max_abs_leak = 0.0
 
-    for tick in range(1, 501): # Run for 500 ticks
+    for tick in range(1, 101): # Run for 100 ticks (reduced for speed)
         sim.run_tick()
         curr_b = get_balances()
+
+        # Calculate Delta in Total Assets (Dollars)
         diff = curr_b['total'] - last_b['total']
         
-        # 발행/파괴 보정
+        # Calculate Authorized Monetary Delta (Dollars)
+        # Ledger tracks in face value (dollars if not specified otherwise, but we should assume dollars based on float usage)
         monetary_delta = (curr_b['issued'] - last_b['issued']) - (curr_b['destroyed'] - last_b['destroyed'])
+
+        # Leak = Unexplained Change
         leak = diff - monetary_delta
         
         # Update Max Leak
@@ -81,7 +85,7 @@ def diagnose():
             max_abs_leak = abs(leak)
         
         # Structured Output
-        logger.info(f"TICK: {tick:3} | LEAK: {leak:10.4f} | TOTAL_M2: {curr_b['total']:15,.2f}")
+        logger.info(f"TICK: {tick:3} | LEAK: {leak:10.4f} | TOTAL: {curr_b['total']:15,.2f} | DELTA: {diff:10.4f} | AUTH: {monetary_delta:10.4f}")
         
         # Forensic Mode
         if abs(leak) > 1.0:
@@ -90,30 +94,6 @@ def diagnose():
             logger.info(f"    - System Asset Delta:    {diff:15,.4f}")
             logger.info(f"    - Money Supply Delta:    {monetary_delta:15,.4f}")
             logger.info(f"    - Unexplained (Leak):    {leak:15,.4f}")
-
-            # Transaction Summary
-            tx_summary = defaultdict(lambda: {'count': 0, 'volume': 0.0})
-
-            # sim.transactions should hold the transactions of the current tick
-            current_transactions = getattr(sim, 'transactions', [])
-
-            for tx in current_transactions:
-                t_type = tx.transaction_type
-                # Group generic/other types by item_id if needed
-                if t_type == 'other' or t_type is None:
-                    t_type = f"other:{tx.item_id}"
-
-                vol = tx.price * tx.quantity
-                tx_summary[t_type]['count'] += 1
-                tx_summary[t_type]['volume'] += vol
-
-            logger.info(f"  Transaction Summary:")
-            logger.info(f"    {'Type':<25} | {'Count':>8} | {'Volume':>15}")
-            logger.info(f"    {'-'*25}-+-{'-'*8}-+-{'-'*15}")
-
-            for t_type, stats in sorted(tx_summary.items()):
-                logger.info(f"    {t_type:<25} | {stats['count']:8d} | {stats['volume']:15,.2f}")
-            logger.info("")
 
         last_b = curr_b
 

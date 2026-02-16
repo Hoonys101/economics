@@ -13,9 +13,9 @@ class EmergencyTransactionHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        trade_value = round(tx.quantity * tx.price, 2)
+        trade_value = int(tx.quantity * tx.price) # MIGRATION: Int pennies
 
-        credits: List[Tuple[Any, float, str]] = []
+        credits: List[Tuple[Any, int, str]] = []
 
         # Seller Credit
         credits.append((seller, trade_value, f"emergency_buy:{tx.item_id}"))
@@ -24,7 +24,8 @@ class EmergencyTransactionHandler(ITransactionHandler):
         if context.taxation_system:
             intents = context.taxation_system.calculate_tax_intents(tx, buyer, seller, context.government, context.market_data)
             for intent in intents:
-                credits.append((context.government, intent.amount, intent.reason))
+                # Ensure intent.amount is int
+                credits.append((context.government, int(intent.amount), intent.reason))
 
         # 1. Execute Settlement (Atomic)
         success = context.settlement_system.settle_atomic(buyer, credits, context.time)

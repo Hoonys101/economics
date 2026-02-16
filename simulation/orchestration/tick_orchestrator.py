@@ -45,7 +45,7 @@ class TickOrchestrator:
             Phase_FirmProductionAndSalaries(world_state),
             Phase_GovernmentPrograms(world_state),
             Phase_TaxationIntents(world_state),
-            Phase_MonetaryProcessing(world_state),
+            # Phase_MonetaryProcessing removed: Merged into Phase3_Transaction for integrity
             Phase3_Transaction(world_state),         # Transaction Processing & Cleanup
 
             Phase_Consumption(world_state),          # Late Lifecycle (Consumption Finalization)

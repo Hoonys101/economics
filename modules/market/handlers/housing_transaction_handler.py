@@ -112,7 +112,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                 due_tick = context.time + mortgage_term
 
                 grant_result = context.bank.grant_loan(
-                    borrower_id=buyer.id,
+                    borrower_id=buyer, # Pass object for SettlementSystem resolution
                     amount=loan_amount,
                     interest_rate=mortgage_rate,
                     due_tick=due_tick,

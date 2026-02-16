@@ -36,6 +36,14 @@ class Phase3_Transaction(IPhaseStrategy):
             # WO-116: Record Revenue (Saga Pattern)
             if state.taxation_system:
                 state.taxation_system.record_revenue(results)
+
+            # MONETARY_LEDGER INTEGRATION:
+            # Only process successful transactions to ensure Zero-Sum Integrity.
+            # Replaces Phase_MonetaryProcessing which indiscriminately processed all queued transactions.
+            if state.government and hasattr(state.government, "monetary_ledger"):
+                successful_txs = [r.original_transaction for r in results if r.success]
+                state.government.monetary_ledger.process_transactions(successful_txs)
+
         else:
             state.logger.error("TransactionProcessor not initialized.")
 
