@@ -17,18 +17,10 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "clean-sweep-and-verify-leak": {
-        "description": "Fix all TypeErrors in tests (DTO sync) and AttributeErrors in core logic, then verify the money leak is resolved.",
-        "instruction": "1. Fix 'TypeError' in 'tests/utils/factories.py' and related tests by providing missing args to HouseholdConfigDTO. 2. Fix 'AttributeError' in 'Bank.grant_loan' regarding LoanInfoDTO. 3. Ensure all tests pass with zero ERRORs (ignore FAILs/Assertions for now). 4. Run 'scripts/trace_leak.py' and confirm M2 leak is under control. Ensure all values are in integer pennies."
-    },
-    "build-phase-audit-system": {
-        "description": "Create a diagnostic script that audits total money supply after every phase in TickOrchestrator to find leaks.",
-        "instruction": "Create 'scripts/run_phase_audit.py'. This script must: 1. Initialize simulation. 2. Manually execute each phase of TickOrchestrator for Tick 1. 3. Output a table showing 'Total Assets' (HH+Firm+Gov+Bank) and the 'Delta' after each phase. 4. Save output to 'reports/temp/phase_audit.log'. Avoid using sim.run_tick(), orchestrate phases manually and handle sim_state sync."
-    },
-    "fix-and-run-diagnostics": {
-        "title": "Forensic Execution: Repair and Run Leak Diagnostics",
+    "fix-runtime-errors-only": {
+        "title": "Clear Runtime Errors (DTO Sync & GrantLoan Fix)",
         "command": "create",
-        "instruction": "`scripts/diagnose_money_leak.py` 스크립트가 최신 엔진 코드(특히 `Bank` 클래스의 `.assets` 참조 오류)와 호환되도록 수정하고 실행하십시오. 실행 결과(Transaction Summary 포함)를 `reports/temp/tick1_diagnostics.log`로 저장하여 Gemini의 후속 분석을 위한 데이터를 확보하십시오.",
+        "instruction": "Fix critical runtime errors to stabilize the engine: 1. Update 'tests/utils/factories.py' and any other test setups causing 'TypeError' in 'HouseholdConfigDTO' by adding the 3 missing arguments ('default_food_price_estimate', 'survival_budget_allocation', 'food_consumption_utility'). 2. Fix 'AttributeError: dict has no attribute loan_id' in 'Bank.grant_loan' by ensuring 'LoanInfoDTO' is handled as an object. 3. Verify with 'pytest' that the error count is 0 (Fails/Assertions should be ignored for now).",
         "wait": True
     }
 }

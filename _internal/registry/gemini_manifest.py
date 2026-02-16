@@ -23,33 +23,5 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "audit-tick1-leak": {
-        "title": "Forensic Audit: Tick 1 Financial Leak (-99,680.00)",
-        "worker": "audit",
-        "instruction": "Tick 1에서 발생하는 대규모 자산 누출(-99,680.00)의 근본 원인을 추적하십시오. 1. 초기 상태 설정(`create_simulation`), 2. 은행 초기 자산 부여(`Bank` 초기화), 3. 틱 시작 시의 이자/수수료 계산 등을 중점적으로 분석하십시오. `diagnose_money_leak.py`의 로직과 실제 엔진 코드 간의 불일치가 있는지 확인하고, M2 합계가 보존되지 않는 임계 지점을 특정하십시오.",
-        "context_files": [
-            "main.py",
-            "simulation/orchestration/tick_orchestrator.py",
-            "simulation/bank.py",
-            "modules/finance/system.py",
-            "scripts/diagnose_money_leak.py",
-            "config/defaults.py",
-            "design/_archive/sessions/20260216_123510/audits/ROOT_CAUSE_PROFILE.md"
-        ],
-        "output_path": "design/3_work_artifacts/audits/MISSION_tick1-leak_AUDIT.md"
-    },
-    "audit-tick-loop-sequence": {
-        "title": "Architectural Audit: Tick Loop Re-sequencing for Corporate Tax",
-        "worker": "spec",
-        "instruction": "현재 `Corporate Tax` 계산이 `firm.produce()` 이후에 위치해야 하는 제약사항으로 인해 블락되어 있습니다. `TickOrchestrator`의 페이즈 순서를 분석하여, (1) 기업의 생산/이익 확정, (2) 이에 따른 세금 계산, (3) 모든 트랜잭션의 통합 처리(Transaction Phase)가 논리적 모순 없이 실행될 수 있도록 틱 루프 시퀀스 재설계안을 제안하십시오. `Phase_Production`, `Phase_TaxationIntents`, `Phase_FirmProductionAndSalaries`, `Phase3_Transaction` 간의 데이터 흐름과 의존성을 중점적으로 검토하십시오.",
-        "context_files": [
-            "simulation/orchestration/tick_orchestrator.py",
-            "simulation/orchestration/phases/production.py",
-            "simulation/orchestration/phases/taxation_intents.py",
-            "simulation/orchestration/phases/firm_operations.py",
-            "simulation/orchestration/phases/transaction.py",
-            "design/HANDOVER.md"
-        ],
-        "output_path": "design/3_work_artifacts/specs/MISSION_tick-loop-sequence_SPEC.md"
-    }
+    # Add missions here
 }
