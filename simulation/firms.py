@@ -234,35 +234,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
                     target_inv = self.inventory_component.main_inventory
                     target_qual = self.inventory_component.inventory_quality
                 elif slot == InventorySlot.INPUT:
-                    # Access private attributes via facade? No, InventoryComponent exposes input_inventory property
-                    # But if I write to it, I need it to be mutable.
-                    # InventoryComponent.input_inventory returns self._input_inventory which is a dict.
-                    # Assuming it returns reference.
                     target_inv = self.inventory_component.input_inventory
-                    # For quality, I need to know component implementation.
-                    # InventoryComponent has no input_quality property in interface.
-                    # Wait, modules/agent_framework/components/inventory_component.py had:
-                    # self._input_quality
-                    # But I didn't expose it in properties for IFirmComponent?
-                    # modules/firm/api.py: IInventoryComponent has `inventory_quality` (MAIN).
-                    # It does not explicitly list `input_inventory_quality`.
-                    # But InventoryComponent implementation I updated DOES NOT expose `input_inventory_quality` as property.
-                    # I should access it via protected member or fix component.
-                    # Given I am refactoring, I should probably expose it or use `add_item` loop.
-                    # Using `add_item` loop is safer but `add_item` does weighted average.
-                    # If I am restoring exact state, I want direct set.
-                    # I will assume I can access _input_quality or similar if needed.
-                    # Actually, `load_from_state` is a method on IInventoryComponent (from agent_framework API).
-                    # I should use that if available.
-                    # `load_from_state` in InventoryComponent takes `inventory_data: Dict[str, Any]`.
-                    # AgentStateDTO.inventories is Dict[str, InventorySlotDTO].
-                    # I might need to adapt.
-                    # Or I can just manually populate for now.
-                    # Since I cannot easily change interface again without updating multiple files,
-                    # and `Firm` is allowed to access component internals if needed (friend class concept),
-                    # I'll try to stick to public API.
-                    # But `target_qual` for input inventory is not exposed publicly.
-                    pass
                 else:
                     self.logger.warning(f"Unknown inventory slot in load_state: {slot_name}")
                     continue

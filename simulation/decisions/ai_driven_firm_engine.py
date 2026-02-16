@@ -166,6 +166,10 @@ class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
                                  best_bid = getattr(signal, 'best_bid', None)
                                  if best_bid is not None:
                                       if not isinstance(best_bid, (int, float)):
+                                          self.logger.debug(
+                                              f"FIRE_SALE | Invalid best_bid type {type(best_bid)} for {item_id}, defaulting to 0.0",
+                                              extra={"tick": context.current_time}
+                                          )
                                           best_bid = 0.0
                                       discount = getattr(config, 'fire_sale_discount', 0.2)
                                       if not isinstance(discount, (int, float)): discount = 0.2
