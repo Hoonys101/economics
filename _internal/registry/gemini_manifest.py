@@ -23,54 +23,5 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "test-repair-specs": {
-        "title": "테스트 결함 원인 분석 및 수리 명세서(Spec) 작성",
-        "worker": "spec",
-        "instruction": """
-다음 테스트 에러 로그를 분석하고, 각 모듈별 원인을 규명한 뒤 `MISSION_test-repair_SPEC.md`를 작성하라.
-
-[Error Log Summary]
-1. **MockBank Protocol Mismatch (High Critical)**
-   - `TypeError: Can't instantiate abstract class MockBank without an implementation for abstract method 'get_total_deposits'`
-   - Affects: `test_circular_imports_fix.py`, `test_settlement_system.py`, etc.
-   - Cause: `IBank` interface updated but `MockBank` (in tests) missed the implementation.
-
-2. **Solvency Logic Assertion Failure**
-   - `tests/finance/test_solvency_logic.py:106: AssertionError: assert 10000 == 1000000`
-   - Cause: Likely unit mismatch (Pennies vs Dollars) or scale factor error.
-
-3. **Asset Management Precision Failure**
-   - `tests/simulation/components/engines/test_asset_management_engine.py:41: assert 0.0001 == 0.01`
-   - Cause: Expected value (0.01) vs Actual (0.0001) suggests logic using 1bps instead of 1% (or vice versa).
-
-4. **Production Engine Attribute Error**
-   - `tests/simulation/components/engines/test_production_engine.py: AttributeError: Mock object has no attribute 'id'`
-   - Cause: Mock setup incomplete.
-
-5. **Command Service Rollback Failure**
-   - `tests/unit/modules/system/test_command_service_unit.py:130: AssertionError: expected call not found`
-   - Cause: Mock verification drift.
-
-[Deliverables]
-1. **Root Cause Analysis**: 각 에러 그룹별로 코드 레벨 원인 분석.
-2. **Repair Plan**:
-   - `MockBank`에 `get_total_deposits` 메서드 추가 (return 0 or meaningful dummy value).
-   - `test_solvency_logic.py`의 assertion 값 수정 또는 로직 수정 (단위 통일).
-   - `AssetManagementEngine` 또는 테스트의 기대값 보정.
-   - 기타 Mock 객체 설정 보완.
-3. **Validation Strategy**: `pytest` 재실행을 통한 검증 절차 기술.
-""",
-        "context_files": [
-            "tests/finance/test_circular_imports_fix.py",
-            "tests/unit/systems/test_settlement_system.py",
-            "tests/finance/test_solvency_logic.py",
-            "tests/simulation/components/engines/test_asset_management_engine.py",
-            "tests/simulation/components/engines/test_production_engine.py",
-            "tests/unit/modules/system/test_command_service_unit.py",
-            "modules/finance/api.py", # For IBank definition
-            "simulation/components/engines/asset_management_engine.py",
-            "modules/finance/system.py"
-        ],
-        "output_path": "design/3_work_artifacts/specs/MISSION_test-repair_SPEC.md"
-    }
+    # Add missions here
 }

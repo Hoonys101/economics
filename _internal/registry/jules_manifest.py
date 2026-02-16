@@ -17,9 +17,5 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "testing-repair": {
-        "title": "테스트 수트 복구 및 프로토콜 정렬 구현",
-        "command": "create",
-        "file": "design/3_work_artifacts/specs/MISSION_test-repair_SPEC.md"
-    }
+    # Add missions here
 }

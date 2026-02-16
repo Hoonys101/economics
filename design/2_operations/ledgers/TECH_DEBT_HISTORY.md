@@ -65,6 +65,10 @@ This document archives resolved technical debt items to keep the primary ledger 
 | **TD-DATA-01-MOCK** | Finance | **Strict Mocking**: Added `assert_implements_protocol` and segregrated interfaces. | 2026-02-15 | [Mission Review](./pr_review_jules-17-3-config-proxy-purity-7306288639511283426.md) |
 | **TD-CRIT-FLOAT-SETTLE** | Settlement | **Protocol Purity**: Enforced strict typing for Settlement System interactions. | 2026-02-15 | [Mission Review](./pr_review_jules-track-a-settlement-12072150354750025434.md) |
 | **TD-ARCH-SEC-GOD** | Security | **Hardening**: Enforced Localhost binding and Config DTOs for SimulationServer. | 2026-02-15 | [Mission Review](./pr_review_jules-track-b-security-11612781887738691353.md) |
+| **TD-MOCK-BANK-DRIFT** | Finance | **Protocol Alignment**: Fixed `MockBank` to implement `get_total_deposits`. | 2026-02-16 | [PR Review](../../_archive/gemini_output/pr_review_fix-tests-and-protocols-956842252339614960.md) |
+| **TD-ASSET-PRECISION** | Engines | **Unit Standardization**: Fixed `AssetManagementEngine` tests using Pennies (int). | 2026-02-16 | [PR Review](../../_archive/gemini_output/pr_review_fix-tests-and-protocols-956842252339614960.md) |
+| **TD-PROC-ENGINE-BUG** | Simulation | **Bug Fix**: Resolved `NameError` in `ProductionEngine` and added `AgentID` to Mock Firm. | 2026-02-16 | [PR Review](../../_archive/gemini_output/pr_review_fix-tests-and-protocols-956842252339614960.md) |
+| **TD-CMD-ROLLBACK** | System | **Hardening**: Fixed `CommandService` rollback assertions for `IRestorableRegistry`. | 2026-02-16 | [PR Review](../../_archive/gemini_output/pr_review_fix-tests-and-protocols-956842252339614960.md) |
 
 ## 📓 Implementation Lessons (Resolved Path)
 
@@ -128,4 +132,17 @@ This document archives resolved technical debt items to keep the primary ledger 
 - **Symptom**: `from config import X` bound values at import time, ignoring runtime registry updates (e.g., God Mode tweaks).
 - **Resolution**: Refactored `config` to a `sys.modules` Proxy pattern that routes all access to a layered `GlobalRegistry`.
 - **Resolved in**: `jules-17-3-config-proxy-purity`
+---
 
+### ID: TD-MOCK-BANK-DRIFT
+### Title: Protocol-Mock Drift Clearance
+- **Symptom**: Abstract class instantiation errors in CI.
+- **Resolution**: Implemented missing interface methods across all test files and modernized `test_circular_imports_fix.py`.
+- **Lesson**: Interface changes require a global search for mock implementations.
+
+---
+### ID: TD-ASSET-PRECISION
+### Title: Penny Accounting Enforcement (Tests)
+- **Symptom**: Magnitude errors in production/investment results.
+- **Resolution**: Refactored `AssetManagementInputDTO` fixtures to use absolute penny values (`int`).
+- **Lesson**: Decouple "Display Dollars" from "Simulation Pennies" at the test boundary.
