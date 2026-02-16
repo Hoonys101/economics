@@ -68,23 +68,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "dto-api-repair": {
-      "key": "dto-api-repair",
-      "title": "DTO & API Repair: Float Leakage & God Factory",
-      "type": "jules",
-      "instruction_raw": "Execute the DTO and API repair as specified in the MISSION_dto-api-repair_SPEC.md. Secure the 'Integer Pennies' standard in Config DTOs and enforce IFirmStateProvider protocol in FirmStateDTO.",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_dto-api-repair_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "agent-decomposition": {
       "key": "agent-decomposition",
       "title": "Agent Shell Refactor: Firm & Household Decomposition",
