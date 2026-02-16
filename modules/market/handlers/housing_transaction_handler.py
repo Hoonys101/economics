@@ -2,10 +2,10 @@ from typing import Any, Optional, Tuple, Dict
 import logging
 from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction
-from modules.market.api import IHousingTransactionHandler, HousingConfigDTO, IHousingTransactionParticipant
+from modules.market.api import IHousingTransactionHandler, HousingConfigDTO, IHousingTransactionParticipant, HousingTransactionContextDTO
 from modules.finance.api import BorrowerProfileDTO, LienDTO, IFinancialAgent
 from modules.system.escrow_agent import EscrowAgent
-from modules.common.interfaces import IPropertyOwner, IResident, IMortgageBorrower
+from modules.common.interfaces import IPropertyOwner
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.firms import Firm
 from modules.simulation.api import AgentID
@@ -18,7 +18,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
     Orchestrates atomic settlement involving Buyer, Seller, Bank, and Escrow.
     """
 
-    def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+    def handle(self, tx: Transaction, buyer: Any, seller: Any, state: Any) -> bool:
         """
         Executes the housing transaction saga:
         1. Validation
@@ -27,15 +27,18 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
         4. Loan Disbursement (Bank -> Escrow)
         5. Final Settlement (Escrow -> Seller)
         """
+        # Map state to HousingTransactionContextDTO
+        context = self._build_context(state)
+
         # 1. Initialization & Validation
         if not buyer or not seller:
-            context.logger.error(f"HOUSING | Invalid participants. Buyer: {buyer}, Seller: {seller}")
+            logger.error(f"HOUSING | Invalid participants. Buyer: {buyer}, Seller: {seller}")
             return False
 
         # Find Escrow Agent
         escrow_agent = next((a for a in context.agents.values() if isinstance(a, EscrowAgent)), None)
         if not escrow_agent:
-            context.logger.critical("HOUSING | Escrow Agent not found in simulation agents.")
+            logger.critical("HOUSING | Escrow Agent not found in simulation agents.")
             return False
 
         # Parse Unit
@@ -43,10 +46,10 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
             unit_id = int(tx.item_id.split("_")[1])
             unit = next((u for u in context.real_estate_units if u.id == unit_id), None)
             if not unit:
-                context.logger.error(f"HOUSING | Unit {unit_id} not found.")
+                logger.error(f"HOUSING | Unit {unit_id} not found.")
                 return False
         except (IndexError, ValueError):
-            context.logger.error(f"HOUSING | Invalid item_id format: {tx.item_id}")
+            logger.error(f"HOUSING | Invalid item_id format: {tx.item_id}")
             return False
 
         # Config
@@ -56,21 +59,14 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
         mortgage_term = housing_config.get("mortgage_term_ticks", 300)
 
         # Interest Rate (Bank Config or Global)
-        # Using context.config_module.bank_defaults if available or context.bank.base_rate logic?
-        # Bank.grant_loan takes interest_rate.
-        # We should query the bank for current rate or use config.
-        mortgage_rate = getattr(context.config_module, "MORTGAGE_INTEREST_RATE", 0.05) # Legacy/Global config fallback
-        if context.bank:
-             # Ideally bank has a mortgage rate product, but for now we use base rate + spread?
-             # Or stick to the config constant if it exists.
-             pass
+        mortgage_rate = getattr(context.config_module, "MORTGAGE_INTEREST_RATE", 0.05)
 
         sale_price = tx.price * tx.quantity
         loan_amount = 0.0
         down_payment = sale_price
 
         # Determine Mortgage Eligibility
-        # Agents implementing IHousingTransactionParticipant (which includes current_wage) are eligible.
+        # Strict Protocol Check
         is_borrower = isinstance(buyer, IHousingTransactionParticipant)
         use_mortgage = is_borrower and context.bank is not None
 
@@ -89,17 +85,14 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
              buyer_assets = 0.0
 
         if buyer_assets < down_payment:
-            context.logger.info(f"HOUSING | Buyer {buyer.id} insufficient funds for down payment {down_payment:.2f}")
+            logger.info(f"HOUSING | Buyer {buyer.id} insufficient funds for down payment {down_payment:.2f}")
             return False
 
         # 2. Saga Step A: Secure Down Payment (Buyer -> Escrow)
         memo_down = f"escrow_hold:down_payment:{tx.item_id}"
-        # TD-213: Pass currency to settlement system
         if not context.settlement_system.transfer(buyer, escrow_agent, down_payment, memo_down, tick=context.time, currency=tx_currency):
-            context.logger.warning(f"HOUSING | Failed to secure down payment from {buyer.id}")
+            logger.warning(f"HOUSING | Failed to secure down payment from {buyer.id}")
             return False
-
-        # --- Compensation Logic Needed from here ---
 
         loan_id = None
         new_loan_dto = None
@@ -108,11 +101,10 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
             # 3. Saga Step B: Create Mortgage (if applicable)
             if use_mortgage:
                 borrower_profile = self._create_borrower_profile(buyer, sale_price, context, currency=tx_currency)
-                # Estimate due tick
                 due_tick = context.time + mortgage_term
 
                 grant_result = context.bank.grant_loan(
-                    borrower_id=buyer, # Pass object for SettlementSystem resolution
+                    borrower_id=buyer,
                     amount=loan_amount,
                     interest_rate=mortgage_rate,
                     due_tick=due_tick,
@@ -120,17 +112,16 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                 )
 
                 if not grant_result:
-                    context.logger.warning(f"HOUSING | Bank rejected mortgage for {buyer.id}")
+                    logger.warning(f"HOUSING | Bank rejected mortgage for {buyer.id}")
                     # Compensate Step A
                     context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:loan_rejected", tick=context.time, currency=tx_currency)
                     return False
 
                 new_loan_dto, credit_tx = grant_result
-                # LoanInfoDTO is a TypedDict
                 loan_id = new_loan_dto['loan_id']
 
-                # Append credit creation tx to queue
-                if credit_tx:
+                # Append credit creation tx to queue if provided
+                if credit_tx and context.transaction_queue is not None:
                     context.transaction_queue.append(credit_tx)
 
                 # 4. Saga Step C: Disburse Loan (Bank -> Escrow)
@@ -140,12 +131,12 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                     # Neutralize the deposit created by grant_loan
                     withdrawal_success = context.bank.withdraw_for_customer(buyer.id, loan_amount)
                     if not withdrawal_success:
-                        context.logger.critical(f"HOUSING | Failed to withdraw loan deposit from Buyer {buyer.id}. Aborting.")
+                        logger.critical(f"HOUSING | Failed to withdraw loan deposit from Buyer {buyer.id}. Aborting.")
                         self._void_loan_safely(context, loan_id)
                         context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
                         return False
                 except Exception as e:
-                    context.logger.critical(f"HOUSING | Error withdrawing loan deposit: {e}")
+                    logger.critical(f"HOUSING | Error withdrawing loan deposit: {e}")
                     self._void_loan_safely(context, loan_id)
                     context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
                     return False
@@ -153,25 +144,19 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
                 memo_disburse = f"escrow_hold:loan_proceeds:{tx.item_id}"
                 # Transfer from BANK (Reserves) to Escrow
                 if not context.settlement_system.transfer(context.bank, escrow_agent, loan_amount, memo_disburse, tick=context.time, currency=tx_currency):
-                    context.logger.critical(f"HOUSING | Failed to move loan proceeds from Bank to Escrow for {buyer.id}")
+                    logger.critical(f"HOUSING | Failed to move loan proceeds from Bank to Escrow for {buyer.id}")
                     # Compensate: Terminate Loan (Asset), Return Down Payment
-                    # Note: We cannot use _void_loan_safely because the deposit is already gone (withdrawn).
                     self._terminate_loan_safely(context, loan_id)
                     context.settlement_system.transfer(escrow_agent, buyer, down_payment, "escrow_reversal:disbursement_failed", tick=context.time, currency=tx_currency)
                     return False
 
             # 5. Saga Step D: Final Settlement (Escrow -> Seller)
-            # Escrow now holds `down_payment + loan_amount` (which equals `sale_price`).
             memo_settle = f"final_settlement:{tx.item_id}"
 
-            # Check if Seller is Government (Tax Collection path?)
-            # Usually Housing Sale is Asset Transfer.
-            # If Seller is Government, we transfer to Government.
-
             if not context.settlement_system.transfer(escrow_agent, seller, sale_price, memo_settle, tick=context.time, currency=tx_currency):
-                context.logger.critical(f"HOUSING | CRITICAL: Failed to pay seller {seller.id} from escrow.")
+                logger.critical(f"HOUSING | CRITICAL: Failed to pay seller {seller.id} from escrow.")
                 # Compensate:
-                # 1. Return Loan Proceeds to BANK (since we withdrew form Buyer and sent to Escrow from Bank)
+                # 1. Return Loan Proceeds to BANK
                 if use_mortgage:
                     context.settlement_system.transfer(escrow_agent, context.bank, loan_amount, "reversal:loan_return_to_bank", tick=context.time, currency=tx_currency)
                     self._terminate_loan_safely(context, loan_id)
@@ -185,33 +170,35 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
             lender_id = context.bank.id if context.bank else 0
             self._apply_housing_effects(unit, buyer, seller, loan_id, loan_amount, lender_id, context)
 
-            # Store mortgage_id in metadata for Registry/Observer
             if loan_id:
                 if not tx.metadata: tx.metadata = {}
                 tx.metadata["mortgage_id"] = loan_id
                 tx.metadata["loan_principal"] = loan_amount
                 tx.metadata["lender_id"] = lender_id
 
-            context.logger.info(f"HOUSING | Success: Unit {unit.id} sold to {buyer.id}. Price: {sale_price}")
+            logger.info(f"HOUSING | Success: Unit {unit.id} sold to {buyer.id}. Price: {sale_price}")
             return True
 
         except Exception as e:
-            context.logger.error(f"HOUSING | Unexpected error: {e}", exc_info=True)
-            # Generic Compensation Attempt (Best Effort)
-            try:
-                # If money in escrow, try to return to buyer?
-                escrow_bal = context.bank.get_balance(str(escrow_agent.id)) if context.bank else 0 # Approximate
-                # This is hard to know exactly how much of escrow balance is ours.
-                # We rely on specific rollback blocks above.
-                pass
-            except:
-                pass
+            logger.error(f"HOUSING | Unexpected error: {e}", exc_info=True)
             return False
 
-    def _create_borrower_profile(self, buyer: Any, trade_value: float, context: TransactionContext, currency: str = DEFAULT_CURRENCY) -> BorrowerProfileDTO:
+    def _build_context(self, state: Any) -> HousingTransactionContextDTO:
+        """Adapts SimulationState or TransactionContext to DTO."""
+        return HousingTransactionContextDTO(
+            settlement_system=state.settlement_system,
+            bank=getattr(state, 'bank', None),
+            government=getattr(state, 'government', None),
+            real_estate_units=getattr(state, 'real_estate_units', []),
+            agents=getattr(state, 'agents', {}),
+            config_module=getattr(state, 'config_module', None),
+            time=getattr(state, 'time', 0),
+            transaction_queue=getattr(state, 'transaction_queue', [])
+        )
+
+    def _create_borrower_profile(self, buyer: Any, trade_value: float, context: HousingTransactionContextDTO, currency: str = DEFAULT_CURRENCY) -> BorrowerProfileDTO:
         gross_income = 0.0
         if isinstance(buyer, IHousingTransactionParticipant):
-             # Estimate monthly income
              work_hours = getattr(context.config_module, "WORK_HOURS_PER_DAY", 8.0)
              ticks_per_year = getattr(context.config_module, "TICKS_PER_YEAR", 100.0)
              ticks_per_month = ticks_per_year / 12.0
@@ -227,47 +214,35 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
         assets_val = 0.0
         if isinstance(buyer, IFinancialAgent):
              assets_val = buyer.get_balance(currency)
-        else:
-             assets_val = 0.0
 
         return BorrowerProfileDTO(
-            borrower_id=AgentID(buyer.id),
             gross_income=gross_income,
-            existing_debt_payments=existing_debt * 0.01, # Approx
-            collateral_value=trade_value,
-            existing_assets=assets_val
+            existing_debt_payments=existing_debt * 0.01,
+            collateral_value=trade_value
         )
 
-    def _void_loan_safely(self, context: TransactionContext, loan_id: str):
+    def _void_loan_safely(self, context: HousingTransactionContextDTO, loan_id: str):
         if context.bank and loan_id:
             try:
                 void_tx = context.bank.void_loan(loan_id)
                 if void_tx and context.transaction_queue is not None:
                     context.transaction_queue.append(void_tx)
             except Exception as e:
-                context.logger.error(f"HOUSING | Failed to void loan {loan_id}: {e}")
+                logger.error(f"HOUSING | Failed to void loan {loan_id}: {e}")
 
-    def _terminate_loan_safely(self, context: TransactionContext, loan_id: str):
+    def _terminate_loan_safely(self, context: HousingTransactionContextDTO, loan_id: str):
         if context.bank and loan_id:
             try:
                 term_tx = context.bank.terminate_loan(loan_id)
                 if term_tx and context.transaction_queue is not None:
                     context.transaction_queue.append(term_tx)
             except Exception as e:
-                context.logger.error(f"HOUSING | Failed to terminate loan {loan_id}: {e}")
+                logger.error(f"HOUSING | Failed to terminate loan {loan_id}: {e}")
 
     def _apply_housing_effects(self, unit: Any, buyer: Any, seller: Any, mortgage_id: Optional[str],
-                             loan_amount: float, lender_id: int, context: TransactionContext):
-        """
-        Updates housing ownership and residency.
-        Mirrors Registry._handle_housing_registry but includes mortgage_id.
-        """
+                             loan_amount: float, lender_id: int, context: HousingTransactionContextDTO):
         unit_id = unit.id
-
-        # Update Unit
         unit.owner_id = buyer.id
-
-        # Update Liens
         unit.liens = [lien for lien in unit.liens if lien['lien_type'] != 'MORTGAGE']
 
         if mortgage_id:
@@ -279,16 +254,13 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
              }
              unit.liens.append(new_lien)
 
-        # Update Seller (if not None/Govt)
         if seller and isinstance(seller, IPropertyOwner):
              seller.remove_property(unit_id)
 
-        # Update Buyer
         if isinstance(buyer, IPropertyOwner):
             buyer.add_property(unit_id)
 
-            # Auto-move-in if homeless
-            if isinstance(buyer, IResident):
+            if isinstance(buyer, IHousingTransactionParticipant):
                 if buyer.residing_property_id is None:
                     unit.occupant_id = buyer.id
                     buyer.residing_property_id = unit_id

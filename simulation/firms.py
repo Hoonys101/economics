@@ -580,10 +580,16 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
     @override
     def add_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, quality: float = 1.0, slot: InventorySlot = InventorySlot.MAIN) -> bool:
+        """
+        Delegates to InventoryComponent, supporting strict slot-based inventory management (MAIN vs INPUT).
+        """
         return self.inventory_component.add_item(item_id, quantity, transaction_id, quality, slot)
 
     @override
     def remove_item(self, item_id: str, quantity: float, transaction_id: Optional[str] = None, slot: InventorySlot = InventorySlot.MAIN) -> bool:
+        """
+        Delegates to InventoryComponent, supporting strict slot-based inventory management.
+        """
         return self.inventory_component.remove_item(item_id, quantity, transaction_id, slot)
 
     @override

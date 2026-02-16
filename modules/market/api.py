@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, TypedDict, Protocol, TYPE_CHECKING, List, runtime_checkable
+from typing import Optional, Dict, Any, TypedDict, Protocol, TYPE_CHECKING, List, runtime_checkable, Union
+from enum import Enum
 import uuid
 from modules.finance.dtos import MoneyDTO
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
@@ -99,6 +100,41 @@ class HousingConfigDTO(TypedDict):
     # Note: Interest rate is handled by the banking/lending system config
 
 @dataclass
+class MarketConfigDTO:
+    """Configuration DTO for market mechanics."""
+    transaction_fee: float = 0.0
+    housing_max_ltv: float = 0.8
+    housing_mortgage_term: int = 300
+
+@dataclass
+class HousingTransactionContextDTO:
+    """
+    DTO capturing the system state required to process a housing transaction.
+    Decouples the handler from the monolithic 'simulation' object.
+    """
+    settlement_system: Any  # ISettlementSystem
+    bank: Any               # ICentralBank
+    government: Optional[IPropertyOwner]
+    real_estate_units: List[Any] # List[RealEstateUnit]
+    agents: Dict[Any, Any]
+    config_module: Any # Should be MarketConfigDTO in strict future
+    time: int
+    transaction_queue: List[Any] # For side-effect transactions (credit creation)
+
+class TransactionType(Enum):
+    HOUSING = "housing"
+    GOODS = "goods"
+    LABOR = "labor"
+
+@dataclass
+class TransactionResultDTO:
+    """Result of a transaction processing attempt."""
+    success: bool
+    reason: Optional[str] = None
+    transaction_id: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+@dataclass
 class OrderBookStateDTO:
     """State DTO for generic OrderBook markets (Goods, Labor)."""
     buy_orders: Dict[str, List[CanonicalOrderDTO]]
@@ -159,6 +195,16 @@ class IHousingTransactionParticipant(IPropertyOwner, IFinancialAgent, Protocol):
     @property
     def current_wage(self) -> int: # Changed to int (pennies) for consistency
         """Current wage for mortgage eligibility calculation."""
+        ...
+
+    @property
+    def residing_property_id(self) -> Optional[int]:
+        """ID of the property where the agent currently resides."""
+        ...
+
+    @property
+    def is_homeless(self) -> bool:
+        """Indicates if the agent is currently homeless."""
         ...
 
 class IMarket(Protocol):

@@ -28,6 +28,7 @@ from modules.simulation.api import IEducated
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.finance.wallet.wallet import Wallet
 from modules.common.interfaces import IPropertyOwner, IInvestor
+from modules.market.api import IHousingTransactionParticipant
 import simulation
 
 # Engines
@@ -69,13 +70,12 @@ class Household(
     ILearningAgent,
     IEmployeeDataProvider,
     IEducated,
+    IHousingTransactionParticipant,
     IFinancialEntity,
-    IFinancialAgent,
     IOrchestratorAgent,
     ICreditFrozen,
     IInventoryHandler,
     ISensoryDataProvider,
-    IPropertyOwner,
     IInvestor,
     HouseholdStateAccessMixin
 ):
