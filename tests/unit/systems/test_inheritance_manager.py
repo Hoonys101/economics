@@ -37,6 +37,8 @@ class TestInheritanceManager:
         h._econ_state = MagicMock()
         h._bio_state = MagicMock()
         h._econ_state.assets = assets
+        # Mock get_balance to return int(assets) to match InheritanceManager expectations
+        h.get_balance.return_value = int(assets)
         h._econ_state.portfolio = Portfolio(id)
         h._econ_state.owned_properties = []
         h._bio_state.is_active = True
@@ -120,4 +122,4 @@ class TestInheritanceManager:
 
         tax_tx = next((t for t in txs if t.transaction_type == "tax"), None)
         assert tax_tx is not None
-        assert tax_tx.price == 500.0 # 50% of 1000
+        assert tax_tx.price == 500 # 50% of 1000 (int)
