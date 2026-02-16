@@ -3,23 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "fix-firm-engine-logic": {
-      "key": "fix-firm-engine-logic",
-      "title": "Firm Structure & Engine Implementation",
-      "type": "jules",
-      "instruction_raw": "",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_fix-firm-struct-and-engines_SPEC.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "fix-system-integrity": {
       "key": "fix-system-integrity",
       "title": "System Integrity & Registry Repair",
@@ -63,6 +46,23 @@
       "created_at": "",
       "command": "create",
       "file_path": "design/3_work_artifacts/specs/MISSION_fix-dto-subscripting_SPEC.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "fix-firm-engine-logic": {
+      "key": "fix-firm-engine-logic",
+      "title": "Firm Structure & Engine Implementation",
+      "type": "jules",
+      "instruction_raw": "",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_fix-firm-struct-and-engines_SPEC.md",
       "wait": true,
       "session_id": null,
       "worker": null,
