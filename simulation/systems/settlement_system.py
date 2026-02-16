@@ -329,6 +329,11 @@ class SettlementSystem(IMonetaryAuthority):
                  self.logger.error(f"SETTLEMENT_FAIL | Negative credit amount {amount} in atomic batch. Memo: {memo}")
                  return False
 
+             # Validate Memo
+             if not self._validate_memo(memo):
+                 self.logger.error(f"SETTLEMENT_FAIL | Invalid memo in atomic batch. Memo: {memo}")
+                 return False
+
         # 1. Calculate Total Debit
         total_debit = sum(amount for _, amount, _ in credits_list)
         if total_debit <= 0:
@@ -338,6 +343,10 @@ class SettlementSystem(IMonetaryAuthority):
         memo = f"atomic_batch_{len(credits_list)}_txs"
         success = self._execute_withdrawal(debit_agent, total_debit, memo, tick)
         if not success:
+            self.logger.warning(
+                f"SETTLEMENT_ATOMIC_FAIL | Withdrawal failed for debit agent {debit_agent.id}. Amount: {total_debit}",
+                extra={"tick": tick}
+            )
             return False
 
         # 3. Execute Credits
@@ -379,6 +388,21 @@ class SettlementSystem(IMonetaryAuthority):
 
         return True
 
+    def _validate_memo(self, memo: str) -> bool:
+        """
+        Validates the memo field for security and length.
+        Ensures strictly string type and max length.
+        """
+        if not isinstance(memo, str):
+            self.logger.warning(f"Invalid memo type: {type(memo)}. Rejecting.")
+            return False
+
+        if len(memo) > 255:
+             self.logger.warning(f"Memo too long: {len(memo)} chars. Max 255. Rejecting.")
+             return False
+
+        return True
+
     @enforce_purity()
     def transfer(
         self,
@@ -398,6 +422,11 @@ class SettlementSystem(IMonetaryAuthority):
         if not isinstance(amount, int):
              raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)}. Memo: {memo}")
 
+        # Security: Validate Memo
+        if not self._validate_memo(memo):
+            self.logger.error(f"SETTLEMENT_FAIL | Invalid memo: {memo}")
+            return None
+
         if amount <= 0:
             self.logger.warning(f"Transfer of non-positive amount ({amount}) attempted. Memo: {memo}")
             # Consider this a success logic-wise (no-op) but log it.
@@ -411,10 +440,10 @@ class SettlementSystem(IMonetaryAuthority):
              self.logger.error(f"SETTLEMENT_FAIL | Debit or Credit agent is None. Memo: {memo}")
              return None
 
-        # VALIDATION (Tech Debt Fix: Null IDs)
         debit_id = debit_agent.id
         credit_id = credit_agent.id
 
+        # VALIDATION (NULL Integrity & Protocol Safety)
         if debit_id is None or credit_id is None:
              self.logger.critical(
                  f"SETTLEMENT_FATAL | Transfer attempted with NULL agent IDs! "
@@ -423,6 +452,18 @@ class SettlementSystem(IMonetaryAuthority):
                  extra={"tick": tick, "tags": ["settlement", "integrity_error"]}
              )
              return None
+
+        # PROTOCOL CHECK: Strict type enforcement
+        if not (isinstance(debit_agent, IFinancialAgent) or isinstance(debit_agent, IFinancialEntity)):
+             self.logger.error(f"SETTLEMENT_FAIL | Debit agent does not implement IFinancialAgent/IFinancialEntity. Agent: {debit_agent}")
+             return None
+
+        if not (isinstance(credit_agent, IFinancialAgent) or isinstance(credit_agent, IFinancialEntity)):
+             self.logger.error(f"SETTLEMENT_FAIL | Credit agent does not implement IFinancialAgent/IFinancialEntity. Agent: {credit_agent}")
+             return None
+
+        debit_id = debit_agent.id
+        credit_id = credit_agent.id
 
         # EXECUTE
         success = self._execute_withdrawal(debit_agent, amount, memo, tick, currency=currency)
@@ -475,6 +516,11 @@ class SettlementSystem(IMonetaryAuthority):
         if not isinstance(amount, int):
              raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)}.")
 
+        # Security: Validate Reason (Memo)
+        if not self._validate_memo(reason):
+             self.logger.error(f"MINT_FAIL | Invalid reason (memo): {reason}")
+             return None
+
         if amount <= 0:
             return None
 
@@ -516,6 +562,11 @@ class SettlementSystem(IMonetaryAuthority):
         """
         if not isinstance(amount, int):
              raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)}.")
+
+        # Security: Validate Reason (Memo)
+        if not self._validate_memo(reason):
+             self.logger.error(f"BURN_FAIL | Invalid reason (memo): {reason}")
+             return None
 
         if amount <= 0:
             return None
@@ -647,6 +698,7 @@ class SettlementSystem(IMonetaryAuthority):
             if isinstance(agent, IBank):
                 bank_reserves += current_balance
                 total_deposits += agent.get_total_deposits()
+            # Removed legacy hasattr fallback for strict Protocol Purity
 
         # M2 = (Total Cash - Bank Reserves) + Total Deposits
         # Currency in Circulation = Total Cash - Bank Reserves
