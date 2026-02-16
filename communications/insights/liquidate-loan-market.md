@@ -40,3 +40,11 @@ Output:
 ```
 ============================== 47 passed in 0.55s ==============================
 ```
+
+### Post-Review Verification (Fix Ambiguity)
+Command: `python3 -m pytest tests/unit/markets/test_loan_market_mortgage.py tests/unit/test_bank_decomposition.py tests/unit/test_bank.py`
+
+Output:
+```
+============================== 18 passed in 0.94s ==============================
+```

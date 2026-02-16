@@ -8,7 +8,7 @@ from modules.housing.dtos import MortgageApprovalDTO
 # Import from new API
 from modules.market.housing_planner_api import ILoanMarket
 from modules.finance.api import MortgageApplicationDTO
-from modules.finance.api import LoanInfoDTO as LoanDTO
+from modules.finance.api import LoanInfoDTO
 from modules.simulation.api import AgentID
 
 if TYPE_CHECKING:
@@ -124,7 +124,7 @@ class LoanMarket(Market, ILoanMarket):
 
         return True
 
-    def apply_for_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
+    def apply_for_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanInfoDTO]:
         """
         Processes a mortgage application with regulatory checks.
         Returns LoanInfoDTO if approved, None otherwise.
@@ -162,7 +162,7 @@ class LoanMarket(Market, ILoanMarket):
             return loan_info.loan_id
         return None
 
-    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
+    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanInfoDTO]:
         """
         Legacy/Compat method.
         Stages a mortgage (creates loan record) without disbursing funds.
@@ -180,7 +180,7 @@ class LoanMarket(Market, ILoanMarket):
              return "APPROVED"
         return "REJECTED"
 
-    def convert_staged_to_loan(self, staged_loan_id: str) -> Optional[LoanDTO]:
+    def convert_staged_to_loan(self, staged_loan_id: str) -> Optional[LoanInfoDTO]:
         """
         Finalizes an approved application.
         Returns LoanInfoDTO object.
@@ -188,7 +188,7 @@ class LoanMarket(Market, ILoanMarket):
         if hasattr(self.bank, 'loans') and staged_loan_id in self.bank.loans:
              loan = self.bank.loans[staged_loan_id]
              # MIGRATION: Ensure DTO purity by returning object
-             return LoanDTO(
+             return LoanInfoDTO(
                  loan_id=staged_loan_id,
                  borrower_id=int(loan.borrower_id),
                  original_amount=float(loan.principal),
