@@ -49,15 +49,15 @@ class TestConsumptionManagerSurvival:
         # Survival need 0.9 > threshold 0.8
         base_household.needs["survival"] = 0.9
 
-        # Market signal
+        # Market signal (Integer Pennies: 1000 = $10.00)
         market_snapshot = {
             "market_signals": {
-                "basic_food": {"best_ask": 10.0}
+                "basic_food": {"best_ask": 1000}
             }
         }
 
-        # Assets sufficient (100.0 > 10.0 * 1.1)
-        base_household.assets = 100.0
+        # Assets sufficient (10000 > 1000 + 100)
+        base_household.assets = 10000
 
         result = manager.check_survival_override(base_household, base_config, market_snapshot, 1, mock_logger)
 
@@ -68,8 +68,8 @@ class TestConsumptionManagerSurvival:
         assert len(orders) == 1
         assert orders[0].item_id == "basic_food"
         assert orders[0].side == "BUY"
-        # Price = 10.0 * 1.1 = 11.0
-        assert abs(orders[0].price_limit - 11.0) < 0.0001
+        # Price = 1000 + 100 (premium) = 1100
+        assert abs(orders[0].price_limit - 1100) < 0.0001
 
         assert isinstance(vector, HouseholdActionVector)
         assert vector.work_aggressiveness == 1.0

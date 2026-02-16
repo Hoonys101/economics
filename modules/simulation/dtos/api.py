@@ -267,7 +267,7 @@ class FirmConfigDTO:
     default_loan_spread: float
 
     # Expanded Fields
-    initial_firm_liquidity_need: float # Ratio or Int? Context suggests amount. Check usage.
+    initial_firm_liquidity_need: int # Amount in pennies
     bankruptcy_consecutive_loss_threshold: int
     profit_history_ticks: int
     ipo_initial_shares: float

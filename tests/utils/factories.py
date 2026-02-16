@@ -170,6 +170,7 @@ def create_firm_config_dto(**kwargs) -> FirmConfigDTO:
         "ai_epsilon_decay_params": (0.5, 0.05, 700),
         "ai_reward_brand_value_multiplier": 0.05,
         "default_unit_cost": 500, # Added missing
+        "space_utility_factor": 1.0,
     }
     defaults.update(kwargs)
     return FirmConfigDTO(**defaults)

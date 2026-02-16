@@ -79,8 +79,8 @@ class ConsumptionManager:
                          premium_pennies = 20
 
                      # MIGRATION: Spec says additive premium in pennies.
-                     # Convert pennies to dollars (float) to match ask_price (float)
-                     bid_price = ask_price + (premium_pennies / 100.0)
+                     # ask_price is now in pennies (int), so we add premium directly.
+                     bid_price = ask_price + premium_pennies
 
                      if logger:
                          logger.warning(
