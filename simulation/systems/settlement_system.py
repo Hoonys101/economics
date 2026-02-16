@@ -9,8 +9,7 @@ from modules.finance.api import (
     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID,
     IMonetaryAuthority
 )
-from simulation.dtos.settlement_dtos import LegacySettlementAccount
-from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder
+from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.market.housing_planner_api import MortgageApplicationDTO
 from simulation.models import Transaction
@@ -36,8 +35,7 @@ class SettlementSystem(IMonetaryAuthority):
         self.logger = logger if logger else logging.getLogger(__name__)
         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
         self.total_liquidation_losses: int = 0
-        self.settlement_accounts: Dict[int, LegacySettlementAccount] = {} # TD-160
-        self.agent_registry: Optional[Any] = None # Injected by SimulationInitializer
+        self.agent_registry: Optional[IAgentRegistry] = None # Injected by SimulationInitializer
 
         # TD-INT-STRESS-SCALE: Reverse Index for Bank Accounts
         # BankID -> Set[AgentID]
@@ -106,230 +104,13 @@ class SettlementSystem(IMonetaryAuthority):
         self.logger.warning(f"get_balance: Agent {agent_id} not found or Registry not linked or Agent not IFinancialAgent.")
         return 0
 
-    def create_settlement(
-        self,
-        agent: Any, # IPortfolioHandler & IHeirProvider & IFinancialAgent
-        tick: int
-    ) -> LegacySettlementAccount:
-        """
-        TD-160: Initiates the settlement process by creating an escrow account.
-        Atomically transfers all assets (Cash + Portfolio) from the agent to the escrow.
-        """
-        agent_id = agent.id
-
-        # 1. Atomic Transfer: Portfolio
-        if isinstance(agent, IPortfolioHandler):
-            portfolio_dto = agent.get_portfolio()
-            agent.clear_portfolio()
-        else:
-            # Fallback for non-compliant agents (should not happen with new Households)
-            portfolio_dto = PortfolioDTO(assets=[])
-            self.logger.warning(f"Agent {agent_id} does not implement IPortfolioHandler. Portfolio not captured.")
-
-        # 2. Atomic Transfer: Cash
-        # IFinancialAgent protocol enforcement (was agent.assets)
-        cash_balance = 0
-        if isinstance(agent, IFinancialEntity):
-            cash_balance = agent.balance_pennies
-        elif isinstance(agent, IFinancialAgent):
-            cash_balance = agent.get_balance(DEFAULT_CURRENCY)
-
-        if cash_balance > 0:
-            if isinstance(agent, IFinancialEntity):
-                agent.withdraw(cash_balance, currency=DEFAULT_CURRENCY)
-            elif isinstance(agent, IFinancialAgent):
-                agent._withdraw(cash_balance)
-
-        # 3. Determine Heir / Escheatment
-        heir_id = None
-        is_escheatment = True
-
-        if isinstance(agent, IHeirProvider):
-            heir_id = agent.get_heir()
-            if heir_id is not None:
-                is_escheatment = False
-
-        account = LegacySettlementAccount(
-            deceased_agent_id=agent_id,
-            escrow_cash=cash_balance,
-            escrow_portfolio=portfolio_dto,
-            escrow_real_estate=[], # Placeholder
-            status="OPEN",
-            created_at=tick,
-            heir_id=heir_id,
-            is_escheatment=is_escheatment
-        )
-        self.settlement_accounts[agent_id] = account
-
-        self.logger.info(
-            f"SETTLEMENT_CREATED | Escrow account created for Agent {agent_id}. Cash: {cash_balance}. Portfolio items: {len(portfolio_dto.assets)}. Heir: {heir_id if heir_id else 'NONE (Escheatment)'}",
-            extra={"tick": tick, "agent_id": agent_id, "tags": ["settlement", "inheritance", "atomic"]}
-        )
-        return account
-
-    def execute_settlement(
-        self,
-        account_id: int,
-        distribution_plan: List[Tuple[Any, int, str, str]], # (Recipient, Amount, Memo, TxType)
-        tick: int
-    ) -> List[ITransaction]:
-        """
-        TD-160: Executes the distribution of assets from the escrow account.
-        Returns a list of executed transactions (receipts).
-        """
-        if account_id not in self.settlement_accounts:
-            self.logger.error(f"SETTLEMENT_FAIL | Account {account_id} not found.")
-            return []
-
-        account = self.settlement_accounts[account_id]
-        if account.status != "OPEN":
-            self.logger.error(f"SETTLEMENT_FAIL | Account {account_id} is not OPEN. Status: {account.status}")
-            return []
-
-        account.status = "PROCESSING"
-        transactions: List[ITransaction] = []
-
-        # --- 1. Portfolio Distribution (Priority) ---
-        portfolio_transferred = False
-        if account.escrow_portfolio.assets:
-            # Attempt to find the correct recipient in the plan
-            # If escheatment -> Government
-            # If inheritance -> Heir (heir_id)
-
-            recipient_candidate = None
-
-            for recipient, _, _, _ in distribution_plan:
-                # Check for Government (Escheatment)
-                if account.is_escheatment:
-                    # Heuristic: Check for Government protocol
-                    if isinstance(recipient, IGovernment):
-                        recipient_candidate = recipient
-                        break
-
-                # Check for Heir
-                else:
-                    if recipient.id == account.heir_id:
-                        recipient_candidate = recipient
-                        break
-
-            if recipient_candidate and isinstance(recipient_candidate, IPortfolioHandler):
-                recipient_candidate.receive_portfolio(account.escrow_portfolio)
-                # Clear from escrow to prevent leak/duplication (Reassign to empty DTO to preserve passed reference)
-                account.escrow_portfolio = PortfolioDTO(assets=[])
-                portfolio_transferred = True
-                self.logger.info(
-                    f"PORTFOLIO_TRANSFER | Transferred portfolio to {recipient_candidate.id}",
-                    extra={"tick": tick, "agent_id": account.deceased_agent_id}
-                )
-            else:
-                self.logger.error(
-                    f"PORTFOLIO_TRANSFER_FAIL | Could not find valid IPortfolioHandler recipient for {'Escheatment' if account.is_escheatment else f'Heir {account.heir_id}'}",
-                    extra={"tick": tick, "agent_id": account.deceased_agent_id}
-                )
-
-        # --- 2. Cash Distribution ---
-        total_distributed = 0
-
-        for recipient, amount, memo, tx_type in distribution_plan:
-            if not isinstance(amount, int):
-                 raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)} in distribution plan.")
-
-            if amount <= 0:
-                continue
-
-            # Strict Integer Check
-            if total_distributed + amount > account.escrow_cash:
-                 self.logger.critical(
-                     f"SETTLEMENT_OVERDRAFT | Attempted to distribute more than escrow! "
-                     f"Escrow: {account.escrow_cash}, Distributed: {total_distributed}, Requested: {amount}",
-                     extra={"tick": tick, "agent_id": account_id}
-                 )
-                 continue
-
-            try:
-                # Direct Deposit (Source is Void/Escrow)
-                if isinstance(recipient, IFinancialEntity):
-                    recipient.deposit(amount)
-                elif isinstance(recipient, IFinancialAgent):
-                    recipient._deposit(amount)
-                else:
-                     raise TypeError(f"Recipient {recipient.id} is not a valid financial agent.")
-
-                total_distributed += amount
-
-                # Create Receipt
-                tx = self._create_transaction_record(
-                    buyer_id=recipient.id, # Recipient
-                    seller_id=account.deceased_agent_id, # Deceased
-                    amount=amount,
-                    memo=memo,
-                    tick=tick
-                )
-                tx.transaction_type = tx_type
-                if tx.metadata is None:
-                    tx.metadata = {}
-                tx.metadata["executed"] = True
-                transactions.append(tx)
-
-            except Exception as e:
-                self.logger.error(f"SETTLEMENT_DISTRIBUTION_FAIL | Failed to pay {recipient.id}. {e}")
-
-        # Update Account
-        account.escrow_cash -= total_distributed
-        # No float tolerance needed for int
-
-        return transactions
-
     def get_assets_by_currency(self) -> Dict[str, int]:
         """
         Implements ICurrencyHolder for M2 verification.
         Returns total cash held in escrow accounts.
         """
-        total = 0
-        for acc in self.settlement_accounts.values():
-            # Count all cash in the system regardless of status, as it is withdrawn from circulation
-            total += acc.escrow_cash
-        return {DEFAULT_CURRENCY: total}
-
-    def verify_and_close(self, account_id: int, tick: int) -> bool:
-        """
-        TD-160: Verifies zero balance and closes the account.
-        """
-        if account_id not in self.settlement_accounts:
-            return False
-
-        account = self.settlement_accounts[account_id]
-
-        has_error = False
-
-        # 1. Cash Check
-        if account.escrow_cash != 0:
-            self.logger.warning(
-                f"SETTLEMENT_LEAK | Account {account_id} closed with remaining cash: {account.escrow_cash}. Burning it.",
-                extra={"tick": tick, "agent_id": account_id}
-            )
-            account.escrow_cash = 0
-            has_error = True
-
-        # 2. Portfolio Check (TD-160)
-        if account.escrow_portfolio and account.escrow_portfolio.assets:
-             self.logger.warning(
-                f"SETTLEMENT_LEAK | Account {account_id} closed with remaining PORTFOLIO ASSETS: {len(account.escrow_portfolio.assets)} items.",
-                extra={"tick": tick, "agent_id": account_id}
-             )
-             # Logic to burn/destroy portfolio assets? Just log for now.
-             has_error = True
-
-        if has_error:
-            account.status = "CLOSED_WITH_LEAK"
-            return False
-
-        account.status = "CLOSED"
-        self.logger.info(
-            f"SETTLEMENT_CLOSED | Account {account_id} closed successfully.",
-            extra={"tick": tick, "agent_id": account_id}
-        )
-        return True
+        # Since settlement_accounts are removed, SettlementSystem holds 0 assets.
+        return {DEFAULT_CURRENCY: 0}
 
     def record_liquidation(
         self,
@@ -411,7 +192,7 @@ class SettlementSystem(IMonetaryAuthority):
         elif isinstance(agent, IFinancialAgent):
             current_cash = agent.get_balance(currency)
         elif isinstance(agent, ICurrencyHolder):
-             # Fallback if agent is ICurrencyHolder but not IFinancialAgent (unlikely now)
+             # Fallback if agent is ICurrencyHolder but not IFinancialAgent
              current_cash = agent.get_assets_by_currency().get(currency, 0)
 
         if current_cash < amount:
@@ -631,8 +412,8 @@ class SettlementSystem(IMonetaryAuthority):
              return None
 
         # VALIDATION (Tech Debt Fix: Null IDs)
-        debit_id = getattr(debit_agent, 'id', None)
-        credit_id = getattr(credit_agent, 'id', None)
+        debit_id = debit_agent.id
+        credit_id = credit_agent.id
 
         if debit_id is None or credit_id is None:
              self.logger.critical(
@@ -830,10 +611,11 @@ class SettlementSystem(IMonetaryAuthority):
              self.logger.critical("AUDIT_FAIL | Agent registry not linked.")
              return False
 
-        # Use the enhanced registry method
-        if not hasattr(self.agent_registry, "get_all_financial_agents"):
-             self.logger.critical("AUDIT_FAIL | Agent registry does not support get_all_financial_agents.")
-             return False
+        # Use the enhanced registry method (IAgentRegistry assumption via typing)
+        # Removed hasattr check for get_all_financial_agents as strict typing implies it should exist if valid registry.
+        # But for runtime safety with "Any", we might want to keep it or just try.
+        # Given mandates, I'll rely on correct registry injection.
+        # If registry is invalid, it will raise AttributeError, which is fine for "Protocol Enforcement".
 
         agents = self.agent_registry.get_all_financial_agents()
         total_cash = 0
@@ -853,9 +635,10 @@ class SettlementSystem(IMonetaryAuthority):
                 current_balance = agent.balance_pennies
             elif isinstance(agent, IFinancialAgent):
                 current_balance = agent.get_balance(DEFAULT_CURRENCY)
-            elif hasattr(agent, "get_assets_by_currency"):
-                assets = agent.get_assets_by_currency()
-                current_balance = assets.get(DEFAULT_CURRENCY, 0)
+            elif isinstance(agent, ICurrencyHolder):
+                 # Protocol Fallback
+                 assets = agent.get_assets_by_currency()
+                 current_balance = assets.get(DEFAULT_CURRENCY, 0)
 
             total_cash += current_balance
 
@@ -864,22 +647,11 @@ class SettlementSystem(IMonetaryAuthority):
             if isinstance(agent, IBank):
                 bank_reserves += current_balance
                 total_deposits += agent.get_total_deposits()
-            elif hasattr(agent, '__class__') and agent.__class__.__name__ == "Bank":
-                # Fallback for legacy bank not implementing IBank properly
-                bank_reserves += current_balance
-                if hasattr(agent, 'get_total_deposits'):
-                    total_deposits += agent.get_total_deposits()
-                elif hasattr(agent, 'deposits') and isinstance(agent.deposits, dict):
-                     # Legacy Bank support
-                     total_deposits += sum(d.amount for d in agent.deposits.values() if hasattr(d, 'amount'))
 
-        # Include escrow accounts (considered removed from circulation until settled, but part of system total)
-        # Escrow is effectively "Cash in Limbo".
-        escrow_cash = sum(acc.escrow_cash for acc in self.settlement_accounts.values())
-
-        # M2 = (Total Cash - Bank Reserves) + Total Deposits + Escrow
+        # M2 = (Total Cash - Bank Reserves) + Total Deposits
         # Currency in Circulation = Total Cash - Bank Reserves
-        total_m2 = (total_cash - bank_reserves) + total_deposits + escrow_cash
+        # Removed Escrow (TD-232 Cleanup)
+        total_m2 = (total_cash - bank_reserves) + total_deposits
 
         if expected_total is not None:
             if total_m2 != expected_total:

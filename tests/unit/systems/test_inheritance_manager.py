@@ -54,20 +54,6 @@ class TestInheritanceManager:
 
         mocks.agents = {2: heir1, 3: heir2}
 
-        # Mock Settlement System Receipts
-        mocks.settlement_system.execute_settlement.return_value = [
-            {
-                "buyer_id": 1, "seller_id": 2, "item_id": "inheritance_distribution",
-                "quantity": 1.0, "price": 5000.0, "market_id": "system",
-                "transaction_type": "inheritance_distribution", "time": 0, "metadata": {"heir_ids": [2, 3]}
-            },
-            {
-                "buyer_id": 1, "seller_id": 3, "item_id": "inheritance_distribution",
-                "quantity": 1.0, "price": 5000.0, "market_id": "system",
-                "transaction_type": "inheritance_distribution", "time": 0, "metadata": {"heir_ids": [2, 3]}
-            }
-        ]
-
         txs = setup_manager.process_death(deceased, mocks.government, mocks)
 
         # Check for distribution tx
@@ -86,15 +72,6 @@ class TestInheritanceManager:
         heir3 = self.create_household(4)
         deceased._bio_state.children_ids = [2, 3, 4]
         mocks.agents = {2: heir1, 3: heir2, 4: heir3}
-
-        # Mock Settlement System Receipts
-        mocks.settlement_system.execute_settlement.return_value = [
-            {
-                "buyer_id": 1, "seller_id": 2, "item_id": "inheritance_distribution",
-                "quantity": 1.0, "price": 33.33, "market_id": "system",
-                "transaction_type": "inheritance_distribution", "time": 0, "metadata": {"heir_ids": [2, 3, 4]}
-            }
-        ]
 
         txs = setup_manager.process_death(deceased, mocks.government, mocks)
 
@@ -138,15 +115,6 @@ class TestInheritanceManager:
         heir1 = self.create_household(2)
         deceased._bio_state.children_ids = [2]
         mocks.agents = {2: heir1}
-
-        # Mock Settlement System Receipts
-        mocks.settlement_system.execute_settlement.return_value = [
-            {
-                "buyer_id": 1, "seller_id": mocks.government.id, "item_id": "inheritance_tax",
-                "quantity": 1.0, "price": 500.0, "market_id": "system",
-                "transaction_type": "tax", "time": 0, "metadata": {}
-            }
-        ]
 
         txs = setup_manager.process_death(deceased, mocks.government, mocks)
 
