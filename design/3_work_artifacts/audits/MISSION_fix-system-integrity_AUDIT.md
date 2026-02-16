@@ -34,3 +34,8 @@ The codebase requires immediate remediation:
 1.  **Monetary Ledger**: Remove `deposit_interest` and `loan_interest` from expansion/contraction lists in `monetary_ledger.py`.
 2.  **Registry Tests**: Refactor `test_service.py` to correctly instantiate `MissionLock` with a path and remove the invalid `patch`.
 3.  **Registry Service**: (Optional) Add `LOCK_PATH = DB_PATH.with_suffix('.lock')` to `service.py` for backward compatibility if needed by other consumers.
+
+### 📝 JULES Execution Log
+- **System Integrity Fix Status**: [Pending/Fixed]
+- **M2 Leak Resolved?**: [Yes/No]
+- **Reproduction Result**: [Paste test output summary here]
