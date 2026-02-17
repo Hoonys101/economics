@@ -41,5 +41,10 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "title": "Transaction Logic Unification",
         "file": "design/3_work_artifacts/specs/MISSION_transaction-unification-implementation_SPEC.md",
         "instruction": "Deprecate TransactionManager and migrate all logic to TransactionProcessor. Redirect all callers (markets, modules) to the new processor. Ensure zero-sum integrity and anti-fraud checks are preserved."
+    },
+    "resolve-post-merge-import-errors": {
+        "title": "Post-Merge Import & Path Stabilization",
+        "file": "design/3_work_artifacts/specs/MISSION_resolve-import-errors_SPEC.md",
+        "instruction": "Audit the test suite for all broken imports and file path errors resulting from the recent merge. Fix all ImportErrors and ensure parity between updated DTOs and their consumers."
     }
 }
