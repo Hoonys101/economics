@@ -44,7 +44,7 @@ class TransactionValidator(ITransactionValidator):
         try:
             participant = self.account_accessor.get_participant(transaction.source_account_id)
             balance = participant.get_balance(transaction.currency)
-            if balance < transaction.amount:
+            if balance < transaction.amount and not participant.allows_overdraft:
                 raise InsufficientFundsError(
                     f"Insufficient funds in source account {transaction.source_account_id}. "
                     f"Required: {transaction.amount}, Available: {balance}"

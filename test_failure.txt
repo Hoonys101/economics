@@ -1,0 +1,111 @@
+
+tests/integration/test_omo_system.py::test_process_omo_purchase_transaction FAILED [ 50%]
+tests/system/test_engine.py::test_handle_agent_lifecycle_removes_inactive_agents FAILED [100%]
+
+================================== FAILURES ===================================
+____________________ test_process_omo_purchase_transaction ____________________
+
+omo_setup = (<simulation.systems.central_bank_system.CentralBankSystem object at 0x0000024463B16E40>, <simulation.systems.transact...gent object at 0x0000024463AFAC10>, <tests.integration.test_omo_system.OMOTestAgent object at 0x0000024463AFAD50>, ...)
+
+    def test_process_omo_purchase_transaction(omo_setup):
+        cb_system, tx_manager, state, cb_agent, gov_agent, household, settlement = omo_setup
+    
+        # Household sells bond to CB (OMO Purchase by CB)
+        # CB pays Household (Minting new money)
+        trade_price = 100
+        tx = Transaction(
+            buyer_id=cb_agent.id,
+            seller_id=household.id,
+            item_id="government_bond",
+            quantity=10,
+            price=10, # Unit price 10. Total = 100
+            market_id="security_market",
+            transaction_type="omo_purchase",
+            time=1
+        )
+        state.transactions = [tx]
+    
+        # Use SSoT for initial state
+        initial_hh_assets = settlement.get_balance(household.id)
+        initial_money_issued = gov_agent.total_money_issued
+    
+        # Audit M2 before (Sum of non-CB agents)
+        # M2 = Household(500) + Gov(1000) = 1500
+        initial_m2 = settlement.audit_total_m2(expected_total=None) # Returns bool, but logs value.
+        # We can calculate manually for assertion or trust audit_total_m2 logic.
+        # Let's calculate manually using settlement.get_balance
+        m2_before = settlement.get_balance(household.id) + settlement.get_balance(gov_agent.id)
+    
+        tx_manager.execute(state)
+    
+        # Verify Household got paid via SSoT
+>       assert settlement.get_balance(household.id) == initial_hh_assets + trade_price
+E       assert 500 == (500 + 100)
+E        +  where 500 = get_balance(1)
+E        +    where get_balance = <simulation.systems.settlement_system.SettlementSystem object at 0x0000024463B16BA0>.get_balance
+E        +    and   1 = <tests.integration.test_omo_system.OMOTestAgent object at 0x0000024463AFAD50>.id
+
+tests\integration\test_omo_system.py:184: AssertionError
+_____________ test_handle_agent_lifecycle_removes_inactive_agents _____________
+
+setup_simulation_for_lifecycle = (<simulation.engine.Simulation object at 0x0000024463D238C0>, <simulation.core_agents.Household object at 0x0000024463...463D2CCD0>, <simulation.firms.Firm object at 0x0000024463D21550>, <simulation.firms.Firm object at 0x0000024463D2E350>)
+
+    def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lifecycle):
+        (
+            sim,
+            household_active,
+            household_inactive,
+            household_employed_by_inactive_firm,
+            firm_active,
+            firm_inactive,
+        ) = setup_simulation_for_lifecycle
+    
+        assert len(sim.households) == 3
+        assert len(sim.firms) == 2
+        assert household_active in sim.households
+        assert household_inactive in sim.households
+        assert firm_active in sim.firms
+        assert firm_inactive in sim.firms
+        assert household_employed_by_inactive_firm.is_employed
+        assert household_employed_by_inactive_firm.employer_id == firm_inactive.id
+        assert household_active in firm_active.hr_state.employees
+        assert household_employed_by_inactive_firm in firm_inactive.hr_state.employees
+    
+        # CHANGED: Replaced hasattr with direct access where safe, and getattr for optional components
+        state = SimulationState(
+            time=sim.time,
+            households=sim.households,
+            firms=sim.firms,
+            agents=sim.agents,
+            markets=sim.markets,
+            government=sim.government,
+            bank=sim.bank,
+            central_bank=sim.central_bank, # Direct access
+            escrow_agent=getattr(sim, 'escrow_agent', None), # Keep getattr for optional/dynamic
+            stock_market=sim.stock_market, # Direct access
+            stock_tracker=sim.stock_tracker, # Direct access
+            goods_data=sim.goods_data,
+            market_data={},
+            config_module=sim.config_module,
+            tracker=sim.tracker,
+            logger=sim.logger,
+            ai_training_manager=sim.ai_training_manager, # Direct access
+            ai_trainer=sim.ai_trainer, # Direct access
+            next_agent_id=sim.next_agent_id, # Direct access
+            real_estate_units=sim.real_estate_units, # Direct access
+            transaction_processor=sim.transaction_processor, # Inject processor
+        )
+    
+        # Force inactive state as SimulationInitializer.build_simulation -> update_needs resets it
+        household_inactive.is_active = False
+        firm_inactive.is_active = False
+    
+>       sim.lifecycle_manager._handle_agent_liquidation(state)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'AgentLifecycleManager' object has no attribute '_handle_agent_liquidation'
+
+tests\system\test_engine.py:823: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/integration/test_omo_system.py::test_process_omo_purchase_transaction
+FAILED tests/system/test_engine.py::test_handle_agent_lifecycle_removes_inactive_agents
+====================== 2 failed, 571 deselected in 2.12s ======================

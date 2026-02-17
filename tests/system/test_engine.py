@@ -820,7 +820,7 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
     household_inactive.is_active = False
     firm_inactive.is_active = False
 
-    sim.lifecycle_manager._handle_agent_liquidation(state)
+    sim.lifecycle_manager.death_system.execute(state)
 
     assert len(sim.households) == 2
     assert household_active in sim.households

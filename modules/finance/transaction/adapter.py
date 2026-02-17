@@ -19,6 +19,12 @@ class FinancialEntityAdapter:
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         return self.entity.balance_pennies if currency == DEFAULT_CURRENCY else 0
 
+    @property
+    def allows_overdraft(self) -> bool:
+        # Hardcoded ID check for Central Bank. IDs are usually int.
+        from modules.system.constants import ID_CENTRAL_BANK
+        return self.entity.id == ID_CENTRAL_BANK or str(self.entity.id) == str(ID_CENTRAL_BANK)
+
 class FinancialAgentAdapter:
     """
     Adapter for IFinancialAgent to ITransactionParticipant.
@@ -34,6 +40,11 @@ class FinancialAgentAdapter:
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         return self.agent.get_balance(currency)
+
+    @property
+    def allows_overdraft(self) -> bool:
+        from modules.system.constants import ID_CENTRAL_BANK
+        return self.agent.id == ID_CENTRAL_BANK or str(self.agent.id) == str(ID_CENTRAL_BANK)
 
 
 class RegistryAccountAccessor(IAccountAccessor):

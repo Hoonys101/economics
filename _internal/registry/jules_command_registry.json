@@ -54,6 +54,23 @@
       "model": null,
       "audit_requirements": null
     },
+    "lifecycle-decomposition": {
+      "key": "lifecycle-decomposition",
+      "title": "Lifecycle Manager Decomposition",
+      "type": "jules",
+      "instruction_raw": "Implement the structural decomposition of LifecycleManager into BirthSystem, DeathSystem, and AgingSystem. Ensure the coordinator in LifecycleManager correctly delegates tasks. Verify with split unit tests for each sub-system.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_lifecycle-decomposition-implementation_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
     "transaction-unification": {
       "key": "transaction-unification",
       "title": "Transaction Logic Unification",

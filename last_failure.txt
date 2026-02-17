@@ -1,0 +1,32 @@
+
+tests/unit/test_transaction_engine.py::test_validator_insufficient_funds FAILED [100%]
+
+================================== FAILURES ===================================
+______________________ test_validator_insufficient_funds ______________________
+
+    def test_validator_insufficient_funds():
+        mock_accessor = Mock(spec=IAccountAccessor)
+        mock_accessor.exists.return_value = True
+        mock_participant = Mock(spec=ITransactionParticipant)
+        mock_participant.get_balance.return_value = 1000 # 10.00
+        mock_accessor.get_participant.return_value = mock_participant
+    
+        validator = TransactionValidator(mock_accessor)
+    
+        dto = TransactionDTO(
+            transaction_id="1",
+            source_account_id="src",
+            destination_account_id="dst",
+            amount=5000, # 50.00
+            currency=DEFAULT_CURRENCY,
+            description="test"
+        )
+    
+>       with pytest.raises(InsufficientFundsError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'modules.finance.transaction.api.InsufficientFundsError'>
+
+tests\unit\test_transaction_engine.py:84: Failed
+=========================== short test summary info ===========================
+FAILED tests/unit/test_transaction_engine.py::test_validator_insufficient_funds
+====================== 1 failed, 262 deselected in 3.18s ======================

@@ -90,6 +90,11 @@ class ITransactionParticipant(Protocol):
         """Returns the current balance for the specified currency."""
         ...
 
+    @property
+    def allows_overdraft(self) -> bool:
+        """Returns True if this participant is allowed to have a negative balance (e.g., Central Bank)."""
+        ...
+
 
 @runtime_checkable
 class IAccountAccessor(Protocol):
