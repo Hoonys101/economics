@@ -1,6 +1,7 @@
 import pytest
 import shutil
 import os
+from unittest.mock import patch
 from scripts.ledger_manager import LedgerManager, TableBlock
 
 @pytest.fixture
@@ -73,42 +74,42 @@ def test_register_new_item(mock_ledger_env):
                     assert "OPERATIONS" in block.section_title
     assert found
 
-def test_sync_with_codebase(mock_ledger_env, capsys, mocker):
+def test_sync_with_codebase(mock_ledger_env, capsys):
     ledger_path, archive_dir = mock_ledger_env
     manager = LedgerManager(str(ledger_path), str(archive_dir))
 
     # Mock scan_code
-    mocker.patch.object(manager, '_scan_code_for_todos', return_value={
+    with patch.object(manager, '_scan_code_for_todos', return_value={
         'TD-001': ['file.py:10'], # TD-001 is active
         'TD-999': ['file.py:20']  # TD-999 is orphan
-    })
+    }):
 
-    manager.sync_with_codebase()
+        manager.sync_with_codebase()
 
-    captured = capsys.readouterr()
-    assert "[ORPHANED TODOs]" in captured.out
-    assert "TD-999" in captured.out
-    assert "TD-001" not in captured.out # Should be matched, not reported as orphan or untracked
+        captured = capsys.readouterr()
+        assert "[ORPHANED TODOs]" in captured.out
+        assert "TD-999" in captured.out
+        assert "TD-001" not in captured.out # Should be matched, not reported as orphan or untracked
 
-    # TD-001 is active in ledger AND in code -> Synced.
-    # TD-002 was RESOLVED in setup, but if we didn't archive it yet, it's NOT ACTIVE for sync logic?
-    # Sync logic: status not in (RESOLVED, COMPLETED) -> Active.
-    # TD-002 is RESOLVED, so it is skipped.
+        # TD-001 is active in ledger AND in code -> Synced.
+        # TD-002 was RESOLVED in setup, but if we didn't archive it yet, it's NOT ACTIVE for sync logic?
+        # Sync logic: status not in (RESOLVED, COMPLETED) -> Active.
+        # TD-002 is RESOLVED, so it is skipped.
 
-    # Add an active item in ledger that is missing in code
-    # We need to modify ledger first
-    blocks = manager._parse_ledger()
-    blocks[1].rows.append({ # Add to AGENTS
-        'id': 'TD-MISSING',
-        'date': '', 'description': '', 'impact': '', 'status': 'ACTIVE',
-        'section': 'AGENTS', 'extra_columns': {}
-    })
-    manager._write_ledger(blocks)
+        # Add an active item in ledger that is missing in code
+        # We need to modify ledger first
+        blocks = manager._parse_ledger()
+        blocks[1].rows.append({ # Add to AGENTS
+            'id': 'TD-MISSING',
+            'date': '', 'description': '', 'impact': '', 'status': 'ACTIVE',
+            'section': 'AGENTS', 'extra_columns': {}
+        })
+        manager._write_ledger(blocks)
 
-    manager.sync_with_codebase()
-    captured = capsys.readouterr()
-    assert "TD-MISSING" in captured.out
-    assert "[UNTRACKED DEBT]" in captured.out
+        manager.sync_with_codebase()
+        captured = capsys.readouterr()
+        assert "TD-MISSING" in captured.out
+        assert "[UNTRACKED DEBT]" in captured.out
 
 
 def test_pipe_escaping_in_ledger(mock_ledger_env):
