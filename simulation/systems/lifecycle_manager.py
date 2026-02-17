@@ -3,7 +3,6 @@ from typing import List, TYPE_CHECKING, Any, Optional
 import logging
 
 if TYPE_CHECKING:
-    from simulation.core_agents import Household
     from simulation.dtos.api import SimulationState
     from simulation.models import Transaction
     from modules.household.api import IHouseholdFactory
@@ -14,13 +13,17 @@ from simulation.systems.immigration_manager import ImmigrationManager
 from simulation.systems.inheritance_manager import InheritanceManager
 from simulation.systems.firm_management import FirmSystem
 from simulation.systems.liquidation_manager import LiquidationManager
-from simulation.ai.vectorized_planner import VectorizedHouseholdPlanner
 from simulation.finance.api import ISettlementSystem
-from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY, ICurrencyHolder
+from modules.system.api import IAssetRecoverySystem
 from modules.system.registry import AgentRegistry
 from modules.hr.service import HRService
 from modules.finance.service import TaxService
 from modules.finance.api import IShareholderRegistry
+
+# New Imports
+from simulation.systems.lifecycle.aging_system import AgingSystem
+from simulation.systems.lifecycle.birth_system import BirthSystem
+from simulation.systems.lifecycle.death_system import DeathSystem
 
 class AgentLifecycleManager(AgentLifecycleManagerInterface):
     """
@@ -35,16 +38,9 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                  shareholder_registry: IShareholderRegistry = None,
                  household_factory: Optional[IHouseholdFactory] = None):
         self.config = config_module
-        self.demographic_manager = demographic_manager
-        self.inheritance_manager = inheritance_manager
-        self.firm_system = firm_system
-        self.settlement_system = settlement_system
-        self.public_manager = public_manager
-        self.immigration_manager = ImmigrationManager(config_module=config_module, settlement_system=settlement_system)
-        self.shareholder_registry = shareholder_registry
-        self.household_factory = household_factory
+        self.logger = logger
 
-        # Dependencies for LiquidationManager
+        # Dependencies for LiquidationManager (maintained for instantiation)
         self.agent_registry = AgentRegistry()
         self.hr_service = HRService()
         self.tax_service = TaxService(self.agent_registry)
@@ -55,12 +51,31 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             self.hr_service,
             self.tax_service,
             self.agent_registry,
-            self.shareholder_registry,
+            shareholder_registry,
             public_manager
         )
 
-        self.breeding_planner = VectorizedHouseholdPlanner(config_module)
-        self.logger = logger
+        # Instantiate Sub-Systems
+        self.aging_system = AgingSystem(config_module, demographic_manager, logger)
+
+        self.birth_system = BirthSystem(
+            config_module,
+            demographic_manager,
+            ImmigrationManager(config_module=config_module, settlement_system=settlement_system),
+            firm_system,
+            settlement_system,
+            logger,
+            household_factory
+        )
+
+        self.death_system = DeathSystem(
+            config_module,
+            inheritance_manager,
+            self.liquidation_manager,
+            settlement_system,
+            public_manager,
+            logger
+        )
 
     def reset_agents_tick_state(self, state: SimulationState) -> None:
         """
@@ -83,411 +98,20 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                                to be queued for the NEXT tick.
         """
         # Update AgentRegistry with current state
+        # Note: Ideally this should be done by the orchestrator, but keeping it here for safety.
+        # But AgentRegistry is used by LiquidationManager via DeathSystem.
         self.agent_registry.set_state(state)
 
-        # 1. Aging (and internal lifecycle update)
-        self.demographic_manager.process_aging(state.households, state.time, state.market_data)
+        all_transactions = []
 
-        # 2. NEW: Firm Lifecycle (Aging & Bankruptcy Checks)
-        self._process_firm_lifecycle(state)
+        # 1. Aging Phase
+        self.aging_system.execute(state)
 
-        # 2a. Household Lifecycle (Distress Checks)
-        self._process_household_lifecycle(state)
+        # 2. Birth Phase
+        self.birth_system.execute(state)
 
-        # 3. Births
-        new_children = self._process_births(state)
-        self._register_new_agents(state, new_children)
+        # 3. Death Phase
+        death_txs = self.death_system.execute(state)
+        all_transactions.extend(death_txs)
 
-        # 4. Immigration
-        new_immigrants = self.immigration_manager.process_immigration(state)
-        self._register_new_agents(state, new_immigrants)
-
-        # 5. Entrepreneurship
-        self.firm_system.check_entrepreneurship(state)
-
-        # 6. Death & Liquidation
-        return self._handle_agent_liquidation(state)
-
-    def _process_firm_lifecycle(self, state: SimulationState) -> None:
-        """
-        Handles lifecycle updates for all active firms, formerly in Firm.update_needs.
-        Includes WO-167 Grace Protocol for distressed firms.
-        """
-        assets_threshold = getattr(self.config, "ASSETS_CLOSURE_THRESHOLD", 0.0)
-        closure_turns_threshold = getattr(self.config, "FIRM_CLOSURE_TURNS_THRESHOLD", 5)
-        liquidity_inc_rate = getattr(self.config, "LIQUIDITY_NEED_INCREASE_RATE", 1.0)
-
-        for firm in state.firms:
-            if not firm.is_active:
-                continue
-
-            firm.age += 1
-
-            # Liquidity Need Increase
-            firm.needs["liquidity_need"] = min(100.0, firm.needs["liquidity_need"] + liquidity_inc_rate)
-
-            # Check bankruptcy status (logic from FinanceDepartment)
-            firm.finance_engine.check_bankruptcy(firm.finance_state, firm.config)
-
-            # WO-167: Grace Protocol
-            # Check for Cash Crunch
-            # Note: check_cash_crunch and get_inventory_value methods were proxies.
-            # We need to implement them or access state directly.
-            # Current Balance < Needs? Or check FinanceState directly if it has crunch flag.
-            # Simplified: Assets < Liquidity Need
-            current_assets = firm.wallet.get_balance(DEFAULT_CURRENCY)
-            is_crunch = current_assets < firm.needs.get("liquidity_need", 0.0)
-
-            # Inventory Value Calculation
-            inventory_val = self._calculate_inventory_value(firm.get_all_items(), state.markets)
-
-            if is_crunch and inventory_val > 0:
-                # Enter or Continue Distress
-                # Assuming is_distressed is on FinanceState now? No, it was on proxy.
-                # Let's check FinanceState definition. If not there, we might need to add it or use temp.
-                # Assuming it is NOT on FinanceState yet based on errors.
-                # Let's add it dynamically or check if it exists.
-                # For now, let's use getattr/setattr on finance_state for transient flags if needed,
-                # or just use firm.finance_state if we added it there.
-
-                firm.finance_state.is_distressed = True
-                firm.finance_state.distress_tick_counter += 1
-
-                # If within grace period (5 ticks)
-                if firm.finance_state.distress_tick_counter <= 5:
-                    # Trigger Emergency Liquidation (Manual Logic since proxy is gone)
-                    # Use sales engine? Or just post orders.
-                    emergency_orders = [] # Placeholder: Implement Fire Sale Logic here if needed or skip.
-                    # Given the constraints, skipping complex fire sale logic for now to fix crash.
-
-                    # Inject orders into markets
-                    for order in emergency_orders:
-                        market = state.markets.get(order.market_id)
-                        if market:
-                            market.place_order(order, state.time)
-
-                    # SKIP standard closure check
-                    continue
-            else:
-                # Recovery or No Crunch
-                firm.finance_state.is_distressed = False
-                firm.finance_state.distress_tick_counter = 0
-
-            # Standard Closure Check
-            # Refactor: Use finance.balance
-            current_assets = firm.wallet.get_balance(DEFAULT_CURRENCY)
-            if (current_assets <= assets_threshold or
-                    firm.finance_state.consecutive_loss_turns >= closure_turns_threshold):
-
-                # Double check grace period (if we fell through but counter is high)
-                if getattr(firm.finance_state, "distress_tick_counter", 0) > 5:
-                    pass # Allow closure
-                elif getattr(firm.finance_state, "is_distressed", False):
-                    continue # Should have been caught above, but safety check
-
-                firm.is_active = False
-                self.logger.warning(
-                    f"FIRM_INACTIVE | Firm {firm.id} closed down. Assets: {current_assets:.2f}, Consecutive Loss Turns: {firm.finance_state.consecutive_loss_turns}",
-                    extra={
-                        "tick": state.time,
-                        "agent_id": firm.id,
-                        "assets": current_assets,
-                        "consecutive_loss_turns": firm.finance_state.consecutive_loss_turns,
-                        "tags": ["firm_closure"],
-                    }
-                )
-
-    def _process_household_lifecycle(self, state: SimulationState) -> None:
-        """
-        WO-167: Handles distress checks for households.
-        Triggers emergency liquidation if starving but solvent.
-        """
-        survival_threshold = getattr(self.config, "SURVIVAL_NEED_DEATH_THRESHOLD", 100.0)
-        # We intervene before they hit the threshold perfectly, or if they are close.
-        # Let's say 90% of threshold.
-        distress_threshold = survival_threshold * 0.9
-
-        for household in state.households:
-            if not household._bio_state.is_active:
-                continue
-
-            survival_need = household._bio_state.needs.get("survival", 0.0)
-
-            # Check for Distress (High Survival Need or Low Assets but High Real Assets)
-            # Simplification: If survival need is high, we check if they have things to sell.
-            if survival_need > distress_threshold:
-                has_inventory = any(qty > 0 for qty in household._econ_state.inventory.values())
-                has_stocks = any(qty > 0 for qty in household._econ_state.portfolio.to_legacy_dict().values())
-
-                if has_inventory or has_stocks:
-                    household.distress_tick_counter += 1
-
-                    if household.distress_tick_counter <= 5:
-                         emergency_orders = household.trigger_emergency_liquidation()
-
-                         for order in emergency_orders:
-                             market = state.markets.get(order.market_id)
-                             if market:
-                                 market.place_order(order, state.time)
-                             else:
-                                 # Fallback for stocks if market_id="stock_market" is not in dict keys directly?
-                                 if order.market_id == "stock_market" and hasattr(state, "stock_market") and state.stock_market:
-                                     state.stock_market.place_order(order, state.time)
-
-                else:
-                    # No assets to sell, nature takes its course
-                    pass
-            else:
-                household.distress_tick_counter = 0
-
-    def _process_births(self, state: SimulationState) -> List[Household]:
-        if self.household_factory:
-            # New Logic using Factory
-            birth_requests = []
-            active_households = [h for h in state.households if h._bio_state.is_active]
-            if not active_households:
-                return []
-
-            decisions = self.breeding_planner.decide_breeding_batch(active_households)
-            for h, decision in zip(active_households, decisions):
-                if decision:
-                    birth_requests.append(h)
-
-            created_children = []
-            for parent_agent in birth_requests:
-                # Re-verify biological capability (sanity check)
-                if not (self.config.REPRODUCTION_AGE_START <= parent_agent.age <= self.config.REPRODUCTION_AGE_END):
-                    continue
-
-                new_id = state.next_agent_id
-                state.next_agent_id += 1
-
-                # Asset Transfer Calculation
-                parent_assets = 0
-                if hasattr(parent_agent, 'wallet'):
-                    parent_assets = parent_agent.wallet.get_balance(DEFAULT_CURRENCY)
-                elif hasattr(parent_agent, 'assets') and isinstance(parent_agent.assets, dict):
-                    parent_assets = int(parent_agent.assets.get(DEFAULT_CURRENCY, 0))
-                elif hasattr(parent_agent, 'assets'): # Fallback
-                     parent_assets = int(parent_agent.assets)
-
-                initial_gift_pennies = int(max(0, min(parent_assets * 0.1, parent_assets)))
-
-                try:
-                    child = self.household_factory.create_newborn(
-                        parent=parent_agent,
-                        new_id=new_id,
-                        initial_assets=initial_gift_pennies,
-                        current_tick=state.time
-                    )
-
-                    parent_agent.children_ids.append(new_id)
-                    created_children.append(child)
-
-                    self.logger.info(
-                        f"BIRTH | Parent {parent_agent.id} ({parent_agent.age:.1f}y) -> Child {child.id}. "
-                        f"Assets: {initial_gift_pennies}",
-                        extra={"parent_id": parent_agent.id, "child_id": child.id, "tick": state.time}
-                    )
-                except Exception as e:
-                    self.logger.error(
-                        f"BIRTH_FAILED | Failed to create child for parent {parent_agent.id}. Error: {e}",
-                        extra={"parent_id": parent_agent.id, "error": str(e)}
-                    )
-                    continue
-            return created_children
-        else:
-            # Fallback to legacy
-            birth_requests = []
-            active_households = [h for h in state.households if h._bio_state.is_active]
-            if not active_households:
-                return []
-
-            decisions = self.breeding_planner.decide_breeding_batch(active_households)
-            for h, decision in zip(active_households, decisions):
-                if decision:
-                    birth_requests.append(h)
-
-            return self.demographic_manager.process_births(state, birth_requests)
-
-    def _register_new_agents(self, state: SimulationState, new_agents: List[Household]):
-        for agent in new_agents:
-            state.households.append(agent)
-            state.agents[agent.id] = agent
-            agent.decision_engine.markets = state.markets
-            agent.decision_engine.goods_data = state.goods_data
-
-            # WO-218: Track new agent as currency holder for M2 integrity
-            if isinstance(agent, ICurrencyHolder):
-                state.register_currency_holder(agent)
-            else:
-                self.logger.critical(f"LIFECYCLE_ERROR | New Agent {agent.id} is NOT ICurrencyHolder!")
-
-            # Ensure agent has settlement system
-            if hasattr(agent, 'settlement_system'):
-                agent.settlement_system = self.settlement_system
-
-            if state.stock_market:
-                for firm_id, holding in agent.portfolio.holdings.items():
-                    state.stock_market.update_shareholder(agent.id, firm_id, holding.quantity)
-
-            if state.ai_training_manager:
-                state.ai_training_manager.agents.append(agent)
-
-    def _calculate_inventory_value(self, inventory: dict, markets: dict) -> float:
-        total_value = 0.0
-        default_price = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
-
-        for item_id, qty in inventory.items():
-            price = default_price
-            if item_id in markets:
-                m = markets[item_id]
-                if hasattr(m, "avg_price") and m.avg_price > 0:
-                    price = m.avg_price
-                elif hasattr(m, "current_price") and m.current_price > 0:
-                    price = m.current_price
-
-            total_value += qty * price
-        return total_value
-
-    def _handle_agent_liquidation(self, state: SimulationState) -> List[Transaction]:
-        """
-        Handles liquidation of inactive firms and households.
-        Returns a list of transactions (specifically from Inheritance).
-        """
-        transactions: List[Transaction] = []
-
-        # --- Firm Liquidation ---
-        inactive_firms = [f for f in state.firms if not f.is_active]
-        for firm in inactive_firms:
-            self.logger.info(
-                f"FIRM_LIQUIDATION | Starting liquidation for Firm {firm.id}.",
-                extra={"agent_id": firm.id, "tags": ["liquidation"]}
-            )
-
-            inv_value = self._calculate_inventory_value(firm.get_all_items(), state.markets)
-            capital_value = firm.capital_stock
-
-            # TD-187: Liquidation Waterfall Protocol (Prioritized Claims)
-            # Must run BEFORE employees are cleared to calculate severance/wages
-            # AND before PublicManager seizure (now handled internally by LiquidationManager)
-            # WO-212: initiate_liquidation now handles "Firm Write-offs" (Inventory, Capital Stock) atomically.
-            self.liquidation_manager.initiate_liquidation(firm, state)
-
-            # Clear employees
-            for employee in firm.hr_state.employees:
-                if employee.is_active:
-                    employee.is_employed = False
-                    employee.employer_id = None
-            firm.hr_state.employees = []
-            # firm.inventory and firm.capital_stock are cleared in initiate_liquidation -> firm.liquidate_assets
-
-            # Record Liquidation (Destruction of real assets & Escheatment)
-            # Only Capital Stock is destroyed now (machines, buildings), inventory is recovered.
-            # WO-178: record_liquidation now handles escheatment of residual assets (after dividends) to government.
-            government = getattr(state, "government", None)
-
-            self.settlement_system.record_liquidation(
-                agent=firm,
-                inventory_value=0.0, # Inventory recovered
-                capital_value=capital_value,
-                recovered_cash=0.0,
-                reason="firm_liquidation",
-                tick=state.time,
-                government_agent=government
-            )
-
-            # Clear shareholdings
-            for household in state.households:
-                if firm.id in household._econ_state.portfolio.to_legacy_dict():
-                    del household._econ_state.portfolio.to_legacy_dict()[firm.id]
-                    if state.stock_market:
-                        state.stock_market.update_shareholder(household.id, firm.id, 0)
-
-            # TD-030: Unregister from currency registry immediately
-            if isinstance(firm, ICurrencyHolder):
-                state.unregister_currency_holder(firm)
-
-            # TD-INT-STRESS-SCALE: Clean up settlement index
-            if self.settlement_system:
-                self.settlement_system.remove_agent_from_all_accounts(firm.id)
-
-        # --- Household Liquidation (Inheritance) ---
-        inactive_households = [h for h in state.households if not h._bio_state.is_active]
-        for household in inactive_households:
-            # WO-109: Preserve inactive agent for transaction processing
-            if hasattr(state, "inactive_agents") and isinstance(state.inactive_agents, dict):
-                state.inactive_agents[household.id] = household
-
-            # Capture transactions returned by InheritanceManager
-            inheritance_txs = self.inheritance_manager.process_death(household, state.government, state)
-            # TD-160: Atomic Execution - Transactions are already executed.
-            # Append to state.transactions for logging, but do NOT return them to inter_tick_queue.
-            state.transactions.extend(inheritance_txs)
-
-            inv_value = self._calculate_inventory_value(household._econ_state.inventory, state.markets)
-
-            # Phase 3: Asset Recovery for Households
-            if household._econ_state.inventory:
-                 bankruptcy_event = {
-                     "agent_id": household.id,
-                     "tick": state.time,
-                     "inventory": household._econ_state.inventory.copy()
-                 }
-                 self.public_manager.process_bankruptcy_event(bankruptcy_event)
-
-            # Record Liquidation (Destruction)
-            # Inventory is recovered, so we record 0 destruction for inventory.
-            if False and inv_value > 0: # Logic disabled as inventory is recovered
-                 self.settlement_system.record_liquidation(
-                     agent=household,
-                     inventory_value=inv_value,
-                     capital_value=0.0,
-                     recovered_cash=0.0,
-                     reason="household_liquidation_inventory",
-                     tick=state.time
-                 )
-
-            household._econ_state.inventory.clear()
-            household._econ_state.portfolio.to_legacy_dict().clear()
-            if hasattr(household, "portfolio"):
-                 household._econ_state.portfolio.holdings.clear()
-            # Clear shareholdings from registry (TD-275)
-            if state.shareholder_registry:
-                for firm in state.firms:
-                     state.shareholder_registry.register_shares(firm.id, household.id, 0.0)
-            elif state.stock_market:
-                # Fallback for older StockMarket logic if any
-                if hasattr(state.stock_market, "shareholders"):
-                    for firm_id in list(state.stock_market.shareholders.keys()):
-                        state.stock_market.update_shareholder(household.id, firm_id, 0)
-
-            # TD-030: Unregister from currency registry immediately
-            if isinstance(household, ICurrencyHolder):
-                state.unregister_currency_holder(household)
-
-            # TD-INT-STRESS-SCALE: Clean up settlement index
-            if self.settlement_system:
-                self.settlement_system.remove_agent_from_all_accounts(household.id)
-
-        # Cleanup Global Lists
-        state.households[:] = [h for h in state.households if h._bio_state.is_active]
-        state.firms[:] = [f for f in state.firms if f.is_active]
-
-        state.agents.clear()
-        state.agents.update({agent.id: agent for agent in state.households + state.firms})
-        if state.bank:
-             state.agents[state.bank.id] = state.bank
-        if hasattr(state, 'government') and state.government:
-             state.agents[state.government.id] = state.government
-        if hasattr(state, 'central_bank') and state.central_bank:
-             state.agents[state.central_bank.id] = state.central_bank
-        if hasattr(state, 'escrow_agent') and state.escrow_agent:
-             state.agents[state.escrow_agent.id] = state.escrow_agent
-
-        for firm in state.firms:
-            firm.hr_state.employees = [
-                emp for emp in firm.hr_state.employees if hasattr(emp, 'is_active') and emp.is_active and emp.id in state.agents
-            ]
-
-        return transactions
+        return all_transactions

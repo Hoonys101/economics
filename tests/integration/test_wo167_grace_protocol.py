@@ -61,7 +61,7 @@ class TestGraceProtocol:
 
         # Run 1: Enter Distress
         firm.wallet.get_balance.return_value = -10.0 # Cash Crunch
-        manager._process_firm_lifecycle(state)
+        manager.aging_system._process_firm_lifecycle(state)
 
         assert firm.finance_state.is_distressed is True
         assert firm.finance_state.distress_tick_counter == 1
@@ -83,13 +83,13 @@ class TestGraceProtocol:
         # Run 2-5: Stay in Distress
         for i in range(2, 6):
             state.time = i
-            manager._process_firm_lifecycle(state)
+            manager.aging_system._process_firm_lifecycle(state)
             assert firm.finance_state.distress_tick_counter == i
             assert firm.is_active is True
 
         # Run 6: Death
         state.time = 6
-        manager._process_firm_lifecycle(state)
+        manager.aging_system._process_firm_lifecycle(state)
         assert firm.finance_state.distress_tick_counter == 6
         # Should fall through to closure check
         # Since assets <= threshold (0 <= 0), it should close.
@@ -157,7 +157,7 @@ class TestGraceProtocol:
         manager = AgentLifecycleManager(config, MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock())
 
         # Run 1: Enter Distress
-        manager._process_household_lifecycle(state)
+        manager.aging_system._process_household_lifecycle(state)
 
         assert hh.distress_tick_counter == 1
 
