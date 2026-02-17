@@ -41,41 +41,49 @@ class InheritanceManager:
         # 1. Valuation & Asset Gathering
         # ------------------------------------------------------------------
         cash_raw = deceased._econ_state.assets
-        cash = cash_raw
         if isinstance(cash_raw, dict):
-            cash = cash_raw.get(DEFAULT_CURRENCY, 0.0)
-        cash = round(cash, 2)
+            cash = int(cash_raw.get(DEFAULT_CURRENCY, 0))
+        else:
+            cash = int(cash_raw)
 
         self.logger.info(
-            f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {cash:.2f}",
+            f"INHERITANCE_START | Processing death for Household {deceased.id}. Assets: {cash}",
             extra={"agent_id": deceased.id, "tags": ["inheritance", "death"]}
         )
 
         deceased_units = [u for u in simulation.real_estate_units if u.owner_id == deceased.id]
-        real_estate_value = sum(u.estimated_value for u in deceased_units)
-        real_estate_value = round(real_estate_value, 2)
+        # Real Estate Value is in Pennies
+        real_estate_value = sum(int(u.estimated_value) for u in deceased_units)
 
         portfolio_holdings = deceased._econ_state.portfolio.holdings.copy() # dict of firm_id -> Share
-        stock_value = 0.0
+        stock_value = 0
         current_prices = {}
         if simulation.stock_market:
             for firm_id, share in portfolio_holdings.items():
                 price = simulation.stock_market.get_daily_avg_price(firm_id)
                 if price <= 0:
                     price = share.acquisition_price
-                price = round(price, 2)
+                # Convert price to int (pennies) if it's float pennies
+                price = int(price)
                 current_prices[firm_id] = price
-                stock_value += share.quantity * price
+                stock_value += int(share.quantity * price)
 
-        stock_value = round(stock_value, 2)
-        total_wealth = round(cash + real_estate_value + stock_value, 2)
+        total_wealth = cash + real_estate_value + stock_value
 
         # 2. Liquidation for Tax (if needed)
         # ------------------------------------------------------------------
         tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.4)
         deduction = getattr(self.config_module, "INHERITANCE_DEDUCTION", 10000.0)
-        taxable_base = max(0.0, total_wealth - deduction)
-        tax_amount = round(taxable_base * tax_rate, 2)
+
+        # MIGRATION: Handle Deduction Unit Mismatch.
+        # If deduction < 100,000 ($1,000), assume it's Dollars and convert to Pennies.
+        # This prevents accidental scaling of valid low-value penny deductions (e.g. $5k = 500,000 pennies).
+        deduction_pennies = int(deduction)
+        if deduction_pennies < 100_000 and deduction_pennies > 0:
+            deduction_pennies *= 100
+
+        taxable_base = max(0, total_wealth - deduction_pennies)
+        tax_amount = int(taxable_base * tax_rate)
 
         if cash < tax_amount:
             # Need to liquidate assets to pay tax.
@@ -86,8 +94,9 @@ class InheritanceManager:
             # A. Stock Liquidation
             if needed > 0 and stock_value > 0:
                 for firm_id, share in list(portfolio_holdings.items()):
-                    price = current_prices.get(firm_id, 0.0)
-                    proceeds = round(share.quantity * price, 2)
+                    price = current_prices.get(firm_id, 0)
+                    # Proceed calculation: quantity * price_pennies
+                    proceeds = int(share.quantity * price)
 
                     # TD-232: Use TransactionProcessor for atomic execution + side effects
                     tx = Transaction(
@@ -95,7 +104,8 @@ class InheritanceManager:
                         seller_id=deceased.id,
                         item_id=f"stock_{firm_id}",
                         quantity=share.quantity,
-                        price=price,
+                        price=float(price), # Deprecated display
+                        total_pennies=proceeds, # SSoT
                         market_id="stock_market",
                         transaction_type="asset_liquidation",
                         time=current_tick,
@@ -122,7 +132,7 @@ class InheritanceManager:
             if needed > 0 and real_estate_value > 0:
                 fire_sale_ratio = 0.9
                 for unit in list(deceased_units):
-                    sale_price = round(unit.estimated_value * fire_sale_ratio, 2)
+                    sale_price = int(unit.estimated_value * fire_sale_ratio)
 
                     # TD-232: Use TransactionProcessor
                     tx = Transaction(
@@ -130,7 +140,8 @@ class InheritanceManager:
                         seller_id=deceased.id,
                         item_id=f"real_estate_{unit.id}",
                         quantity=1.0,
-                        price=sale_price,
+                        price=float(sale_price), # Deprecated display
+                        total_pennies=sale_price, # SSoT
                         market_id="real_estate_market",
                         transaction_type="asset_liquidation",
                         time=current_tick,
@@ -163,7 +174,8 @@ class InheritanceManager:
                 seller_id=government.id, # Payee
                 item_id="inheritance_tax",
                 quantity=1.0,
-                price=tax_to_pay,
+                price=float(tax_to_pay), # Deprecated
+                total_pennies=tax_to_pay, # SSoT
                 market_id="system",
                 transaction_type="tax",
                 time=current_tick
@@ -172,6 +184,10 @@ class InheritanceManager:
             if results and results[0].success:
                 transactions.append(tx)
                 cash -= tax_to_pay
+            else:
+                # CRITICAL: Tax payment failed. Abort distribution to prevent leak.
+                self.logger.critical(f"INHERITANCE_FAIL | Tax payment failed for {deceased.id}. Aborting distribution.")
+                return transactions # Stop here.
 
         # B. Heirs & Escheatment
         heirs = []

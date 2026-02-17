@@ -107,8 +107,8 @@ class TaxationSystem:
         intents: List[TaxIntent] = []
         trade_value = int(transaction.quantity * transaction.price)
 
-        # 1. Sales Tax (Goods)
-        if transaction.transaction_type == "goods":
+        # 1. Sales Tax (Goods & Emergency Buy)
+        if transaction.transaction_type in ["goods", "emergency_buy"]:
             sales_tax_rate = getattr(self.config_module, "SALES_TAX_RATE", 0.05)
             # Calculate raw then round
             tax_amount = self._round_currency(trade_value * sales_tax_rate)
