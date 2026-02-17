@@ -65,7 +65,7 @@ def test_grant_bailout_loan_success_and_covenant_type(finance_test_environment):
     assert isinstance(command, GrantBailoutCommand)
     assert isinstance(command.covenants, BailoutCovenant)
     assert command.covenants.dividends_allowed is False
-    assert command.covenants.mandatory_repayment == 0.5
+    assert command.covenants.executive_bonus_allowed is False
     assert command.amount == loan_amount
     assert command.firm_id == mock_firm.id
 

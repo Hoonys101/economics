@@ -216,6 +216,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
              assets_val = buyer.get_balance(currency)
 
         return BorrowerProfileDTO(
+            borrower_id=buyer.id,
             gross_income=gross_income,
             existing_debt_payments=existing_debt * 0.01,
             collateral_value=trade_value

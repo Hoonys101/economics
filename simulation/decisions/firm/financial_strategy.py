@@ -91,11 +91,10 @@ class FinancialStrategy:
                     gross_income = gross_income_raw.get(DEFAULT_CURRENCY, 0.0)
 
                 borrower_profile = BorrowerProfileDTO(
-                    borrower_id=str(firm.id),
+                    borrower_id=firm.id,
                     gross_income=gross_income,
                     existing_debt_payments=daily_burden * 30, # Approx monthly
                     collateral_value=0.0, # Unsecured
-                    existing_assets=firm.finance.balance
                 )
 
                 # WO-146: Use market rate + spread instead of hardcoded 0.10

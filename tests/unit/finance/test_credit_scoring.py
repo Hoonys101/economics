@@ -14,6 +14,7 @@ def scoring_service():
 
 def test_assess_approved(scoring_service):
     profile = BorrowerProfileDTO(
+        borrower_id="TEST_BORROWER",
         gross_income=1000.0,
         existing_debt_payments=200.0,
         collateral_value=0.0,
@@ -27,6 +28,7 @@ def test_assess_approved(scoring_service):
 
 def test_assess_dti_fail(scoring_service):
     profile = BorrowerProfileDTO(
+        borrower_id="TEST_BORROWER",
         gross_income=1000.0,
         existing_debt_payments=500.0, # DTI 0.5 > 0.4
         collateral_value=0.0,
@@ -38,6 +40,7 @@ def test_assess_dti_fail(scoring_service):
 
 def test_assess_ltv_fail(scoring_service):
     profile = BorrowerProfileDTO(
+        borrower_id="TEST_BORROWER",
         gross_income=1000.0,
         existing_debt_payments=100.0,
         collateral_value=1000.0,
@@ -50,6 +53,7 @@ def test_assess_ltv_fail(scoring_service):
 
 def test_assess_unsecured_cap_fail(scoring_service):
     profile = BorrowerProfileDTO(
+        borrower_id="TEST_BORROWER",
         gross_income=100.0,
         existing_debt_payments=0.0,
         collateral_value=0.0,
@@ -62,6 +66,7 @@ def test_assess_unsecured_cap_fail(scoring_service):
 
 def test_zero_income_fail(scoring_service):
     profile = BorrowerProfileDTO(
+        borrower_id="TEST_BORROWER",
         gross_income=0.0,
         existing_debt_payments=0.0,
         collateral_value=0.0,

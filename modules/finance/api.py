@@ -280,7 +280,9 @@ class LoanRollbackError(Exception):
 class BorrowerProfileDTO:
     """
     Profile of a borrower for credit assessment.
+    Updated: Added borrower_id to resolve TD-DTO-DESYNC-2026.
     """
+    borrower_id: AgentID  # Added to resolve signature desync
     gross_income: float
     existing_debt_payments: float
     collateral_value: float

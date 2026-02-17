@@ -181,6 +181,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
             # MIGRATION: Updated to new BorrowerProfileDTO signature
             profile = BorrowerProfileDTO(
+                borrower_id=borrower_agent_id,
                 gross_income=safe_float(borrower_profile.get('gross_income', 0)),
                 existing_debt_payments=safe_float(borrower_profile.get('existing_debt_payments', 0)),
                 collateral_value=safe_float(borrower_profile.get('collateral_value', 0)),
@@ -191,6 +192,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         else:
             # Fallback: create empty/default DTO
             profile = BorrowerProfileDTO(
+                borrower_id=borrower_agent_id,
                 gross_income=0.0,
                 existing_debt_payments=0.0,
                 collateral_value=0.0,
