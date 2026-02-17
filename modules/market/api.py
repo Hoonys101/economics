@@ -24,7 +24,8 @@ class CanonicalOrderDTO:
     side: str  # "BUY" or "SELL" (formerly order_type)
     item_id: str
     quantity: float
-    price_limit: int # (formerly price) - Max for BUY, Min for SELL - Changed to int (pennies)
+    price_pennies: int # Integer pennies (The SSoT)
+    price_limit: float # Legacy float representation (for UI/Logging) - DEPRECATED
     market_id: str
 
     # Phase 6/7 Extensions
@@ -40,7 +41,7 @@ class CanonicalOrderDTO:
     id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
 
     @property
-    def price(self) -> int:
+    def price(self) -> float:
         """Alias for legacy compatibility during migration."""
         return self.price_limit
 
@@ -66,12 +67,38 @@ def convert_legacy_order_to_canonical(order: Any) -> CanonicalOrderDTO:
         if not item_id and order.get("firm_id"):
              item_id = f"stock_{order.get('firm_id')}"
 
+        # Determine price
+        raw_price = order.get("price_limit") or order.get("price", 0)
+        price_pennies = order.get("price_pennies")
+
+        if price_pennies is None:
+            if isinstance(raw_price, float):
+                 # Assume Dollars -> Convert to Pennies
+                 price_pennies = int(raw_price * 100)
+            elif isinstance(raw_price, str):
+                 # Try convert to float first
+                 try:
+                     val = float(raw_price)
+                     # Heuristic: if it looks like an int (e.g. "1050"), treat as pennies?
+                     # But "10.50" becomes 10.5.
+                     # If string has decimal, assume dollars.
+                     if "." in raw_price:
+                         price_pennies = int(val * 100)
+                     else:
+                         price_pennies = int(val)
+                 except ValueError:
+                     price_pennies = 0
+            else:
+                 # Assume Pennies (int)
+                 price_pennies = int(raw_price)
+
         return CanonicalOrderDTO(
             agent_id=order.get("agent_id"),
             side=order.get("side") or order.get("order_type"),
             item_id=item_id,
             quantity=order.get("quantity"),
-            price_limit=int(order.get("price_limit") or order.get("price", 0)), # Force int
+            price_pennies=price_pennies,
+            price_limit=float(raw_price),
             market_id=order.get("market_id", "stock_market"),
             target_agent_id=order.get("target_agent_id"),
             brand_info=order.get("brand_info"),
@@ -82,12 +109,14 @@ def convert_legacy_order_to_canonical(order: Any) -> CanonicalOrderDTO:
 
     # Handle Legacy StockOrder (duck typing to avoid circular import)
     if hasattr(order, "firm_id") and hasattr(order, "order_type") and hasattr(order, "price"):
+        # StockOrder.price was int (pennies)
         return CanonicalOrderDTO(
             agent_id=order.agent_id,
             side=order.order_type,
             item_id=f"stock_{order.firm_id}",
             quantity=order.quantity,
-            price_limit=int(order.price), # Force int
+            price_pennies=int(order.price),
+            price_limit=float(order.price),
             market_id=getattr(order, "market_id", "stock_market"),
         )
 

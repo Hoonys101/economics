@@ -18,19 +18,22 @@ class MarketOrder:
     side: str
     item_id: str
     quantity: float
-    price: float
+    price_pennies: int # SSoT (Integer Pennies)
+    price: float       # Legacy/Display (Float)
     original_id: str
     target_agent_id: Optional[int] = None
     brand_info: Optional[Dict[str, Any]] = None
 
     @classmethod
     def from_dto(cls, dto: CanonicalOrderDTO) -> 'MarketOrder':
+        # Ensure price_pennies is available. DTO should enforce this.
         return cls(
             agent_id=dto.agent_id,
             side=dto.side,
             item_id=dto.item_id,
             quantity=dto.quantity,
-            price=dto.price_limit,
+            price_pennies=dto.price_pennies,
+            price=dto.price_limit, # Legacy float
             original_id=dto.id,
             target_agent_id=dto.target_agent_id,
             brand_info=dto.brand_info
@@ -47,6 +50,7 @@ class MarketOrder:
             side=self.side,
             item_id=self.item_id,
             quantity=self.quantity,
+            price_pennies=self.price_pennies,
             price_limit=self.price,
             market_id=market_id,
             target_agent_id=self.target_agent_id,
@@ -320,11 +324,11 @@ class OrderBookMarket(Market):
         if order.item_id not in target_order_book:
             target_order_book[order.item_id] = []
         target_order_book[order.item_id].append(order)
-        # Sort orders: BUY by price (desc), SELL by price (asc)
+        # Sort orders: BUY by price_pennies (desc), SELL by price_pennies (asc)
         if order.side == "BUY":
-            target_order_book[order.item_id].sort(key=lambda o: o.price, reverse=True)
+            target_order_book[order.item_id].sort(key=lambda o: o.price_pennies, reverse=True)
         else:
-            target_order_book[order.item_id].sort(key=lambda o: o.price)
+            target_order_book[order.item_id].sort(key=lambda o: o.price_pennies)
 
     def get_best_ask(self, item_id: str) -> float | None:
         """주어진 아이템의 최저 판매 가격(best ask)을 반환합니다."""

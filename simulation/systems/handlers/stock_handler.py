@@ -14,7 +14,13 @@ class StockTransactionHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        trade_value = int(tx.quantity * tx.price)
+        # SSoT: Use pre-calculated total_pennies from Matching Engine if available
+        if getattr(tx, 'total_pennies', 0) > 0:
+             trade_value = tx.total_pennies
+        elif getattr(tx, 'total_pennies', 0) == 0 and tx.price == 0:
+             trade_value = 0
+        else:
+             trade_value = int(tx.quantity * tx.price)
 
         # 1. Execute Settlement (Direct Transfer)
         # Stock trades typically don't have sales tax in this simulation model yet.

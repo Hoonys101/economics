@@ -11,6 +11,7 @@ class TestMarketAdapter:
             item_id="stock_100",
             quantity=10.0,
             price_limit=50.0,
+            price_pennies=5000,
             market_id="stock_market"
         )
         converted = convert_legacy_order_to_canonical(dto)
@@ -22,7 +23,7 @@ class TestMarketAdapter:
             order_type="SELL",
             firm_id=100,
             quantity=5.0,
-            price=45.0
+            price=45.0 # StockOrder treats this as raw value (pennies usually if int)
         )
         converted = convert_legacy_order_to_canonical(legacy)
 
@@ -32,6 +33,8 @@ class TestMarketAdapter:
         assert converted.item_id == "stock_100"
         assert converted.quantity == 5.0
         assert converted.price_limit == 45.0
+        # StockOrder conversion logic uses int(order.price) directly
+        assert converted.price_pennies == 45
         assert converted.market_id == "stock_market"
 
     def test_convert_dict_legacy_format(self):
@@ -51,6 +54,8 @@ class TestMarketAdapter:
         assert converted.item_id == "stock_200"
         assert converted.quantity == 20.0
         assert converted.price_limit == 60.0
+        # Dict conversion logic: float -> dollars -> * 100
+        assert converted.price_pennies == 6000
 
     def test_convert_dict_canonical_format(self):
         canonical_dict = {
@@ -68,6 +73,8 @@ class TestMarketAdapter:
         assert converted.side == "SELL"
         assert converted.item_id == "stock_300"
         assert converted.price_limit == 55.0
+        # Dict logic again
+        assert converted.price_pennies == 5500
 
     def test_invalid_input(self):
         with pytest.raises(ValueError):

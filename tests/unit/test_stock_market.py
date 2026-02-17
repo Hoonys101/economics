@@ -37,6 +37,7 @@ def sample_buy_order_dto():
         item_id="stock_100",
         quantity=10.0,
         price_limit=50.0,
+        price_pennies=5000,
         market_id="stock_market"
     )
 
@@ -48,6 +49,7 @@ def sample_sell_order_dto():
         item_id="stock_100",
         quantity=10.0,
         price_limit=45.0,
+        price_pennies=4500,
         market_id="stock_market"
     )
 
@@ -95,14 +97,14 @@ class TestStockOrderPlacement:
         # Limit rate is 0.15 (from fixture) -> Range [85.0, 115.0]
 
         # Case 1: Price too high (120.0) -> Should be clamped to 115.0
-        high_order = OrderDTO(1, "BUY", f"stock_{firm_id}", 1.0, 120.0, "stock")
+        high_order = OrderDTO(agent_id=1, side="BUY", item_id=f"stock_{firm_id}", quantity=1.0, price_limit=120.0, price_pennies=12000, market_id="stock")
         stock_market.place_order(high_order, tick=1)
         
         best_bid = stock_market.get_best_bid(firm_id)
         assert best_bid == pytest.approx(115.0)
 
         # Case 2: Price too low (80.0) -> Should be clamped to 85.0
-        low_order = OrderDTO(1, "SELL", f"stock_{firm_id}", 1.0, 80.0, "stock")
+        low_order = OrderDTO(agent_id=1, side="SELL", item_id=f"stock_{firm_id}", quantity=1.0, price_limit=80.0, price_pennies=8000, market_id="stock")
         stock_market.place_order(low_order, tick=1)
         
         best_ask = stock_market.get_best_ask(firm_id)
@@ -112,9 +114,9 @@ class TestStockOrderPlacement:
         firm_id = 100
         stock_market.reference_prices[firm_id] = 50.0
 
-        o1 = OrderDTO(1, "BUY", f"stock_{firm_id}", 1.0, 45.0, "stock")
-        o2 = OrderDTO(2, "BUY", f"stock_{firm_id}", 1.0, 55.0, "stock")
-        o3 = OrderDTO(3, "BUY", f"stock_{firm_id}", 1.0, 50.0, "stock")
+        o1 = OrderDTO(agent_id=1, side="BUY", item_id=f"stock_{firm_id}", quantity=1.0, price_limit=45.0, price_pennies=4500, market_id="stock")
+        o2 = OrderDTO(agent_id=2, side="BUY", item_id=f"stock_{firm_id}", quantity=1.0, price_limit=55.0, price_pennies=5500, market_id="stock")
+        o3 = OrderDTO(agent_id=3, side="BUY", item_id=f"stock_{firm_id}", quantity=1.0, price_limit=50.0, price_pennies=5000, market_id="stock")
 
         stock_market.place_order(o1, 1)
         stock_market.place_order(o2, 1)
@@ -138,7 +140,10 @@ class TestStockOrderMatching:
         assert tx.buyer_id == 1
         assert tx.seller_id == 2
         assert tx.quantity == 10.0
-        assert tx.price == pytest.approx(47.5) # (50 + 45) / 2
+        # (50 + 45) / 2 = 47.5
+        # (5000 + 4500) / 2 = 4750 pennies.
+        # Transaction.price uses SSoT total_pennies / quantity = 47500 / 10 = 4750.0
+        assert tx.price == pytest.approx(4750.0)
 
         summary = stock_market.get_market_summary(100)
         assert summary["buy_order_count"] == 0
@@ -149,9 +154,9 @@ class TestStockOrderMatching:
         stock_market.reference_prices[firm_id] = 50.0
         
         # Buy 15 @ 50
-        buy_order = OrderDTO(1, "BUY", f"stock_{firm_id}", 15.0, 50.0, "stock")
+        buy_order = OrderDTO(agent_id=1, side="BUY", item_id=f"stock_{firm_id}", quantity=15.0, price_limit=50.0, price_pennies=5000, market_id="stock")
         # Sell 10 @ 45
-        sell_order = OrderDTO(2, "SELL", f"stock_{firm_id}", 10.0, 45.0, "stock")
+        sell_order = OrderDTO(agent_id=2, side="SELL", item_id=f"stock_{firm_id}", quantity=10.0, price_limit=45.0, price_pennies=4500, market_id="stock")
         
         stock_market.place_order(buy_order, tick=1)
         stock_market.place_order(sell_order, tick=1)
@@ -163,7 +168,7 @@ class TestStockOrderMatching:
         
         # Verify remaining buy order via summary
         # We can place another sell order to match the remaining 5
-        sell_order_2 = OrderDTO(3, "SELL", f"stock_{firm_id}", 5.0, 45.0, "stock")
+        sell_order_2 = OrderDTO(agent_id=3, side="SELL", item_id=f"stock_{firm_id}", quantity=5.0, price_limit=45.0, price_pennies=4500, market_id="stock")
         stock_market.place_order(sell_order_2, tick=2)
         
         transactions_2 = stock_market.match_orders(tick=2)
@@ -177,7 +182,7 @@ class TestOrderExpiry:
         firm_id = 100
         stock_market.reference_prices[firm_id] = 50.0
         
-        o1 = OrderDTO(1, "BUY", f"stock_{firm_id}", 5.0, 50.0, "stock")
+        o1 = OrderDTO(agent_id=1, side="BUY", item_id=f"stock_{firm_id}", quantity=5.0, price_limit=50.0, price_pennies=5000, market_id="stock")
         stock_market.place_order(o1, tick=1)
         
         # Tick 5: 5 - 1 = 4 > 3 -> Expired

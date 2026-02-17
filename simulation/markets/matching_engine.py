@@ -14,6 +14,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
     """
     Stateless matching engine for Goods and Labor markets.
     Implements price-time priority and targeted (brand loyalty) matching.
+    Uses Integer Math (Pennies) for Zero-Sum Integrity.
     """
 
     def match(self, state: OrderBookStateDTO, current_tick: int) -> MatchingResultDTO:
@@ -82,25 +83,18 @@ class OrderBookMatchingEngine(IMatchingEngine):
         targeted_buys = [o for o in buy_orders if o.target_agent_id is not None]
         general_buys = [o for o in buy_orders if o.target_agent_id is None]
 
-        # Sort general buys by price (desc)
-        general_buys.sort(key=lambda o: o.price_limit, reverse=True)
+        # Sort general buys by price_pennies (desc)
+        general_buys.sort(key=lambda o: o.price_pennies, reverse=True)
 
         # Organize sells for targeted lookup
         sell_map: Dict[int, List[CanonicalOrderDTO]] = {}
         for s_order in sell_orders:
-             # Need mutable wrapper or copy to track quantity consumed
-             # Since CanonicalOrderDTO is frozen, we will create new instances or track reduction
-             # To keep it simple, let's convert to a mutable structure locally
-             # But wait, we need to return CanonicalOrderDTOs.
-             # We will track reduced quantities.
              agent_id = int(s_order.agent_id) if isinstance(s_order.agent_id, (int, float)) else s_order.agent_id
-             # Assuming agent_id is int for firms/households usually.
              if agent_id not in sell_map:
                  sell_map[agent_id] = []
              sell_map[agent_id].append(s_order)
 
         # Helper to manage mutable state of orders during matching
-        # We'll use a wrapper class locally
         class MutableOrder:
             def __init__(self, dto: CanonicalOrderDTO):
                 self.dto = dto
@@ -117,9 +111,9 @@ class OrderBookMatchingEngine(IMatchingEngine):
         all_mutable_sells: List[MutableOrder] = []
 
         for s_list in sell_map.values():
-            s_list.sort(key=lambda o: o.price_limit) # Sort sells by price asc
+            s_list.sort(key=lambda o: o.price_pennies) # Sort sells by price_pennies asc
             m_list = [MutableOrder(o) for o in s_list]
-            mutable_sell_map[s_list[0].agent_id] = m_list
+            mutable_sell_map[s_list[0].agent_id] = m_list # Use agent_id directly
             all_mutable_sells.extend(m_list)
 
         # --- Phase 6: Targeted Matching ---
@@ -131,21 +125,24 @@ class OrderBookMatchingEngine(IMatchingEngine):
             target_asks = mutable_sell_map.get(target_id)
 
             if target_asks:
-                # Iterate through seller's asks
-                # Note: target_asks is already sorted by price ASC
+                # Iterate through seller's asks (Sorted by Price Asc)
                 for s_wrapper in target_asks:
                     if b_wrapper.remaining_qty <= 1e-9: break
                     if s_wrapper.remaining_qty <= 1e-9: continue
 
-                    # Price Check
-                    if b_wrapper.dto.price_limit >= s_wrapper.dto.price_limit:
-                        trade_price = s_wrapper.dto.price_limit # Pay Ask Price for Loyalty
+                    # Price Check (Integer)
+                    if b_wrapper.dto.price_pennies >= s_wrapper.dto.price_pennies:
+                        trade_price_pennies = s_wrapper.dto.price_pennies # Pay Ask Price for Loyalty
                         trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
+
+                        trade_total_pennies = int(trade_price_pennies * trade_qty)
+                        effective_price = trade_total_pennies / trade_qty if trade_qty > 0 else 0.0
 
                         tx = Transaction(
                              item_id=item_id,
                              quantity=trade_qty,
-                             price=trade_price,
+                             price=effective_price,
+                             total_pennies=trade_total_pennies,
                              buyer_id=b_wrapper.dto.agent_id,
                              seller_id=s_wrapper.dto.agent_id,
                              market_id=market_id,
@@ -154,7 +151,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
                              quality=s_wrapper.dto.brand_info.get("quality", 1.0) if s_wrapper.dto.brand_info else 1.0
                         )
                         transactions.append(tx)
-                        stats["last_price"] = trade_price
+                        stats["last_price"] = effective_price # Keep float for stats compatibility
                         stats["volume"] += trade_qty
 
                         b_wrapper.remaining_qty -= trade_qty
@@ -167,11 +164,11 @@ class OrderBookMatchingEngine(IMatchingEngine):
         if remaining_targeted_buys:
             mutable_general_buys.extend(remaining_targeted_buys)
             # Re-sort general buys by price desc to maintain priority
-            mutable_general_buys.sort(key=lambda o: o.dto.price_limit, reverse=True)
+            mutable_general_buys.sort(key=lambda o: o.dto.price_pennies, reverse=True)
 
         # Collect all remaining sells for general matching and sort
         active_sells = [s for s in all_mutable_sells if s.remaining_qty > 1e-9]
-        active_sells.sort(key=lambda o: o.dto.price_limit)
+        active_sells.sort(key=lambda o: o.dto.price_pennies)
 
         # --- General Matching ---
         idx_b = 0
@@ -188,19 +185,25 @@ class OrderBookMatchingEngine(IMatchingEngine):
                 idx_s += 1
                 continue
 
-            if b_wrapper.dto.price_limit >= s_wrapper.dto.price_limit:
+            # Integer Price Check
+            if b_wrapper.dto.price_pennies >= s_wrapper.dto.price_pennies:
                 # Labor/Housing Market Specific Pricing Logic
                 if market_id == "labor" or market_id == "research_labor":
-                    trade_price = b_wrapper.dto.price_limit
+                    trade_price_pennies = b_wrapper.dto.price_pennies
                 else:
-                    trade_price = (b_wrapper.dto.price_limit + s_wrapper.dto.price_limit) / 2
+                    # Mid-price calculation (Integer Division = Floor)
+                    trade_price_pennies = (b_wrapper.dto.price_pennies + s_wrapper.dto.price_pennies) // 2
 
                 trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
+
+                trade_total_pennies = int(trade_price_pennies * trade_qty)
+                effective_price = trade_total_pennies / trade_qty if trade_qty > 0 else 0.0
 
                 tx = Transaction(
                      item_id=item_id,
                      quantity=trade_qty,
-                     price=trade_price,
+                     price=effective_price,
+                     total_pennies=trade_total_pennies,
                      buyer_id=b_wrapper.dto.agent_id,
                      seller_id=s_wrapper.dto.agent_id,
                      market_id=market_id,
@@ -209,7 +212,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
                      quality=s_wrapper.dto.brand_info.get("quality", 1.0) if s_wrapper.dto.brand_info else 1.0
                 )
                 transactions.append(tx)
-                stats["last_price"] = trade_price
+                stats["last_price"] = effective_price
                 stats["volume"] += trade_qty
 
                 b_wrapper.remaining_qty -= trade_qty
@@ -220,10 +223,10 @@ class OrderBookMatchingEngine(IMatchingEngine):
 
         # Convert remaining wrappers back to DTOs
         final_buys = [b.to_dto() for b in mutable_general_buys if b.remaining_qty > 1e-9]
-        final_buys.sort(key=lambda o: o.price_limit, reverse=True)
+        final_buys.sort(key=lambda o: o.price_pennies, reverse=True)
 
         final_sells = [s.to_dto() for s in active_sells if s.remaining_qty > 1e-9]
-        final_sells.sort(key=lambda o: o.price_limit)
+        final_sells.sort(key=lambda o: o.price_pennies)
 
         return transactions, final_buys, final_sells, stats
 
@@ -232,6 +235,7 @@ class StockMatchingEngine(IMatchingEngine):
     """
     Stateless matching engine for Stock Market.
     Matches Buy and Sell orders for each firm.
+    Uses Integer Math (Pennies).
     """
 
     def match(self, state: StockMarketStateDTO, current_tick: int) -> MatchingResultDTO:
@@ -249,12 +253,6 @@ class StockMatchingEngine(IMatchingEngine):
         all_firm_ids = set(state.buy_orders.keys()) | set(state.sell_orders.keys())
 
         for firm_id in all_firm_ids:
-            # Map firm_id back to str key if needed for output dict,
-            # but StockMarketStateDTO uses int keys for input.
-            # MatchingResultDTO uses str keys for generic compatibility.
-            # We will use "stock_{firm_id}" or just str(firm_id).
-            # Consistent with CanonicalOrderDTO.item_id logic: "stock_{firm_id}"
-
             buy_orders = state.buy_orders.get(firm_id, [])
             sell_orders = state.sell_orders.get(firm_id, [])
 
@@ -299,9 +297,9 @@ class StockMatchingEngine(IMatchingEngine):
 
         # Sort Orders
         # Buy: Price Desc
-        buy_orders.sort(key=lambda o: o.price_limit, reverse=True)
+        buy_orders.sort(key=lambda o: o.price_pennies, reverse=True)
         # Sell: Price Asc
-        sell_orders.sort(key=lambda o: o.price_limit)
+        sell_orders.sort(key=lambda o: o.price_pennies)
 
         # Mutable wrappers
         class MutableOrder:
@@ -333,13 +331,17 @@ class StockMatchingEngine(IMatchingEngine):
                 idx_s += 1
                 continue
 
-            if b_order.dto.price_limit >= s_order.dto.price_limit:
-                trade_price = (b_order.dto.price_limit + s_order.dto.price_limit) / 2
+            # Integer Price Check
+            if b_order.dto.price_pennies >= s_order.dto.price_pennies:
+                # Mid-price (Integer Division)
+                trade_price_pennies = (b_order.dto.price_pennies + s_order.dto.price_pennies) // 2
                 trade_qty = min(b_order.remaining_qty, s_order.remaining_qty)
+
+                trade_total_pennies = int(trade_price_pennies * trade_qty)
+                effective_price = trade_total_pennies / trade_qty if trade_qty > 0 else 0.0
 
                 # Validation check
                 if b_order.dto.agent_id is None or s_order.dto.agent_id is None:
-                    # Skip invalid order
                     if b_order.dto.agent_id is None: idx_b += 1
                     if s_order.dto.agent_id is None: idx_s += 1
                     continue
@@ -349,7 +351,8 @@ class StockMatchingEngine(IMatchingEngine):
                     seller_id=s_order.dto.agent_id,
                     item_id=f"stock_{firm_id}",
                     quantity=trade_qty,
-                    price=trade_price,
+                    price=effective_price,
+                    total_pennies=trade_total_pennies,
                     market_id=market_id,
                     transaction_type="stock",
                     time=current_tick,
@@ -357,9 +360,9 @@ class StockMatchingEngine(IMatchingEngine):
                 transactions.append(tx)
 
                 stats["volume"] += trade_qty
-                last_price = trade_price
-                high = max(high, trade_price)
-                low = min(low, trade_price)
+                last_price = effective_price
+                high = max(high, effective_price)
+                low = min(low, effective_price)
 
                 b_order.remaining_qty -= trade_qty
                 s_order.remaining_qty -= trade_qty

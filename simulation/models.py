@@ -17,12 +17,13 @@ class Transaction:
     seller_id: int | str
     item_id: str
     quantity: float
-    price: int  # Changed from float to int (pennies) for DTO integrity
+    price: float  # Changed from int to float (deprecated/display)
     market_id: str  # Added market_id
     transaction_type: str  # 'goods', 'labor', 'dividend', 'stock' 등 거래 유형
     time: int  # 거래가 발생한 시뮬레이션 틱
     currency: str = DEFAULT_CURRENCY # TD-213: Multi-currency support
     quality: float = 1.0  # Phase 15: Durables Quality
+    total_pennies: int = 0 # SSoT for settlement
     metadata: Optional[Dict[str, Any]] = None  # WO-109: Metadata for side-effects
 
 

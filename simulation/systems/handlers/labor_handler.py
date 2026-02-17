@@ -16,7 +16,13 @@ class LaborTransactionHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        trade_value = round_to_pennies(tx.quantity * tx.price)
+        # SSoT: Use pre-calculated total_pennies from Matching Engine if available
+        if getattr(tx, 'total_pennies', 0) > 0:
+             trade_value = tx.total_pennies
+        elif getattr(tx, 'total_pennies', 0) == 0 and tx.price == 0:
+             trade_value = 0
+        else:
+             trade_value = round_to_pennies(tx.quantity * tx.price)
 
 
         # 1. Prepare Settlement (Calculate tax intents)

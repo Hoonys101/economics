@@ -160,7 +160,9 @@ class StockMarket(Market):
             )
             # 가격을 제한 범위 내로 조정하여 새로운 CanonicalOrderDTO 생성
             clamped_price = max(min_price, min(max_price, order.price_limit))
-            final_order = replace(order, price_limit=clamped_price)
+            # Also clamp pennies (assuming Scale 100)
+            clamped_pennies = int(clamped_price * 100)
+            final_order = replace(order, price_limit=clamped_price, price_pennies=clamped_pennies)
 
         # 내부 래퍼 생성
         managed_order = ManagedOrder(

@@ -28,13 +28,9 @@ class TestOrderBookMarketInitialization:
 class TestPlaceOrderToBook:
     def test_add_single_buy_order(self, market: OrderBookMarket):
         """단일 매수 주문이 오더북에 올바르게 추가되는지 테스트합니다."""
+        # Order(agent_id, side, item_id, quantity, price_pennies, price_limit, market_id)
         order = Order(
-            agent_id=1,
-            side="BUY",
-            item_id="food",
-            quantity=10,
-            price_limit=100,
-            market_id="test_market",
+            1, "BUY", "food", 10, 100, 100, "test_market"
         )
         market.place_order(order, 1)
 
@@ -46,30 +42,9 @@ class TestPlaceOrderToBook:
 
     def test_add_buy_orders_sorted(self, market: OrderBookMarket):
         """여러 매수 주문이 가격 내림차순으로 정렬되는지 테스트합니다."""
-        order1 = Order(
-            agent_id=1,
-            side="BUY",
-            item_id="food",
-            quantity=10,
-            price_limit=100,
-            market_id="test_market",
-        )
-        order2 = Order(
-            agent_id=2,
-            side="BUY",
-            item_id="food",
-            quantity=5,
-            price_limit=110,
-            market_id="test_market",
-        )
-        order3 = Order(
-            agent_id=3,
-            side="BUY",
-            item_id="food",
-            quantity=8,
-            price_limit=105,
-            market_id="test_market",
-        )
+        order1 = Order(1, "BUY", "food", 10, 100, 100, "test_market")
+        order2 = Order(2, "BUY", "food", 5, 110, 110, "test_market")
+        order3 = Order(3, "BUY", "food", 8, 105, 105, "test_market")
 
         market.place_order(order1, 1)
         market.place_order(order2, 2)
@@ -81,30 +56,9 @@ class TestPlaceOrderToBook:
 
     def test_add_sell_orders_sorted(self, market: OrderBookMarket):
         """여러 매도 주문이 가격 오름차순으로 정렬되는지 테스트합니다."""
-        order1 = Order(
-            agent_id=1,
-            side="SELL",
-            item_id="food",
-            quantity=10,
-            price_limit=100,
-            market_id="test_market",
-        )
-        order2 = Order(
-            agent_id=2,
-            side="SELL",
-            item_id="food",
-            quantity=5,
-            price_limit=90,
-            market_id="test_market",
-        )
-        order3 = Order(
-            agent_id=3,
-            side="SELL",
-            item_id="food",
-            quantity=8,
-            price_limit=95,
-            market_id="test_market",
-        )
+        order1 = Order(1, "SELL", "food", 10, 100, 100, "test_market")
+        order2 = Order(2, "SELL", "food", 5, 90, 90, "test_market")
+        order3 = Order(3, "SELL", "food", 8, 95, 95, "test_market")
 
         market.place_order(order1, 1)
         market.place_order(order2, 2)
@@ -117,30 +71,9 @@ class TestPlaceOrderToBook:
     def test_add_orders_with_same_price(self, market: OrderBookMarket):
         """가격이 같은 주문은 시간 순서(FIFO)대로 정렬되는지 테스트합니다."""
         # 이 테스트는 현재 bisect 구현 상 통과함 (stable sort와 유사하게 동작)
-        order1 = Order(
-            agent_id=1,
-            side="BUY",
-            item_id="food",
-            quantity=10,
-            price_limit=100,
-            market_id="test_market",
-        )
-        order2 = Order(
-            agent_id=2,
-            side="BUY",
-            item_id="food",
-            quantity=5,
-            price_limit=110,
-            market_id="test_market",
-        )
-        order3 = Order(
-            agent_id=3,
-            side="BUY",
-            item_id="food",
-            quantity=8,
-            price_limit=100,
-            market_id="test_market",
-        )  # order1과 가격 동일
+        order1 = Order(1, "BUY", "food", 10, 100, 100, "test_market")
+        order2 = Order(2, "BUY", "food", 5, 110, 110, "test_market")
+        order3 = Order(3, "BUY", "food", 8, 100, 100, "test_market")
 
         market.place_order(order1, 1)
         market.place_order(order2, 2)
@@ -157,24 +90,10 @@ class TestOrderMatching:
     def test_unfilled_order_no_match(self, market: OrderBookMarket):
         """가격이 교차하지 않아 매칭이 발생하지 않는 경우를 테스트합니다."""
         # Arrange: 매도 110, 매수 100 (가격 불일치)
-        sell_order = Order(
-            agent_id=1,
-            side="SELL",
-            item_id="food",
-            quantity=10,
-            price_limit=110,
-            market_id="test_market",
-        )
+        sell_order = Order(1, "SELL", "food", 10, 110, 110, "test_market")
         market.place_order(sell_order, current_time=1)
 
-        buy_order = Order(
-            agent_id=2,
-            side="BUY",
-            item_id="food",
-            quantity=10,
-            price_limit=100,
-            market_id="test_market",
-        )
+        buy_order = Order(2, "BUY", "food", 10, 100, 100, "test_market")
         market.place_order(buy_order, current_time=2)
 
         # Act
@@ -193,24 +112,10 @@ class TestOrderMatching:
 
     def test_full_match_one_to_one(self, market: OrderBookMarket):
         """매수 주문 1개와 매도 주문 1개가 완전히 체결되는 경우를 테스트합니다."""
-        sell_order = Order(
-            agent_id=2,
-            side="SELL",
-            item_id="food",
-            quantity=10,
-            price_limit=100,
-            market_id="test_market",
-        )
+        sell_order = Order(2, "SELL", "food", 10, 100, 100, "test_market")
         market.place_order(sell_order, current_time=1)
 
-        buy_order = Order(
-            agent_id=1,
-            side="BUY",
-            item_id="food",
-            quantity=10,
-            price_limit=105,
-            market_id="test_market",
-        )
+        buy_order = Order(1, "BUY", "food", 10, 105, 105, "test_market")
         market.place_order(buy_order, current_time=2)
 
         transactions = market.match_orders(current_time=2)
@@ -218,7 +123,8 @@ class TestOrderMatching:
         assert len(transactions) == 1
         tx = transactions[0]
         assert tx.quantity == 10
-        assert tx.price == 102.5  # FIX: 매치가격은 중간값으로 설정
+        # Integer Math: (105 + 100) // 2 = 102
+        assert tx.price == 102.0
         assert tx.buyer_id == 1
         assert tx.seller_id == 2
         assert tx.currency == DEFAULT_CURRENCY
@@ -229,24 +135,10 @@ class TestOrderMatching:
 
     def test_partial_match_then_book(self, market: OrderBookMarket):
         """새로운 매수 주문이 부분 체결된 후 나머지가 오더북에 등록되는 경우를 테스트합니다."""
-        sell_order = Order(
-            agent_id=2,
-            side="SELL",
-            item_id="food",
-            quantity=5,
-            price_limit=100,
-            market_id="test_market",
-        )
+        sell_order = Order(2, "SELL", "food", 5, 100, 100, "test_market")
         market.place_order(sell_order, current_time=1)
 
-        buy_order = Order(
-            agent_id=1,
-            side="BUY",
-            item_id="food",
-            quantity=10,
-            price_limit=105,
-            market_id="test_market",
-        )
+        buy_order = Order(1, "BUY", "food", 10, 105, 105, "test_market")
         market.place_order(buy_order, current_time=2)
 
         transactions = market.match_orders(current_time=2)
@@ -265,42 +157,23 @@ class TestOrderMatching:
 
     def test_match_with_multiple_orders(self, market: OrderBookMarket):
         """새로운 큰 주문 하나가 여러 개의 작은 주문과 체결되는 경우를 테스트합니다."""
-        sell1 = Order(
-            agent_id=2,
-            side="SELL",
-            item_id="food",
-            quantity=5,
-            price_limit=98,
-            market_id="test_market",
-        )
-        sell2 = Order(
-            agent_id=3,
-            side="SELL",
-            item_id="food",
-            quantity=5,
-            price_limit=100,
-            market_id="test_market",
-        )
+        sell1 = Order(2, "SELL", "food", 5, 98, 98, "test_market")
+        sell2 = Order(3, "SELL", "food", 5, 100, 100, "test_market")
         market.place_order(sell1, current_time=1)
         market.place_order(sell2, current_time=2)
 
-        buy_order = Order(
-            agent_id=1,
-            side="BUY",
-            item_id="food",
-            quantity=12,
-            price_limit=105,
-            market_id="test_market",
-        )
+        buy_order = Order(1, "BUY", "food", 12, 105, 105, "test_market")
         market.place_order(buy_order, current_time=3)
 
         transactions = market.match_orders(current_time=3)
 
         assert len(transactions) == 2
         assert transactions[0].quantity == 5
-        assert transactions[0].price == 101.5  # FIX: (105+98)/2
+        # (105 + 98) // 2 = 101
+        assert transactions[0].price == 101.0
         assert transactions[1].quantity == 5
-        assert transactions[1].price == 102.5  # FIX: (105+100)/2
+        # (105 + 100) // 2 = 102
+        assert transactions[1].price == 102.0
 
         # 매도 오더북은 비워지고, 매수 오더북에 남은 주문이 등록되어야 함
         buy_book = market.buy_orders.get("food", [])
@@ -320,8 +193,8 @@ class TestMarketAPI:
 
     def test_get_best_bid_non_empty(self, market: OrderBookMarket):
         """매수 오더북에 주문이 있을 때 get_best_bid가 최고가를 반환하는지 테스트합니다."""
-        market.place_order(Order(1, "BUY", "food", 10, 100, "test"), 1)
-        market.place_order(Order(2, "BUY", "food", 5, 110, "test"), 2)
+        market.place_order(Order(1, "BUY", "food", 10, 100, 100, "test"), 1)
+        market.place_order(Order(2, "BUY", "food", 5, 110, 110, "test"), 2)
         assert market.get_best_bid("food") == 110
 
     def test_get_best_ask_empty(self, market: OrderBookMarket):
@@ -330,37 +203,34 @@ class TestMarketAPI:
 
     def test_get_best_ask_non_empty(self, market: OrderBookMarket):
         """매도 오더북에 주문이 있을 때 get_best_ask가 최저가를 반환하는지 테스트합니다."""
-        market.place_order(Order(1, "SELL", "food", 10, 100, "test"), 1)
-        market.place_order(Order(2, "SELL", "food", 5, 90, "test"), 2)
+        market.place_order(Order(1, "SELL", "food", 10, 100, 100, "test"), 1)
+        market.place_order(Order(2, "SELL", "food", 5, 90, 90, "test"), 2)
         assert market.get_best_ask("food") == 90
-
-    # Verified: The following methods (get_last_traded_price, get_spread, get_market_depth)
-    # were confirmed to be implemented and working as per requirement.
 
     def test_get_last_traded_price(self, market: OrderBookMarket):
         """거래 발생 후 get_last_traded_price가 올바른 가격을 반환하는지 테스트합니다."""
-        market.place_order(Order(1, 'SELL', 'food', 10, 100, 'test'), 1)
-        market.place_order(Order(2, 'BUY', 'food', 10, 105, 'test'), 2)
+        market.place_order(Order(1, 'SELL', 'food', 10, 100, 100, 'test'), 1)
+        market.place_order(Order(2, 'BUY', 'food', 10, 105, 105, 'test'), 2)
         market.match_orders(2)
-        assert market.get_last_traded_price('food') == 102.5
+        assert market.get_last_traded_price('food') == 102.0
 
     def test_get_spread(self, market: OrderBookMarket):
         """스프레드 계산이 올바른지 테스트합니다."""
-        market.place_order(Order(1, 'BUY', 'food', 10, 100, 'test'), 1)
-        market.place_order(Order(2, 'SELL', 'food', 10, 105, 'test'), 2)
+        market.place_order(Order(1, 'BUY', 'food', 10, 100, 100, 'test'), 1)
+        market.place_order(Order(2, 'SELL', 'food', 10, 105, 105, 'test'), 2)
         assert market.get_spread('food') == 5
 
     def test_get_spread_no_bid_or_ask(self, market: OrderBookMarket):
         """매수/매도 호가가 없을 때 get_spread가 None을 반환하는지 테스트합니다."""
-        market.place_order(Order(1, 'BUY', 'food', 10, 100, 'test'), 1)
+        market.place_order(Order(1, 'BUY', 'food', 10, 100, 100, 'test'), 1)
         assert market.get_spread('food') is None
         market = OrderBookMarket(market_id="test_goods_market", logger=Logger()) # Reset market
-        market.place_order(Order(2, 'SELL', 'food', 10, 105, 'test'), 2)
+        market.place_order(Order(2, 'SELL', 'food', 10, 105, 105, 'test'), 2)
         assert market.get_spread('food') is None
 
     def test_get_market_depth(self, market: OrderBookMarket):
         """시장 깊이(주문 수) 계산이 올바른지 테스트합니다."""
-        market.place_order(Order(1, 'BUY', 'food', 10, 100, 'test'), 1)
-        market.place_order(Order(2, 'BUY', 'food', 5, 90, 'test'), 2)
-        market.place_order(Order(3, 'SELL', 'food', 10, 105, 'test'), 3)
+        market.place_order(Order(1, 'BUY', 'food', 10, 100, 100, 'test'), 1)
+        market.place_order(Order(2, 'BUY', 'food', 5, 90, 90, 'test'), 2)
+        market.place_order(Order(3, 'SELL', 'food', 10, 105, 105, 'test'), 3)
         assert market.get_market_depth('food') == {'buy_orders': 2, 'sell_orders': 1}
