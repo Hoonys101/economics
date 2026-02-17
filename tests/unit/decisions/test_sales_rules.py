@@ -3,6 +3,7 @@ from unittest.mock import Mock
 from simulation.dtos import DecisionContext
 from simulation.schemas import FirmActionVector
 from tests.utils.factories import create_firm_config_dto
+from modules.system.api import DEFAULT_CURRENCY
 
 class TestSalesRules:
     def test_sales_aggressiveness_impact_on_price(
@@ -10,6 +11,7 @@ class TestSalesRules:
     ):
         """Verify that sales aggressiveness inversely affects price."""
         state = create_firm_state_dto(base_mock_firm, firm_engine_config)
+        state.finance.balance = {DEFAULT_CURRENCY: 100000} # Prevent Fire-Sale
         state.production.inventory["food"] = 100.0
         state.sales.price_history["food"] = 10.0
 

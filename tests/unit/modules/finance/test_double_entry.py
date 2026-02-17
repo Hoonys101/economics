@@ -25,8 +25,10 @@ class MockGovernment:
     @property
     def assets(self): return self.total_wealth # Alias for tests
     def get_balance(self, currency=DEFAULT_CURRENCY): return self._assets
+    def get_liquid_assets(self, currency=DEFAULT_CURRENCY): return float(self._assets)
     @property
     def total_debt(self): return getattr(self, '_total_debt', 0)
+    def get_total_debt(self): return float(self.total_debt)
     @total_debt.setter
     def total_debt(self, value): self._total_debt = value
     def get_debt_to_gdp_ratio(self):
@@ -44,6 +46,8 @@ class MockCentralBank:
     @property
     def assets(self): return self.total_wealth # Alias for tests
     def get_balance(self, currency=DEFAULT_CURRENCY): return self.assets['cash']
+    def get_liquid_assets(self, currency=DEFAULT_CURRENCY): return float(self.assets['cash'])
+    def get_total_debt(self): return 0.0
     def get_base_rate(self):
         return 0.01
     def add_bond_to_portfolio(self, bond):
@@ -66,6 +70,8 @@ class MockBank:
     @property
     def assets(self): return self.total_wealth # Alias for tests
     def get_balance(self, currency=DEFAULT_CURRENCY): return self._assets
+    def get_liquid_assets(self, currency=DEFAULT_CURRENCY): return float(self._assets)
+    def get_total_debt(self): return 0.0
     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self._assets += amount
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self._assets -= amount
     def get_all_balances(self): return {DEFAULT_CURRENCY: self._assets}
@@ -83,6 +89,8 @@ class MockFirm:
     @property
     def assets(self): return self.total_wealth # Alias for tests
     def get_balance(self, currency=DEFAULT_CURRENCY): return self.cash_reserve
+    def get_liquid_assets(self, currency=DEFAULT_CURRENCY): return float(self.cash_reserve)
+    def get_total_debt(self): return 0.0
     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self.cash_reserve += amount
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self.cash_reserve -= amount
     def get_all_balances(self): return {DEFAULT_CURRENCY: self.cash_reserve}

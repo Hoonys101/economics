@@ -281,7 +281,7 @@ def test_grant_bailout_loan(finance_system, mock_government, mock_firm, mock_con
     assert isinstance(cmd, GrantBailoutCommand)
     assert cmd.firm_id == mock_firm.id
     assert cmd.amount == amount
-    assert cmd.covenants.mandatory_repayment == mock_config.BAILOUT_REPAYMENT_RATIO
+    assert cmd.covenants.executive_bonus_allowed is False
 
 def test_service_debt_central_bank_repayment(finance_system, mock_government, mock_central_bank, mock_config, mock_bank):
     # 1. Issue Bond

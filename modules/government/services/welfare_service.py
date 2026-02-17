@@ -187,8 +187,7 @@ class WelfareService(IWelfareService):
                 interest_rate=0.05, # Default or config?
                 covenants=BailoutCovenant(
                     dividends_allowed=False,
-                    executive_salary_freeze=True,
-                    mandatory_repayment=0.5
+                    executive_bonus_allowed=False
                 )
             )
 

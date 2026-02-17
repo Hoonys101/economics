@@ -140,7 +140,7 @@ class TestFinanceEngine:
         state = FinanceState()
         config = MagicMock(spec=FirmConfigDTO)
         config.inventory_holding_cost_rate = 0.1
-        config.firm_maintenance_fee = 10.0 # 1000 pennies (converted inside engine)
+        config.firm_maintenance_fee = 1000 # 1000 pennies (converted inside engine)
         config.bailout_repayment_ratio = 0.1
 
         context = FinancialTransactionContext(
