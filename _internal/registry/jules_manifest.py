@@ -17,16 +17,19 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "modernize-regression-tests": {
-        "title": "Implement General Test Logic Regressions",
-        "command": "create",
-        "instruction": "Resolve judicial and manufacturing test regressions by aligning with current logic and SSoT.",
-        "file": "design/3_work_artifacts/specs/MISSION_modernize-regression-tests_SPEC.md"
+    "liquidate-residual": {
+        "title": "Liquidate Residual Failures (Welfare, Sales, Finance)",
+        "file": "design/3_work_artifacts/specs/MISSION_liquidate-residual-implementation_SPEC.md",
+        "instruction": "Implement the specific fixes detailed in the spec for WelfareService, SalesEngine, and FinanceEngine. Ensure all Dollar-vs-Penny drift is eliminated by using strict integer casting. Verify with unit tests provided in the spec."
     },
-    "liquidate-final-residue": {
-        "title": "Liquidate 6 Residual Test Failures",
-        "command": "create",
-        "instruction": "Apply final fixes for BailoutCovenant, SalesRules precision, and DoubleEntry transaction deltas based on the AUDIT report.",
-        "file": "design/3_work_artifacts/audits/MISSION_audit-final-failures_AUDIT.md"
+    "market-precision-refactor": {
+        "title": "Market Precision Refactor (Matching Engine)",
+        "file": "design/3_work_artifacts/specs/MISSION_market-precision-refactor_SPEC.md",
+        "instruction": "Refactor CanonicalOrderDTO and the MatchingEngine to use strict Integer Math (pennies). Implement integer mid-price calculation and Zero-Sum settlement as specified. Ensure M2 integrity is preserved."
+    },
+    "protocol-lockdown": {
+        "title": "Phase 15 Architectural Protocol Lockdown",
+        "file": "design/3_work_artifacts/specs/MISSION_protocol-lockdown-implementation_SPEC.md",
+        "instruction": "Build the Architect's Hammer: A static analysis tool to enforce SEO patterns and block private attribute leaks as defined in the spec. Implement the core scanner and the three rules (SEO-001, DTO-001, FIN-001)."
     }
 }

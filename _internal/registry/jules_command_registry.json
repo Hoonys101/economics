@@ -3,15 +3,15 @@
     "version": "1.0"
   },
   "missions": {
-    "modernize-regression-tests": {
-      "key": "modernize-regression-tests",
-      "title": "Implement General Test Logic Regressions",
+    "liquidate-residual": {
+      "key": "liquidate-residual",
+      "title": "Liquidate Residual Failures (Welfare, Sales, Finance)",
       "type": "jules",
-      "instruction_raw": "Resolve judicial and manufacturing test regressions by aligning with current logic and SSoT.",
+      "instruction_raw": "Implement the specific fixes detailed in the spec for WelfareService, SalesEngine, and FinanceEngine. Ensure all Dollar-vs-Penny drift is eliminated by using strict integer casting. Verify with unit tests provided in the spec.",
       "status": "pending",
       "created_at": "",
       "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_modernize-regression-tests_SPEC.md",
+      "file_path": "design/3_work_artifacts/specs/MISSION_liquidate-residual-implementation_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,
@@ -20,15 +20,32 @@
       "model": null,
       "audit_requirements": null
     },
-    "liquidate-final-residue": {
-      "key": "liquidate-final-residue",
-      "title": "Liquidate 6 Residual Test Failures",
+    "market-precision-refactor": {
+      "key": "market-precision-refactor",
+      "title": "Market Precision Refactor (Matching Engine)",
       "type": "jules",
-      "instruction_raw": "Apply final fixes for BailoutCovenant, SalesRules precision, and DoubleEntry transaction deltas based on the AUDIT report.",
+      "instruction_raw": "Refactor CanonicalOrderDTO and the MatchingEngine to use strict Integer Math (pennies). Implement integer mid-price calculation and Zero-Sum settlement as specified. Ensure M2 integrity is preserved.",
       "status": "pending",
       "created_at": "",
       "command": "create",
-      "file_path": "design/3_work_artifacts/audits/MISSION_audit-final-failures_AUDIT.md",
+      "file_path": "design/3_work_artifacts/specs/MISSION_market-precision-refactor_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "protocol-lockdown": {
+      "key": "protocol-lockdown",
+      "title": "Phase 15 Architectural Protocol Lockdown",
+      "type": "jules",
+      "instruction_raw": "Build the Architect's Hammer: A static analysis tool to enforce SEO patterns and block private attribute leaks as defined in the spec. Implement the core scanner and the three rules (SEO-001, DTO-001, FIN-001).",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_protocol-lockdown-implementation_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,

@@ -23,5 +23,43 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "liquidate-residual": {
+        "title": "Liquidate Residual Failures Diagnostic",
+        "worker": "spec",
+        "instruction": "Based on the Integrated Mission Guide, conduct a diagnostic audit of the remaining ~10 test failures. Specifically, identify the legacy field 'executive_salary_freeze' in welfare_service.py and propose the replacement with 'executive_bonus_allowed'. Refactor SalesEngine and FinanceEngine to eliminate Dollar-vs-Penny induction errors and precision drift in pricing logic. Output a precise spec for Jules to liquidate these specific items.",
+        "context_files": [
+            "design/3_work_artifacts/specs/MISSION_liquidate_residual_and_precision_SPEC.md",
+            "modules/government/services/welfare_service.py",
+            "simulation/components/engines/sales_engine.py",
+            "simulation/components/engines/finance_engine.py",
+            "modules/finance/api.py",
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_liquidate-residual-implementation_SPEC.md"
+    },
+    "market-precision-spec": {
+        "title": "Market Precision Refactor Spec (Integer Math)",
+        "worker": "spec",
+        "instruction": "Draft a high-fidelity implementation spec for refactoring the MatchingEngine into Integer Math with Zero-Sum rounding rules. Analyze the weighted average price calculation and define the integer-based formula to eliminate drift. Design the collection mechanism for residual pennies to ensure M2 integrity.",
+        "context_files": [
+            "design/3_work_artifacts/specs/MISSION_market_precision_refactor_SPEC.md",
+            "simulation/markets/matching_engine.py",
+            "simulation/markets/order_book_market.py",
+            "modules/finance/api.py",
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_market-precision-refactor_SPEC.md"
+    },
+    "protocol-lockdown-spec": {
+        "title": "Protocol Enforcement & Lockdown Spec",
+        "worker": "spec",
+        "instruction": "Design the technical implementation for Phase 15 Architectural Lockdown. Propose custom Ruff rules or static analysis scripts to block direct private member access (like .inventory, .wallet). Update QUICKSTART.md with mandatory protocol sections for contributors.",
+        "context_files": [
+            "design/3_work_artifacts/specs/MISSION_protocol_lockdown_SPEC.md",
+            "design/QUICKSTART.md",
+            "design/1_governance/platform_architecture.md",
+            "simulation/components/engines/sales_engine.py"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_protocol-lockdown-implementation_SPEC.md"
+    }
 }

@@ -27,17 +27,19 @@ Run this audit on the provided context files and output the result.'...
 📖 Attached context: simulation\firms.py
 📖 Attached context: simulation\core_agents.py
 📖 Attached context: design\1_governance\architecture\ARCH_AGENTS.md
-🚀 [GeminiWorker] Running task with manual: reporter.md
+🚀 [GeminiWorker] Running task with manual: report.md
 
-✅ Report Saved: C:\coding\economics\reports\temp\report_20260216_121856_Domain_Auditor.md
+✅ Report Saved: C:\coding\economics\reports\temp\report_20260217_173114_Domain_Auditor.md
 ============================================================
-# Agent Implementation & Architecture Audit Report
+# Agent Domain Audit Report
 
 ## Executive Summary
-The audit of `Firm` and `Household` agents confirms a successful transition to the **Stateless Engine & Orchestrator Pattern**. Both agents have been decoupled from legacy stateful components, delegating business logic to stateless engines while maintaining state ownership within private DTOs. Protocol adherence for inventory and financial handling is high.
+The `Firm` and `Household` agents have been successfully refactored to the **Stateless Engine & Orchestrator Pattern**. Business logic is delegated to pure-function engines, while state is centralized within the Orchestrator classes. The system is currently in a transitional "Migration State" for integer-based currency (pennies).
 
 ## Detailed Analysis
 
-### 1. Stateless Engine & Orchestrator Patte
+### 1. Protocol Purity
+- **Status**: ✅ Implemented
+- **Evidence**: `firms.py:L316-350`, `core_a
 ...
 ============================================================

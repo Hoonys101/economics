@@ -10,8 +10,9 @@
 | **TD-ARCH-DI-SETTLE** | Architecture | **DI Timing**: `AgentRegistry` injection into `SettlementSystem` happens post-initialization. | **Low**: Initialization fragility. | Open |
 | **TD-UI-DTO-PURITY** | Cockpit | **Manual Deserialization**: UI uses raw dicts/manual mapping for Telemetry. Needs `pydantic`. | **Medium**: Code Quality. | Open |
 | **TD-PROC-TRANS-DUP** | Logic | **Handler Redundancy**: Logic overlap between legacy `TransactionManager` and new `TransactionProcessor`. | **Medium**: Maintenance. | **Identified** |
-| **TD-DTO-DESYNC-2026** | DTO/API | **Contract Fracture**: `BorrowerProfileDTO` desync across Firm logic & 700+ tests following Dataclass migration. | **Critical**: System Integrity. | **Liquidated** |
-| **TD-TEST-SSOT-SYNC** | Testing | **SSoT Balance Mismatch**: Tests assert against legacy `.assets` attributes instead of querying `SettlementSystem`. | **High**: Verification Validity. | **Identified** |
+| **TD-CRIT-FLOAT-SETTLE** | Finance | **Float-to-Int Migration**: Residual `float` usage in `SettlementSystem` and `MatchingEngine`. | **Critical**: High Leakage risk. | **Identified** |
+| **TD-DTO-DESYNC-2026** | DTO/API | **Contract Fracture**: `BorrowerProfileDTO` desync across Firm logic & tests. | **Critical**: System Integrity. | **Resolved** |
+| **TD-TEST-SSOT-SYNC** | Testing | **SSoT Balance Mismatch**: Tests assert against legacy `.assets` attributes instead of `SettlementSystem`. | **High**: Verification Validity. | **Resolved** |
 
 ---
 > [!NOTE]
@@ -66,8 +67,14 @@
     2. **Protocol Update**: Every Mission SPEC must include an "API/DTO Impact" section.
     3. **Verification Update**: PR reviews must include a `full-suite-audit` check if DTOs are modified.
 ---
-### ID: TD-TEST-SSOT-SYNC
-### Title: SSoT Balance Mismatch in Testing
-- **Symptom**: `test_fiscal_integrity.py` and others fail despite correct logic because they check `.assets` attributes which are no longer synchronized by `FinanceSystem`.
-- **Risk**: High maintenance cost and false negatives in CI/CD. Masked regressions in financial business logic.
-- **Solution**: Refactor test assertions to use `settlement_system.get_balance(agent_id)` instead of `agent.assets`. Remove legacy asset/liability attributes from base `Agent` class once full migration is complete.
+### ID: TD-CRIT-FLOAT-SETTLE
+### Title: Float-to-Int Migration Bridge
+- **Symptom**: Core financial engines still pass `float` dollars instead of `int` pennies at several integration points.
+- **Risk**: Cumulative rounding errors in long-running simulations (10,000+ ticks).
+- **Solution**: Execute the global migration script to convert all `float` currency fields to `int` pennies.
+- **Status**: Registered. Basis point depreciation (1/10000) implemented as a precursor.
+
+---
+### Architectural Note: CES Lite (Component-based Engine & Shell)
+- **Achievement**: Successfully dismantled `Firm` into `IFinancialComponent` and `IInventoryComponent`.
+- **Impact**: Solves **TD-124** (Firm God Class). All future agent expansions MUST follow the CES Lite pattern.
