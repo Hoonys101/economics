@@ -61,5 +61,30 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
             "simulation/components/engines/sales_engine.py"
         ],
         "output_path": "design/3_work_artifacts/specs/MISSION_protocol-lockdown-implementation_SPEC.md"
+    },
+    "lifecycle-decomposition-spec": {
+        "title": "Lifecycle Manager Decomposition Spec",
+        "worker": "spec",
+        "instruction": "Based on the Integrated Mission Guide, design the decomposition of the LifecycleManager monolith into discrete systems: BirthSystem, DeathSystem, and AgingSystem. Focus on stateless coordination and improved unit testability. Output a high-fidelity implementation spec for Jules.",
+        "context_files": [
+            "design/3_work_artifacts/specs/MISSION_lifecycle_decomposition_SPEC.md",
+            "simulation/systems/lifecycle_manager.py",
+            "main.py",
+            "modules/government/services/welfare_service.py"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_lifecycle-decomposition-implementation_SPEC.md"
+    },
+    "transaction-unification-spec": {
+        "title": "Transaction Logic Unification Spec",
+        "worker": "spec",
+        "instruction": "Design the unification of transaction processing by deprecating the legacy TransactionManager and migrating all logic to the TransactionProcessor. Ensure safety parity (double-spending protection) and strict SettlementSystem API adherence. Output a precise spec for Jules.",
+        "context_files": [
+            "design/3_work_artifacts/specs/MISSION_transaction_unification_SPEC.md",
+            "simulation/systems/transaction_manager.py",
+            "simulation/systems/transaction_processor.py",
+            "simulation/markets/matching_engine.py",
+            "modules/finance/api.py"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_transaction-unification-implementation_SPEC.md"
     }
 }

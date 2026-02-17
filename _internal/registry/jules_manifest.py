@@ -31,5 +31,15 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "title": "Phase 15 Architectural Protocol Lockdown",
         "file": "design/3_work_artifacts/specs/MISSION_protocol-lockdown-implementation_SPEC.md",
         "instruction": "Build the Architect's Hammer: A static analysis tool to enforce SEO patterns and block private attribute leaks as defined in the spec. Implement the core scanner and the three rules (SEO-001, DTO-001, FIN-001)."
+    },
+    "lifecycle-decomposition": {
+        "title": "Lifecycle Manager Decomposition",
+        "file": "design/3_work_artifacts/specs/MISSION_lifecycle-decomposition-implementation_SPEC.md",
+        "instruction": "Implement the structural decomposition of LifecycleManager into BirthSystem, DeathSystem, and AgingSystem. Ensure the coordinator in LifecycleManager correctly delegates tasks. Verify with split unit tests for each sub-system."
+    },
+    "transaction-unification": {
+        "title": "Transaction Logic Unification",
+        "file": "design/3_work_artifacts/specs/MISSION_transaction-unification-implementation_SPEC.md",
+        "instruction": "Deprecate TransactionManager and migrate all logic to TransactionProcessor. Redirect all callers (markets, modules) to the new processor. Ensure zero-sum integrity and anti-fraud checks are preserved."
     }
 }
