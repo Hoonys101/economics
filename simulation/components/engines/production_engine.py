@@ -28,19 +28,21 @@ class ProductionEngine(IProductionEngine):
 
         try:
             # 1. Depreciation & Decay (Calculation, NO mutation)
-            capital_depreciation_rate = config.capital_depreciation_rate
-            capital_depreciation_val = production_state.capital_stock * capital_depreciation_rate
-            effective_capital = max(production_state.capital_stock - capital_depreciation_val, 0.01)
+            # MIGRATION: Integer Math for Capital Depreciation (pennies)
+            # Formula: floor(capital_stock * rate_basis_points / 10000)
+            rate_bp = int(config.capital_depreciation_rate * 10000)
+            capital_depreciation_val = (production_state.capital_stock * rate_bp) // 10000
 
-            # Automation Decay
-            # Original: state.automation_level *= 0.995
-            # So decay is (1 - 0.995) = 0.005
-            automation_decay_rate = 0.005 # Hardcoded in original logic
+            # effective_capital must be at least 0.
+            # Using max(..., 1) to avoid division by zero if used later, though here it's used in numerator.
+            effective_capital = max(production_state.capital_stock - capital_depreciation_val, 0)
+
+            # Automation Decay (Float is acceptable for non-monetary abstract value)
+            automation_decay_rate = 0.005
             automation_decay = production_state.automation_level * automation_decay_rate
             effective_automation = production_state.automation_level - automation_decay
 
             if effective_automation < 0.001:
-                # If it drops below threshold, we lose the rest
                 automation_decay += effective_automation
                 effective_automation = 0.0
 
@@ -62,7 +64,6 @@ class ProductionEngine(IProductionEngine):
                 )
 
             # 3. Production Parameters
-            # Cobb-Douglas Parameters
             base_alpha = config.labor_alpha
             automation_reduction = config.automation_labor_reduction
 
@@ -78,16 +79,18 @@ class ProductionEngine(IProductionEngine):
             # Quality Calculation
             item_config = config.goods.get(production_state.specialization, {})
             quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
-            # Use base_quality from state
             actual_quality = production_state.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
 
             produced_quantity = 0.0
             if total_labor_skill > 0 and effective_capital > 0:
+                # Standard Cobb-Douglas
                 produced_quantity = tfp * (total_labor_skill ** alpha_adjusted) * (effective_capital ** beta_adjusted)
 
             actual_produced = 0.0
             consumed_inputs = {}
 
+            # Production Cost (if tracking specific batch costs)
+            # Currently 0 as costs are amortized/handled by Inventory/Wage logic separately
             production_cost = 0
 
             if produced_quantity > 0:
@@ -104,20 +107,25 @@ class ProductionEngine(IProductionEngine):
                             max_by_inputs = min(max_by_inputs, available / req_per_unit)
 
                     actual_produced = min(produced_quantity, max_by_inputs)
-
-                    # Calculate consumed inputs
-                    for mat, req_per_unit in input_config.items():
-                        consumed_inputs[mat] = actual_produced * req_per_unit
                 else:
                     actual_produced = produced_quantity
 
+                # MIGRATION: Deterministic Integer Output
+                # We floor the output to ensure integer quantities of goods
+                actual_produced = math.floor(actual_produced)
+
+                if input_config and actual_produced > 0:
+                    # Calculate consumed inputs based on integer output
+                    for mat, req_per_unit in input_config.items():
+                        consumed_inputs[mat] = actual_produced * req_per_unit
+
             return ProductionResultDTO(
                 success=True,
-                quantity_produced=actual_produced,
+                quantity_produced=float(actual_produced),
                 quality=actual_quality,
                 specialization=production_state.specialization,
                 inputs_consumed=consumed_inputs,
-                production_cost=int(production_cost),
+                production_cost=production_cost,
                 capital_depreciation=int(capital_depreciation_val),
                 automation_decay=automation_decay
             )

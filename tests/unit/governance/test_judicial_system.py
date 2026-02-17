@@ -105,6 +105,9 @@ def test_judicial_system_waterfall_full_recovery(mock_dependencies):
         return True
     deps["settlement_system"].transfer.side_effect = transfer_side_effect
 
+    # SSoT Mock: get_balance should return agent assets
+    deps["settlement_system"].get_balance.side_effect = lambda aid, cur=DEFAULT_CURRENCY: 1500.0 if aid == 1 else 0
+
     system = JudicialSystem(
         event_bus=deps["event_bus"],
         settlement_system=deps["settlement_system"],
@@ -153,6 +156,15 @@ def test_judicial_system_waterfall_partial_recovery_and_restructuring(mock_depen
         return True
     deps["settlement_system"].transfer.side_effect = transfer_side_effect
 
+    # SSoT Mock: get_balance should return agent assets
+    # Agent starts with 100, then 50 more after liquidation
+    # We can use a side effect that inspects the agent object if we had access to it,
+    # but here we can just use a mutable value or logic.
+    # Since agent object is updated, maybe we can delegate?
+
+    # We need to capture the agent instance created later
+    # But agent is created later in the test function.
+
     system = JudicialSystem(
         event_bus=deps["event_bus"],
         settlement_system=deps["settlement_system"],
@@ -169,6 +181,9 @@ def test_judicial_system_waterfall_partial_recovery_and_restructuring(mock_depen
     agent = MockAgent(agent_id, assets=100.0) # Only 100 cash
     agent.inventory_value = 50.0 # 50 inventory
     creditor = MockAgent(creditor_id)
+
+    # Update get_balance to use agent's current assets
+    deps["settlement_system"].get_balance.side_effect = lambda aid, cur=DEFAULT_CURRENCY: agent.get_balance() if aid == agent_id else 0
 
     deps["agent_registry"].get_agent.side_effect = lambda aid: agent if aid == agent_id else (creditor if aid == creditor_id else None)
 

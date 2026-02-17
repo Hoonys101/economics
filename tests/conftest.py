@@ -3,7 +3,7 @@ from unittest.mock import Mock, MagicMock, patch
 import pytest
 
 # Mock missing dependencies for CI/Sandbox environments
-for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit"]:
+for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit", "pydantic"]:
     if module_name in sys.modules:
         continue
     try:
@@ -30,6 +30,13 @@ for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model"
 
         if module_name == "yaml":
             mock.safe_load.return_value = {}
+
+        if module_name == "pydantic":
+            # Mock BaseModel to allow inheritance
+            mock.BaseModel = MagicMock
+            mock.Field = MagicMock(return_value=None)
+            mock.validator = MagicMock(return_value=lambda x: x)
+
         sys.modules[module_name] = mock
 
 import config

@@ -68,6 +68,14 @@ class ISettlementSystem(ABC):
         ...
 
     @abstractmethod
+    def get_balance(self, agent_id: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """
+        Queries the Single Source of Truth for an agent's current balance.
+        This is the ONLY permissible way to check another agent's funds.
+        """
+        ...
+
+    @abstractmethod
     def create_and_transfer(
         self,
         source_authority: IFinancialAgent,
