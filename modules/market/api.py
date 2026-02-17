@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
     from simulation.models import Transaction
     from simulation.core_agents import Household
+    from modules.finance.api import IBank, ISettlementSystem
+    from modules.simulation.api import IGovernment, IAgent
 
 @dataclass(frozen=True)
 class CanonicalOrderDTO:
@@ -112,11 +114,11 @@ class HousingTransactionContextDTO:
     DTO capturing the system state required to process a housing transaction.
     Decouples the handler from the monolithic 'simulation' object.
     """
-    settlement_system: Any  # ISettlementSystem
-    bank: Any               # ICentralBank
+    settlement_system: "ISettlementSystem"
+    bank: Optional["IBank"]
     government: Optional[IPropertyOwner]
     real_estate_units: List[Any] # List[RealEstateUnit]
-    agents: Dict[Any, Any]
+    agents: Dict[Any, "IAgent"]
     config_module: Any # Should be MarketConfigDTO in strict future
     time: int
     transaction_queue: List[Any] # For side-effect transactions (credit creation)
