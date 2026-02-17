@@ -3,23 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "market-precision-refactor": {
-      "key": "market-precision-refactor",
-      "title": "Market Precision Refactor (Matching Engine)",
-      "type": "jules",
-      "instruction_raw": "Refactor CanonicalOrderDTO and the MatchingEngine to use strict Integer Math (pennies). Implement integer mid-price calculation and Zero-Sum settlement as specified. Ensure M2 integrity is preserved.",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_market-precision-refactor_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "protocol-lockdown": {
       "key": "protocol-lockdown",
       "title": "Phase 15 Architectural Protocol Lockdown",
@@ -80,6 +63,23 @@
       "created_at": "",
       "command": "create",
       "file_path": "design/3_work_artifacts/specs/MISSION_transaction-unification-implementation_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "market-precision-refactor": {
+      "key": "market-precision-refactor",
+      "title": "Market Precision Refactor (Matching Engine)",
+      "type": "jules",
+      "instruction_raw": "Refactor CanonicalOrderDTO and the MatchingEngine to use strict Integer Math (pennies). Implement integer mid-price calculation and Zero-Sum settlement as specified. Ensure M2 integrity is preserved.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_market-precision-refactor_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,

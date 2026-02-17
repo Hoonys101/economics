@@ -134,8 +134,10 @@ class OrderBookMatchingEngine(IMatchingEngine):
                     if b_wrapper.dto.price_pennies >= s_wrapper.dto.price_pennies:
                         trade_price_pennies = s_wrapper.dto.price_pennies # Pay Ask Price for Loyalty
                         trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
-
+                        
+                        # TD-MKT-FLOAT-MATCH: Calculate integer total as Single Source of Truth
                         trade_total_pennies = int(trade_price_pennies * trade_qty)
+                        
                         # Effective Price in Dollars (for display/legacy)
                         effective_price_dollars = (trade_total_pennies / trade_qty) / 100.0 if trade_qty > 0 else 0.0
 
@@ -152,7 +154,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
                              quality=s_wrapper.dto.brand_info.get("quality", 1.0) if s_wrapper.dto.brand_info else 1.0
                         )
                         transactions.append(tx)
-                        stats["last_price"] = effective_price # Keep float for stats compatibility
+                        stats["last_price"] = effective_price_dollars 
                         stats["volume"] += trade_qty
 
                         b_wrapper.remaining_qty -= trade_qty
@@ -196,7 +198,8 @@ class OrderBookMatchingEngine(IMatchingEngine):
                     trade_price_pennies = (b_wrapper.dto.price_pennies + s_wrapper.dto.price_pennies) // 2
 
                 trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
-
+                
+                # TD-MKT-FLOAT-MATCH: Calculate integer total
                 trade_total_pennies = int(trade_price_pennies * trade_qty)
                 effective_price_dollars = (trade_total_pennies / trade_qty) / 100.0 if trade_qty > 0 else 0.0
 
@@ -337,7 +340,8 @@ class StockMatchingEngine(IMatchingEngine):
                 # Mid-price (Integer Division)
                 trade_price_pennies = (b_order.dto.price_pennies + s_order.dto.price_pennies) // 2
                 trade_qty = min(b_order.remaining_qty, s_order.remaining_qty)
-
+                
+                # TD-MKT-FLOAT-MATCH: Calculate integer total
                 trade_total_pennies = int(trade_price_pennies * trade_qty)
                 effective_price_dollars = (trade_total_pennies / trade_qty) / 100.0 if trade_qty > 0 else 0.0
 
@@ -356,7 +360,7 @@ class StockMatchingEngine(IMatchingEngine):
                     total_pennies=trade_total_pennies,
                     market_id=market_id,
                     transaction_type="stock",
-                    time=current_tick,
+                    time=current_tick
                 )
                 transactions.append(tx)
 

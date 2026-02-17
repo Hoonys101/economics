@@ -86,5 +86,19 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
             "modules/finance/api.py"
         ],
         "output_path": "design/3_work_artifacts/specs/MISSION_transaction-unification-implementation_SPEC.md"
+    },
+    "regression-audit": {
+        "title": "Post-Merge Regression & Deprecation Audit",
+        "worker": "audit",
+        "instruction": "Conduct a comprehensive audit of current test failures and deprecation warnings. 1) Analyze why 'test_validator_insufficient_funds' is failing (likely a mock discrepancy with the new 'allows_overdraft' property). 2) Catalog the 10 identified DeprecationWarnings (Government.collect_tax, GovernmentDecisionEngine, HouseholdFactory, StockOrder) and propose a systematic liquidation plan. Output an audit report with clear migration steps for Jules.",
+        "context_files": [
+            "tests/unit/test_transaction_engine.py",
+            "modules/finance/transaction/api.py",
+            "modules/finance/transaction/engine.py",
+            "simulation/systems/transaction_manager.py",
+            "modules/government/agents.py",
+            "tests/integration/test_government_fiscal_policy.py"
+        ],
+        "output_path": "design/3_work_artifacts/audits/MISSION_post-merge-regression-audit_REPORT.md"
     }
 }

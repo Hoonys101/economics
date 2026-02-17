@@ -31,6 +31,7 @@ def test_validator_success():
     mock_accessor.exists.return_value = True
     mock_participant = Mock(spec=ITransactionParticipant)
     mock_participant.get_balance.return_value = 10000 # 100.00
+    mock_participant.allows_overdraft = False
     mock_accessor.get_participant.return_value = mock_participant
 
     validator = TransactionValidator(mock_accessor)
@@ -68,6 +69,7 @@ def test_validator_insufficient_funds():
     mock_accessor.exists.return_value = True
     mock_participant = Mock(spec=ITransactionParticipant)
     mock_participant.get_balance.return_value = 1000 # 10.00
+    mock_participant.allows_overdraft = False
     mock_accessor.get_participant.return_value = mock_participant
 
     validator = TransactionValidator(mock_accessor)

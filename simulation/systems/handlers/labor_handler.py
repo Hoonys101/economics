@@ -24,7 +24,6 @@ class LaborTransactionHandler(ITransactionHandler):
         else:
              trade_value = round_to_pennies(tx.quantity * tx.price)
 
-
         # 1. Prepare Settlement (Calculate tax intents)
         # Note: TransactionProcessor used market_data.get("goods_market")?
         # But TaxationSystem.calculate_tax_intents signature expects 'market_data'.
