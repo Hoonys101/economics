@@ -34,7 +34,7 @@ class TestMarketAdapter:
         assert converted.quantity == 5.0
         assert converted.price_limit == 45.0
         # StockOrder conversion logic uses int(order.price) directly
-        assert converted.price_pennies == 45
+        assert converted.price_pennies == 4500
         assert converted.market_id == "stock_market"
 
     def test_convert_dict_legacy_format(self):

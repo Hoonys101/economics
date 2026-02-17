@@ -142,8 +142,8 @@ class TestStockOrderMatching:
         assert tx.quantity == 10.0
         # (50 + 45) / 2 = 47.5
         # (5000 + 4500) / 2 = 4750 pennies.
-        # Transaction.price uses SSoT total_pennies / quantity = 47500 / 10 = 4750.0
-        assert tx.price == pytest.approx(4750.0)
+        # Transaction.price (Dollars) = 4750 pennies / 100.0 = 47.50
+        assert tx.price == pytest.approx(47.5)
 
         summary = stock_market.get_market_summary(100)
         assert summary["buy_order_count"] == 0

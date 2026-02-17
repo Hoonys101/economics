@@ -136,12 +136,13 @@ class OrderBookMatchingEngine(IMatchingEngine):
                         trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
 
                         trade_total_pennies = int(trade_price_pennies * trade_qty)
-                        effective_price = trade_total_pennies / trade_qty if trade_qty > 0 else 0.0
+                        # Effective Price in Dollars (for display/legacy)
+                        effective_price_dollars = (trade_total_pennies / trade_qty) / 100.0 if trade_qty > 0 else 0.0
 
                         tx = Transaction(
                              item_id=item_id,
                              quantity=trade_qty,
-                             price=effective_price,
+                             price=effective_price_dollars,
                              total_pennies=trade_total_pennies,
                              buyer_id=b_wrapper.dto.agent_id,
                              seller_id=s_wrapper.dto.agent_id,
@@ -197,12 +198,12 @@ class OrderBookMatchingEngine(IMatchingEngine):
                 trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
 
                 trade_total_pennies = int(trade_price_pennies * trade_qty)
-                effective_price = trade_total_pennies / trade_qty if trade_qty > 0 else 0.0
+                effective_price_dollars = (trade_total_pennies / trade_qty) / 100.0 if trade_qty > 0 else 0.0
 
                 tx = Transaction(
                      item_id=item_id,
                      quantity=trade_qty,
-                     price=effective_price,
+                     price=effective_price_dollars,
                      total_pennies=trade_total_pennies,
                      buyer_id=b_wrapper.dto.agent_id,
                      seller_id=s_wrapper.dto.agent_id,
@@ -212,7 +213,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
                      quality=s_wrapper.dto.brand_info.get("quality", 1.0) if s_wrapper.dto.brand_info else 1.0
                 )
                 transactions.append(tx)
-                stats["last_price"] = effective_price
+                stats["last_price"] = effective_price_dollars
                 stats["volume"] += trade_qty
 
                 b_wrapper.remaining_qty -= trade_qty
@@ -338,7 +339,7 @@ class StockMatchingEngine(IMatchingEngine):
                 trade_qty = min(b_order.remaining_qty, s_order.remaining_qty)
 
                 trade_total_pennies = int(trade_price_pennies * trade_qty)
-                effective_price = trade_total_pennies / trade_qty if trade_qty > 0 else 0.0
+                effective_price_dollars = (trade_total_pennies / trade_qty) / 100.0 if trade_qty > 0 else 0.0
 
                 # Validation check
                 if b_order.dto.agent_id is None or s_order.dto.agent_id is None:
@@ -351,7 +352,7 @@ class StockMatchingEngine(IMatchingEngine):
                     seller_id=s_order.dto.agent_id,
                     item_id=f"stock_{firm_id}",
                     quantity=trade_qty,
-                    price=effective_price,
+                    price=effective_price_dollars,
                     total_pennies=trade_total_pennies,
                     market_id=market_id,
                     transaction_type="stock",
@@ -360,9 +361,9 @@ class StockMatchingEngine(IMatchingEngine):
                 transactions.append(tx)
 
                 stats["volume"] += trade_qty
-                last_price = effective_price
-                high = max(high, effective_price)
-                low = min(low, effective_price)
+                last_price = effective_price_dollars
+                high = max(high, effective_price_dollars)
+                low = min(low, effective_price_dollars)
 
                 b_order.remaining_qty -= trade_qty
                 s_order.remaining_qty -= trade_qty

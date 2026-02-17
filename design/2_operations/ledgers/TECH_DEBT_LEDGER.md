@@ -2,7 +2,7 @@
 
 | ID | Module / Component | Description | Priority / Impact | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **TD-MKT-FLOAT-MATCH** | Markets | **Market Precision Leak**: `MatchingEngine` uses `float` for price discovery. Violates Zero-Sum. | **Critical**: Financial Halo. | **Identified** |
+| **TD-MKT-FLOAT-MATCH** | Markets | **Market Precision Leak**: `MatchingEngine` uses `float` for price discovery. Violates Zero-Sum. | **Critical**: Financial Halo. | **Resolved** |
 | **TD-ARCH-LIFE-GOD** | Systems | **God Manager**: `LifecycleManager` monolithically handles Birth, Death, Aging, Liquidation. | **Medium**: Coupling. | **Identified** |
 | **TD-CONF-GHOST-BIND** | Config | **Ghost Constants**: Modules bind config values at import time, preventing runtime hot-swap. | **Medium**: Dynamic Tuning. | **Identified** |
 | **TD-INT-PENNIES-FRAGILITY** | System | **Penny-Float Duality**: Widespread `hasattr`/`getattr` for `xxx_pennies` vs `xxx`. Needs Unified API. | **High**: Logic Inconsistency. | **Resolved** |

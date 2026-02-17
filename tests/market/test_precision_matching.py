@@ -44,7 +44,8 @@ class TestPrecisionMatching(unittest.TestCase):
         # Total pennies: 99 * 1.0 = 99
 
         self.assertEqual(tx.total_pennies, 99)
-        self.assertEqual(tx.price, 99.0 / 1.0) # 99.0
+        # Price (Dollars) = 99 / 100.0 = 0.99
+        self.assertEqual(tx.price, 0.99)
 
     def test_market_fractional_qty_rounding(self):
         engine = OrderBookMatchingEngine()
@@ -85,7 +86,8 @@ class TestPrecisionMatching(unittest.TestCase):
         # Total pennies: int(10 * 0.33) = int(3.3) = 3 pennies
 
         self.assertEqual(tx.total_pennies, 3)
-        self.assertAlmostEqual(tx.price, 3 / 0.33, places=5) # ~9.0909...
+        # Price (Dollars) = (3 / 0.33) / 100 = 9.09... / 100 = 0.0909...
+        self.assertAlmostEqual(tx.price, (3 / 0.33) / 100.0, places=5)
 
     def test_labor_market_pricing(self):
         # Labor market uses Buyer's Bid as price

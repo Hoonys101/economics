@@ -2,9 +2,9 @@
 
 ## 1. Architectural Insights
 - **Penny Standard Adoption**: The `OrderBookMatchingEngine` and `StockMatchingEngine` now operate exclusively on `int` pennies. This eliminates floating-point drift in price discovery and execution.
-- **DTO Migration**: `CanonicalOrderDTO` now enforces `price_pennies: int`. The legacy `price_limit: float` is retained but deprecated. `convert_legacy_order_to_canonical` bridges the gap by treating floats as dollars and ints as pennies (mostly), with heuristics for safety.
-- **Transaction SSoT**: The `Transaction` model now carries `total_pennies: int` as the Single Source of Truth for settlement. `price` (float) is a derived value (`total_pennies / quantity`) for display and legacy agent compatibility. This ensures `SettlementSystem` receives exact integer amounts.
-- **Scale Discrepancy Resolved**: A discrepancy between legacy tests (expecting dollars) and the new engine (producing pennies) was identified. The decision was made to update tests to expect pennies, enforcing the "Penny Standard" across the board. Agents relying on `Transaction.price` must now interpret it as pennies (or the system must be updated to scale it back, but currently it's raw unit price in pennies).
+- **DTO Migration**: `CanonicalOrderDTO` now enforces `price_pennies: int`. The legacy `price_limit: float` is retained but deprecated. `convert_legacy_order_to_canonical` bridges the gap by treating floats as dollars (converting to pennies via `* 100`) and ints as pennies.
+- **Transaction SSoT**: The `Transaction` model now carries `total_pennies: int` as the Single Source of Truth for settlement. `price` (float) is a derived value (`(total_pennies / quantity) / 100.0`) representing Dollars. This ensures `SettlementSystem` receives exact integer amounts while maintaining legacy UI compatibility.
+- **Display Price (Dollars)**: A critical decision was made to ensure `Transaction.price` represents Dollars (float), not Pennies. This maintains semantic compatibility with legacy agents and dashboards. Tests were updated to reflect this expectation (e.g., $1.02 instead of 102.0 pennies).
 
 ## 2. Test Evidence
 All relevant tests passed, including new precision tests and updated legacy tests.
@@ -47,5 +47,5 @@ tests/market/test_precision_matching.py::TestPrecisionMatching::test_market_zero
 ```
 
 ## 3. Risks & Recommendations
-- **Agent Confusion**: Legacy agents might misinterpret `Transaction.price` (pennies) as dollars if they are not updated. Recommendation: Batch update agent logic or introduce a "Display Price" field in `Transaction` that respects the market's configured scale.
-- **Legacy DTOs**: `StockOrder` is deprecated but still supported. Future refactors should eliminate it completely.
+- **Legacy DTOs**: `StockOrder` is deprecated but supported. The conversion logic now assumes `float` inputs are Dollars and `int` inputs are Pennies. This is a heuristic that should be monitored.
+- **Agent Awareness**: Agents must continue to treat `Transaction.price` as Dollars. If they access `total_pennies`, they get the exact settlement value.
