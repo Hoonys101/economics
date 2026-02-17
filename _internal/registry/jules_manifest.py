@@ -17,40 +17,16 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "liquidate-dto-contracts": {
-        "title": "Implement DTO Contract Liquidation",
-        "command": "create",
-        "instruction": "Implement the fixes in BorrowerProfileDTO signature and Test Subscripting as defined in the SPEC. Run full finance unit tests to verify.",
-        "file": "design/3_work_artifacts/specs/MISSION_liquidate-dto-contracts_SPEC.md"
-    },
-    "liquidate-loan-market": {
-        "title": "Implement LoanMarket Dict-Leak Fix",
-        "command": "create",
-        "instruction": "Resolve the 'dict' object attribute error in loan_market.py by ensuring DTO objects are returned and used. Verify with loan market unit tests.",
-        "file": "design/3_work_artifacts/specs/MISSION_liquidate-loan-market_SPEC.md"
-    },
-    "liquidate-regressions": {
-        "title": "Implement Behavioral Regression Fixes",
-        "command": "create",
-        "instruction": "Fix firm inventory slots and housing transaction protocols to resolve residual test failures. Maintain zero-sum integrity.",
-        "file": "design/3_work_artifacts/specs/MISSION_liquidate-regressions_SPEC.md"
-    },
-    "modernize-omo-tests": {
-        "title": "Implement OMO & Settlement Test Modernization",
-        "command": "create",
-        "instruction": "Refactor balance assertions in OMO and Settlement tests to use SettlementSystem SSoT. Ensure zero-sum integrity.",
-        "file": "design/3_work_artifacts/specs/MISSION_modernize-omo-tests_SPEC.md"
-    },
-    "modernize-bailout-tests": {
-        "title": "Implement Bailout & DTO Contract Fixes",
-        "command": "create",
-        "instruction": "Fix BailoutCovenant and DTO signature collisions in tests. Ensure strict Dataclass usage.",
-        "file": "design/3_work_artifacts/specs/MISSION_modernize-bailout-tests_SPEC.md"
-    },
     "modernize-regression-tests": {
         "title": "Implement General Test Logic Regressions",
         "command": "create",
         "instruction": "Resolve judicial and manufacturing test regressions by aligning with current logic and SSoT.",
         "file": "design/3_work_artifacts/specs/MISSION_modernize-regression-tests_SPEC.md"
+    },
+    "liquidate-final-residue": {
+        "title": "Liquidate 6 Residual Test Failures",
+        "command": "create",
+        "instruction": "Apply final fixes for BailoutCovenant, SalesRules precision, and DoubleEntry transaction deltas based on the AUDIT report.",
+        "file": "design/3_work_artifacts/audits/MISSION_audit-final-failures_AUDIT.md"
     }
 }

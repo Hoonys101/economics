@@ -3,57 +3,15 @@
     "version": "1.0"
   },
   "missions": {
-    "liquidate-dto-contracts": {
-      "key": "liquidate-dto-contracts",
-      "title": "Liquidate DTO Contract Desyncs",
-      "type": "gemini",
-      "instruction_raw": "Draft a SPEC to fix BorrowerProfileDTO signature errors and residual LoanInfoDTO subscripting across Firm logic and 700+ tests. Ensure all keyword arguments match the frozen dataclass definition. Refer to TD-DTO-DESYNC-2026.",
-      "status": "pending",
-      "created_at": "",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "simulation/decisions/firm/financial_strategy.py",
-        "tests/unit/corporate/test_financial_strategy.py",
-        "tests/unit/finance/test_finance_system_refactor.py"
-      ],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
-    "liquidate-loan-market": {
-      "key": "liquidate-loan-market",
-      "title": "Liquidate LoanMarket Dict-Leak",
-      "type": "gemini",
-      "instruction_raw": "Draft a SPEC to resolve the AttributeError in loan_market.py where a 'dict' is returned instead of a LoanInfoDTO object. Trace the origin in bank.stage_loan and ensure dot notation is used throughout.",
-      "status": "pending",
-      "created_at": "",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "simulation/loan_market.py",
-        "simulation/bank.py",
-        "tests/unit/markets/test_loan_market_mortgage.py"
-      ],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
-    "liquidate-regressions": {
-      "key": "liquidate-regressions",
-      "title": "Implement Behavioral Regression Fixes",
+    "modernize-regression-tests": {
+      "key": "modernize-regression-tests",
+      "title": "Implement General Test Logic Regressions",
       "type": "jules",
-      "instruction_raw": "Fix firm inventory slots and housing transaction protocols to resolve residual test failures. Maintain zero-sum integrity.",
+      "instruction_raw": "Resolve judicial and manufacturing test regressions by aligning with current logic and SSoT.",
       "status": "pending",
       "created_at": "",
       "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_liquidate-regressions_SPEC.md",
+      "file_path": "design/3_work_artifacts/specs/MISSION_modernize-regression-tests_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,
@@ -62,66 +20,19 @@
       "model": null,
       "audit_requirements": null
     },
-    "modernize-omo-tests": {
-      "key": "modernize-omo-tests",
-      "title": "Modernize OMO & Settlement Tests (SSoT Alignment)",
-      "type": "gemini",
-      "instruction_raw": "Draft a SPEC to refactor test_omo_system.py and test_atomic_settlement.py. Replace direct Agent.assets checks with settlement_system.get_balance() as per TEST_REFRACTORING_GUIDE.md. Resolve existing 500 != (500 +/- 100) failures.",
+    "liquidate-final-residue": {
+      "key": "liquidate-final-residue",
+      "title": "Liquidate 6 Residual Test Failures",
+      "type": "jules",
+      "instruction_raw": "Apply final fixes for BailoutCovenant, SalesRules precision, and DoubleEntry transaction deltas based on the AUDIT report.",
       "status": "pending",
       "created_at": "",
-      "command": null,
-      "file_path": null,
+      "command": "create",
+      "file_path": "design/3_work_artifacts/audits/MISSION_audit-final-failures_AUDIT.md",
       "wait": false,
       "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "tests/integration/test_omo_system.py",
-        "tests/integration/test_atomic_settlement.py",
-        "design/1_governance/architecture/standards/TEST_REFRACTORING_GUIDE.md"
-      ],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
-    "modernize-bailout-tests": {
-      "key": "modernize-bailout-tests",
-      "title": "Modernize Bailout & DTO Signature Tests",
-      "type": "gemini",
-      "instruction_raw": "Draft a SPEC to fix BailoutCovenant attribute errors (executive_salary_freeze vs bonus) and BorrowerProfileDTO signature desyncs in remaining test files. Ensure mocks return strict Dataclasses.",
-      "status": "pending",
-      "created_at": "",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "tests/integration/test_finance_bailout.py",
-        "tests/unit/modules/finance/test_system.py",
-        "modules/finance/api.py",
-        "design/1_governance/architecture/standards/TEST_REFRACTORING_GUIDE.md"
-      ],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
-    "modernize-regression-tests": {
-      "key": "modernize-regression-tests",
-      "title": "Modernize General Behavioral Regressions",
-      "type": "gemini",
-      "instruction_raw": "Draft a SPEC to resolve logic regressions in judicial systems and manufacturing ratios. Ensure all balance assertions query the SSoT.",
-      "status": "pending",
-      "created_at": "",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "tests/unit/governance/test_judicial_system.py",
-        "tests/unit/components/test_engines.py",
-        "design/1_governance/architecture/standards/TEST_REFRACTORING_GUIDE.md"
-      ],
+      "worker": null,
+      "context_files": [],
       "output_path": null,
       "model": null,
       "audit_requirements": null

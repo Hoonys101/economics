@@ -23,55 +23,5 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "liquidate-dto-contracts": {
-        "title": "Liquidate DTO Contract Desyncs",
-        "worker": "spec",
-        "instruction": "Draft a SPEC to fix BorrowerProfileDTO signature errors and residual LoanInfoDTO subscripting across Firm logic and 700+ tests. Ensure all keyword arguments match the frozen dataclass definition. Refer to TD-DTO-DESYNC-2026.",
-        "context_files": [
-            "simulation/decisions/firm/financial_strategy.py",
-            "tests/unit/corporate/test_financial_strategy.py",
-            "tests/unit/finance/test_finance_system_refactor.py"
-        ]
-    },
-    "liquidate-loan-market": {
-        "title": "Liquidate LoanMarket Dict-Leak",
-        "worker": "spec",
-        "instruction": "Draft a SPEC to resolve the AttributeError in loan_market.py where a 'dict' is returned instead of a LoanInfoDTO object. Trace the origin in bank.stage_loan and ensure dot notation is used throughout.",
-        "context_files": [
-            "simulation/loan_market.py",
-            "simulation/bank.py",
-            "tests/unit/markets/test_loan_market_mortgage.py"
-        ]
-    },
-    "modernize-omo-tests": {
-        "title": "Modernize OMO & Settlement Tests (SSoT Alignment)",
-        "worker": "spec",
-        "instruction": "Draft a SPEC to refactor test_omo_system.py and test_atomic_settlement.py. Replace direct Agent.assets checks with settlement_system.get_balance() as per TEST_REFRACTORING_GUIDE.md. Resolve existing 500 != (500 +/- 100) failures.",
-        "context_files": [
-            "tests/integration/test_omo_system.py",
-            "tests/integration/test_atomic_settlement.py",
-            "design/1_governance/architecture/standards/TEST_REFRACTORING_GUIDE.md"
-        ]
-    },
-    "modernize-bailout-tests": {
-        "title": "Modernize Bailout & DTO Signature Tests",
-        "worker": "spec",
-        "instruction": "Draft a SPEC to fix BailoutCovenant attribute errors (executive_salary_freeze vs bonus) and BorrowerProfileDTO signature desyncs in remaining test files. Ensure mocks return strict Dataclasses.",
-        "context_files": [
-            "tests/integration/test_finance_bailout.py",
-            "tests/unit/modules/finance/test_system.py",
-            "modules/finance/api.py",
-            "design/1_governance/architecture/standards/TEST_REFRACTORING_GUIDE.md"
-        ]
-    },
-    "modernize-regression-tests": {
-        "title": "Modernize General Behavioral Regressions",
-        "worker": "spec",
-        "instruction": "Draft a SPEC to resolve logic regressions in judicial systems and manufacturing ratios. Ensure all balance assertions query the SSoT.",
-        "context_files": [
-            "tests/unit/governance/test_judicial_system.py",
-            "tests/unit/components/test_engines.py",
-            "design/1_governance/architecture/standards/TEST_REFRACTORING_GUIDE.md"
-        ]
-    }
+    # Add missions here
 }

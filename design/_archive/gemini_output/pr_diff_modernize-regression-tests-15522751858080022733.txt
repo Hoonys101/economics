@@ -1,0 +1,980 @@
+diff --git a/communications/insights/modernize-regression-tests.md b/communications/insights/modernize-regression-tests.md
+new file mode 100644
+index 00000000..6538daad
+--- /dev/null
++++ b/communications/insights/modernize-regression-tests.md
+@@ -0,0 +1,48 @@
++# Insight Report: Modernize Regression Tests
++
++## Architectural Insights
++- Identified dependence on `MockAgent` state in Judicial tests as a violation of SSoT.
++- Production Engine float math is a source of non-determinism.
++- Updated `SettlementSystem` protocol in `simulation/finance/api.py` to match implementation and provide `get_balance`.
++
++## Technical Debt
++- [Resolving] TD-045: Mock Object Drift.
++- [Resolving] TD-092: Non-deterministic Float Math.
++
++## Test Evidence
++```
++tests/unit/governance/test_judicial_ssot.py::test_waterfall_cash_only_ssot PASSED [ 10%]
++tests/unit/governance/test_judicial_ssot.py::test_waterfall_partial_cash
++-------------------------------- live log call ---------------------------------
++WARNING  modules.governance.judicial.system:system.py:189 JudicialSystem: Debt Restructuring Required for Agent 101. Remaining Debt: 600
++PASSED                                                                   [ 20%]
++tests/unit/governance/test_judicial_system.py::test_judicial_system_waterfall_full_recovery
++-------------------------------- live log call ---------------------------------
++INFO     modules.governance.judicial.system:system.py:58 JudicialSystem: Credit frozen for Agent 1 until tick 110.
++INFO     modules.governance.judicial.system:system.py:66 JudicialSystem: Applied XP penalty to Agent 1.
++PASSED                                                                   [ 30%]
++tests/unit/governance/test_judicial_system.py::test_judicial_system_waterfall_partial_recovery_and_restructuring
++-------------------------------- live log call ---------------------------------
++INFO     modules.governance.judicial.system:system.py:58 JudicialSystem: Credit frozen for Agent 1 until tick 110.
++INFO     modules.governance.judicial.system:system.py:66 JudicialSystem: Applied XP penalty to Agent 1.
++INFO     modules.governance.judicial.system:system.py:143 JudicialSystem: Transferred 10 shares of Firm 99 from 1 to 2.
++WARNING  modules.governance.judicial.system:system.py:189 JudicialSystem: Debt Restructuring Required for Agent 1. Remaining Debt: 850.0
++PASSED                                                                   [ 40%]
++tests/unit/firm/test_firm_actions.py::TestFirmActionExecutor::test_invest_automation_success
++-------------------------------- live log call ---------------------------------
++INFO     modules.firm.orchestrators.firm_action_executor:firm_action_executor.py:88 INTERNAL_EXEC | Firm 1 invested 100 in INVEST_AUTOMATION.
++PASSED                                                                   [ 50%]
++tests/unit/firm/test_firm_actions.py::TestFirmActionExecutor::test_invest_rd_success
++-------------------------------- live log call ---------------------------------
++INFO     modules.firm.orchestrators.firm_action_executor:firm_action_executor.py:112 INTERNAL_EXEC | Firm 1 R&D SUCCESS (Budget: 100.0)
++PASSED                                                                   [ 60%]
++tests/unit/firm/test_firm_actions.py::TestFirmActionExecutor::test_fire_employee
++-------------------------------- live log call ---------------------------------
++INFO     modules.firm.orchestrators.firm_action_executor:firm_action_executor.py:147 INTERNAL_EXEC | Firm 1 fired employee 2.
++PASSED                                                                   [ 70%]
++tests/unit/firm/test_production_int_math.py::test_production_integer_depreciation PASSED [ 80%]
++tests/unit/firm/test_production_int_math.py::test_production_deterministic_output PASSED [ 90%]
++tests/unit/firm/test_production_int_math.py::test_production_deterministic_floor PASSED [100%]
++
++======================== 10 passed, 2 warnings in 0.38s ========================
++```
+diff --git a/design/3_work_artifacts/specs/modernize_regression_tests_spec.md b/design/3_work_artifacts/specs/modernize_regression_tests_spec.md
+new file mode 100644
+index 00000000..ce937e29
+--- /dev/null
++++ b/design/3_work_artifacts/specs/modernize_regression_tests_spec.md
+@@ -0,0 +1,109 @@
++# Spec: Modernize General Behavioral Regressions
++
++## 1. Overview
++This specification addresses critical regressions in the `JudicialSystem` and `ProductionEngine`. The primary goal is to enforce the **Single Source of Truth (SSoT)** pattern for all financial assertions and ensure deterministic manufacturing ratios in production logic.
++
++### 1.1 Goals
++- **Judicial System**: Refactor `handle_default` to query `SettlementSystem` directly for balances, removing reliance on stale `Agent` state.
++- **Production Engine**: Standardize capital depreciation and input/output calculations to use strict integer arithmetic (pennies).
++- **Testing**: Update regression tests to assert against the SSoT (`SettlementSystem`) and eliminate `Agent.assets` side-effect mocks.
++
++## 2. Debt Review (Mandatory)
++- **Status**: **RESOLVE**. This spec directly addresses "TD-045: Mock Object Drift in Judicial Tests" and "TD-092: Non-deterministic Float Math in Production".
++- **Risk**: Low. This is a refactoring of internal logic and tests.
++- **Ledger Action**: Upon completion, close TD-045 and TD-092 in `TECH_DEBT_LEDGER.md`.
++
++## 3. Detailed Design
++
++### 3.1 Judicial System: Waterfall Recovery Logic
++The `JudicialSystem` acts as an Orchestrator. It must not rely on `agent.get_balance()`.
++
++**Logic Flow (Pseudo-code):**
++```python
++def handle_default(self, event: LoanDefaultedEvent) -> SeizureResultDTO:
++    remaining_debt = event['defaulted_amount']
++    seized_total = 0
++
++    # Step 1: Cash Seizure (Direct from SSoT)
++    # Query SettlementSystem directly
++    debtor_balance = self.settlement_system.get_balance(event['agent_id'], DEFAULT_CURRENCY)
++    cash_seize_amount = min(debtor_balance, remaining_debt)
++
++    if cash_seize_amount > 0:
++        self.settlement_system.transfer(
++            source=event['agent_id'],
++            dest=event['creditor_id'],
++            amount=cash_seize_amount,
++            memo=f"Seizure for Loan {event['loan_id']}"
++        )
++        remaining_debt -= cash_seize_amount
++        seized_total += cash_seize_amount
++
++    # Step 2: Stock Seizure (If debt remains)
++    if remaining_debt > 0:
++        # Fetch portfolio via ShareholderRegistry (SSoT for stocks)
++        stocks = self.shareholder_registry.get_portfolio(event['agent_id'])
++        # Logic to transfer stocks at current market valuation
++        # ...
++
++    # Step 3: Inventory Seizure (If debt remains)
++    if remaining_debt > 0:
++        # Logic to liquidate inventory
++        # ...
++
++    # Emit Restructuring Event if debt still remains
++    if remaining_debt > 0:
++        self.event_bus.publish(DebtRestructuringRequiredEvent(...))
++
++    return SeizureResultDTO(...)
++```
++
++### 3.2 Production Engine: Manufacturing Ratios
++Ensure depreciation and productivity uses integer math.
++
++**Logic Updates:**
++- **Capital Depreciation**: `floor(capital_stock * depreciation_rate_basis_points / 10000)`
++- **Productivity**: Ensure `labor_skill` and `technology_factor` result in a deterministic integer output quantity when applied to inputs.
++
++## 4. Verification Plan
++
++### 4.1 New Test Cases
++Create `tests/unit/governance/test_judicial_ssot.py`:
++- **test_waterfall_cash_only_ssot**: Setup `SettlementSystem` with 5000 pennies. Default 1000. Assert `SettlementSystem` balance becomes 4000. DO NOT check `Agent.assets`.
++- **test_production_integer_depreciation**: Input capital 100,000. Rate 0.015 (1.5%). Assert depreciation is exactly 1,500.
++
++### 4.2 Existing Test Impact
++- **Refactor `tests/unit/governance/test_judicial_system.py`**:
++    - Remove `MockAgent._assets`.
++    - Replace `agent.assets` assertions with `settlement_system.get_balance.assert_called_with(...)` or state verification.
++    - **CRITICAL**: Ensure `SettlementSystem` mock in `conftest.py` simulates balance updates if using `MagicMock`, or use a verified fake.
++
++### 4.3 Integration Check
++- Run `tests/integration/test_bankruptcy_flow.py` (if exists) or create a script to verify a firm going bankrupt correctly transfers assets to creditors without "creating" money (Zero-Sum check).
++
++## 5. Mocking Guide
++- **Use `tests/conftest.py` fixtures**: `mock_settlement_system` should be strict.
++- **Forbidden**: `agent.assets = 500`.
++- **Required**: `settlement_system.get_balance.return_value = 500`.
++
++## 6. Pre-Implementation Risk Analysis
++- **Circular Dependency**: `JudicialSystem` needs `SettlementSystem`. Ensure `SettlementSystem` does not import `JudicialSystem`.
++- **Breaking Changes**: Changing `ProductionEngine` math might alter simulation trajectory slightly (Butterfly Effect). Acceptable for "Modernization" but requires explicit mention in CHANGELOG.
++
++## 7. Mandatory Reporting Instruction
++**IMMEDIATELY** create the file `communications/insights/modernize-regression-tests.md` with the following content structure:
++
++```markdown
++# Insight Report: Modernize Regression Tests
++
++## Architectural Insights
++- Identified dependence on `MockAgent` state in Judicial tests as a violation of SSoT.
++- Production Engine float math is a source of non-determinism.
++
++## Technical Debt
++- [Resolving] TD-045: Mock Object Drift.
++- [Resolving] TD-092: Non-deterministic Float Math.
++
++## Test Evidence
++(Paste pytest output here after implementation)
++```
+diff --git a/modules/governance/judicial/api.py b/modules/governance/judicial/api.py
+index 55100be0..0c31ef4b 100644
+--- a/modules/governance/judicial/api.py
++++ b/modules/governance/judicial/api.py
+@@ -1,46 +1,70 @@
+-from typing import Protocol, TYPE_CHECKING
++from typing import TypedDict, List, Optional, Protocol, Dict
+ from dataclasses import dataclass
+-from modules.events.dtos import FinancialEvent
+ 
+-if TYPE_CHECKING:
+-    from simulation.finance.api import ISettlementSystem
+-    from modules.system.api import IAgentRegistry
+-    from modules.finance.api import IShareholderRegistry
++# Common/System Imports
++from modules.system.api import AgentID, CurrencyCode
+ 
++# DTOs
+ @dataclass
+-class SeizureWaterfallResultDTO:
+-    """Result of the judicial asset seizure process."""
+-    success: bool
+-    total_seized: float
+-    remaining_debt: float
+-    cash_seized: float
+-    stocks_seized_value: float
+-    inventory_seized_value: float
++class JudicialConfigDTO:
++    """Configuration for the Judicial System."""
++    seizure_threshold: int = 0
++    legal_fee_percent: float = 0.0
++    bankruptcy_threshold: int = -1000  # Debt level triggering bankruptcy
++
++@dataclass
++class SeizureRequestDTO:
++    """DTO for requesting asset seizure."""
++    debtor_id: AgentID
++    creditor_id: AgentID
++    target_amount: int
++    currency: CurrencyCode
++    loan_id: str
++
++@dataclass
++class SeizureResultDTO:
++    """Result of a seizure operation."""
++    seized_cash: int
++    seized_stocks_value: int
++    seized_inventory_value: int
++    remaining_debt: int
++    is_fully_recovered: bool
++    liquidated_assets: Dict[str, int]  # Details of what was sold
+ 
+ class IJudicialSystem(Protocol):
+     """
+-    Handles the consequences of events based on simulation rules.
+-    It subscribes to the EventBus and acts upon financial events
+-    to enforce governance and legal statutes.
++    Interface for the Judicial System.
++    Orchestrates debt recovery and bankruptcy proceedings.
+     """
+ 
+-    def handle_financial_event(self, event: FinancialEvent) -> None:
++    def handle_default(self, event: 'LoanDefaultedEvent') -> SeizureResultDTO:
+         """
+-        Primary entry point for processing events from the EventBus.
+-        This method delegates to specific handlers based on the event's type.
++        Process a loan default event using the Waterfall Recovery Logic.
++        1. Cash Seizure
++        2. Stock Seizure (Liquidation/Transfer)
++        3. Inventory Seizure (Liquidation)
+         """
+         ...
+ 
+-    def apply_default_penalty(self, agent_id: int, defaulted_amount: float, loan_id: str, tick: int) -> None:
++    def assess_solvency(self, agent_id: AgentID) -> bool:
+         """
+-        Applies non-financial penalties for a loan default, such as
+-        reducing reputation or experience points, and freezing credit.
++        Check if an agent is solvent based on SSoT balances and assets.
+         """
+         ...
+ 
+-    def execute_seizure_waterfall(self, agent_id: int, creditor_id: int, amount: float, loan_id: str, tick: int) -> SeizureWaterfallResultDTO:
+-        """
+-        Executes a hierarchical asset seizure (Cash -> Stocks -> Inventory)
+-        to recover the defaulted amount.
+-        """
+-        ...
++# Events
++class LoanDefaultedEvent(TypedDict):
++    event_type: str  # "LOAN_DEFAULTED"
++    tick: int
++    agent_id: AgentID
++    loan_id: str
++    defaulted_amount: int  # Pennies
++    creditor_id: AgentID
++
++class DebtRestructuringRequiredEvent(TypedDict):
++    event_type: str # "DEBT_RESTRUCTURING_REQUIRED"
++    tick: int
++    debtor_id: AgentID
++    creditor_id: AgentID
++    remaining_debt: int
++    loan_id: str
+diff --git a/modules/governance/judicial/system.py b/modules/governance/judicial/system.py
+index f7f287bb..8af52ef5 100644
+--- a/modules/governance/judicial/system.py
++++ b/modules/governance/judicial/system.py
+@@ -1,11 +1,13 @@
+-from typing import Dict, Any, Optional
++from typing import Dict, Any, Optional, cast
+ import logging
+ from modules.common.config_manager.api import ConfigManager
+-from modules.events.dtos import FinancialEvent, LoanDefaultedEvent, DebtRestructuringRequiredEvent
++from modules.events.dtos import FinancialEvent
+ from modules.system.event_bus.api import IEventBus
+-from modules.governance.judicial.api import IJudicialSystem, SeizureWaterfallResultDTO
++from modules.governance.judicial.api import (
++    IJudicialSystem, SeizureResultDTO, LoanDefaultedEvent, DebtRestructuringRequiredEvent
++)
+ from simulation.finance.api import ISettlementSystem
+-from modules.system.api import IAgentRegistry
++from modules.system.api import IAgentRegistry, AgentID
+ from modules.finance.api import (
+     IShareholderRegistry, IPortfolioHandler, ICreditFrozen, IFinancialAgent, ILiquidatable
+ )
+@@ -32,116 +34,104 @@ class JudicialSystem(IJudicialSystem):
+ 
+     def handle_financial_event(self, event: FinancialEvent) -> None:
+         if event['event_type'] == "LOAN_DEFAULTED":
+-            loan_event = event # Type narrowing
++            # Adapt generic FinancialEvent to LoanDefaultedEvent
++            loan_event = cast(LoanDefaultedEvent, event)
++
+             self.apply_default_penalty(
+                 agent_id=loan_event['agent_id'],
+-                defaulted_amount=loan_event['defaulted_amount'],
+-                loan_id=loan_event['loan_id'],
+                 tick=loan_event['tick']
+             )
+ 
+-            # Execute Seizure Waterfall
+-            result = self.execute_seizure_waterfall(
+-                agent_id=loan_event['agent_id'],
+-                creditor_id=loan_event['creditor_id'],
+-                amount=loan_event['defaulted_amount'],
+-                loan_id=loan_event['loan_id'],
+-                tick=loan_event['tick']
+-            )
++            self.handle_default(loan_event)
+ 
+-    def apply_default_penalty(self, agent_id: int, defaulted_amount: float, loan_id: str, tick: int) -> None:
++    def apply_default_penalty(self, agent_id: AgentID, tick: int) -> None:
+         agent = self.agent_registry.get_agent(agent_id)
+         if not agent:
+             logger.warning(f"JudicialSystem: Agent {agent_id} not found for penalty application.")
+             return
+ 
+-        # 1. Share Seizure moved to execute_seizure_waterfall
+-
+-        # 2. Credit Freeze
++        # Credit Freeze
+         if isinstance(agent, ICreditFrozen):
+             default_recovery = self.config_manager.get("finance.bank_defaults.credit_recovery_ticks", 100)
+             jail_ticks = self.config_manager.get("bank.credit_recovery_ticks", default_recovery)
+             agent.credit_frozen_until_tick = tick + jail_ticks
+             logger.info(f"JudicialSystem: Credit frozen for Agent {agent_id} until tick {agent.credit_frozen_until_tick}.")
+ 
+-        # 3. XP Penalty
++        # XP Penalty
+         if isinstance(agent, IEducated):
+             default_penalty = self.config_manager.get("finance.bank_defaults.bankruptcy_xp_penalty", 0.2)
+             xp_penalty = self.config_manager.get("bank.bankruptcy_xp_penalty", default_penalty)
++            # XP is float, so this is fine
+             agent.education_xp *= (1.0 - xp_penalty)
+             logger.info(f"JudicialSystem: Applied XP penalty to Agent {agent_id}.")
+ 
+-    def _get_agent_balance(self, agent: Any) -> float:
+-        if isinstance(agent, IFinancialAgent):
+-            return agent.get_balance(DEFAULT_CURRENCY)
+-        elif hasattr(agent, 'wallet'):
+-            return agent.wallet.get_balance(DEFAULT_CURRENCY)
+-        return 0.0
+-
+-    def _transfer_cash(self, agent: Any, creditor: Any, amount: float, memo: str, tick: int) -> float:
+-        """Attempts to transfer amount. Returns actual transferred amount."""
+-        balance = self._get_agent_balance(agent)
+-        transfer_amount = min(balance, amount)
+-
+-        if transfer_amount <= 0:
+-            return 0.0
+-
+-        success = self.settlement_system.transfer(
+-            debit_agent=agent,
+-            credit_agent=creditor,
+-            amount=transfer_amount,
+-            memo=memo,
+-            tick=tick
+-        )
+-
+-        return transfer_amount if success else 0.0
+-
+-    def execute_seizure_waterfall(self, agent_id: int, creditor_id: int, amount: float, loan_id: str, tick: int) -> SeizureWaterfallResultDTO:
+-        agent = self.agent_registry.get_agent(agent_id)
+-        creditor = self.agent_registry.get_agent(creditor_id)
+-
+-        result = SeizureWaterfallResultDTO(
+-            success=False,
+-            total_seized=0.0,
++    def assess_solvency(self, agent_id: AgentID) -> bool:
++        """
++        Check if an agent is solvent based on SSoT balances.
++        For now, simply checks if balance is non-negative.
++        """
++        balance = self.settlement_system.get_balance(agent_id, DEFAULT_CURRENCY)
++        return balance >= 0
++
++    def handle_default(self, event: LoanDefaultedEvent) -> SeizureResultDTO:
++        agent_id = event['agent_id']
++        creditor_id = event['creditor_id']
++        amount = int(event['defaulted_amount']) # Ensure int
++        loan_id = event['loan_id']
++        tick = event['tick']
++
++        result = SeizureResultDTO(
++            seized_cash=0,
++            seized_stocks_value=0,
++            seized_inventory_value=0,
+             remaining_debt=amount,
+-            cash_seized=0.0,
+-            stocks_seized_value=0.0,
+-            inventory_seized_value=0.0
++            is_fully_recovered=False,
++            liquidated_assets={}
+         )
+ 
+-        if not agent or not creditor:
++        agent = self.agent_registry.get_agent(agent_id)
++        if not agent:
+             return result
+ 
+         memo_base = f"Seizure: Default {loan_id}"
+ 
+-        # Stage 1: Cash
+-        cash_1 = self._transfer_cash(agent, creditor, result.remaining_debt, f"{memo_base} (Cash Stage 1)", tick)
+-        result.cash_seized += cash_1
+-        result.total_seized += cash_1
+-        result.remaining_debt -= cash_1
++        # Stage 1: Cash Seizure (Direct from SSoT)
++        debtor_balance = self.settlement_system.get_balance(agent_id, DEFAULT_CURRENCY)
++        cash_seize_amount = min(debtor_balance, result.remaining_debt)
++
++        # Get creditor agent object (agent is already fetched)
++        creditor = self.agent_registry.get_agent(creditor_id)
++
++        if cash_seize_amount > 0 and creditor:
++            success = self.settlement_system.transfer(
++                debit_agent=agent,
++                credit_agent=creditor,
++                amount=cash_seize_amount,
++                memo=f"{memo_base} (Cash Stage 1)",
++                tick=tick
++            )
++            if success:
++                result.seized_cash += cash_seize_amount
++                result.remaining_debt -= cash_seize_amount
+ 
+-        if result.remaining_debt <= 0.001: # Epsilon check
+-             result.success = True
++        if result.remaining_debt <= 0:
++             result.is_fully_recovered = True
+              return result
+ 
+         # Stage 2: Stocks
+         if isinstance(agent, IPortfolioHandler):
+             portfolio = agent.get_portfolio()
+-            # We assume stocks don't immediately reduce debt value (valuation issue),
+-            # but we transfer them to creditor to prevent leakage.
+             for asset in portfolio.assets:
+                 if asset.asset_type == 'stock':
+                     try:
+                         firm_id = int(asset.asset_id)
+                         quantity = asset.quantity
+                         if self.shareholder_registry and quantity > 0:
++                            # Transfer logic
+                             # 1. Remove from Debtor
+                             self.shareholder_registry.register_shares(firm_id, agent_id, 0)
+ 
+-                            # 2. Add to Creditor (Need to fetch existing shares first)
+-                            # Assuming shareholder_registry can handle this or we just re-register
+-                            # Since we don't have atomic 'transfer_shares', we do best effort.
+-                            # Ideally we get creditor shares first.
++                            # 2. Add to Creditor
+                             current_holdings = self.shareholder_registry.get_shareholders_of_firm(firm_id)
+                             creditor_qty = 0.0
+                             for holding in current_holdings:
+@@ -150,38 +140,52 @@ class JudicialSystem(IJudicialSystem):
+                                     break
+ 
+                             self.shareholder_registry.register_shares(firm_id, creditor_id, creditor_qty + quantity)
+-                            # Note: We don't increment result.stocks_seized_value because we don't know the price.
+-                            # And we don't reduce remaining_debt.
+                             logger.info(f"JudicialSystem: Transferred {quantity} shares of Firm {firm_id} from {agent_id} to {creditor_id}.")
+ 
++                            # Note: We are not valuing the stocks here to reduce debt because stock valuation is complex
++                            # and might not be accepted at face value by creditor in this simplified logic.
++                            # Ideally we would get market price and reduce remaining_debt.
++
+                     except ValueError:
+                         pass
+             agent.clear_portfolio()
+ 
+         # Stage 3: Inventory (Liquidation)
+-        # Check remaining debt again (stocks didn't reduce it)
+-        if result.remaining_debt > 0.001 and isinstance(agent, ILiquidatable):
++        if result.remaining_debt > 0 and isinstance(agent, ILiquidatable):
+              # This converts inventory to cash
+              _ = agent.liquidate_assets(tick)
+ 
+-             # Now seize the generated cash
+-             cash_2 = self._transfer_cash(agent, creditor, result.remaining_debt, f"{memo_base} (Inventory Stage 3)", tick)
+-             result.inventory_seized_value += cash_2 # We assume cash obtained came from liquidation
+-             result.total_seized += cash_2
+-             result.remaining_debt -= cash_2
+-
+-        if result.remaining_debt <= 0.001:
+-            result.success = True
++             # Now seize the generated cash from SSoT
++             # We need to check balance again because liquidation increased it
++             new_balance = self.settlement_system.get_balance(agent_id, DEFAULT_CURRENCY)
++             # The available cash to seize is whatever is there now
++             cash_seize_amount_2 = min(new_balance, result.remaining_debt)
++
++             if cash_seize_amount_2 > 0 and creditor:
++                 success = self.settlement_system.transfer(
++                    debit_agent=agent,
++                    credit_agent=creditor,
++                    amount=cash_seize_amount_2,
++                    memo=f"{memo_base} (Inventory Stage 3)",
++                    tick=tick
++                 )
++                 if success:
++                     result.seized_inventory_value += cash_seize_amount_2
++                     result.remaining_debt -= cash_seize_amount_2
++
++        if result.remaining_debt <= 0:
++            result.is_fully_recovered = True
+         else:
+             # Emit DebtRestructuringRequiredEvent
+-            event = DebtRestructuringRequiredEvent(
++            restructure_event = DebtRestructuringRequiredEvent(
+                 event_type="DEBT_RESTRUCTURING_REQUIRED",
+                 tick=tick,
+-                agent_id=agent_id,
++                debtor_id=agent_id,
+                 remaining_debt=result.remaining_debt,
+-                creditor_id=creditor_id
++                creditor_id=creditor_id,
++                loan_id=loan_id
+             )
+-            self.event_bus.publish(event)
++            self.event_bus.publish(restructure_event) # type: ignore
+             logger.warning(f"JudicialSystem: Debt Restructuring Required for Agent {agent_id}. Remaining Debt: {result.remaining_debt}")
+ 
+         return result
+diff --git a/simulation/components/engines/production_engine.py b/simulation/components/engines/production_engine.py
+index a1a8d4a0..b615557d 100644
+--- a/simulation/components/engines/production_engine.py
++++ b/simulation/components/engines/production_engine.py
+@@ -28,19 +28,21 @@ class ProductionEngine(IProductionEngine):
+ 
+         try:
+             # 1. Depreciation & Decay (Calculation, NO mutation)
+-            capital_depreciation_rate = config.capital_depreciation_rate
+-            capital_depreciation_val = production_state.capital_stock * capital_depreciation_rate
+-            effective_capital = max(production_state.capital_stock - capital_depreciation_val, 0.01)
+-
+-            # Automation Decay
+-            # Original: state.automation_level *= 0.995
+-            # So decay is (1 - 0.995) = 0.005
+-            automation_decay_rate = 0.005 # Hardcoded in original logic
++            # MIGRATION: Integer Math for Capital Depreciation (pennies)
++            # Formula: floor(capital_stock * rate_basis_points / 10000)
++            rate_bp = int(config.capital_depreciation_rate * 10000)
++            capital_depreciation_val = (production_state.capital_stock * rate_bp) // 10000
++
++            # effective_capital must be at least 0.
++            # Using max(..., 1) to avoid division by zero if used later, though here it's used in numerator.
++            effective_capital = max(production_state.capital_stock - capital_depreciation_val, 0)
++
++            # Automation Decay (Float is acceptable for non-monetary abstract value)
++            automation_decay_rate = 0.005
+             automation_decay = production_state.automation_level * automation_decay_rate
+             effective_automation = production_state.automation_level - automation_decay
+ 
+             if effective_automation < 0.001:
+-                # If it drops below threshold, we lose the rest
+                 automation_decay += effective_automation
+                 effective_automation = 0.0
+ 
+@@ -62,7 +64,6 @@ class ProductionEngine(IProductionEngine):
+                 )
+ 
+             # 3. Production Parameters
+-            # Cobb-Douglas Parameters
+             base_alpha = config.labor_alpha
+             automation_reduction = config.automation_labor_reduction
+ 
+@@ -78,16 +79,18 @@ class ProductionEngine(IProductionEngine):
+             # Quality Calculation
+             item_config = config.goods.get(production_state.specialization, {})
+             quality_sensitivity = item_config.get("quality_sensitivity", 0.5)
+-            # Use base_quality from state
+             actual_quality = production_state.base_quality + (math.log1p(avg_skill) * quality_sensitivity)
+ 
+             produced_quantity = 0.0
+             if total_labor_skill > 0 and effective_capital > 0:
++                # Standard Cobb-Douglas
+                 produced_quantity = tfp * (total_labor_skill ** alpha_adjusted) * (effective_capital ** beta_adjusted)
+ 
+             actual_produced = 0.0
+             consumed_inputs = {}
+ 
++            # Production Cost (if tracking specific batch costs)
++            # Currently 0 as costs are amortized/handled by Inventory/Wage logic separately
+             production_cost = 0
+ 
+             if produced_quantity > 0:
+@@ -104,20 +107,25 @@ class ProductionEngine(IProductionEngine):
+                             max_by_inputs = min(max_by_inputs, available / req_per_unit)
+ 
+                     actual_produced = min(produced_quantity, max_by_inputs)
++                else:
++                    actual_produced = produced_quantity
+ 
+-                    # Calculate consumed inputs
++                # MIGRATION: Deterministic Integer Output
++                # We floor the output to ensure integer quantities of goods
++                actual_produced = math.floor(actual_produced)
++
++                if input_config and actual_produced > 0:
++                    # Calculate consumed inputs based on integer output
+                     for mat, req_per_unit in input_config.items():
+                         consumed_inputs[mat] = actual_produced * req_per_unit
+-                else:
+-                    actual_produced = produced_quantity
+ 
+             return ProductionResultDTO(
+                 success=True,
+-                quantity_produced=actual_produced,
++                quantity_produced=float(actual_produced),
+                 quality=actual_quality,
+                 specialization=production_state.specialization,
+                 inputs_consumed=consumed_inputs,
+-                production_cost=int(production_cost),
++                production_cost=production_cost,
+                 capital_depreciation=int(capital_depreciation_val),
+                 automation_decay=automation_decay
+             )
+diff --git a/simulation/finance/api.py b/simulation/finance/api.py
+index 810ab3c3..b477a2cc 100644
+--- a/simulation/finance/api.py
++++ b/simulation/finance/api.py
+@@ -67,6 +67,14 @@ class ISettlementSystem(ABC):
+         """
+         ...
+ 
++    @abstractmethod
++    def get_balance(self, agent_id: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
++        """
++        Queries the Single Source of Truth for an agent's current balance.
++        This is the ONLY permissible way to check another agent's funds.
++        """
++        ...
++
+     @abstractmethod
+     def create_and_transfer(
+         self,
+diff --git a/tests/conftest.py b/tests/conftest.py
+index e7289e37..3d913b21 100644
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -3,7 +3,7 @@ from unittest.mock import Mock, MagicMock, patch
+ import pytest
+ 
+ # Mock missing dependencies for CI/Sandbox environments
+-for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit"]:
++for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit", "pydantic"]:
+     if module_name in sys.modules:
+         continue
+     try:
+@@ -30,6 +30,13 @@ for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model"
+ 
+         if module_name == "yaml":
+             mock.safe_load.return_value = {}
++
++        if module_name == "pydantic":
++            # Mock BaseModel to allow inheritance
++            mock.BaseModel = MagicMock
++            mock.Field = MagicMock(return_value=None)
++            mock.validator = MagicMock(return_value=lambda x: x)
++
+         sys.modules[module_name] = mock
+ 
+ import config
+diff --git a/tests/unit/firm/test_production_int_math.py b/tests/unit/firm/test_production_int_math.py
+new file mode 100644
+index 00000000..46b2ef9e
+--- /dev/null
++++ b/tests/unit/firm/test_production_int_math.py
+@@ -0,0 +1,130 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.components.engines.production_engine import ProductionEngine
++from modules.firm.api import ProductionInputDTO, FirmSnapshotDTO
++from modules.simulation.dtos.api import FirmConfigDTO, ProductionStateDTO, HRStateDTO, FinanceStateDTO, SalesStateDTO
++
++def test_production_integer_depreciation():
++    engine = ProductionEngine()
++
++    # Setup
++    config = MagicMock(spec=FirmConfigDTO)
++    config.capital_depreciation_rate = 0.015 # 1.5%
++    config.labor_alpha = 0.5
++    config.automation_labor_reduction = 0.5
++    config.labor_elasticity_min = 0.1
++    config.goods = {"WIDGET": {"quality_sensitivity": 0.5}}
++
++    prod_state = MagicMock(spec=ProductionStateDTO)
++    prod_state.capital_stock = 100000 # 100,000 pennies
++    prod_state.automation_level = 0.0
++    prod_state.specialization = "WIDGET"
++    prod_state.base_quality = 1.0
++    prod_state.productivity_factor = 1.0
++    prod_state.input_inventory = {}
++
++    hr_state = MagicMock(spec=HRStateDTO)
++    hr_state.employees_data = {1: {"skill": 1.0}}
++
++    snapshot = MagicMock(spec=FirmSnapshotDTO)
++    snapshot.id = 1
++    snapshot.config = config
++    snapshot.production = prod_state
++    snapshot.hr = hr_state
++
++    input_dto = ProductionInputDTO(
++        firm_snapshot=snapshot,
++        productivity_multiplier=1.0
++    )
++
++    result = engine.produce(input_dto)
++
++    # Expected depreciation: floor(100000 * 0.015) = 1500
++    # Or using basis points: floor(100000 * 150 / 10000) = 1500
++    assert result.capital_depreciation == 1500
++    assert isinstance(result.capital_depreciation, int)
++
++def test_production_deterministic_output():
++    engine = ProductionEngine()
++
++    config = MagicMock(spec=FirmConfigDTO)
++    config.capital_depreciation_rate = 0.0
++    config.labor_alpha = 0.5
++    config.automation_labor_reduction = 0.0
++    config.labor_elasticity_min = 0.1
++    config.goods = {"WIDGET": {"quality_sensitivity": 0.0}}
++
++    prod_state = MagicMock(spec=ProductionStateDTO)
++    prod_state.capital_stock = 10000
++    prod_state.automation_level = 0.0
++    prod_state.specialization = "WIDGET"
++    prod_state.base_quality = 1.0
++    prod_state.productivity_factor = 1.0
++    prod_state.input_inventory = {}
++
++    hr_state = MagicMock(spec=HRStateDTO)
++    # 1 employee, skill 1.0
++    hr_state.employees_data = {1: {"skill": 1.0}}
++
++    snapshot = MagicMock(spec=FirmSnapshotDTO)
++    snapshot.id = 1
++    snapshot.config = config
++    snapshot.production = prod_state
++    snapshot.hr = hr_state
++
++    input_dto = ProductionInputDTO(
++        firm_snapshot=snapshot,
++        productivity_multiplier=1.0
++    )
++
++    # Logic:
++    # labor = 1.0
++    # capital = 10000
++    # alpha = 0.5, beta = 0.5
++    # output = 1.0 * (1.0^0.5) * (10000^0.5) = 1.0 * 1.0 * 100.0 = 100.0
++
++    result = engine.produce(input_dto)
++
++    assert result.quantity_produced == 100.0
++    assert result.quantity_produced.is_integer() # Should be float but integer value
++
++def test_production_deterministic_floor():
++    """Test that output is floored if fractional."""
++    engine = ProductionEngine()
++
++    config = MagicMock(spec=FirmConfigDTO)
++    config.capital_depreciation_rate = 0.0
++    config.labor_alpha = 0.5
++    config.automation_labor_reduction = 0.0
++    config.labor_elasticity_min = 0.1
++    config.goods = {"WIDGET": {"quality_sensitivity": 0.0}}
++
++    prod_state = MagicMock(spec=ProductionStateDTO)
++    prod_state.capital_stock = 100 # sqrt(100) = 10
++    prod_state.automation_level = 0.0
++    prod_state.specialization = "WIDGET"
++    prod_state.base_quality = 1.0
++    prod_state.productivity_factor = 1.0
++    prod_state.input_inventory = {}
++
++    hr_state = MagicMock(spec=HRStateDTO)
++    # Labor 1.5. sqrt(1.5) ~= 1.2247
++    hr_state.employees_data = {1: {"skill": 1.5}}
++
++    snapshot = MagicMock(spec=FirmSnapshotDTO)
++    snapshot.id = 1
++    snapshot.config = config
++    snapshot.production = prod_state
++    snapshot.hr = hr_state
++
++    input_dto = ProductionInputDTO(
++        firm_snapshot=snapshot,
++        productivity_multiplier=1.0
++    )
++
++    # Output = 1.0 * sqrt(1.5) * sqrt(100) = 1.2247 * 10 = 12.247
++    # Floor(12.247) = 12
++
++    result = engine.produce(input_dto)
++
++    assert result.quantity_produced == 12.0
+diff --git a/tests/unit/governance/test_judicial_ssot.py b/tests/unit/governance/test_judicial_ssot.py
+new file mode 100644
+index 00000000..3d8c3852
+--- /dev/null
++++ b/tests/unit/governance/test_judicial_ssot.py
+@@ -0,0 +1,124 @@
++import pytest
++from unittest.mock import MagicMock, call
++from modules.governance.judicial.system import JudicialSystem
++from modules.governance.judicial.api import LoanDefaultedEvent
++from modules.system.event_bus.api import IEventBus
++from simulation.finance.api import ISettlementSystem
++from modules.system.api import IAgentRegistry, DEFAULT_CURRENCY
++from modules.finance.api import IShareholderRegistry, IFinancialAgent
++from modules.common.config_manager.api import ConfigManager
++
++@pytest.fixture
++def mock_deps():
++    event_bus = MagicMock(spec=IEventBus)
++    settlement = MagicMock(spec=ISettlementSystem)
++    registry = MagicMock(spec=IAgentRegistry)
++    shareholder_registry = MagicMock(spec=IShareholderRegistry)
++    config_mgr = MagicMock(spec=ConfigManager)
++    return event_bus, settlement, registry, shareholder_registry, config_mgr
++
++def test_waterfall_cash_only_ssot(mock_deps):
++    event_bus, settlement, registry, shareholder_registry, config_mgr = mock_deps
++
++    system = JudicialSystem(event_bus, settlement, registry, shareholder_registry, config_mgr)
++
++    agent_id = 101
++    creditor_id = 202
++    debt_amount = 1000
++    loan_id = "LOAN_001"
++    tick = 10
++
++    # SSoT Setup: Agent has sufficient balance
++    settlement.get_balance.return_value = 5000 # 5000 pennies
++    settlement.transfer.return_value = True # Transfer success
++
++    # Mock Agents
++    mock_agent = MagicMock(spec=IFinancialAgent)
++    mock_creditor = MagicMock(spec=IFinancialAgent)
++
++    def get_agent_side_effect(aid):
++        if aid == agent_id: return mock_agent
++        if aid == creditor_id: return mock_creditor
++        return None
++    registry.get_agent.side_effect = get_agent_side_effect
++
++    event = LoanDefaultedEvent(
++        event_type="LOAN_DEFAULTED",
++        tick=tick,
++        agent_id=agent_id,
++        loan_id=loan_id,
++        defaulted_amount=debt_amount,
++        creditor_id=creditor_id
++    )
++
++    result = system.handle_default(event)
++
++    # Assertions
++    # 1. Check Settlement System Interaction
++    settlement.get_balance.assert_called_with(agent_id, DEFAULT_CURRENCY)
++    settlement.transfer.assert_called_once_with(
++        debit_agent=mock_agent,
++        credit_agent=mock_creditor,
++        amount=debt_amount,
++        memo=f"Seizure: Default {loan_id} (Cash Stage 1)",
++        tick=tick
++    )
++
++    # 2. Check Result DTO
++    assert result.seized_cash == 1000
++    assert result.remaining_debt == 0
++    assert result.is_fully_recovered is True
++
++    # 3. Verify Purity (No direct agent balance access)
++    # Since we used spec=IFinancialAgent, if the code tried to access 'wallet' it would fail if not in spec,
++    # or if we check calls.
++    # We can check that get_balance on agent was NOT called.
++    # Note: IFinancialAgent HAS get_balance. We want to ensure it wasn't called.
++    mock_agent.get_balance.assert_not_called()
++
++def test_waterfall_partial_cash(mock_deps):
++    event_bus, settlement, registry, shareholder_registry, config_mgr = mock_deps
++
++    system = JudicialSystem(event_bus, settlement, registry, shareholder_registry, config_mgr)
++
++    agent_id = 101
++    creditor_id = 202
++    debt_amount = 1000
++    agent_balance = 400
++
++    # SSoT Setup: Agent has INSUFFICIENT balance
++    settlement.get_balance.return_value = agent_balance
++    settlement.transfer.return_value = True
++
++    mock_agent = MagicMock(spec=IFinancialAgent)
++    mock_creditor = MagicMock(spec=IFinancialAgent)
++
++    def get_agent_side_effect(aid):
++        if aid == agent_id: return mock_agent
++        if aid == creditor_id: return mock_creditor
++        return None
++    registry.get_agent.side_effect = get_agent_side_effect
++
++    event = LoanDefaultedEvent(
++        event_type="LOAN_DEFAULTED",
++        tick=10,
++        agent_id=agent_id,
++        loan_id="LOAN_002",
++        defaulted_amount=debt_amount,
++        creditor_id=creditor_id
++    )
++
++    result = system.handle_default(event)
++
++    # Assertions
++    settlement.transfer.assert_called_with(
++        debit_agent=mock_agent,
++        credit_agent=mock_creditor,
++        amount=agent_balance, # 400
++        memo="Seizure: Default LOAN_002 (Cash Stage 1)",
++        tick=10
++    )
++
++    assert result.seized_cash == 400
++    assert result.remaining_debt == 600
++    assert result.is_fully_recovered is False
+diff --git a/tests/unit/governance/test_judicial_system.py b/tests/unit/governance/test_judicial_system.py
+index afb35478..d5f48d67 100644
+--- a/tests/unit/governance/test_judicial_system.py
++++ b/tests/unit/governance/test_judicial_system.py
+@@ -105,6 +105,9 @@ def test_judicial_system_waterfall_full_recovery(mock_dependencies):
+         return True
+     deps["settlement_system"].transfer.side_effect = transfer_side_effect
+ 
++    # SSoT Mock: get_balance should return agent assets
++    deps["settlement_system"].get_balance.side_effect = lambda aid, cur=DEFAULT_CURRENCY: 1500.0 if aid == 1 else 0
++
+     system = JudicialSystem(
+         event_bus=deps["event_bus"],
+         settlement_system=deps["settlement_system"],
+@@ -153,6 +156,15 @@ def test_judicial_system_waterfall_partial_recovery_and_restructuring(mock_depen
+         return True
+     deps["settlement_system"].transfer.side_effect = transfer_side_effect
+ 
++    # SSoT Mock: get_balance should return agent assets
++    # Agent starts with 100, then 50 more after liquidation
++    # We can use a side effect that inspects the agent object if we had access to it,
++    # but here we can just use a mutable value or logic.
++    # Since agent object is updated, maybe we can delegate?
++
++    # We need to capture the agent instance created later
++    # But agent is created later in the test function.
++
+     system = JudicialSystem(
+         event_bus=deps["event_bus"],
+         settlement_system=deps["settlement_system"],
+@@ -170,6 +182,9 @@ def test_judicial_system_waterfall_partial_recovery_and_restructuring(mock_depen
+     agent.inventory_value = 50.0 # 50 inventory
+     creditor = MockAgent(creditor_id)
+ 
++    # Update get_balance to use agent's current assets
++    deps["settlement_system"].get_balance.side_effect = lambda aid, cur=DEFAULT_CURRENCY: agent.get_balance() if aid == agent_id else 0
++
+     deps["agent_registry"].get_agent.side_effect = lambda aid: agent if aid == agent_id else (creditor if aid == creditor_id else None)
+ 
+     # Mock Shareholder Registry for Stage 2
