@@ -1,25 +1,27 @@
-from typing import Protocol, TypedDict, Literal, runtime_checkable
-from modules.finance.wallet.api import IWallet
-from modules.system.api import CurrencyCode
+from typing import Protocol, List, Literal, runtime_checkable, Any
+from dataclasses import dataclass
+from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 
 # ==============================================================================
 # DATA TRANSFER OBJECTS (DTOs)
 # ==============================================================================
 
-class TransactionDTO(TypedDict):
+@dataclass
+class TransactionDTO:
     """
     A pure data container describing a single transaction request.
     This object is immutable once created and is passed between components.
+    MIGRATION: Uses integer pennies for amount.
     """
     transaction_id: str
     source_account_id: str
     destination_account_id: str
-    amount: float
+    amount: int
     currency: CurrencyCode  # e.g., "GOLD", "USD"
     description: str
 
-
-class TransactionResultDTO(TypedDict):
+@dataclass
+class TransactionResultDTO:
     """
     A data container representing the final outcome of a transaction attempt.
     This is what the TransactionEngine returns to the caller.
@@ -28,7 +30,6 @@ class TransactionResultDTO(TypedDict):
     status: Literal['COMPLETED', 'FAILED', 'CRITICAL_FAILURE']
     message: str
     timestamp: float # Simulation timestamp
-
 
 # ==============================================================================
 # EXCEPTIONS
@@ -72,15 +73,34 @@ class ExecutionError(TransactionError):
 # ==============================================================================
 
 @runtime_checkable
+class ITransactionParticipant(Protocol):
+    """
+    A standardized interface for any entity (Agent, Firm, Wallet wrapper)
+    that can participate in financial transactions.
+    """
+    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "") -> None:
+        """Deposits funds into the participant's account."""
+        ...
+
+    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "") -> None:
+        """Withdraws funds from the participant's account."""
+        ...
+
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """Returns the current balance for the specified currency."""
+        ...
+
+
+@runtime_checkable
 class IAccountAccessor(Protocol):
     """
     Interface for accessing account information and performing operations.
     Decouples the transaction system from the agent registry.
     """
-    def get_wallet(self, account_id: str) -> IWallet:
+    def get_participant(self, account_id: str) -> ITransactionParticipant:
         """
-        Retrieves the wallet for the given account ID.
-        Raises InvalidAccountError if the account does not exist.
+        Retrieves the transaction participant for the given account ID.
+        Raises InvalidAccountError if the account does not exist or is incompatible.
         """
         ...
 
@@ -149,7 +169,7 @@ class ITransactionEngine(Protocol):
         self,
         source_account_id: str,
         destination_account_id: str,
-        amount: float,
+        amount: int,
         currency: CurrencyCode,
         description: str
     ) -> TransactionResultDTO:
@@ -159,11 +179,19 @@ class ITransactionEngine(Protocol):
         Args:
             source_account_id: The ID of the account to debit.
             destination_account_id: The ID of the account to credit.
-            amount: The amount to transfer.
+            amount: The amount to transfer (in pennies).
             currency: The currency of the transaction.
             description: A human-readable description of the transaction.
 
         Returns:
             A DTO containing the full transaction details and its final status.
+        """
+        ...
+
+    def process_batch(self, transactions: List[TransactionDTO]) -> List[TransactionResultDTO]:
+        """
+        Processes a batch of transactions atomically.
+        If any transaction fails, the entire batch is rolled back (implementation dependent,
+        but interface supports returning results for all).
         """
         ...

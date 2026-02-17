@@ -16,6 +16,13 @@ from simulation.models import Transaction
 from modules.simulation.api import IGovernment, ICentralBank
 from modules.common.protocol import enforce_purity
 
+# Transaction Engine Imports
+from modules.finance.transaction.api import TransactionResultDTO, TransactionDTO
+from modules.finance.transaction.engine import (
+    TransactionEngine, TransactionValidator, TransactionExecutor, SimpleTransactionLedger
+)
+from modules.finance.transaction.adapter import RegistryAccountAccessor, DictionaryAccountAccessor
+
 if TYPE_CHECKING:
     from simulation.firms import Firm
 
@@ -24,11 +31,7 @@ class SettlementSystem(IMonetaryAuthority):
     Centralized system for handling all financial transfers between entities.
     Enforces atomicity and zero-sum integrity.
     MIGRATION: Uses integer pennies for all monetary values.
-
-    ZERO-SUM PRINCIPLE:
-    Every transfer MUST result in a net change of 0 across the system.
-    Asset deduction from one agent must exactly equal asset addition to another.
-    Money creation/destruction is ONLY allowed via the CentralBank (Minting Authority).
+    INTEGRATION: Uses TransactionEngine for atomic transfers.
     """
 
     def __init__(self, logger: Optional[logging.Logger] = None, bank: Optional[IBank] = None):
@@ -37,11 +40,46 @@ class SettlementSystem(IMonetaryAuthority):
         self.total_liquidation_losses: int = 0
         self.agent_registry: Optional[IAgentRegistry] = None # Injected by SimulationInitializer
 
+        # Transaction Engine (Initialized lazily)
+        self._transaction_engine: Optional[TransactionEngine] = None
+
         # TD-INT-STRESS-SCALE: Reverse Index for Bank Accounts
         # BankID -> Set[AgentID]
         self._bank_depositors: Dict[int, Set[int]] = defaultdict(set)
         # AgentID -> Set[BankID] (for fast removal)
         self._agent_banks: Dict[int, Set[int]] = defaultdict(set)
+
+    def _get_engine(self, context_agents: Optional[List[Any]] = None) -> TransactionEngine:
+        """
+        Retrieves the TransactionEngine.
+        If Registry is available, returns the cached registry-backed engine.
+        If Registry is missing (e.g., tests), constructs a temporary engine using context_agents.
+        """
+        if self.agent_registry:
+            if not self._transaction_engine:
+                # Initialize Registry-backed Engine
+                accessor = RegistryAccountAccessor(self.agent_registry)
+                validator = TransactionValidator(accessor)
+                executor = TransactionExecutor(accessor)
+                ledger = SimpleTransactionLedger(self.logger)
+                self._transaction_engine = TransactionEngine(validator, executor, ledger)
+            return self._transaction_engine
+
+        # Fallback for Tests: Create temporary engine with local map
+        if context_agents:
+            agents_map = {}
+            for agent in context_agents:
+                if hasattr(agent, 'id'):
+                    agents_map[agent.id] = agent
+                    agents_map[str(agent.id)] = agent
+
+            accessor = DictionaryAccountAccessor(agents_map)
+            validator = TransactionValidator(accessor)
+            executor = TransactionExecutor(accessor)
+            ledger = SimpleTransactionLedger(self.logger)
+            return TransactionEngine(validator, executor, ledger)
+
+        raise RuntimeError("Agent Registry not initialized in SettlementSystem and no context agents provided.")
 
     def register_account(self, bank_id: int, agent_id: int) -> None:
         """
@@ -109,7 +147,6 @@ class SettlementSystem(IMonetaryAuthority):
         Implements ICurrencyHolder for M2 verification.
         Returns total cash held in escrow accounts.
         """
-        # Since settlement_accounts are removed, SettlementSystem holds 0 assets.
         return {DEFAULT_CURRENCY: 0}
 
     def record_liquidation(
@@ -124,9 +161,6 @@ class SettlementSystem(IMonetaryAuthority):
     ) -> None:
         """
         Records the value destroyed during a firm's bankruptcy and liquidation.
-        This ensures the value is accounted for in the simulation's total wealth.
-        If government_agent is provided, transfers residual assets to it (Escheatment).
-        MIGRATION: All inputs are int pennies.
         """
         # Loss = Book Value (Inventory + Capital) - Recovered Cash
         loss_amount = inventory_value + capital_value - recovered_cash
@@ -144,9 +178,7 @@ class SettlementSystem(IMonetaryAuthority):
             extra={"tick": tick, "tags": ["liquidation", "bankruptcy", "ledger"]}
         )
 
-        # WO-178: Escheatment Logic
         if government_agent:
-            # IFinancialAgent usage
             current_assets_val = agent.get_balance(DEFAULT_CURRENCY)
 
             if current_assets_val > 0:
@@ -159,150 +191,55 @@ class SettlementSystem(IMonetaryAuthority):
                     currency=DEFAULT_CURRENCY
                 )
 
-    def _execute_withdrawal(self, agent: IFinancialAgent, amount: int, memo: str, tick: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> bool:
-        """
-        Executes withdrawal with checks and seamless payment (Bank) support.
-        Returns True on success, False on failure.
-        """
-        # 1. Checks
-        if agent is None:
-            self.logger.error(f"SETTLEMENT_FAIL | Debit agent is None. Memo: {memo}")
-            return False
-
-        if not isinstance(amount, int):
-             raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)}. Memo: {memo}")
-
-        is_central_bank = isinstance(agent, ICentralBank) or (agent.id == ID_CENTRAL_BANK)
-
-        if is_central_bank:
-             try:
-                 # Central Bank might still use withdraw if it tracks money supply?
-                 # Usually CB has infinite money, so withdraw should just work or be a no-op on validation but decrement M0.
-                 if isinstance(agent, IFinancialAgent):
-                    agent._withdraw(amount, currency=currency)
-                 return True
-             except Exception as e:
-                 self.logger.error(f"SETTLEMENT_FAIL | Central Bank withdrawal failed. {e}")
-                 return False
-
-        # 2. Standard Agent Checks (IFinancialEntity / IFinancialAgent Interface)
-        current_cash = 0
-        if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
-            current_cash = agent.balance_pennies
-        elif isinstance(agent, IFinancialAgent):
-            current_cash = agent.get_balance(currency)
-        elif isinstance(agent, ICurrencyHolder):
-             # Fallback if agent is ICurrencyHolder but not IFinancialAgent
-             current_cash = agent.get_assets_by_currency().get(currency, 0)
-
-        if current_cash < amount:
-            # Seamless Check (Only for DEFAULT_CURRENCY for now, assume Bank uses DEFAULT_CURRENCY)
-            if self.bank and currency == DEFAULT_CURRENCY:
-                needed_from_bank = amount - current_cash
-                # Bank balance check using str(agent.id)
-                agent_id_str = str(agent.id)
-                bank_balance = self.bank.get_customer_balance(agent_id_str)
-
-                if (current_cash + bank_balance) < amount:
-                    self.logger.error(
-                        f"SETTLEMENT_FAIL | Insufficient total funds (Cash+Deposits) for {agent.id}. "
-                        f"Cash: {current_cash}, Bank: {bank_balance}, Total: {(current_cash + bank_balance)}. "
-                        f"Required: {amount}. Memo: {memo}",
-                        extra={"tags": ["settlement", "insufficient_funds"]}
-                    )
-                    return False
-            else:
-                self.logger.error(
-                    f"SETTLEMENT_FAIL | Insufficient cash for {agent.id} AND Bank service is missing/incompatible. "
-                    f"Cash: {current_cash}, Required: {amount}. Memo: {memo}",
-                    extra={"tags": ["settlement", "insufficient_funds"]}
-                )
-                return False
-
-        # 3. Execution
-        try:
-            if current_cash >= amount:
-                # Use standard withdraw
-                if isinstance(agent, IFinancialEntity):
-                    agent.withdraw(amount, currency=currency)
-                elif isinstance(agent, IFinancialAgent):
-                    agent._withdraw(amount, currency=currency)
-                self.logger.debug(f"DEBUG_WITHDRAW | Agent {agent.id} withdrew {amount}. Memo: {memo}")
-            else:
-                # Seamless (Only for DEFAULT_CURRENCY)
-                if currency != DEFAULT_CURRENCY:
-                     self.logger.error(f"SETTLEMENT_FAIL | Seamless payment not supported for {currency}")
-                     return False
-
-                needed_from_bank = amount - current_cash
-                if current_cash > 0:
-                    if isinstance(agent, IFinancialEntity):
-                        agent.withdraw(current_cash, currency=currency)
-                    elif isinstance(agent, IFinancialAgent):
-                        agent._withdraw(current_cash, currency=currency)
-
-                success = self.bank.withdraw_for_customer(int(agent.id), needed_from_bank)
-                if not success:
-                    # Rollback cash
-                    if current_cash > 0:
-                         if isinstance(agent, IFinancialEntity):
-                            agent.deposit(current_cash, currency=currency)
-                         elif isinstance(agent, IFinancialAgent):
-                            agent._deposit(current_cash, currency=currency)
-                    raise InsufficientFundsError(f"Bank withdrawal failed for {agent.id} despite check.")
-
-                self.logger.info(
-                    f"SEAMLESS_PAYMENT | Agent {agent.id} paid {amount} using {current_cash} cash and {needed_from_bank} from bank.",
-                    extra={"tick": tick, "agent_id": agent.id, "tags": ["settlement", "bank"]}
-                )
-            return True
-        except InsufficientFundsError as e:
-             self.logger.critical(f"SETTLEMENT_CRITICAL | InsufficientFundsError. {e}")
-             return False
-        except Exception as e:
-             self.logger.exception(f"SETTLEMENT_UNHANDLED_FAIL | {e}")
-             return False
-
     def execute_multiparty_settlement(
         self,
         transfers: List[Tuple[IFinancialAgent, IFinancialAgent, int]],
         tick: int
     ) -> bool:
         """
-        Executes a batch of transfers atomically.
+        Executes a batch of transfers atomically using TransactionEngine.
         Format: (DebitAgent, CreditAgent, Amount)
-        If any transfer fails, all are rolled back.
         """
         if not transfers:
             return True
 
-        completed_transfers = [] # List of (Debit, Credit, Amount)
+        # Convert to TransactionDTOs
+        dtos = []
+        agents_involved = []
 
         for i, (debit, credit, amount) in enumerate(transfers):
-            memo = f"multiparty_seq_{i}"
+             agents_involved.append(debit)
+             agents_involved.append(credit)
 
-            # Execute individual transfer safely
-            tx = self.transfer(debit, credit, amount, memo, tick=tick)
-            if tx:
-                completed_transfers.append((debit, credit, amount))
-            else:
-                d_id = debit.id
-                c_id = credit.id
-                self.logger.warning(
-                    f"MULTIPARTY_FAIL | Transfer {i} failed ({d_id} -> {c_id}). Rolling back {len(completed_transfers)} previous transfers."
-                )
+             # Prep Seamless
+             if not self._prepare_seamless_funds(debit, amount, DEFAULT_CURRENCY):
+                 self.logger.warning(f"MULTIPARTY_FAIL | Insufficient funds for {debit.id}")
+                 return False
 
-                # ROLLBACK
-                for r_debit, r_credit, r_amount in reversed(completed_transfers):
-                    # Reverse: r_credit pays back r_debit
-                    rb_tx = self.transfer(r_credit, r_debit, r_amount, f"rollback_multiparty_{i}", tick=tick)
-                    if not rb_tx:
-                         rc_id = r_credit.id
-                         rd_id = r_debit.id
-                         self.logger.critical(
-                             f"MULTIPARTY_FATAL | Rollback failed for {r_amount} from {rc_id} to {rd_id}."
-                         )
-                return False
+             dtos.append(TransactionDTO(
+                 transaction_id=f"batch_{tick}_{i}",
+                 source_account_id=str(debit.id),
+                 destination_account_id=str(credit.id),
+                 amount=amount,
+                 currency=DEFAULT_CURRENCY,
+                 description=f"multiparty_seq_{i}"
+             ))
+
+        # Execute Batch
+        try:
+            engine = self._get_engine(context_agents=agents_involved)
+            results = engine.process_batch(dtos)
+        except RuntimeError:
+             # If engine fails to init (no registry, no agents?), fail
+             self.logger.error("MULTIPARTY_FAIL | Transaction Engine initialization failed.")
+             return False
+
+        # Check results
+        all_success = all(r.status == 'COMPLETED' for r in results)
+
+        if not all_success:
+            self.logger.error("MULTIPARTY_FAIL | Batch execution failed.")
+            return False
 
         return True
 
@@ -315,23 +252,16 @@ class SettlementSystem(IMonetaryAuthority):
         """
         Executes a one-to-many atomic settlement.
         All credits are summed to determine the total debit amount.
-        If the debit fails, the entire transaction is aborted.
-        If any credit fails, previous credits in this batch are rolled back.
         """
         if not credits_list:
             return True
 
-        # 0. Validate Credits (No negative transfers allowed in this atomic mode)
+        # 0. Validate Credits
         for _, amount, memo in credits_list:
-             if not isinstance(amount, int):
-                 raise TypeError(f"Settlement integrity violation: Amount must be int in atomic batch. Memo: {memo}")
-             if amount < 0:
-                 self.logger.error(f"SETTLEMENT_FAIL | Negative credit amount {amount} in atomic batch. Memo: {memo}")
+             if not isinstance(amount, int) or amount < 0:
+                 self.logger.error(f"SETTLEMENT_FAIL | Invalid credit amount {amount}. Memo: {memo}")
                  return False
-
-             # Validate Memo
              if not self._validate_memo(memo):
-                 self.logger.error(f"SETTLEMENT_FAIL | Invalid memo in atomic batch. Memo: {memo}")
                  return False
 
         # 1. Calculate Total Debit
@@ -339,69 +269,90 @@ class SettlementSystem(IMonetaryAuthority):
         if total_debit <= 0:
              return True
 
-        # 2. Debit Check & Withdrawal
-        memo = f"atomic_batch_{len(credits_list)}_txs"
-        success = self._execute_withdrawal(debit_agent, total_debit, memo, tick)
-        if not success:
-            self.logger.warning(
-                f"SETTLEMENT_ATOMIC_FAIL | Withdrawal failed for debit agent {debit_agent.id}. Amount: {total_debit}",
-                extra={"tick": tick}
-            )
+        # 2. Prepare Funds (Seamless)
+        if not self._prepare_seamless_funds(debit_agent, total_debit, DEFAULT_CURRENCY):
             return False
 
-        # 3. Execute Credits
-        completed_credits = []
-        for credit_agent, amount, credit_memo in credits_list:
-            if amount <= 0:
-                continue
-            try:
-                if isinstance(credit_agent, IFinancialEntity):
-                    credit_agent.deposit(amount)
-                elif isinstance(credit_agent, IFinancialAgent):
-                    credit_agent._deposit(amount)
-                completed_credits.append((credit_agent, amount))
-            except Exception as e:
-                self.logger.error(
-                    f"SETTLEMENT_ROLLBACK | Deposit failed for {credit_agent.id}. Rolling back atomic batch. Error: {e}"
-                )
-                # ROLLBACK
-                # 1. Reverse completed credits
-                for ca, amt in completed_credits:
-                    try:
-                        if isinstance(ca, IFinancialEntity):
-                            ca.withdraw(amt)
-                        elif isinstance(ca, IFinancialAgent):
-                            ca._withdraw(amt)
-                    except Exception as rb_err:
-                        self.logger.critical(f"SETTLEMENT_FATAL | Credit Rollback failed for {ca.id}. {rb_err}")
+        # 3. Create Batch DTOs
+        dtos = []
+        agents_involved = [debit_agent]
 
-                # 2. Refund debit agent
-                try:
-                    if isinstance(debit_agent, IFinancialEntity):
-                        debit_agent.deposit(total_debit)
-                    elif isinstance(debit_agent, IFinancialAgent):
-                        debit_agent._deposit(total_debit)
-                except Exception as rb_err:
-                    self.logger.critical(f"SETTLEMENT_FATAL | Debit Refund failed for {debit_agent.id}. {rb_err}")
+        for i, (credit_agent, amount, memo) in enumerate(credits_list):
+            if amount <= 0: continue
+            agents_involved.append(credit_agent)
+            dtos.append(TransactionDTO(
+                 transaction_id=f"atomic_{tick}_{i}",
+                 source_account_id=str(debit_agent.id),
+                 destination_account_id=str(credit_agent.id),
+                 amount=amount,
+                 currency=DEFAULT_CURRENCY,
+                 description=memo
+            ))
 
-                return False
+        # Execute Batch
+        try:
+            engine = self._get_engine(context_agents=agents_involved)
+            results = engine.process_batch(dtos)
+        except RuntimeError:
+            self.logger.error("SETTLEMENT_ATOMIC_FAIL | Engine init failed.")
+            return False
 
-        return True
+        return all(r.status == 'COMPLETED' for r in results)
 
     def _validate_memo(self, memo: str) -> bool:
-        """
-        Validates the memo field for security and length.
-        Ensures strictly string type and max length.
-        """
         if not isinstance(memo, str):
             self.logger.warning(f"Invalid memo type: {type(memo)}. Rejecting.")
             return False
-
         if len(memo) > 255:
              self.logger.warning(f"Memo too long: {len(memo)} chars. Max 255. Rejecting.")
              return False
-
         return True
+
+    def _prepare_seamless_funds(self, agent: IFinancialAgent, amount: int, currency: CurrencyCode) -> bool:
+        """
+        Checks if agent has enough cash. If not, attempts to withdraw from Bank
+        and deposit to Agent's wallet (Seamless Payment).
+        """
+        # Central Bank check
+        if isinstance(agent, ICentralBank) or (agent.id == ID_CENTRAL_BANK):
+            return True
+
+        current_cash = 0
+        if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
+            current_cash = agent.balance_pennies
+        elif isinstance(agent, IFinancialAgent):
+            current_cash = agent.get_balance(currency)
+
+        if current_cash >= amount:
+            return True
+
+        # Needs Bank Withdrawal
+        if self.bank and currency == DEFAULT_CURRENCY:
+            needed = amount - current_cash
+            # Check Bank Balance
+            # Assuming bank uses string ID
+            bank_balance = self.bank.get_customer_balance(str(agent.id))
+
+            if bank_balance >= needed:
+                success = self.bank.withdraw_for_customer(int(agent.id), needed)
+                if success:
+                    # Inject cash into agent wallet to preserve Zero-Sum
+                    if isinstance(agent, IFinancialEntity):
+                        agent.deposit(needed, currency)
+                    elif isinstance(agent, IFinancialAgent):
+                        agent._deposit(needed, currency)
+
+                    self.logger.info(
+                        f"SEAMLESS_PREP | Agent {agent.id} withdrew {needed} from bank to wallet for transfer.",
+                        extra={"agent_id": agent.id}
+                    )
+                    return True
+
+        self.logger.error(
+            f"SETTLEMENT_FAIL | Insufficient funds (Cash+Bank). Cash: {current_cash}, Req: {amount}.",
+            extra={"tags": ["insufficient_funds"]}
+        )
+        return False
 
     @enforce_purity()
     def transfer(
@@ -416,90 +367,44 @@ class SettlementSystem(IMonetaryAuthority):
         currency: CurrencyCode = DEFAULT_CURRENCY
     ) -> Optional[ITransaction]:
         """
-        Executes an atomic transfer from debit_agent to credit_agent.
-        Returns a Transaction object (truthy) on success, None (falsy) on failure.
+        Executes an atomic transfer using TransactionEngine.
         """
         if not isinstance(amount, int):
-             raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)}. Memo: {memo}")
+             raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)}.")
 
-        # Security: Validate Memo
         if not self._validate_memo(memo):
-            self.logger.error(f"SETTLEMENT_FAIL | Invalid memo: {memo}")
             return None
 
         if amount <= 0:
-            self.logger.warning(f"Transfer of non-positive amount ({amount}) attempted. Memo: {memo}")
-            # Consider this a success logic-wise (no-op) but log it.
-            return self._create_transaction_record(
-                debit_agent.id,
-                credit_agent.id,
-                amount, memo, tick
-            )
+            return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
 
         if debit_agent is None or credit_agent is None:
-             self.logger.error(f"SETTLEMENT_FAIL | Debit or Credit agent is None. Memo: {memo}")
+             self.logger.error("SETTLEMENT_FAIL | Null agents.")
              return None
 
-        debit_id = debit_agent.id
-        credit_id = credit_agent.id
-
-        # VALIDATION (NULL Integrity & Protocol Safety)
-        if debit_id is None or credit_id is None:
-             self.logger.critical(
-                 f"SETTLEMENT_FATAL | Transfer attempted with NULL agent IDs! "
-                 f"Debit ID: {debit_id}, Credit ID: {credit_id}. Memo: {memo}. "
-                 f"Aborting to prevent DB Integrity Error.",
-                 extra={"tick": tick, "tags": ["settlement", "integrity_error"]}
-             )
-             return None
-
-        # PROTOCOL CHECK: Strict type enforcement
-        if not (isinstance(debit_agent, IFinancialAgent) or isinstance(debit_agent, IFinancialEntity)):
-             self.logger.error(f"SETTLEMENT_FAIL | Debit agent does not implement IFinancialAgent/IFinancialEntity. Agent: {debit_agent}")
-             return None
-
-        if not (isinstance(credit_agent, IFinancialAgent) or isinstance(credit_agent, IFinancialEntity)):
-             self.logger.error(f"SETTLEMENT_FAIL | Credit agent does not implement IFinancialAgent/IFinancialEntity. Agent: {credit_agent}")
-             return None
-
-        debit_id = debit_agent.id
-        credit_id = credit_agent.id
-
-        # EXECUTE
-        success = self._execute_withdrawal(debit_agent, amount, memo, tick, currency=currency)
-        if not success:
+        # Prepare Funds
+        if not self._prepare_seamless_funds(debit_agent, amount, currency):
             return None
 
+        # Execute via Engine
         try:
-            if isinstance(credit_agent, IFinancialEntity):
-                credit_agent.deposit(amount, currency=currency)
-            elif isinstance(credit_agent, IFinancialAgent):
-                credit_agent._deposit(amount, currency=currency)
-        except Exception as e:
-            # ROLLBACK: Credit failed, must reverse debit
-            self.logger.error(
-                f"SETTLEMENT_ROLLBACK | Deposit failed for {credit_agent.id}. Rolling back withdrawal of {amount} from {debit_agent.id}. Error: {e}"
+            engine = self._get_engine(context_agents=[debit_agent, credit_agent])
+            result = engine.process_transaction(
+                source_account_id=str(debit_agent.id),
+                destination_account_id=str(credit_agent.id),
+                amount=amount,
+                currency=currency,
+                description=memo
             )
-            try:
-                if isinstance(debit_agent, IFinancialEntity):
-                    debit_agent.deposit(amount, currency=currency)
-                elif isinstance(debit_agent, IFinancialAgent):
-                    debit_agent._deposit(amount, currency=currency)
-                self.logger.info(f"SETTLEMENT_ROLLBACK_SUCCESS | Rolled back {amount} to {debit_agent.id}.")
-            except Exception as rollback_error:
-                self.logger.critical(
-                    f"SETTLEMENT_FATAL | Rollback failed! Money {amount} lost from {debit_agent.id}. "
-                    f"Original Error: {e}. Rollback Error: {rollback_error}",
-                    extra={"tags": ["settlement", "fatal", "money_leak"]}
-                )
-            return None
+        except RuntimeError:
+             self.logger.error("SETTLEMENT_FAIL | Engine init failed.")
+             return None
 
-        # Success
-        self.logger.debug(
-            f"SETTLEMENT_SUCCESS | Transferred {amount} from {debit_agent.id} to {credit_agent.id}. Memo: {memo}",
-            extra={"tags": ["settlement"], "tick": tick}
-        )
-        return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
+        if result.status == 'COMPLETED':
+             return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
+        else:
+             self.logger.error(f"SETTLEMENT_FAIL | Engine Error: {result.message}")
+             return None
 
     def create_and_transfer(
         self,
@@ -513,26 +418,20 @@ class SettlementSystem(IMonetaryAuthority):
         """
         Creates new money (or grants) and transfers it to an agent.
         """
-        if not isinstance(amount, int):
-             raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)}.")
-
-        # Security: Validate Reason (Memo)
-        if not self._validate_memo(reason):
-             self.logger.error(f"MINT_FAIL | Invalid reason (memo): {reason}")
-             return None
-
-        if amount <= 0:
-            return None
+        if amount <= 0: return None
 
         is_central_bank = isinstance(source_authority, ICentralBank) or (source_authority.id == ID_CENTRAL_BANK)
 
         if is_central_bank:
-            # Minting logic: Just credit destination. Source (CB) is assumed to have infinite capacity.
+            # Minting is special: Source doesn't need funds.
             try:
                 if isinstance(destination, IFinancialEntity):
-                    destination.deposit(amount, currency=currency)
+                    destination.deposit(amount, currency)
                 elif isinstance(destination, IFinancialAgent):
-                    destination._deposit(amount, currency=currency)
+                    destination._deposit(amount, currency)
+                else:
+                    self.logger.error(f"MINT_FAIL | Destination agent {destination.id} does not implement IFinancialEntity or IFinancialAgent.")
+                    return None
 
                 self.logger.info(
                     f"MINT_AND_TRANSFER | Created {amount} {currency} from {source_authority.id} to {destination.id}. Reason: {reason}",
@@ -545,7 +444,6 @@ class SettlementSystem(IMonetaryAuthority):
                 self.logger.error(f"MINT_FAIL | {e}")
                 return None
         else:
-            # If not CB (e.g. Government), treat as regular transfer to enforce budget
             return self.transfer(source_authority, destination, amount, reason, tick=tick, currency=currency)
 
     def transfer_and_destroy(
@@ -560,26 +458,17 @@ class SettlementSystem(IMonetaryAuthority):
         """
         Transfers money from an agent to an authority to be destroyed.
         """
-        if not isinstance(amount, int):
-             raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)}.")
-
-        # Security: Validate Reason (Memo)
-        if not self._validate_memo(reason):
-             self.logger.error(f"BURN_FAIL | Invalid reason (memo): {reason}")
-             return None
-
-        if amount <= 0:
-            return None
+        if amount <= 0: return None
 
         is_central_bank = isinstance(sink_authority, ICentralBank) or (sink_authority.id == ID_CENTRAL_BANK)
 
         if is_central_bank:
-            # Burning logic: Just debit source. Sink (CB) absorbs it (removed from circulation).
+            # Burning: Withdraw from source.
             try:
                 if isinstance(source, IFinancialEntity):
-                    source.withdraw(amount, currency=currency)
+                    source.withdraw(amount, currency)
                 elif isinstance(source, IFinancialAgent):
-                    source._withdraw(amount, currency=currency)
+                    source._withdraw(amount, currency)
 
                 self.logger.info(
                     f"TRANSFER_AND_DESTROY | Destroyed {amount} {currency} from {source.id} to {sink_authority.id}. Reason: {reason}",
@@ -592,24 +481,18 @@ class SettlementSystem(IMonetaryAuthority):
                 self.logger.error(f"BURN_FAIL | {e}")
                 return None
         else:
-            # If not CB, treat as regular transfer (e.g. tax to Gov)
             return self.transfer(source, sink_authority, amount, reason, tick=tick, currency=currency)
 
     def _create_transaction_record(self, buyer_id: int, seller_id: int, amount: int, memo: str, tick: int) -> Optional[Transaction]:
         if buyer_id is None or seller_id is None:
-             self.logger.critical(
-                 f"SETTLEMENT_INTEGRITY_FAIL | Attempted to create transaction with NULL ID. "
-                 f"Buyer: {buyer_id}, Seller: {seller_id}, Memo: {memo}. Skipping record creation.",
-                 extra={"tick": tick, "tags": ["integrity_error"]}
-             )
              return None
 
         return Transaction(
             buyer_id=buyer_id,
             seller_id=seller_id,
             item_id="currency",
-            quantity=amount, # Int amount as quantity
-            price=1, # Nominal price 1 for currency transfer (Int)
+            quantity=amount,
+            price=1,
             market_id="settlement",
             transaction_type="transfer",
             time=tick,
@@ -617,31 +500,15 @@ class SettlementSystem(IMonetaryAuthority):
         )
 
     def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = "god_mode_injection") -> bool:
-        """
-        FOUND-03: Phase 0 Intercept - Special transaction for God Mode injection.
-        Uses Central Bank as the source to ensure authorized money creation.
-        """
-        if not self.agent_registry:
-            self.logger.critical("MINT_FAIL | Agent registry not linked.")
-            return False
+        if not self.agent_registry: return False
 
         central_bank = self.agent_registry.get_agent(ID_CENTRAL_BANK)
         if not central_bank:
-             # Try fallback to string ID if registry keys are strings
              central_bank = self.agent_registry.get_agent(str(ID_CENTRAL_BANK))
-
-        if not central_bank:
-            self.logger.critical("MINT_FAIL | Central Bank not found.")
-            return False
+        if not central_bank: return False
 
         target_agent = self.agent_registry.get_agent(target_agent_id)
-        if not target_agent:
-            self.logger.critical(f"MINT_FAIL | Target agent {target_agent_id} not found.")
-            return False
-
-        if not isinstance(central_bank, IFinancialAgent) or not isinstance(target_agent, IFinancialAgent):
-            self.logger.critical("MINT_FAIL | Agents must implement IFinancialAgent.")
-            return False
+        if not target_agent: return False
 
         tx = self.create_and_transfer(
             source_authority=central_bank,
@@ -653,20 +520,7 @@ class SettlementSystem(IMonetaryAuthority):
         return tx is not None
 
     def audit_total_m2(self, expected_total: Optional[int] = None) -> bool:
-        """
-        FOUND-03: Phase 0 Intercept - M2 Integrity Audit.
-        Sums up all cash in the system and compares with expected total.
-        If expected_total is None, it just logs the current total (Passive Mode).
-        """
-        if not self.agent_registry:
-             self.logger.critical("AUDIT_FAIL | Agent registry not linked.")
-             return False
-
-        # Use the enhanced registry method (IAgentRegistry assumption via typing)
-        # Removed hasattr check for get_all_financial_agents as strict typing implies it should exist if valid registry.
-        # But for runtime safety with "Any", we might want to keep it or just try.
-        # Given mandates, I'll rely on correct registry injection.
-        # If registry is invalid, it will raise AttributeError, which is fine for "Protocol Enforcement".
+        if not self.agent_registry: return False
 
         agents = self.agent_registry.get_all_financial_agents()
         total_cash = 0
@@ -674,9 +528,6 @@ class SettlementSystem(IMonetaryAuthority):
         total_deposits = 0
 
         for agent in agents:
-            # Exclude Central Bank from M2 calculation to align with WorldState.calculate_total_money
-            # M2 is money in circulation, not held by the issuer.
-            # IFinancialAgent requires 'id'.
             agent_id = getattr(agent, 'id', None)
             if agent_id == ID_CENTRAL_BANK or str(agent_id) == str(ID_CENTRAL_BANK):
                 continue
@@ -687,22 +538,15 @@ class SettlementSystem(IMonetaryAuthority):
             elif isinstance(agent, IFinancialAgent):
                 current_balance = agent.get_balance(DEFAULT_CURRENCY)
             elif isinstance(agent, ICurrencyHolder):
-                 # Protocol Fallback
                  assets = agent.get_assets_by_currency()
                  current_balance = assets.get(DEFAULT_CURRENCY, 0)
 
             total_cash += current_balance
 
-            # Bank Logic: Reserves and Deposits
-            # Identify if agent is a Bank to adjust for M2 (Fractional Reserve)
             if isinstance(agent, IBank):
                 bank_reserves += current_balance
                 total_deposits += agent.get_total_deposits()
-            # Removed legacy hasattr fallback for strict Protocol Purity
 
-        # M2 = (Total Cash - Bank Reserves) + Total Deposits
-        # Currency in Circulation = Total Cash - Bank Reserves
-        # Removed Escrow (TD-232 Cleanup)
         total_m2 = (total_cash - bank_reserves) + total_deposits
 
         if expected_total is not None:
