@@ -42,6 +42,7 @@ class AgingSystem(IAgingSystem):
         assets_threshold = getattr(self.config, "ASSETS_CLOSURE_THRESHOLD", 0.0)
         closure_turns_threshold = getattr(self.config, "FIRM_CLOSURE_TURNS_THRESHOLD", 5)
         liquidity_inc_rate = getattr(self.config, "LIQUIDITY_NEED_INCREASE_RATE", 1.0)
+        grace_period = getattr(self.config, "DISTRESS_GRACE_PERIOD", 5)
 
         for firm in state.firms:
             if not firm.is_active:
@@ -68,8 +69,8 @@ class AgingSystem(IAgingSystem):
                 firm.finance_state.is_distressed = True
                 firm.finance_state.distress_tick_counter += 1
 
-                # If within grace period (5 ticks)
-                if firm.finance_state.distress_tick_counter <= 5:
+                # If within grace period
+                if firm.finance_state.distress_tick_counter <= grace_period:
                     # Trigger Emergency Liquidation (Manual Logic since proxy is gone)
                     # Use sales engine? Or just post orders.
                     # emergency_orders = []
@@ -91,7 +92,7 @@ class AgingSystem(IAgingSystem):
                     firm.finance_state.consecutive_loss_turns >= closure_turns_threshold):
 
                 # Double check grace period (if we fell through but counter is high)
-                if getattr(firm.finance_state, "distress_tick_counter", 0) > 5:
+                if getattr(firm.finance_state, "distress_tick_counter", 0) > grace_period:
                     pass # Allow closure
                 elif getattr(firm.finance_state, "is_distressed", False):
                     continue # Should have been caught above, but safety check
@@ -115,6 +116,7 @@ class AgingSystem(IAgingSystem):
         """
         survival_threshold = getattr(self.config, "SURVIVAL_NEED_DEATH_THRESHOLD", 100.0)
         distress_threshold = survival_threshold * 0.9
+        grace_period = getattr(self.config, "DISTRESS_GRACE_PERIOD", 5)
 
         for household in state.households:
             if not household._bio_state.is_active:
@@ -130,7 +132,7 @@ class AgingSystem(IAgingSystem):
                 if has_inventory or has_stocks:
                     household.distress_tick_counter += 1
 
-                    if household.distress_tick_counter <= 5:
+                    if household.distress_tick_counter <= grace_period:
                          # Use method on Household if it exists (it does in original code)
                          emergency_orders = household.trigger_emergency_liquidation()
 

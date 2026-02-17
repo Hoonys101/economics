@@ -88,12 +88,25 @@ class BirthSystem(IBirthSystem):
                 initial_gift_pennies = int(max(0, min(parent_assets * 0.1, parent_assets)))
 
                 try:
+                    # Pass initial_assets=0 to factory to prevent it from handling transfer.
+                    # We will handle it explicitly below via SettlementSystem for auditability.
                     child = self.household_factory.create_newborn(
                         parent=parent_agent,
                         new_id=new_id,
-                        initial_assets=initial_gift_pennies,
+                        initial_assets=0,
                         current_tick=state.time
                     )
+
+                    # Explicit Zero-Sum Transfer
+                    if initial_gift_pennies > 0 and self.settlement_system:
+                         self.settlement_system.transfer(
+                             debit_agent=parent_agent,
+                             credit_agent=child,
+                             amount=initial_gift_pennies,
+                             memo="BIRTH_GIFT",
+                             tick=state.time,
+                             currency=DEFAULT_CURRENCY
+                         )
 
                     parent_agent.children_ids.append(new_id)
                     created_children.append(child)

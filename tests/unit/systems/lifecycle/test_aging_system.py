@@ -11,6 +11,7 @@ class TestAgingSystem:
         config.FIRM_CLOSURE_TURNS_THRESHOLD = 5
         config.LIQUIDITY_NEED_INCREASE_RATE = 1.0
         config.SURVIVAL_NEED_DEATH_THRESHOLD = 100.0
+        config.DISTRESS_GRACE_PERIOD = 5 # Mock the config value
 
         demographic_manager = MagicMock()
         logger = MagicMock()
@@ -50,3 +51,29 @@ class TestAgingSystem:
 
         assert firm.finance_state.is_distressed is True
         assert firm.finance_state.distress_tick_counter == 1
+
+    def test_firm_grace_period_config(self, aging_system):
+        # Change grace period to 10
+        aging_system.config.DISTRESS_GRACE_PERIOD = 10
+
+        firm = MagicMock()
+        firm.is_active = True
+        firm.wallet.get_balance.return_value = -10.0
+        firm.needs = {"liquidity_need": 0.0}
+        firm.finance_state.distress_tick_counter = 9
+        firm.get_all_items.return_value = {"wood": 10.0}
+
+        state = MagicMock()
+        state.firms = [firm]
+        state.households = []
+        state.markets = {"wood": MagicMock(avg_price=10.0)}
+        state.time = 1
+        state.market_data = {}
+
+        aging_system.execute(state)
+
+        # Should still be active (tick 10 <= 10)
+        # Note: logic increments tick counter first. 9 -> 10.
+        # if 10 <= 10: continue. So active=True.
+        assert firm.finance_state.distress_tick_counter == 10
+        assert firm.is_active is True
