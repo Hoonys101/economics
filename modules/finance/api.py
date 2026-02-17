@@ -91,6 +91,7 @@ class IFinancialFirm(IFinancialEntity, Protocol):
         """The average profit over the relevant history in pennies."""
         ...
 
+@runtime_checkable
 class IFinanceDepartment(Protocol):
     """
     Interface for a Firm's financial operations, designed for a multi-currency environment.
@@ -325,6 +326,7 @@ class MortgageApplicationDTO(TypedDict):
     existing_monthly_debt_payments: float
     loan_term: int
 
+@runtime_checkable
 class ICreditScoringService(Protocol):
     """
     Interface for a service that assesses the creditworthiness of a potential borrower.
@@ -425,6 +427,7 @@ class IFinancialAgent(Protocol):
         """Returns the total wealth in default currency estimation."""
         ...
 
+@runtime_checkable
 class IBankService(Protocol):
     """
     Interface for Bank Services used by Markets.
@@ -484,6 +487,7 @@ class IBank(IBankService, IFinancialAgent, Protocol):
 
 # IBankService = IBank # Removed alias
 
+@runtime_checkable
 class IFiscalMonitor(Protocol):
     """Interface for the fiscal health analysis component."""
     def get_debt_to_gdp_ratio(self, government: "IGovernment", indicators: "EconomicIndicatorsDTO") -> float: ...
@@ -581,6 +585,7 @@ class IMonetaryAuthority(ISettlementSystem, Protocol):
         """
         ...
 
+@runtime_checkable
 class IFinanceSystem(Protocol):
     """Interface for the sovereign debt and corporate bailout system."""
 
@@ -625,7 +630,7 @@ class IFinanceSystem(Protocol):
         self,
         borrower_id: AgentID,
         amount: int,
-        borrower_profile: Dict,
+        borrower_profile: BorrowerProfileDTO,
         current_tick: int
     ) -> Tuple[Optional[LoanInfoDTO], List["Transaction"]]:
         """Orchestrates the loan application process."""
@@ -650,6 +655,7 @@ class OMOInstructionDTO(TypedDict):
     # Optional: Could add target_price_limit, order_type etc. for more advanced ops
 
 
+@runtime_checkable
 class IMonetaryOperations(Protocol):
     """
     Interface for a system that executes monetary operations like OMO.
@@ -667,6 +673,7 @@ class IMonetaryOperations(Protocol):
         ...
 
 
+@runtime_checkable
 class ICentralBank(IMonetaryOperations, Protocol):
     """
     Represents the Central Bank entity, responsible for executing monetary policy.
@@ -685,6 +692,14 @@ class ICentralBank(IMonetaryOperations, Protocol):
 # --- Portfolio Interfaces (TD-160) ---
 
 # --- Interfaces for Data Access ---
+
+class SagaStateDTO(TypedDict):
+    """Generic DTO for representing the state of a saga."""
+    saga_id: UUID
+    state: str
+    payload: Dict[str, Any]
+    created_at: int
+    updated_at: int
 
 class IRealEstateRegistry(ABC):
     """
@@ -729,7 +744,7 @@ class ISagaRepository(ABC):
     Interface for querying the state of active Sagas.
     """
     @abstractmethod
-    def find_active_saga_for_property(self, property_id: int) -> Optional[dict]:
+    def find_active_saga_for_property(self, property_id: int) -> Optional[SagaStateDTO]:
         """
         Finds an active (non-completed, non-failed) housing transaction saga
         for a given property ID. Returns the saga state DTO if found, else None.
@@ -804,6 +819,7 @@ class IShareholderView(Protocol):
     is_active: bool
     def get_book_value_per_share(self) -> float: ...
 
+@runtime_checkable
 class IShareholderRegistry(Protocol):
     """Single source of truth for stock ownership."""
     def register_shares(self, firm_id: AgentID, agent_id: AgentID, quantity: float) -> None:
@@ -818,6 +834,7 @@ class IShareholderRegistry(Protocol):
 
 # --- Bank Decomposition Interfaces (TD-274) ---
 
+@runtime_checkable
 class ILoanManager(Protocol):
     """Interface for managing the entire lifecycle of loans."""
     def submit_loan_application(self, application: LoanApplicationDTO) -> str: ...
@@ -832,6 +849,7 @@ class ILoanManager(Protocol):
     def get_loans_for_agent(self, agent_id: AgentID) -> List[LoanDTO]: ...
     def repay_loan(self, loan_id: str, amount: int) -> bool: ...
 
+@runtime_checkable
 class IDepositManager(Protocol):
     """Interface for managing agent deposit accounts."""
     def create_deposit(self, owner_id: AgentID, amount: int, interest_rate: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> str: ...
@@ -868,6 +886,7 @@ class SolvencyCheckOutputDTO(TypedDict):
 
 # --- Engine Interface ---
 
+@runtime_checkable
 class SolvencyEngine(Protocol):
     """
     A stateless engine for checking the financial solvency of an entity.

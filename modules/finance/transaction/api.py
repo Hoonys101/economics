@@ -114,6 +114,7 @@ class IAccountAccessor(Protocol):
         ...
 
 
+@runtime_checkable
 class ITransactionValidator(Protocol):
     """
     Interface for a component that validates a transaction against business rules.
@@ -132,6 +133,7 @@ class ITransactionValidator(Protocol):
         ...
 
 
+@runtime_checkable
 class ITransactionExecutor(Protocol):
     """
     Interface for a component that executes a transaction.
@@ -150,6 +152,7 @@ class ITransactionExecutor(Protocol):
         ...
 
 
+@runtime_checkable
 class ITransactionLedger(Protocol):
     """
     Interface for a Data Access Object (DAO) that records transaction results.
@@ -165,6 +168,7 @@ class ITransactionLedger(Protocol):
         ...
 
 
+@runtime_checkable
 class ITransactionEngine(Protocol):
     """
     Interface for the main engine that orchestrates the entire transaction process.

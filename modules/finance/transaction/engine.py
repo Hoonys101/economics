@@ -291,6 +291,7 @@ class TransactionEngine(ITransactionEngine):
     def _rollback_batch(self, transactions: List[TransactionDTO]) -> None:
         """
         Rolls back a list of successfully executed transactions.
+        Attempts to rollback ALL transactions even if some fail, to maximize consistency.
         """
         for tx in reversed(transactions):
             try:
@@ -305,5 +306,6 @@ class TransactionEngine(ITransactionEngine):
                 )
                 self.executor.execute(reverse_tx)
             except Exception as e:
-                 # CRITICAL: Rollback failed
+                 # CRITICAL: Rollback failed. Money is effectively created/destroyed or trapped.
                  logging.critical(f"BATCH ROLLBACK FAILED for {tx.transaction_id}. System State Inconsistent! Error: {e}")
+                 # Continue to try rolling back others
