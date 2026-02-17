@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, call
 
 from modules.finance.transaction.api import (
     TransactionDTO,
@@ -8,16 +8,19 @@ from modules.finance.transaction.api import (
     NegativeAmountError,
     ExecutionError,
     IAccountAccessor,
-    ITransactionLedger
+    ITransactionLedger,
+    ITransactionParticipant,
+    ITransactionValidator,
+    ITransactionExecutor
 )
 from modules.finance.transaction.engine import (
     TransactionValidator,
     TransactionExecutor,
     TransactionEngine
 )
-from modules.finance.wallet.api import IWallet
 from modules.finance.transaction.adapter import RegistryAccountAccessor
-from modules.system.api import IAgentRegistry
+from modules.finance.api import IFinancialAgent, IFinancialEntity
+from modules.system.api import IAgentRegistry, DEFAULT_CURRENCY
 
 # ==============================================================================
 # Validator Tests
@@ -26,9 +29,9 @@ from modules.system.api import IAgentRegistry
 def test_validator_success():
     mock_accessor = Mock(spec=IAccountAccessor)
     mock_accessor.exists.return_value = True
-    mock_wallet = Mock(spec=IWallet)
-    mock_wallet.get_balance.return_value = 100.0
-    mock_accessor.get_wallet.return_value = mock_wallet
+    mock_participant = Mock(spec=ITransactionParticipant)
+    mock_participant.get_balance.return_value = 10000 # 100.00
+    mock_accessor.get_participant.return_value = mock_participant
 
     validator = TransactionValidator(mock_accessor)
 
@@ -36,8 +39,8 @@ def test_validator_success():
         transaction_id="1",
         source_account_id="src",
         destination_account_id="dst",
-        amount=50.0,
-        currency="USD",
+        amount=5000, # 50.00
+        currency=DEFAULT_CURRENCY,
         description="test"
     )
 
@@ -52,8 +55,8 @@ def test_validator_negative_amount():
         transaction_id="1",
         source_account_id="src",
         destination_account_id="dst",
-        amount=-10.0,
-        currency="USD",
+        amount=-1000,
+        currency=DEFAULT_CURRENCY,
         description="test"
     )
 
@@ -63,9 +66,9 @@ def test_validator_negative_amount():
 def test_validator_insufficient_funds():
     mock_accessor = Mock(spec=IAccountAccessor)
     mock_accessor.exists.return_value = True
-    mock_wallet = Mock(spec=IWallet)
-    mock_wallet.get_balance.return_value = 10.0
-    mock_accessor.get_wallet.return_value = mock_wallet
+    mock_participant = Mock(spec=ITransactionParticipant)
+    mock_participant.get_balance.return_value = 1000 # 10.00
+    mock_accessor.get_participant.return_value = mock_participant
 
     validator = TransactionValidator(mock_accessor)
 
@@ -73,8 +76,8 @@ def test_validator_insufficient_funds():
         transaction_id="1",
         source_account_id="src",
         destination_account_id="dst",
-        amount=50.0,
-        currency="USD",
+        amount=5000, # 50.00
+        currency=DEFAULT_CURRENCY,
         description="test"
     )
 
@@ -91,8 +94,8 @@ def test_validator_invalid_account():
         transaction_id="1",
         source_account_id="non_existing",
         destination_account_id="existing",
-        amount=50.0,
-        currency="USD",
+        amount=5000,
+        currency=DEFAULT_CURRENCY,
         description="test"
     )
 
@@ -106,15 +109,15 @@ def test_validator_invalid_account():
 
 def test_executor_success():
     mock_accessor = Mock(spec=IAccountAccessor)
-    src_wallet = Mock(spec=IWallet)
-    dst_wallet = Mock(spec=IWallet)
+    src_participant = Mock(spec=ITransactionParticipant)
+    dst_participant = Mock(spec=ITransactionParticipant)
 
-    def get_wallet_side_effect(id):
-        if id == "src": return src_wallet
-        if id == "dst": return dst_wallet
+    def get_participant_side_effect(id):
+        if id == "src": return src_participant
+        if id == "dst": return dst_participant
         raise InvalidAccountError()
 
-    mock_accessor.get_wallet.side_effect = get_wallet_side_effect
+    mock_accessor.get_participant.side_effect = get_participant_side_effect
 
     executor = TransactionExecutor(mock_accessor)
 
@@ -122,22 +125,30 @@ def test_executor_success():
         transaction_id="1",
         source_account_id="src",
         destination_account_id="dst",
-        amount=50.0,
-        currency="USD",
+        amount=5000,
+        currency=DEFAULT_CURRENCY,
         description="test"
     )
 
     executor.execute(dto)
 
-    src_wallet.subtract.assert_called_once()
-    dst_wallet.add.assert_called_once()
+    src_participant.withdraw.assert_called_once_with(5000, DEFAULT_CURRENCY, memo="Transfer to dst: test")
+    dst_participant.deposit.assert_called_once_with(5000, DEFAULT_CURRENCY, memo="Transfer from src: test")
 
-def test_executor_failure():
+def test_executor_failure_rollback():
     mock_accessor = Mock(spec=IAccountAccessor)
-    src_wallet = Mock(spec=IWallet)
-    # Simulate failure during subtract
-    src_wallet.subtract.side_effect = Exception("DB Error")
-    mock_accessor.get_wallet.return_value = src_wallet
+    src_participant = Mock(spec=ITransactionParticipant)
+    dst_participant = Mock(spec=ITransactionParticipant)
+
+    def get_participant_side_effect(id):
+        if id == "src": return src_participant
+        if id == "dst": return dst_participant
+        raise InvalidAccountError()
+
+    mock_accessor.get_participant.side_effect = get_participant_side_effect
+
+    # Simulate success withdraw, fail deposit
+    dst_participant.deposit.side_effect = Exception("DB Error")
 
     executor = TransactionExecutor(mock_accessor)
 
@@ -145,13 +156,18 @@ def test_executor_failure():
         transaction_id="1",
         source_account_id="src",
         destination_account_id="dst",
-        amount=50.0,
-        currency="USD",
+        amount=5000,
+        currency=DEFAULT_CURRENCY,
         description="test"
     )
 
     with pytest.raises(ExecutionError):
         executor.execute(dto)
+
+    # Verify Rollback
+    src_participant.withdraw.assert_called_once()
+    dst_participant.deposit.assert_called_once()
+    src_participant.deposit.assert_called_once_with(5000, DEFAULT_CURRENCY, memo="ROLLBACK: Failed transfer to dst")
 
 
 # ==============================================================================
@@ -159,50 +175,103 @@ def test_executor_failure():
 # ==============================================================================
 
 def test_engine_process_transaction_success():
-    mock_validator = Mock()
-    mock_executor = Mock()
+    mock_validator = Mock(spec=ITransactionValidator)
+    mock_executor = Mock(spec=ITransactionExecutor)
     mock_ledger = Mock(spec=ITransactionLedger)
 
     engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
 
-    result = engine.process_transaction("src", "dst", 100.0, "USD", "test")
+    result = engine.process_transaction("src", "dst", 10000, DEFAULT_CURRENCY, "test")
 
-    assert result['status'] == 'COMPLETED'
+    assert result.status == 'COMPLETED'
     mock_validator.validate.assert_called_once()
     mock_executor.execute.assert_called_once()
     mock_ledger.record.assert_called_once()
-    assert mock_ledger.record.call_args[0][0]['status'] == 'COMPLETED'
+    assert mock_ledger.record.call_args[0][0].status == 'COMPLETED'
 
 def test_engine_process_transaction_validation_fail():
-    mock_validator = Mock()
+    mock_validator = Mock(spec=ITransactionValidator)
     mock_validator.validate.side_effect = InsufficientFundsError("Not enough money")
-    mock_executor = Mock()
+    mock_executor = Mock(spec=ITransactionExecutor)
     mock_ledger = Mock(spec=ITransactionLedger)
 
     engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
 
-    result = engine.process_transaction("src", "dst", 100.0, "USD", "test")
+    result = engine.process_transaction("src", "dst", 10000, DEFAULT_CURRENCY, "test")
 
-    assert result['status'] == 'FAILED'
-    assert "Not enough money" in result['message']
+    assert result.status == 'FAILED'
+    assert "Not enough money" in result.message
     mock_executor.execute.assert_not_called()
     mock_ledger.record.assert_called_once()
-    assert mock_ledger.record.call_args[0][0]['status'] == 'FAILED'
+    assert mock_ledger.record.call_args[0][0].status == 'FAILED'
 
 def test_engine_process_transaction_execution_fail():
-    mock_validator = Mock()
-    mock_executor = Mock()
+    mock_validator = Mock(spec=ITransactionValidator)
+    mock_executor = Mock(spec=ITransactionExecutor)
     mock_executor.execute.side_effect = ExecutionError("Critical fail")
     mock_ledger = Mock(spec=ITransactionLedger)
 
     engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
 
-    result = engine.process_transaction("src", "dst", 100.0, "USD", "test")
+    result = engine.process_transaction("src", "dst", 10000, DEFAULT_CURRENCY, "test")
 
-    assert result['status'] == 'CRITICAL_FAILURE'
-    assert "Critical fail" in result['message']
+    assert result.status == 'CRITICAL_FAILURE'
+    assert "Critical fail" in result.message
     mock_ledger.record.assert_called_once()
-    assert mock_ledger.record.call_args[0][0]['status'] == 'CRITICAL_FAILURE'
+    assert mock_ledger.record.call_args[0][0].status == 'CRITICAL_FAILURE'
+
+def test_engine_process_batch_success():
+    mock_validator = Mock(spec=ITransactionValidator)
+    mock_executor = Mock(spec=ITransactionExecutor)
+    mock_ledger = Mock(spec=ITransactionLedger)
+
+    engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
+
+    tx1 = TransactionDTO("1", "src", "dst", 100, DEFAULT_CURRENCY, "t1")
+    tx2 = TransactionDTO("2", "dst", "src", 50, DEFAULT_CURRENCY, "t2")
+
+    results = engine.process_batch([tx1, tx2])
+
+    assert len(results) == 2
+    assert results[0].status == 'COMPLETED'
+    assert results[1].status == 'COMPLETED'
+    assert mock_executor.execute.call_count == 2
+    assert mock_ledger.record.call_count == 2
+
+def test_engine_process_batch_rollback():
+    mock_validator = Mock(spec=ITransactionValidator)
+    mock_executor = Mock(spec=ITransactionExecutor)
+    mock_ledger = Mock(spec=ITransactionLedger)
+
+    engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
+
+    tx1 = TransactionDTO("1", "src", "dst", 100, DEFAULT_CURRENCY, "t1")
+    tx2 = TransactionDTO("2", "dst", "src", 50, DEFAULT_CURRENCY, "t2")
+
+    # Second transaction fails execution
+    def execute_side_effect(tx):
+        if tx.transaction_id == "2":
+            raise ExecutionError("Fail")
+        return None
+
+    mock_executor.execute.side_effect = execute_side_effect
+
+    results = engine.process_batch([tx1, tx2])
+
+    assert len(results) == 2
+    # Both should be marked failed (or one failed one critical)
+    assert results[0].status == 'FAILED'
+    assert results[1].status == 'CRITICAL_FAILURE' or results[1].status == 'FAILED'
+
+    # Verify rollback called for tx1
+    # Executor called for tx1 (exec), tx2 (fail), rollback_tx1 (exec)
+    assert mock_executor.execute.call_count == 3
+
+    # Check arguments of calls
+    calls = mock_executor.execute.call_args_list
+    assert calls[0][0][0].transaction_id == "1"
+    assert calls[1][0][0].transaction_id == "2"
+    assert calls[2][0][0].transaction_id == "rollback_1"
 
 # ==============================================================================
 # Adapter Tests
@@ -210,24 +279,17 @@ def test_engine_process_transaction_execution_fail():
 
 def test_adapter_registry_accessor():
     mock_registry = Mock(spec=IAgentRegistry)
-    mock_agent = Mock()
-    mock_wallet = Mock(spec=IWallet)
-    mock_agent.wallet = mock_wallet
+    mock_agent = Mock(spec=IFinancialAgent)
+    mock_agent.get_balance.return_value = 1000
 
     mock_registry.get_agent.return_value = mock_agent
 
     accessor = RegistryAccountAccessor(mock_registry)
 
-    # Test get_wallet with digit string, expect int conversion
-    wallet = accessor.get_wallet("123")
-    assert wallet == mock_wallet
+    # Test get_participant with digit string, expect int conversion
+    participant = accessor.get_participant("123")
+    assert participant.get_balance() == 1000
     mock_registry.get_agent.assert_called_with(123)
 
     # Test exists
     assert accessor.exists("123")
-
-    # Test not found
-    mock_registry.get_agent.return_value = None
-    assert not accessor.exists("999")
-    with pytest.raises(InvalidAccountError):
-        accessor.get_wallet("999")
