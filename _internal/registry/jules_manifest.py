@@ -34,5 +34,23 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "command": "create",
         "instruction": "Fix firm inventory slots and housing transaction protocols to resolve residual test failures. Maintain zero-sum integrity.",
         "file": "design/3_work_artifacts/specs/MISSION_liquidate-regressions_SPEC.md"
+    },
+    "modernize-omo-tests": {
+        "title": "Implement OMO & Settlement Test Modernization",
+        "command": "create",
+        "instruction": "Refactor balance assertions in OMO and Settlement tests to use SettlementSystem SSoT. Ensure zero-sum integrity.",
+        "file": "design/3_work_artifacts/specs/MISSION_modernize-omo-tests_SPEC.md"
+    },
+    "modernize-bailout-tests": {
+        "title": "Implement Bailout & DTO Contract Fixes",
+        "command": "create",
+        "instruction": "Fix BailoutCovenant and DTO signature collisions in tests. Ensure strict Dataclass usage.",
+        "file": "design/3_work_artifacts/specs/MISSION_modernize-bailout-tests_SPEC.md"
+    },
+    "modernize-regression-tests": {
+        "title": "Implement General Test Logic Regressions",
+        "command": "create",
+        "instruction": "Resolve judicial and manufacturing test regressions by aligning with current logic and SSoT.",
+        "file": "design/3_work_artifacts/specs/MISSION_modernize-regression-tests_SPEC.md"
     }
 }

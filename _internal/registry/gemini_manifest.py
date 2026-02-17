@@ -43,14 +43,35 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
             "tests/unit/markets/test_loan_market_mortgage.py"
         ]
     },
-    "liquidate-regressions": {
-        "title": "Liquidate Behavioral Regressions",
+    "modernize-omo-tests": {
+        "title": "Modernize OMO & Settlement Tests (SSoT Alignment)",
         "worker": "spec",
-        "instruction": "Draft a SPEC to resolve logic regressions in firm inventory, housing protocols, and scenario tests (27 total failures). Coordinate with recent DTO changes to ensure zero-sum integrity is maintained.",
+        "instruction": "Draft a SPEC to refactor test_omo_system.py and test_atomic_settlement.py. Replace direct Agent.assets checks with settlement_system.get_balance() as per TEST_REFRACTORING_GUIDE.md. Resolve existing 500 != (500 +/- 100) failures.",
         "context_files": [
-            "tests/test_firm_inventory_slots.py",
-            "tests/unit/markets/test_housing_transaction_handler.py",
-            "tests/unit/systems/handlers/test_housing_handler.py"
+            "tests/integration/test_omo_system.py",
+            "tests/integration/test_atomic_settlement.py",
+            "design/1_governance/architecture/standards/TEST_REFRACTORING_GUIDE.md"
+        ]
+    },
+    "modernize-bailout-tests": {
+        "title": "Modernize Bailout & DTO Signature Tests",
+        "worker": "spec",
+        "instruction": "Draft a SPEC to fix BailoutCovenant attribute errors (executive_salary_freeze vs bonus) and BorrowerProfileDTO signature desyncs in remaining test files. Ensure mocks return strict Dataclasses.",
+        "context_files": [
+            "tests/integration/test_finance_bailout.py",
+            "tests/unit/modules/finance/test_system.py",
+            "modules/finance/api.py",
+            "design/1_governance/architecture/standards/TEST_REFRACTORING_GUIDE.md"
+        ]
+    },
+    "modernize-regression-tests": {
+        "title": "Modernize General Behavioral Regressions",
+        "worker": "spec",
+        "instruction": "Draft a SPEC to resolve logic regressions in judicial systems and manufacturing ratios. Ensure all balance assertions query the SSoT.",
+        "context_files": [
+            "tests/unit/governance/test_judicial_system.py",
+            "tests/unit/components/test_engines.py",
+            "design/1_governance/architecture/standards/TEST_REFRACTORING_GUIDE.md"
         ]
     }
 }
