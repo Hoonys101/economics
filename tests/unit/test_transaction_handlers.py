@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, ANY
 from modules.finance.transaction.handlers import GoodsTransactionHandler, LaborTransactionHandler
+from modules.finance.transaction.handlers.protocols import ISolvent, ITaxCollector
 from simulation.models import Transaction
 from simulation.dtos.api import SimulationState
 
@@ -8,7 +9,11 @@ class TestGoodsTransactionHandler(unittest.TestCase):
     def setUp(self):
         self.handler = GoodsTransactionHandler()
         self.settlement = MagicMock()
-        self.government = MagicMock()
+
+        # Mock Government with ITaxCollector protocol
+        self.government = MagicMock(spec=ITaxCollector)
+        self.government.id = 99
+
         self.escrow_agent = MagicMock()
         self.config = MagicMock()
         self.logger = MagicMock()
@@ -21,8 +26,12 @@ class TestGoodsTransactionHandler(unittest.TestCase):
         self.state.time = 100
         self.state.market_data = {}
 
-        self.buyer = MagicMock()
+        # Mock Buyer with ISolvent protocol
+        self.buyer = MagicMock(spec=ISolvent)
         self.buyer.id = 1
+        # Set assets to sufficient amount by default to avoid issues
+        self.buyer.assets = 10000
+
         self.seller = MagicMock()
         self.seller.id = 2
 
@@ -100,7 +109,10 @@ class TestLaborTransactionHandler(unittest.TestCase):
     def setUp(self):
         self.handler = LaborTransactionHandler()
         self.settlement = MagicMock()
-        self.government = MagicMock()
+
+        # Mock Government with ITaxCollector protocol
+        self.government = MagicMock(spec=ITaxCollector)
+
         self.config = MagicMock()
         self.logger = MagicMock()
         self.state = MagicMock(spec=SimulationState)
