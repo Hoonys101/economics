@@ -1,4 +1,4 @@
-from typing import Protocol, Dict, List, runtime_checkable
+from typing import Protocol, Dict, List, runtime_checkable, Optional
 from simulation.models import Order, Transaction
 
 @runtime_checkable
@@ -14,3 +14,8 @@ class IMarket(Protocol):
 
     def get_daily_avg_price(self) -> float: ...
     def get_daily_volume(self) -> float: ...
+
+    # Modernized Accessors
+    def get_price(self, item_id: str) -> float:
+        """Returns the current market price for the given item."""
+        ...

@@ -79,6 +79,26 @@ class StockMarket(Market):
             return self.last_prices[firm_id]
         return self.reference_prices.get(firm_id)
 
+    def get_price(self, item_id: str) -> float:
+        """
+        Returns the current market price for the given stock item (e.g., 'stock_123').
+        IMarket Implementation.
+        """
+        try:
+            # Parse 'stock_123' -> 123
+            if '_' in item_id:
+                parts = item_id.split('_')
+                # Assuming format 'stock_ID'
+                firm_id = int(parts[-1])
+            else:
+                firm_id = int(item_id)
+
+            price = self.get_stock_price(firm_id)
+            return price if price is not None else 0.0
+        except (ValueError, IndexError):
+            self.logger.warning(f"Invalid item_id for get_price: {item_id}")
+            return 0.0
+
     def get_daily_avg_price(self, firm_id: Optional[int]=None) -> float:
         """
         특정 기업의 일일 평균 거래 가격을 반환합니다.

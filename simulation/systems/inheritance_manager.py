@@ -96,6 +96,7 @@ class InheritanceManager:
                         item_id=f"stock_{firm_id}",
                         quantity=share.quantity,
                         price=price,
+                        total_pennies=int(proceeds * 100),
                         market_id="stock_market",
                         transaction_type="asset_liquidation",
                         time=current_tick,
@@ -131,6 +132,7 @@ class InheritanceManager:
                         item_id=f"real_estate_{unit.id}",
                         quantity=1.0,
                         price=sale_price,
+                        total_pennies=int(sale_price * 100),
                         market_id="real_estate_market",
                         transaction_type="asset_liquidation",
                         time=current_tick,
@@ -164,6 +166,7 @@ class InheritanceManager:
                 item_id="inheritance_tax",
                 quantity=1.0,
                 price=tax_to_pay,
+                total_pennies=int(tax_to_pay * 100),
                 market_id="system",
                 transaction_type="tax",
                 time=current_tick
@@ -192,6 +195,7 @@ class InheritanceManager:
                     item_id="escheatment",
                     quantity=1.0,
                     price=cash, # Used for record, handler takes all
+                    total_pennies=int(cash * 100),
                     market_id="system",
                     transaction_type="escheatment",
                     time=current_tick
@@ -208,6 +212,7 @@ class InheritanceManager:
                         item_id=f"real_estate_{unit.id}",
                         quantity=1.0,
                         price=0.0,
+                        total_pennies=0,
                         market_id="real_estate_market",
                         transaction_type="asset_transfer",
                         time=current_tick,
@@ -229,6 +234,7 @@ class InheritanceManager:
                     item_id="estate_distribution",
                     quantity=1.0,
                     price=cash, # Informational
+                    total_pennies=int(cash * 100),
                     market_id="system",
                     transaction_type="inheritance_distribution",
                     time=current_tick,
@@ -249,6 +255,7 @@ class InheritanceManager:
                         item_id=f"real_estate_{unit.id}",
                         quantity=1.0,
                         price=0.0,
+                        total_pennies=0,
                         market_id="real_estate_market",
                         transaction_type="asset_transfer",
                         time=current_tick,

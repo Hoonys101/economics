@@ -346,6 +346,14 @@ class OrderBookMarket(Market):
         """주어진 아이템의 마지막 체결 가격을 반환합니다."""
         return self.last_traded_prices.get(item_id)
 
+    def get_price(self, item_id: str) -> float:
+        """
+        Returns the current market price for the given item (IMarket Implementation).
+        Returns last traded price or 0.0 if not available.
+        """
+        price = self.last_traded_prices.get(item_id)
+        return price if price is not None else 0.0
+
     def get_last_trade_tick(self, item_id: str) -> int | None:
         """Returns the tick of the last trade for the item."""
         return self.last_trade_ticks.get(item_id)

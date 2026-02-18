@@ -8,6 +8,8 @@ from simulation.systems.inheritance_manager import InheritanceManager
 from simulation.systems.liquidation_manager import LiquidationManager
 from simulation.finance.api import ISettlementSystem
 from modules.system.api import IAssetRecoverySystem, ICurrencyHolder
+from simulation.interfaces.market_interface import IMarket
+from modules.finance.api import IShareholderRegistry, IFinancialEntity
 
 class DeathSystem(IDeathSystem):
     """
@@ -83,11 +85,17 @@ class DeathSystem(IDeathSystem):
             )
 
             # Clear shareholdings
-            for household in state.households:
-                if firm.id in household._econ_state.portfolio.to_legacy_dict():
-                    del household._econ_state.portfolio.to_legacy_dict()[firm.id]
-                    if state.stock_market:
-                        state.stock_market.update_shareholder(household.id, firm.id, 0)
+            # Use Registry if available
+            if state.shareholder_registry:
+                 for household in state.households:
+                      state.shareholder_registry.register_shares(firm.id, household.id, 0.0)
+            elif state.stock_market:
+                 # Legacy Fallback
+                 for household in state.households:
+                    if firm.id in household._econ_state.portfolio.to_legacy_dict():
+                        del household._econ_state.portfolio.to_legacy_dict()[firm.id]
+                        if hasattr(state.stock_market, "update_shareholder"):
+                            state.stock_market.update_shareholder(household.id, firm.id, 0)
 
             # TD-030: Unregister from currency registry immediately
             if isinstance(firm, ICurrencyHolder):
@@ -135,17 +143,21 @@ class DeathSystem(IDeathSystem):
 
             household._econ_state.inventory.clear()
             household._econ_state.portfolio.to_legacy_dict().clear()
-            if hasattr(household, "portfolio"):
-                 household._econ_state.portfolio.holdings.clear()
+            # Direct access as Household is strongly typed in list
+            household._econ_state.portfolio.holdings.clear()
+
             # Clear shareholdings from registry (TD-275)
             if state.shareholder_registry:
                 for firm in state.firms:
                      state.shareholder_registry.register_shares(firm.id, household.id, 0.0)
             elif state.stock_market:
                 # Fallback for older StockMarket logic if any
-                if hasattr(state.stock_market, "shareholders"):
-                    for firm_id in list(state.stock_market.shareholders.keys()):
-                        state.stock_market.update_shareholder(household.id, firm_id, 0)
+                # Using hasattr only for legacy fallback support
+                if hasattr(state.stock_market, "update_shareholder"):
+                    # We don't iterate shareholders directly as it's an internal impl detail
+                    # Instead we iterate firms and clear for this household
+                    for firm in state.firms:
+                         state.stock_market.update_shareholder(household.id, firm.id, 0)
 
             # TD-030: Unregister from currency registry immediately
             if isinstance(household, ICurrencyHolder):
@@ -183,12 +195,29 @@ class DeathSystem(IDeathSystem):
 
         for item_id, qty in inventory.items():
             price = default_price
+
+            # 1. Direct Item Market (Legacy)
             if item_id in markets:
                 m = markets[item_id]
-                if hasattr(m, "avg_price") and m.avg_price > 0:
+                if isinstance(m, IMarket):
+                    p = m.get_price(item_id)
+                    if p > 0: price = p
+                elif hasattr(m, "avg_price") and m.avg_price > 0: # Strict Legacy Fallback
                     price = m.avg_price
-                elif hasattr(m, "current_price") and m.current_price > 0:
-                    price = m.current_price
+
+            # 2. Goods Market (Standard)
+            elif "goods_market" in markets:
+                m = markets["goods_market"]
+                if isinstance(m, IMarket):
+                    p = m.get_price(item_id)
+                    if p > 0: price = p
+
+            # 3. Stock Market (Standard)
+            elif "stock_market" in markets and item_id.startswith("stock_"):
+                 m = markets["stock_market"]
+                 if isinstance(m, IMarket):
+                    p = m.get_price(item_id)
+                    if p > 0: price = p
 
             total_value += qty * price
         return total_value

@@ -13,7 +13,7 @@ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, 
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.market.housing_planner_api import MortgageApplicationDTO
 from simulation.models import Transaction
-from modules.simulation.api import IGovernment, ICentralBank
+from modules.simulation.api import IGovernment, ICentralBank, IAgent
 from modules.common.protocol import enforce_purity
 
 # Transaction Engine Imports
@@ -69,7 +69,8 @@ class SettlementSystem(IMonetaryAuthority):
         if context_agents:
             agents_map = {}
             for agent in context_agents:
-                if hasattr(agent, 'id'):
+                # Use Protocol check if possible, or strict attribute access
+                if isinstance(agent, IAgent) or hasattr(agent, 'id'):
                     agents_map[agent.id] = agent
                     agents_map[str(agent.id)] = agent
 
