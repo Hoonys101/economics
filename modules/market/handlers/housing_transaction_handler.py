@@ -61,7 +61,10 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
         # Interest Rate (Bank Config or Global)
         mortgage_rate = getattr(context.config_module, "MORTGAGE_INTEREST_RATE", 0.05)
 
-        sale_price = tx.price * tx.quantity
+        if getattr(tx, 'total_pennies', 0) > 0:
+            sale_price = tx.total_pennies
+        else:
+            sale_price = int(tx.price * tx.quantity * 100)
         loan_amount = 0.0
         down_payment = sale_price
 

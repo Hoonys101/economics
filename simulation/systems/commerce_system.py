@@ -123,13 +123,16 @@ class CommerceSystem(ICommerceSystem):
 
                         # Use a proper constant for the system seller ID
                         from simulation.constants import SYSTEM_MARKET_MAKER_ID
+                        from modules.finance.utils.currency_math import round_to_pennies
 
+                        total_pennies = round_to_pennies(bid_price * b_amt * 100)
                         tx = Transaction(
                             buyer_id=household.id,
                             seller_id=SYSTEM_MARKET_MAKER_ID,
                             item_id="basic_food",
                             quantity=b_amt,
                             price=bid_price,
+                            total_pennies=total_pennies,
                             market_id="basic_food",
                             transaction_type="PHASE23_MARKET_ORDER",
                             time=current_time
@@ -149,13 +152,16 @@ class CommerceSystem(ICommerceSystem):
                             planned_consumptions[household.id]["buy_amount"] = b_amt
                             government = context.get("government")
                             seller_id = government.id if government else 999999
+                            from modules.finance.utils.currency_math import round_to_pennies
 
+                            total_pennies = round_to_pennies(food_price * b_amt * 100)
                             tx = Transaction(
                                 buyer_id=household.id,
                                 seller_id=seller_id,
                                 item_id="basic_food",
                                 quantity=b_amt,
                                 price=food_price,
+                                total_pennies=total_pennies,
                                 market_id="system",
                                 transaction_type="emergency_buy",
                                 time=current_time

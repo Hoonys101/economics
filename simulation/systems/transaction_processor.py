@@ -66,9 +66,9 @@ class TransactionProcessor(SystemInterface):
                     amount = 0.0
                     if success:
                         if getattr(tx, 'total_pennies', 0) > 0:
-                            amount = float(tx.total_pennies)
+                            amount = tx.total_pennies
                         else:
-                            amount = tx.quantity * tx.price
+                            amount = round_to_pennies(tx.quantity * tx.price * 100)
 
                     return SettlementResultDTO(
                         original_transaction=tx,
@@ -199,9 +199,9 @@ class TransactionProcessor(SystemInterface):
                 if success:
                     # TD-MKT-FLOAT-MATCH: total_pennies is the SSoT for settlement
                     if getattr(tx, 'total_pennies', 0) > 0:
-                        amount = float(tx.total_pennies)
+                        amount = tx.total_pennies
                     else:
-                        amount = tx.quantity * tx.price
+                        amount = round_to_pennies(tx.quantity * tx.price * 100)
 
                 results.append(
                     SettlementResultDTO(

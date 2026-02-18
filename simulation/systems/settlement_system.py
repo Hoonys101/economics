@@ -494,6 +494,7 @@ class SettlementSystem(IMonetaryAuthority):
             item_id="currency",
             quantity=amount,
             price=1,
+            total_pennies=amount,
             market_id="settlement",
             transaction_type="transfer",
             time=tick,
