@@ -28,6 +28,7 @@ class TransactionData:
     item_id: str
     quantity: float
     price: float
+    total_pennies: int # Added for Reporting DTO Hardening
     currency: CurrencyCode  # Added for Phase 33
     market_id: str
     transaction_type: str
@@ -38,7 +39,7 @@ class AgentStateData:
     time: int
     agent_id: AgentID
     agent_type: str
-    assets: Dict[CurrencyCode, float] # Changed for Phase 33
+    assets: Dict[CurrencyCode, int] # Changed for Phase 33 (Hardened to int)
     is_active: bool
     is_employed: Optional[bool] = None
     employer_id: Optional[AgentID] = None
@@ -64,13 +65,13 @@ class EconomicIndicatorData:
     avg_goods_price: Optional[float] = None
     total_production: Optional[float] = None
     total_consumption: Optional[float] = None
-    total_household_assets: Optional[Dict[CurrencyCode, float]] = None # Changed for Phase 33
-    total_firm_assets: Optional[Dict[CurrencyCode, float]] = None # Changed for Phase 33
+    total_household_assets: Optional[int] = None # Changed for Reporting DTO Hardening (Pennies)
+    total_firm_assets: Optional[int] = None # Changed for Reporting DTO Hardening (Pennies)
     total_food_consumption: Optional[float] = None
     total_inventory: Optional[float] = None
     avg_survival_need: Optional[float] = None
-    total_labor_income: Optional[float] = None
-    total_capital_income: Optional[float] = None
+    total_labor_income: Optional[int] = None # Changed for Reporting DTO Hardening (Pennies)
+    total_capital_income: Optional[int] = None # Changed for Reporting DTO Hardening (Pennies)
     # Phase 23: Education & Opportunity Metrics
     avg_education_level: Optional[float] = None
     education_spending: Optional[float] = None
@@ -318,7 +319,7 @@ class StockMarketHistoryData:
     firm_id: AgentID
     
     # 주가 관련
-    stock_price: float              # 현재 주가 (거래가 또는 기준가)
+    stock_price: int                # 현재 주가 (거래가 또는 기준가) [Pennies]
     book_value_per_share: float     # 주당 순자산가치 (BPS)
     price_to_book_ratio: float      # PBR (주가/BPS)
     
@@ -328,10 +329,10 @@ class StockMarketHistoryData:
     sell_order_count: int           # 매도 주문 수
     
     # 기업 실적 연계
-    firm_assets: float              # 기업 총자산
-    firm_profit: float              # 기업 이익 (당기)
-    dividend_paid: float            # 배당금 지급액
-    market_cap: float               # 시가총액
+    firm_assets: int                # 기업 총자산 [Pennies]
+    firm_profit: int                # 기업 이익 (당기) [Pennies]
+    dividend_paid: int              # 배당금 지급액 [Pennies]
+    market_cap: int                 # 시가총액 [Pennies]
 
 
 @dataclass
@@ -366,12 +367,12 @@ class HouseholdIncomeData:
     time: int
     household_id: AgentID
     
-    labor_income: float             # 노동 소득 (임금)
-    dividend_income: float          # 배당 소득
-    capital_gains: float            # 주식 매매 차익
-    total_income: float             # 총 소득
+    labor_income: int               # 노동 소득 (임금) [Pennies]
+    dividend_income: int            # 배당 소득 [Pennies]
+    capital_gains: int              # 주식 매매 차익 [Pennies]
+    total_income: int               # 총 소득 [Pennies]
     
-    portfolio_value: float          # 포트폴리오 가치
+    portfolio_value: int            # 포트폴리오 가치 [Pennies]
     portfolio_return_rate: float    # 투자 수익률
 
 

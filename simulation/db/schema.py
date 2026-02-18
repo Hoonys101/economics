@@ -30,6 +30,7 @@ def create_tables(conn: sqlite3.Connection):
             item_id TEXT NOT NULL,
             quantity REAL NOT NULL,
             price REAL NOT NULL,
+            total_pennies INTEGER,
             market_id TEXT NOT NULL,
             transaction_type TEXT NOT NULL,
             FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)
@@ -44,7 +45,7 @@ def create_tables(conn: sqlite3.Connection):
             time INTEGER NOT NULL,
             agent_id INTEGER NOT NULL,
             agent_type TEXT NOT NULL,
-            assets REAL NOT NULL,
+            assets INTEGER NOT NULL,
             is_active BOOLEAN NOT NULL,
             is_employed BOOLEAN,
             employer_id INTEGER,
@@ -90,13 +91,13 @@ def create_tables(conn: sqlite3.Connection):
             avg_goods_price REAL,
             total_production REAL,
             total_consumption REAL,
-            total_household_assets REAL,
-            total_firm_assets REAL,
+            total_household_assets INTEGER,
+            total_firm_assets INTEGER,
             total_food_consumption REAL,
             total_inventory REAL,
             avg_survival_need REAL,
-            total_labor_income REAL,
-            total_capital_income REAL,
+            total_labor_income INTEGER,
+            total_capital_income INTEGER,
             FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)
         )
     """)
@@ -123,16 +124,16 @@ def create_tables(conn: sqlite3.Connection):
             run_id INTEGER NOT NULL,
             time INTEGER NOT NULL,
             firm_id INTEGER NOT NULL,
-            stock_price REAL,
+            stock_price INTEGER,
             book_value_per_share REAL,
             price_to_book_ratio REAL,
             trade_volume REAL,
             buy_order_count INTEGER,
             sell_order_count INTEGER,
-            firm_assets REAL,
-            firm_profit REAL,
-            dividend_paid REAL,
-            market_cap REAL,
+            firm_assets INTEGER,
+            firm_profit INTEGER,
+            dividend_paid INTEGER,
+            market_cap INTEGER,
             FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)
         )
     """)
@@ -164,11 +165,11 @@ def create_tables(conn: sqlite3.Connection):
             run_id INTEGER NOT NULL,
             time INTEGER NOT NULL,
             household_id INTEGER NOT NULL,
-            labor_income REAL,
-            dividend_income REAL,
-            capital_gains REAL,
-            total_income REAL,
-            portfolio_value REAL,
+            labor_income INTEGER,
+            dividend_income INTEGER,
+            capital_gains INTEGER,
+            total_income INTEGER,
+            portfolio_value INTEGER,
             portfolio_return_rate REAL,
             FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)
         )

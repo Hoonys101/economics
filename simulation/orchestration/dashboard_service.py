@@ -163,21 +163,21 @@ class DashboardService:
             tick=state.time,
             timestamp=datetime.now().timestamp(),
             status="RUNNING", # TODO: Hook into simulation status if available
-            integrity=IntegrityDTO(m2_leak=m2_leak, fps=fps),
+            integrity=IntegrityDTO(m2_leak=int(m2_leak), fps=fps),
             macro=MacroDTO(
-                gdp=gdp,
+                gdp=int(gdp),
                 cpi=cpi,
                 unemploy=unemploy,
                 gini=gini
             ),
             finance=FinanceDTO(
                 rates=FinanceRatesDTO(base=base_rate, call=call_rate, loan=loan_rate, savings=savings_rate),
-                supply=FinanceSupplyDTO(m0=m0, m1=m1, m2=m2, velocity=velocity)
+                supply=FinanceSupplyDTO(m0=int(m0), m1=int(m1), m2=int(m2), velocity=velocity)
             ),
             politics=PoliticsDTO(
                 approval=PoliticsApprovalDTO(total=approval_total, low=approval_low, mid=approval_mid, high=approval_high),
                 status=PoliticsStatusDTO(ruling_party=party, cohesion=cohesion),
-                fiscal=PoliticsFiscalDTO(revenue=revenue, welfare=welfare, debt=debt)
+                fiscal=PoliticsFiscalDTO(revenue=int(revenue), welfare=int(welfare), debt=int(debt))
             ),
             population=PopulationDTO(
                 distribution=PopulationDistributionDTO(q1=q1, q2=q2, q3=q3, q4=q4, q5=q5),

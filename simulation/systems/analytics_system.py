@@ -113,6 +113,7 @@ class AnalyticsSystem:
                 item_id=tx.item_id,
                 quantity=tx.quantity,
                 price=tx.price,
+                total_pennies=getattr(tx, 'total_pennies', 0),
                 currency=getattr(tx, 'currency', DEFAULT_CURRENCY),
                 market_id=tx.market_id,
                 transaction_type=tx.transaction_type,
@@ -127,22 +128,22 @@ class AnalyticsSystem:
             # Recalculate some aggregates if needed or rely on tracker.
             # PersistenceManager logic:
             # Recalculate some aggregates via snapshots
-            total_labor_income = 0.0
-            total_capital_income = 0.0
+            total_labor_income = 0
+            total_capital_income = 0
             
             for h in world_state.households:
                 # Access via snapshot for purity
                 if hasattr(h, 'create_snapshot_dto'):
                     snap = h.create_snapshot_dto()
-                    total_labor_income += snap.econ_state.labor_income_this_tick_pennies / 100.0
-                    total_capital_income += snap.econ_state.capital_income_this_tick_pennies / 100.0
+                    total_labor_income += snap.econ_state.labor_income_this_tick_pennies
+                    total_capital_income += snap.econ_state.capital_income_this_tick_pennies
 
             # Flatten assets for DB
             hh_assets = tracker_indicators.get("total_household_assets", 0.0)
             firm_assets = tracker_indicators.get("total_firm_assets", 0.0)
 
-            hh_assets_val = hh_assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(hh_assets, dict) else float(hh_assets)
-            firm_assets_val = firm_assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(firm_assets, dict) else float(firm_assets)
+            hh_assets_val = int(hh_assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(hh_assets, dict) else hh_assets)
+            firm_assets_val = int(firm_assets.get(DEFAULT_CURRENCY, 0.0) if isinstance(firm_assets, dict) else firm_assets)
 
             indicator_dto = EconomicIndicatorData(
                 run_id=run_id,

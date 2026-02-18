@@ -21,7 +21,7 @@ class AgentRepository(BaseRepository):
         try:
             assets_val = data.assets
             if isinstance(assets_val, dict):
-                assets_val = assets_val.get(DEFAULT_CURRENCY, 0.0)
+                assets_val = assets_val.get(DEFAULT_CURRENCY, 0)
 
             self.cursor.execute(
                 """
@@ -64,7 +64,7 @@ class AgentRepository(BaseRepository):
             for state_data in agent_states_data:
                 assets_val = state_data.assets
                 if isinstance(assets_val, dict):
-                    assets_val = assets_val.get(DEFAULT_CURRENCY, 0.0)
+                    assets_val = assets_val.get(DEFAULT_CURRENCY, 0)
 
                 data_to_insert.append(
                     (

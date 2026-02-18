@@ -21,8 +21,8 @@ class MarketRepository(BaseRepository):
         try:
             self.cursor.execute(
                 """
-                INSERT INTO transactions (run_id, time, buyer_id, seller_id, item_id, quantity, price, market_id, transaction_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO transactions (run_id, time, buyer_id, seller_id, item_id, quantity, price, total_pennies, market_id, transaction_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     data.run_id,
@@ -32,6 +32,7 @@ class MarketRepository(BaseRepository):
                     data.item_id,
                     data.quantity,
                     data.price,
+                    data.total_pennies,
                     data.market_id,
                     data.transaction_type,
                 ),
@@ -61,14 +62,15 @@ class MarketRepository(BaseRepository):
                         tx_data.item_id,
                         tx_data.quantity,
                         tx_data.price,
+                        tx_data.total_pennies,
                         tx_data.market_id,
                         tx_data.transaction_type,
                     )
                 )
             self.cursor.executemany(
                 """
-                INSERT INTO transactions (run_id, time, buyer_id, seller_id, item_id, quantity, price, market_id, transaction_type)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO transactions (run_id, time, buyer_id, seller_id, item_id, quantity, price, total_pennies, market_id, transaction_type)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 data_to_insert,
             )

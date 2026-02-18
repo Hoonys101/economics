@@ -65,7 +65,7 @@ def test_save_and_get_agent_state(test_repo: SimulationRepository):
         time=1,
         agent_id=101,
         agent_type="Household",
-        assets=100.0,
+        assets=10000,
         is_active=True,
         is_employed=True,
         employer_id=201,
@@ -84,7 +84,7 @@ def test_save_and_get_agent_state(test_repo: SimulationRepository):
 
     retrieved_state = retrieved_states[0]
     assert retrieved_state["agent_id"] == 101
-    assert retrieved_state["assets"] == 100.0 # Changed from 1000.0 to 100.0 to match DTO
+    assert retrieved_state["assets"] == 10000 # Changed from 1000.0 to 100.0 to match DTO
     assert retrieved_state["inventory_food"] == 10.0
 
 
@@ -98,6 +98,7 @@ def test_save_and_get_transaction(test_repo: SimulationRepository):
         item_id="food",
         quantity=5.0,
         price=10.0,
+        total_pennies=1000,
         currency=DEFAULT_CURRENCY,
         transaction_type="Goods",
         market_id="goods_market",
@@ -127,8 +128,8 @@ def test_save_and_get_economic_indicators(test_repo: SimulationRepository):
         avg_goods_price=12.0,
         total_production=500.0,
         total_consumption=450.0,
-        total_household_assets=100000.0,
-        total_firm_assets=200000.0,
+        total_household_assets=10000000, # 100000.0 -> 10000000 pennies
+        total_firm_assets=20000000, # 200000.0 -> 20000000 pennies
         total_food_consumption=200.0,
         total_inventory=1000.0,
     )

@@ -28,7 +28,7 @@ def test_analytics_system_purity():
     hh = MagicMock(spec=Household)
     hh.id = 1
     hh.is_active = True
-    hh.get_assets_by_currency.return_value = {"USD": 100.0}
+    hh.get_assets_by_currency.return_value = {"USD": 10000} # 100.00 -> 10000 pennies
     hh.is_employed = True
     hh.employer_id = 2
     hh.needs = {"survival": 0.5}
@@ -41,7 +41,7 @@ def test_analytics_system_purity():
     firm = MagicMock(spec=Firm)
     firm.id = 2
     firm.is_active = True
-    firm.get_assets_by_currency.return_value = {"USD": 5000.0}
+    firm.get_assets_by_currency.return_value = {"USD": 500000} # 5000.00 -> 500000 pennies
     firm.get_quantity.return_value = 20.0 # Food inventory
     firm.current_production = 100.0
     # Firm uses get_state_dto
@@ -55,7 +55,7 @@ def test_analytics_system_purity():
     # Mock Transactions
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="food", quantity=1.0, price=10.0,
-        market_id="goods", transaction_type="purchase", time=100
+        market_id="goods", transaction_type="purchase", time=100, total_pennies=1000
     )
     world_state.transactions = [tx]
 
@@ -63,8 +63,8 @@ def test_analytics_system_purity():
     mock_tracker = MagicMock()
     mock_tracker.get_latest_indicators.return_value = {
         "unemployment_rate": 0.05,
-        "total_household_assets": 1000.0,
-        "total_firm_assets": 5000.0
+        "total_household_assets": 100000,
+        "total_firm_assets": 500000
     }
     world_state.tracker = mock_tracker
     world_state.household_time_allocation = {1: 8.0}
@@ -77,7 +77,7 @@ def test_analytics_system_purity():
 
     hh_dto = next(d for d in agent_states if d.agent_id == 1)
     assert hh_dto.agent_type == "household"
-    assert hh_dto.assets == {"USD": 100.0}
+    assert hh_dto.assets == {"USD": 10000}
     assert hh_dto.inventory_food == 5.0
 
     firm_dto = next(d for d in agent_states if d.agent_id == 2)

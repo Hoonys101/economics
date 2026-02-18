@@ -8,8 +8,8 @@ class AgentTickAnalyticsDTO(TypedDict):
     run_id: int
     time: int
     agent_id: int
-    labor_income_this_tick: Optional[float]
-    capital_income_this_tick: Optional[float]
+    labor_income_this_tick: Optional[int]
+    capital_income_this_tick: Optional[int]
     consumption_this_tick: Optional[float]
     utility_this_tick: Optional[float]
     savings_rate_this_tick: Optional[float]

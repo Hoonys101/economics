@@ -97,7 +97,7 @@ class TestWatchtowerHardening(unittest.TestCase):
         def create_agent(tick, agent_id, run_id=1):
             return AgentStateData(
                 run_id=run_id, time=tick, agent_id=agent_id, agent_type='household',
-                assets=100.0, is_active=True, is_employed=False, employer_id=None,
+                assets=10000, is_active=True, is_employed=False, employer_id=None,
                 needs_survival=0, needs_labor=0, inventory_food=0, current_production=0,
                 num_employees=0, education_xp=0, generation=1
             )

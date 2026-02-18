@@ -3,12 +3,12 @@ from typing import Dict, List, Any, Optional
 
 @dataclass
 class IntegrityDTO:
-    m2_leak: float
+    m2_leak: int
     fps: float
 
 @dataclass
 class MacroDTO:
-    gdp: float
+    gdp: int
     cpi: float
     unemploy: float
     gini: float
@@ -22,9 +22,9 @@ class FinanceRatesDTO:
 
 @dataclass
 class FinanceSupplyDTO:
-    m0: float
-    m1: float
-    m2: float
+    m0: int
+    m1: int
+    m2: int
     velocity: float
 
 @dataclass
@@ -46,9 +46,9 @@ class PoliticsStatusDTO:
 
 @dataclass
 class PoliticsFiscalDTO:
-    revenue: float
-    welfare: float
-    debt: float
+    revenue: int
+    welfare: int
+    debt: int
 
 @dataclass
 class PoliticsDTO:
