@@ -19,6 +19,23 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "MISSION_TEST_MODERNIZATION_EXEC": {
+      "key": "MISSION_TEST_MODERNIZATION_EXEC",
+      "title": "Execute Test Modernization & SSoT Fixes",
+      "type": "jules",
+      "instruction_raw": "Resolve the 17 identified test failures by formally registering 'escrow_agent' in WorldState and modernizing SettlementSystem tests to use a mocked IAgentRegistry. Resolve DeprecationWarnings for collect_tax.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_TEST_MODERNIZATION_EXEC_IMG.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }

@@ -16,10 +16,10 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "MISSION_TRANSACTION_INT_EXEC_PHASE3": {
-        "title": "Fix Transaction Handler Tests & Protocol Compliance",
-        "instruction": "Fix failures in tests/unit/test_transaction_handlers.py caused by Protocol check failures with mocks. Ensure handlers correctly detect ITaxCollector and ISolvent interfaces.",
-        "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_TRANSACTION_INT_EXEC_PHASE3_IMG.md",
+    "MISSION_TEST_MODERNIZATION_EXEC": {
+        "title": "Execute Test Modernization & SSoT Fixes",
+        "instruction": "Resolve the 17 identified test failures by formally registering 'escrow_agent' in WorldState and modernizing SettlementSystem tests to use a mocked IAgentRegistry. Resolve DeprecationWarnings for collect_tax.",
+        "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_TEST_MODERNIZATION_EXEC_IMG.md",
         "wait": True
     },
 }
