@@ -14,6 +14,7 @@
 | **TD-CRIT-FLOAT-SETTLE** | Finance | **Float-to-Int Migration**: Residual `float` usage in `SettlementSystem` and `MatchingEngine`. | **Critical**: High Leakage risk. | **Identified** |
 | **TD-DTO-DESYNC-2026** | DTO/API | **Contract Fracture**: `BorrowerProfileDTO` desync across Firm logic & tests. | **Critical**: System Integrity. | **Resolved** |
 | **TD-TEST-SSOT-SYNC** | Testing | **SSoT Balance Mismatch**: Tests assert against legacy `.assets` attributes instead of `SettlementSystem`. | **High**: Verification Validity. | **Resolved** |
+| **TD-TRANS-LEGACY-PRICING** | Transaction | **Float Cast Bridge**: `TransactionProcessor` converts integer `total_pennies` back to `float` for `SettlementResultDTO` compatibility. | **Medium**: Precision Risk. | **Identified** |
 
 ---
 > [!NOTE]

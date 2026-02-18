@@ -23,16 +23,5 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "MISSION_TRANSACTION_INT_SPEC": {
-        "worker": "spec",
-        "objective": "Draft detailed technical spec for Transaction model integer (Penny) migration.",
-        "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_TRANSACTION_INT_IMG.md",
-        "output": "design/3_work_artifacts/specs/MISSION_TRANSACTION_INT_SPEC.md",
-        "context_files": [
-            "simulation/models.py",
-            "simulation/systems/transaction_processor.py",
-            "modules/finance/transaction/engine.py",
-            "simulation/dtos/transactions.py"
-        ]
-    },
+    # Add missions here
 }

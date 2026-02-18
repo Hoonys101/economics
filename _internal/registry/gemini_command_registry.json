@@ -2,28 +2,5 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {
-    "MISSION_TRANSACTION_INT_SPEC": {
-      "key": "MISSION_TRANSACTION_INT_SPEC",
-      "title": "MISSION_TRANSACTION_INT_SPEC",
-      "type": "gemini",
-      "instruction_raw": "",
-      "status": "pending",
-      "created_at": "",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "simulation/models.py",
-        "simulation/systems/transaction_processor.py",
-        "modules/finance/transaction/engine.py",
-        "simulation/dtos/transactions.py"
-      ],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    }
-  }
+  "missions": {}
 }

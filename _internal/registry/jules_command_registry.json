@@ -3,15 +3,15 @@
     "version": "1.0"
   },
   "missions": {
-    "MISSION_TRANSACTION_INT_EXEC_PHASE1": {
-      "key": "MISSION_TRANSACTION_INT_EXEC_PHASE1",
-      "title": "Implement Transaction API & Refactor Processor",
+    "MISSION_TRANSACTION_INT_EXEC_PHASE2": {
+      "key": "MISSION_TRANSACTION_INT_EXEC_PHASE2",
+      "title": "Implement Specialized Transaction Handlers (Goods, Labor, etc.)",
       "type": "jules",
-      "instruction_raw": "",
+      "instruction_raw": "Port legacy transaction handlers (goods, labor, financial) to the new ITransactionHandler protocol and Penny Standard as defined in the MISSION_spec.",
       "status": "pending",
       "created_at": "",
       "command": "create",
-      "file_path": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_TRANSACTION_INT_EXEC_PHASE1_IMG.md",
+      "file_path": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_TRANSACTION_INT_EXEC_PHASE2_IMG.md",
       "wait": true,
       "session_id": null,
       "worker": null,
