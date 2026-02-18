@@ -23,25 +23,5 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "spec-matching-engine-int-math": {
-        "title": "SPEC: MatchingEngine Integer Math Hardening",
-        "worker": "spec",
-        "instruction": "Refactor the MatchingEngine math to use integer pennies exclusively. Define rounding rules (Round-Down/Floor) for mid-price discovery to eliminate M2 drift. Ensure execution prices and total values are calculated as integers.",
-        "context_files": [
-            "simulation/markets/matching_engine.py",
-            "simulation/dtos/api.py",
-            "modules/system/api.py"
-        ],
-        "output_path": "design/3_work_artifacts/specs/MISSION_MATCH_ENGINE_INT_SPEC.md"
-    },
-    "spec-dto-reporting-pennies": {
-        "title": "SPEC: Reporting DTO Penny Hardening",
-        "worker": "spec",
-        "instruction": "Analyze all DTOs in simulation/dtos/api.py. Identify any fields currently using float for monetary values (assets, price, wealth, indicators) and refactor them to integer pennies (int). Ensure backward compatibility with existing serialization logic where possible.",
-        "context_files": [
-            "simulation/dtos/api.py",
-            "modules/simulation/dtos/api.py"
-        ],
-        "output_path": "design/3_work_artifacts/specs/MISSION_REPORTING_DTO_INT_SPEC.md"
-    }
+    # Add missions here
 }

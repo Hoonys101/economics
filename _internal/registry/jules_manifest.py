@@ -21,5 +21,17 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "file": "design/3_work_artifacts/specs/MISSION_lifecycle_decomposition_SPEC.md",
         "instruction": "Implement the LifecycleManager decomposition as per the provided spec. Extract AgingSystem, BirthSystem, and DeathSystem into separate classes in simulation/systems/lifecycle/ and update the manager to orchestrate them.",
         "wait": False
+    },
+    "exec-match-engine-int-math": {
+        "title": "EXEC: MatchingEngine Integer Math Hardening",
+        "file": "design/3_work_artifacts/specs/MISSION_MATCH_ENGINE_INT_SPEC.md",
+        "instruction": "Refactor MatchingEngine to use strict integer math for prices and execution values. Follow the rounding and mid-price formulas defined in the spec.",
+        "wait": False
+    },
+    "exec-dto-reporting-pennies": {
+        "title": "EXEC: Reporting DTO Penny Hardening",
+        "file": "design/3_work_artifacts/specs/MISSION_REPORTING_DTO_INT_SPEC.md",
+        "instruction": "Refactor monetary fields in reporting DTOs (api.py) to use integer pennies as specified. Ensure averages and stats remain float.",
+        "wait": False
     }
 }
