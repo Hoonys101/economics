@@ -37,6 +37,8 @@ class TestInheritanceManager:
         h._econ_state = MagicMock()
         h._bio_state = MagicMock()
         h._econ_state.assets = assets
+        # Sync balance_pennies if spec has it, or just set it for tests relying on it
+        h.balance_pennies = int(assets * 100)
         h._econ_state.portfolio = Portfolio(id)
         h._econ_state.owned_properties = []
         h._bio_state.is_active = True
@@ -121,3 +123,19 @@ class TestInheritanceManager:
         tax_tx = next((t for t in txs if t.transaction_type == "tax"), None)
         assert tax_tx is not None
         assert tax_tx.price == 500.0 # 50% of 1000
+
+    def test_asset_cleanup(self, setup_manager, mocks):
+        """Test Case 6: Verify assets are wiped to prevent floating point leaks."""
+        deceased = self.create_household(1, assets=100.004) # Fractional
+        deceased._bio_state.children_ids = []
+
+        setup_manager.process_death(deceased, mocks.government, mocks)
+
+        # Verify wipe
+        if isinstance(deceased._econ_state.assets, dict):
+            # If assets is a dict (legacy path mock), check key
+            # But create_household sets assets to float.
+            pass
+
+        # Since create_household sets it to float:
+        assert deceased._econ_state.assets == 0.0

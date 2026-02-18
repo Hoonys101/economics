@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, ANY
-from modules.finance.transaction.handlers import GoodsTransactionHandler, LaborTransactionHandler
+from modules.finance.transaction.handlers.goods import GoodsTransactionHandler
+from modules.finance.transaction.handlers.labor import LaborTransactionHandler
 from modules.finance.transaction.handlers.protocols import ISolvent, ITaxCollector
 from simulation.models import Transaction
 from simulation.dtos.api import SimulationState
@@ -52,19 +53,25 @@ class TestGoodsTransactionHandler(unittest.TestCase):
         # Total Cost = 1100
 
         self.settlement.transfer.return_value = True
+        self.settlement.settle_atomic.return_value = True
 
         success = self.handler.handle(tx, self.buyer, self.seller, self.state)
 
         self.assertTrue(success)
 
         # Verify Escrow Transfer (Buyer -> Escrow)
-        self.settlement.transfer.assert_any_call(self.buyer, self.escrow_agent, 1100, "escrow_hold:apple")
+        self.settlement.transfer.assert_called_with(self.buyer, self.escrow_agent, 1100, "escrow_hold:apple", tick=100)
 
-        # Verify Trade Transfer (Escrow -> Seller)
-        self.settlement.transfer.assert_any_call(self.escrow_agent, self.seller, 1000, "goods_trade:apple")
-
-        # Verify Tax Transfer (Escrow -> Gov)
-        self.settlement.transfer.assert_any_call(self.escrow_agent, self.government, 100, "sales_tax:apple")
+        # Verify Atomic Settlement
+        expected_credits = [
+            (self.seller, 1000, "goods_trade:apple"),
+            (self.government, 100, "sales_tax:apple")
+        ]
+        self.settlement.settle_atomic.assert_called_with(
+            debit_agent=self.escrow_agent,
+            credits_list=expected_credits,
+            tick=100
+        )
 
         # Verify Gov Record Revenue
         self.government.record_revenue.assert_called_once()
@@ -92,8 +99,9 @@ class TestGoodsTransactionHandler(unittest.TestCase):
             total_pennies=1000
         )
 
-        # 1. Escrow (Success), 2. Trade (Fail), 3. Rollback (Success)
-        self.settlement.transfer.side_effect = [True, False, True]
+        # 1. Escrow (Success), 2. Atomic (Fail), 3. Rollback (Success)
+        self.settlement.transfer.side_effect = [True, True] # Escrow success, Rollback success
+        self.settlement.settle_atomic.return_value = False
 
         success = self.handler.handle(tx, self.buyer, self.seller, self.state)
 
@@ -101,9 +109,13 @@ class TestGoodsTransactionHandler(unittest.TestCase):
 
         # Verify calls
         # 1. Buyer -> Escrow (1100)
-        # 2. Escrow -> Seller (1000) (FAILED)
+        self.settlement.transfer.assert_any_call(self.buyer, self.escrow_agent, 1100, "escrow_hold:apple", tick=100)
+
+        # 2. Atomic Settlement (Fail)
+        self.settlement.settle_atomic.assert_called()
+
         # 3. Escrow -> Buyer (1100) (ROLLBACK)
-        self.settlement.transfer.assert_any_call(self.escrow_agent, self.buyer, 1100, "escrow_reversal:trade_failure")
+        self.settlement.transfer.assert_any_call(self.escrow_agent, self.buyer, 1100, "escrow_reversal:distribution_failure", tick=100)
 
 class TestLaborTransactionHandler(unittest.TestCase):
     def setUp(self):

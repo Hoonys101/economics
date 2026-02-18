@@ -50,6 +50,8 @@ class GoodsTransactionHandler(ISpecializedTransactionHandler):
              except Exception:
                  pass
 
+        current_tick = tx.time or 0
+
         # --- 3-Step Escrow Logic (Atomic) ---
         # 1. Secure Total Amount in Escrow
         memo_escrow = f"escrow_hold:{tx.item_id}"
@@ -57,62 +59,58 @@ class GoodsTransactionHandler(ISpecializedTransactionHandler):
             buyer,
             escrow_agent,
             total_cost,
-            memo_escrow
+            memo_escrow,
+            tick=current_tick
         )
 
         if not escrow_success:
             return False
 
-        # 2. Distribute Funds from Escrow
+        # 2. Distribute Funds from Escrow (Atomic Batch)
         try:
+            credits_list = []
+
             # 2a. Pay Seller
             memo_trade = f"goods_trade:{tx.item_id}"
-            trade_success = settlement.transfer(
-                escrow_agent,
-                seller,
-                trade_value,
-                memo_trade
-            )
-
-            if not trade_success:
-                # Critical Failure: Funds stuck in escrow. Rollback buyer.
-                sys_logger.critical(f"ESCROW_FAIL | Trade transfer to seller failed. Rolling back {total_cost} to buyer {buyer.id}.")
-                settlement.transfer(escrow_agent, buyer, total_cost, "escrow_reversal:trade_failure")
-                return False
+            credits_list.append((seller, trade_value, memo_trade))
 
             # 2b. Pay Tax to Government
             if tax_amount > 0:
                 memo_tax = f"sales_tax:{tx.item_id}"
-                # Push tax to Government via Settlement
-                tax_success = settlement.transfer(
-                    escrow_agent,
-                    government,
-                    tax_amount,
-                    memo_tax
-                )
+                credits_list.append((government, tax_amount, memo_tax))
 
-                if not tax_success:
-                    # Critical Failure: Tax transfer failed. Rollback everything.
-                    sys_logger.critical(f"ESCROW_FAIL | Tax transfer to government failed. Rolling back trade and escrow.")
-                    # Revert seller payment
-                    settlement.transfer(seller, escrow_agent, trade_value, "reversal:tax_failure")
-                    # Return all to buyer
-                    settlement.transfer(escrow_agent, buyer, total_cost, "escrow_reversal:tax_failure")
-                    return False
+            # Execute Atomic Settlement
+            # This ensures that both Seller and Government get paid, OR neither do.
+            distribution_success = settlement.settle_atomic(
+                debit_agent=escrow_agent,
+                credits_list=credits_list,
+                tick=current_tick
+            )
 
-                # Explicitly record tax revenue since we bypassed collect_tax
-                if isinstance(government, ITaxCollector):
-                    government.record_revenue({
-                        "success": True,
-                        "amount_collected": tax_amount,
-                        "tax_type": f"sales_tax_{tx.transaction_type}",
-                        "payer_id": buyer.id,
-                        "payee_id": government.id,
-                        "error_message": None
-                    })
+            if not distribution_success:
+                # Critical Failure: Funds stuck in escrow. Rollback buyer.
+                sys_logger.critical(f"ESCROW_FAIL | Distribution failed. Rolling back {total_cost} to buyer {buyer.id}.")
+                settlement.transfer(escrow_agent, buyer, total_cost, "escrow_reversal:distribution_failure", tick=current_tick)
+                return False
+
+            # Explicitly record tax revenue since we bypassed collect_tax
+            if tax_amount > 0 and isinstance(government, ITaxCollector):
+                government.record_revenue({
+                    "success": True,
+                    "amount_collected": tax_amount,
+                    "tax_type": f"sales_tax_{tx.transaction_type}",
+                    "payer_id": buyer.id,
+                    "payee_id": government.id,
+                    "error_message": None
+                })
 
             return True
 
         except Exception as e:
             sys_logger.exception(f"ESCROW_EXCEPTION | Unexpected error during distribution: {e}")
+            # Attempt Rollback on Exception
+            try:
+                 settlement.transfer(escrow_agent, buyer, total_cost, "escrow_reversal:exception", tick=current_tick)
+            except Exception as rollback_e:
+                 sys_logger.critical(f"CRITICAL: Rollback failed after exception! {e} -> {rollback_e}")
             return False
