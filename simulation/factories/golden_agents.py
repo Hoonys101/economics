@@ -17,7 +17,7 @@ class GoldenAgent(IPropertyOwner, IResident, IMortgageBorrower, IWelfareRecipien
         self._assets: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: initial_assets}
 
         # IMortgageBorrower
-        self.current_wage: float = 0.0
+        self.current_wage: int = 0
 
         # IPropertyOwner
         self.owned_properties: List[int] = []

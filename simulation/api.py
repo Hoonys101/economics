@@ -49,7 +49,7 @@ class GoodsInfoDTO:
     category: str
     is_durable: bool
     is_essential: bool
-    initial_price: float
+    initial_price: int
     base_need_satisfaction: float
     quality_modifier: float
     type: str
@@ -63,12 +63,12 @@ class MarketHistoryDTO:
     """
     avg_price: float
     trade_volume: float
-    best_ask: float
-    best_bid: float
+    best_ask: int
+    best_bid: int
     avg_ask: float
     avg_bid: float
-    worst_ask: float
-    worst_bid: float
+    worst_ask: int
+    worst_bid: int
 
 # MarketSnapshotDTO is now imported from modules.system.api
 from modules.system.api import MarketSnapshotDTO

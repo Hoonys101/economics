@@ -178,7 +178,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         return LiquidationConfigDTO(
             haircut=self.config.fire_sale_discount,
             initial_prices=initial_prices,
-            default_price=10.0,
+            default_price=1000,
             market_prices=self.last_prices.copy()
         )
 

@@ -55,9 +55,11 @@ class ProductionStrategy:
                     last_price = mat_market_data.get(fallback_price_key, 0.0)
                 if last_price <= 0:
                     mat_info = goods_map.get(mat, {})
-                    last_price = mat_info.get('initial_price', 10.0)
+                    last_price = mat_info.get('initial_price', 1000)
                 bid_price = last_price * 1.05
-                orders.append(Order(agent_id=firm.id, side='BUY', item_id=mat, quantity=deficit, price_pennies=int(bid_price * 100), price_limit=bid_price, market_id=mat))
+                # last_price is already in pennies, so bid_price is in pennies.
+                # Do NOT multiply by 100 again.
+                orders.append(Order(agent_id=firm.id, side='BUY', item_id=mat, quantity=deficit, price_pennies=int(bid_price), price_limit=bid_price, market_id=mat))
         return orders
 
     def _manage_automation(self, firm: FirmStateDTO, aggressiveness: float, guidance: Dict[str, Any], current_time: int, config: FirmConfigDTO) -> List[Order]:

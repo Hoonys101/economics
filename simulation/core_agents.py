@@ -142,7 +142,7 @@ class Household(
 
         perceived_prices = {}
         for g in goods_data:
-             perceived_prices[g["id"]] = g.get("initial_price", 10.0)
+             perceived_prices[g["id"]] = g.get("initial_price", 1000)
 
         adaptation_rate = self.config.adaptation_rate_normal
         if personality == Personality.IMPULSIVE:

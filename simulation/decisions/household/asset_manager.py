@@ -107,7 +107,7 @@ class AssetManager:
         risk_free_rate = loan_market.get('interest_rate', config.default_mortgage_rate)
         equity_return = getattr(config, 'expected_startup_roi', 0.15)
         goods_market = market_data.get('goods_market', {})
-        food_price = goods_market.get('basic_food_current_sell_price', 5.0)
+        food_price = goods_market.get('basic_food_current_sell_price', 500)
         daily_consumption = getattr(config, 'household_food_consumption_per_tick', 2.0)
         monthly_survival_cost = food_price * daily_consumption * 30.0
         if household.expected_inflation:
@@ -159,9 +159,9 @@ class AssetManager:
         avg_dividend_yield = market_data.get('avg_dividend_yield', 0.05)
         risk_free_rate = market_data.get('loan_market', {}).get('interest_rate', 0.03)
         goods_market = market_data.get('goods_market', {})
-        food_price = goods_market.get('basic_food_current_sell_price', 5.0)
+        food_price = goods_market.get('basic_food_current_sell_price', 500)
         if not food_price or food_price <= 0:
-            food_price = config.goods.get('basic_food', {}).get('initial_price', 5.0)
+            food_price = config.goods.get('basic_food', {}).get('initial_price', 500)
         daily_consumption = getattr(config, 'household_food_consumption_per_tick', 2.0)
         survival_cost = food_price * daily_consumption * 30.0
         risk_aversion = self._get_risk_aversion(household.personality)

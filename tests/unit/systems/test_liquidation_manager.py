@@ -86,15 +86,15 @@ class TestLiquidationManager(unittest.TestCase):
         self.firm.liquidate_assets.assert_called_once_with(self.state.time)
 
         # Verify Transfers
-        # Expect transfers for both claims
+        # Expect transfers for both claims (Values cast to int by manager)
         self.mock_settlement.transfer.assert_has_calls([
-            call(self.firm, agent_101, 100.0, "Liquidation Payout: Wage", currency=DEFAULT_CURRENCY),
-            call(self.firm, agent_gov, 50.0, "Liquidation Payout: Tax", currency=DEFAULT_CURRENCY)
+            call(self.firm, agent_101, 100, "Liquidation Payout: Wage", currency=DEFAULT_CURRENCY),
+            call(self.firm, agent_gov, 50, "Liquidation Payout: Tax", currency=DEFAULT_CURRENCY)
         ], any_order=True)
 
     def test_bank_claim_handling(self):
         # Setup Bank Debt
-        self.firm.total_debt = 500.0
+        self.firm.total_debt = 500
 
         # Mock Decision Engine structure since Firm is a spec mock
         self.firm.decision_engine = MagicMock()
@@ -114,7 +114,7 @@ class TestLiquidationManager(unittest.TestCase):
 
         # Check transfer to bank
         self.mock_settlement.transfer.assert_called_with(
-            self.firm, bank_agent, 500.0, "Liquidation Payout: Secured Loan", currency=DEFAULT_CURRENCY
+            self.firm, bank_agent, 500, "Liquidation Payout: Secured Loan", currency=DEFAULT_CURRENCY
         )
 
     def test_asset_liquidation_integration(self):
@@ -123,9 +123,9 @@ class TestLiquidationManager(unittest.TestCase):
         self.firm.get_all_items = MagicMock(return_value={"apple": 10})
         self.firm.get_liquidation_config.return_value = LiquidationConfigDTO(
             haircut=0.2,
-            initial_prices={"default": 10.0},
-            default_price=10.0,
-            market_prices={"apple": 5.0}
+            initial_prices={"default": 1000},
+            default_price=1000,
+            market_prices={"apple": 500}
         )
 
         self.mock_settlement.transfer.return_value = True
@@ -133,7 +133,7 @@ class TestLiquidationManager(unittest.TestCase):
         self.manager.initiate_liquidation(self.firm, self.state)
 
         # Check transfer for asset liquidation
-        # 10 * 5.0 * 0.8 = 40.0
+        # 10 * 500 * 0.8 = 4000.0
         # Note: Code uses "Agent {id}" not "Firm {id}"
         self.mock_settlement.transfer.assert_any_call(
             self.mock_public,

@@ -107,7 +107,7 @@ class GoodsDTO(TypedDict, total=False):
     category: str
     is_durable: bool
     is_essential: bool
-    initial_price: float
+    initial_price: int
     base_need_satisfaction: float
     quality_modifier: float
     # Fields from goods.json
@@ -118,12 +118,12 @@ class GoodsDTO(TypedDict, total=False):
 class MarketHistoryDTO(TypedDict, total=False):
     avg_price: float
     trade_volume: float
-    best_ask: float
-    best_bid: float
+    best_ask: int
+    best_bid: int
     avg_ask: float
     avg_bid: float
-    worst_ask: float
-    worst_bid: float
+    worst_ask: int
+    worst_bid: int
 
 # Phase 1: MarketSnapshotDTO moved to modules.system.api
 from modules.system.api import (

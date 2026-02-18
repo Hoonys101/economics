@@ -170,8 +170,9 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
             amount = args[2]
             paid_amounts[payee.id] = amount
 
-        self.assertAlmostEqual(paid_amounts[101], expected_A)
-        self.assertAlmostEqual(paid_amounts[102], expected_B)
+        # MIGRATION: int truncation
+        self.assertAlmostEqual(paid_amounts[101], int(expected_A), delta=1.0)
+        self.assertAlmostEqual(paid_amounts[102], int(expected_B), delta=1.0)
 
         # Verify Shareholders got nothing (no calls to shareholder agents)
         # Note: In this test setup, households list is empty so no shareholders loop ran anyway,
@@ -246,9 +247,10 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
             amt = call[0][2]
             paid_map[payee.id] = amt
 
-        self.assertAlmostEqual(paid_map[101], severance)
+        # MIGRATION: int truncation
+        self.assertAlmostEqual(paid_map[101], int(severance), delta=1.0)
         self.assertAlmostEqual(paid_map["bank"], 5000.0)
-        self.assertAlmostEqual(paid_map[201], equity_payout)
+        self.assertAlmostEqual(paid_map[201], int(equity_payout), delta=1.0)
 
     def test_asset_rich_cash_poor_liquidation(self):
         """
@@ -268,7 +270,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         self._setup_registry()
         self.firm.finance.balance = {DEFAULT_CURRENCY: 0.0}
         self.firm.inventory = {"apples": 100.0}
-        self.firm.last_prices = {"apples": 10.0}
+        self.firm.last_prices = {"apples": 1000}
 
         # Mock public manager managed inventory update
         self.mock_public_manager.managed_inventory = {"apples": 0.0}

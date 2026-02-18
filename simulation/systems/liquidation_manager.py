@@ -173,7 +173,9 @@ class LiquidationManager:
 
         if creditor:
             memo = f"Liquidation Payout: {claim.description}" + (" (Partial)" if partial else "")
-            success = self.settlement_system.transfer(agent, creditor, amount, memo, currency=DEFAULT_CURRENCY)
+            # MIGRATION: Ensure amount is int pennies
+            amount_pennies = int(amount)
+            success = self.settlement_system.transfer(agent, creditor, amount_pennies, memo, currency=DEFAULT_CURRENCY)
             if not success:
                  logger.error(f"LIQUIDATION_PAYMENT_FAIL | Failed to transfer {amount:.2f} to {creditor.id}")
         else:

@@ -67,7 +67,7 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
                 latest = tracker.get_latest_indicators()
                 avg_price = latest.get(f"{good_name}_avg_price", 0)
             if avg_price <= 0:
-                avg_price = state.config_module.GOODS[good_name].get("initial_price", 10.0)
+                avg_price = state.config_module.GOODS[good_name].get("initial_price", 1000)
 
             goods_market_data[f"{good_name}_current_sell_price"] = avg_price
 
@@ -101,7 +101,7 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
             total_price += price
             count += 1
 
-    avg_goods_price_for_market_data = total_price / count if count > 0 else 10.0
+    avg_goods_price_for_market_data = total_price / count if count > 0 else 1000
 
     stock_market_data = {}
     if state.stock_market:
@@ -112,7 +112,7 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
                 price = state.stock_market.get_best_ask(firm.id) or 0
             if price <= 0:
                 asset_val = float(firm.get_balance(DEFAULT_CURRENCY))
-                price = asset_val / firm.total_shares if firm.total_shares > 0 else 10.0
+                price = asset_val / firm.total_shares if firm.total_shares > 0 else 1000
             stock_market_data[firm_item_id] = {"avg_price": price}
 
     rent_prices = [u.rent_price for u in state.real_estate_units if u.owner_id is not None]

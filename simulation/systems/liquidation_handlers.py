@@ -75,8 +75,8 @@ class InventoryLiquidationHandler(ILiquidationHandler):
 
         if total_value > 0:
             # Transfer Funds: PublicManager -> Agent
-            # Convert float dollars to int pennies for SettlementSystem
-            amount_pennies = int(total_value * 100)
+            # Value is already in pennies (since price is in pennies)
+            amount_pennies = int(total_value)
 
             success = self.settlement_system.transfer(
                 self.public_manager,

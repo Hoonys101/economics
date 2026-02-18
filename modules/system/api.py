@@ -16,7 +16,7 @@ class MarketContextDTO:
     Contains strictly external market data (prices, rates, signals).
     """
     market_data: Dict[str, Any]
-    market_signals: Dict[str, float]
+    market_signals: Dict[str, int]
     tick: int
     # Represents currency exchange rates relative to base currency
     exchange_rates: Optional[Dict[str, float]] = None
@@ -25,11 +25,11 @@ class MarketContextDTO:
 class MarketSignalDTO:
     market_id: str
     item_id: str
-    best_bid: Optional[float]
-    best_ask: Optional[float]
-    last_traded_price: Optional[float]
+    best_bid: Optional[int]
+    best_ask: Optional[int]
+    last_traded_price: Optional[int]
     last_trade_tick: int
-    price_history_7d: List[float]
+    price_history_7d: List[int]
     volatility_7d: float
     order_book_depth_buy: int
     order_book_depth_sell: int
@@ -40,9 +40,9 @@ class MarketSignalDTO:
 @dataclass(frozen=True)
 class HousingMarketUnitDTO:
     unit_id: str
-    price: float
+    price: int
     quality: float
-    rent_price: Optional[float] = None
+    rent_price: Optional[int] = None
 
 @dataclass(frozen=True)
 class HousingMarketSnapshotDTO:
@@ -220,10 +220,10 @@ class ICurrencyHolder(Protocol):
     Protocol for agents/systems that hold currency.
     Used for M2 Money Supply calculation.
     """
-    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> float:
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         ...
 
-    def get_assets_by_currency(self) -> Dict[CurrencyCode, float]:
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, int]:
         ...
 
 class IAssetRecoverySystem(Protocol):

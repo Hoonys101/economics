@@ -44,11 +44,11 @@ class TestInventoryLiquidationHandler(unittest.TestCase):
         self.firm.get_liquidation_config.return_value = LiquidationConfigDTO(
             haircut=0.2,
             initial_prices={},
-            default_price=10.0,
-            market_prices={"apple": 5.0}
+            default_price=1000,
+            market_prices={"apple": 500}
         )
 
-        # 10 * 5.0 * (1 - 0.2) = 50 * 0.8 = 40.0
+        # 10 * 500 * (1 - 0.2) = 5000 * 0.8 = 4000.0
 
         self.mock_settlement.transfer.return_value = True
 
@@ -69,12 +69,12 @@ class TestInventoryLiquidationHandler(unittest.TestCase):
         self.firm.get_all_items.return_value = {"unknown": 10}
         self.firm.get_liquidation_config.return_value = LiquidationConfigDTO(
             haircut=0.2,
-            initial_prices={"unknown": 10.0},
-            default_price=10.0,
+            initial_prices={"unknown": 1000},
+            default_price=1000,
             market_prices={}
         )
-        # default price 10.0
-        # 10 * 10.0 * 0.8 = 80.0
+        # default price 1000
+        # 10 * 1000 * 0.8 = 8000.0
 
         self.mock_settlement.transfer.return_value = True
         self.handler.liquidate(self.firm, self.state)
@@ -93,8 +93,8 @@ class TestInventoryLiquidationHandler(unittest.TestCase):
         self.firm.get_liquidation_config.return_value = LiquidationConfigDTO(
             haircut=0.2,
             initial_prices={},
-            default_price=10.0,
-            market_prices={"apple": 5.0}
+            default_price=1000,
+            market_prices={"apple": 500}
         )
 
         self.mock_settlement.transfer.return_value = False
