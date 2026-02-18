@@ -104,7 +104,7 @@ class Phase1_Decision(IPhaseStrategy):
             if deflationary_multiplier is not None:
                 current_price = market_data.get('basic_food_current_sell_price', 5.0)
                 new_price = min(order.price_limit, max(0.1, current_price * float(deflationary_multiplier)))
-                order = replace(order, price_limit=new_price)
+                order = replace(order, price_limit=new_price, price_pennies=int(new_price * 100))
         if order.side == 'INVEST' and order.market_id == 'admin':
             if self.world_state.firm_system:
                 self.world_state.firm_system.spawn_firm(state, household)
