@@ -6,6 +6,9 @@ if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
     from simulation.models import Transaction
     from modules.household.api import IHouseholdFactory
+    from modules.hr.api import IHRService
+    from modules.finance.api import ITaxService
+    from modules.system.api import IAgentRegistry
 
 from simulation.systems.api import AgentLifecycleManagerInterface
 from simulation.systems.demographic_manager import DemographicManager
@@ -36,14 +39,19 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                  inheritance_manager: InheritanceManager, firm_system: FirmSystem,
                  settlement_system: ISettlementSystem, public_manager: IAssetRecoverySystem, logger: logging.Logger,
                  shareholder_registry: IShareholderRegistry = None,
-                 household_factory: Optional[IHouseholdFactory] = None):
+                 household_factory: Optional[IHouseholdFactory] = None,
+                 hr_service: Optional[IHRService] = None,
+                 tax_service: Optional[ITaxService] = None,
+                 agent_registry: Optional[IAgentRegistry] = None):
+
         self.config = config_module
         self.logger = logger
 
-        # Dependencies for LiquidationManager (maintained for instantiation)
-        self.agent_registry = AgentRegistry()
-        self.hr_service = HRService()
-        self.tax_service = TaxService(self.agent_registry)
+        # Dependencies for LiquidationManager
+        # Prefer injected dependencies, fallback to instantiation for backward compatibility
+        self.agent_registry = agent_registry if agent_registry else AgentRegistry()
+        self.hr_service = hr_service if hr_service else HRService()
+        self.tax_service = tax_service if tax_service else TaxService(self.agent_registry)
 
         # TD-187: Liquidation Waterfall
         self.liquidation_manager = LiquidationManager(
@@ -57,6 +65,9 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
 
         # Instantiate Sub-Systems
         self.aging_system = AgingSystem(config_module, demographic_manager, logger)
+
+        if household_factory is None:
+             raise ValueError("IHouseholdFactory is mandatory for AgentLifecycleManager.")
 
         self.birth_system = BirthSystem(
             config_module,
@@ -105,12 +116,17 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         all_transactions = []
 
         # 1. Aging Phase
-        self.aging_system.execute(state)
+        # AgingSystem is side-effect heavy (aging, distress), currently returns no transactions.
+        aging_txs = self.aging_system.execute(state)
+        all_transactions.extend(aging_txs)
 
         # 2. Birth Phase
-        self.birth_system.execute(state)
+        # BirthSystem now returns transactions for birth gifts.
+        birth_txs = self.birth_system.execute(state)
+        all_transactions.extend(birth_txs)
 
         # 3. Death Phase
+        # DeathSystem returns transactions (inheritance, liquidation leftovers)
         death_txs = self.death_system.execute(state)
         all_transactions.extend(death_txs)
 

@@ -18,18 +18,23 @@ class TestBirthSystem:
         logger = MagicMock()
         household_factory = MagicMock()
 
+        immigration_manager.process_immigration.return_value = []
+
         system = BirthSystem(config, demographic_manager, immigration_manager, firm_system, settlement_system, logger, household_factory)
         system.breeding_planner = MagicMock()
         return system
 
     def test_process_births_with_factory_zero_sum(self, birth_system):
         # Setup Parent with assets
-        parent = MagicMock()
-        parent._bio_state.is_active = True
+        # Use spec=Household to satisfy isinstance(parent, ICurrencyHolder)
+        parent = MagicMock(spec=Household)
+        parent.id = 1
         parent.age = 25
-        parent.wallet.get_balance.return_value = 1000
+        parent.is_active = True
         parent.children_ids = []
-        parent.balance_pennies = 0
+        # Mock methods required by ICurrencyHolder
+        parent.get_balance.return_value = 1000
+        parent.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 1000}
 
         # Setup State
         state = MagicMock()
@@ -41,35 +46,39 @@ class TestBirthSystem:
         state.goods_data = {}
         state.stock_market = None
         state.ai_training_manager = None
+        state.shareholder_registry = None
 
         # Mock Planner
         birth_system.breeding_planner.decide_breeding_batch.return_value = [True]
 
         # Mock Child
-        child = MagicMock()
+        child = MagicMock(spec=Household)
         child.id = 100
+        child.portfolio.holdings.items.return_value = []
+        child.decision_engine = MagicMock() # Explicitly mock decision_engine
 
         # Mock Factory to verify it receives 0 initial assets
         birth_system.household_factory.create_newborn.return_value = child
 
         # Execute
-        birth_system.execute(state)
+        transactions = birth_system.execute(state)
 
         # Assert Factory called with 0 assets
         birth_system.household_factory.create_newborn.assert_called_once()
         call_kwargs = birth_system.household_factory.create_newborn.call_args[1]
         assert call_kwargs.get('initial_assets') == 0
 
-        # Assert Explicit Transfer via SettlementSystem
-        # Expected gift: 10% of 1000 = 100
+        # Assert SettlementSystem.transfer NOT called (Deferred Execution)
+        birth_system.settlement_system.transfer.assert_not_called()
+
+        # Assert Transaction Returned
         expected_gift = 100
-        birth_system.settlement_system.transfer.assert_called_once_with(
-            debit_agent=parent,
-            credit_agent=child,
-            amount=expected_gift,
-            memo="BIRTH_GIFT",
-            tick=1,
-            currency=DEFAULT_CURRENCY
-        )
+        assert len(transactions) == 1
+        tx = transactions[0]
+        assert tx.item_id == "BIRTH_GIFT"
+        assert tx.total_pennies == expected_gift
+        assert tx.buyer_id == parent.id
+        assert tx.seller_id == child.id
+        assert tx.transaction_type == "GIFT"
 
         assert child in state.households

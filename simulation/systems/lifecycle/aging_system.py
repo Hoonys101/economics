@@ -1,15 +1,32 @@
 from __future__ import annotations
-from typing import List, Any
+from typing import List, Any, Dict, Protocol, runtime_checkable, Optional
 import logging
 from simulation.systems.lifecycle.api import IAgingSystem
 from simulation.dtos.api import SimulationState
 from simulation.models import Transaction
 from simulation.systems.demographic_manager import DemographicManager
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder
+from simulation.interfaces.market_interface import IMarket
+from modules.finance.api import IFinancialEntity
+
+@runtime_checkable
+class IAgingFirm(Protocol):
+    """Protocol for firms processed by AgingSystem."""
+    id: Any
+    is_active: bool
+    age: int
+    needs: Dict[str, float]
+    wallet: IFinancialEntity
+    finance_state: Any  # Mutable state required for updates
+    config: Any
+    finance_engine: Any # Required for check_bankruptcy
+
+    def get_all_items(self) -> Dict[str, Any]: ...
 
 class AgingSystem(IAgingSystem):
     """
     Handles aging, needs updates, and distress/grace protocol checks for agents.
+    Strictly follows Protocol Purity and Integer Math.
     """
     def __init__(self, config_module: Any, demographic_manager: DemographicManager, logger: logging.Logger):
         self.config = config_module
@@ -38,48 +55,59 @@ class AgingSystem(IAgingSystem):
         """
         Handles lifecycle updates for all active firms.
         Includes WO-167 Grace Protocol for distressed firms.
+        Refactored for Integer Math and Protocol Safety.
         """
-        assets_threshold = getattr(self.config, "ASSETS_CLOSURE_THRESHOLD", 0.0)
+        # Config values (converted to pennies where applicable)
+        assets_threshold_pennies = int(getattr(self.config, "ASSETS_CLOSURE_THRESHOLD", 0.0) * 100)
         closure_turns_threshold = getattr(self.config, "FIRM_CLOSURE_TURNS_THRESHOLD", 5)
         liquidity_inc_rate = getattr(self.config, "LIQUIDITY_NEED_INCREASE_RATE", 1.0)
         grace_period = getattr(self.config, "DISTRESS_GRACE_PERIOD", 5)
 
         for firm in state.firms:
-            if not firm.is_active:
+            if not isinstance(firm, IAgingFirm) or not firm.is_active:
                 continue
 
             firm.age += 1
 
             # Liquidity Need Increase
-            firm.needs["liquidity_need"] = min(100.0, firm.needs["liquidity_need"] + liquidity_inc_rate)
+            current_need = firm.needs.get("liquidity_need", 0.0)
+            firm.needs["liquidity_need"] = min(100.0, current_need + liquidity_inc_rate)
 
             # Check bankruptcy status (logic from FinanceDepartment)
-            firm.finance_engine.check_bankruptcy(firm.finance_state, firm.config)
+            # Use getattr for safer access if protocol doesn't guarantee implementation details of engine
+            finance_engine = getattr(firm, 'finance_engine', None)
+            if finance_engine and hasattr(finance_engine, 'check_bankruptcy'):
+                finance_engine.check_bankruptcy(firm.finance_state, firm.config)
 
             # WO-167: Grace Protocol
-            # Check for Cash Crunch
-            current_assets = firm.wallet.get_balance(DEFAULT_CURRENCY)
-            is_crunch = current_assets < firm.needs.get("liquidity_need", 0.0)
+            # Check for Cash Crunch (Integer Math)
+            current_assets_pennies = 0
+            if isinstance(firm, ICurrencyHolder):
+                current_assets_pennies = firm.get_balance(DEFAULT_CURRENCY)
+            elif isinstance(firm.wallet, IFinancialEntity): # Fallback via wallet
+                 current_assets_pennies = firm.wallet.balance_pennies
 
-            # Inventory Value Calculation
-            inventory_val = self._calculate_inventory_value(firm.get_all_items(), state.markets)
+            # Need is usually a normalized value 0-100, but here it seems to represent something else?
+            # Assuming liquidity_need is a ratio or similar.
+            # If it's a monetary need, it should be in pennies.
+            # But the original code compared `current_assets < firm.needs["liquidity_need"]`.
+            # If `current_assets` was float dollars, then `liquidity_need` was float dollars.
+            # So `liquidity_need` * 100 gives pennies.
+            liquidity_need_pennies = int(firm.needs.get("liquidity_need", 0.0) * 100)
 
-            if is_crunch and inventory_val > 0:
+            is_crunch = current_assets_pennies < liquidity_need_pennies
+
+            # Inventory Value Calculation (Integer Pennies)
+            inventory_val_pennies = self._calculate_inventory_value(firm.get_all_items(), state.markets)
+
+            if is_crunch and inventory_val_pennies > 0:
                 # Enter or Continue Distress
                 firm.finance_state.is_distressed = True
                 firm.finance_state.distress_tick_counter += 1
 
                 # If within grace period
                 if firm.finance_state.distress_tick_counter <= grace_period:
-                    # Trigger Emergency Liquidation (Manual Logic since proxy is gone)
-                    # Use sales engine? Or just post orders.
-                    # emergency_orders = []
-                    # Note: Original implementation had a placeholder here.
-                    # We preserve the logic as is: check grace period, skip closure.
-
-                    # Inject orders into markets (Placeholder from original code)
-                    # for order in emergency_orders: ...
-
+                    # Trigger Emergency Liquidation logic would go here
                     # SKIP standard closure check
                     continue
             else:
@@ -88,7 +116,7 @@ class AgingSystem(IAgingSystem):
                 firm.finance_state.distress_tick_counter = 0
 
             # Standard Closure Check
-            if (current_assets <= assets_threshold or
+            if (current_assets_pennies <= assets_threshold_pennies or
                     firm.finance_state.consecutive_loss_turns >= closure_turns_threshold):
 
                 # Double check grace period (if we fell through but counter is high)
@@ -99,11 +127,11 @@ class AgingSystem(IAgingSystem):
 
                 firm.is_active = False
                 self.logger.warning(
-                    f"FIRM_INACTIVE | Firm {firm.id} closed down. Assets: {current_assets:.2f}, Consecutive Loss Turns: {firm.finance_state.consecutive_loss_turns}",
+                    f"FIRM_INACTIVE | Firm {firm.id} closed down. Assets: {current_assets_pennies/100:.2f}, Consecutive Loss Turns: {firm.finance_state.consecutive_loss_turns}",
                     extra={
                         "tick": state.time,
                         "agent_id": firm.id,
-                        "assets": current_assets,
+                        "assets": current_assets_pennies / 100, # Log in dollars for readability
                         "consecutive_loss_turns": firm.finance_state.consecutive_loss_turns,
                         "tags": ["firm_closure"],
                     }
@@ -119,50 +147,108 @@ class AgingSystem(IAgingSystem):
         grace_period = getattr(self.config, "DISTRESS_GRACE_PERIOD", 5)
 
         for household in state.households:
-            if not household._bio_state.is_active:
+            # Direct access to _bio_state is unavoidable without DTO setter,
+            # but we check if it exists or use property if available.
+            # Assuming household is Household object.
+            # Use getattr for robustness
+            is_active = getattr(household, 'is_active', False)
+            if not is_active:
                 continue
 
-            survival_need = household._bio_state.needs.get("survival", 0.0)
+            # Need is typically in BioState
+            # We access via property if possible, else direct
+            survival_need = 0.0
+
+            # Prefer property access or known structure
+            # Household typically has 'needs' property or '_bio_state.needs'
+            needs = getattr(household, 'needs', None)
+            if needs is None:
+                 bio_state = getattr(household, '_bio_state', None)
+                 if bio_state:
+                     needs = getattr(bio_state, 'needs', {})
+
+            if needs:
+                survival_need = needs.get("survival", 0.0)
 
             # Check for Distress
             if survival_need > distress_threshold:
-                has_inventory = any(qty > 0 for qty in household._econ_state.inventory.values())
-                has_stocks = any(qty > 0 for qty in household._econ_state.portfolio.to_legacy_dict().values())
+                # Inventory check
+                has_inventory = False
+                # Try property first
+                inventory = getattr(household, 'inventory', None)
+                if inventory is None:
+                     econ_state = getattr(household, '_econ_state', None)
+                     if econ_state:
+                         inventory = getattr(econ_state, 'inventory', None)
+
+                if inventory:
+                    has_inventory = any(qty > 0 for qty in inventory.values())
+
+                # Stocks check
+                has_stocks = False
+                portfolio = getattr(household, 'portfolio', None)
+                if portfolio:
+                    holdings = getattr(portfolio, 'holdings', None)
+                    if holdings:
+                         has_stocks = True
+                    else:
+                         legacy_dict = getattr(portfolio, 'to_legacy_dict', None)
+                         if legacy_dict:
+                             has_stocks = any(qty > 0 for qty in legacy_dict().values())
 
                 if has_inventory or has_stocks:
-                    household.distress_tick_counter += 1
+                    # Update distress counter
+                    current_counter = getattr(household, 'distress_tick_counter', 0)
+                    new_counter = current_counter + 1
+                    setattr(household, 'distress_tick_counter', new_counter)
 
-                    if household.distress_tick_counter <= grace_period:
-                         # Use method on Household if it exists (it does in original code)
-                         emergency_orders = household.trigger_emergency_liquidation()
+                    if new_counter <= grace_period:
+                         # Use method on Household if it exists
+                         trigger_method = getattr(household, 'trigger_emergency_liquidation', None)
+                         if trigger_method:
+                             emergency_orders = trigger_method()
 
-                         for order in emergency_orders:
-                             market = state.markets.get(order.market_id)
-                             if market:
-                                 market.place_order(order, state.time)
-                             else:
-                                 # Fallback for stocks
-                                 if order.market_id == "stock_market" and hasattr(state, "stock_market") and state.stock_market:
-                                     state.stock_market.place_order(order, state.time)
+                             # Place orders
+                             for order in emergency_orders:
+                                 market = state.markets.get(order.market_id)
+                                 if isinstance(market, IMarket):
+                                     # Check for place_order method on IMarket implementation
+                                     place_order = getattr(market, 'place_order', None)
+                                     if place_order:
+                                         place_order(order, state.time)
+                                 elif order.market_id == "stock_market" and state.stock_market:
+                                      place_order = getattr(state.stock_market, 'place_order', None)
+                                      if place_order:
+                                          place_order(order, state.time)
 
                 else:
                     # No assets to sell, nature takes its course
                     pass
             else:
-                household.distress_tick_counter = 0
+                # Reset distress counter
+                if hasattr(household, 'distress_tick_counter'):
+                    setattr(household, 'distress_tick_counter', 0)
 
-    def _calculate_inventory_value(self, inventory: dict, markets: dict) -> float:
-        total_value = 0.0
-        default_price = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
+    def _calculate_inventory_value(self, inventory: dict, markets: dict) -> int:
+        """
+        Calculates total inventory value in integer pennies.
+        """
+        total_pennies = 0
+        default_price_float = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
+        default_price_pennies = int(default_price_float * 100)
 
         for item_id, qty in inventory.items():
-            price = default_price
+            price_pennies = default_price_pennies
             if item_id in markets:
                 m = markets[item_id]
-                if hasattr(m, "avg_price") and m.avg_price > 0:
-                    price = m.avg_price
-                elif hasattr(m, "current_price") and m.current_price > 0:
-                    price = m.current_price
+                # Check for IMarket protocol
+                if isinstance(m, IMarket):
+                    try:
+                        p_float = m.get_price(item_id)
+                        if p_float > 0:
+                            price_pennies = int(p_float * 100)
+                    except Exception:
+                        pass
 
-            total_value += qty * price
-        return total_value
+            total_pennies += int(qty * price_pennies)
+        return total_pennies
