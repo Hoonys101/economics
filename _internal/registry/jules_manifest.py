@@ -22,4 +22,10 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_TEST_STABILIZATION_FINAL_IMG.md",
         "wait": True
     },
+    "MISSION_FLOAT_LIQUIDATION_EXEC": {
+        "title": "Global Float-to-Int Migration & Test Modernization",
+        "instruction": "Enforce Penny Standard across DTOs and MatchingEngine. Modernize affected tests to use exact integer assertions and update fixtures.",
+        "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_FLOAT_LIQUIDATION_EXEC_IMG.md",
+        "wait": True
+    },
 }

@@ -1,0 +1,2388 @@
+diff --git a/communications/insights/MISSION_TEST_STABILIZATION_FINAL.md b/communications/insights/MISSION_TEST_STABILIZATION_FINAL.md
+new file mode 100644
+index 00000000..ff825a23
+--- /dev/null
++++ b/communications/insights/MISSION_TEST_STABILIZATION_FINAL.md
+@@ -0,0 +1,24 @@
++# MISSION_TEST_STABILIZATION_FINAL Insight Report
++
++## Architectural Insights
++
++1.  **Settlement System SSoT Dependency**:
++    -   The `SettlementSystem`'s `get_balance` method strictly enforces the Single Source of Truth (SSoT) pattern by requiring an injected `IAgentRegistry` to resolve agent IDs to actual agent instances. Without a valid registry, it defaults to returning 0, which caused widespread test failures in `test_settlement_system.py`.
++    -   Tests must now rigorously mock or provide a registry that implements the `IAgentRegistry` protocol (`get_agent`, `get_all_financial_agents`, `set_state`) to ensure accurate balance verification.
++
++2.  **Transaction Handler Mock Leakage**:
++    -   In `test_tax_incidence.py`, the `SettlementSystem` was initially instantiated but later overwritten by a `MagicMock` in the `sim.world_state` (due to `Simulation.__init__` logic vs manual assignment). This caused transaction handlers (like `LaborTransactionHandler`) to interact with a mock that always returned success but performed no side effects (no actual balance transfer), leading to puzzling assertion failures where the logic flow seemed correct but the outcome was null.
++    -   Correctly synchronizing `sim.settlement_system` and `sim.world_state.settlement_system` ensures that the real business logic is executed during integration tests.
++
++3.  **Protocol Adherence in Mocks**:
++    -   `RegistryAccountAccessor` relies on `isinstance(agent, IFinancialAgent)` checks. When mocking agents or registries, it is crucial that the retrieved objects satisfy these protocols (or inherit from classes that do) to ensure the correct adapters (`FinancialAgentAdapter`) are instantiated.
++
++## Test Evidence
++
++All tests passed successfully, including the stabilized `test_settlement_system.py` and `test_tax_incidence.py`.
++
++```
++=========================== short test summary info ============================
++SKIPPED [1] tests/unit/decisions/test_household_integration_new.py:13: TODO: Fix integration test setup. BudgetEngine/ConsumptionEngine interaction results in empty orders.
++================= 848 passed, 1 skipped, 10 warnings in 17.28s =================
++```
+diff --git a/reports/snapshots/snapshot_tick_00001_20260217_131259.json b/reports/snapshots/snapshot_tick_00001_20260217_131259.json
+deleted file mode 100644
+index 7a047da0..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260217_131259.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771333979.248342,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 47.43607988235853
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260217_131349.json b/reports/snapshots/snapshot_tick_00001_20260217_131349.json
+deleted file mode 100644
+index 07a06fa2..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260217_131349.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771334029.954577,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 163.7465203864418
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260217_132049.json b/reports/snapshots/snapshot_tick_00001_20260217_132049.json
+deleted file mode 100644
+index a6e48937..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260217_132049.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771334449.900956,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 198.7281399046105
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260217_132319.json b/reports/snapshots/snapshot_tick_00001_20260217_132319.json
+deleted file mode 100644
+index b84cd8a5..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260217_132319.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771334599.64499,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 189.17896329928112
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260217_132805.json b/reports/snapshots/snapshot_tick_00001_20260217_132805.json
+deleted file mode 100644
+index 10d6ac91..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260217_132805.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771334885.682208,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 156.76438313215237
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260217_133732.json b/reports/snapshots/snapshot_tick_00001_20260217_133732.json
+deleted file mode 100644
+index 8b71e652..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260217_133732.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771335452.476773,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 175.22340984755562
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260217_135647.json b/reports/snapshots/snapshot_tick_00001_20260217_135647.json
+deleted file mode 100644
+index 2a95c3dd..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260217_135647.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771336607.000624,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 196.078431372549
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260217_211142.json b/reports/snapshots/snapshot_tick_00001_20260217_211142.json
+deleted file mode 100644
+index 835645fc..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260217_211142.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771330302.665493,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 176.92852087756546
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260217_211341.json b/reports/snapshots/snapshot_tick_00001_20260217_211341.json
+deleted file mode 100644
+index 3875b8db..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260217_211341.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771330421.407045,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 55.58025789239662
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260217_215413.json b/reports/snapshots/snapshot_tick_00001_20260217_215413.json
+deleted file mode 100644
+index 682a6aa6..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260217_215413.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771332853.587289,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 145.30659691950015
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260218_094713.json b/reports/snapshots/snapshot_tick_00001_20260218_094713.json
+deleted file mode 100644
+index 0384c343..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260218_094713.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771375633.104577,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 158.02781289506953
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260218_095200.json b/reports/snapshots/snapshot_tick_00001_20260218_095200.json
+deleted file mode 100644
+index ac94bd35..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260218_095200.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771375920.537931,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 316.3555836760519
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260218_134524.json b/reports/snapshots/snapshot_tick_00001_20260218_134524.json
+deleted file mode 100644
+index 66e93a19..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260218_134524.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771389924.287928,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 235.3494939985879
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260218_152455.json b/reports/snapshots/snapshot_tick_00001_20260218_152455.json
+deleted file mode 100644
+index 9b0790b2..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260218_152455.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771395895.477201,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 328.7310979618672
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260217_131247.json b/reports/snapshots/snapshot_tick_00042_20260217_131247.json
+deleted file mode 100644
+index f764a68f..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260217_131247.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771333967.348617,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 193548.3870967742
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260217_131339.json b/reports/snapshots/snapshot_tick_00042_20260217_131339.json
+deleted file mode 100644
+index ab2bf2f8..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260217_131339.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771334019.771253,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 159695.8174904943
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260217_132037.json b/reports/snapshots/snapshot_tick_00042_20260217_132037.json
+deleted file mode 100644
+index 1dea74a1..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260217_132037.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771334437.198445,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 218750.0
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260217_132306.json b/reports/snapshots/snapshot_tick_00042_20260217_132306.json
+deleted file mode 100644
+index 6c83328f..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260217_132306.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771334586.8473,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 219895.28795811516
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260217_132753.json b/reports/snapshots/snapshot_tick_00042_20260217_132753.json
+deleted file mode 100644
+index 55c76bda..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260217_132753.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771334873.599862,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 199052.1327014218
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260217_133720.json b/reports/snapshots/snapshot_tick_00042_20260217_133720.json
+deleted file mode 100644
+index ca2eb530..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260217_133720.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771335440.073452,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 190909.0909090909
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260217_135635.json b/reports/snapshots/snapshot_tick_00042_20260217_135635.json
+deleted file mode 100644
+index 395fed9c..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260217_135635.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771336595.02933,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 235955.0561797753
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260217_204312.json b/reports/snapshots/snapshot_tick_00042_20260217_204312.json
+deleted file mode 100644
+index 1d62eeb3..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260217_204312.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771328592.251023,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 37135.278514588856
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260217_205538.json b/reports/snapshots/snapshot_tick_00042_20260217_205538.json
+deleted file mode 100644
+index b84b21f0..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260217_205538.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771329338.847732,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 32258.064516129034
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260217_205938.json b/reports/snapshots/snapshot_tick_00042_20260217_205938.json
+deleted file mode 100644
+index 05617db5..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260217_205938.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771329578.835351,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 34797.0173985087
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260217_210322.json b/reports/snapshots/snapshot_tick_00042_20260217_210322.json
+deleted file mode 100644
+index 2c2ba92d..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260217_210322.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771329802.712882,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 65830.7210031348
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260217_211127.json b/reports/snapshots/snapshot_tick_00042_20260217_211127.json
+deleted file mode 100644
+index 4a9a393c..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260217_211127.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771330287.758297,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 42682.92682926829
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260217_211327.json b/reports/snapshots/snapshot_tick_00042_20260217_211327.json
+deleted file mode 100644
+index 69682d55..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260217_211327.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771330407.024525,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 13190.954773869345
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260217_215402.json b/reports/snapshots/snapshot_tick_00042_20260217_215402.json
+deleted file mode 100644
+index 0a099772..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260217_215402.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771332842.507074,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 55408.9709762533
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260218_094700.json b/reports/snapshots/snapshot_tick_00042_20260218_094700.json
+deleted file mode 100644
+index 3104135e..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260218_094700.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771375620.82221,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 27796.161482461946
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260218_095149.json b/reports/snapshots/snapshot_tick_00042_20260218_095149.json
+deleted file mode 100644
+index 7234b858..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260218_095149.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771375909.125645,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 57065.217391304344
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260218_134512.json b/reports/snapshots/snapshot_tick_00042_20260218_134512.json
+deleted file mode 100644
+index 13c84548..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260218_134512.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771389912.649714,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 107416.87979539641
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260218_152443.json b/reports/snapshots/snapshot_tick_00042_20260218_152443.json
+deleted file mode 100644
+index 4ea71c7e..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260218_152443.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771395883.966593,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 119318.18181818182
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/tests/unit/systems/test_settlement_system.py b/tests/unit/systems/test_settlement_system.py
+index 5254852f..5e25cca7 100644
+--- a/tests/unit/systems/test_settlement_system.py
++++ b/tests/unit/systems/test_settlement_system.py
+@@ -3,10 +3,27 @@ from unittest.mock import MagicMock, PropertyMock, patch
+ from simulation.systems.settlement_system import SettlementSystem
+ from modules.finance.api import IFinancialAgent, IBank, InsufficientFundsError
+ from modules.system.constants import ID_CENTRAL_BANK
+-from modules.system.api import DEFAULT_CURRENCY
++from modules.system.api import DEFAULT_CURRENCY, IAgentRegistry
+ 
+ from modules.finance.api import IPortfolioHandler, IHeirProvider, PortfolioDTO, PortfolioAsset
+ 
++class MockRegistry(IAgentRegistry):
++    def __init__(self):
++        self.agents = {}
++
++    def register(self, agent):
++        self.agents[agent.id] = agent
++        self.agents[str(agent.id)] = agent
++
++    def get_agent(self, agent_id):
++        return self.agents.get(agent_id) or self.agents.get(str(agent_id))
++
++    def get_all_financial_agents(self):
++        return list(self.agents.values())
++
++    def set_state(self, state):
++        pass
++
+ class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
+     def __init__(self, agent_id, assets=0, heir_id=None):
+         self._id = agent_id
+@@ -132,11 +149,17 @@ def mock_bank():
+ 
+ @pytest.fixture
+ def settlement_system(mock_bank):
+-    return SettlementSystem(bank=mock_bank)
++    registry = MockRegistry()
++    registry.register(mock_bank)
++    system = SettlementSystem(bank=mock_bank)
++    system.agent_registry = registry
++    return system
+ 
+ def test_transfer_success(settlement_system):
+     sender = MockAgent(1, 100)
+     receiver = MockAgent(2, 50)
++    settlement_system.agent_registry.register(sender)
++    settlement_system.agent_registry.register(receiver)
+ 
+     tx = settlement_system.transfer(sender, receiver, 20, "Test Transfer", tick=10)
+ 
+@@ -149,6 +172,8 @@ def test_transfer_success(settlement_system):
+ def test_transfer_insufficient_funds(settlement_system):
+     sender = MockAgent(1, 10)
+     receiver = MockAgent(2, 50)
++    settlement_system.agent_registry.register(sender)
++    settlement_system.agent_registry.register(receiver)
+ 
+     tx = settlement_system.transfer(sender, receiver, 20, "Test Fail", tick=10)
+ 
+@@ -159,6 +184,8 @@ def test_transfer_insufficient_funds(settlement_system):
+ def test_create_and_transfer_minting(settlement_system):
+     cb = MockCentralBank(ID_CENTRAL_BANK, 0)
+     receiver = MockAgent(1, 0)
++    settlement_system.agent_registry.register(cb)
++    settlement_system.agent_registry.register(receiver)
+ 
+     tx = settlement_system.create_and_transfer(cb, receiver, 100, "Minting", tick=5)
+ 
+@@ -169,6 +196,8 @@ def test_create_and_transfer_minting(settlement_system):
+ def test_create_and_transfer_government_grant(settlement_system):
+     gov = MockAgent(3, 1000)
+     receiver = MockAgent(1, 0)
++    settlement_system.agent_registry.register(gov)
++    settlement_system.agent_registry.register(receiver)
+ 
+     tx = settlement_system.create_and_transfer(gov, receiver, 100, "Grant", tick=5)
+ 
+@@ -179,6 +208,8 @@ def test_create_and_transfer_government_grant(settlement_system):
+ def test_transfer_and_destroy_burning(settlement_system):
+     cb = MockCentralBank(ID_CENTRAL_BANK, 0)
+     sender = MockAgent(1, 100)
++    settlement_system.agent_registry.register(cb)
++    settlement_system.agent_registry.register(sender)
+ 
+     tx = settlement_system.transfer_and_destroy(sender, cb, 50, "Burning", tick=5)
+ 
+@@ -189,6 +220,8 @@ def test_transfer_and_destroy_burning(settlement_system):
+ def test_transfer_and_destroy_tax(settlement_system):
+     gov = MockAgent(3, 0)
+     sender = MockAgent(1, 100)
++    settlement_system.agent_registry.register(gov)
++    settlement_system.agent_registry.register(sender)
+ 
+     tx = settlement_system.transfer_and_destroy(sender, gov, 20, "Tax", tick=5)
+ 
+@@ -198,6 +231,8 @@ def test_transfer_and_destroy_tax(settlement_system):
+ 
+ def test_record_liquidation(settlement_system):
+     agent = MockAgent(1, 0)
++    settlement_system.agent_registry.register(agent)
++
+     settlement_system.record_liquidation(agent, 100, 50, 20, "Bankruptcy", tick=1)
+     assert settlement_system.total_liquidation_losses == 130
+ 
+@@ -207,6 +242,8 @@ def test_record_liquidation(settlement_system):
+ def test_record_liquidation_escheatment(settlement_system):
+     agent = MockAgent(1, 50)
+     gov = MockAgent(99, 0)
++    settlement_system.agent_registry.register(agent)
++    settlement_system.agent_registry.register(gov)
+ 
+     settlement_system.record_liquidation(
+         agent,
+@@ -229,6 +266,8 @@ def test_transfer_rollback(settlement_system):
+ 
+     sender = MockAgent(1, 100)
+     receiver = FaultyAgent(2, 50)
++    settlement_system.agent_registry.register(sender)
++    settlement_system.agent_registry.register(receiver)
+ 
+     tx = settlement_system.transfer(sender, receiver, 20, "Faulty Transfer", tick=10)
+ 
+@@ -242,6 +281,9 @@ def test_transfer_seamless_success(settlement_system, mock_bank):
+     # Agent has 10 cash, but 100 in bank. Needs to transfer 50.
+     sender = MockAgent(1, 10)
+     receiver = MockAgent(2, 0)
++    settlement_system.agent_registry.register(sender)
++    settlement_system.agent_registry.register(receiver)
++
+     mock_bank.deposit_for_customer(1, 100)
+ 
+     tx = settlement_system.transfer(sender, receiver, 50, "Seamless", tick=10)
+@@ -255,6 +297,9 @@ def test_transfer_seamless_fail_bank(settlement_system, mock_bank):
+     # Agent has 10 cash, but only 10 in bank. Needs 50. Total 20. Fail.
+     sender = MockAgent(1, 10)
+     receiver = MockAgent(2, 0)
++    settlement_system.agent_registry.register(sender)
++    settlement_system.agent_registry.register(receiver)
++
+     mock_bank.deposit_for_customer(1, 10)
+ 
+     tx = settlement_system.transfer(sender, receiver, 50, "Seamless Fail", tick=10)
+@@ -269,6 +314,9 @@ def test_execute_multiparty_settlement_success(settlement_system):
+     agent_a = MockAgent("A", 100)
+     agent_b = MockAgent("B", 100)
+     agent_c = MockAgent("C", 100)
++    settlement_system.agent_registry.register(agent_a)
++    settlement_system.agent_registry.register(agent_b)
++    settlement_system.agent_registry.register(agent_c)
+ 
+     transfers = [
+         (agent_a, agent_b, 50),
+@@ -287,6 +335,9 @@ def test_execute_multiparty_settlement_rollback(settlement_system):
+     agent_a = MockAgent("A", 100)
+     agent_b = MockAgent("B", 100) # has 100
+     agent_c = MockAgent("C", 0)
++    settlement_system.agent_registry.register(agent_a)
++    settlement_system.agent_registry.register(agent_b)
++    settlement_system.agent_registry.register(agent_c)
+ 
+     transfers = [
+         (agent_a, agent_b, 50), # This succeeds initially
+@@ -305,6 +356,9 @@ def test_settle_atomic_success(settlement_system):
+     agent_a = MockAgent("A", 100)
+     agent_b = MockAgent("B", 0)
+     agent_c = MockAgent("C", 0)
++    settlement_system.agent_registry.register(agent_a)
++    settlement_system.agent_registry.register(agent_b)
++    settlement_system.agent_registry.register(agent_c)
+ 
+     credits = [
+         (agent_b, 50, "pay b"),
+@@ -323,6 +377,9 @@ def test_settle_atomic_rollback(settlement_system):
+     agent_a = MockAgent("A", 90)
+     agent_b = MockAgent("B", 0)
+     agent_c = MockAgent("C", 0)
++    settlement_system.agent_registry.register(agent_a)
++    settlement_system.agent_registry.register(agent_b)
++    settlement_system.agent_registry.register(agent_c)
+ 
+     credits = [
+         (agent_b, 50, "pay b"),
+@@ -343,6 +400,8 @@ def test_settle_atomic_credit_fail_rollback(settlement_system):
+ 
+     agent_a = MockAgent("A", 100)
+     agent_b = FaultyAgent("B", 0)
++    settlement_system.agent_registry.register(agent_a)
++    settlement_system.agent_registry.register(agent_b)
+ 
+     credits = [(agent_b, 50, "pay b")]
+ 
+diff --git a/tests/unit/test_tax_incidence.py b/tests/unit/test_tax_incidence.py
+index 7ac9aebf..7142a18c 100644
+--- a/tests/unit/test_tax_incidence.py
++++ b/tests/unit/test_tax_incidence.py
+@@ -117,6 +117,7 @@ class TestTaxIncidence(unittest.TestCase):
+         # SettlementSystem
+         from simulation.systems.settlement_system import SettlementSystem
+         sim.settlement_system = SettlementSystem(logger=logger)
++        sim.world_state.settlement_system = sim.settlement_system # FIX: Update world_state with real system
+         h.settlement_system = sim.settlement_system
+         f.settlement_system = sim.settlement_system
+         gov.settlement_system = sim.settlement_system
+@@ -144,7 +145,7 @@ class TestTaxIncidence(unittest.TestCase):
+             accounting_system=sim.accounting_system,
+             settlement_system=sim.settlement_system,
+             central_bank_system=sim.central_bank_system,
+-            escrow_agent=sim.escrow_agent,
++            escrow_agent=MagicMock(),
+             config=cfg,
+             handlers={},
+             logger=logger

@@ -23,5 +23,17 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "MISSION_FLOAT_LIQUIDATION_AUDIT": {
+        "title": "Float-to-Int Migration & Test Modernization Audit",
+        "worker": "audit",
+        "instruction": "Audit residual float usage in SettlementSystem, MatchingEngine, and DTOs. Design a migration plan for TD-CRIT-FLOAT-SETTLE and a corresponding test modernization plan.",
+        "context_files": [
+            "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_FLOAT_LIQUIDATION_AUDIT_IMG.md",
+            "c:\\coding\\economics\\simulation\\systems\\settlement_system.py",
+            "c:\\coding\\economics\\modules\\market\\matching_engine.py",
+            "c:\\coding\\economics\\simulation\\dtos\\api.py",
+            "c:\\coding\\economics\\design\\2_operations\\ledgers\\TECH_DEBT_LEDGER.md"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_FLOAT_LIQUIDATION_AUDIT_SPEC.md"
+    },
 }
