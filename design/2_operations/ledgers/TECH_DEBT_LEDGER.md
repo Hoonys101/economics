@@ -76,6 +76,16 @@
 - **Status**: Registered. Basis point depreciation (1/10000) implemented as a precursor.
 
 ---
+### ID: TD-TEST-SSOT-SYNC
+### Title: SSoT Balance Mismatch in Test Suite
+- **Symptom**: `test_fiscal_integrity.py` (and potentially others) fails despite logic being correct, because assertions use `Agent.assets` (float/legacy) instead of `SettlementSystem.get_balance()` (int/SSoT).
+- **Risk**: Masking of regression bugs. The transition to "Dual-Write Elimination" in `FinanceSystem` makes agent-level property updates unreliable.
+- **Solution**: 
+    1. Refactor `test_fiscal_integrity.py:L82` to use `settlement_system.get_balance(gov.id)`.
+    2. Audit the entire integration test suite for similar stale assertions.
+- **Status**: **Resolved** (Refactored `test_settlement_system.py`, `test_tax_incidence.py`, `verify_inheritance.py`, `verify_integrity_v2.py`, etc.).
+
+---
 ### Architectural Note: CES Lite (Component-based Engine & Shell)
 - **Achievement**: Successfully dismantled `Firm` into `IFinancialComponent` and `IInventoryComponent`.
 - **Impact**: Solves **TD-124** (Firm God Class). All future agent expansions MUST follow the CES Lite pattern.

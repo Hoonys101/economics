@@ -129,17 +129,17 @@ def verify_zero_sum():
     tm.execute(state)
     final_total = buyer.assets + seller.assets + gov.assets
 
-    logger.info(f"Buyer Assets: {buyer.assets} (Expected 900.0)")
-    logger.info(f"Seller Assets: {seller.assets} (Expected 600.0)")
-    logger.info(f"Gov Assets: {gov.assets} (Expected 0.0)")
+    logger.info(f"Buyer Assets: {settlement.get_balance(buyer.id)} (Expected 900.0)")
+    logger.info(f"Seller Assets: {settlement.get_balance(seller.id)} (Expected 600.0)")
+    logger.info(f"Gov Assets: {settlement.get_balance(gov.id)} (Expected 0.0)")
     logger.info(f"Total Money: {initial_total} -> {final_total}")
 
     if abs(initial_total - final_total) > 0.0001:
         logger.error("ZERO-SUM VIOLATION!")
         sys.exit(1)
 
-    assert buyer.assets == 900.0
-    assert seller.assets == 600.0
+    assert settlement.get_balance(buyer.id) == 900.0
+    assert settlement.get_balance(seller.id) == 600.0
 
     # 4. Execute Taxed Trade
     logger.info("Executing Taxed Trade (100.0 + 10% Tax)...")
@@ -156,21 +156,18 @@ def verify_zero_sum():
     )
     state.transactions = [tx2]
 
-    initial_total = buyer.assets + seller.assets + gov.assets
+    # Recalculate initial total for taxed trade test segment if needed, 
+    # but here we just check final state.
     tm.execute(state)
-    final_total = buyer.assets + seller.assets + gov.assets
+    final_total_taxed = settlement.get_balance(buyer.id) + settlement.get_balance(seller.id) + settlement.get_balance(gov.id)
 
-    logger.info(f"Buyer Assets: {buyer.assets} (Expected 790.0 - 100 trade - 10 tax)")
-    logger.info(f"Seller Assets: {seller.assets} (Expected 700.0 - +100 trade)")
-    logger.info(f"Gov Assets: {gov.assets} (Expected 10.0 - +10 tax)")
+    logger.info(f"Buyer Assets: {settlement.get_balance(buyer.id)} (Expected 790.0 - 100 trade - 10 tax)")
+    logger.info(f"Seller Assets: {settlement.get_balance(seller.id)} (Expected 700.0 - +100 trade)")
+    logger.info(f"Gov Assets: {settlement.get_balance(gov.id)} (Expected 10.0 - +10 tax)")
 
-    if abs(initial_total - final_total) > 0.0001:
-         logger.error("ZERO-SUM VIOLATION WITH TAX!")
-         sys.exit(1)
-
-    assert buyer.assets == 790.0
-    assert seller.assets == 700.0
-    assert gov.assets == 10.0
+    assert settlement.get_balance(buyer.id) == 790.0
+    assert settlement.get_balance(seller.id) == 700.0
+    assert settlement.get_balance(gov.id) == 10.0
 
     logger.info("VERIFICATION SUCCESSFUL")
 

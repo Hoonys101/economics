@@ -142,8 +142,8 @@ def test_transfer_success(settlement_system):
 
     assert tx is not None
     assert tx.quantity == 20
-    assert sender.assets == 80
-    assert receiver.assets == 70
+    assert settlement_system.get_balance(sender.id) == 80
+    assert settlement_system.get_balance(receiver.id) == 70
     assert tx.time == 10
 
 def test_transfer_insufficient_funds(settlement_system):
@@ -153,8 +153,8 @@ def test_transfer_insufficient_funds(settlement_system):
     tx = settlement_system.transfer(sender, receiver, 20, "Test Fail", tick=10)
 
     assert tx is None
-    assert sender.assets == 10
-    assert receiver.assets == 50
+    assert settlement_system.get_balance(sender.id) == 10
+    assert settlement_system.get_balance(receiver.id) == 50
 
 def test_create_and_transfer_minting(settlement_system):
     cb = MockCentralBank(ID_CENTRAL_BANK, 0)
@@ -163,8 +163,8 @@ def test_create_and_transfer_minting(settlement_system):
     tx = settlement_system.create_and_transfer(cb, receiver, 100, "Minting", tick=5)
 
     assert tx is not None
-    assert receiver.assets == 100
-    assert cb.assets == 0
+    assert settlement_system.get_balance(receiver.id) == 100
+    assert settlement_system.get_balance(cb.id) == 0
 
 def test_create_and_transfer_government_grant(settlement_system):
     gov = MockAgent(3, 1000)
@@ -173,8 +173,8 @@ def test_create_and_transfer_government_grant(settlement_system):
     tx = settlement_system.create_and_transfer(gov, receiver, 100, "Grant", tick=5)
 
     assert tx is not None
-    assert receiver.assets == 100
-    assert gov.assets == 900
+    assert settlement_system.get_balance(receiver.id) == 100
+    assert settlement_system.get_balance(gov.id) == 900
 
 def test_transfer_and_destroy_burning(settlement_system):
     cb = MockCentralBank(ID_CENTRAL_BANK, 0)
@@ -183,8 +183,8 @@ def test_transfer_and_destroy_burning(settlement_system):
     tx = settlement_system.transfer_and_destroy(sender, cb, 50, "Burning", tick=5)
 
     assert tx is not None
-    assert sender.assets == 50
-    assert cb.assets == 0
+    assert settlement_system.get_balance(sender.id) == 50
+    assert settlement_system.get_balance(cb.id) == 0
 
 def test_transfer_and_destroy_tax(settlement_system):
     gov = MockAgent(3, 0)
@@ -193,8 +193,8 @@ def test_transfer_and_destroy_tax(settlement_system):
     tx = settlement_system.transfer_and_destroy(sender, gov, 20, "Tax", tick=5)
 
     assert tx is not None
-    assert sender.assets == 80
-    assert gov.assets == 20
+    assert settlement_system.get_balance(sender.id) == 80
+    assert settlement_system.get_balance(gov.id) == 20
 
 def test_record_liquidation(settlement_system):
     agent = MockAgent(1, 0)
@@ -219,8 +219,8 @@ def test_record_liquidation_escheatment(settlement_system):
     )
 
     assert settlement_system.total_liquidation_losses == 20
-    assert agent.assets == 0
-    assert gov.assets == 50
+    assert settlement_system.get_balance(agent.id) == 0
+    assert settlement_system.get_balance(gov.id) == 50
 
 def test_transfer_rollback(settlement_system):
     class FaultyAgent(MockAgent):
@@ -233,8 +233,8 @@ def test_transfer_rollback(settlement_system):
     tx = settlement_system.transfer(sender, receiver, 20, "Faulty Transfer", tick=10)
 
     assert tx is None
-    assert sender.assets == 100
-    assert receiver.assets == 50
+    assert settlement_system.get_balance(sender.id) == 100
+    assert settlement_system.get_balance(receiver.id) == 50
 
 # --- NEW TESTS BELOW ---
 
@@ -247,9 +247,9 @@ def test_transfer_seamless_success(settlement_system, mock_bank):
     tx = settlement_system.transfer(sender, receiver, 50, "Seamless", tick=10)
 
     assert tx is not None
-    assert sender.assets == 0 # Cash drained
+    assert settlement_system.get_balance(sender.id) == 0 # Cash drained
     assert mock_bank.get_customer_balance("1") == 60 # 100 - (50 - 10) = 60
-    assert receiver.assets == 50
+    assert settlement_system.get_balance(receiver.id) == 50
 
 def test_transfer_seamless_fail_bank(settlement_system, mock_bank):
     # Agent has 10 cash, but only 10 in bank. Needs 50. Total 20. Fail.
@@ -260,9 +260,9 @@ def test_transfer_seamless_fail_bank(settlement_system, mock_bank):
     tx = settlement_system.transfer(sender, receiver, 50, "Seamless Fail", tick=10)
 
     assert tx is None
-    assert sender.assets == 10 # Untouched (due to check)
+    assert settlement_system.get_balance(sender.id) == 10 # Untouched (due to check)
     assert mock_bank.get_customer_balance("1") == 10
-    assert receiver.assets == 0
+    assert settlement_system.get_balance(receiver.id) == 0
 
 def test_execute_multiparty_settlement_success(settlement_system):
     # A->B 50, B->C 30
@@ -278,9 +278,9 @@ def test_execute_multiparty_settlement_success(settlement_system):
     success = settlement_system.execute_multiparty_settlement(transfers, tick=1)
 
     assert success is True
-    assert agent_a.assets == 50
-    assert agent_b.assets == 120 # 100 + 50 - 30
-    assert agent_c.assets == 130
+    assert settlement_system.get_balance(agent_a.id) == 50
+    assert settlement_system.get_balance(agent_b.id) == 120 # 100 + 50 - 30
+    assert settlement_system.get_balance(agent_c.id) == 130
 
 def test_execute_multiparty_settlement_rollback(settlement_system):
     # A->B 50 (Success), B->C 200 (Fail, B only has 100)
@@ -296,9 +296,9 @@ def test_execute_multiparty_settlement_rollback(settlement_system):
     success = settlement_system.execute_multiparty_settlement(transfers, tick=1)
 
     assert success is False
-    assert agent_a.assets == 100
-    assert agent_b.assets == 100
-    assert agent_c.assets == 0
+    assert settlement_system.get_balance(agent_a.id) == 100
+    assert settlement_system.get_balance(agent_b.id) == 100
+    assert settlement_system.get_balance(agent_c.id) == 0
 
 def test_settle_atomic_success(settlement_system):
     # A pays B 50 and C 50. A has 100.
@@ -314,9 +314,9 @@ def test_settle_atomic_success(settlement_system):
     success = settlement_system.settle_atomic(agent_a, credits, tick=1)
 
     assert success is True
-    assert agent_a.assets == 0
-    assert agent_b.assets == 50
-    assert agent_c.assets == 50
+    assert settlement_system.get_balance(agent_a.id) == 0
+    assert settlement_system.get_balance(agent_b.id) == 50
+    assert settlement_system.get_balance(agent_c.id) == 50
 
 def test_settle_atomic_rollback(settlement_system):
     # A pays B 50 and C 50. A has 90. Total debit 100 > 90. Fail before any execution.
@@ -332,8 +332,8 @@ def test_settle_atomic_rollback(settlement_system):
     success = settlement_system.settle_atomic(agent_a, credits, tick=1)
 
     assert success is False
-    assert agent_a.assets == 90
-    assert agent_b.assets == 0
+    assert settlement_system.get_balance(agent_a.id) == 90
+    assert settlement_system.get_balance(agent_b.id) == 0
 
 def test_settle_atomic_credit_fail_rollback(settlement_system):
     # A pays Faulty 50. A has 100.
@@ -349,5 +349,5 @@ def test_settle_atomic_credit_fail_rollback(settlement_system):
     success = settlement_system.settle_atomic(agent_a, credits, tick=1)
 
     assert success is False
-    assert agent_a.assets == 100 # Refunded
-    assert agent_b.assets == 0
+    assert settlement_system.get_balance(agent_a.id) == 100 # Refunded
+    assert settlement_system.get_balance(agent_b.id) == 0

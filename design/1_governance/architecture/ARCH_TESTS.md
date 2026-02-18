@@ -30,6 +30,7 @@ Recent test failures (e.g., `TypeError`, `AttributeError`, `Dataclass` issues) a
 - **Inconsistent/Incomplete Mocking**: Mocks are frequently not updated to reflect new realities. This leads to `AttributeError` when a test tries to access a newly added attribute on an old mock (e.g., a mock `config` object missing `profit_history_ticks`). It also causes `TypeError` when a `MagicMock` returns another mock instead of a primitive value (e.g., comparing a mock to an `int`).
 - **Component-Based Refactoring**: Logic is being moved from large agent classes (e.g., `Household`) into smaller, focused components or managers (e.g., `ConsumptionManager`, `LifecycleComponent`). Tests targeting the old agent methods are now obsolete or fail because the logic has moved.
 - **API and Protocol Drift**: Method signatures in interfaces (Protocols) have changed (e.g., `withdraw()` now requires a `currency` keyword argument), but test mocks have not been updated, causing `TypeError` on keyword arguments.
+- **SSoT Balance Verification (Critical)**: Following "Dual-Write Elimination," tests MUST NOT assert against `Agent.assets`. All balance checks must query the `SettlementSystem` SSoT (e.g., `settlement_system.get_balance(agent.id)`). Failure to do so leads to `TD-TEST-SSOT-SYNC` debt.
 
 ## 2. Module-to-Source Mapping & Relocation Plan
 

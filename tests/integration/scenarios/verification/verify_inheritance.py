@@ -74,6 +74,10 @@ class TestInheritance:
 
     def test_standard_inheritance(self):
         """Rich parent dies, tax paid, heir gets remaining."""
+        # SSoT Mock: get_balance should return agent assets
+        self.simulation.settlement_system.get_balance.side_effect = lambda aid, cur=DEFAULT_CURRENCY: \
+            self.simulation.agents[aid].get_balance(cur) if aid in self.simulation.agents else 0
+
         self.manager.process_death(self.deceased, self.government, self.simulation)
 
         # Wealth: 50k
@@ -82,11 +86,16 @@ class TestInheritance:
         # Net: 50k - 16k = 34k
 
         self.government.record_revenue.assert_called()
-        # Check heir assets ~ 34k
-        assert self.heir.get_balance() == pytest.approx(34000.0)
+        # Check heir assets ~ 34k via SSoT
+        assert self.simulation.settlement_system.get_balance(self.heir.id) == pytest.approx(34000.0)
 
     def test_liquidation_stocks(self):
         """Cash poor, Stock rich. Stocks sold to pay tax."""
+        # Update SSoT Mock (already set in setup, but just in case)
+        self.simulation.settlement_system.get_balance.side_effect = lambda aid, cur=DEFAULT_CURRENCY: \
+            self.deceased.get_balance(cur) if aid == self.deceased.id else \
+            (self.simulation.agents[aid].get_balance(cur) if aid in self.simulation.agents else 0)
+
         self.deceased._econ_state.wallet.clear()
         self.deceased._deposit(1000.0) # Low cash
         self.deceased.portfolio.add(99, 100, 100.0) # 100 shares of Firm 99 @ 100.0
@@ -107,11 +116,11 @@ class TestInheritance:
         # Should have sold stocks.
         # Logic: Sells ALL stocks if cash < tax?
         # My implementation: "if deceased.assets < tax_amount and stock_value > 0: ... Sell all"
-        # So stocks sold -> 10000 proceeds. Cash = 11000.
+        # So stocks sold -> 1000 proceeds. Cash = 11000.
         # Paid 4400.
         # Remaining 6600.
 
-        assert self.heir.get_balance() == pytest.approx(6600.0)
+        assert self.simulation.settlement_system.get_balance(self.heir.id) == pytest.approx(6600.0)
         assert len(self.heir.portfolio.holdings) == 0 # No stocks inherited (Sold)
 
     def test_portfolio_merge(self):
