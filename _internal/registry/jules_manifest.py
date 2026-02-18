@@ -16,16 +16,10 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "MISSION_TEST_STABILIZATION_FINAL": {
-        "title": "Hardened Test Stabilization & SSoT Alignment",
-        "instruction": "Fix 17 test regressions by adding 'escrow_agent' to WorldState and modernizing the SettlementSystem test suite to use a Mocked Registry. Ensure all assertions match the Penny Standard.",
-        "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_TEST_STABILIZATION_FINAL_IMG.md",
-        "wait": True
-    },
-    "MISSION_FLOAT_LIQUIDATION_EXEC": {
-        "title": "Global Float-to-Int Migration & Test Modernization",
-        "instruction": "Enforce Penny Standard across DTOs and MatchingEngine. Modernize affected tests to use exact integer assertions and update fixtures.",
-        "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_FLOAT_LIQUIDATION_EXEC_IMG.md",
-        "wait": True
-    },
+    "exec-lifecycle-decomposition": {
+        "title": "EXEC: LifecycleManager Decomposition",
+        "file": "design/3_work_artifacts/specs/MISSION_lifecycle_decomposition_SPEC.md",
+        "instruction": "Implement the LifecycleManager decomposition as per the provided spec. Extract AgingSystem, BirthSystem, and DeathSystem into separate classes in simulation/systems/lifecycle/ and update the manager to orchestrate them.",
+        "wait": False
+    }
 }

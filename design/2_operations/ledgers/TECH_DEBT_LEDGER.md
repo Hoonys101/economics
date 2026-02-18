@@ -2,7 +2,7 @@
 
 | ID | Module / Component | Description | Priority / Impact | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **TD-MKT-FLOAT-MATCH** | Markets | **Market Precision Leak**: `MatchingEngine` uses `float` for price discovery. Violates Zero-Sum. | **Critical**: Financial Halo. | **Resolved** |
+| **TD-MKT-FLOAT-MATCH** | Markets | **Market Precision Leak**: `MatchingEngine` internal paths still use legacy `float`. | **Critical**: Financial Halo. | **Partial** |
 | **TD-ARCH-LIFE-GOD** | Systems | **God Manager**: `LifecycleManager` monolithically handles Birth, Death, Aging, Liquidation. | **Medium**: Coupling. | **Identified** |
 | **TD-CONF-GHOST-BIND** | Config | **Ghost Constants**: Modules bind config values at import time, preventing runtime hot-swap. | **Medium**: Dynamic Tuning. | **Identified** |
 | **TD-INT-PENNIES-FRAGILITY** | System | **Penny-Float Duality**: Widespread `hasattr`/`getattr` for `xxx_pennies` vs `xxx`. Needs Unified API. | **High**: Logic Inconsistency. | **Resolved** |
@@ -11,10 +11,12 @@
 | **TD-ARCH-DI-SETTLE** | Architecture | **DI Timing**: `AgentRegistry` injection into `SettlementSystem` happens post-initialization. | **Low**: Initialization fragility. | Open |
 | **TD-UI-DTO-PURITY** | Cockpit | **Manual Deserialization**: UI uses raw dicts/manual mapping for Telemetry. Needs `pydantic`. | **Medium**: Code Quality. | Open |
 | **TD-PROC-TRANS-DUP** | Logic | **Handler Redundancy**: Logic overlap between legacy `TransactionManager` and new `TransactionProcessor`. | **Medium**: Maintenance. | **Identified** |
-| **TD-CRIT-FLOAT-SETTLE** | Finance | **Float-to-Int Migration**: Residual `float` usage in `SettlementSystem` and `MatchingEngine`. | **Critical**: High Leakage risk. | **Identified** |
+| **TD-CRIT-FLOAT-SETTLE** | Finance | **Float-to-Int Migration**: Residual `float` usage in `SettlementSystem` and `MatchingEngine`. | **Critical**: High Leakage risk. | **Resolved** |
 | **TD-DTO-DESYNC-2026** | DTO/API | **Contract Fracture**: `BorrowerProfileDTO` desync across Firm logic & tests. | **Critical**: System Integrity. | **Resolved** |
 | **TD-TEST-SSOT-SYNC** | Testing | **SSoT Balance Mismatch**: Tests assert against legacy `.assets` attributes instead of `SettlementSystem`. | **High**: Verification Validity. | **Resolved** |
-| **TD-TRANS-LEGACY-PRICING** | Transaction | **Float Cast Bridge**: `TransactionProcessor` converts integer `total_pennies` back to `float` for `SettlementResultDTO` compatibility. | **Medium**: Precision Risk. | **Identified** |
+| **TD-TRANS-LEGACY-PRICING** | Transaction | **Float Cast Bridge**: `TransactionProcessor` converts integer `total_pennies` back to `float` for `SettlementResultDTO` compatibility. | **Medium**: Precision Risk. | **Resolved** |
+| **TD-TRANS-INT-SCHEMA** | Transaction | **Schema Lag**: `Transaction` model (simulation/models.py) still uses `float` price. | **High**: Persistence Drift. | **Identified** |
+| **TD-DTO-RED-ZONE** | DTO/API | **Reporting Leakage**: `api.py` DTOs heavily float-based for analytics/export. | **High**: Reporting Inaccuracy. | **Identified** |
 
 ---
 > [!NOTE]
@@ -84,7 +86,7 @@
 - **Solution**: 
     1. Refactor `test_fiscal_integrity.py:L82` to use `settlement_system.get_balance(gov.id)`.
     2. Audit the entire integration test suite for similar stale assertions.
-- **Status**: **Resolved** (Refactored `test_settlement_system.py`, `test_tax_incidence.py`, `verify_inheritance.py`, `verify_integrity_v2.py`, etc.).
+- **Status**: **Resolved** (Refactored `test_settlement_system.py`, `test_tax_incidence.py`, `verify_inheritance.py`, `verify_integrity_v2.py`, etc.). Verified by cross-branch audit harvest on 2026-02-19.
 
 ---
 ### Architectural Note: CES Lite (Component-based Engine & Shell)

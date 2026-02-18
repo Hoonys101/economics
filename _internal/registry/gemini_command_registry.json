@@ -25,6 +25,47 @@
       "output_path": "design/3_work_artifacts/specs/MISSION_FLOAT_LIQUIDATION_AUDIT_SPEC.md",
       "model": null,
       "audit_requirements": null
+    },
+    "spec-matching-engine-int-math": {
+      "key": "spec-matching-engine-int-math",
+      "title": "SPEC: MatchingEngine Integer Math Hardening",
+      "type": "gemini",
+      "instruction_raw": "Refactor the MatchingEngine math to use integer pennies exclusively. Define rounding rules (Round-Down/Floor) for mid-price discovery to eliminate M2 drift. Ensure execution prices and total values are calculated as integers.",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "simulation/markets/matching_engine.py",
+        "simulation/dtos/api.py",
+        "modules/system/api.py"
+      ],
+      "output_path": "design/3_work_artifacts/specs/MISSION_MATCH_ENGINE_INT_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "spec-dto-reporting-pennies": {
+      "key": "spec-dto-reporting-pennies",
+      "title": "SPEC: Reporting DTO Penny Hardening",
+      "type": "gemini",
+      "instruction_raw": "Analyze all DTOs in simulation/dtos/api.py. Identify any fields currently using float for monetary values (assets, price, wealth, indicators) and refactor them to integer pennies (int). Ensure backward compatibility with existing serialization logic where possible.",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "simulation/dtos/api.py",
+        "modules/simulation/dtos/api.py"
+      ],
+      "output_path": "design/3_work_artifacts/specs/MISSION_REPORTING_DTO_INT_SPEC.md",
+      "model": null,
+      "audit_requirements": null
     }
   }
 }

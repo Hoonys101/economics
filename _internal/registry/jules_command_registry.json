@@ -36,6 +36,23 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "exec-lifecycle-decomposition": {
+      "key": "exec-lifecycle-decomposition",
+      "title": "EXEC: LifecycleManager Decomposition",
+      "type": "jules",
+      "instruction_raw": "Implement the LifecycleManager decomposition as per the provided spec. Extract AgingSystem, BirthSystem, and DeathSystem into separate classes in simulation/systems/lifecycle/ and update the manager to orchestrate them.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_lifecycle_decomposition_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }

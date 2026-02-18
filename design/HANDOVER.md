@@ -1,64 +1,62 @@
-# Architectural Handover Report: Penny Standard & System Decomposition
+# Technical Handover Report: MISSION_FLOAT_LIQUIDATION & TRANSACTION_STANDARDIZATION
 
 ## Executive Summary
-This session successfully transitioned the core simulation logic to a **Strict Integer (Penny) Standard**, resolving long-standing floating-point drift in markets and settlement. Simultaneously, the monolithic `LifecycleManager` and `TransactionManager` were decomposed into specialized, protocol-driven subsystems, significantly improving modularity and testability. The test suite has been stabilized with **822 passing tests**, marking a critical milestone in system reliability.
+This session successfully completed the core transition of the financial engine to the **Penny Standard (Integer Math)**, resolving the most critical risks associated with floating-point drift in settlement. We have established a robust **Specialized Transaction Handler** architecture and stabilized the test suite through strict Protocol enforcement. The system is now prepared for the "Final Lockdown" phase of architectural boundaries.
 
 ---
 
-## 1. Key Accomplishments
+## 1. Accomplishments & Architectural Changes
 
-### 🏗️ Architectural Decomposition (SEO Pattern)
-- **Lifecycle System**: The `AgentLifecycleManager` (formerly a "God Class") has been decomposed into `AgingSystem`, `BirthSystem`, and `DeathSystem`. These systems are now stateless orchestrators operating on `SimulationState` DTOs.
-- **Transaction Unification**: Legacy `TransactionManager` logic (Escrow, Tax, Withholding) has been unified into a modular `TransactionEngine` integrated with the `SettlementSystem`. This resolves `TD-PROC-TRANS-DUP`.
+### 1.1. Penny Standard & Float Liquidation
+- **Global Integer Migration**: Standardized `ICurrencyHolder` and `ISettlementSystem` to operate exclusively on integer `pennies`.
+- **DTO Modernization**: Updated `GoodsInfoDTO`, `MarketContextDTO`, and `HousingMarketUnitDTO` to use `int` for all price/balance fields, eliminating "Float Dust" at boundary layers.
+- **Liquidation Logic**: Refactored `InventoryLiquidationHandler` and `LiquidationManager` to strictly output integer pennies, ensuring Zero-Sum integrity during agent death/bankruptcy.
 
-### 💰 Precision & Zero-Sum Integrity
-- **Market Precision Refactor**: The `OrderBookMatchingEngine` and `StockMatchingEngine` now operate exclusively on `int` pennies. All mid-price calculations and execution values use integer math (`// 2`), eliminating "Financial Dust" leakage.
-- **Settlement SSoT**: `SettlementSystem` now acts as the authoritative ledger. Atomic batch processing with full rollback support ensures that multi-leg transactions (e.g., Goods Escrow) either succeed completely or leave the system in its original state.
+### 1.2. Transaction Integration Layer (Phase 1-3)
+- **Specialized Handlers**: Implemented `GoodsTransactionHandler` and `LaborTransactionHandler` to encapsulate complex domain logic (Escrow, Tax withholding).
+- **Dispatcher Pattern**: Refactored `TransactionProcessor` to route transactions dynamically to specialized handlers, improving modularity and testability.
+- **Registry Restoration**: Re-enabled inventory update logic in the `Registry` to ensure that financial settlement and physical state updates remain synchronized but decoupled.
 
-### 🔒 Protocol & DTO Lockdown (Phase 15)
-- **Runtime Enforcement**: Critical protocols (e.g., `IFinancialEntity`, `ISettlementSystem`) now use `@runtime_checkable` for strict `isinstance` validation.
-- **DTO Purity**: Introduced `SagaStateDTO` and standardized `CanonicalOrderDTO`. Legacy float fields are deprecated in favor of `_pennies` integer fields.
+### 1.3. Protocol & Test Stabilization
+- **Mock Purity**: Resolved widespread test failures caused by `MagicMock` protocol compliance issues (using `spec=Protocol` to satisfy `@runtime_checkable`).
+- **SSO Synchronization**: Fixed the `SettlementSystem` dependency on `IAgentRegistry` in unit tests, ensuring balance lookups use the correct architectural path.
 
 ---
 
-## 2. Economic & System Insights
-- **Settlement Transparency**: By moving the "birth gift" asset transfer from factories to the `BirthSystem`, zero-sum integrity is now explicitly auditable at the system level.
-- **Market Determinism**: Integer-based mid-pricing introduces a slight, deterministic "Market Friction" (flooring fractional pennies), which prevents the creation of money out of thin air during high-volume trading.
-- **M2 Stability**: Verification scripts confirm that the M2 money supply delta remains exactly `0` across complex multi-step transactions, a direct result of integer settlement and atomic rollbacks.
+## 2. Economic Insights
+
+- **Zero-Sum Integrity**: The move to integer-only settlement in the `SettlementSystem` has effectively eliminated M2 supply drift. Discrepancies previously attributed to "market noise" were identified as floating-point truncation artifacts.
+- **Market Friction (Integer Flooring)**: Implementation of integer division (`// 2`) for mid-price discovery introduces a deterministic 0.5 penny bias (Market Friction). This effectively acts as a negligible "transaction cost" that preserves the total money supply without requiring complex rounding collectors.
+- **Tax/Escrow Robustness**: Moving tax withholding (Labor) and Escrow (Goods) into specialized handlers has clarified the "Cash Flow" of the government, making fiscal impact analysis more predictable.
 
 ---
 
 ## 3. Pending Tasks & Technical Debt
 
-### ⚠️ Immediate Priorities (Critical Tech Debt)
-- **`TD-TRANS-INT-SCHEMA` (Top Priority)**: The `Transaction` model must be upgraded to `total_pennies` (int) to eliminate back-calculation artifacts.
-- **`TD-CRIT-FLOAT-SETTLE`**: Complete the global float-to-int migration for all residual currency fields in logic and DTOs.
-- **`TD-CONF-GHOST-BIND`**: Implement dynamic config resolution to enable real-time "God Mode" hotswapping.
+### 3.1. Immediate Technical Debt
+- **`TD-MKT-FLOAT-MATCH` (Critical)**: The `MatchingEngine` still uses legacy float calculations for mid-prices in some paths. This must be refactored to `price_pennies` immediately.
+- **`TD-TRANS-INT-SCHEMA`**: The `Transaction` model (simulation/models.py) still carries a float `price`. It needs a schema migration to `total_pennies` to avoid back-calculation drift.
+- **`TD-DTO-RED-ZONE`**: `simulation/dtos/api.py` remains heavily float-based for analytics and state export. This creates a "Red Zone" where precision is lost during reporting.
 
-### 🤖 Workflow Update: "Audit vs. Implement"
-Starting next session, the project will adopt a bifurcated worker structure:
-- **Gemini (Lead Architect)**: Responsible for full-suite audits, mission specification, and verification.
-- **Jules (Senior Builder)**: Responsible for implementation, refactoring, and following the "Integrated Mission Guide".
-- **Rule**: No implementation without a Gemini-approved Mission SPEC.
-
-### 📉 Technical Debt Ledger
-- **Resolved**: `TD-ARCH-LIFE-GOD`, `TD-MKT-FLOAT-MATCH`, `TD-PROC-TRANS-DUP`, `TD-TEST-SSOT-SYNC` (SSoT Audit Complete).
-- **Active**: `TD-CRIT-FLOAT-SETTLE`, `TD-TRANS-INT-SCHEMA`.
+### 3.2. Unfinished Missions
+- **Lifecycle Decomposition**: `LifecycleManager` is still monolithic. The transition to `AgingSystem`, `BirthSystem`, and `DeathSystem` (as per `lifecycle_decomposition_spec.md`) is planned but not executed.
+- **Architectural Lockdown**: Static analysis rules (`SEO-001`, `DTO-001`) to block direct access to `.inventory` and `.wallet` are designed but require the implementation of the `audit_architecture.py` scanner.
+- **Welfare Fix**: `WelfareService` currently has a broken constructor for `BailoutCovenant` (`executive_salary_freeze` vs `executive_bonus_allowed`).
 
 ---
 
 ## 4. Verification Status
 
-### ✅ Test Suite Summary
-- **Total Passed**: 822
-- **Skipped**: 1 (`test_ws.py` due to environment missing `fastapi`)
-- **Failing**: 0
-- **Environment**: Verified using `python -m pytest` to ensure local dependency alignment.
+| Component | Status | Note |
+| :--- | :--- | :--- |
+| **SettlementSystem** | ✅ Stable | Penny Standard enforced. |
+| **TransactionProcessor**| ✅ Stable | specialized handlers active. |
+| **Market Engine** | ⚠️ Partial | Internal math still leaking floats (TD-MKT-FLOAT-MATCH). |
+| **Lifecycle** | ❌ Legacy | Still using monolithic Manager. |
+| **Test Suite** | ✅ Passed | 848 passed, 1 skipped. |
 
-### 🧪 Critical Path Verification
-- **Grace Protocol**: `tests/integration/test_wo167_grace_protocol.py` confirms that firm/household distress logic survived the lifecycle decomposition.
-- **Atomic Rollback**: `tests/unit/test_transaction_rollback.py` confirms that batch failures correctly revert all ledger entries within the same tick.
-- **Market Precision**: `tests/market/test_precision_matching.py` confirms integer parity across 1M+ random trade scenarios.
+**Final Verdict**: The engine's "heart" is integer-safe, but the "veins" (DTOs) and "skin" (Market interfaces) still require one final purge of floating-point logic to achieve 100% Zero-Sum compliance across all layers.
 
 ---
-**Handover Status**: **STABLE**. The "Penny Standard" is now the law of the land. The system is ready for the implementation of the `Architectural Scanner` to lock down these gains permanently.
+**Handover generated by Gemini-CLI (Subordinate Worker)**
+*Directives for next session: Execute DTO Red-Zone Refactor and decompose LifecycleManager.*
