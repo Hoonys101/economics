@@ -16,10 +16,10 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "MISSION_TEST_MODERNIZATION_EXEC": {
-        "title": "Execute Test Modernization & SSoT Fixes",
-        "instruction": "Resolve the 17 identified test failures by formally registering 'escrow_agent' in WorldState and modernizing SettlementSystem tests to use a mocked IAgentRegistry. Resolve DeprecationWarnings for collect_tax.",
-        "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_TEST_MODERNIZATION_EXEC_IMG.md",
+    "MISSION_TEST_STABILIZATION_FINAL": {
+        "title": "Hardened Test Stabilization & SSoT Alignment",
+        "instruction": "Fix 17 test regressions by adding 'escrow_agent' to WorldState and modernizing the SettlementSystem test suite to use a Mocked Registry. Ensure all assertions match the Penny Standard.",
+        "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_TEST_STABILIZATION_FINAL_IMG.md",
         "wait": True
     },
 }

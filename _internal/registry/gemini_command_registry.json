@@ -2,29 +2,5 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {
-    "MISSION_TEST_MODERNIZATION_AUDIT": {
-      "key": "MISSION_TEST_MODERNIZATION_AUDIT",
-      "title": "Global Test Audit & Modernization SPEC",
-      "type": "gemini",
-      "instruction_raw": "Analyze the 17 identified test failures. Pay special attention to SettlementSystem SSoT regression and missing 'escrow_agent' in WorldState. Provide a SPEC for modernizing the test suite and resolving DeprecationWarnings.",
-      "status": "pending",
-      "created_at": "",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "audit",
-      "context_files": [
-        "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_TEST_MODERNIZATION_AUDIT_IMG.md",
-        "c:\\coding\\economics\\simulation\\systems\\settlement_system.py",
-        "c:\\coding\\economics\\simulation\\world_state.py",
-        "c:\\coding\\economics\\simulation\\engine.py",
-        "c:\\coding\\economics\\tests\\unit\\systems\\test_settlement_system.py"
-      ],
-      "output_path": "design/3_work_artifacts/specs/MISSION_TEST_MODERNIZATION_AUDIT_SPEC.md",
-      "model": null,
-      "audit_requirements": null
-    }
-  }
+  "missions": {}
 }
