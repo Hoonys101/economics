@@ -6,31 +6,23 @@ from simulation.dtos import DecisionContext, FirmStateDTO, FirmConfigDTO
 from modules.finance.api import BorrowerProfileDTO
 from simulation.decisions.firm.api import FinancialPlanDTO
 from modules.system.api import DEFAULT_CURRENCY
-
 logger = logging.getLogger(__name__)
 
 class FinancialStrategy:
+
     def formulate_plan(self, context: DecisionContext, dividend_aggressiveness: float, debt_aggressiveness: float) -> FinancialPlanDTO:
         firm = context.state
         config = context.config
         market_data = context.market_data
-
         orders = []
-
-        # 1. Dividends
         div_order = self._manage_dividends(firm, dividend_aggressiveness, config)
         if div_order:
             orders.append(div_order)
-
-        # 2. Debt
         debt_orders = self._manage_debt(firm, debt_aggressiveness, context)
         orders.extend(debt_orders)
-
-        # 3. Secondary Offering (SEO)
         seo_order = self._attempt_secondary_offering(firm, context, config)
         if seo_order:
             orders.append(seo_order)
-
         return FinancialPlanDTO(orders=orders)
 
     def _manage_dividends(self, firm: FirmStateDTO, aggressiveness: float, config: FirmConfigDTO) -> Optional[Order]:
@@ -40,17 +32,13 @@ class FinancialStrategy:
         z_score = firm.finance.altman_z_score
         z_score_threshold = config.altman_z_score_threshold
         loss_limit = config.dividend_suspension_loss_ticks
-
-        is_distressed = (z_score < z_score_threshold) or (firm.finance.consecutive_loss_turns >= loss_limit)
-
+        is_distressed = z_score < z_score_threshold or firm.finance.consecutive_loss_turns >= loss_limit
         if is_distressed:
-            return Order(agent_id=firm.id, side="SET_DIVIDEND", item_id="internal", quantity=0.0, price_limit=0.0, market_id="internal")
-
+            return Order(agent_id=firm.id, side='SET_DIVIDEND', item_id='internal', quantity=0.0, price_pennies=int(0.0 * 100), price_limit=0.0, market_id='internal')
         base_rate = config.dividend_rate_min
         max_rate = config.dividend_rate_max
-        new_rate = base_rate + (aggressiveness * (max_rate - base_rate))
-
-        return Order(agent_id=firm.id, side="SET_DIVIDEND", item_id="internal", quantity=new_rate, price_limit=0.0, market_id="internal")
+        new_rate = base_rate + aggressiveness * (max_rate - base_rate)
+        return Order(agent_id=firm.id, side='SET_DIVIDEND', item_id='internal', quantity=new_rate, price_pennies=int(0.0 * 100), price_limit=0.0, market_id='internal')
 
     def _manage_debt(self, firm: FirmStateDTO, aggressiveness: float, context: DecisionContext) -> List[Order]:
         """
@@ -59,141 +47,83 @@ class FinancialStrategy:
         market_data = context.market_data
         orders = []
         target_leverage = aggressiveness * 2.0
-
         current_debt = 0.0
-        debt_info = market_data.get("debt_data", {}).get(firm.id)
+        debt_info = market_data.get('debt_data', {}).get(firm.id)
         if debt_info:
-            current_debt = debt_info.get("total_principal", 0.0)
-
+            current_debt = debt_info.get('total_principal', 0.0)
         current_assets_raw = firm.finance.balance
         current_assets_val = current_assets_raw
         if isinstance(current_assets_raw, dict):
             current_assets_val = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
-
         current_assets = max(current_assets_val, 1.0)
         current_leverage = current_debt / current_assets
-
         if current_leverage < target_leverage:
             desired_debt = current_assets * target_leverage
             borrow_amount = desired_debt - current_debt
             borrow_amount = min(borrow_amount, current_assets * 0.5)
-
             if borrow_amount > 100.0:
-                # WO-078: Construct BorrowerProfileDTO
-                # Retrieve debt info to estimate payments
                 daily_burden = 0.0
                 if debt_info:
-                    daily_burden = debt_info.get("daily_interest_burden", 0.0)
-
+                    daily_burden = debt_info.get('daily_interest_burden', 0.0)
                 gross_income_raw = firm.finance.revenue_this_turn
                 gross_income = gross_income_raw
                 if isinstance(gross_income_raw, dict):
                     gross_income = gross_income_raw.get(DEFAULT_CURRENCY, 0.0)
-
-                borrower_profile = BorrowerProfileDTO(
-                    borrower_id=firm.id,
-                    gross_income=gross_income,
-                    existing_debt_payments=daily_burden * 30, # Approx monthly
-                    collateral_value=0.0, # Unsecured
-                )
-
-                # WO-146: Use market rate + spread instead of hardcoded 0.10
-                # Fallback: Configured Initial Rate
+                borrower_profile = BorrowerProfileDTO(borrower_id=firm.id, gross_income=gross_income, existing_debt_payments=daily_burden * 30, collateral_value=0.0)
                 base_rate = context.config.initial_base_annual_rate
-
-                # Prioritize Government Policy Rate (Official Base Rate)
                 if context.government_policy:
                     base_rate = context.government_policy.base_interest_rate
-                # Fallback to Market Data (if available)
-                elif "loan_market" in market_data and "interest_rate" in market_data["loan_market"]:
-                    base_rate = market_data["loan_market"]["interest_rate"]
+                elif 'loan_market' in market_data and 'interest_rate' in market_data['loan_market']:
+                    base_rate = market_data['loan_market']['interest_rate']
                 else:
-                    logger.warning(f"FINANCE_WARNING | Missing policy/market rate for firm {firm.id}. Used default fallback.")
-
-                # Willingness to pay: base_rate + risk spread
-                # Firms usually accept slightly higher than base rate
+                    logger.warning(f'FINANCE_WARNING | Missing policy/market rate for firm {firm.id}. Used default fallback.')
                 spread = context.config.default_loan_spread
                 wtp_rate = base_rate + spread
-
-                order = Order(
-                    agent_id=firm.id,
-                    side="LOAN_REQUEST",
-                    item_id="loan",
-                    quantity=borrow_amount,
-                    price_limit=wtp_rate,
-                    market_id="loan",
-                    metadata={"borrower_profile": borrower_profile}
-                )
+                order = Order(agent_id=firm.id, side='LOAN_REQUEST', item_id='loan', quantity=borrow_amount, price_pennies=int(wtp_rate * 100), price_limit=wtp_rate, market_id='loan', metadata={'borrower_profile': borrower_profile})
                 orders.append(order)
-
         elif current_leverage > target_leverage:
-            excess_debt = current_debt - (current_assets * target_leverage)
+            excess_debt = current_debt - current_assets * target_leverage
             repay_amount = min(excess_debt, current_assets * 0.5)
-
             if repay_amount > 10.0 and current_debt > 0:
-                 orders.append(
-                    Order(agent_id=firm.id, side="REPAYMENT", item_id="loan", quantity=repay_amount, price_limit=1.0, market_id="loan")
-                )
-
+                orders.append(Order(agent_id=firm.id, side='REPAYMENT', item_id='loan', quantity=repay_amount, price_pennies=int(1.0 * 100), price_limit=1.0, market_id='loan'))
         return orders
 
     def _attempt_secondary_offering(self, firm: FirmStateDTO, context: DecisionContext, config: FirmConfigDTO) -> Optional[OrderDTO]:
         """Sell treasury shares to raise capital when cash is low."""
         startup_cost = config.startup_cost
         trigger_ratio = config.seo_trigger_ratio
-
         current_balance_raw = firm.finance.balance
         current_balance = current_balance_raw
         if isinstance(current_balance_raw, dict):
             current_balance = current_balance_raw.get(DEFAULT_CURRENCY, 0.0)
-
         if current_balance >= startup_cost * trigger_ratio:
             return None
         if firm.finance.treasury_shares <= 0:
             return None
-
-        # Use DTO
         market_snapshot = context.market_snapshot
-
         max_sell_ratio = config.seo_max_sell_ratio
         sell_qty = min(firm.finance.treasury_shares * max_sell_ratio, firm.finance.treasury_shares)
-
         if sell_qty < 1.0:
             return None
-
-        # Determine price (Market Price or Book Value)
         price = 0.0
         if market_snapshot:
-             signals = getattr(market_snapshot, "market_signals", None)
-             if isinstance(signals, dict):
-                 signal = signals.get(f"stock_{firm.id}")
-                 if signal:
-                     price = getattr(signal, "last_traded_price", 0.0) or getattr(signal, "best_bid", 0.0) or 0.0
-
-             # Fallback to legacy market_data if signals failed
-             if price <= 0:
-                 m_data = getattr(market_snapshot, "market_data", None)
-                 if isinstance(m_data, dict):
-                     stock_data = m_data.get("stock_market", {}).get(f"stock_{firm.id}", {})
-                     price = stock_data.get("avg_price", 0.0)
-
+            signals = getattr(market_snapshot, 'market_signals', None)
+            if isinstance(signals, dict):
+                signal = signals.get(f'stock_{firm.id}')
+                if signal:
+                    price = getattr(signal, 'last_traded_price', 0.0) or getattr(signal, 'best_bid', 0.0) or 0.0
+            if price <= 0:
+                m_data = getattr(market_snapshot, 'market_data', None)
+                if isinstance(m_data, dict):
+                    stock_data = m_data.get('stock_market', {}).get(f'stock_{firm.id}', {})
+                    price = stock_data.get('avg_price', 0.0)
         if price is None or price <= 0:
-            # Fallback to Book Value
             if firm.finance.total_shares > 0:
                 price = current_balance / firm.finance.total_shares
             else:
                 price = 0.0
-
         if price <= 0:
             return None
-
-        order = OrderDTO(
-            agent_id=firm.id,
-            side="SELL",
-            item_id=f"stock_{firm.id}",
-            quantity=sell_qty,
-            price_limit=price,
-            market_id="stock_market"
-        )
-        logger.info(f"SEO | Firm {firm.id} offering {sell_qty:.1f} shares at {price:.2f}")
+        order = OrderDTO(agent_id=firm.id, side='SELL', item_id=f'stock_{firm.id}', quantity=sell_qty, price_pennies=int(price * 100), price_limit=price, market_id='stock_market')
+        logger.info(f'SEO | Firm {firm.id} offering {sell_qty:.1f} shares at {price:.2f}')
         return order

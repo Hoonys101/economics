@@ -4,18 +4,15 @@
 가계와 기업 간 주식 거래를 중개하는 시장 클래스입니다.
 기존 OrderBookMarket과 유사한 가격-시간 우선 원칙을 적용합니다.
 """
-
 from typing import Dict, List, Optional, Any, TYPE_CHECKING, Union
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, replace
-
 from simulation.models import Transaction, Order
 from simulation.core_markets import Market
 from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO
 from modules.finance.api import IShareholderRegistry, IShareholderView
 from simulation.markets.matching_engine import StockMatchingEngine
-
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -34,29 +31,18 @@ class StockMarket(Market):
     실제 거래는 호가 매칭으로 이루어집니다.
     """
 
-    def __init__(
-        self,
-        config_module: Any,
-        shareholder_registry: IShareholderRegistry,
-        logger: Optional[logging.Logger] = None,
-    ):
-        self.id = "stock_market"
+    def __init__(self, config_module: Any, shareholder_registry: IShareholderRegistry, logger: Optional[logging.Logger]=None):
+        self.id = 'stock_market'
         self.config_module = config_module
         self.logger = logger or logging.getLogger(__name__)
         self.shareholder_registry = shareholder_registry
-        
-        # 기업별 주문서 (firm_id -> List[ManagedOrder])
         self.buy_orders: Dict[int, List[ManagedOrder]] = defaultdict(list)
         self.sell_orders: Dict[int, List[ManagedOrder]] = defaultdict(list)
-        
-        # 가격 및 거래량 추적
-        self.last_prices: Dict[int, float] = {}      # 최근 거래가
-        self.reference_prices: Dict[int, float] = {} # 기준가 (순자산가치 기반)
-        self.daily_volumes: Dict[int, float] = {}    # 일일 거래량
-        self.daily_high: Dict[int, float] = {}       # 일일 최고가
-        self.daily_low: Dict[int, float] = {}        # 일일 최저가
-
-        # Phase 10: Stateless Matching Engine
+        self.last_prices: Dict[int, float] = {}
+        self.reference_prices: Dict[int, float] = {}
+        self.daily_volumes: Dict[int, float] = {}
+        self.daily_high: Dict[int, float] = {}
+        self.daily_low: Dict[int, float] = {}
         self.matching_engine = StockMatchingEngine()
 
     def update_shareholder(self, agent_id: int, firm_id: int, quantity: float) -> None:
@@ -73,12 +59,10 @@ class StockMarket(Market):
         Args:
             firms: 기업 ID -> Firm 객체 맵
         """
-        multiplier = getattr(self.config_module, "STOCK_BOOK_VALUE_MULTIPLIER", 1.0)
-        
+        multiplier = getattr(self.config_module, 'STOCK_BOOK_VALUE_MULTIPLIER', 1.0)
         for firm_id, firm in firms.items():
-            if not getattr(firm, "is_active", True):
+            if not getattr(firm, 'is_active', True):
                 continue
-                
             book_value = self._calculate_book_value_per_share(firm)
             self.reference_prices[firm_id] = max(0.01, book_value * multiplier)
 
@@ -95,14 +79,13 @@ class StockMarket(Market):
             return self.last_prices[firm_id]
         return self.reference_prices.get(firm_id)
 
-    def get_daily_avg_price(self, firm_id: Optional[int] = None) -> float:
+    def get_daily_avg_price(self, firm_id: Optional[int]=None) -> float:
         """
         특정 기업의 일일 평균 거래 가격을 반환합니다.
         firm_id가 없으면 전체 평균을 반환합니다.
         """
         if firm_id is not None:
             return self.get_stock_price(firm_id) or 0.0
-
         if not self.last_prices:
             return 0.0
         return sum(self.last_prices.values()) / len(self.last_prices)
@@ -118,157 +101,90 @@ class StockMarket(Market):
         orders = self.buy_orders.get(firm_id, [])
         if not orders:
             return None
-        return max(managed.order.price_limit for managed in orders)
+        return max((managed.order.price_limit for managed in orders))
 
     def get_best_ask(self, firm_id: int) -> Optional[float]:
         """특정 기업 주식의 최저 매도호가를 반환합니다."""
         orders = self.sell_orders.get(firm_id, [])
         if not orders:
             return None
-        return min(managed.order.price_limit for managed in orders)
+        return min((managed.order.price_limit for managed in orders))
 
     def place_order(self, order: CanonicalOrderDTO, tick: int) -> None:
         """
         주식 주문을 제출합니다.
         """
         if not isinstance(order, CanonicalOrderDTO):
-            self.logger.error(f"Invalid order type passed to StockMarket: {type(order)}. Expected CanonicalOrderDTO.")
+            self.logger.error(f'Invalid order type passed to StockMarket: {type(order)}. Expected CanonicalOrderDTO.')
             return
-
-        # item_id에서 firm_id 추출 ("stock_{firm_id}")
         try:
-            firm_id = int(order.item_id.split("_")[1])
+            firm_id = int(order.item_id.split('_')[1])
         except (ValueError, IndexError):
-            self.logger.error(
-                f"Invalid item_id format for stock order: {order.item_id}. Expected 'stock_<firm_id>'"
-            )
+            self.logger.error(f"Invalid item_id format for stock order: {order.item_id}. Expected 'stock_<firm_id>'")
             return
-
-        # 가격 제한 확인 (상하한가)
-        limit_rate = getattr(self.config_module, "STOCK_PRICE_LIMIT_RATE", 0.10)
+        limit_rate = getattr(self.config_module, 'STOCK_PRICE_LIMIT_RATE', 0.1)
         ref_price = self.reference_prices.get(firm_id, order.price_limit)
-        
         min_price = ref_price * (1 - limit_rate)
         max_price = ref_price * (1 + limit_rate)
-        
         final_order = order
         if order.price_limit < min_price or order.price_limit > max_price:
-            self.logger.warning(
-                f"Stock order price {order.price_limit:.2f} out of limit range "
-                f"[{min_price:.2f}, {max_price:.2f}] for firm {firm_id}",
-                extra={"tick": tick, "agent_id": order.agent_id, "firm_id": firm_id}
-            )
-            # 가격을 제한 범위 내로 조정하여 새로운 CanonicalOrderDTO 생성
+            self.logger.warning(f'Stock order price {order.price_limit:.2f} out of limit range [{min_price:.2f}, {max_price:.2f}] for firm {firm_id}', extra={'tick': tick, 'agent_id': order.agent_id, 'firm_id': firm_id})
             clamped_price = max(min_price, min(max_price, order.price_limit))
-            # Also clamp pennies (assuming Scale 100)
             clamped_pennies = int(clamped_price * 100)
             final_order = replace(order, price_limit=clamped_price, price_pennies=clamped_pennies)
-
-        # 내부 래퍼 생성
-        managed_order = ManagedOrder(
-            order=final_order,
-            remaining_quantity=final_order.quantity,
-            created_tick=tick
-        )
-        
-        # 주문 추가
-        if final_order.side == "BUY":
+        managed_order = ManagedOrder(order=final_order, remaining_quantity=final_order.quantity, created_tick=tick)
+        if final_order.side == 'BUY':
             self.buy_orders[firm_id].append(managed_order)
-            # 높은 가격 순으로 정렬
             self.buy_orders[firm_id].sort(key=lambda m: -m.order.price_limit)
-        elif final_order.side == "SELL":
+        elif final_order.side == 'SELL':
             self.sell_orders[firm_id].append(managed_order)
-            # 낮은 가격 순으로 정렬
             self.sell_orders[firm_id].sort(key=lambda m: m.order.price_limit)
         else:
-            self.logger.warning(
-                f"Unknown stock order side: {final_order.side}",
-                extra={"tick": tick, "agent_id": final_order.agent_id}
-            )
+            self.logger.warning(f'Unknown stock order side: {final_order.side}', extra={'tick': tick, 'agent_id': final_order.agent_id})
             return
-        
-        self.logger.info(
-            f"Stock {final_order.side} order placed: {final_order.quantity:.1f} shares "
-            f"of firm {firm_id} at {final_order.price_limit:.2f}",
-            extra={
-                "tick": tick,
-                "agent_id": final_order.agent_id,
-                "firm_id": firm_id,
-                "order_type": final_order.side,
-                "quantity": final_order.quantity,
-                "price": final_order.price_limit,
-                "tags": ["stock", "order"]
-            }
-        )
+        self.logger.info(f'Stock {final_order.side} order placed: {final_order.quantity:.1f} shares of firm {firm_id} at {final_order.price_limit:.2f}', extra={'tick': tick, 'agent_id': final_order.agent_id, 'firm_id': firm_id, 'order_type': final_order.side, 'quantity': final_order.quantity, 'price': final_order.price_limit, 'tags': ['stock', 'order']})
 
     def match_orders(self, tick: int) -> List[Transaction]:
         """
         모든 기업의 주식 주문을 매칭하여 거래를 성사시킵니다.
         Delegates to Stateless Matching Engine.
         """
-        
-        # 1. Construct State DTO
+
         def to_dto_with_metadata(managed: ManagedOrder) -> CanonicalOrderDTO:
             dto = replace(managed.order, quantity=managed.remaining_quantity)
             new_metadata = dto.metadata.copy() if dto.metadata else {}
             new_metadata['created_tick'] = managed.created_tick
             return replace(dto, metadata=new_metadata)
-
-        buy_orders_dto = {
-            firm_id: [to_dto_with_metadata(managed) for managed in orders]
-            for firm_id, orders in self.buy_orders.items()
-        }
-        sell_orders_dto = {
-            firm_id: [to_dto_with_metadata(managed) for managed in orders]
-            for firm_id, orders in self.sell_orders.items()
-        }
-        
-        state = StockMarketStateDTO(
-            buy_orders=buy_orders_dto,
-            sell_orders=sell_orders_dto,
-            market_id=self.id
-        )
-        
-        # 2. Execute Matching via Engine
+        buy_orders_dto = {firm_id: [to_dto_with_metadata(managed) for managed in orders] for firm_id, orders in self.buy_orders.items()}
+        sell_orders_dto = {firm_id: [to_dto_with_metadata(managed) for managed in orders] for firm_id, orders in self.sell_orders.items()}
+        state = StockMarketStateDTO(buy_orders=buy_orders_dto, sell_orders=sell_orders_dto, market_id=self.id)
         result = self.matching_engine.match(state, tick)
-
-        # 3. Apply Results
-        # Update Stats
-        for firm_id_str, price in result.market_stats.get("last_prices", {}).items():
+        for firm_id_str, price in result.market_stats.get('last_prices', {}).items():
             firm_id = int(firm_id_str)
             self.last_prices[firm_id] = price
-            
-        for firm_id_str, volume in result.market_stats.get("daily_volumes", {}).items():
+        for firm_id_str, volume in result.market_stats.get('daily_volumes', {}).items():
             firm_id = int(firm_id_str)
             self.daily_volumes[firm_id] = self.daily_volumes.get(firm_id, 0.0) + volume
-
-        for firm_id_str, high in result.market_stats.get("daily_high", {}).items():
+        for firm_id_str, high in result.market_stats.get('daily_high', {}).items():
             firm_id = int(firm_id_str)
             if firm_id not in self.daily_high or high > self.daily_high[firm_id]:
                 self.daily_high[firm_id] = high
-
-        for firm_id_str, low in result.market_stats.get("daily_low", {}).items():
+        for firm_id_str, low in result.market_stats.get('daily_low', {}).items():
             firm_id = int(firm_id_str)
             if firm_id not in self.daily_low or low < self.daily_low[firm_id]:
                 self.daily_low[firm_id] = low
 
-        # Reconstruct ManagedOrders
         def from_dto(dto: CanonicalOrderDTO) -> ManagedOrder:
             created_tick = dto.metadata.get('created_tick', tick) if dto.metadata else tick
-            # Remove created_tick from metadata to keep DTO clean? Or keep it?
-            # Keeping it doesn't hurt.
             return ManagedOrder(order=dto, remaining_quantity=dto.quantity, created_tick=created_tick)
-
         self.buy_orders = defaultdict(list)
         for firm_id_str, dtos in result.unfilled_buy_orders.items():
             firm_id = int(firm_id_str)
             self.buy_orders[firm_id] = [from_dto(dto) for dto in dtos]
-
         self.sell_orders = defaultdict(list)
         for firm_id_str, dtos in result.unfilled_sell_orders.items():
             firm_id = int(firm_id_str)
             self.sell_orders[firm_id] = [from_dto(dto) for dto in dtos]
-        
         return result.transactions
 
     def clear_expired_orders(self, current_tick: int) -> int:
@@ -281,33 +197,20 @@ class StockMarket(Market):
         Returns:
             제거된 주문 수
         """
-        expiry_ticks = getattr(self.config_module, "STOCK_ORDER_EXPIRY_TICKS", 5)
+        expiry_ticks = getattr(self.config_module, 'STOCK_ORDER_EXPIRY_TICKS', 5)
         removed_count = 0
-        
         for firm_id in list(self.buy_orders.keys()):
             original_count = len(self.buy_orders[firm_id])
-            self.buy_orders[firm_id] = [
-                managed for managed in self.buy_orders[firm_id]
-                if current_tick - managed.created_tick < expiry_ticks
-            ]
+            self.buy_orders[firm_id] = [managed for managed in self.buy_orders[firm_id] if current_tick - managed.created_tick < expiry_ticks]
             removed = original_count - len(self.buy_orders[firm_id])
             removed_count += removed
-        
         for firm_id in list(self.sell_orders.keys()):
             original_count = len(self.sell_orders[firm_id])
-            self.sell_orders[firm_id] = [
-                managed for managed in self.sell_orders[firm_id]
-                if current_tick - managed.created_tick < expiry_ticks
-            ]
+            self.sell_orders[firm_id] = [managed for managed in self.sell_orders[firm_id] if current_tick - managed.created_tick < expiry_ticks]
             removed = original_count - len(self.sell_orders[firm_id])
             removed_count += removed
-        
         if removed_count > 0:
-            self.logger.debug(
-                f"Cleared {removed_count} expired stock orders",
-                extra={"tick": current_tick, "tags": ["stock", "cleanup"]}
-            )
-        
+            self.logger.debug(f'Cleared {removed_count} expired stock orders', extra={'tick': current_tick, 'tags': ['stock', 'cleanup']})
         return removed_count
 
     def reset_daily_stats(self) -> None:
@@ -318,18 +221,7 @@ class StockMarket(Market):
 
     def get_market_summary(self, firm_id: int) -> Dict[str, Any]:
         """특정 기업의 주식 시장 요약 정보를 반환합니다."""
-        return {
-            "firm_id": firm_id,
-            "last_price": self.last_prices.get(firm_id),
-            "reference_price": self.reference_prices.get(firm_id),
-            "best_bid": self.get_best_bid(firm_id),
-            "best_ask": self.get_best_ask(firm_id),
-            "daily_volume": self.daily_volumes.get(firm_id, 0),
-            "daily_high": self.daily_high.get(firm_id),
-            "daily_low": self.daily_low.get(firm_id),
-            "buy_order_count": len(self.buy_orders.get(firm_id, [])),
-            "sell_order_count": len(self.sell_orders.get(firm_id, [])),
-        }
+        return {'firm_id': firm_id, 'last_price': self.last_prices.get(firm_id), 'reference_price': self.reference_prices.get(firm_id), 'best_bid': self.get_best_bid(firm_id), 'best_ask': self.get_best_ask(firm_id), 'daily_volume': self.daily_volumes.get(firm_id, 0), 'daily_high': self.daily_high.get(firm_id), 'daily_low': self.daily_low.get(firm_id), 'buy_order_count': len(self.buy_orders.get(firm_id, [])), 'sell_order_count': len(self.sell_orders.get(firm_id, []))}
 
     def clear_orders(self) -> None:
         """

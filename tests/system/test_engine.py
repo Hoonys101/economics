@@ -436,6 +436,7 @@ class TestSimulation:
         tx.item_id = "basic_food"
         tx.quantity = 5.0
         tx.price = 10.0
+        tx.total_pennies = 50
         tx.quality = 1.0 # Ensure quality is a float
         tx.transaction_type = "goods"
         tx.metadata = {}
@@ -476,6 +477,7 @@ class TestSimulation:
         tx.item_id = "labor"
         tx.quantity = 1.0
         tx.price = 20.0
+        tx.total_pennies = 20
         tx.transaction_type = "labor"
         tx.metadata = {}
 
@@ -524,6 +526,7 @@ class TestSimulation:
         tx.item_id = "research_labor"
         tx.quantity = 1.0
         tx.price = 30.0
+        tx.total_pennies = 30
         tx.transaction_type = "research_labor"
         tx.metadata = {}
 

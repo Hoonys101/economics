@@ -1,12 +1,10 @@
 from __future__ import annotations
 from typing import List, Dict, Optional, Any, TYPE_CHECKING, override
 from logging import Logger
-
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.finance.api import PortfolioDTO, PortfolioAsset
 from simulation.models import Order
 from simulation.portfolio import Portfolio
-
 if TYPE_CHECKING:
     from modules.household.dtos import EconStateDTO
     from modules.simulation.dtos.api import HouseholdConfigDTO
@@ -16,23 +14,21 @@ class HouseholdFinancialsMixin:
     Mixin for Household financial operations.
     Handles assets, inventory, portfolio, and employment termination.
     """
-
-    # Type hints for properties expected on self
     id: int
     logger: Logger
-    config: "HouseholdConfigDTO"
-    _econ_state: "EconStateDTO"
+    config: 'HouseholdConfigDTO'
+    _econ_state: 'EconStateDTO'
 
     @override
-    def _internal_add_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self._econ_state.wallet.add(amount, currency, memo="Internal Add")
+    def _internal_add_assets(self, amount: float, currency: CurrencyCode=DEFAULT_CURRENCY) -> None:
+        self._econ_state.wallet.add(amount, currency, memo='Internal Add')
 
     @override
-    def _internal_sub_assets(self, amount: float, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-        self._econ_state.wallet.subtract(amount, currency, memo="Internal Sub")
+    def _internal_sub_assets(self, amount: float, currency: CurrencyCode=DEFAULT_CURRENCY) -> None:
+        self._econ_state.wallet.subtract(amount, currency, memo='Internal Sub')
 
     @override
-    def adjust_assets(self, delta: float, currency: CurrencyCode = DEFAULT_CURRENCY, memo: str = "", tick: int = -1) -> None:
+    def adjust_assets(self, delta: float, currency: CurrencyCode=DEFAULT_CURRENCY, memo: str='', tick: int=-1) -> None:
         """
         Adjusts assets by delta (positive or negative).
         """
@@ -58,7 +54,7 @@ class HouseholdFinancialsMixin:
 
     def quit(self) -> None:
         if self._econ_state.is_employed:
-            self.logger.info(f"Household {self.id} is quitting from Firm {self._econ_state.employer_id}")
+            self.logger.info(f'Household {self.id} is quitting from Firm {self._econ_state.employer_id}')
             self._econ_state.is_employed = False
             self._econ_state.employer_id = None
             self._econ_state.current_wage = 0.0
@@ -69,52 +65,22 @@ class HouseholdFinancialsMixin:
         Returns list of Order.
         """
         orders = []
-
-        # 1. Liquidate Inventory
         for good, qty in self._econ_state.inventory.items():
             if qty <= 0:
                 continue
-
             price = self._econ_state.perceived_avg_prices.get(good, 10.0)
             liquidation_price = price * self.config.emergency_liquidation_discount
-
-            order = Order(
-                agent_id=self.id,
-                side="SELL",
-                item_id=good,
-                quantity=qty,
-                price_limit=liquidation_price,
-                market_id=good
-            )
+            order = Order(agent_id=self.id, side='SELL', item_id=good, quantity=qty, price_pennies=int(liquidation_price * 100), price_limit=liquidation_price, market_id=good)
             orders.append(order)
-
-        # 2. Liquidate Stocks
         for firm_id, holding in self._econ_state.portfolio.holdings.items():
             shares = holding.quantity
             if shares <= 0:
                 continue
-
-            # Heuristic price for stock: we don't have access to stock market price here easily
-            # without checking markets. We'll use a very low price to ensure sale (market order effectively)
-            # or rely on the market to match.
             price = self.config.emergency_stock_liquidation_fallback_price
-
-            order = Order(
-                agent_id=self.id,
-                side="SELL",
-                item_id=f"stock_{firm_id}",
-                quantity=shares,
-                price_limit=price,
-                market_id="stock_market"
-            )
+            order = Order(agent_id=self.id, side='SELL', item_id=f'stock_{firm_id}', quantity=shares, price_pennies=int(price * 100), price_limit=price, market_id='stock_market')
             orders.append(order)
-
         if orders:
-            self.logger.warning(
-                f"GRACE_PROTOCOL | Household {self.id} triggering emergency liquidation. Generated {len(orders)} orders.",
-                extra={"agent_id": self.id, "tags": ["grace_protocol", "liquidation"]}
-            )
-
+            self.logger.warning(f'GRACE_PROTOCOL | Household {self.id} triggering emergency liquidation. Generated {len(orders)} orders.', extra={'agent_id': self.id, 'tags': ['grace_protocol', 'liquidation']})
         return orders
 
     def add_labor_income(self, income: float) -> None:
@@ -135,7 +101,7 @@ class HouseholdFinancialsMixin:
         self._econ_state.labor_income_this_tick = 0.0
         self._econ_state.capital_income_this_tick = 0.0
 
-    def record_consumption(self, quantity: float, is_food: bool = False) -> None:
+    def record_consumption(self, quantity: float, is_food: bool=False) -> None:
         """
         Updates consumption counters.
         Used by Registry during transaction processing.
@@ -143,8 +109,6 @@ class HouseholdFinancialsMixin:
         self._econ_state.current_consumption += quantity
         if is_food:
             self._econ_state.current_food_consumption += quantity
-
-    # --- IPortfolioHandler Implementation ---
 
     @property
     def portfolio(self) -> Portfolio:
@@ -157,25 +121,19 @@ class HouseholdFinancialsMixin:
     def get_portfolio(self) -> PortfolioDTO:
         assets = []
         for firm_id, share in self._econ_state.portfolio.holdings.items():
-            assets.append(PortfolioAsset(
-                asset_type="stock",
-                asset_id=str(firm_id),
-                quantity=share.quantity
-            ))
+            assets.append(PortfolioAsset(asset_type='stock', asset_id=str(firm_id), quantity=share.quantity))
         return PortfolioDTO(assets=assets)
 
     def receive_portfolio(self, portfolio: PortfolioDTO) -> None:
         for asset in portfolio.assets:
-            if asset.asset_type == "stock":
+            if asset.asset_type == 'stock':
                 try:
                     firm_id = int(asset.asset_id)
-                    # TD-160: Inherited assets are integrated.
-                    # We use 0.0 acquisition price as default for inheritance if not specified.
                     self._econ_state.portfolio.add(firm_id, asset.quantity, 0.0)
                 except ValueError:
-                    self.logger.error(f"Invalid firm_id in portfolio receive: {asset.asset_id}")
+                    self.logger.error(f'Invalid firm_id in portfolio receive: {asset.asset_id}')
             else:
-                self.logger.warning(f"Household received unhandled asset type: {asset.asset_type} (ID: {asset.asset_id})")
+                self.logger.warning(f'Household received unhandled asset type: {asset.asset_type} (ID: {asset.asset_id})')
 
     def clear_portfolio(self) -> None:
         self._econ_state.portfolio.holdings.clear()

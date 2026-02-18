@@ -39,85 +39,52 @@ class TestWO157DynamicPricing:
         return config
 
     def test_record_sale_updates_tick(self, mock_config):
-        # Construct Firm with minimal mocks
-        core_config = AgentCoreConfigDTO(
-            id=1, name="Firm_1", logger=Mock(), memory_interface=None, value_orientation="PROFIT", initial_needs={}
-        )
-        firm = Firm(
-            core_config=core_config,
-            engine=Mock(),
-            specialization="widget",
-            productivity_factor=1.0,
-            config_dto=mock_config
-        )
-
-        firm.record_sale("widget", 10.0, 100)
-        assert firm.sales_state.inventory_last_sale_tick["widget"] == 100
-
-        firm.record_sale("widget", 5.0, 105)
-        assert firm.sales_state.inventory_last_sale_tick["widget"] == 105
+        core_config = AgentCoreConfigDTO(id=1, name='Firm_1', logger=Mock(), memory_interface=None, value_orientation='PROFIT', initial_needs={})
+        firm = Firm(core_config=core_config, engine=Mock(), specialization='widget', productivity_factor=1.0, config_dto=mock_config)
+        firm.record_sale('widget', 10.0, 100)
+        assert firm.sales_state.inventory_last_sale_tick['widget'] == 100
+        firm.record_sale('widget', 5.0, 105)
+        assert firm.sales_state.inventory_last_sale_tick['widget'] == 105
 
     def test_dynamic_pricing_reduction(self, mock_config):
-        # Test SalesEngine logic directly
         engine = SalesEngine()
         state = SalesState()
-
-        current_tick = 100
-        last_sale = 80 # Diff 20 > Timeout 10
-        state.inventory_last_sale_tick["widget"] = last_sale
-
-        orders = [
-            Order(1, "SELL", "widget", 10.0, 100.0, "market")
-        ]
-
-        def estimator(item_id): return 50.0
-
-        engine.check_and_apply_dynamic_pricing(state, orders, current_tick, mock_config, estimator)
-
-        # Expect price reduction: 100.0 * 0.9 = 90.0
-        assert orders[0].price_limit == 90.0
-        assert state.last_prices["widget"] == 90.0
-
-    def test_dynamic_pricing_floor(self, mock_config):
-        # Setup: Stale item, price near floor
-        engine = SalesEngine()
-        state = SalesState()
-
         current_tick = 100
         last_sale = 80
-        state.inventory_last_sale_tick["widget"] = last_sale
+        state.inventory_last_sale_tick['widget'] = last_sale
+        orders = [Order(1, 'SELL', 'widget', 10.0, int(100.0 * 100), 100.0, 'market')]
 
-        # Floor is 50.0
-        orders = [
-            Order(1, "SELL", "widget", 10.0, 52.0, "market")
-        ]
-
-        # 52 * 0.9 = 46.8 < 50.0
-        # Should clap to 50.0
-        def estimator(item_id): return 50.0
-
+        def estimator(item_id):
+            return 50.0
         engine.check_and_apply_dynamic_pricing(state, orders, current_tick, mock_config, estimator)
+        assert orders[0].price_limit == 90.0
+        assert state.last_prices['widget'] == 90.0
 
-        assert orders[0].price_limit == 50.0
-        assert state.last_prices["widget"] == 50.0
-
-    def test_dynamic_pricing_not_stale(self, mock_config):
-        # Setup: Fresh item
+    def test_dynamic_pricing_floor(self, mock_config):
         engine = SalesEngine()
         state = SalesState()
-
         current_tick = 100
-        last_sale = 95 # Diff 5 < Timeout 10
-        state.inventory_last_sale_tick["widget"] = last_sale
+        last_sale = 80
+        state.inventory_last_sale_tick['widget'] = last_sale
+        orders = [Order(1, 'SELL', 'widget', 10.0, int(52.0 * 100), 52.0, 'market')]
 
-        orders = [
-            Order(1, "SELL", "widget", 10.0, 100.0, "market")
-        ]
-
-        def estimator(item_id): return 50.0
-
+        def estimator(item_id):
+            return 50.0
         engine.check_and_apply_dynamic_pricing(state, orders, current_tick, mock_config, estimator)
+        assert orders[0].price_limit == 50.0
+        assert state.last_prices['widget'] == 50.0
 
+    def test_dynamic_pricing_not_stale(self, mock_config):
+        engine = SalesEngine()
+        state = SalesState()
+        current_tick = 100
+        last_sale = 95
+        state.inventory_last_sale_tick['widget'] = last_sale
+        orders = [Order(1, 'SELL', 'widget', 10.0, int(100.0 * 100), 100.0, 'market')]
+
+        def estimator(item_id):
+            return 50.0
+        engine.check_and_apply_dynamic_pricing(state, orders, current_tick, mock_config, estimator)
         assert orders[0].price_limit == 100.0
 
     def test_transaction_processor_calls_record_sale(self, mock_config):
@@ -127,34 +94,18 @@ class TestWO157DynamicPricing:
         state.settlement_system = Mock()
         state.settlement_system.transfer.return_value = True
         state.market_data = {}
-        # Mock taxation system to return iterable intents
         state.taxation_system = Mock()
         state.taxation_system.calculate_tax_intents.return_value = []
-
         buyer = Mock()
-        buyer.assets = 1000.0 # Sufficient funds
+        buyer.assets = 1000.0
         buyer.inventory = {}
         buyer.inventory_quality = {}
-
-        # Seller needs to be a Firm instance logic-wise, but Mock(spec=Firm) is safer for unit test
         seller = Mock(spec=Firm)
         seller.record_sale = Mock()
-        # Mock other needed attributes/methods if TransactionProcessor accesses them
-        # TransactionProcessor checks: isinstance(seller, Firm) -> seller.record_sale(...)
-
         state.agents = {1: buyer, 2: seller}
-
-        tx = Transaction(
-            buyer_id=1, seller_id=2, item_id="widget",
-            quantity=5.0, price=10.0, market_id="market",
-            transaction_type="goods", time=200
-        )
+        tx = Transaction(buyer_id=1, seller_id=2, item_id='widget', quantity=5.0, price=10.0, market_id='market', transaction_type='goods', time=200)
         state.transactions = [tx]
-
-        # Register Handler
         handler = GoodsTransactionHandler()
-        processor.register_handler("goods", handler)
-
+        processor.register_handler('goods', handler)
         processor.execute(state)
-
-        seller.record_sale.assert_called_with("widget", 5.0, 200)
+        seller.record_sale.assert_called_with('widget', 5.0, 200)

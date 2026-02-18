@@ -16,29 +16,13 @@ def test_engine_execution_parity_smoke():
     diverges from the legacy engine (Need Factors). This test primarily ensures that
     the DTO refactoring hasn't broken the execution path of either engine.
     """
-    # Setup Mocks
     mock_ai = MagicMock()
-    # Mock Action Vector
     mock_vector = MagicMock()
-    mock_vector.consumption_aggressiveness = {"basic_food": 0.5, "luxury_item": 0.8}
+    mock_vector.consumption_aggressiveness = {'basic_food': 0.5, 'luxury_item': 0.8}
     mock_vector.job_mobility_aggressiveness = 0.5
     mock_ai.decide_action_vector.return_value = mock_vector
-
-    # Mock Config Module (Legacy expects uppercase attributes)
     mock_config_module = MagicMock()
-    mock_config_module.GOODS = {
-        "basic_food": {
-            "utility_effects": {"survival": 10},
-            "is_luxury": False,
-            "is_durable": False
-        },
-        "luxury_item": {
-            "utility_effects": {"social": 10},
-            "is_luxury": True,
-            "is_durable": True,
-            "is_veblen": True
-        }
-    }
+    mock_config_module.GOODS = {'basic_food': {'utility_effects': {'survival': 10}, 'is_luxury': False, 'is_durable': False}, 'luxury_item': {'utility_effects': {'social': 10}, 'is_luxury': True, 'is_durable': True, 'is_veblen': True}}
     mock_config_module.DEFAULT_MORTGAGE_RATE = 0.05
     mock_config_module.DSR_CRITICAL_THRESHOLD = 0.5
     mock_config_module.TARGET_FOOD_BUFFER_QUANTITY = 5.0
@@ -78,13 +62,9 @@ def test_engine_execution_parity_smoke():
     mock_config_module.BUDGET_LIMIT_NORMAL_RATIO = 0.5
     mock_config_module.BUDGET_LIMIT_URGENT_NEED = 80
     mock_config_module.BUDGET_LIMIT_URGENT_RATIO = 0.9
-    mock_config_module.HOUSEHOLD_CONSUMABLE_GOODS = ["basic_food", "luxury_item"]
-
-
-    # Mock DTO Config (New Engine uses this from context)
-    # Must match mock_config_module values
+    mock_config_module.HOUSEHOLD_CONSUMABLE_GOODS = ['basic_food', 'luxury_item']
     config_dto = MagicMock(spec=HouseholdConfigDTO)
-    config_dto.household_consumable_goods = ["basic_food", "luxury_item"]
+    config_dto.household_consumable_goods = ['basic_food', 'luxury_item']
     config_dto.goods = mock_config_module.GOODS
     config_dto.default_mortgage_rate = 0.05
     config_dto.dsr_critical_threshold = 0.5
@@ -125,22 +105,17 @@ def test_engine_execution_parity_smoke():
     config_dto.budget_limit_normal_ratio = 0.5
     config_dto.budget_limit_urgent_need = 80
     config_dto.budget_limit_urgent_ratio = 0.9
-
-    # Household State
-    # Hybrid mock: no spec to allow arbitrary nesting, but we manually populate both flat and nested fields
     household = MagicMock()
-    household.id = "HH_1"
+    household.id = 'HH_1'
     household.agent_data = {}
-
-    # Flat DTO fields (New Engine)
-    household.inventory = {"basic_food": 2.0}
-    household.assets = 100000.0 # $1000 in pennies
-    household.current_wage = 2000.0 # $20 in pennies
-    household.current_wage_pennies = 2000 # Integer pennies
+    household.inventory = {'basic_food': 2.0}
+    household.assets = 100000.0
+    household.current_wage = 2000.0
+    household.current_wage_pennies = 2000
     household.is_employed = True
     household.wage_modifier = 1.0
-    household.needs = {"survival": 50.0, "social": 20.0}
-    household.expected_inflation = {"basic_food": 0.02}
+    household.needs = {'survival': 50.0, 'social': 20.0}
+    household.expected_inflation = {'basic_food': 0.02}
     household.portfolio_holdings = {}
     from simulation.ai.api import Personality
     household.personality = Personality.STATUS_SEEKER
@@ -157,8 +132,6 @@ def test_engine_execution_parity_smoke():
     household.durable_assets = []
     household.perceived_prices = {}
     household.demand_elasticity = 1.0
-
-    # Nested fields (Legacy Engine compatibility)
     household._econ_state = MagicMock()
     household._econ_state.inventory = household.inventory
     household._econ_state.assets = household.assets
@@ -170,81 +143,26 @@ def test_engine_execution_parity_smoke():
     household._econ_state.owned_properties = household.owned_properties
     household._econ_state.is_homeless = household.is_homeless
     household._econ_state.durable_assets = household.durable_assets
-
     household._bio_state = MagicMock()
     household._bio_state.needs = household.needs
-
     household._social_state = MagicMock()
     household._social_state.personality = household.personality
     household._social_state.conformity = household.conformity
     household._social_state.optimism = household.optimism
     household._social_state.ambition = household.ambition
-
-    # Market Data
-    market_data = {
-        "loan_market": {"interest_rate": 0.05},
-        "debt_data": {},
-        "goods_market": {
-            "basic_food_current_sell_price": 5.0,
-            "luxury_item_current_sell_price": 50.0,
-            "labor": {"avg_wage": 20.0, "best_wage_offer": 22.0}
-        },
-        "avg_dividend_yield": 0.05,
-        "inflation": 0.02,
-        "reference_standard": {"avg_housing_tier": 2.0}, # Trigger mimicry
-        "deposit_data": {}
-    }
-
+    market_data = {'loan_market': {'interest_rate': 0.05}, 'debt_data': {}, 'goods_market': {'basic_food_current_sell_price': 5.0, 'luxury_item_current_sell_price': 50.0, 'labor': {'avg_wage': 20.0, 'best_wage_offer': 22.0}}, 'avg_dividend_yield': 0.05, 'inflation': 0.02, 'reference_standard': {'avg_housing_tier': 2.0}, 'deposit_data': {}}
     market_snapshot = MagicMock(spec=MarketSnapshotDTO)
-    market_snapshot.prices = {"stock_1": 100.0}
+    market_snapshot.prices = {'stock_1': 100.0}
     market_snapshot.asks = {}
-
-    context = DecisionContext(
-        state=household,
-        config=config_dto,
-        market_snapshot=market_snapshot,
-        market_data=market_data,
-        goods_data={}, # Added empty goods_data
-        current_time=100
-    )
-
-    # Instantiate Engines
-    # Legacy uses config_module for uppercase lookups
+    context = DecisionContext(state=household, config=config_dto, market_snapshot=market_snapshot, market_data=market_data, goods_data={}, current_time=100)
     legacy_engine = LegacyAIDrivenHouseholdDecisionEngine(mock_ai, mock_config_module)
-
-    # New Engine passes config_module to init, but uses context.config (config_dto) in execution
-    # We pass config_dto to init as well, assuming config_factory handles it or we pass mock_config_module
-    # if managers in init use it?
-    # HousingManager(config=config_module) in new engine __init__.
-    # But HousingManager logic uses context.config.
-    # So init arg doesn't matter much if decide_housing uses context.
     new_engine = AIDrivenHouseholdDecisionEngine(mock_ai, mock_config_module)
-
-    # Seed and Run Legacy
     random.seed(42)
     legacy_orders, _ = legacy_engine._make_decisions_internal(context)
-
-    # Seed and Run New
     random.seed(42)
     new_output = new_engine._make_decisions_internal(context)
     new_orders = new_output.orders
-
-    # Assert
-    print(f"Legacy Orders: {len(legacy_orders)}")
-    print(f"New Orders: {len(new_orders)}")
-
-    # Sort orders by type/item to allow comparison if order differs slightly but content is same?
-    # No, strict parity implies exact order.
-
-    # NOTE: Behavioral equivalence is currently broken due to divergence in logic (WO-157 vs Legacy).
-    # Disabling strict assertions to allow test to pass as a "smoke test" for DTO access.
-    # assert len(legacy_orders) == len(new_orders)
-    # for i, (o1, o2) in enumerate(zip(legacy_orders, new_orders)):
-    #     print(f"Comparing Order {i}: {o1} vs {o2}")
-    #     assert o1.order_type == o2.order_type, f"Type mismatch at {i}"
-    #     assert o1.item_id == o2.item_id, f"Item mismatch at {i}"
-    #     assert abs(o1.quantity - o2.quantity) < 1e-6, f"Quantity mismatch at {i}: {o1.quantity} vs {o2.quantity}"
-    #     assert abs(o1.price - o2.price) < 1e-6, f"Price mismatch at {i}: {o1.price} vs {o2.price}"
-
-if __name__ == "__main__":
+    print(f'Legacy Orders: {len(legacy_orders)}')
+    print(f'New Orders: {len(new_orders)}')
+if __name__ == '__main__':
     test_engine_execution_parity_smoke()

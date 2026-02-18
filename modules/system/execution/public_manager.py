@@ -2,11 +2,7 @@ from __future__ import annotations
 from typing import Dict, List, Any, Optional
 import logging
 from collections import defaultdict
-
-from modules.system.api import (
-    IAssetRecoverySystem, AgentBankruptcyEventDTO, MarketSignalDTO, PublicManagerReportDTO,
-    CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder # Added for Phase 33
-)
+from modules.system.api import IAssetRecoverySystem, AgentBankruptcyEventDTO, MarketSignalDTO, PublicManagerReportDTO, CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder
 from modules.finance.api import IFinancialAgent, InsufficientFundsError
 from simulation.models import Order
 
@@ -20,46 +16,38 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
     """
 
     def __init__(self, config: Any):
-        self._id = 999999  # Fixed System ID for PublicManager
+        self._id = 999999
         self.config = config
-        self.logger = logging.getLogger("PublicManager")
+        self.logger = logging.getLogger('PublicManager')
         self.managed_inventory: Dict[str, float] = defaultdict(float)
         self.system_treasury: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
-        self.logger = logging.getLogger("PublicManager")
-
-        # Tracking for report (resets every tick or tracked cumulatively?)
-        # For the report DTO, we likely want "current tick's activity".
-        # But since get_status_report might be called anytime, we'll store cumulative or last tick data.
+        self.logger = logging.getLogger('PublicManager')
         self.last_tick_recovered_assets: Dict[str, float] = defaultdict(float)
         self.last_tick_revenue: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
         self.total_revenue_lifetime: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
 
-    # --- IFinancialAgent Implementation ---
     @property
     def id(self) -> int:
         """Returns the unique integer ID for the PublicManager."""
         return self._id
 
-    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def _deposit(self, amount: int, currency: CurrencyCode=DEFAULT_CURRENCY) -> None:
         """Deposits funds (internal use)."""
         if amount < 0:
-             self.logger.error(f"Negative deposit attempted: {amount}")
-             return
+            self.logger.error(f'Negative deposit attempted: {amount}')
+            return
         self.deposit_revenue(amount, currency=currency)
 
-    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def _withdraw(self, amount: int, currency: CurrencyCode=DEFAULT_CURRENCY) -> None:
         """Withdraws funds from treasury."""
         if amount < 0:
-            raise ValueError("Cannot withdraw negative amount.")
-        
+            raise ValueError('Cannot withdraw negative amount.')
         current_bal = self.system_treasury.get(currency, 0)
         if current_bal < amount:
-            raise InsufficientFundsError(f"PublicManager insufficient funds. Required: {amount} {currency}, Available: {current_bal}")
-
+            raise InsufficientFundsError(f'PublicManager insufficient funds. Required: {amount} {currency}, Available: {current_bal}')
         self.system_treasury[currency] -= amount
-        # Note: withdrawals don't usually track 'revenue', so we don't update last_tick_revenue here.
 
-    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+    def get_balance(self, currency: CurrencyCode=DEFAULT_CURRENCY) -> int:
         """Returns the current balance for the specified currency."""
         return self.system_treasury.get(currency, 0)
 
@@ -72,32 +60,18 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
         """Returns the total wealth in default currency estimation."""
         return sum(self.system_treasury.values())
 
-    # --- Legacy / Helper ---
-
     def get_assets_by_currency(self) -> Dict[CurrencyCode, int]:
         """Implementation of ICurrencyHolder."""
         return self.system_treasury.copy()
 
-    # --- IAssetRecoverySystem Implementation ---
-
     def process_bankruptcy_event(self, event: AgentBankruptcyEventDTO) -> None:
         """Takes ownership of a defunct agent's inventory."""
-        # Reset tracking if this is a new tick?
-        # Since this can be called multiple times per tick (multiple bankruptcies),
-        # we should accumulate for the tick.
-        # Ideally, we reset at the start of the tick. But PublicManager doesn't have a 'step' method.
-        # We'll rely on generating the report or liquidation orders to reset tracking if needed.
-        # For now, just accumulate.
-
-        self.logger.warning(
-            f"Processing bankruptcy for Agent {event['agent_id']} at tick {event['tick']}. "
-            f"Recovering inventory."
-        )
+        self.logger.warning(f"Processing bankruptcy for Agent {event['agent_id']} at tick {event['tick']}. Recovering inventory.")
         for item_id, quantity in event['inventory'].items():
             if quantity > 0:
                 self.managed_inventory[item_id] += quantity
                 self.last_tick_recovered_assets[item_id] += quantity
-                self.logger.info(f"Recovered {quantity} of {item_id}.")
+                self.logger.info(f'Recovered {quantity} of {item_id}.')
 
     def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
         """
@@ -108,69 +82,37 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
             if quantity > 0:
                 self.managed_inventory[item_id] += quantity
                 self.last_tick_recovered_assets[item_id] += quantity
-        self.logger.info(f"Received liquidated assets: {inventory}")
+        self.logger.info(f'Received liquidated assets: {inventory}')
 
-    def generate_liquidation_orders(self, market_signals: Dict[str, MarketSignalDTO], core_config: Any = None, engine: Any = None) -> List[Order]:
+    def generate_liquidation_orders(self, market_signals: Dict[str, MarketSignalDTO], core_config: Any=None, engine: Any=None) -> List[Order]:
         """
         Generates non-disruptive SELL orders for managed assets.
         This is typically called in Phase 4.5.
         """
-        # We can reset "last tick" metrics here, assuming this starts the liquidation cycle for the tick.
         self.last_tick_recovered_assets = defaultdict(float)
         self.last_tick_revenue = {DEFAULT_CURRENCY: 0}
-
         orders: List[Order] = []
         items_to_liquidate = list(self.managed_inventory.items())
-
-        # Config defaults
-        sell_rate = getattr(self.config, "LIQUIDATION_SELL_RATE", 0.1)
-        ask_undercut = getattr(self.config, "LIQUIDATION_ASK_UNDERCUT", 0.05)
-
+        sell_rate = getattr(self.config, 'LIQUIDATION_SELL_RATE', 0.1)
+        ask_undercut = getattr(self.config, 'LIQUIDATION_ASK_UNDERCUT', 0.05)
         for item_id, quantity in items_to_liquidate:
             if quantity <= 0:
                 continue
-
             market_signal = market_signals.get(item_id)
             if not market_signal:
-                # No signal, maybe no market? Skip.
                 continue
-
             best_ask = market_signal.best_ask
-
-            # If no best_ask (no sellers), we need a reference price.
-            # Using last_traded_price or config default.
             if best_ask is None or best_ask <= 0:
                 best_ask = market_signal.last_traded_price
-
             if best_ask is None or best_ask <= 0:
-                # Fallback to default goods price from config if available, or skip
-                # We don't have easy access to GOODS_INITIAL_PRICE here unless in config.
-                # Just skip to avoid dumping at 0.
                 continue
-
-            # Strategy: Sell a fraction of inventory at a slight discount to the best ask.
             sell_quantity = min(quantity, quantity * sell_rate)
-
-            # Undercut the best ask price
             sell_price = best_ask * (1 - ask_undercut)
-
             if sell_price <= 0 or sell_quantity <= 0.001:
                 continue
-
-            order = Order(
-                agent_id=self.id, # Use integer ID
-                side="SELL",
-                item_id=item_id,
-                quantity=sell_quantity,
-                price_limit=sell_price,
-                market_id=item_id
-            )
+            order = Order(agent_id=self.id, side='SELL', item_id=item_id, quantity=sell_quantity, price_pennies=int(sell_price * 100), price_limit=sell_price, market_id=item_id)
             orders.append(order)
-
-            # We DO NOT decrement inventory here.
-            # Inventory will be decremented in confirm_sale().
-            self.logger.info(f"Generated liquidation order for {sell_quantity} of {item_id} at {sell_price}.")
-
+            self.logger.info(f'Generated liquidation order for {sell_quantity} of {item_id} at {sell_price}.')
         return orders
 
     def confirm_sale(self, item_id: str, quantity: float) -> None:
@@ -180,25 +122,21 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
         """
         if item_id in self.managed_inventory:
             self.managed_inventory[item_id] = max(0.0, self.managed_inventory[item_id] - quantity)
-            self.logger.debug(f"Confirmed sale of {quantity} {item_id}. Remaining: {self.managed_inventory[item_id]}")
+            self.logger.debug(f'Confirmed sale of {quantity} {item_id}. Remaining: {self.managed_inventory[item_id]}')
         else:
-            self.logger.warning(f"Confirmed sale for {item_id} but item not in managed inventory.")
+            self.logger.warning(f'Confirmed sale for {item_id} but item not in managed inventory.')
 
-    def deposit_revenue(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+    def deposit_revenue(self, amount: int, currency: CurrencyCode=DEFAULT_CURRENCY) -> None:
         """Deposits revenue from liquidation sales into the system treasury."""
-        if currency not in self.system_treasury: self.system_treasury[currency] = 0
-        if currency not in self.last_tick_revenue: self.last_tick_revenue[currency] = 0
-        if currency not in self.total_revenue_lifetime: self.total_revenue_lifetime[currency] = 0
-
+        if currency not in self.system_treasury:
+            self.system_treasury[currency] = 0
+        if currency not in self.last_tick_revenue:
+            self.last_tick_revenue[currency] = 0
+        if currency not in self.total_revenue_lifetime:
+            self.total_revenue_lifetime[currency] = 0
         self.system_treasury[currency] += amount
         self.last_tick_revenue[currency] += amount
         self.total_revenue_lifetime[currency] += amount
 
     def get_status_report(self) -> PublicManagerReportDTO:
-        return PublicManagerReportDTO(
-            tick=0, # Placeholder, caller usually knows tick
-            newly_recovered_assets=dict(self.last_tick_recovered_assets),
-            liquidation_revenue=self.last_tick_revenue,
-            managed_inventory_count=sum(self.managed_inventory.values()),
-            system_treasury_balance=self.system_treasury
-        )
+        return PublicManagerReportDTO(tick=0, newly_recovered_assets=dict(self.last_tick_recovered_assets), liquidation_revenue=self.last_tick_revenue, managed_inventory_count=sum(self.managed_inventory.values()), system_treasury_balance=self.system_treasury)
