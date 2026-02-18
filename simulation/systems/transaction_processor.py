@@ -37,6 +37,53 @@ class TransactionProcessor(SystemInterface):
         """Registers a handler for Public Manager transactions (seller check)."""
         self._public_manager_handler = handler
 
+    def _handle_public_manager(self, tx: Transaction, context: TransactionContext) -> Optional[SettlementResultDTO]:
+        """
+        Handles transactions where the seller is the Public Manager.
+        Returns a SettlementResultDTO if handled, or None if not applicable.
+        """
+        # 1. Check if it is a PM transaction
+        is_pm_seller = (
+            tx.seller_id == "PUBLIC_MANAGER"
+            or tx.seller_id == 999999
+            or tx.seller_id == -1
+        )
+        is_systemic = tx.transaction_type in [
+            "inheritance_distribution",
+            "escheatment",
+        ]
+
+        if is_pm_seller and not is_systemic and self._public_manager_handler:
+            buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(
+                tx.buyer_id
+            )
+            if buyer:
+                try:
+                    success = self._public_manager_handler.handle(
+                        tx, buyer, None, context
+                    )
+
+                    amount = 0.0
+                    if success:
+                        if getattr(tx, 'total_pennies', 0) > 0:
+                            amount = float(tx.total_pennies)
+                        else:
+                            amount = tx.quantity * tx.price
+
+                    return SettlementResultDTO(
+                        original_transaction=tx,
+                        success=success,
+                        amount_settled=amount,
+                    )
+                except Exception as e:
+                    context.logger.error(f"Public Manager Handler Failed for {tx.item_id}: {e}", exc_info=True)
+                    return SettlementResultDTO(
+                        original_transaction=tx,
+                        success=False,
+                        amount_settled=0.0
+                    )
+        return None
+
     def execute(
         self,
         state: SimulationState,
@@ -108,34 +155,9 @@ class TransactionProcessor(SystemInterface):
                 continue
 
             # 1. Special Routing: Public Manager (Seller)
-            # Hijack if seller is explicitly PUBLIC_MANAGER or system placeholder,
-            # BUT only if it's not a specialized systemic distribution (Inheritance/Escheatment)
-            is_pm_seller = (
-                tx.seller_id == "PUBLIC_MANAGER"
-                or tx.seller_id == 999999
-                or tx.seller_id == -1
-            )
-            is_systemic = tx.transaction_type in [
-                "inheritance_distribution",
-                "escheatment",
-            ]
-
-            if is_pm_seller and not is_systemic and self._public_manager_handler:
-                buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(
-                    tx.buyer_id
-                )
-                if buyer:
-                    success = self._public_manager_handler.handle(
-                        tx, buyer, None, context
-                    )
-                    amount = tx.quantity * tx.price if success else 0.0
-                    results.append(
-                        SettlementResultDTO(
-                            original_transaction=tx,
-                            success=success,
-                            amount_settled=amount,
-                        )
-                    )
+            pm_result = self._handle_public_manager(tx, context)
+            if pm_result:
+                results.append(pm_result)
                 continue
 
             # 2. Standard Dispatch
@@ -158,6 +180,9 @@ class TransactionProcessor(SystemInterface):
                     continue
 
             # Resolve Agents
+            # Note: We resolve them outside try-except because if this fails,
+            # something is structurally wrong with the simulation state (missing agent).
+            # However, for robustness, we could wrap this too. But usually we want to crash early on corrupted state.
             buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(
                 tx.buyer_id
             )
@@ -165,28 +190,37 @@ class TransactionProcessor(SystemInterface):
                 tx.seller_id
             )
 
-            # Dispatch
-            success = handler.handle(tx, buyer, seller, context)
+            try:
+                # Dispatch
+                success = handler.handle(tx, buyer, seller, context)
 
-            # Record Result
-            if success:
-                # TD-MKT-FLOAT-MATCH: total_pennies is the SSoT for settlement
-                if getattr(tx, 'total_pennies', 0) > 0:
-                    amount = float(tx.total_pennies)
-                else:
-                    amount = tx.quantity * tx.price
-            else:
+                # Record Result
                 amount = 0.0
+                if success:
+                    # TD-MKT-FLOAT-MATCH: total_pennies is the SSoT for settlement
+                    if getattr(tx, 'total_pennies', 0) > 0:
+                        amount = float(tx.total_pennies)
+                    else:
+                        amount = tx.quantity * tx.price
 
-            results.append(
-                SettlementResultDTO(
-                    original_transaction=tx, success=success, amount_settled=amount
+                results.append(
+                    SettlementResultDTO(
+                        original_transaction=tx, success=success, amount_settled=amount
+                    )
                 )
-            )
 
-            # Post-processing
-            if success and tx.metadata and tx.metadata.get("triggers_effect"):
-                state.effects_queue.append(tx.metadata)
+                # Post-processing
+                if success and tx.metadata and tx.metadata.get("triggers_effect"):
+                    state.effects_queue.append(tx.metadata)
+
+            except Exception as e:
+                # Catch-all for handler failures to prevent crashing the entire tick
+                state.logger.error(f"Transaction Handler Failed for {tx.transaction_type} (ID: {getattr(tx, 'id', 'unknown')}): {e}", exc_info=True)
+                results.append(
+                    SettlementResultDTO(
+                        original_transaction=tx, success=False, amount_settled=0.0
+                    )
+                )
 
         # Append queued transactions from context to state (e.g. credit creation from loans)
         if context.transaction_queue:

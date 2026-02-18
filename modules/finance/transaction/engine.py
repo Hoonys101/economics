@@ -28,12 +28,14 @@ class TransactionValidator(ITransactionValidator):
         self.account_accessor = account_accessor
 
     def validate(self, transaction: TransactionDTO) -> None:
-        if transaction.amount <= 0:
-            raise NegativeAmountError(f"Transaction amount must be positive. Got: {transaction.amount}")
-
+        # Strict Type Check
         if not isinstance(transaction.amount, int):
              raise ValidationError(f"Transaction amount must be integer (pennies). Got: {type(transaction.amount)}")
 
+        if transaction.amount <= 0:
+            raise NegativeAmountError(f"Transaction amount must be positive. Got: {transaction.amount}")
+
+        # Account Existence Checks
         if not self.account_accessor.exists(transaction.source_account_id):
             raise InvalidAccountError(f"Source account does not exist: {transaction.source_account_id}")
 
@@ -85,7 +87,7 @@ class TransactionExecutor(ITransactionExecutor):
                     memo=f"Transfer from {transaction.source_account_id}: {transaction.description}"
                 )
             except Exception as e:
-                # ROLLBACK
+                # ROLLBACK: Attempt to return funds to source
                 self.logger.warning(
                     f"Deposit failed for {transaction.destination_account_id}. Rolling back withdrawal from {transaction.source_account_id}. Error: {e}"
                 )
@@ -96,11 +98,13 @@ class TransactionExecutor(ITransactionExecutor):
                         memo=f"ROLLBACK: Failed transfer to {transaction.destination_account_id}"
                     )
                 except Exception as rb_error:
-                    # CRITICAL: Money destroyed
-                    raise ExecutionError(
+                    # CRITICAL: Money destroyed (Withdrawn but not Returned)
+                    msg = (
                         f"CRITICAL: Rollback failed! {transaction.amount} {transaction.currency} lost from {transaction.source_account_id}. "
                         f"Original Error: {e}. Rollback Error: {rb_error}"
-                    ) from rb_error
+                    )
+                    self.logger.critical(msg)
+                    raise ExecutionError(msg) from rb_error
 
                 # Re-raise original error wrapped in ExecutionError (since transaction failed)
                 raise ExecutionError(f"Deposit failed: {e}. Rollback successful.") from e
@@ -270,14 +274,23 @@ class TransactionEngine(ITransactionEngine):
                 self._rollback_batch(successful_transactions)
 
                 # Return failure for all
-                failed_results = [
-                     TransactionResultDTO(
+                # Mark executed ones as failed (rolled back) and the failing one as failed.
+                failed_results = []
+                for t in transactions:
+                    msg = fail_msg
+                    status = 'FAILED'
+                    if t == tx:
+                        status = 'CRITICAL_FAILURE' # Execution failed
+                    elif t in successful_transactions:
+                         msg = f"Rolled back due to batch failure: {fail_msg}"
+
+                    failed_results.append(TransactionResultDTO(
                          transaction=t,
-                         status='FAILED' if t != tx else 'CRITICAL_FAILURE', # Mark the one that failed as critical? Or just FAILED batch
-                         message=fail_msg,
+                         status=status,
+                         message=msg,
                          timestamp=self._get_timestamp()
-                     ) for t in transactions
-                 ]
+                     ))
+
                 for fr in failed_results:
                      self.ledger.record(fr)
                 return failed_results
