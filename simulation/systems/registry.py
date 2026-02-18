@@ -7,7 +7,7 @@ from simulation.models import Transaction
 from simulation.core_agents import Household, Skill
 from simulation.firms import Firm
 from simulation.dtos.api import SimulationState
-from modules.simulation.api import IInventoryHandler
+from modules.simulation.api import IInventoryHandler, InventorySlot
 from modules.housing.api import IHousingService
 from modules.common.interfaces import IInvestor
 from modules.system.constants import (
@@ -116,14 +116,26 @@ class Registry(IRegistry):
                 buyer.consume(tx.item_id, tx.quantity, current_time)
         else:
             # Physical Goods: Update Inventory via Protocol
-            # Migrated to GoodsTransactionHandler to prevent double-counting
-            pass
+            # RESTORED for TransactionManager compatibility
+
+            # Seller Inventory
+            if isinstance(seller, IInventoryHandler):
+                seller.remove_item(tx.item_id, tx.quantity)
+
+            # Buyer Inventory
+            is_raw_material = tx.item_id in getattr(config, "RAW_MATERIAL_SECTORS", [])
+            tx_quality = getattr(tx, 'quality', 1.0)
+
+            if isinstance(buyer, IInventoryHandler):
+                slot = InventorySlot.INPUT if is_raw_material and isinstance(buyer, Firm) else InventorySlot.MAIN
+                buyer.add_item(tx.item_id, tx.quantity, quality=tx_quality, slot=slot)
 
         # 2. Household Consumption Counters (Used for Utility/Stats)
         if isinstance(buyer, Household):
             if not is_service:
                 is_food = (tx.item_id == "basic_food")
-                buyer.record_consumption(tx.quantity, is_food=is_food)
+                if hasattr(buyer, "record_consumption"):
+                    buyer.record_consumption(tx.quantity, is_food=is_food)
 
     def _handle_stock_registry(self, tx: Transaction, buyer: Any, seller: Any, stock_market: Any, current_time: int):
         """Updates share holdings and market registry."""
