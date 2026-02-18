@@ -3,9 +3,26 @@ from unittest.mock import MagicMock, PropertyMock, patch
 from simulation.systems.settlement_system import SettlementSystem
 from modules.finance.api import IFinancialAgent, IBank, InsufficientFundsError
 from modules.system.constants import ID_CENTRAL_BANK
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, IAgentRegistry
 
 from modules.finance.api import IPortfolioHandler, IHeirProvider, PortfolioDTO, PortfolioAsset
+
+class MockRegistry(IAgentRegistry):
+    def __init__(self):
+        self.agents = {}
+
+    def register(self, agent):
+        self.agents[agent.id] = agent
+        self.agents[str(agent.id)] = agent
+
+    def get_agent(self, agent_id):
+        return self.agents.get(agent_id) or self.agents.get(str(agent_id))
+
+    def get_all_financial_agents(self):
+        return list(self.agents.values())
+
+    def set_state(self, state):
+        pass
 
 class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
     def __init__(self, agent_id, assets=0, heir_id=None):
@@ -132,11 +149,17 @@ def mock_bank():
 
 @pytest.fixture
 def settlement_system(mock_bank):
-    return SettlementSystem(bank=mock_bank)
+    registry = MockRegistry()
+    registry.register(mock_bank)
+    system = SettlementSystem(bank=mock_bank)
+    system.agent_registry = registry
+    return system
 
 def test_transfer_success(settlement_system):
     sender = MockAgent(1, 100)
     receiver = MockAgent(2, 50)
+    settlement_system.agent_registry.register(sender)
+    settlement_system.agent_registry.register(receiver)
 
     tx = settlement_system.transfer(sender, receiver, 20, "Test Transfer", tick=10)
 
@@ -149,6 +172,8 @@ def test_transfer_success(settlement_system):
 def test_transfer_insufficient_funds(settlement_system):
     sender = MockAgent(1, 10)
     receiver = MockAgent(2, 50)
+    settlement_system.agent_registry.register(sender)
+    settlement_system.agent_registry.register(receiver)
 
     tx = settlement_system.transfer(sender, receiver, 20, "Test Fail", tick=10)
 
@@ -159,6 +184,8 @@ def test_transfer_insufficient_funds(settlement_system):
 def test_create_and_transfer_minting(settlement_system):
     cb = MockCentralBank(ID_CENTRAL_BANK, 0)
     receiver = MockAgent(1, 0)
+    settlement_system.agent_registry.register(cb)
+    settlement_system.agent_registry.register(receiver)
 
     tx = settlement_system.create_and_transfer(cb, receiver, 100, "Minting", tick=5)
 
@@ -169,6 +196,8 @@ def test_create_and_transfer_minting(settlement_system):
 def test_create_and_transfer_government_grant(settlement_system):
     gov = MockAgent(3, 1000)
     receiver = MockAgent(1, 0)
+    settlement_system.agent_registry.register(gov)
+    settlement_system.agent_registry.register(receiver)
 
     tx = settlement_system.create_and_transfer(gov, receiver, 100, "Grant", tick=5)
 
@@ -179,6 +208,8 @@ def test_create_and_transfer_government_grant(settlement_system):
 def test_transfer_and_destroy_burning(settlement_system):
     cb = MockCentralBank(ID_CENTRAL_BANK, 0)
     sender = MockAgent(1, 100)
+    settlement_system.agent_registry.register(cb)
+    settlement_system.agent_registry.register(sender)
 
     tx = settlement_system.transfer_and_destroy(sender, cb, 50, "Burning", tick=5)
 
@@ -189,6 +220,8 @@ def test_transfer_and_destroy_burning(settlement_system):
 def test_transfer_and_destroy_tax(settlement_system):
     gov = MockAgent(3, 0)
     sender = MockAgent(1, 100)
+    settlement_system.agent_registry.register(gov)
+    settlement_system.agent_registry.register(sender)
 
     tx = settlement_system.transfer_and_destroy(sender, gov, 20, "Tax", tick=5)
 
@@ -198,6 +231,8 @@ def test_transfer_and_destroy_tax(settlement_system):
 
 def test_record_liquidation(settlement_system):
     agent = MockAgent(1, 0)
+    settlement_system.agent_registry.register(agent)
+
     settlement_system.record_liquidation(agent, 100, 50, 20, "Bankruptcy", tick=1)
     assert settlement_system.total_liquidation_losses == 130
 
@@ -207,6 +242,8 @@ def test_record_liquidation(settlement_system):
 def test_record_liquidation_escheatment(settlement_system):
     agent = MockAgent(1, 50)
     gov = MockAgent(99, 0)
+    settlement_system.agent_registry.register(agent)
+    settlement_system.agent_registry.register(gov)
 
     settlement_system.record_liquidation(
         agent,
@@ -229,6 +266,8 @@ def test_transfer_rollback(settlement_system):
 
     sender = MockAgent(1, 100)
     receiver = FaultyAgent(2, 50)
+    settlement_system.agent_registry.register(sender)
+    settlement_system.agent_registry.register(receiver)
 
     tx = settlement_system.transfer(sender, receiver, 20, "Faulty Transfer", tick=10)
 
@@ -242,6 +281,9 @@ def test_transfer_seamless_success(settlement_system, mock_bank):
     # Agent has 10 cash, but 100 in bank. Needs to transfer 50.
     sender = MockAgent(1, 10)
     receiver = MockAgent(2, 0)
+    settlement_system.agent_registry.register(sender)
+    settlement_system.agent_registry.register(receiver)
+
     mock_bank.deposit_for_customer(1, 100)
 
     tx = settlement_system.transfer(sender, receiver, 50, "Seamless", tick=10)
@@ -255,6 +297,9 @@ def test_transfer_seamless_fail_bank(settlement_system, mock_bank):
     # Agent has 10 cash, but only 10 in bank. Needs 50. Total 20. Fail.
     sender = MockAgent(1, 10)
     receiver = MockAgent(2, 0)
+    settlement_system.agent_registry.register(sender)
+    settlement_system.agent_registry.register(receiver)
+
     mock_bank.deposit_for_customer(1, 10)
 
     tx = settlement_system.transfer(sender, receiver, 50, "Seamless Fail", tick=10)
@@ -269,6 +314,9 @@ def test_execute_multiparty_settlement_success(settlement_system):
     agent_a = MockAgent("A", 100)
     agent_b = MockAgent("B", 100)
     agent_c = MockAgent("C", 100)
+    settlement_system.agent_registry.register(agent_a)
+    settlement_system.agent_registry.register(agent_b)
+    settlement_system.agent_registry.register(agent_c)
 
     transfers = [
         (agent_a, agent_b, 50),
@@ -287,6 +335,9 @@ def test_execute_multiparty_settlement_rollback(settlement_system):
     agent_a = MockAgent("A", 100)
     agent_b = MockAgent("B", 100) # has 100
     agent_c = MockAgent("C", 0)
+    settlement_system.agent_registry.register(agent_a)
+    settlement_system.agent_registry.register(agent_b)
+    settlement_system.agent_registry.register(agent_c)
 
     transfers = [
         (agent_a, agent_b, 50), # This succeeds initially
@@ -305,6 +356,9 @@ def test_settle_atomic_success(settlement_system):
     agent_a = MockAgent("A", 100)
     agent_b = MockAgent("B", 0)
     agent_c = MockAgent("C", 0)
+    settlement_system.agent_registry.register(agent_a)
+    settlement_system.agent_registry.register(agent_b)
+    settlement_system.agent_registry.register(agent_c)
 
     credits = [
         (agent_b, 50, "pay b"),
@@ -323,6 +377,9 @@ def test_settle_atomic_rollback(settlement_system):
     agent_a = MockAgent("A", 90)
     agent_b = MockAgent("B", 0)
     agent_c = MockAgent("C", 0)
+    settlement_system.agent_registry.register(agent_a)
+    settlement_system.agent_registry.register(agent_b)
+    settlement_system.agent_registry.register(agent_c)
 
     credits = [
         (agent_b, 50, "pay b"),
@@ -343,6 +400,8 @@ def test_settle_atomic_credit_fail_rollback(settlement_system):
 
     agent_a = MockAgent("A", 100)
     agent_b = FaultyAgent("B", 0)
+    settlement_system.agent_registry.register(agent_a)
+    settlement_system.agent_registry.register(agent_b)
 
     credits = [(agent_b, 50, "pay b")]
 

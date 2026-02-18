@@ -117,6 +117,7 @@ class TestTaxIncidence(unittest.TestCase):
         # SettlementSystem
         from simulation.systems.settlement_system import SettlementSystem
         sim.settlement_system = SettlementSystem(logger=logger)
+        sim.world_state.settlement_system = sim.settlement_system # FIX: Update world_state with real system
         h.settlement_system = sim.settlement_system
         f.settlement_system = sim.settlement_system
         gov.settlement_system = sim.settlement_system
@@ -144,7 +145,7 @@ class TestTaxIncidence(unittest.TestCase):
             accounting_system=sim.accounting_system,
             settlement_system=sim.settlement_system,
             central_bank_system=sim.central_bank_system,
-            escrow_agent=sim.escrow_agent,
+            escrow_agent=MagicMock(),
             config=cfg,
             handlers={},
             logger=logger
