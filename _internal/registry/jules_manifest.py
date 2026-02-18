@@ -12,15 +12,14 @@
    - instruction (str): 구체적인 행동 지시. 'file' 미사용 시 필수.
    - file (str, Optional): MISSION_spec 또는 통합 미션 가이드 문서 경로.
    - wait (bool, Optional): 작업 완료까지 대기 여부. (기본값: False)
-
 """
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "MISSION_TRANSACTION_INT_EXEC_PHASE2": {
-        "title": "Implement Specialized Transaction Handlers (Goods, Labor, etc.)",
-        "instruction": "Port legacy transaction handlers (goods, labor, financial) to the new ITransactionHandler protocol and Penny Standard as defined in the MISSION_spec.",
-        "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_TRANSACTION_INT_EXEC_PHASE2_IMG.md",
+    "MISSION_TRANSACTION_INT_EXEC_PHASE3": {
+        "title": "Fix Transaction Handler Tests & Protocol Compliance",
+        "instruction": "Fix failures in tests/unit/test_transaction_handlers.py caused by Protocol check failures with mocks. Ensure handlers correctly detect ITaxCollector and ISolvent interfaces.",
+        "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\3c6114c9-8ad4-4eaa-833d-49722a642486\\MISSION_TRANSACTION_INT_EXEC_PHASE3_IMG.md",
         "wait": True
     },
 }

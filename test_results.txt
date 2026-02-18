@@ -1,0 +1,48 @@
+
+tests/unit/test_transaction_handlers.py::TestGoodsTransactionHandler::test_goods_escrow_fail PASSED [ 20%]
+tests/unit/test_transaction_handlers.py::TestGoodsTransactionHandler::test_goods_success FAILED [ 40%]
+tests/unit/test_transaction_handlers.py::TestGoodsTransactionHandler::test_goods_trade_fail_rollback PASSED [ 60%]
+tests/unit/test_transaction_handlers.py::TestLaborTransactionHandler::test_labor_firm_tax_payer FAILED [ 80%]
+tests/unit/test_transaction_handlers.py::TestLaborTransactionHandler::test_labor_household_tax_payer FAILED [100%]
+
+================================== FAILURES ===================================
+_______________ TestGoodsTransactionHandler.test_goods_success ________________
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:958: in assert_called_once
+    raise AssertionError(msg)
+E   AssertionError: Expected 'record_revenue' to have been called once. Called 0 times.
+
+During handling of the above exception, another exception occurred:
+tests\unit\test_transaction_handlers.py:61: in test_goods_success
+    self.government.record_revenue.assert_called_once()
+E   AssertionError: Expected 'record_revenue' to have been called once. Called 0 times.
+____________ TestLaborTransactionHandler.test_labor_firm_tax_payer ____________
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:970: in assert_called_with
+    raise AssertionError(error_message)
+E   AssertionError: expected call not found.
+E   Expected: collect_tax(200, 'income_tax_firm', <MagicMock id='1292024036528'>, 100)
+E     Actual: not called.
+
+During handling of the above exception, another exception occurred:
+tests\unit\test_transaction_handlers.py:167: in test_labor_firm_tax_payer
+    self.government.collect_tax.assert_called_with(200, "income_tax_firm", self.buyer, 100)
+E   AssertionError: expected call not found.
+E   Expected: collect_tax(200, 'income_tax_firm', <MagicMock id='1292024036528'>, 100)
+E     Actual: not called.
+_________ TestLaborTransactionHandler.test_labor_household_tax_payer __________
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:970: in assert_called_with
+    raise AssertionError(error_message)
+E   AssertionError: expected call not found.
+E   Expected: collect_tax(200, 'income_tax_household', <MagicMock id='1292026024960'>, 100)
+E     Actual: not called.
+
+During handling of the above exception, another exception occurred:
+tests\unit\test_transaction_handlers.py:144: in test_labor_household_tax_payer
+    self.government.collect_tax.assert_called_with(200, "income_tax_household", self.seller, 100)
+E   AssertionError: expected call not found.
+E   Expected: collect_tax(200, 'income_tax_household', <MagicMock id='1292026024960'>, 100)
+E     Actual: not called.
+=========================== short test summary info ===========================
+FAILED tests/unit/test_transaction_handlers.py::TestGoodsTransactionHandler::test_goods_success
+FAILED tests/unit/test_transaction_handlers.py::TestLaborTransactionHandler::test_labor_firm_tax_payer
+FAILED tests/unit/test_transaction_handlers.py::TestLaborTransactionHandler::test_labor_household_tax_payer
+========================= 3 failed, 2 passed in 0.65s =========================

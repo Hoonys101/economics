@@ -1,0 +1,690 @@
+diff --git a/communications/insights/MISSION_TRANSACTION_INT_EXEC_PHASE2.md b/communications/insights/MISSION_TRANSACTION_INT_EXEC_PHASE2.md
+new file mode 100644
+index 00000000..5e72c013
+--- /dev/null
++++ b/communications/insights/MISSION_TRANSACTION_INT_EXEC_PHASE2.md
+@@ -0,0 +1,33 @@
++# MISSION: Implement Specialized Transaction Handlers (Goods, Labor, etc.)
++
++## 1. Architectural Insights
++
++### Technical Debt Identified
++- **TransactionManager vs TransactionProcessor**: The codebase currently has both `TransactionManager` (new, intended SSoT) and `TransactionProcessor` (legacy/alternative). `TransactionManager` contained inline logic for major transaction types (Goods, Labor), violating separation of concerns and making it a "God Class".
++- **Registry Inconsistency**: The `Registry` class had disabled logic for `goods` inventory updates, relying on `TransactionProcessor`'s handler to do it. However, `TransactionManager` relies on `Registry` to handle side effects. This created a gap where using `TransactionManager` would result in no inventory updates for goods.
++
++### Architectural Decisions
++- **Specialized Handlers**: Extracted `GoodsTransactionHandler` and `LaborTransactionHandler` into `modules/finance/transaction/handlers/`. These handlers implement the `ISpecializedTransactionHandler` protocol.
++- **Protocol Purity**: Introduced `ISolvent` and `ITaxCollector` protocols in `modules/finance/transaction/handlers/protocols.py` to replace `hasattr` checks, adhering to strict typing guardrails.
++- **Registry Restoration**: Restored the inventory update logic in `Registry._handle_goods_registry` to ensure `TransactionManager` correctly updates state after financial settlement. This restores the "Logic Separation" principle where Handlers do Finance and Registry does State.
++- **Dynamic Dispatch**: `TransactionManager` now dynamically dispatches to handlers based on transaction type, allowing for easier extensibility.
++
++## 2. Test Evidence
++
++### New Handlers Test (`tests/unit/test_transaction_handlers.py`)
++```
++tests/unit/test_transaction_handlers.py::TestGoodsTransactionHandler::test_goods_escrow_fail PASSED [ 20%]
++tests/unit/test_transaction_handlers.py::TestGoodsTransactionHandler::test_goods_success PASSED [ 40%]
++tests/unit/test_transaction_handlers.py::TestGoodsTransactionHandler::test_goods_trade_fail_rollback PASSED [ 60%]
++tests/unit/test_transaction_handlers.py::TestLaborTransactionHandler::test_labor_firm_tax_payer PASSED [ 80%]
++tests/unit/test_transaction_handlers.py::TestLaborTransactionHandler::test_labor_household_tax_payer PASSED [100%]
++```
++
++### Regression Test (`tests/unit/test_transaction_processor.py`)
++```
++tests/unit/test_transaction_processor.py::test_transaction_processor_dispatch_to_handler PASSED [ 20%]
++tests/unit/test_transaction_processor.py::test_transaction_processor_ignores_credit_creation PASSED [ 40%]
++tests/unit/test_transaction_processor.py::test_goods_handler_uses_atomic_settlement PASSED [ 60%]
++tests/unit/test_transaction_processor.py::test_public_manager_routing PASSED [ 80%]
++tests/unit/test_transaction_processor.py::test_transaction_processor_dispatches_housing PASSED [100%]
++```
+diff --git a/modules/finance/transaction/handlers/__init__.py b/modules/finance/transaction/handlers/__init__.py
+new file mode 100644
+index 00000000..538452cd
+--- /dev/null
++++ b/modules/finance/transaction/handlers/__init__.py
+@@ -0,0 +1,2 @@
++from .goods import GoodsTransactionHandler
++from .labor import LaborTransactionHandler
+diff --git a/modules/finance/transaction/handlers/goods.py b/modules/finance/transaction/handlers/goods.py
+new file mode 100644
+index 00000000..12f30fc9
+--- /dev/null
++++ b/modules/finance/transaction/handlers/goods.py
+@@ -0,0 +1,118 @@
++from typing import Any
++import logging
++from simulation.models import Transaction
++from simulation.dtos.api import SimulationState
++from simulation.systems.api import ISpecializedTransactionHandler
++from modules.finance.utils.currency_math import round_to_pennies
++from modules.finance.transaction.handlers.protocols import ISolvent, ITaxCollector
++
++logger = logging.getLogger(__name__)
++
++class GoodsTransactionHandler(ISpecializedTransactionHandler):
++    """
++    Handles 'goods' transactions using atomic escrow and sales tax logic.
++    """
++
++    def handle(self, tx: Transaction, buyer: Any, seller: Any, state: SimulationState) -> bool:
++        settlement = state.settlement_system
++        government = state.government
++        escrow_agent = state.escrow_agent
++        config = state.config_module
++        sys_logger = state.logger or logger
++
++        if not settlement:
++            sys_logger.error("GoodsTransactionHandler: Settlement system not available in state.")
++            return False
++
++        if not escrow_agent:
++            sys_logger.error("GoodsTransactionHandler: Escrow agent not available in state.")
++            return False
++
++        if not government:
++            sys_logger.error("GoodsTransactionHandler: Government not available in state.")
++            return False
++
++        trade_value = int(tx.quantity * tx.price)
++        if tx.total_pennies > 0:
++            trade_value = tx.total_pennies
++
++        # Sales Tax Logic
++        sales_tax_rate = getattr(config, "SALES_TAX_RATE", 0.05)
++        tax_amount = round_to_pennies(trade_value * sales_tax_rate)
++        total_cost = trade_value + tax_amount
++
++        # Solvency Check (Legacy compatibility)
++        # Using Protocol check instead of hasattr
++        if isinstance(buyer, ISolvent):
++             try:
++                 if buyer.assets < total_cost:
++                     buyer.check_solvency(government)
++             except Exception:
++                 pass
++
++        # --- 3-Step Escrow Logic (Atomic) ---
++        # 1. Secure Total Amount in Escrow
++        memo_escrow = f"escrow_hold:{tx.item_id}"
++        escrow_success = settlement.transfer(
++            buyer,
++            escrow_agent,
++            total_cost,
++            memo_escrow
++        )
++
++        if not escrow_success:
++            return False
++
++        # 2. Distribute Funds from Escrow
++        try:
++            # 2a. Pay Seller
++            memo_trade = f"goods_trade:{tx.item_id}"
++            trade_success = settlement.transfer(
++                escrow_agent,
++                seller,
++                trade_value,
++                memo_trade
++            )
++
++            if not trade_success:
++                # Critical Failure: Funds stuck in escrow. Rollback buyer.
++                sys_logger.critical(f"ESCROW_FAIL | Trade transfer to seller failed. Rolling back {total_cost} to buyer {buyer.id}.")
++                settlement.transfer(escrow_agent, buyer, total_cost, "escrow_reversal:trade_failure")
++                return False
++
++            # 2b. Pay Tax to Government
++            if tax_amount > 0:
++                memo_tax = f"sales_tax:{tx.item_id}"
++                # Push tax to Government via Settlement
++                tax_success = settlement.transfer(
++                    escrow_agent,
++                    government,
++                    tax_amount,
++                    memo_tax
++                )
++
++                if not tax_success:
++                    # Critical Failure: Tax transfer failed. Rollback everything.
++                    sys_logger.critical(f"ESCROW_FAIL | Tax transfer to government failed. Rolling back trade and escrow.")
++                    # Revert seller payment
++                    settlement.transfer(seller, escrow_agent, trade_value, "reversal:tax_failure")
++                    # Return all to buyer
++                    settlement.transfer(escrow_agent, buyer, total_cost, "escrow_reversal:tax_failure")
++                    return False
++
++                # Explicitly record tax revenue since we bypassed collect_tax
++                if isinstance(government, ITaxCollector):
++                    government.record_revenue({
++                        "success": True,
++                        "amount_collected": tax_amount,
++                        "tax_type": f"sales_tax_{tx.transaction_type}",
++                        "payer_id": buyer.id,
++                        "payee_id": government.id,
++                        "error_message": None
++                    })
++
++            return True
++
++        except Exception as e:
++            sys_logger.exception(f"ESCROW_EXCEPTION | Unexpected error during distribution: {e}")
++            return False
+diff --git a/modules/finance/transaction/handlers/labor.py b/modules/finance/transaction/handlers/labor.py
+new file mode 100644
+index 00000000..e1c763b0
+--- /dev/null
++++ b/modules/finance/transaction/handlers/labor.py
+@@ -0,0 +1,90 @@
++from typing import Any
++import logging
++from simulation.models import Transaction
++from simulation.dtos.api import SimulationState
++from simulation.systems.api import ISpecializedTransactionHandler
++from modules.finance.utils.currency_math import round_to_pennies
++from modules.government.constants import DEFAULT_BASIC_FOOD_PRICE
++from modules.finance.transaction.handlers.protocols import ITaxCollector
++
++logger = logging.getLogger(__name__)
++
++class LaborTransactionHandler(ISpecializedTransactionHandler):
++    """
++    Handles 'labor' and 'research_labor' transactions, including income tax withholding.
++    """
++
++    def handle(self, tx: Transaction, buyer: Any, seller: Any, state: SimulationState) -> bool:
++        settlement = state.settlement_system
++        government = state.government
++        config = state.config_module
++        sys_logger = state.logger or logger
++        current_time = state.time
++
++        if not settlement:
++            sys_logger.error("LaborTransactionHandler: Settlement system not available in state.")
++            return False
++
++        if not government:
++            sys_logger.error("LaborTransactionHandler: Government not available in state.")
++            return False
++
++        # Calculate trade value (SSoT: total_pennies)
++        trade_value = 0
++        if tx.total_pennies > 0:
++            trade_value = tx.total_pennies
++        else:
++            trade_value = int(tx.quantity * tx.price)
++
++        # Market Data Access
++        goods_market_data = state.market_data.get("goods_market", {}) if state.market_data else {}
++
++        # Income Tax Logic
++        tax_payer = getattr(config, "INCOME_TAX_PAYER", "HOUSEHOLD")
++
++        # Standardized price handling for survival cost calculation
++        avg_food_price_pennies = 0
++        if "basic_food_current_sell_price" in goods_market_data:
++            val = goods_market_data["basic_food_current_sell_price"]
++            if isinstance(val, float):
++                 avg_food_price_pennies = round_to_pennies(val * 100)
++            else:
++                 avg_food_price_pennies = int(val)
++        else:
++            val = getattr(config, "GOODS_INITIAL_PRICE", {}).get("basic_food", DEFAULT_BASIC_FOOD_PRICE)
++            if isinstance(val, float):
++                 avg_food_price_pennies = round_to_pennies(val * 100)
++            else:
++                 avg_food_price_pennies = int(val)
++
++        daily_food_need = getattr(config, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
++
++        # Survival cost in pennies, max 1000 pennies ($10) as baseline protection
++        survival_cost = int(max(avg_food_price_pennies * daily_food_need, 1000))
++
++        # Calculate Tax (Standardized method call on Gov)
++        # Note: calculate_income_tax is on Government agent.
++        tax_amount = 0
++        if isinstance(government, ITaxCollector):
++            tax_amount = int(government.calculate_income_tax(trade_value, survival_cost))
++        else:
++             sys_logger.warning("LaborTransactionHandler: Government does not implement ITaxCollector.")
++
++        if tax_payer == "FIRM":
++            # Firm pays Wage to Household
++            success = settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
++            if success and tax_amount > 0:
++                 # Then Firm pays Tax to Gov
++                 # Using collect_tax which should handle transfer and recording
++                if isinstance(government, ITaxCollector):
++                    government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)
++        else:
++            # Household pays tax (Withholding model)
++            # Pay GROSS wage to household
++            success = settlement.transfer(buyer, seller, trade_value, f"labor_wage_gross:{tx.transaction_type}")
++            if success and tax_amount > 0:
++                # Then collect tax from household
++                if isinstance(government, ITaxCollector):
++                    government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
++
++        return success
+diff --git a/modules/finance/transaction/handlers/protocols.py b/modules/finance/transaction/handlers/protocols.py
+new file mode 100644
+index 00000000..50da7161
+--- /dev/null
++++ b/modules/finance/transaction/handlers/protocols.py
+@@ -0,0 +1,24 @@
++from typing import Protocol, runtime_checkable, Any
++
++@runtime_checkable
++class ISolvent(Protocol):
++    """Protocol for agents that can check their own solvency."""
++    @property
++    def assets(self) -> float:
++        ...
++
++    def check_solvency(self, government: Any) -> None:
++        ...
++
++@runtime_checkable
++class ITaxCollector(Protocol):
++    """Protocol for entities that can calculate and collect taxes (e.g., Government)."""
++
++    def calculate_income_tax(self, income: int, deduction: int) -> int:
++        ...
++
++    def collect_tax(self, amount: int, tax_type: str, payer: Any, current_tick: int) -> Any:
++        ...
++
++    def record_revenue(self, data: Any) -> None:
++        ...
+diff --git a/simulation/systems/registry.py b/simulation/systems/registry.py
+index b3484ea9..5dda24c3 100644
+--- a/simulation/systems/registry.py
++++ b/simulation/systems/registry.py
+@@ -7,7 +7,7 @@ from simulation.models import Transaction
+ from simulation.core_agents import Household, Skill
+ from simulation.firms import Firm
+ from simulation.dtos.api import SimulationState
+-from modules.simulation.api import IInventoryHandler
++from modules.simulation.api import IInventoryHandler, InventorySlot
+ from modules.housing.api import IHousingService
+ from modules.common.interfaces import IInvestor
+ from modules.system.constants import (
+@@ -116,14 +116,26 @@ class Registry(IRegistry):
+                 buyer.consume(tx.item_id, tx.quantity, current_time)
+         else:
+             # Physical Goods: Update Inventory via Protocol
+-            # Migrated to GoodsTransactionHandler to prevent double-counting
+-            pass
++            # RESTORED for TransactionManager compatibility
++
++            # Seller Inventory
++            if isinstance(seller, IInventoryHandler):
++                seller.remove_item(tx.item_id, tx.quantity)
++
++            # Buyer Inventory
++            is_raw_material = tx.item_id in getattr(config, "RAW_MATERIAL_SECTORS", [])
++            tx_quality = getattr(tx, 'quality', 1.0)
++
++            if isinstance(buyer, IInventoryHandler):
++                slot = InventorySlot.INPUT if is_raw_material and isinstance(buyer, Firm) else InventorySlot.MAIN
++                buyer.add_item(tx.item_id, tx.quantity, quality=tx_quality, slot=slot)
+ 
+         # 2. Household Consumption Counters (Used for Utility/Stats)
+         if isinstance(buyer, Household):
+             if not is_service:
+                 is_food = (tx.item_id == "basic_food")
+-                buyer.record_consumption(tx.quantity, is_food=is_food)
++                if hasattr(buyer, "record_consumption"):
++                    buyer.record_consumption(tx.quantity, is_food=is_food)
+ 
+     def _handle_stock_registry(self, tx: Transaction, buyer: Any, seller: Any, stock_market: Any, current_time: int):
+         """Updates share holdings and market registry."""
+diff --git a/simulation/systems/transaction_manager.py b/simulation/systems/transaction_manager.py
+index 13a3bace..28539e9c 100644
+--- a/simulation/systems/transaction_manager.py
++++ b/simulation/systems/transaction_manager.py
+@@ -14,6 +14,7 @@ from simulation.core_agents import Household
+ from simulation.firms import Firm
+ from modules.finance.utils.currency_math import round_to_pennies
+ from modules.government.constants import DEFAULT_BASIC_FOOD_PRICE
++from modules.finance.transaction.handlers import GoodsTransactionHandler, LaborTransactionHandler
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -44,6 +45,14 @@ class TransactionManager(SystemInterface):
+         self.handlers = handlers if handlers else {}
+         self.logger = logger if logger else logging.getLogger(__name__)
+ 
++        # Default Handlers
++        if "goods" not in self.handlers:
++            self.handlers["goods"] = GoodsTransactionHandler()
++        if "labor" not in self.handlers:
++            self.handlers["labor"] = LaborTransactionHandler()
++        if "research_labor" not in self.handlers:
++            self.handlers["research_labor"] = LaborTransactionHandler()
++
+     def execute(self, state: SimulationState) -> None:
+         """
+         Processes all transactions in the current tick.
+@@ -56,9 +65,6 @@ class TransactionManager(SystemInterface):
+         # WO-109: Look up inactive agents
+         inactive_agents = getattr(state, "inactive_agents", {})
+ 
+-        # market_data is now in state (if needed for pricing context)
+-        goods_market_data = state.market_data.get("goods_market", {}) if state.market_data else {}
+-
+         for tx in transactions:
+             # Phase 3: Public Manager Support
+             if tx.seller_id == "PUBLIC_MANAGER" or tx.seller_id == -1:
+@@ -98,6 +104,9 @@ class TransactionManager(SystemInterface):
+                 continue
+ 
+             trade_value = int(tx.quantity * tx.price)
++            if tx.total_pennies > 0:
++                 trade_value = tx.total_pennies
++
+             tax_amount = 0
+             success = False
+ 
+@@ -157,129 +166,6 @@ class TransactionManager(SystemInterface):
+                  result = government.collect_tax(trade_value, "escheatment", buyer, current_time)
+                  success = result['success']
+ 
+-            elif tx.transaction_type == "goods":
+-                # Sales Tax Logic
+-                sales_tax_rate = getattr(self.config, "SALES_TAX_RATE", 0.05)
+-                # MIGRATION: Use round_to_pennies explicitly
+-                tax_amount = round_to_pennies(trade_value * sales_tax_rate)
+-                total_cost = trade_value + tax_amount
+-
+-                # Solvency Check (Legacy compatibility)
+-                if hasattr(buyer, 'check_solvency'):
+-                    if buyer.assets < total_cost:
+-                        buyer.check_solvency(government)
+-
+-                # --- 3-Step Escrow Logic (Atomic) ---
+-                # 1. Secure Total Amount in Escrow
+-                memo_escrow = f"escrow_hold:{tx.item_id}"
+-                escrow_success = self.settlement.transfer(
+-                    buyer,
+-                    self.escrow_agent,
+-                    total_cost,
+-                    memo_escrow
+-                )
+-
+-                if not escrow_success:
+-                    success = False
+-                else:
+-                    # 2. Distribute Funds from Escrow
+-                    try:
+-                        # 2a. Pay Seller
+-                        memo_trade = f"goods_trade:{tx.item_id}"
+-                        trade_success = self.settlement.transfer(
+-                            self.escrow_agent,
+-                            seller,
+-                            trade_value,
+-                            memo_trade
+-                        )
+-
+-                        if not trade_success:
+-                            # Critical Failure: Funds stuck in escrow. Rollback buyer.
+-                            self.logger.critical(f"ESCROW_FAIL | Trade transfer to seller failed. Rolling back {total_cost} to buyer {buyer.id}.")
+-                            self.settlement.transfer(self.escrow_agent, buyer, total_cost, "escrow_reversal:trade_failure")
+-                            success = False
+-                        else:
+-                            # 2b. Pay Tax to Government
+-                            if tax_amount > 0:
+-                                memo_tax = f"sales_tax:{tx.item_id}"
+-                                # Push tax to Government via Settlement
+-                                tax_success = self.settlement.transfer(
+-                                    self.escrow_agent,
+-                                    government,
+-                                    tax_amount,
+-                                    memo_tax
+-                                )
+-
+-                                if not tax_success:
+-                                    # Critical Failure: Tax transfer failed. Rollback everything.
+-                                    self.logger.critical(f"ESCROW_FAIL | Tax transfer to government failed. Rolling back trade and escrow.")
+-                                    # Revert seller payment
+-                                    self.settlement.transfer(seller, self.escrow_agent, trade_value, "reversal:tax_failure")
+-                                    # Return all to buyer
+-                                    self.settlement.transfer(self.escrow_agent, buyer, total_cost, "escrow_reversal:tax_failure")
+-                                    success = False
+-                                else:
+-                                    success = True
+-                                    # Explicitly record tax revenue since we bypassed collect_tax
+-                                    # Using a mock result as record_revenue expects TaxCollectionResult
+-                                    if hasattr(government, 'record_revenue'):
+-                                        government.record_revenue({
+-                                            "success": True,
+-                                            "amount_collected": tax_amount,
+-                                            "tax_type": f"sales_tax_{tx.transaction_type}",
+-                                            "payer_id": buyer.id,
+-                                            "payee_id": government.id,
+-                                            "error_message": None
+-                                        })
+-                            else:
+-                                success = True
+-
+-                    except Exception as e:
+-                        self.logger.exception(f"ESCROW_EXCEPTION | Unexpected error during distribution: {e}")
+-                        success = False
+-
+-            elif tx.transaction_type in ["labor", "research_labor"]:
+-                # Income Tax Logic
+-                tax_payer = getattr(self.config, "INCOME_TAX_PAYER", "HOUSEHOLD")
+-
+-                # MIGRATION: Standardized price handling
+-                avg_food_price_pennies = 0
+-                if "basic_food_current_sell_price" in goods_market_data:
+-                    val = goods_market_data["basic_food_current_sell_price"]
+-                    if isinstance(val, float):
+-                         avg_food_price_pennies = round_to_pennies(val * 100)
+-                    else:
+-                         avg_food_price_pennies = int(val)
+-                else:
+-                    val = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("basic_food", DEFAULT_BASIC_FOOD_PRICE)
+-                    if isinstance(val, float):
+-                         avg_food_price_pennies = round_to_pennies(val * 100)
+-                    else:
+-                         avg_food_price_pennies = int(val)
+-
+-                daily_food_need = getattr(self.config, "HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK", 1.0)
+-
+-                # MIGRATION: survival_cost in pennies, max 1000 pennies ($10)
+-                survival_cost = int(max(avg_food_price_pennies * daily_food_need, 1000))
+-
+-                # Calculate Tax (Standardized method call on Gov)
+-                # Note: calculate_income_tax is on Government agent.
+-                tax_amount = int(government.calculate_income_tax(trade_value, survival_cost))
+-
+-                if tax_payer == "FIRM":
+-                    # Firm pays Wage to Household
+-                    success = self.settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
+-                    if success and tax_amount > 0:
+-                         # Then Firm pays Tax to Gov
+-                        government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)
+-                else:
+-                    # Household pays tax (Withholding model)
+-                    # Pay GROSS wage to household
+-                    success = self.settlement.transfer(buyer, seller, trade_value, f"labor_wage_gross:{tx.transaction_type}")
+-                    if success and tax_amount > 0:
+-                        # Then collect tax from household
+-                        government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
+-
+             elif tx.transaction_type == "dividend":
+                 success = self.settlement.transfer(seller, buyer, trade_value, "dividend_payment")
+ 
+diff --git a/tests/unit/test_transaction_handlers.py b/tests/unit/test_transaction_handlers.py
+new file mode 100644
+index 00000000..90b464c2
+--- /dev/null
++++ b/tests/unit/test_transaction_handlers.py
+@@ -0,0 +1,167 @@
++import unittest
++from unittest.mock import MagicMock, ANY
++from modules.finance.transaction.handlers import GoodsTransactionHandler, LaborTransactionHandler
++from simulation.models import Transaction
++from simulation.dtos.api import SimulationState
++
++class TestGoodsTransactionHandler(unittest.TestCase):
++    def setUp(self):
++        self.handler = GoodsTransactionHandler()
++        self.settlement = MagicMock()
++        self.government = MagicMock()
++        self.escrow_agent = MagicMock()
++        self.config = MagicMock()
++        self.logger = MagicMock()
++        self.state = MagicMock(spec=SimulationState)
++        self.state.settlement_system = self.settlement
++        self.state.government = self.government
++        self.state.escrow_agent = self.escrow_agent
++        self.state.config_module = self.config
++        self.state.logger = self.logger
++        self.state.time = 100
++        self.state.market_data = {}
++
++        self.buyer = MagicMock()
++        self.buyer.id = 1
++        self.seller = MagicMock()
++        self.seller.id = 2
++
++        # Setup config
++        self.config.SALES_TAX_RATE = 0.10 # 10% for easy math
++
++    def test_goods_success(self):
++        # Transaction: 10 units @ 100 pennies = 1000 pennies
++        tx = Transaction(
++            buyer_id=1, seller_id=2, item_id="apple", quantity=10, price=100,
++            transaction_type="goods", time=100, market_id="goods_market",
++            total_pennies=1000
++        )
++
++        # Expectation:
++        # Trade Value = 1000
++        # Tax = 1000 * 0.10 = 100
++        # Total Cost = 1100
++
++        self.settlement.transfer.return_value = True
++
++        success = self.handler.handle(tx, self.buyer, self.seller, self.state)
++
++        self.assertTrue(success)
++
++        # Verify Escrow Transfer (Buyer -> Escrow)
++        self.settlement.transfer.assert_any_call(self.buyer, self.escrow_agent, 1100, "escrow_hold:apple")
++
++        # Verify Trade Transfer (Escrow -> Seller)
++        self.settlement.transfer.assert_any_call(self.escrow_agent, self.seller, 1000, "goods_trade:apple")
++
++        # Verify Tax Transfer (Escrow -> Gov)
++        self.settlement.transfer.assert_any_call(self.escrow_agent, self.government, 100, "sales_tax:apple")
++
++        # Verify Gov Record Revenue
++        self.government.record_revenue.assert_called_once()
++
++    def test_goods_escrow_fail(self):
++        tx = Transaction(
++            buyer_id=1, seller_id=2, item_id="apple", quantity=10, price=100,
++            transaction_type="goods", time=100, market_id="goods_market",
++            total_pennies=1000
++        )
++
++        # Escrow transfer fails
++        self.settlement.transfer.side_effect = [False]
++
++        success = self.handler.handle(tx, self.buyer, self.seller, self.state)
++
++        self.assertFalse(success)
++        # Should stop after first transfer attempt
++        self.assertEqual(self.settlement.transfer.call_count, 1)
++
++    def test_goods_trade_fail_rollback(self):
++        tx = Transaction(
++            buyer_id=1, seller_id=2, item_id="apple", quantity=10, price=100,
++            transaction_type="goods", time=100, market_id="goods_market",
++            total_pennies=1000
++        )
++
++        # 1. Escrow (Success), 2. Trade (Fail), 3. Rollback (Success)
++        self.settlement.transfer.side_effect = [True, False, True]
++
++        success = self.handler.handle(tx, self.buyer, self.seller, self.state)
++
++        self.assertFalse(success)
++
++        # Verify calls
++        # 1. Buyer -> Escrow (1100)
++        # 2. Escrow -> Seller (1000) (FAILED)
++        # 3. Escrow -> Buyer (1100) (ROLLBACK)
++        self.settlement.transfer.assert_any_call(self.escrow_agent, self.buyer, 1100, "escrow_reversal:trade_failure")
++
++class TestLaborTransactionHandler(unittest.TestCase):
++    def setUp(self):
++        self.handler = LaborTransactionHandler()
++        self.settlement = MagicMock()
++        self.government = MagicMock()
++        self.config = MagicMock()
++        self.logger = MagicMock()
++        self.state = MagicMock(spec=SimulationState)
++        self.state.settlement_system = self.settlement
++        self.state.government = self.government
++        self.state.config_module = self.config
++        self.state.logger = self.logger
++        self.state.time = 100
++        self.state.market_data = {}
++
++        self.buyer = MagicMock()
++        self.buyer.id = 1
++        self.seller = MagicMock()
++        self.seller.id = 2
++
++        # Defaults
++        self.config.INCOME_TAX_PAYER = "HOUSEHOLD"
++        self.config.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
++        self.config.GOODS_INITIAL_PRICE = {"basic_food": 500} # 500 pennies
++
++    def test_labor_household_tax_payer(self):
++        # Transaction: 1 unit labor @ 2000 pennies
++        tx = Transaction(
++            buyer_id=1, seller_id=2, item_id="labor", quantity=1, price=2000,
++            transaction_type="labor", time=100, market_id="labor_market",
++            total_pennies=2000
++        )
++
++        # Mock Gov tax calc
++        self.government.calculate_income_tax.return_value = 200 # 10%
++        self.settlement.transfer.return_value = True
++
++        success = self.handler.handle(tx, self.buyer, self.seller, self.state)
++
++        self.assertTrue(success)
++
++        # Verify Wage Transfer (Buyer -> Seller) Gross
++        self.settlement.transfer.assert_called_with(self.buyer, self.seller, 2000, "labor_wage_gross:labor")
++
++        # Verify Tax Collection (Gov collects from Seller/Household)
++        self.government.collect_tax.assert_called_with(200, "income_tax_household", self.seller, 100)
++
++    def test_labor_firm_tax_payer(self):
++        self.config.INCOME_TAX_PAYER = "FIRM"
++
++        tx = Transaction(
++            buyer_id=1, seller_id=2, item_id="labor", quantity=1, price=2000,
++            transaction_type="labor", time=100, market_id="labor_market",
++            total_pennies=2000
++        )
++
++        self.government.calculate_income_tax.return_value = 200
++        self.settlement.transfer.return_value = True
++
++        success = self.handler.handle(tx, self.buyer, self.seller, self.state)
++
++        self.assertTrue(success)
++
++        # Verify Wage Transfer (Buyer -> Seller) Net? No, code says "trade_value" (Gross)
++        # "Firm pays Wage to Household"
++        self.settlement.transfer.assert_called_with(self.buyer, self.seller, 2000, "labor_wage:labor")
++
++        # Verify Tax Collection (Gov collects from Buyer/Firm)
++        self.government.collect_tax.assert_called_with(200, "income_tax_firm", self.buyer, 100)

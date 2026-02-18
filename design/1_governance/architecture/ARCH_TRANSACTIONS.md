@@ -38,6 +38,13 @@
 4. **Registry & Accounting (State Commitment)**:
    - 비금융적 권리(재고, 소유권) 기록 및 금융 원장(수익/비용) 업데이트.
 
+### 3.1 Specialized Transaction Handlers (전문 핸들러)
+`TransactionManager`의 거대화(Bloating)를 방지하기 위해, 복잡한 비즈니스 로직이 필요한 트랜잭션 타입은 `modules/finance/transaction/handlers/`에 위치한 전용 핸들러로 위임됩니다.
+
+- **GoodsTransactionHandler**: **Atomic Escrow Pattern**을 구현하여 상품 대금과 판매세의 원자적 정산을 보장합니다.
+- **LaborTransactionHandler**: 소득세 귀착(Incidence) 로직을 관리하며, 고용주와 피고용인 간의 정산 및 세무 프로토콜을 집행합니다.
+- **Saga Pattern**: 주거(Housing)와 같은 다단계 거래는 전용 Saga Handler를 통해 상태 전이의 무결성을 유지합니다.
+
 ## 4. 2단계 상태 전이 (Two-Phase State Transition)
 복잡한 상태 변경 시 **Plan(Phase 1)**과 **Finalize(Phase 3)**를 철저히 분리합니다.
 1. **Plan**: 현재 상태를 읽어 `Intent` 혹은 `Transaction` 객체를 생성 (상태 변경 없음).
