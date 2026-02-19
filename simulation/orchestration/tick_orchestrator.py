@@ -112,8 +112,8 @@ class TickOrchestrator:
         state = self.world_state
 
         # Drain command queue
-        commands_for_tick = list(state.system_command_queue)
-        state.system_command_queue.clear()
+        commands_for_tick = list(state.system_commands)
+        state.system_commands.clear()
 
         # drain god_command_queue atomically using popleft
         god_commands_for_tick = []

@@ -326,7 +326,7 @@ def test_parameter_rollback(test_env):
     # Mock current value 0.1
     registry.get.return_value = 0.1
     # Mock previous entry for rollback logic (CommandService uses get_entry to snapshot)
-    registry.get_entry.return_value = RegistryEntry(value=0.1, origin=OriginType.CONFIG)
+    registry.get_entry.return_value = RegistryEntry(key="tax_rate", value=0.1, origin=OriginType.CONFIG)
 
     service.execute_command_batch([cmd], tick=103, baseline_m2=10000)
 

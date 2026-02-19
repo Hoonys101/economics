@@ -16,48 +16,27 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "exec-cockpit-fe-2": {
-        "title": "Cockpit 2.0 FE-2: Macro Canvas + Scatter Plot + Inspector Panel",
-        "file": "design/3_work_artifacts/specs/MISSION_COCKPIT_API_CONTRACT.md",
+    "fix-mock-regressions": {
+        "title": "Fix Mock Attribute Regressions (Cockpit 2.0)",
+        "command": "create",
         "instruction": (
-            "Implement Phase 2 of the Cockpit 2.0 Frontend. PREREQUISITE: FE-1 must be merged first.\n\n"
-            "=== SAME ARCHITECTURAL MANDATE AS FE-1 ===\n"
-            "HTML = Structure, CSS = Design, JS = Rendering. Container-Component pattern mandatory.\n\n"
-            "=== SCOPE ===\n"
-            "1. **Layer 2 — Macro Canvas** (frontend/src/containers/MacroCanvasContainer.tsx):\n"
-            "   - LEFT: TimeSeriesPanel.tsx — GDP, CPI, Unemployment, Gini (Recharts LineChart)\n"
-            "     * Maintain rolling buffer of last 200 ticks from WebSocket stream\n"
-            "     * CSS: frontend/src/components/macro/timeseries.css\n"
-            "   - CENTER: SurvivalScatter.tsx — Scatter plot (X: risk_tolerance, Y: wealth)\n"
-            "     * Fetch from GET /api/v1/genealogy on tab activation\n"
-            "     * Living agents = dot, Dead agents = X mark (color-coded)\n"
-            "     * CSS: frontend/src/components/macro/scatter.css\n"
-            "   - RIGHT: SectorFlow.tsx — Money flow summary (Household/Firm/Gov balances)\n"
-            "     * CSS: frontend/src/components/macro/sectorflow.css\n\n"
-            "2. **Layer 3 — Inspector Panel** (frontend/src/containers/InspectorContainer.tsx):\n"
-            "   - Slide-over panel from right side on agent click\n"
-            "   - Fetch GET /api/v1/inspector/{agent_id}\n"
-            "   - Subcomponents:\n"
-            "     * AgentIdentity.tsx: ID, type, alive status\n"
-            "     * AgentWallet.tsx: currency balances\n"
-            "     * AgentDecisionLog.tsx: timeline of decisions (chat-like UI)\n"
-            "     * AgentInventory.tsx: item list\n"
-            "   - CSS: frontend/src/components/inspector/inspector.css\n\n"
-            "3. **Glassmorphism Design**: Apply dark mode + glass-card aesthetic from existing App.css. "
-            "All new CSS files must use the existing design tokens (--background, --foreground, --primary, etc.).\n\n"
-            "Reference: design/3_work_artifacts/specs/MISSION_COCKPIT_API_CONTRACT.md"
+            "Fix the deprecated `system_command_queue` attribute in WorldState mocks based on the audit report.\n\n"
+            "**Target Files:**\n"
+            "1. `tests/orchestration/test_state_synchronization.py`\n"
+            "2. `tests/modules/governance/test_cockpit_flow.py`\n"
+            "3. `tests/integration/test_tick_normalization.py`\n"
+            "4. `tests/integration/test_cockpit_integration.py`\n\n"
+            "**Required Changes:**\n"
+            "- Rename `ws.system_command_queue` (or `state.system_command_queue`) to `ws.system_commands` (or `state.system_commands`).\n"
+            "- Ensure `system_commands` is initialized as a `list` (`[]`), NOT a `deque`.\n"
+            "- Verify `god_command_queue` usage is consistent with `WorldState` (should be `deque`).\n"
+            "- Fix unrelated `AttributeError` in `tests/system/test_engine.py` (AgentLifecycleManager) by invoking the correct DeathSystem or LiquidationManager method if possible.\n"
+            "- Run the specific tests to verify fixes.\n\n"
+            "**Reference:**\n"
+            "- `design/3_work_artifacts/reports/AUDIT_MOCK_REGRESSIONS.md` (Audit Report)\n"
+            "- `simulation/world_state.py` (Source of Truth)"
         ),
-    },
-    "exec-cockpit-stabilization": {
-        "title": "Cockpit 2.0 Stabilization: Fix Regressions",
-        "file": "design/3_work_artifacts/specs/MISSION_COCKPIT_STABILIZATION_SPEC.md",
-        "instruction": (
-            "Restore the test suite to 100% PASS by fixing Pydantic-related regressions.\n\n"
-            "**Fix Areas:**\n"
-            "1. **dashboard/components/controls.py**: Change all `schema['key']` style accesses to `schema.key` (dot notation) for ParameterSchemaDTO.\n"
-            "2. **tests/unit/modules/system/test_command_service_unit.py**: Update all `RegistryEntry()` calls to include `key='...'` (e.g. key='test_param').\n"
-            "3. **tests/system/test_command_service_rollback.py**: Fix any validation errors in Registry/UndoRecord setups.\n\n"
-            "Run `pytest -rfE --tb=line tests/` after fixes to verify success."
-        ),
+        "file": "design/3_work_artifacts/reports/AUDIT_MOCK_REGRESSIONS.md",
+        "wait": True
     },
 }

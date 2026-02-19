@@ -48,7 +48,7 @@ def test_dispatch_set_param(command_service, mock_registry):
     )
 
     # Setup mock to return previous entry
-    previous_entry = RegistryEntry(value=50, origin=OriginType.SYSTEM)
+    previous_entry = RegistryEntry(key="test_param", value=50, origin=OriginType.SYSTEM)
     mock_registry.get_entry.return_value = previous_entry
     mock_registry.set.return_value = True
 
@@ -68,7 +68,7 @@ def test_rollback_set_param_restorable(restorable_command_service, mock_restorab
         parameter_key="test_param",
         new_value=100
     )
-    previous_entry = RegistryEntry(value=50, origin=OriginType.SYSTEM)
+    previous_entry = RegistryEntry(key="test_param", value=50, origin=OriginType.SYSTEM)
     mock_restorable_registry.get_entry.return_value = previous_entry
     mock_restorable_registry.set.return_value = True
 
@@ -89,7 +89,7 @@ def test_rollback_set_param_fallback(command_service, mock_registry):
         parameter_key="test_param",
         new_value=100
     )
-    previous_entry = RegistryEntry(value=50, origin=OriginType.SYSTEM)
+    previous_entry = RegistryEntry(key="test_param", value=50, origin=OriginType.SYSTEM)
     mock_registry.get_entry.return_value = previous_entry
     mock_registry.set.return_value = True
 
@@ -188,7 +188,7 @@ def test_commit_last_tick_clears_stack(command_service):
     command_service.undo_stack.start_batch()
 
     # Correct instantiation with previous_entry
-    previous_entry = RegistryEntry(value=0, origin=OriginType.SYSTEM)
+    previous_entry = RegistryEntry(key="test", value=0, origin=OriginType.SYSTEM)
     record = UndoRecord(
         command_id=uuid4(),
         command_type="SET_PARAM",

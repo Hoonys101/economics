@@ -19,7 +19,7 @@ class TestLifecycleCycle:
         # Important: use real lists for queues to track movement
         state.transactions = []
         state.inter_tick_queue = []
-        state.system_command_queue = []
+        state.system_commands = []
         state.god_command_queue = deque()
         state.command_queue = MagicMock()
         state.command_queue.empty.return_value = True

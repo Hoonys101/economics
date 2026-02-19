@@ -20,7 +20,7 @@ class MockRegistry(IRestorableRegistry):
 
     def get_entry(self, key):
         if key in self.data:
-            return RegistryEntry(value=self.data[key], origin=OriginType.CONFIG)
+            return RegistryEntry(key=key, value=self.data[key], origin=OriginType.CONFIG)
         return None
 
     def delete_entry(self, key):

@@ -27,7 +27,7 @@ def render_dynamic_controls(container=None, use_tabs=True):
     registry_data = telemetry.get("registry", {})
 
     # 3. Group by Category
-    categories = sorted(list(set(s['category'] for s in schemas)))
+    categories = sorted(list(set(s.category for s in schemas)))
 
     if use_tabs:
         tabs = parent.tabs([f"🏛️ {c}" for c in categories])
@@ -40,7 +40,7 @@ def render_dynamic_controls(container=None, use_tabs=True):
                 _render_category_content(category, schemas, registry_data)
 
 def _render_category_content(category: str, schemas: List[ParameterSchemaDTO], registry_data: Dict[str, Any]):
-    cat_schemas = [s for s in schemas if s['category'] == category]
+    cat_schemas = [s for s in schemas if s.category == category]
     for schema in cat_schemas:
         _render_widget(schema, registry_data)
 
@@ -48,10 +48,10 @@ def _render_widget(schema: ParameterSchemaDTO, registry_data: Dict[str, Any]):
     """
     Renders a single widget for a parameter.
     """
-    key = schema['key']
-    label = schema['label']
-    desc = schema['description']
-    unit = schema.get('unit', '')
+    key = schema.key
+    label = schema.label
+    desc = schema.description
+    unit = getattr(schema, 'unit', '')
 
     ui_key = f"ui_{key}"
 
@@ -69,7 +69,7 @@ def _render_widget(schema: ParameterSchemaDTO, registry_data: Dict[str, Any]):
     # Mismatch Handling: If value not found, mark as missing
     is_missing = (current_val is None)
     if is_missing:
-         current_val = schema['min_value'] # Fallback default
+         current_val = schema.min_value # Fallback default
          label = f"{label} (⚠️ N/A)"
 
     # Append unit to label
@@ -92,13 +92,13 @@ def _render_widget(schema: ParameterSchemaDTO, registry_data: Dict[str, Any]):
     is_locked = (not is_god_mode) or is_missing
 
     # Widget Generation
-    widget_type = schema['widget_type']
+    widget_type = schema.widget_type
 
     def on_change():
         new_val = st.session_state[ui_key]
 
         cmd = GodCommandDTO(
-            target_domain=schema['category'],
+            target_domain=schema.category,
             parameter_key=key,
             new_value=new_val,
             command_type="SET_PARAM"
@@ -122,9 +122,9 @@ def _render_widget(schema: ParameterSchemaDTO, registry_data: Dict[str, Any]):
         if widget_type == "slider":
             st.slider(
                 label=label,
-                min_value=float(schema['min_value']),
-                max_value=float(schema['max_value']),
-                step=float(schema['step']) if schema['step'] else 0.1,
+                min_value=float(schema.min_value),
+                max_value=float(schema.max_value),
+                step=float(schema.step) if schema.step else 0.1,
                 key=ui_key,
                 on_change=on_change,
                 help=desc,
@@ -133,9 +133,9 @@ def _render_widget(schema: ParameterSchemaDTO, registry_data: Dict[str, Any]):
         elif widget_type == "number_input":
             st.number_input(
                 label=label,
-                min_value=float(schema['min_value']),
-                max_value=float(schema['max_value']),
-                step=float(schema['step']) if schema['step'] else 1.0,
+                min_value=float(schema.min_value),
+                max_value=float(schema.max_value),
+                step=float(schema.step) if schema.step else 1.0,
                 key=ui_key,
                 on_change=on_change,
                 help=desc,

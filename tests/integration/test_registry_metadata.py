@@ -47,9 +47,9 @@ class TestRegistryMetadata:
 
             metadata = registry.get_metadata(known_key)
             assert metadata is not None
-            assert metadata["key"] == known_key
-            assert metadata["label"] == "Corporate Tax Rate"
-            assert metadata["data_type"] == "float"
+            assert metadata.key == known_key
+            assert metadata.label == "Corporate Tax Rate"
+            assert metadata.data_type == "float"
 
     def test_global_registry_get_metadata_returns_none_for_unknown_key(self):
         """Verify get_metadata returns None for non-existent keys."""
