@@ -16,43 +16,19 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "fix-gov-structure": {
-        "title": "Structural Fix: Government Singleton/List Mismatch",
-        "command": "create",
+    "exec-test-modernization": {
+        "title": "Execute Test Modernization & Stabilization",
         "instruction": (
-            "Implement the 'Property Proxy' pattern to resolve the Government Singleton vs List mismatch.\n\n"
-            "**Key Tasks:**\n"
-            "1. **Refactor WorldState** (`simulation/world_state.py`): \n"
-            "   - Add `@property` for `government` to access `governments[0]`.\n"
-            "   - Add `@government.setter` to sync with `governments` list.\n"
-            "   - Ensure `governments` is the SSoT.\n"
-            "2. **Update Initializer** (`simulation/initialization/initializer.py`):\n"
-            "   - Change direct `sim.government` assignment to `sim.world_state.governments.append(gov)`.\n"
-            "3. **Verify**:\n"
-            "   - Create a new test `tests/unit/test_government_structure.py` to verify singleton/list synchronization and initializer integrity.\n\n"
-            "**Reference:** `design/3_work_artifacts/spec/STRUCT_GOV_FIX_SPEC.md`"
+            "Align the test suite with Phase 19/20 architecture as per the modernization spec.\n\n"
+            "**Core Tasks:**\n"
+            "1. **Conftest**: Add `mock_household_factory_context` fixture to `tests/conftest.py`.\n"
+            "2. **Audit Integrity**: Refactor `tests/system/test_audit_integrity.py` to use real `HouseholdFactory` + `mock_context` to verify birth gift transfers.\n"
+            "3. **Mock IDs**: Ensure all mocks in `tests/unit/test_transaction_handlers.py` have explicit `id` attributes.\n"
+            "4. **Factory Tests**: Update `tests/simulation/factories/test_agent_factory.py` to use `HouseholdFactoryContext`.\n"
+            "5. **Engine Tests**: Update `tests/integration/test_government_refactor_behavior.py` to test `FiscalEngine` directly.\n"
+            "6. **Government Tests**: Remove `collect_tax` calls in `tests/integration/test_government_fiscal_policy.py` and `tests/unit/test_tax_collection.py`, replacing them with `settlement_system.transfer` or service-level recording.\n\n"
+            "**Verification**: The goal is 100% test pass rate for the affected files."
         ),
-        "file": "design/3_work_artifacts/spec/STRUCT_GOV_FIX_SPEC.md",
-        "wait": True
-    },
-    "cleanup-deprecations": {
-        "title": "Hygiene: Cleanup Deprecated Code (Track B)",
-        "command": "create",
-        "instruction": (
-            "Refactor deprecated code to enforce Zero-Sum Integrity and SEO patterns.\n\n"
-            "**Key Tasks:**\n"
-            "1. **Government.collect_tax** (`simulation/agents/government.py`):\n"
-            "   - Deprecate/Replace with `settlement.settle_atomic`.\n"
-            "   - Update all call sites in `tests/` to use atomic settlement logic.\n"
-            "2. **HouseholdFactory** (`simulation/systems/demographic_manager.py`):\n"
-            "   - Migrate to `simulation.factories.agent_factory` methodology.\n"
-            "   - Inject `simulation` context where required.\n"
-            "3. **StockOrder** (`simulation/models.py`):\n"
-            "   - Remove class and enforce `CanonicalOrderDTO`.\n"
-            "   - Update `tests/unit/test_market_adapter.py`.\n\n"
-            "**Reference:** `design/3_work_artifacts/spec/DEPRECATION_CLEANUP_SPEC.md`"
-        ),
-        "file": "design/3_work_artifacts/spec/DEPRECATION_CLEANUP_SPEC.md",
-        "wait": True
+        "file": "design/3_work_artifacts/spec/TEST_MODERNIZATION_SPEC.md"
     },
 }

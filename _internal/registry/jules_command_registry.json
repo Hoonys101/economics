@@ -3,16 +3,16 @@
     "version": "1.0"
   },
   "missions": {
-    "cleanup-deprecations": {
-      "key": "cleanup-deprecations",
-      "title": "Hygiene: Cleanup Deprecated Code (Track B)",
+    "exec-test-modernization": {
+      "key": "exec-test-modernization",
+      "title": "Execute Test Modernization & Stabilization",
       "type": "jules",
-      "instruction_raw": "Refactor deprecated code to enforce Zero-Sum Integrity and SEO patterns.\n\n**Key Tasks:**\n1. **Government.collect_tax** (`simulation/agents/government.py`):\n   - Deprecate/Replace with `settlement.settle_atomic`.\n   - Update all call sites in `tests/` to use atomic settlement logic.\n2. **HouseholdFactory** (`simulation/systems/demographic_manager.py`):\n   - Migrate to `simulation.factories.agent_factory` methodology.\n   - Inject `simulation` context where required.\n3. **StockOrder** (`simulation/models.py`):\n   - Remove class and enforce `CanonicalOrderDTO`.\n   - Update `tests/unit/test_market_adapter.py`.\n\n**Reference:** `design/3_work_artifacts/spec/DEPRECATION_CLEANUP_SPEC.md`",
+      "instruction_raw": "Align the test suite with Phase 19/20 architecture as per the modernization spec.\n\n**Core Tasks:**\n1. **Conftest**: Add `mock_household_factory_context` fixture to `tests/conftest.py`.\n2. **Audit Integrity**: Refactor `tests/system/test_audit_integrity.py` to use real `HouseholdFactory` + `mock_context` to verify birth gift transfers.\n3. **Mock IDs**: Ensure all mocks in `tests/unit/test_transaction_handlers.py` have explicit `id` attributes.\n4. **Factory Tests**: Update `tests/simulation/factories/test_agent_factory.py` to use `HouseholdFactoryContext`.\n5. **Engine Tests**: Update `tests/integration/test_government_refactor_behavior.py` to test `FiscalEngine` directly.\n6. **Government Tests**: Remove `collect_tax` calls in `tests/integration/test_government_fiscal_policy.py` and `tests/unit/test_tax_collection.py`, replacing them with `settlement_system.transfer` or service-level recording.\n\n**Verification**: The goal is 100% test pass rate for the affected files.",
       "status": "pending",
       "created_at": "",
       "command": "create",
-      "file_path": "design/3_work_artifacts/spec/DEPRECATION_CLEANUP_SPEC.md",
-      "wait": true,
+      "file_path": "design/3_work_artifacts/spec/TEST_MODERNIZATION_SPEC.md",
+      "wait": false,
       "session_id": null,
       "worker": null,
       "context_files": [],

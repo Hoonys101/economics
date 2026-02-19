@@ -23,54 +23,31 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "analyze-gov-structure": {
-        "title": "Structural Analysis: Government Singleton vs List",
+    "modernize-tests": {
+        "title": "Test Modernization: Aligning with Phase 19/20 Architecture",
         "worker": "spec",
         "instruction": (
-            "Analyze the usage of `government` (singleton) versus `governments` (list) in `WorldState` and `Simulation`.\n\n"
-            "**Context:**\n"
-            "- `WorldState` defines `self.governments: List[Government] = []`.\n"
-            "- `TickOrchestrator` and tests often access `state.government`.\n"
-            "- Determining how `state.government` is currently populated (likely dynamic injection in `Simulation`).\n\n"
-            "**Objective:**\n"
-            "1. Identify where `state.government` is being set (e.g., `initializer.py`, `simulation.py`).\n"
-            "2. Propose a structural fix: either add a proper `@property` to `WorldState` or refactor all consumers to use `governments[0]`.\n"
-            "3. Assess impact on `TickOrchestrator`, `SimulationState` DTO, and tests."
+            "Analyze current test failures and deprecation warnings to design a modernization plan.\n\n"
+            "**Primary Objectives:**\n"
+            "1. **Taxation Fix**: Replace `government.collect_tax(...)` calls with `government.settlement_system.settle_atomic(...)` or proper service-based calls.\n"
+            "2. **Birth Gift Fix**: Update `test_birth_gift_rounding` to assert against `settle_atomic` or `transfer` within the context of the new `HouseholdFactory`.\n"
+            "3. **Mock Hardening**: Fix `AttributeError: Mock object has no attribute 'id'` by ensuring mocks in `test_transaction_handlers.py` correctly simulate `IAgent` or `IFinancialAgent` protocols.\n"
+            "4. **Factory Migration**: Update `test_agent_factory.py` and others to use `simulation.factories.household_factory` and the mandatory `simulation` injection.\n"
+            "5. **Engine Migration**: Replace `GovernmentDecisionEngine` with `FiscalEngine` in tests.\n\n"
+            "**Constraint:** Every refactor must enforce Zero-Sum integrity and match the current `SettlementSystem` API."
         ),
         "context_files": [
-            "simulation/world_state.py",
-            "simulation/engine.py",
-            "simulation/initialization/initializer.py",
-            "simulation/orchestration/tick_orchestrator.py"
-        ],
-        "output_path": "design/3_work_artifacts/spec/STRUCT_GOV_FIX_SPEC.md"
-    },
-    "analyze-deprecations": {
-        "title": "Hygiene Analysis: Deprecation Cleanup (Track B)",
-        "worker": "spec",
-        "instruction": (
-            "Analyze the usage of deprecated components and design a refactoring plan.\n\n"
-            "**Deprecated targets:**\n"
-            "1. `Government.collect_tax` -> `settlement.settle_atomic`\n"
-            "2. `HouseholdFactory` (old) -> `simulation.factories.household_factory`\n"
-            "3. `StockOrder` -> `CanonicalOrderDTO`\n\n"
-            "**Objective:**\n"
-            "1. Review the provided context files to understand how deprecated aliases are used.\n"
-            "2. For each category, provide a specific `sed` or refactoring pattern.\n"
-            "3. Identify any logic changes required (e.g., parameter differences between old/new factories).\n"
-            "4. Output a `MISSION_spec` for Jules to execute the cleanup."
-        ),
-        "context_files": [
-            "tests/unit/agents/test_government.py",
-            "tests/integration/test_government_tax.py",
-            "tests/simulation/factories/test_agent_factory.py",
-            "tests/unit/test_household_factory.py",
-            "tests/unit/systems/test_demographic_manager_newborn.py",
-            "tests/unit/modules/demographics/test_event_consistency.py",
+            "simulation/agents/government.py",
+            "simulation/factories/household_factory.py",
+            "simulation/systems/settlement_system.py",
+            "simulation/systems/demographic_manager.py",
+            "tests/integration/test_government_fiscal_policy.py",
             "tests/system/test_audit_integrity.py",
-            "tests/unit/test_market_adapter.py",
-            "tests/unit/test_stock_market.py"
+            "tests/unit/test_tax_collection.py",
+            "tests/unit/test_transaction_handlers.py",
+            "tests/simulation/factories/test_agent_factory.py",
+            "tests/integration/test_government_refactor_behavior.py"
         ],
-        "output_path": "design/3_work_artifacts/spec/DEPRECATION_CLEANUP_SPEC.md"
+        "output_path": "design/3_work_artifacts/spec/TEST_MODERNIZATION_SPEC.md"
     },
 }
