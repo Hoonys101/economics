@@ -311,8 +311,8 @@ class SettlementSystem(IMonetaryAuthority):
 
     def _prepare_seamless_funds(self, agent: IFinancialAgent, amount: int, currency: CurrencyCode) -> bool:
         """
-        Checks if agent has enough cash. If not, attempts to withdraw from Bank
-        and deposit to Agent's wallet (Seamless Payment).
+        Checks if agent has enough cash.
+        REMOVED: Automatic Bank Withdrawal (No Budget, No Execution).
         """
         # Central Bank check
         if isinstance(agent, ICentralBank) or (agent.id == ID_CENTRAL_BANK):
@@ -327,30 +327,8 @@ class SettlementSystem(IMonetaryAuthority):
         if current_cash >= amount:
             return True
 
-        # Needs Bank Withdrawal
-        if self.bank and currency == DEFAULT_CURRENCY:
-            needed = amount - current_cash
-            # Check Bank Balance
-            # Assuming bank uses string ID
-            bank_balance = self.bank.get_customer_balance(str(agent.id))
-
-            if bank_balance >= needed:
-                success = self.bank.withdraw_for_customer(int(agent.id), needed)
-                if success:
-                    # Inject cash into agent wallet to preserve Zero-Sum
-                    if isinstance(agent, IFinancialEntity):
-                        agent.deposit(needed, currency)
-                    elif isinstance(agent, IFinancialAgent):
-                        agent._deposit(needed, currency)
-
-                    self.logger.info(
-                        f"SEAMLESS_PREP | Agent {agent.id} withdrew {needed} from bank to wallet for transfer.",
-                        extra={"agent_id": agent.id}
-                    )
-                    return True
-
         self.logger.error(
-            f"SETTLEMENT_FAIL | Insufficient funds (Cash+Bank). Cash: {current_cash}, Req: {amount}.",
+            f"SETTLEMENT_FAIL | Insufficient funds. Cash: {current_cash}, Req: {amount}.",
             extra={"tags": ["insufficient_funds"]}
         )
         return False

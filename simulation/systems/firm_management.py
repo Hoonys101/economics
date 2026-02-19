@@ -154,7 +154,7 @@ class FirmSystem:
         success = settlement_system.transfer(
             founder_household,
             new_firm,
-            final_startup_cost,
+            int(final_startup_cost),
             f"Startup Capital for Firm {new_firm.id}",
             tick=simulation.time
         )

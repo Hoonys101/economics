@@ -21,7 +21,7 @@ class FinancialTransactionHandler(ITransactionHandler):
 
         success = False
 
-        if tx_type in ["interest_payment", "loan_interest", "deposit_interest", "deposit", "withdrawal", "bank_profit_remittance"]:
+        if tx_type in ["interest_payment", "loan_interest", "deposit_interest", "deposit", "withdrawal", "bank_profit_remittance", "holding_cost"]:
              success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
 
              if success and isinstance(buyer, Firm):

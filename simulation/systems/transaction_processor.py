@@ -191,6 +191,19 @@ class TransactionProcessor(SystemInterface):
                 tx.seller_id
             )
 
+            # Agent Existential Guard
+            if buyer is None or seller is None:
+                state.logger.error(
+                    f"Transaction Failed: Missing Agent. Buyer: {tx.buyer_id}, Seller: {tx.seller_id} "
+                    f"for Transaction: {tx.transaction_type}"
+                )
+                results.append(
+                    SettlementResultDTO(
+                        original_transaction=tx, success=False, amount_settled=0.0
+                    )
+                )
+                continue
+
             try:
                 # Dispatch
                 success = handler.handle(tx, buyer, seller, context)

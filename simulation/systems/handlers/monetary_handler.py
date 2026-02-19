@@ -59,6 +59,11 @@ class MonetaryTransactionHandler(ITransactionHandler):
                 # Asset Transfer Logic (Stock/RE)
                 self._apply_asset_liquidation_effects(tx, buyer, seller, context)
 
+        elif tx_type == "bond_interest":
+             success = context.settlement_system.transfer(
+                 buyer, seller, int(trade_value), tx_type
+             )
+
         elif tx_type in ["bond_purchase", "omo_purchase"]:
             # QE: CB (Buyer) -> Gov/Agent (Seller)
             success = context.settlement_system.transfer(
