@@ -21,4 +21,10 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "instruction": "Dismantle legacy transaction engine. [DELETE] simulation/systems/transaction_manager.py. Remove all residual references in WorldState, SimulationState, and registries. Ensure zero reliance on the legacy manager.",
         "wait": False
     },
+    "exec-reporting-dto-pennies": {
+        "title": "Reporting DTO Penny-Hardening Implementation",
+        "file": "design/3_work_artifacts/specs/MISSION_REPORTING_DTO_PENNIES_SPEC.md",
+        "instruction": "Implement the hardening of reporting DTOs (total_pennies as SSoT) and update the AnalyticsSystem to aggregate from integer sources instead of floats. Follow the provided MISSION_REPORTING_DTO_PENNIES_SPEC.md strictly.",
+        "wait": False
+    },
 }

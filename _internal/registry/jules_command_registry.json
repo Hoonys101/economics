@@ -19,6 +19,23 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "exec-reporting-dto-pennies": {
+      "key": "exec-reporting-dto-pennies",
+      "title": "Reporting DTO Penny-Hardening Implementation",
+      "type": "jules",
+      "instruction_raw": "Implement the hardening of reporting DTOs (total_pennies as SSoT) and update the AnalyticsSystem to aggregate from integer sources instead of floats. Follow the provided MISSION_REPORTING_DTO_PENNIES_SPEC.md strictly.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_REPORTING_DTO_PENNIES_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }
