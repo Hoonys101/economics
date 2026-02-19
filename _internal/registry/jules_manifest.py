@@ -16,79 +16,6 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
-    "exec-cockpit-be-1": {
-        "title": "Cockpit 2.0 BE-1: Pydantic DTOs + GlobalRegistry",
-        "file": "design/3_work_artifacts/specs/MISSION_COCKPIT_BACKEND_SPEC.md",
-        "instruction": (
-            "Implement Phase 1 of the Cockpit 2.0 Backend. SCOPE IS LIMITED TO:\n\n"
-            "1. **Pydantic DTO Migration**: Migrate simulation/dtos/watchtower.py from dataclasses to pydantic.BaseModel. "
-            "The models MUST exactly match the API Contract in design/3_work_artifacts/specs/MISSION_COCKPIT_API_CONTRACT.md. "
-            "Import the canonical models (WatchtowerSnapshotResponse, CockpitCommand, etc.) from modules/governance/cockpit/api.py.\n\n"
-            "2. **GlobalRegistry**: Implement modules/core/global_registry.py as specified in the backend spec. "
-            "Create the IGlobalRegistry Protocol, RegistryEntry, OriginType enum, and the singleton accessor. "
-            "Add seed_registry() to initialize from config.py values.\n\n"
-            "3. **DashboardService Hardening**: Update simulation/orchestration/dashboard_service.py to construct "
-            "WatchtowerSnapshotResponse (Pydantic) instead of dataclass-based snapshots. Use .model_dump(mode='json').\n\n"
-            "4. **Tests**: Create tests/unit/test_cockpit_models.py and tests/unit/test_global_registry.py.\n\n"
-            "DO NOT touch: DeathSystem, Genealogy, server.py endpoints. Those are in BE-2."
-        ),
-    },
-    "exec-cockpit-be-2": {
-        "title": "Cockpit 2.0 BE-2: Genealogy System + API Endpoints",
-        "file": "design/3_work_artifacts/specs/MISSION_COCKPIT_BACKEND_SPEC.md",
-        "instruction": (
-            "Implement Phase 2 of the Cockpit 2.0 Backend. PREREQUISITE: BE-1 must be merged first.\n\n"
-            "1. **AgentGenealogy**: Create modules/watchtower/models/genealogy.py with AgentSurvivalData model "
-            "and IGenealogyRepository Protocol as defined in the backend spec. Implement InMemoryGenealogyRepository.\n\n"
-            "2. **DeathSystem Hook**: Inject IGenealogyRepository into DeathSystem.__init__() in "
-            "simulation/systems/lifecycle/death_system.py. Archive agent traits on liquidation.\n\n"
-            "3. **API Endpoints in server.py**:\n"
-            "   - WebSocket /ws/live: broadcast WatchtowerSnapshotResponse at 1Hz\n"
-            "   - WebSocket /ws/command: validate CockpitCommand via TypeAdapter, route to GlobalRegistry\n"
-            "   - REST GET /api/v1/inspector/{agent_id}: return AgentInspectorResponse\n"
-            "   - REST GET /api/v1/genealogy: return GenealogyResponse\n\n"
-            "4. **Tests**: Add tests for DeathSystem genealogy hook and API endpoint validation.\n\n"
-            "Reference: design/3_work_artifacts/specs/MISSION_COCKPIT_API_CONTRACT.md (canonical schemas)."
-        ),
-    },
-    "exec-cockpit-fe-1": {
-        "title": "Cockpit 2.0 FE-1: Foundation (Types + WebSocket + HUD + God Bar)",
-        "file": "design/3_work_artifacts/specs/MISSION_COCKPIT_API_CONTRACT.md",
-        "instruction": (
-            "Implement Phase 1 of the Cockpit 2.0 Frontend. Tech: React 19 + Vite + TailwindCSS v4 + Recharts.\n\n"
-            "=== ARCHITECTURAL MANDATE: Separation of Concerns ===\n"
-            "HTML = Structure (semantic markup, container-component hierarchy)\n"
-            "CSS  = Design (all visual styling, layout, animations — NO inline styles in JSX)\n"
-            "JS   = Rendering logic (data binding, state management, event handlers — NO styling logic)\n\n"
-            "=== CONTAINER-COMPONENT PATTERN ===\n"
-            "Every UI section follows Container (data/logic) + Component (pure render):\n"
-            "- Container: fetches data, manages state, passes props\n"
-            "- Component: receives props, returns JSX, ZERO side effects\n"
-            "- CSS: Each component gets a dedicated CSS module or BEM-scoped class block\n\n"
-            "=== SCOPE ===\n"
-            "1. **TypeScript Types** (frontend/src/types/watchtower.ts): "
-            "Define ALL interfaces matching MISSION_COCKPIT_API_CONTRACT.md exactly. "
-            "WatchtowerSnapshot, CockpitCommand, AgentInspectorResponse, GenealogyResponse.\n\n"
-            "2. **WebSocket Hook** (frontend/src/hooks/useWatchtower.ts): "
-            "Replace REST polling. Connect to /ws/live (data) and /ws/command (commands). "
-            "Reconnection with exponential backoff. Connection status state. "
-            "sendCommand() function for God Mode.\n\n"
-            "3. **Layer 1 — HUD Container** (frontend/src/containers/HudContainer.tsx + frontend/src/components/hud/):\n"
-            "   - VitalStrip.tsx: Tick, FPS, M2 Leak (green/red), Active Population\n"
-            "   - SpeedControl.tsx: Play/Pause/Step buttons → sendCommand()\n"
-            "   - CSS: frontend/src/components/hud/hud.css\n\n"
-            "4. **Layer 4 — God Bar Container** (frontend/src/containers/GodBarContainer.tsx + frontend/src/components/godbar/):\n"
-            "   - ParamSlider.tsx: Base Rate, Tax Rate sliders → SET_PARAM commands\n"
-            "   - ShockButton.tsx: Red trigger buttons → TRIGGER_SHOCK commands\n"
-            "   - CSS: frontend/src/components/godbar/godbar.css\n\n"
-            "5. **App.tsx Restructure**: Replace current tab layout with:\n"
-            "   <HudContainer /> (top fixed)\n"
-            "   <main> (flex-1, macro canvas — placeholder for FE-2)\n"
-            "   <GodBarContainer /> (bottom fixed)\n\n"
-            "DO NOT implement: Macro Charts, Scatter Plot, Inspector Panel (those are FE-2)."
-        ),
-    },
     "exec-cockpit-fe-2": {
         "title": "Cockpit 2.0 FE-2: Macro Canvas + Scatter Plot + Inspector Panel",
         "file": "design/3_work_artifacts/specs/MISSION_COCKPIT_API_CONTRACT.md",
@@ -121,5 +48,16 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
             "Reference: design/3_work_artifacts/specs/MISSION_COCKPIT_API_CONTRACT.md"
         ),
     },
+    "exec-cockpit-stabilization": {
+        "title": "Cockpit 2.0 Stabilization: Fix Regressions",
+        "file": "design/3_work_artifacts/specs/MISSION_COCKPIT_STABILIZATION_SPEC.md",
+        "instruction": (
+            "Restore the test suite to 100% PASS by fixing Pydantic-related regressions.\n\n"
+            "**Fix Areas:**\n"
+            "1. **dashboard/components/controls.py**: Change all `schema['key']` style accesses to `schema.key` (dot notation) for ParameterSchemaDTO.\n"
+            "2. **tests/unit/modules/system/test_command_service_unit.py**: Update all `RegistryEntry()` calls to include `key='...'` (e.g. key='test_param').\n"
+            "3. **tests/system/test_command_service_rollback.py**: Fix any validation errors in Registry/UndoRecord setups.\n\n"
+            "Run `pytest -rfE --tb=line tests/` after fixes to verify success."
+        ),
+    },
 }
-

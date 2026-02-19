@@ -24,4 +24,33 @@ from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
     # Add missions here
+    "spec-cockpit-stabilization": {
+        "title": "Cockpit 2.0 Phase 3: Post-Merge Stabilization & Regression Fix",
+        "worker": "spec",
+        "instruction": (
+            "Analyze and fix the 11 test failures introduced by the Cockpit 2.0 Pydantic migration.\n\n"
+            "**Primary Regressions:**\n"
+            "1. **RegistryValueDTO ValidationError**: `modules/system/api.py` defines `RegistryValueDTO` (and alias `RegistryEntry`) "
+            "with a mandatory `key: str` field. Many unit tests (e.g., test_command_service_unit.py) instantiate it with only "
+            "(value, origin). Fix all instantiation sites in the test suite to include the key.\n"
+            "2. **ParameterSchemaDTO Subscripting**: `simulation/dtos/registry_dtos.py:ParameterSchemaDTO` is now a pydantic.BaseModel. "
+            "Legacy code in `dashboard/components/controls.py` and some tests are trying to access it via `dto['key']`. "
+            "Refactor these to `dto.key` or `.model_dump()` if dict-access is required.\n"
+            "3. **Mocking/Assertion Gaps**: In `test_god_command_protocol.py`, some mocks are not receiving the expected calls "
+            "due to changes in how `CommandService` interacts with the registry (using get_entry() instead of get()).\n\n"
+            "**Goal**: Return a spec that identifies every failing file/line and provides the exact fix to restore the test suite to 100% PASS."
+        ),
+
+        "context_files": [
+            "modules/system/api.py",
+            "modules/system/registry.py",
+            "simulation/dtos/registry_dtos.py",
+            "modules/system/services/command_service.py",
+            "tests/unit/modules/system/test_command_service_unit.py",
+            "tests/system/test_command_service_rollback.py",
+            "dashboard/components/controls.py",
+            "design/3_work_artifacts/specs/MISSION_COCKPIT_API_CONTRACT.md"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_COCKPIT_STABILIZATION_SPEC.md"
+    },
 }
