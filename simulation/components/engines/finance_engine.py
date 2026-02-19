@@ -42,7 +42,6 @@ class FinanceEngine:
         holding_cost_pennies = int(holding_cost_float)
 
         if holding_cost_pennies > 0 and gov_id is not None:
-            self._record_expense(state, holding_cost_pennies, DEFAULT_CURRENCY)
             transactions.append(
                 Transaction(
                     buyer_id=firm_id,
@@ -64,7 +63,6 @@ class FinanceEngine:
         payment = min(current_balance, fee_pennies)
 
         if payment > 0 and gov_id is not None:
-            self._record_expense(state, payment, DEFAULT_CURRENCY)
             transactions.append(
                 Transaction(
                     buyer_id=firm_id,

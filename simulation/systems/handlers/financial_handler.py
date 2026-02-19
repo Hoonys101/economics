@@ -59,4 +59,14 @@ class FinancialTransactionHandler(ITransactionHandler):
                  if isinstance(buyer, Firm):
                      buyer.record_expense(int(trade_value), tx.currency)
 
+        elif tx_type in ["repayment", "loan_repayment"]:
+             # Transfer Only. No Expense Recording (Principal Repayment).
+             success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
+
+        elif tx_type in ["investment"]:
+             # Transfer + Expense Recording (CAPEX treated as expense for consistency)
+             success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
+             if success and isinstance(buyer, Firm):
+                 buyer.record_expense(int(trade_value), tx.currency)
+
         return success is not None
