@@ -4,7 +4,7 @@ import signal
 import sys
 import os
 from contextlib import asynccontextmanager
-from dataclasses import asdict
+# from dataclasses import asdict # Removed as we use Pydantic now
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
 from modules.system.builders.simulation_builder import create_simulation
@@ -103,8 +103,10 @@ async def websocket_endpoint(websocket: WebSocket):
             if is_ready and dashboard_service:
                 # Serves WatchtowerSnapshotDTO (TD-125)
                 snapshot = dashboard_service.get_snapshot()
-                # Use asdict to convert dataclass to dict
-                data = asdict(snapshot)
+
+                # Use model_dump to convert Pydantic model to dict
+                data = snapshot.model_dump()
+
                 import json
                 # Safe serialization for MagicMocks
                 try:
@@ -138,14 +140,19 @@ async def command_endpoint(websocket: WebSocket):
             data = await websocket.receive_json()
             # Expecting dict like { "type": "PAUSE", "payload": {} }
             try:
-                cmd_type = data.get("type")
-                payload = data.get("payload", {})
+                # Use Pydantic validation
+                # command = CockpitCommand(**data) is simpler if data matches exactly
+                # But frontend might send extra fields? Pydantic ignores extra fields by default in v2 unless configured otherwise (extra='ignore' is default usually)
+                # Let's use validation safely
 
-                if not cmd_type:
-                    logger.warning("Received command without type")
+                # If data is a dict, we can try to validate it.
+                # However, CockpitCommand expects 'type' and 'payload'.
+                if not isinstance(data, dict):
+                    logger.warning("Received command that is not a dict")
                     continue
 
-                command = CockpitCommand(type=cmd_type, payload=payload)
+                command = CockpitCommand.model_validate(data)
+
                 if sim and hasattr(sim, 'command_service'):
                     sim.command_service.enqueue_command(command)
                     # Optional: Send ack? For now, fire and forget.

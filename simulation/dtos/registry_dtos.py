@@ -1,6 +1,7 @@
-from typing import TypedDict, Any, List, Optional, Union, Literal
+from typing import Any, List, Optional, Union, Literal
+from pydantic import BaseModel
 
-class ParameterSchemaDTO(TypedDict):
+class ParameterSchemaDTO(BaseModel):
     """
     UI 위젯 생성을 위한 메타데이터 정의.
     Matches the schema in config/domains/registry_schema.yaml.
@@ -10,9 +11,9 @@ class ParameterSchemaDTO(TypedDict):
     description: str
     widget_type: Literal["slider", "toggle", "number_input", "select"]
     data_type: Literal["int", "float", "bool", "str"]
-    min_value: Optional[Union[float, int]]
-    max_value: Optional[Union[float, int]]
-    step: Optional[Union[float, int]]
-    options: Optional[List[Any]]
+    min_value: Optional[Union[float, int]] = None
+    max_value: Optional[Union[float, int]] = None
+    step: Optional[Union[float, int]] = None
+    options: Optional[List[Any]] = None
     category: str
-    unit: Optional[str]
+    unit: Optional[str] = None

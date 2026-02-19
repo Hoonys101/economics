@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional, Any, TYPE_CHECKING, Dict, List
-from modules.system.api import IAgentRegistry, IGlobalRegistry, IConfigurationRegistry, OriginType, RegistryEntry, RegistryObserver
+from modules.system.api import IAgentRegistry, IGlobalRegistry, IConfigurationRegistry, OriginType, RegistryValueDTO, RegistryObserver
 from modules.system.services.schema_loader import SchemaLoader
 from simulation.dtos.registry_dtos import ParameterSchemaDTO
 
@@ -53,9 +53,9 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
     Central repository for simulation parameters with priority and locking mechanisms.
     FOUND-01: Implements Origin-based access control and observer pattern using Layered Storage.
     """
-    def __init__(self):
+    def __init__(self, initial_data: Optional[Dict[str, Any]] = None):
         # Layered storage: Key -> {Origin -> Entry}
-        self._layers: Dict[str, Dict[OriginType, RegistryEntry]] = {}
+        self._layers: Dict[str, Dict[OriginType, RegistryValueDTO]] = {}
         self._observers: List[RegistryObserver] = []
         self._key_observers: Dict[str, List[RegistryObserver]] = {}
         # Placeholder for scheduler injection (Phase 0 Intercept)
@@ -64,12 +64,27 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
         self._metadata_map: Dict[str, ParameterSchemaDTO] = {}
         self._load_metadata()
 
+        if initial_data:
+            self.migrate_from_dict(initial_data)
+
     def _load_metadata(self) -> None:
         schemas = SchemaLoader.load_schema()
-        for schema in schemas:
-            self._metadata_map[schema['key']] = schema
+        if isinstance(schemas, list):
+            for schema in schemas:
+                # schema is a dict (or now Pydantic if SchemaLoader was updated? No, SchemaLoader returns dict or list of dicts)
+                # ParameterSchemaDTO is now Pydantic.
+                # SchemaLoader currently returns raw dicts from YAML.
+                # We can access them as dicts.
+                if isinstance(schema, dict) and 'key' in schema:
+                    # Validate with Pydantic
+                    try:
+                        dto = ParameterSchemaDTO(**schema)
+                        self._metadata_map[dto.key] = dto
+                    except Exception as e:
+                         # Log error but continue
+                         pass
 
-    def _get_active_entry(self, key: str) -> Optional[RegistryEntry]:
+    def _get_active_entry(self, key: str) -> Optional[RegistryValueDTO]:
         layers = self._layers.get(key)
         if not layers:
             return None
@@ -101,8 +116,15 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
         # 3. Update Layer
         is_locked = (origin == OriginType.GOD_MODE)
 
-        new_entry = RegistryEntry(
+        # Determine Domain (Default "global" or parse from key)
+        domain = "global"
+        if "." in key:
+            domain = key.split(".")[0]
+
+        new_entry = RegistryValueDTO(
+            key=key,
             value=value,
+            domain=domain,
             origin=origin,
             is_locked=is_locked,
             last_updated_tick=0 # TODO: Inject scheduler.current_tick
@@ -167,7 +189,7 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
             for observer in self._key_observers[key]:
                 observer.on_registry_update(key, value, origin)
 
-    def snapshot(self) -> Dict[str, RegistryEntry]:
+    def snapshot(self) -> Dict[str, RegistryValueDTO]:
         """Returns snapshot of ACTIVE entries."""
         result = {}
         for key in self._layers:
@@ -179,7 +201,7 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
     def get_metadata(self, key: str) -> Optional[ParameterSchemaDTO]:
         return self._metadata_map.get(key)
 
-    def get_entry(self, key: str) -> Optional[RegistryEntry]:
+    def get_entry(self, key: str) -> Optional[RegistryValueDTO]:
         return self._get_active_entry(key)
 
     def delete_entry(self, key: str) -> bool:
@@ -201,7 +223,7 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
             return True
         return False
 
-    def restore_entry(self, key: str, entry: RegistryEntry) -> None:
+    def restore_entry(self, key: str, entry: RegistryValueDTO) -> bool:
         """Restores a full entry state (for rollback purposes)."""
         if key not in self._layers:
             self._layers[key] = {}
@@ -210,6 +232,7 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
         active = self._get_active_entry(key)
         if active and active == entry:
             self._notify(key, entry.value, entry.origin)
+        return True
 
     def reset_to_defaults(self) -> None:
         """
@@ -231,3 +254,15 @@ class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
                 val = active.value if active else None
                 origin = active.origin if active else OriginType.SYSTEM
                 self._notify(key, val, origin)
+
+    def migrate_from_dict(self, data: Dict[str, Any]) -> None:
+        """
+        Migrates a dictionary of configuration values into the registry.
+        Assumes keys are 'domain.key' or simple keys.
+        """
+        for key, value in data.items():
+            # Treat as SYSTEM origin if initial load, or CONFIG if manual migration?
+            # Spec says "migrate_from_dict" for YAML/Config. So OriginType.CONFIG is appropriate.
+            # But if it's the *initial* defaults, maybe SYSTEM?
+            # Let's use CONFIG as it's safer (allows SYSTEM defaults to exist if we ever hardcode them).
+            self.set(key, value, OriginType.CONFIG)

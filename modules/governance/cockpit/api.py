@@ -1,6 +1,6 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
 from typing import Dict, Any, Literal, Protocol, Optional, Union
+from pydantic import BaseModel, Field
 
 CockpitCommandType = Literal[
     "PAUSE",
@@ -10,21 +10,18 @@ CockpitCommandType = Literal[
     "SET_TAX_RATE"
 ]
 
-@dataclass
-class CockpitCommand:
+class CockpitCommand(BaseModel):
     """
     Represents a command from the Cockpit (frontend) to the Simulation.
     """
     type: CockpitCommandType
-    payload: Dict[str, Any] = field(default_factory=dict)
+    payload: Dict[str, Any] = Field(default_factory=dict)
 
-@dataclass
-class SetBaseRatePayload:
+class SetBaseRatePayload(BaseModel):
     """Payload for SET_BASE_RATE command."""
     rate: float  # e.g., 0.05 for 5%
 
-@dataclass
-class SetTaxRatePayload:
+class SetTaxRatePayload(BaseModel):
     """Payload for SET_TAX_RATE command."""
     tax_type: Literal["corporate", "income"]
     rate: float

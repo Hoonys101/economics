@@ -1,82 +1,69 @@
-from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional
+from pydantic import BaseModel, Field
 
-@dataclass
-class IntegrityDTO:
+class IntegrityDTO(BaseModel):
     m2_leak: int
     fps: float
 
-@dataclass
-class MacroDTO:
+class MacroDTO(BaseModel):
     gdp: int
     cpi: float
     unemploy: float
     gini: float
 
-@dataclass
-class FinanceRatesDTO:
+class FinanceRatesDTO(BaseModel):
     base: float
     call: float
     loan: float
     savings: float
 
-@dataclass
-class FinanceSupplyDTO:
+class FinanceSupplyDTO(BaseModel):
     m0: int
     m1: int
     m2: int
     velocity: float
 
-@dataclass
-class FinanceDTO:
+class FinanceDTO(BaseModel):
     rates: FinanceRatesDTO
     supply: FinanceSupplyDTO
 
-@dataclass
-class PoliticsApprovalDTO:
+class PoliticsApprovalDTO(BaseModel):
     total: float
     low: float
     mid: float
     high: float
 
-@dataclass
-class PoliticsStatusDTO:
+class PoliticsStatusDTO(BaseModel):
     ruling_party: str
     cohesion: float
 
-@dataclass
-class PoliticsFiscalDTO:
+class PoliticsFiscalDTO(BaseModel):
     revenue: int
     welfare: int
     debt: int
 
-@dataclass
-class PoliticsDTO:
+class PoliticsDTO(BaseModel):
     approval: PoliticsApprovalDTO
     status: PoliticsStatusDTO
     fiscal: PoliticsFiscalDTO
 
-@dataclass
-class PopulationDistributionDTO:
+class PopulationDistributionDTO(BaseModel):
     q1: float
     q2: float
     q3: float
     q4: float
     q5: float
 
-@dataclass
-class PopulationMetricsDTO:
+class PopulationMetricsDTO(BaseModel):
     birth: float
     death: float
 
-@dataclass
-class PopulationDTO:
+class PopulationDTO(BaseModel):
     distribution: PopulationDistributionDTO
     active_count: int
     metrics: PopulationMetricsDTO
 
-@dataclass
-class WatchtowerSnapshotDTO:
+class WatchtowerSnapshotDTO(BaseModel):
     tick: int
     timestamp: float
     status: str

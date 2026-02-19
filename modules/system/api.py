@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Protocol, Union, runtime_checkable, TYPE_CHECKING, TypedDict
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
+from pydantic import BaseModel, Field
 
 # Define Currency Code (Usually String "USD")
 CurrencyCode = str
@@ -94,12 +95,21 @@ class OriginType(IntEnum):
     USER = 50           # Dashboard/UI manual override
     GOD_MODE = 100      # Absolute override (Scenario Injection)
 
-@dataclass
-class RegistryEntry:
+class RegistryValueDTO(BaseModel):
+    """
+    Data Transfer Object for Registry Values.
+    Replaces the legacy RegistryEntry dataclass.
+    """
+    key: str
     value: Any
+    domain: str = "global"
     origin: OriginType
     is_locked: bool = False
     last_updated_tick: int = 0
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+# Alias for backward compatibility if needed, but we prefer RegistryValueDTO
+RegistryEntry = RegistryValueDTO
 
 class RegistryObserver(Protocol):
     def on_registry_update(self, key: str, value: Any, origin: OriginType) -> None:
@@ -161,13 +171,13 @@ class IGlobalRegistry(Protocol):
     def subscribe(self, observer: RegistryObserver, keys: Optional[List[str]] = None) -> None:
         ...
 
-    def snapshot(self) -> Dict[str, RegistryEntry]:
+    def snapshot(self) -> Dict[str, RegistryValueDTO]:
         ...
 
     def get_metadata(self, key: str) -> Any:
         ...
 
-    def get_entry(self, key: str) -> Optional[RegistryEntry]:
+    def get_entry(self, key: str) -> Optional[RegistryValueDTO]:
         ...
 
 @runtime_checkable
@@ -183,7 +193,7 @@ class IRestorableRegistry(IGlobalRegistry, Protocol):
         """
         ...
 
-    def restore_entry(self, key: str, entry: RegistryEntry) -> bool:
+    def restore_entry(self, key: str, entry: RegistryValueDTO) -> bool:
         """
         Restores a specific entry state (value + origin + lock).
         Used when rolling back a modification.
