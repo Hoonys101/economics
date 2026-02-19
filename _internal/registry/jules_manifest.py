@@ -50,4 +50,28 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "file": "design/3_work_artifacts/spec/TEST_REGRESSION_FIX_V2_SPEC.md",
         "wait": 30
     },
+    "exec-final-test-fix": {
+        "title": "Fix Final Test Regression (Government.py DTO Instantiation)",
+        "instruction": (
+            "Fix the `AttributeError: 'dict' object has no attribute 'market_data'` error in `simulation/agents/government.py`.\n\n"
+            "**Key Instructions:**\n"
+            "1. Locate the `provide_firm_bailout` method in `simulation/agents/government.py`.\n"
+            "2. Find the `market_snapshot` declaration (roughly line 522).\n"
+            "3. Replace the raw dictionary instantiation with a proper `MarketSnapshotDTO` instance.\n"
+            "   Example:\n"
+            "   ```python\n"
+            "   market_snapshot = MarketSnapshotDTO(\n"
+            "       tick=current_tick,\n"
+            "       market_signals={},\n"
+            "       market_data={\n"
+            "           \"inflation_rate_annual\": 0.0,\n"
+            "           \"current_gdp\": 0.0\n"
+            "       }\n"
+            "   )\n"
+            "   ```\n"
+            "**Goal**: Ensure `self.fiscal_engine.decide` receives the correct DTO dataclass, resolving the integration test failure."
+        ),
+        "file": "simulation/agents/government.py",
+        "wait": 30
+    },
 }
