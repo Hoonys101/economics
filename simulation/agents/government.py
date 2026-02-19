@@ -513,11 +513,14 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             "welfare_budget_multiplier": self.welfare_budget_multiplier,
             "potential_gdp": self.potential_gdp
         }
-        market_snapshot = {
-            "tick": current_tick,
-            "inflation_rate_annual": 0.0,
-            "current_gdp": 0.0
-        }
+        market_snapshot = MarketSnapshotDTO(
+            tick=current_tick,
+            market_signals={},
+            market_data={
+                "inflation_rate_annual": 0.0,
+                "current_gdp": 0.0
+            }
+        )
 
         decision = self.fiscal_engine.decide(fiscal_state, market_snapshot, [request])
 

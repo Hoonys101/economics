@@ -1,6 +1,5 @@
 from typing import TypedDict, List, Dict, Optional, Protocol, runtime_checkable
-from modules.system.api import CurrencyCode
-from modules.finance.engines.api import MarketSnapshotDTO
+from modules.system.api import CurrencyCode, MarketSnapshotDTO
 
 class FiscalStateDTO(TypedDict):
     """Input state from Government agent."""
