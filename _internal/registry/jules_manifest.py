@@ -16,15 +16,11 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "exec-transaction-manager-removal": {
-        "title": "Legacy TransactionManager Removal",
-        "instruction": "Dismantle legacy transaction engine. [DELETE] simulation/systems/transaction_manager.py. Remove all residual references in WorldState, SimulationState, and registries. Ensure zero reliance on the legacy manager.",
-        "wait": False
-    },
-    "exec-reporting-dto-pennies": {
-        "title": "Reporting DTO Penny-Hardening Implementation",
-        "file": "design/3_work_artifacts/specs/MISSION_REPORTING_DTO_PENNIES_SPEC.md",
-        "instruction": "Implement the hardening of reporting DTOs (total_pennies as SSoT) and update the AnalyticsSystem to aggregate from integer sources instead of floats. Follow the provided MISSION_REPORTING_DTO_PENNIES_SPEC.md strictly.",
+    # Add missions here
+    "exec-post-merge-stabilization": {
+        "title": "Post-Merge Stabilization Implementation",
+        "file": "design/3_work_artifacts/specs/MISSION_STABILIZATION_SPEC.md",
+        "instruction": "Execute the stabilization fixes detailed in MISSION_STABILIZATION_SPEC.md. Fix the TypeError in household tests, apply the Dollar-Reporting Rule in EconomicIndicatorTracker, and update affected test pipelines. Ensure all 856 tests pass.",
         "wait": False
     },
 }

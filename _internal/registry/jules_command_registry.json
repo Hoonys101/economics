@@ -3,32 +3,15 @@
     "version": "1.0"
   },
   "missions": {
-    "exec-transaction-manager-removal": {
-      "key": "exec-transaction-manager-removal",
-      "title": "Legacy TransactionManager Removal",
+    "exec-post-merge-stabilization": {
+      "key": "exec-post-merge-stabilization",
+      "title": "Post-Merge Stabilization Implementation",
       "type": "jules",
-      "instruction_raw": "Dismantle legacy transaction engine. [DELETE] simulation/systems/transaction_manager.py. Remove all residual references in WorldState, SimulationState, and registries. Ensure zero reliance on the legacy manager.",
+      "instruction_raw": "Execute the stabilization fixes detailed in MISSION_STABILIZATION_SPEC.md. Fix the TypeError in household tests, apply the Dollar-Reporting Rule in EconomicIndicatorTracker, and update affected test pipelines. Ensure all 856 tests pass.",
       "status": "pending",
       "created_at": "",
       "command": "create",
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
-    "exec-reporting-dto-pennies": {
-      "key": "exec-reporting-dto-pennies",
-      "title": "Reporting DTO Penny-Hardening Implementation",
-      "type": "jules",
-      "instruction_raw": "Implement the hardening of reporting DTOs (total_pennies as SSoT) and update the AnalyticsSystem to aggregate from integer sources instead of floats. Follow the provided MISSION_REPORTING_DTO_PENNIES_SPEC.md strictly.",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_REPORTING_DTO_PENNIES_SPEC.md",
+      "file_path": "design/3_work_artifacts/specs/MISSION_STABILIZATION_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,
