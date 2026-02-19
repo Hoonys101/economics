@@ -297,12 +297,12 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             "potential_gdp": self.potential_gdp
         }
 
-        # Prepare Market Snapshot DTO (TypedDict for Engines)
-        engine_market_snapshot = {
-            "tick": current_tick,
-            "inflation_rate_annual": self.sensory_data.inflation_sma if self.sensory_data else 0.0,
-            "current_gdp": current_gdp
-        }
+        # Prepare Market Snapshot DTO (Dataclass for Engines)
+        engine_market_snapshot = MarketSnapshotDTO(
+            tick=current_tick,
+            market_signals={},
+            market_data={"current_gdp": current_gdp}
+        )
 
         # 2. Call Fiscal Engine
         decision = self.fiscal_engine.decide(fiscal_state, engine_market_snapshot, [])

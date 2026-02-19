@@ -34,6 +34,17 @@ class TestGovernmentRefactor:
         config.MITOSIS_MUTATION_PROBABILITY = 0.0
         config.INITIAL_WAGE = 10.0
         config.DEFAULT_VALUE_ORIENTATION = "Growth"
+
+        # Added for FiscalEngine
+        config.INCOME_TAX_RATE = 0.1
+        config.CORPORATE_TAX_RATE = 0.2
+        config.FISCAL_SENSITIVITY_ALPHA = 0.5
+        config.AUTO_COUNTER_CYCLICAL_ENABLED = True
+
+        # Added for Social Policy (Wealth Tax)
+        config.ANNUAL_WEALTH_TAX_RATE = 0.02
+        config.TICKS_PER_YEAR = 100
+        config.CB_INFLATION_TARGET = 0.02
         return config
 
     @pytest.fixture
@@ -81,7 +92,10 @@ class TestGovernmentRefactor:
         market_snapshot = MarketSnapshotDTO(
             tick=1,
             market_signals={},
-            market_data={"total_production": 800.0}
+            market_data={
+                "total_production": 800.0,
+                "current_gdp": 800.0  # Added for FiscalEngine
+            }
         )
         # Manually attach extra attributes if the Engine expects them but DTO doesn't have them
         # (Or fix the Engine to not expect them if they aren't in DTO. 
@@ -91,7 +105,9 @@ class TestGovernmentRefactor:
 
         decision = engine.decide(state, market_snapshot, [])
 
-        assert isinstance(decision, PolicyDecisionDTO)
+        # assert isinstance(decision, PolicyDecisionDTO) # FiscalEngine returns FiscalDecisionDTO (TypedDict)
+        assert isinstance(decision, dict)
+        assert "new_income_tax_rate" in decision
         # assert decision.action_tag == PolicyActionTag.KEYNESIAN_FISCAL # Stimulus
         # assert decision.parameters["income_tax_rate"] < 0.1 # Tax Cut
         # assert "potential_gdp" in decision.parameters

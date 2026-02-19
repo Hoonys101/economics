@@ -7,8 +7,7 @@ from modules.government.engines.api import (
     FiscalDecisionDTO,
     GrantedBailoutDTO
 )
-from modules.finance.engines.api import MarketSnapshotDTO
-from modules.system.api import CurrencyCode
+from modules.system.api import MarketSnapshotDTO, CurrencyCode
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,8 @@ class FiscalEngine(IFiscalEngine):
         return decision
 
     def _calculate_tax_rates(self, state: FiscalStateDTO, market: MarketSnapshotDTO):
-        current_gdp = market["current_gdp"]
+        # Access current_gdp from market_data (safe access with default)
+        current_gdp = market.market_data.get("current_gdp", 0.0)
         potential_gdp = state["potential_gdp"]
 
         # Default fallback
