@@ -99,7 +99,7 @@ class TestPublicManagerIntegration:
             market_id="gold",
             transaction_type="goods",
             time=1
-        )
+        , total_pennies=100000)
 
         # 5. Execute Transaction (Phase 3)
         # Setup TransactionManager dependencies

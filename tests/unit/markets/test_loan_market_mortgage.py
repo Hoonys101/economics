@@ -153,9 +153,9 @@ class TestLoanMarketMortgage:
         # Setup
         mock_loan = MagicMock()
         mock_loan.borrower_id = 1
-        mock_loan.principal = 100.0
-        mock_loan.remaining_balance = 100.0
-        mock_loan.annual_interest_rate = 0.05
+        mock_loan.principal_pennies = 10000 # 100.00 dollars
+        mock_loan.remaining_principal_pennies = 10000
+        mock_loan.interest_rate = 0.05
         mock_loan.origination_tick = 0
         mock_loan.start_tick = 0
         mock_loan.term_ticks = 360

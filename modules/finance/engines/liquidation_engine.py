@@ -31,7 +31,7 @@ class LiquidationEngine(ILiquidationEngine):
                 market_id="liquidation",
                 transaction_type="liquidation_sale",
                 time=ledger.current_tick
-            ))
+            , total_pennies=liquidation_value))
 
         # 2. Settle Debts
         total_proceeds = liquidation_value + request.capital_value_pennies
@@ -67,7 +67,7 @@ class LiquidationEngine(ILiquidationEngine):
                     market_id="financial",
                     transaction_type="loan_repayment_liquidation",
                     time=ledger.current_tick
-                ))
+                , total_pennies=repayment))
 
             if loan.remaining_principal_pennies > 0:
                 # Default the rest
@@ -89,7 +89,7 @@ class LiquidationEngine(ILiquidationEngine):
                     market_id="financial",
                     transaction_type="loan_default",
                     time=ledger.current_tick
-                ))
+                , total_pennies=default_amount))
 
         # 3. Distribute remaining equity (if any)
         if remaining_proceeds > 0:
@@ -102,7 +102,7 @@ class LiquidationEngine(ILiquidationEngine):
                 market_id="financial",
                 transaction_type="equity_distribution",
                 time=ledger.current_tick
-             ))
+             , total_pennies=remaining_proceeds))
 
         return EngineOutputDTO(
             updated_ledger=ledger,

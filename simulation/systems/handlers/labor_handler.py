@@ -16,15 +16,8 @@ class LaborTransactionHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        # SSoT: Use pre-calculated total_pennies from Matching Engine if available
-        if getattr(tx, 'total_pennies', 0) > 0:
-             trade_value = tx.total_pennies
-        elif getattr(tx, 'total_pennies', 0) == 0 and tx.price == 0:
-             trade_value = 0
-        else:
-             # Fallback for legacy transactions without total_pennies
-             # Assume price is in dollars
-             trade_value = round_to_pennies(tx.quantity * tx.price * 100)
+        # SSoT: Use total_pennies directly (Strict Schema Enforced)
+        trade_value = tx.total_pennies
 
         # 1. Prepare Settlement (Calculate tax intents)
         # Note: TransactionProcessor used market_data.get("goods_market")?
@@ -96,7 +89,10 @@ class LaborTransactionHandler(ITransactionHandler):
 
             seller.is_employed = True
             seller.employer_id = buyer.id
-            seller.current_wage_pennies = int(tx.price)
+            # Use trade_value (gross wage) for current_wage_pennies
+            # Assuming trade_value equals the gross wage for the period
+            trade_value = tx.total_pennies
+            seller.current_wage_pennies = trade_value
             seller.needs["labor_need"] = 0.0
 
             # Net Income Tracking
@@ -105,11 +101,12 @@ class LaborTransactionHandler(ITransactionHandler):
 
         # 2. Firm Logic (Buyer)
         if isinstance(buyer, Firm):
+            trade_value = tx.total_pennies
             # HR Update
             if seller not in buyer.hr_state.employees:
-                buyer.hr_engine.hire(buyer.hr_state, seller, int(tx.price), context.time)
+                buyer.hr_engine.hire(buyer.hr_state, seller, trade_value, context.time)
             else:
-                 buyer.hr_state.employee_wages[seller.id] = int(tx.price)
+                 buyer.hr_state.employee_wages[seller.id] = trade_value
 
             # Finance Update
             buyer.finance_engine.record_expense(buyer.finance_state, int(buyer_total_cost), DEFAULT_CURRENCY)

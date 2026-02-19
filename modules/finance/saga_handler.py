@@ -231,9 +231,13 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         principal = saga['mortgage_approval']['approved_principal']
         offer_price = saga['offer_price']
 
-        transfers: List[Tuple[IFinancialAgent, IFinancialAgent, float]] = [
-            (bank, buyer, principal),
-            (buyer, seller, offer_price)
+        # MIGRATION: Convert Dollars to Pennies for Settlement
+        principal_pennies = int(principal * 100)
+        offer_price_pennies = int(offer_price * 100)
+
+        transfers: List[Tuple[IFinancialAgent, IFinancialAgent, int]] = [
+            (bank, buyer, principal_pennies),
+            (buyer, seller, offer_price_pennies)
         ]
 
         success = self.settlement_system.execute_multiparty_settlement(transfers, self.simulation.time)
@@ -334,9 +338,13 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         principal = saga['mortgage_approval']['approved_principal']
         offer_price = saga['offer_price']
 
+        # MIGRATION: Convert Dollars to Pennies for Settlement
+        principal_pennies = int(principal * 100)
+        offer_price_pennies = int(offer_price * 100)
+
         transfers = [
-            (seller, buyer, offer_price),
-            (buyer, bank, principal)
+            (seller, buyer, offer_price_pennies),
+            (buyer, bank, principal_pennies)
         ]
 
         self.settlement_system.execute_multiparty_settlement(transfers, self.simulation.time)

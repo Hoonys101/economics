@@ -187,13 +187,14 @@ class LoanMarket(Market, ILoanMarket):
         """
         if hasattr(self.bank, 'loans') and staged_loan_id in self.bank.loans:
              loan = self.bank.loans[staged_loan_id]
-             # MIGRATION: Ensure DTO purity by returning object
+             # MIGRATION: Ensure DTO purity by returning object.
+             # loan is LoanStateDTO (pennies). LoanInfoDTO expects Dollars (float).
              return LoanInfoDTO(
                  loan_id=staged_loan_id,
                  borrower_id=int(loan.borrower_id),
-                 original_amount=float(loan.principal),
-                 outstanding_balance=float(loan.remaining_balance),
-                 interest_rate=float(loan.annual_interest_rate),
+                 original_amount=float(loan.principal_pennies) / 100.0,
+                 outstanding_balance=float(loan.remaining_principal_pennies) / 100.0,
+                 interest_rate=float(loan.interest_rate),
                  origination_tick=int(loan.origination_tick),
                  due_tick=int(loan.start_tick + loan.term_ticks),
                  lender_id=int(self.bank.id) if hasattr(self.bank, 'id') else None,
@@ -314,47 +315,47 @@ class LoanMarket(Market, ILoanMarket):
 
         elif order.order_type == "REPAYMENT":
             loan_id = order.item_id
-            repay_amount = order.quantity
+            repay_amount_pennies = int(order.quantity * 100) # Assuming Order.quantity is Dollars
 
             try:
-                success = self.bank.repay_loan(loan_id, repay_amount)
+                success = self.bank.repay_loan(loan_id, repay_amount_pennies)
                 if success:
                     transactions.append(
                         Transaction(
                             item_id="loan_repaid",
-                            quantity=repay_amount,
+                            quantity=order.quantity,
                             price=1.0,
                             buyer_id=order.agent_id,
                             seller_id=self.bank.id,
                             transaction_type="loan",
                             time=current_tick,
                             market_id=self.id,
-                        )
+                         total_pennies=repay_amount_pennies)
                     )
                     logger.info(
-                        f"Repayment of {repay_amount:.2f} processed for loan {loan_id} by {order.agent_id}.",
+                        f"Repayment of {order.quantity:.2f} processed for loan {loan_id} by {order.agent_id}.",
                         extra={**log_extra, "loan_id": loan_id},
                     )
             except (LoanNotFoundError, LoanRepaymentError) as e:
                 logger.warning(f"Repayment failed for loan {loan_id}: {e}", extra=log_extra)
 
         elif order.order_type == "DEPOSIT":
-            amount = order.quantity
+            amount_pennies = int(order.quantity * 100)
             if hasattr(self.bank, "deposit_from_customer"):
-                deposit_id = self.bank.deposit_from_customer(order.agent_id, amount) # type: ignore
+                deposit_id = self.bank.deposit_from_customer(order.agent_id, amount_pennies) # type: ignore
 
                 if deposit_id:
                     transactions.append(
                         Transaction(
                             item_id="deposit",
-                            quantity=amount,
+                            quantity=order.quantity,
                             price=1.0,
                             buyer_id=order.agent_id,
                             seller_id=self.bank.id,
                             transaction_type="deposit",
                             time=current_tick,
                             market_id=self.id,
-                        )
+                         total_pennies=amount_pennies)
                     )
                     logger.info(
                         f"Deposit accepted from {order.agent_id} for {amount:.2f}. Deposit ID: {deposit_id}",
@@ -366,22 +367,22 @@ class LoanMarket(Market, ILoanMarket):
                 logger.error("Bank service does not support 'deposit_from_customer'.")
 
         elif order.order_type == "WITHDRAW":
-            amount = order.quantity
+            amount_pennies = int(order.quantity * 100)
             if hasattr(self.bank, "withdraw_for_customer"):
-                success = self.bank.withdraw_for_customer(order.agent_id, amount) # type: ignore
+                success = self.bank.withdraw_for_customer(order.agent_id, amount_pennies) # type: ignore
 
                 if success:
                     transactions.append(
                         Transaction(
                             item_id="withdrawal",
-                            quantity=amount,
+                            quantity=order.quantity,
                             price=1.0,
                             buyer_id=self.bank.id,
                             seller_id=order.agent_id,
                             transaction_type="withdrawal",
                             time=current_tick,
                             market_id=self.id,
-                        )
+                         total_pennies=amount_pennies)
                     )
                     logger.info(
                         f"Withdrawal accepted for {order.agent_id} for {amount:.2f}.",

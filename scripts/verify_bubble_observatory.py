@@ -38,13 +38,13 @@ def verify_observatory():
         buyer_id=1, seller_id=2, item_id="unit_1", quantity=1, price=100000,
         market_id="housing", transaction_type="housing", time=10,
         metadata={"mortgage_id": 123}
-    )
+    , total_pennies=10000000)
     # 2. Cash Tx
     tx2 = Transaction(
         buyer_id=3, seller_id=4, item_id="unit_2", quantity=1, price=200000,
         market_id="housing", transaction_type="housing", time=10,
         metadata={}
-    )
+    , total_pennies=20000000)
 
     state_mock.transactions = [tx1, tx2]
 

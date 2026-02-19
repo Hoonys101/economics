@@ -27,7 +27,7 @@ class TestGoodsHandlerPrecision:
             market_id="test",
             transaction_type="goods",
             time=1
-        )
+        , total_pennies=1000)
 
         # Mock Context
         context = MagicMock(spec=TransactionContext)

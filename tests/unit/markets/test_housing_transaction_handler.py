@@ -102,7 +102,7 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
         market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
-    )
+    , total_pennies=100000)
 
     # Mock Settlement Success: DownPayment(True), Disbursement(True), FinalSettlement(True)
     context.settlement_system.transfer.side_effect = [True, True, True]
@@ -159,7 +159,7 @@ def test_housing_transaction_insufficient_down_payment(handler, context, buyer, 
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
         market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
-    )
+    , total_pennies=100000)
 
     result = handler.handle(tx, buyer, seller, context)
     assert result is False
@@ -172,7 +172,7 @@ def test_housing_transaction_loan_rejected(handler, context, buyer, seller, unit
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
         market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
-    )
+    , total_pennies=100000)
 
     # Down payment success
     context.settlement_system.transfer.side_effect = [True, True] # Sequence
@@ -203,7 +203,7 @@ def test_housing_transaction_disbursement_failed(handler, context, buyer, seller
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
         market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
-    )
+    , total_pennies=100000)
 
     # 1. Down Payment Success
     # 2. Loan Proceeds Transfer Fails

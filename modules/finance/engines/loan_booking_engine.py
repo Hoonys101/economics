@@ -76,7 +76,7 @@ class LoanBookingEngine(ILoanBookingEngine):
             market_id="monetary_policy",
             transaction_type="credit_creation",
             time=ledger.current_tick
-        )
+        , total_pennies=application.amount_pennies)
 
         return EngineOutputDTO(
             updated_ledger=ledger,

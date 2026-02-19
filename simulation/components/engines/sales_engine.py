@@ -50,7 +50,7 @@ class SalesEngine:
         """
         budget = state.marketing_budget_pennies
         if budget > 0 and context.wallet_balance >= budget and context.government_id:
-            return Transaction(buyer_id=context.firm_id, seller_id=context.government_id, item_id='marketing', quantity=1.0, price=budget, market_id='system', transaction_type='marketing', time=context.current_time, currency=DEFAULT_CURRENCY)
+            return Transaction(buyer_id=context.firm_id, seller_id=context.government_id, item_id='marketing', quantity=1.0, price=budget, market_id='system', transaction_type='marketing', time=context.current_time, currency=DEFAULT_CURRENCY, total_pennies=int(budget * 1.0 * 100))
         return None
 
     def check_and_apply_dynamic_pricing(self, state: SalesState, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> None:

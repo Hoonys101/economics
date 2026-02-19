@@ -68,7 +68,7 @@ def test_housing_handler_with_protocol_agent():
         transaction_type="housing",
         time=1,
         metadata={}
-    )
+    , total_pennies=100000)
 
     # Execute
     result = handler.handle(tx, buyer, seller, context)

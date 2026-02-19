@@ -71,7 +71,7 @@ def test_record_revenue_success():
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="corporate_tax",
         quantity=1, price=100.0, market_id="system", transaction_type="tax", time=1
-    )
+    , total_pennies=10000)
     result = SettlementResultDTO(
         original_transaction=tx,
         success=True,
@@ -88,7 +88,7 @@ def test_record_revenue_failure():
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="corporate_tax",
         quantity=1, price=100.0, market_id="system", transaction_type="tax", time=1
-    )
+    , total_pennies=10000)
     result = SettlementResultDTO(
         original_transaction=tx,
         success=False,

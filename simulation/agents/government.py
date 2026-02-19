@@ -506,7 +506,7 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
                  market_id="system",
                  transaction_type="welfare",
                  time=current_tick
-             )]
+             , total_pennies=int(effective_amount * 1.0 * 100))]
         return []
 
     def provide_firm_bailout(self, firm: Any, amount: int, current_tick: int) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:

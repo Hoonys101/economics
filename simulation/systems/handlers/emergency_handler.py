@@ -13,7 +13,7 @@ class EmergencyTransactionHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        trade_value = int(tx.quantity * tx.price) # MIGRATION: Int pennies
+        trade_value = tx.total_pennies # MIGRATION: Use SSoT
 
         credits: List[Tuple[Any, int, str]] = []
 

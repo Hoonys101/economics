@@ -63,7 +63,7 @@ class TestMonetaryIntegrity(unittest.TestCase):
             market_id="housing",
             transaction_type="housing",
             time=sim.time
-        )
+        , total_pennies=int(sale_price * 1.0 * 100))
 
         initial_money_destroyed = gov.total_money_destroyed
 

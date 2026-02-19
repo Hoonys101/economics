@@ -22,7 +22,7 @@ def test_transaction_processor_dispatch_to_handler():
         Transaction(
             buyer_id=1, seller_id=2, item_id="item", price=10, quantity=1,
             market_id="m", transaction_type="test_type", time=0
-        )
+        , total_pennies=1000)
     ]
     state.taxation_system = MagicMock() # Ensure context building works
 
@@ -46,7 +46,7 @@ def test_transaction_processor_ignores_credit_creation():
         Transaction(
             buyer_id=1, seller_id=2, item_id="credit", price=10, quantity=1,
             market_id="m", transaction_type="credit_creation", time=0
-        )
+        , total_pennies=1000)
     ]
     state.agents = {1: MagicMock(), 2: MagicMock()}
 
@@ -111,7 +111,7 @@ def test_public_manager_routing():
     tx = Transaction(
         buyer_id=1, seller_id="PUBLIC_MANAGER", item_id="item", price=10, quantity=1,
         market_id="m", transaction_type="any_type", time=0
-    )
+    , total_pennies=1000)
     state.transactions = [tx]
     state.agents = {1: MagicMock()}
 
@@ -131,7 +131,7 @@ def test_transaction_processor_dispatches_housing():
         Transaction(
             buyer_id=1, seller_id=2, item_id="unit_1", price=100, quantity=1,
             market_id="housing", transaction_type="housing", time=0
-        )
+        , total_pennies=10000)
     ]
     state.agents = {1: MagicMock(), 2: MagicMock()}
     state.taxation_system = MagicMock()

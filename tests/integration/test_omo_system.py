@@ -164,7 +164,7 @@ def test_process_omo_purchase_transaction(omo_setup):
         market_id="security_market",
         transaction_type="omo_purchase",
         time=1
-    )
+        , total_pennies=100)
     state.transactions = [tx]
 
     # Use SSoT for initial state
@@ -209,7 +209,7 @@ def test_process_omo_sale_transaction(omo_setup):
         market_id="security_market",
         transaction_type="omo_sale",
         time=1
-    )
+        , total_pennies=100)
     state.transactions = [tx]
 
     initial_hh_assets = settlement.get_balance(household.id)

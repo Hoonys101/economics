@@ -162,7 +162,8 @@ class TestTaxIncidence(unittest.TestCase):
         
         # 100원 매칭 (노동 거래). Price 10000 pennies (100.00 dollars)
         from simulation.models import Transaction
-        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=10000, market_id="labor", transaction_type="labor", time=1)
+        # Fix: price is in pennies here, so total_pennies should be 10000
+        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=10000, market_id="labor", transaction_type="labor", time=1, total_pennies=10000)
         sim._process_transactions([tx])
         
         # 가계: 100000 + (10000 - 1625) = 108375 (Progressive Tax)
@@ -181,7 +182,8 @@ class TestTaxIncidence(unittest.TestCase):
         
         # 100원 매칭 (노동 거래). Price 10000 pennies
         from simulation.models import Transaction
-        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=10000, market_id="labor", transaction_type="labor", time=1)
+        # Fix: price is in pennies here, so total_pennies should be 10000
+        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=10000, market_id="labor", transaction_type="labor", time=1, total_pennies=10000)
         sim._process_transactions([tx])
         
         # 가계: 100000 + 10000 = 110000

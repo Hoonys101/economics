@@ -15,7 +15,7 @@ class AssetTransferHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        trade_value = tx.quantity * tx.price
+        trade_value = tx.total_pennies
 
         # 1. Execute Settlement (Direct Transfer)
         settlement_success = context.settlement_system.transfer(
@@ -72,7 +72,8 @@ class AssetTransferHandler(ITransactionHandler):
 
         # 2. Buyer Holdings
         if isinstance(buyer, IInvestor):
-            buyer.portfolio.add(firm_id, tx.quantity, tx.price)
+            price_pennies = int(tx.total_pennies / tx.quantity) if tx.quantity > 0 else 0
+            buyer.portfolio.add(firm_id, tx.quantity, price_pennies)
         elif isinstance(buyer, Firm) and buyer.id == firm_id:
             buyer.treasury_shares += tx.quantity
             buyer.total_shares -= tx.quantity

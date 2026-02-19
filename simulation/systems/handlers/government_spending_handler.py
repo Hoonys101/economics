@@ -11,7 +11,7 @@ class GovernmentSpendingHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        trade_value = int(tx.quantity * tx.price)
+        trade_value = tx.total_pennies
 
         # infrastructure_spending: Buyer is Government. Seller is typically System/Reflux or Agent.
         # TransactionProcessor logic: success = settlement.transfer(buyer, seller, trade_value, "infrastructure_spending")

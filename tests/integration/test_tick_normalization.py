@@ -24,7 +24,7 @@ class TestTickNormalization:
         state.bank.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 0.0}
         # Mock run_tick to return a test transaction
         state.bank.run_tick.return_value = [
-            Transaction(0, 1, "test_item", 1.0, 10.0, "financial", "test_type", 0)
+            Transaction(0, 1, "test_item", 1.0, 10.0, "financial", "test_type", 0, total_pennies=1000)
         ]
 
         state.finance_system = MagicMock()

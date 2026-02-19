@@ -48,7 +48,7 @@ class MonetaryLedger(IMonetaryLedger):
                 "executed": True,
                 "is_monetary_expansion": True # Explicit tag
             }
-        )
+        , total_pennies=int(amount * 1.0 * 100))
         self.transaction_log.append(tx)
         logger.debug(f"MONETARY_LEDGER | Credit Expansion: {amount:.2f} (Saga: {saga_id})")
 
@@ -72,6 +72,6 @@ class MonetaryLedger(IMonetaryLedger):
                 "executed": True,
                 "is_monetary_destruction": True # Explicit tag
             }
-        )
+        , total_pennies=int(amount * 1.0 * 100))
         self.transaction_log.append(tx)
         logger.debug(f"MONETARY_LEDGER | Credit Destruction: {amount:.2f} (Saga: {saga_id})")

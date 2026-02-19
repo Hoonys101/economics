@@ -22,15 +22,8 @@ class GoodsTransactionHandler(ITransactionHandler):
             logger.warning(f"Transaction failed: Buyer ({tx.buyer_id}) or Seller ({tx.seller_id}) not found.")
             return False
 
-        # SSoT: Use pre-calculated total_pennies from Matching Engine if available
-        if getattr(tx, 'total_pennies', 0) > 0:
-             trade_value = tx.total_pennies
-        elif getattr(tx, 'total_pennies', 0) == 0 and tx.price == 0:
-             trade_value = 0
-        else:
-             # Fallback for legacy transactions without total_pennies
-             # Assume price is in dollars
-             trade_value = round_to_pennies(tx.quantity * tx.price * 100)
+        # SSoT: Use total_pennies directly (Strict Schema Enforced)
+        trade_value = tx.total_pennies
 
 
         # 1. Prepare Settlement (Calculate tax intents)

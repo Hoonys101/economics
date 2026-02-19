@@ -81,7 +81,7 @@ class InfrastructureManager:
                     "triggers_effect": "GOVERNMENT_INFRA_UPGRADE" if h == active_households[0] else None,
                     "is_public_works": True
                 }
-            )
+            , total_pennies=int(amount_per_hh * 1.0 * 100))
             transactions.append(tx)
 
         logger.info(

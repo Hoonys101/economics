@@ -50,7 +50,7 @@ class DebtServicingEngine(IDebtServicingEngine):
                         market_id="financial",
                         transaction_type="loan_interest",
                         time=ledger.current_tick
-                    ))
+                    , total_pennies=interest_pennies))
 
                     # Principal repayment
                     if ledger.current_tick >= loan.due_tick:
@@ -69,7 +69,7 @@ class DebtServicingEngine(IDebtServicingEngine):
                                 market_id="financial",
                                 transaction_type="loan_repayment",
                                 time=ledger.current_tick
-                            ))
+                            , total_pennies=principal_due))
                         else:
                             # Partial pay?
                             pay = deposit.balance_pennies
@@ -85,7 +85,7 @@ class DebtServicingEngine(IDebtServicingEngine):
                                 market_id="financial",
                                 transaction_type="loan_repayment",
                                 time=ledger.current_tick
-                            ))
+                            , total_pennies=pay))
 
         # 2. Service Treasury Bonds
         treasury = ledger.treasury
@@ -123,7 +123,7 @@ class DebtServicingEngine(IDebtServicingEngine):
                     market_id="financial",
                     transaction_type="bond_interest",
                     time=ledger.current_tick
-                ))
+                , total_pennies=interest_pennies))
 
         return EngineOutputDTO(
             updated_ledger=ledger,

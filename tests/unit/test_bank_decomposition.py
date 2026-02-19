@@ -22,7 +22,7 @@ class TestBankDecomposition(unittest.TestCase):
                 raise TypeError(f"Transfer amount must be int, got {type(amount)}")
             return Transaction(
                 buyer_id=debit.id, seller_id=credit.id, item_id="test", quantity=1, price=amount, market_id="test", transaction_type="transfer", time=kwargs.get('tick', 0)
-            )
+            , total_pennies=int(amount * 1 * 100))
         self.settlement_system.transfer.side_effect = mock_transfer
 
         # Int initial assets
@@ -101,7 +101,7 @@ class TestBankDecomposition(unittest.TestCase):
         interest_tx = Transaction(
             buyer_id=borrower_id, seller_id=1, item_id="interest", quantity=1, price=10,
             market_id="finance", transaction_type="loan_interest", time=1
-        )
+        , total_pennies=1000)
         self.finance_system.service_debt.return_value = [interest_tx]
 
         agents_dict = {borrower_id: self.agent}
@@ -121,7 +121,7 @@ class TestBankDecomposition(unittest.TestCase):
         default_tx = Transaction(
             buyer_id=101, seller_id=1, item_id="default", quantity=1, price=1000,
             market_id="finance", transaction_type="credit_destruction", time=2
-        )
+        , total_pennies=100000)
         self.finance_system.service_debt.return_value = [default_tx]
 
         agents_dict = {101: self.agent}

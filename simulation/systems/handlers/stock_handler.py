@@ -14,13 +14,8 @@ class StockTransactionHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        # SSoT: Use pre-calculated total_pennies from Matching Engine if available
-        if getattr(tx, 'total_pennies', 0) > 0:
-             trade_value = tx.total_pennies
-        elif getattr(tx, 'total_pennies', 0) == 0 and tx.price == 0:
-             trade_value = 0
-        else:
-             trade_value = int(tx.quantity * tx.price)
+        # SSoT: Use total_pennies directly (Strict Schema Enforced)
+        trade_value = tx.total_pennies
 
         # 1. Execute Settlement (Direct Transfer)
         # Stock trades typically don't have sales tax in this simulation model yet.
@@ -58,7 +53,9 @@ class StockTransactionHandler(ITransactionHandler):
 
         # 2. Buyer Holdings
         if hasattr(buyer, "portfolio"):
-            buyer.portfolio.add(firm_id, tx.quantity, tx.price)
+            # MIGRATION: Calculate acquisition price in pennies from total_pennies
+            price_pennies = int(tx.total_pennies / tx.quantity) if tx.quantity > 0 else 0
+            buyer.portfolio.add(firm_id, tx.quantity, price_pennies)
         elif isinstance(buyer, Household) and hasattr(buyer, "shares_owned"):
             # Legacy Fallback
             buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity

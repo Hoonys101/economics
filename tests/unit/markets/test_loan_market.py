@@ -69,7 +69,7 @@ class TestLoanMarket:
         order = Order(agent_id=1, side='REPAYMENT', item_id='loan_id_456', quantity=50, price_pennies=int(0 * 100), price_limit=0, market_id='test_loan_market')
         mock_bank.repay_loan.return_value = True
         transactions = loan_market_instance.place_order(order, 1)
-        mock_bank.repay_loan.assert_called_once_with('loan_id_456', 50)
+        mock_bank.repay_loan.assert_called_once_with('loan_id_456', 5000)
         assert len(transactions) == 1
         assert transactions[0].item_id == 'loan_repaid'
 

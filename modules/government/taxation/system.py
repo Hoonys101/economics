@@ -246,7 +246,7 @@ class TaxationSystem:
                     market_id="system",
                     transaction_type="tax",
                     time=current_tick
-                )
+                , total_pennies=int(tax_amount * 1.0 * 100))
                 intents.append(transaction)
 
         return intents

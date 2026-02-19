@@ -125,7 +125,7 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
             transaction_type="inheritance_distribution",
             time=0,
             metadata={"heir_ids": [heir.id]}
-        )
+        , total_pennies=1000000)
 
         context = TransactionContext(
             agents={101: heir},
@@ -192,7 +192,7 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
             market_id="system",
             transaction_type="goods", # Taxable
             time=0
-        )
+        , total_pennies=500000)
 
         context = TransactionContext(
             agents={},

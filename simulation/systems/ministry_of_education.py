@@ -76,7 +76,7 @@ class MinistryOfEducation:
                             "triggers_effect": "EDUCATION_UPGRADE",
                             "target_agent_id": agent.id
                         }
-                    )
+                    , total_pennies=int(cost * 1.0 * 100))
                     transactions.append(tx)
                     edu_budget -= cost
                     logger.debug(f"EDU_BASIC_GRANT_PENDING | Household {agent.id} nominated for Level 1.")
@@ -104,7 +104,7 @@ class MinistryOfEducation:
                                 "triggers_effect": "EDUCATION_UPGRADE",
                                 "target_agent_id": agent.id
                             }
-                        )
+                        , total_pennies=int(subsidy * 1.0 * 100))
                         # 2. Student Share Tx (Student -> Teacher)
                         tx_student = Transaction(
                             buyer_id=agent.id,
@@ -115,7 +115,7 @@ class MinistryOfEducation:
                             market_id="system",
                             transaction_type="education_spending",
                             time=current_tick
-                        )
+                        , total_pennies=int(student_share * 1.0 * 100))
                         transactions.append(tx_subsidy)
                         transactions.append(tx_student)
                         edu_budget -= subsidy

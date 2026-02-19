@@ -363,7 +363,7 @@ class FinanceSystem(IFinanceSystem):
             market_id="financial",
             transaction_type="bond_purchase",
             time=current_tick
-        )
+        , total_pennies=int(amount * 1.0 * 100))
 
         # Map to legacy BondDTO for return signature compatibility
         bond_dto = BondDTO(

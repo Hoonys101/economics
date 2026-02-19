@@ -113,7 +113,7 @@ def test_processor_handler_failure(processor, state, mock_handler):
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="apple", quantity=1, price=10.0,
         market_id="goods", transaction_type="goods", time=1
-    )
+    , total_pennies=1000)
     state.transactions = [tx]
     state.agents = {1: MagicMock(), 2: MagicMock()}
 
@@ -131,7 +131,7 @@ def test_processor_handler_exception(processor, state, mock_handler):
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="apple", quantity=1, price=10.0,
         market_id="goods", transaction_type="goods", time=1
-    )
+    , total_pennies=1000)
     state.transactions = [tx]
     state.agents = {1: MagicMock(), 2: MagicMock()}
 
@@ -173,7 +173,7 @@ def test_processor_public_manager_fail_missing_buyer(processor, state):
     tx = Transaction(
         buyer_id=999, seller_id="PUBLIC_MANAGER", item_id="apple", quantity=1, price=10.0,
         market_id="goods", transaction_type="goods", time=1
-    )
+    , total_pennies=1000)
     state.transactions = [tx]
     state.agents = {} # Buyer missing
 
@@ -193,7 +193,7 @@ def test_processor_public_manager_exception(processor, state):
     tx = Transaction(
         buyer_id=1, seller_id="PUBLIC_MANAGER", item_id="apple", quantity=1, price=10.0,
         market_id="goods", transaction_type="goods", time=1
-    )
+    , total_pennies=1000)
     state.transactions = [tx]
     state.agents = {1: MagicMock()}
 

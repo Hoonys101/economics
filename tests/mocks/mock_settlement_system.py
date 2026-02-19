@@ -61,7 +61,7 @@ class MockSettlementSystem(ISettlementSystem):
                 market_id="mock",
                 transaction_type="transfer",
                 time=0
-            )
+            , total_pennies=int(1.0 * amount_pennies * 100))
         else:
             return None
 

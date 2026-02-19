@@ -285,4 +285,4 @@ class InheritanceManager:
              transaction_type=tx_dict["transaction_type"],
              time=tx_dict["time"],
              metadata=tx_dict["metadata"]
-         )
+         , total_pennies=int(tx_dict["price"] * tx_dict["quantity"] * 100))

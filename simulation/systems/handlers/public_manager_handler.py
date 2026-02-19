@@ -20,7 +20,7 @@ class PublicManagerTransactionHandler(ITransactionHandler):
         # so might be None or placeholder if accessed via context.agents["PUBLIC_MANAGER"]).
         # TransactionProcessor dispatch logic should ensure we get here.
 
-        trade_value = tx.quantity * tx.price
+        trade_value = tx.total_pennies
         pm = context.public_manager
 
         if not pm:
@@ -134,7 +134,8 @@ class PublicManagerTransactionHandler(ITransactionHandler):
              try:
                  firm_id = int(tx.item_id.split("_")[1])
                  if isinstance(buyer, IInvestor):
-                    buyer.portfolio.add(firm_id, tx.quantity, tx.price)
+                    price_pennies = int(tx.total_pennies / tx.quantity) if tx.quantity > 0 else 0
+                    buyer.portfolio.add(firm_id, tx.quantity, price_pennies)
                  # Registry update
                  if context.stock_market:
                      if isinstance(buyer, IInvestor) and firm_id in buyer.portfolio.holdings:

@@ -70,6 +70,7 @@ class TestHandlerFix(unittest.TestCase):
         tx.price = 50.0
         tx.quantity = 1.0
         tx.transaction_type = "labor"
+        tx.total_pennies = 5000
 
         seller = self.mock_household
         buyer = MagicMock() # Firm mock

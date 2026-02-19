@@ -50,7 +50,7 @@ class DTOFactory:
             time=time,
             quality=quality,
             metadata=metadata
-        )
+        , total_pennies=int(price * quantity * 100))
 
     @staticmethod
     def create_market_snapshot(

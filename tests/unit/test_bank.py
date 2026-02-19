@@ -75,7 +75,7 @@ def test_grant_loan_delegation(bank, mock_finance_system):
         loan_id="L1", borrower_id=2, original_amount=10000, outstanding_balance=10000,
         interest_rate=0.05, origination_tick=0, due_tick=10
     )
-    mock_tx = Transaction(buyer_id=1, seller_id=2, item_id="L1", quantity=10000, price=1.0, market_id="m", transaction_type="credit_creation", time=0)
+    mock_tx = Transaction(buyer_id=1, seller_id=2, item_id="L1", quantity=10000, price=1.0, market_id="m", transaction_type="credit_creation", time=0, total_pennies=1000000)
 
     mock_finance_system.process_loan_application.return_value = (mock_loan, [mock_tx])
 

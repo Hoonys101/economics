@@ -103,7 +103,7 @@ class TestWO157DynamicPricing:
         seller = Mock(spec=Firm)
         seller.record_sale = Mock()
         state.agents = {1: buyer, 2: seller}
-        tx = Transaction(buyer_id=1, seller_id=2, item_id='widget', quantity=5.0, price=10.0, market_id='market', transaction_type='goods', time=200)
+        tx = Transaction(buyer_id=1, seller_id=2, item_id='widget', quantity=5.0, price=10.0, market_id='market', transaction_type='goods', time=200, total_pennies=5000)
         state.transactions = [tx]
         handler = GoodsTransactionHandler()
         processor.register_handler('goods', handler)

@@ -30,7 +30,7 @@ def create_tables(conn: sqlite3.Connection):
             item_id TEXT NOT NULL,
             quantity REAL NOT NULL,
             price REAL NOT NULL,
-            total_pennies INTEGER,
+            total_pennies INTEGER NOT NULL,
             market_id TEXT NOT NULL,
             transaction_type TEXT NOT NULL,
             FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)

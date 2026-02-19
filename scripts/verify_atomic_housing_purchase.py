@@ -83,7 +83,7 @@ class TestAtomicHousingPurchase(unittest.TestCase):
         # Mock Settlement Transfer (Success)
         self.settlement_system.transfer.return_value = Transaction(
             buyer_id=101, seller_id=202, item_id="currency", quantity=20000, price=1, market_id="settlement", transaction_type="transfer", time=1
-        )
+        , total_pennies=2000000)
 
         saga = self.handler.execute_step(saga)
         self.assertEqual(saga['status'], "DOWN_PAYMENT_COMPLETE")
@@ -101,7 +101,7 @@ class TestAtomicHousingPurchase(unittest.TestCase):
         self.settlement_system.transfer.reset_mock()
         self.settlement_system.transfer.return_value = Transaction(
             buyer_id=101, seller_id=202, item_id="currency", quantity=80000, price=1, market_id="settlement", transaction_type="transfer", time=1
-        )
+        , total_pennies=8000000)
 
         saga = self.handler.execute_step(saga)
         self.assertEqual(saga['status'], "MORTGAGE_DISBURSEMENT_COMPLETE")

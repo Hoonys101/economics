@@ -17,7 +17,7 @@ class FinancialTransactionHandler(ITransactionHandler):
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
         tx_type = tx.transaction_type
-        trade_value = int(tx.quantity * tx.price)
+        trade_value = tx.total_pennies
 
         success = False
 

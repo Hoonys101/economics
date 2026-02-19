@@ -37,7 +37,7 @@ def test_housing_service_handle_housing_updates_mortgage():
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
         market_id="housing", transaction_type="housing", time=0
-    )
+    , total_pennies=100000)
     tx.metadata = {"mortgage_id": "loan_999"}
 
     # Execute
@@ -84,7 +84,7 @@ def test_housing_service_handle_housing_clears_mortgage_if_missing():
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
         market_id="housing", transaction_type="housing", time=0
-    )
+    , total_pennies=100000)
     tx.metadata = {} # No mortgage_id
 
     service.process_transaction(tx, state)

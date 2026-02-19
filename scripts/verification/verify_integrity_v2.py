@@ -122,7 +122,7 @@ def verify_zero_sum():
         market_id="goods",
         transaction_type="goods",
         time=0
-    )
+    , total_pennies=10000)
     state.transactions = [tx]
 
     initial_total = buyer.assets + seller.assets + gov.assets
@@ -153,7 +153,7 @@ def verify_zero_sum():
         market_id="goods",
         transaction_type="goods",
         time=1
-    )
+    , total_pennies=10000)
     state.transactions = [tx2]
 
     # Recalculate initial total for taxed trade test segment if needed, 

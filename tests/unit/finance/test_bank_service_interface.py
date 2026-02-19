@@ -65,7 +65,7 @@ class TestBankServiceInterface:
             market_id="finance",
             transaction_type="credit_creation",
             time=0
-        )
+        , total_pennies=int(amount * 1.0 * 100))
         mock_finance_system.process_loan_application.return_value = (loan_dto, [tx])
 
         result = bank.grant_loan(borrower_id, amount, interest_rate)

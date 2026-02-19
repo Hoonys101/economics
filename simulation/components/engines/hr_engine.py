@@ -101,7 +101,7 @@ class HREngine:
                     market_id="labor",
                     transaction_type="wage",
                     time=current_time
-                )
+                , total_pennies=int(net_wage * 1.0 * 100))
                 transactions.append(tx_wage)
 
                 # Transaction 2: Income Tax (Firm -> Government) [Withholding]
@@ -115,7 +115,7 @@ class HREngine:
                         market_id="system",
                         transaction_type="tax",
                         time=current_time
-                    )
+                    , total_pennies=int(income_tax * 1.0 * 100))
                     transactions.append(tx_tax)
 
                 # Schedule Employee Update (Income)
@@ -189,7 +189,7 @@ class HREngine:
                 market_id="labor",
                 transaction_type="severance",
                 time=current_time
-            )
+            , total_pennies=int(severance_pay * 1.0 * 100))
             tx_list.append(tx)
 
             logger.info(
@@ -241,7 +241,7 @@ class HREngine:
             transaction_type="severance",
             time=current_time,
             currency=DEFAULT_CURRENCY
-        )
+        , total_pennies=int(severance_pay * 1.0 * 100))
 
     def finalize_firing(self, hr_state: HRState, employee_id: int):
         """

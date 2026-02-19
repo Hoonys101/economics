@@ -19,7 +19,7 @@ class MonetaryTransactionHandler(ITransactionHandler):
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
         tx_type = tx.transaction_type
-        trade_value = tx.quantity * tx.price
+        trade_value = tx.total_pennies
 
         # Central Bank is needed for minting/burning
         if not context.central_bank:
@@ -110,7 +110,8 @@ class MonetaryTransactionHandler(ITransactionHandler):
 
         # 2. Buyer Holdings
         if isinstance(buyer, IInvestor):
-            buyer.portfolio.add(firm_id, tx.quantity, tx.price)
+            price_pennies = int(tx.total_pennies / tx.quantity) if tx.quantity > 0 else 0
+            buyer.portfolio.add(firm_id, tx.quantity, price_pennies)
         elif isinstance(buyer, Household) and hasattr(buyer, "shares_owned"):
             # Legacy Fallback
             buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity

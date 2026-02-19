@@ -54,7 +54,7 @@ class FinanceEngine:
                     transaction_type="holding_cost",
                     time=current_time,
                     currency=DEFAULT_CURRENCY
-                )
+                , total_pennies=holding_cost_pennies)
             )
 
         # 2. Maintenance Fee
@@ -76,7 +76,7 @@ class FinanceEngine:
                     transaction_type="tax",
                     time=current_time,
                     currency=DEFAULT_CURRENCY
-                )
+                , total_pennies=payment)
             )
 
         # 3. Profit Distribution (Dividends & Bailout Repayment)
@@ -142,7 +142,7 @@ class FinanceEngine:
                         transaction_type="repayment",
                         time=current_time,
                         currency=DEFAULT_CURRENCY
-                    )
+                    , total_pennies=repayment)
                 )
 
                 state.total_debt_pennies -= repayment
@@ -179,7 +179,7 @@ class FinanceEngine:
                                 transaction_type="dividend",
                                 time=current_time,
                                 currency=cur
-                            )
+                            , total_pennies=dividend_amount)
                         )
 
         # 4. Reset Period Counters
@@ -271,7 +271,7 @@ class FinanceEngine:
             transaction_type="investment",
             time=current_time,
             currency=DEFAULT_CURRENCY
-        )
+        , total_pennies=amount)
 
     def invest_in_rd(
         self,
@@ -302,7 +302,7 @@ class FinanceEngine:
             transaction_type="investment",
             time=current_time,
             currency=DEFAULT_CURRENCY
-        )
+        , total_pennies=amount)
 
     def invest_in_capex(
         self,
@@ -333,7 +333,7 @@ class FinanceEngine:
             transaction_type="investment",
             time=current_time,
             currency=DEFAULT_CURRENCY
-        )
+        , total_pennies=amount)
 
     def pay_ad_hoc_tax(
         self,
@@ -366,7 +366,7 @@ class FinanceEngine:
             transaction_type="tax",
             time=current_time,
             currency=currency
-        )
+        , total_pennies=amount)
 
     def record_expense(self, state: FinanceState, amount: int, currency: CurrencyCode):
         """Public method to record expense (e.g. after successful transaction execution)."""
