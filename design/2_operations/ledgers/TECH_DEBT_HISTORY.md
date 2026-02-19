@@ -74,6 +74,14 @@ This document archives resolved technical debt items to keep the primary ledger 
 | **TD-ASSET-PRECISION** | Engines | **Unit Standardization**: Fixed `AssetManagementEngine` tests using Pennies (int). | 2026-02-16 | [PR Review](../../_archive/gemini_output/pr_review_fix-tests-and-protocols-956842252339614960.md) |
 | **TD-PROC-ENGINE-BUG** | Simulation | **Bug Fix**: Resolved `NameError` in `ProductionEngine` and added `AgentID` to Mock Firm. | 2026-02-16 | [PR Review](../../_archive/gemini_output/pr_review_fix-tests-and-protocols-956842252339614960.md) |
 | **TD-CMD-ROLLBACK** | System | **Hardening**: Fixed `CommandService` rollback assertions for `IRestorableRegistry`. | 2026-02-16 | [PR Review](../../_archive/gemini_output/pr_review_fix-tests-and-protocols-956842252339614960.md) |
+| **TD-MKT-FLOAT-MATCH** | Markets | **Refactor**: MatchingEngine Integer Hardening | Phase 19 | [Review](../../_archive/gemini_output/pr_review_exec-match-engine-int-math-17795771630785453590.md) |
+| **TD-ARCH-LIFE-GOD** | Systems | **Refactor**: LifecycleManager Decomposition | Phase 19 | [Review](../../_archive/gemini_output/pr_review_lifecycle-decomposition-15351638010886493967.md) |
+| **TD-INT-PENNIES-FRAGILITY** | System | **Protocol**: Integer Pennies Compatibility | Phase 19 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-CRIT-FLOAT-SETTLE** | Finance | **Fix**: Float-to-Int Migration Bridge | Phase 19 | [Review](../../_archive/gemini_output/pr_review_exec-match-engine-int-math-17795771630785453590.md) |
+| **TD-DTO-DESYNC-2026** | DTO/API | **Fix**: Cross-Module Contract Fracture | Phase 19 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-TEST-SSOT-SYNC** | Testing | **SSoT**: Balance Mismatch Test Sync | Phase 19 | [Review](../../_archive/gemini_output/pr_review_mission-test-modernization-ssot-557820577312838977.md) |
+| **TD-TRANS-LEGACY-PRICING** | Transaction | **Fix**: Float Cast Bridge Elimination | Phase 19 | [Review](../../_archive/gemini_output/pr_review_exec-match-engine-int-math-17795771630785453590.md) |
+| **TD-DTO-RED-ZONE** | DTO/API | **Fix**: Reporting Leakage Hardening | Phase 19 | [Review](../../_archive/gemini_output/pr_review_penny-hardening-reporting-dtos-744587785833593148.md) |
 
 ## 📓 Implementation Lessons (Resolved Path)
 
@@ -184,3 +192,41 @@ This document archives resolved technical debt items to keep the primary ledger 
 - **Symptom**: Magnitude errors in production/investment results.
 - **Resolution**: Refactored `AssetManagementInputDTO` fixtures to use absolute penny values (`int`).
 - **Lesson**: Decouple "Display Dollars" from "Simulation Pennies" at the test boundary.
+
+---
+
+### ID: TD-MKT-FLOAT-MATCH
+- **Title**: MatchingEngine Integer Hardening
+- **Status**: **Resolved** (Phase 19)
+- **Solution**: Implemented Dual-Precision model with `total_pennies` as SSoT for matching logic.
+- **Lesson**: Mid-price calculation MUST use Round-Down logic to prevent float artifacts.
+
+---
+
+### ID: TD-ARCH-LIFE-GOD
+- **Title**: Lifecycle Manager Monolith
+- **Status**: **Resolved** (Phase 19)
+- **Solution**: Decomposed into `BirthSystem`, `DeathSystem`, and `AgingSystem`.
+- **Lesson**: Lifecycle events should be handled by independent systems listening to clock pulses.
+
+---
+
+### ID: TD-INT-PENNIES-FRAGILITY
+- **Title**: Integer Pennies Compatibility Debt
+- **Status**: **Resolved** (Phase 19)
+- **Solution**: Removed `hasattr` wrappers in favor of strict `int` pennies across core DTOs.
+
+---
+
+### ID: TD-TEST-SSOT-SYNC
+- **Title**: SSoT Balance Mismatch in Test Suite
+- **Status**: **Resolved** (Phase 19)
+- **Solution**: Refactored entire test suite to assert against `SettlementSystem` instead of agent attributes.
+- **Lesson**: Tests must verify the *authority's* ledger, not the agent's perceived state.
+
+---
+
+### ID: TD-DTO-RED-ZONE
+- **Title**: Reporting Leakage Hardening
+- **Status**: **Resolved** (Phase 19)
+- **Solution**: Refactored `MarketReportDTO` and `AgentStateDTO` to use integer pennies.

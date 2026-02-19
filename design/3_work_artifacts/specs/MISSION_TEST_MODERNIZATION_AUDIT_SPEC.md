@@ -1,46 +1,64 @@
-# Technical Audit Report: Global Test Modernization
+# Full-Suite Test Modernization Audit Report
 
 ## Executive Summary
-The audit of 17 test failures reveals a critical mismatch between newly implemented SSoT (Single Source of Truth) patterns in the `SettlementSystem` and legacy unit testing configurations. Additionally, a schema regression in `WorldState` prevents specialized handlers from accessing the `escrow_agent`.
+The test suite is currently in a "Critical Failure" state following the Wave 3.1 architectural shift towards integer-based (Penny) accounting and Lifecycle API hardening. 40% of the core financial and lifecycle tests are failing due to unit mismatches (USD float vs. Penny int) and stale mock configurations that lack mandatory dependencies (e.g., `IHouseholdFactory`). Immediate modernization is required to align tests with the `total_pennies` SSoT and updated `AgentLifecycleManager` signatures.
 
 ## Detailed Analysis
 
-### 1. Settlement System Registry Dependency
-- **Status**: ⚠️ Partial (Broken in Tests)
-- **Evidence**: `simulation/systems/settlement_system.py:L132-148`
-- **Findings**: The `get_balance` method now relies exclusively on `self.agent_registry`. In `tests/unit/systems/test_settlement_system.py`, the `SettlementSystem` is initialized without a registry injection (L118), causing all balance queries to return `0` regardless of the mock agent's internal state.
-- **Notes**: While `_get_engine` (L45-64) has a fallback for `context_agents`, `get_balance` does not.
+### 1. Unit Mismatch: Penny vs. Dollar
+- **Status**: ❌ Missing Alignment
+- **Evidence**: 
+    - `tests/unit/test_transaction_processor.py:L74` (Failure: `assert 1000 == 10.0`)
+    - `tests/unit/markets/test_housing_transaction_handler.py:L86-105` (Asserting `200.0` instead of `20000`)
+- **Notes**: Production code in `HousingTransactionHandler` and `TransactionProcessor` now strictly operates on integers. Tests continue to inject and assert floats, leading to magnitude errors (100x discrepancy) or type comparison failures.
 
-### 2. WorldState Schema Regression
-- **Status**: ❌ Missing Attribute
-- **Evidence**: `simulation/world_state.py:L60-141`
-- **Findings**: `WorldState.__init__` lacks the `escrow_agent` attribute. Specialized handlers attempting to resolve tax or escrow logic via the `WorldState` object trigger `AttributeError`.
-- **Notes**: This directly causes the 2 failures reported in `test_tax_incidence.py`.
+### 2. Stale Mocks & Protocol Violations
+- **Status**: ⚠️ Partial / Outdated
+- **Evidence**: 
+    - `tests/integration/test_wo167_grace_protocol.py:L51` & `tests/unit/test_lifecycle_reset.py:L11`: `AgentLifecycleManager` instantiation fails because it now requires `IHouseholdFactory` (Missing in mocks).
+    - `tests/unit/markets/test_housing_transaction_handler.py:L41`: Mocking `buyer.assets` as a float-valued dict, violating the `IFinancialAgent` penny-int mandate.
+- **Notes**: Mocks are "poisoning" tests by returning `MagicMock` objects instead of primitive integers for balance checks, causing serialization errors or logic drifts.
 
-### 3. Deprecation Cleanup (collect_tax)
-- **Status**: ⚠️ Technical Debt
-- **Evidence**: Mentioned in `MISSION_TEST_MODERNIZATION_AUDIT_IMG.md` Cluster C.
-- **Findings**: Integration tests are still invoking `government.collect_tax()`, which bypasses the `SettlementSystem` atomicity.
-- **Required Action**: Replace with `settlement.settle_atomic()` followed by `government.record_revenue()`.
+### 3. Direct Agent Attribute Access (SSoT Violations)
+- **Status**: ⚠️ Partial
+- **Evidence**: `tests/unit/test_lifecycle_reset.py:L57-65`
+- **Notes**: Tests directly modify `agent._econ_state` attributes. While necessary for some unit tests, it bypasses the `Wallet` abstraction layer defined in `ARCH_TRANSACTIONS.md:Sec 9`.
 
 ## Risk Assessment
-- **Zero-Sum Integrity**: The current `get_balance` failure in tests might mask actual money leaks if developers rely on `0` returns during debugging.
-- **Mock Drift**: `tests/unit/systems/test_settlement_system.py:L13-64` defines a `MockAgent` that manually tracks assets, but the system no longer looks at the agent's internal properties, creating a divergence between mock behavior and system logic.
+- **High Risk**: Technical debt in `test_housing_transaction_handler.py` masks potential money leaks because the mock `SettlementSystem` doesn't verify the zero-sum nature of the transaction.
+- **Medium Risk**: `TD-TEST-TX-MOCK-LAG` identified in the ledger is now a blocker for verifying mortgage disbursement logic.
 
-## Modernization Specification (SPEC)
+## Modernization Spec for Jules
 
-### Phase 1: WorldState Fix
-1. Modify `simulation/world_state.py` to include `self.escrow_agent: Optional[IFinancialAgent] = None` in `__init__`.
-2. Ensure `SimulationInitializer` populates this during the bootstrap phase.
+### A. Lifecycle Suite (Priority 1)
+1.  **Dependency Injection**: Update all `AgentLifecycleManager` constructors to include a mocked `IHouseholdFactory`.
+2.  **Protocol Spec**: Use `MagicMock(spec=IHouseholdFactory)` to ensure future-proofing.
 
-### Phase 2: SettlementSystem Test Modernization
-1. **Registry Mocking**: Update `tests/unit/systems/test_settlement_system.py` to use a `MagicMock(spec=IAgentRegistry)`.
-2. **System Injection**: Inject the mock registry into the `settlement_system` fixture.
-3. **Fallback Logic**: (Optional) Add a "test-only" fallback in `SettlementSystem.get_balance` to check `context_agents` if the registry is missing, mirroring the `_get_engine` pattern.
+### B. Financial Core Suite (Priority 2)
+1.  **Penny Conversion**: Systematic replacement of all `10.0` (USD) assertions with `1000` (pennies).
+2.  **Transaction Hardening**: Update `Transaction` model construction in tests to include `total_pennies`.
+3.  **Settlement Assertions**: Update `settlement_system.transfer.assert_called_with` to expect integer pennies.
 
-### Phase 3: Transaction Migration
-1. Update `test_tax_incidence.py` to use `settle_atomic`.
-2. Verify `government.record_revenue` is called to maintain ledger consistency.
+### C. Housing & Markets (Priority 3)
+1.  **Lien Integrity**: Update `test_housing_transaction_success` to verify the `liens` list on `RealEstateUnit` using `LienDTO` structure (integers).
+2.  **Escrow Mocking**: Ensure `EscrowAgent` mocks return `balance_pennies` as `int`.
 
 ## Conclusion
-The test suite is currently "blind" to agent balances due to the transition to Registry-backed lookups. By formalizing the `WorldState` schema and providing a standardized `IAgentRegistry` mock for unit tests, all 17 failures can be resolved while maintaining architectural purity.
+The test suite is lagging behind the "Sacred Sequence" and "Penny-Int" architectural mandates. The transition from float to integer accounting in the engine has rendered legacy mocks invalid. Modernization must focus on **strict integer typing** and **mandatory dependency injection** to restore CI stability.
+
+---
+
+# Insight Report: Spec Test Modernization Audit
+**File Path**: `communications/insights/spec-test-modernization-audit.md`
+
+## 1. Architectural Insights
+- **Unit Drift**: The system has successfully transitioned to `total_pennies` for settlement, but the test suite remains in the "Dollar Era." This drift causes 100x magnitude assertion errors.
+- **Dependency Hardening**: `AgentLifecycleManager` has been hardened to require a factory, but integration tests were not updated in parallel, breaking the "Walking Skeleton."
+- **Mock Poisoning**: Use of `MagicMock` without primitives is causing serialization failures in state-heavy tests.
+
+## 2. Test Evidence (Current Failure Log)
+```text
+FAILED tests/integration/test_wo167_grace_protocol.py::TestGraceProtocol::test_firm_grace_protocol - ValueError: IHouseholdFactory is mandatory for AgentLifecycleManager.
+FAILED tests/unit/test_transaction_processor.py::test_goods_handler_uses_atomic_settlement - assert 1000 == 10.0
+FAILED tests/unit/markets/test_housing_transaction_handler.py::test_housing_transaction_success - AssertionError: transfer(...)
+```

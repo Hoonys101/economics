@@ -48,5 +48,23 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
             "tests/integration/test_wo167_grace_protocol.py"
         ],
         "output_path": "design/3_work_artifacts/specs/MISSION_LIFECYCLE_INIT_FIX_SPEC.md"
+    },
+    "spec-test-modernization-audit": {
+        "title": "SPEC: Full-Suite Test Modernization Audit",
+        "worker": "audit",
+        "instruction": "Conduct a comprehensive audit of the entire test suite (tests/). Identify: 1) Unit mismatches (asserting USD float vs Penny int). 2) Stale mocks that don't satisfy updated protocols (e.g., missing mandatory dependencies, outdated DTO attributes). 3) Direct agent attribute access (SSoT violations). Group findings by module and prioritize by failure impact. Generate a modernization spec for Jules. Use the provided failure logs as a starting point.",
+        "context_files": [
+            "design/1_governance/architecture/standards/TESTING_STABILITY.md",
+            "design/1_governance/architecture/ARCH_TRANSACTIONS.md",
+            "design/3_work_artifacts/reports/current_test_failures.md",
+            "simulation/models.py",
+            "simulation/systems/api.py",
+            "tests/unit/test_transaction_processor.py",
+            "tests/modules/finance/transaction/test_processor.py",
+            "tests/unit/markets/test_housing_transaction_handler.py",
+            "tests/unit/test_lifecycle_reset.py",
+            "tests/integration/test_wo167_grace_protocol.py"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_TEST_MODERNIZATION_AUDIT_SPEC.md"
     }
 }

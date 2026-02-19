@@ -53,6 +53,23 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "exec-test-modernization-fix": {
+      "key": "exec-test-modernization-fix",
+      "title": "EXEC: Full-Suite Test Modernization Fix",
+      "type": "jules",
+      "instruction_raw": "Systematically modernize tests based on MISSION_TEST_MODERNIZATION_AUDIT_SPEC.md: 1) Inject IHouseholdFactory into all AgentLifecycleManager constructors. 2) Convert all USD dollar assertions to Penny integers in transaction/handler tests. 3) Update Housing tests to verify LienDTO structures. Focus on tests/unit and tests/integration.",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_TEST_MODERNIZATION_AUDIT_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }

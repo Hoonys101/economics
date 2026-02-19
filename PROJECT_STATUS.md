@@ -15,9 +15,15 @@
 
 ## 1. 현재 개발 단계
 
-    - **`Phase 19: Deep Integrity Liquidation (Wave 3-5)`** ⚖️ **[ACTIVE]**
+    - **`Phase 19: Post-Wave Technical Debt Liquidation (Wave 3-5)`** ⚖️ **[ACTIVE]**
+        - **Status**: ACTIVE
+        - **Focus**: Market Engine Refactoring & Data Integrity (Wave 3)
         - **Achievement**: Liquidating remaining technical debt via the "Future Liquidation Roadmap".
-        - **Status**:
+        - **Current Progress (Wave 3)**:
+            - [x] 3.1. Matching Engine Integer Hardening (`exec-match-engine-int-math`) - **MERGED**
+            - [ ] 3.2. Transaction Schema Migration (`exec-trans-schema-migration`) - **PENDING**
+            - [/] Hotfix: Lifecycle Manager Initialization (`exec-lifecycle-init-fix`) - **IN PROGRESS**
+        - **Overall Status**:
             - [x] **Wave 1 & 2 (Cleanup)**: Merged `penny-hardening-reporting-dtos` and `lifecycle-decomposition`. ✅ (2026-02-19)
             - [ ] **Wave 3 (Market & Data)**: Refactoring `MatchingEngine` and `Transaction` schema. [RE-INITIATED]
             - [ ] **Wave 4 (Structural)**: Deprecating `TransactionManager`.
