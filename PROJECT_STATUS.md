@@ -25,8 +25,8 @@
             - [x] Hotfix: Lifecycle Manager Initialization (`exec-lifecycle-init-fix`) - **MERGED**
         - **Overall Status**:
             - [x] **Wave 1 & 2 (Cleanup)**: Merged `penny-hardening-reporting-dtos` and `lifecycle-decomposition`. ✅ (2026-02-19)
-            - [ ] **Wave 3 (Market & Data)**: Refactoring `MatchingEngine` and `Transaction` schema. [RE-INITIATED]
-            - [ ] **Wave 4 (Structural)**: Deprecating `TransactionManager`.
+            - [x] **Wave 3 (Market & Data)**: Refactoring `MatchingEngine` and `Transaction` schema. ✅ (2026-02-19)
+            - [x] **Wave 4 (Structural)**: Deprecating `TransactionManager`. ✅ (2026-02-19)
             - [ ] **Wave 5 (Hygiene)**: Finalizing `ConfigProxy` and UI Purity.
 
     - **`Phase 18: Parallel Technical Debt Clearance`** ⚖️ **[COMPLETED]**

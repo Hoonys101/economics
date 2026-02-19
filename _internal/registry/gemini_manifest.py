@@ -24,18 +24,4 @@ from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
     # Add missions here
-    "spec-post-merge-stabilization": {
-        "title": "Post-Merge Stabilization Audit (Wave 3.3/4.0)",
-        "worker": "audit",
-        "instruction": "Audit the recent merge of Wave 3.3 and 4.0. Analyze the TypeError in household tests regarding EconStateDTO and the 0 == 10.0 failure in EconomicIndicatorTracker. Identify all affected DTO callsites and provide a strict stabilization Spec for fixing them, ensuring decimal/penny consistency across all systems.",
-        "context_files": [
-            "modules/household/dtos.py",
-            "simulation/metrics/economic_tracker.py",
-            "simulation/dtos/api.py",
-            "simulation/systems/analytics_system.py",
-            "tests/unit/modules/household/test_consumption_manager.py",
-            "tests/integration/scenarios/diagnosis/test_indicator_pipeline.py"
-        ],
-        "output_path": "design/3_work_artifacts/specs/MISSION_STABILIZATION_SPEC.md"
-    },
 }
