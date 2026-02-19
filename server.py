@@ -11,6 +11,7 @@ from modules.system.builders.simulation_builder import create_simulation
 from simulation.orchestration.dashboard_service import DashboardService
 from modules.governance.cockpit.api import CockpitCommand
 from modules.system.security import verify_god_mode_token
+from modules.demographics.genealogy.router import router as genealogy_router
 import config
 
 # Configure logging
@@ -93,6 +94,7 @@ async def lifespan(app: FastAPI):
             logger.error(f"Error during simulation finalization: {e}", exc_info=True)
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(genealogy_router)
 
 @app.websocket("/ws/live")
 async def websocket_endpoint(websocket: WebSocket):
