@@ -22,7 +22,9 @@ class LaborTransactionHandler(ITransactionHandler):
         elif getattr(tx, 'total_pennies', 0) == 0 and tx.price == 0:
              trade_value = 0
         else:
-             trade_value = round_to_pennies(tx.quantity * tx.price)
+             # Fallback for legacy transactions without total_pennies
+             # Assume price is in dollars
+             trade_value = round_to_pennies(tx.quantity * tx.price * 100)
 
         # 1. Prepare Settlement (Calculate tax intents)
         # Note: TransactionProcessor used market_data.get("goods_market")?

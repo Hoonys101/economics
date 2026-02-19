@@ -251,12 +251,14 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
                          reason="mortgage_disbursal"
                      )
                  else:
+                     from modules.finance.utils.currency_math import round_to_pennies
                      tx_credit = Transaction(
                         buyer_id=bank.id,
                         seller_id=-1, # System Authorization
                         item_id=f"mortgage_disbursal_{saga['saga_id']}",
                         quantity=1.0,
                         price=principal,
+                        total_pennies=round_to_pennies(principal * 100),
                         market_id="monetary_policy",
                         transaction_type="credit_creation",
                         time=self.simulation.time,
@@ -349,12 +351,14 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
                      reason="mortgage_rollback"
                  )
              else:
+                 from modules.finance.utils.currency_math import round_to_pennies
                  tx_destroy = Transaction(
                     buyer_id=-1,
                     seller_id=bank.id,
                     item_id=f"mortgage_rollback_{saga['saga_id']}",
                     quantity=1.0,
                     price=principal,
+                    total_pennies=round_to_pennies(principal * 100),
                     market_id="monetary_policy",
                     transaction_type="credit_destruction",
                     time=self.simulation.time,
@@ -376,12 +380,14 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         if seller_id is None:
              seller_id = saga.get('seller_id')
 
+        from modules.finance.utils.currency_math import round_to_pennies
         tx_record = Transaction(
             buyer_id=buyer_id,
             seller_id=seller_id,
             item_id=f"unit_{saga['property_id']}",
             quantity=1.0,
             price=saga['offer_price'],
+            total_pennies=round_to_pennies(saga['offer_price'] * 100),
             market_id="housing",
             transaction_type="housing",
             time=self.simulation.time,

@@ -29,7 +29,8 @@ class GoodsTransactionHandler(ITransactionHandler):
              trade_value = 0
         else:
              # Fallback for legacy transactions without total_pennies
-             trade_value = round_to_pennies(tx.quantity * tx.price)
+             # Assume price is in dollars
+             trade_value = round_to_pennies(tx.quantity * tx.price * 100)
 
 
         # 1. Prepare Settlement (Calculate tax intents)

@@ -9,6 +9,7 @@ from modules.common.interfaces import IPropertyOwner
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.firms import Firm
 from modules.simulation.api import AgentID
+from modules.finance.utils.currency_math import round_to_pennies
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,12 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
         # Interest Rate (Bank Config or Global)
         mortgage_rate = getattr(context.config_module, "MORTGAGE_INTEREST_RATE", 0.05)
 
-        sale_price = tx.price * tx.quantity
+        if getattr(tx, 'total_pennies', 0) > 0:
+            sale_price = tx.total_pennies
+        else:
+            # Fallback for legacy transactions without total_pennies
+            # Assume price is in dollars
+            sale_price = round_to_pennies(tx.price * tx.quantity * 100)
         loan_amount = 0.0
         down_payment = sale_price
 
