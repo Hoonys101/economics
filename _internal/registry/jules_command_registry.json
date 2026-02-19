@@ -3,23 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "exec-cockpit-be-2": {
-      "key": "exec-cockpit-be-2",
-      "title": "Cockpit 2.0 BE-2: Genealogy System + API Endpoints",
-      "type": "jules",
-      "instruction_raw": "Implement Phase 2 of the Cockpit 2.0 Backend. PREREQUISITE: BE-1 must be merged first.\n\n1. **AgentGenealogy**: Create modules/watchtower/models/genealogy.py with AgentSurvivalData model and IGenealogyRepository Protocol as defined in the backend spec. Implement InMemoryGenealogyRepository.\n\n2. **DeathSystem Hook**: Inject IGenealogyRepository into DeathSystem.__init__() in simulation/systems/lifecycle/death_system.py. Archive agent traits on liquidation.\n\n3. **API Endpoints in server.py**:\n   - WebSocket /ws/live: broadcast WatchtowerSnapshotResponse at 1Hz\n   - WebSocket /ws/command: validate CockpitCommand via TypeAdapter, route to GlobalRegistry\n   - REST GET /api/v1/inspector/{agent_id}: return AgentInspectorResponse\n   - REST GET /api/v1/genealogy: return GenealogyResponse\n\n4. **Tests**: Add tests for DeathSystem genealogy hook and API endpoint validation.\n\nReference: design/3_work_artifacts/specs/MISSION_COCKPIT_API_CONTRACT.md (canonical schemas).",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_COCKPIT_BACKEND_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "exec-cockpit-fe-2": {
       "key": "exec-cockpit-fe-2",
       "title": "Cockpit 2.0 FE-2: Macro Canvas + Scatter Plot + Inspector Panel",
@@ -63,6 +46,23 @@
       "created_at": "",
       "command": "create",
       "file_path": "design/3_work_artifacts/specs/MISSION_COCKPIT_API_CONTRACT.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "exec-cockpit-be-2": {
+      "key": "exec-cockpit-be-2",
+      "title": "Cockpit 2.0 BE-2: Genealogy System + API Endpoints",
+      "type": "jules",
+      "instruction_raw": "Implement Phase 2 of the Cockpit 2.0 Backend. PREREQUISITE: BE-1 must be merged first.\n\n1. **AgentGenealogy**: Create modules/watchtower/models/genealogy.py with AgentSurvivalData model and IGenealogyRepository Protocol as defined in the backend spec. Implement InMemoryGenealogyRepository.\n\n2. **DeathSystem Hook**: Inject IGenealogyRepository into DeathSystem.__init__() in simulation/systems/lifecycle/death_system.py. Archive agent traits on liquidation.\n\n3. **API Endpoints in server.py**:\n   - WebSocket /ws/live: broadcast WatchtowerSnapshotResponse at 1Hz\n   - WebSocket /ws/command: validate CockpitCommand via TypeAdapter, route to GlobalRegistry\n   - REST GET /api/v1/inspector/{agent_id}: return AgentInspectorResponse\n   - REST GET /api/v1/genealogy: return GenealogyResponse\n\n4. **Tests**: Add tests for DeathSystem genealogy hook and API endpoint validation.\n\nReference: design/3_work_artifacts/specs/MISSION_COCKPIT_API_CONTRACT.md (canonical schemas).",
+      "status": "pending",
+      "created_at": "",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MISSION_COCKPIT_BACKEND_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,

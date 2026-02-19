@@ -1,11 +1,3 @@
-🕵️  Reviewing Code with instruction: 'Analyze this PR.'...
-📖 Attached context: C:\coding\economics\design\_archive\gemini_output\pr_diff_exec-cockpit-fe-1-foundation-5535494982574599099.txt
-📖 Attached context: design\1_governance\architecture\standards\TESTING_STABILITY.md
-📖 Attached context: design\1_governance\architecture\ARCH_TESTS.md
-🚀 [GeminiWorker] Running task with manual: git-review.md
-
-📝 [Review Report]
-============================================================
 # 🐙 Gemini CLI System Prompt: Git Reviewer
 
 ## 🔍 Summary
@@ -41,5 +33,3 @@ Refactored the Cockpit Frontend to version 2.0 Foundation. Introduced a **Dual-W
 
 ## ✅ Verdict
 **APPROVE**
-============================================================
-✅ Review Saved: C:\coding\economics\design\_archive\gemini_output\review_backup_20260219_135545_Analyze_this_PR.md

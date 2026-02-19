@@ -71,6 +71,13 @@ index 00000000..de90ae15
 +dist/assets/index-tx8Pe1wG.js   205.91 kB │ gzip: 64.90 kB
 +✓ built in 2.84s
 +```
+diff --git a/frontend/.env.example b/frontend/.env.example
+new file mode 100644
+index 00000000..1c62a615
+--- /dev/null
++++ b/frontend/.env.example
+@@ -0,0 +1 @@
++VITE_GOD_MODE_TOKEN=default-god-token
 diff --git a/frontend/package-lock.json b/frontend/package-lock.json
 index b4c2b617..9ff7f992 100644
 --- a/frontend/package-lock.json
@@ -701,7 +708,7 @@ index 00000000..b6ebf009
 +};
 diff --git a/frontend/src/services/socket.ts b/frontend/src/services/socket.ts
 new file mode 100644
-index 00000000..5abfaa20
+index 00000000..61243619
 --- /dev/null
 +++ b/frontend/src/services/socket.ts
 @@ -0,0 +1,128 @@
@@ -717,7 +724,7 @@ index 00000000..5abfaa20
 +    private snapshotCallbacks: SnapshotCallback[] = [];
 +    private statusCallbacks: StatusCallback[] = [];
 +    private reconnectInterval: number = 2000;
-+    private token: string = "default-god-token"; // Should match config.GOD_MODE_TOKEN default
++    private token: string = import.meta.env.VITE_GOD_MODE_TOKEN || "default-god-token";
 +
 +    constructor() {
 +        // Auto-connect on instantiation
@@ -950,6 +957,21 @@ index 00000000..9ff8778d
 +    finance: FinanceDTO;
 +    politics: PoliticsDTO;
 +    population: PopulationDTO;
++}
+diff --git a/frontend/src/vite-env.d.ts b/frontend/src/vite-env.d.ts
+new file mode 100644
+index 00000000..89a26b1c
+--- /dev/null
++++ b/frontend/src/vite-env.d.ts
+@@ -0,0 +1,9 @@
++/// <reference types="vite/client" />
++
++interface ImportMetaEnv {
++    readonly VITE_GOD_MODE_TOKEN: string
++}
++
++interface ImportMeta {
++    readonly env: ImportMetaEnv
 +}
 diff --git a/frontend/vite.config.ts b/frontend/vite.config.ts
 index 17907a6a..1a6866b3 100644

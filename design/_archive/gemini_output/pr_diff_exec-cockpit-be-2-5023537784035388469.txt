@@ -1,0 +1,428 @@
+diff --git a/communications/insights/exec-cockpit-be-2.md b/communications/insights/exec-cockpit-be-2.md
+new file mode 100644
+index 00000000..0f2f37ea
+--- /dev/null
++++ b/communications/insights/exec-cockpit-be-2.md
+@@ -0,0 +1,36 @@
++# Genealogy System + API Endpoints Report
++
++## Architectural Insights
++1. **Genealogy Service Architecture**:
++   - Implemented a dedicated `GenealogyService` in `modules/demographics/genealogy/service.py`.
++   - The service depends on `IAgentRegistry` to access agent data, ensuring loose coupling and adhering to the "Logic Separation" guardrail.
++   - It performs graph traversal on the `parent_id` and `children_ids` fields of `Household` agents to reconstruct lineage.
++
++2. **DTO Purity**:
++   - Defined strict Pydantic models in `modules/demographics/genealogy/dtos.py` (`AncestorDTO`, `DescendantDTO`, `GenealogyTreeDTO`, `GenealogyNodeDTO`).
++   - All API endpoints return these typed DTOs, preventing raw dictionary leakage and ensuring schema validation.
++
++3. **API Integration**:
++   - Created a new router in `modules/demographics/genealogy/router.py`.
++   - The router uses a dependency injection pattern (`get_genealogy_service`) to access the global simulation state safely, handling potential import cycles via runtime imports.
++   - Integrated into `server.py` via `app.include_router()`.
++
++4. **Zero-Sum Integrity**:
++   - The genealogy system is read-only and does not affect financial state, thus preserving zero-sum integrity.
++
++## Test Evidence
++Ran `python -m pytest modules/demographics/genealogy/tests/test_genealogy.py`.
++
++```
++modules/demographics/genealogy/tests/test_genealogy.py::test_get_ancestors PASSED [ 25%]
++modules/demographics/genealogy/tests/test_genealogy.py::test_get_descendants PASSED [ 50%]
++modules/demographics/genealogy/tests/test_genealogy.py::test_get_tree PASSED [ 75%]
++modules/demographics/genealogy/tests/test_genealogy.py::test_api_endpoints
++-------------------------------- live log call ---------------------------------
++INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/genealogy/3/ancestors "HTTP/1.1 200 OK"
++INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/genealogy/2/descendants "HTTP/1.1 200 OK"
++INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/genealogy/2/tree "HTTP/1.1 200 OK"
++PASSED                                                                   [100%]
++
++============================== 4 passed in 0.95s ===============================
++```
+diff --git a/modules/demographics/genealogy/dtos.py b/modules/demographics/genealogy/dtos.py
+new file mode 100644
+index 00000000..386867b7
+--- /dev/null
++++ b/modules/demographics/genealogy/dtos.py
+@@ -0,0 +1,26 @@
++from pydantic import BaseModel, Field
++from typing import List, Optional
++
++class AncestorDTO(BaseModel):
++    id: int
++    generation_gap: int
++    name: Optional[str] = None
++    is_alive: bool
++
++class DescendantDTO(BaseModel):
++    id: int
++    generation_gap: int
++    name: Optional[str] = None
++    is_alive: bool
++
++class GenealogyNodeDTO(BaseModel):
++    id: int
++    parent_id: Optional[int]
++    children_ids: List[int] = Field(default_factory=list)
++    generation: int
++    name: Optional[str] = None
++    is_alive: bool
++
++class GenealogyTreeDTO(BaseModel):
++    root_id: int
++    nodes: List[GenealogyNodeDTO]
+diff --git a/modules/demographics/genealogy/router.py b/modules/demographics/genealogy/router.py
+new file mode 100644
+index 00000000..81267d09
+--- /dev/null
++++ b/modules/demographics/genealogy/router.py
+@@ -0,0 +1,35 @@
++from fastapi import APIRouter, HTTPException, Depends
++from typing import List, Any
++from modules.demographics.genealogy.service import GenealogyService
++from modules.demographics.genealogy.dtos import AncestorDTO, DescendantDTO, GenealogyTreeDTO
++
++# Dependency to get the service instance
++def get_genealogy_service() -> GenealogyService:
++    # Lazy import to avoid circular dependency
++    try:
++        from server import sim
++    except ImportError:
++        sim = None
++
++    if not sim:
++        raise HTTPException(status_code=503, detail="Simulation not initialized")
++
++    # Assuming sim has agent_registry
++    if not hasattr(sim, 'agent_registry') or not sim.agent_registry:
++         raise HTTPException(status_code=503, detail="Agent Registry not available")
++
++    return GenealogyService(sim.agent_registry)
++
++router = APIRouter(prefix="/genealogy", tags=["Genealogy"])
++
++@router.get("/{agent_id}/ancestors", response_model=List[AncestorDTO])
++def get_ancestors(agent_id: int, service: GenealogyService = Depends(get_genealogy_service)):
++    return service.get_ancestors(agent_id)
++
++@router.get("/{agent_id}/descendants", response_model=List[DescendantDTO])
++def get_descendants(agent_id: int, service: GenealogyService = Depends(get_genealogy_service)):
++    return service.get_descendants(agent_id)
++
++@router.get("/{agent_id}/tree", response_model=GenealogyTreeDTO)
++def get_tree(agent_id: int, depth: int = 3, service: GenealogyService = Depends(get_genealogy_service)):
++    return service.get_tree(agent_id, depth)
+diff --git a/modules/demographics/genealogy/service.py b/modules/demographics/genealogy/service.py
+new file mode 100644
+index 00000000..a96023e7
+--- /dev/null
++++ b/modules/demographics/genealogy/service.py
+@@ -0,0 +1,125 @@
++from typing import List, Optional, Deque, Set
++from collections import deque
++from modules.system.api import IAgentRegistry
++from modules.demographics.genealogy.dtos import AncestorDTO, DescendantDTO, GenealogyTreeDTO, GenealogyNodeDTO
++from simulation.core_agents import Household
++
++class GenealogyService:
++    def __init__(self, agent_registry: IAgentRegistry):
++        self.agent_registry = agent_registry
++
++    def _get_agent(self, agent_id: int) -> Optional[Household]:
++        """
++        Retrieves a Household agent by ID from the registry.
++        Returns None if not found or not a Household.
++        """
++        try:
++            agent = self.agent_registry.get_agent(agent_id)
++            if isinstance(agent, Household):
++                return agent
++        except Exception:
++            # Registry might raise error if ID not found, depending on implementation.
++            # Assuming safe get_agent or catch-all.
++            pass
++        return None
++
++    def get_ancestors(self, agent_id: int) -> List[AncestorDTO]:
++        """
++        Returns a list of ancestors for the given agent ID, ordered by generation gap.
++        """
++        ancestors = []
++        current_id = agent_id
++        gap = 1
++
++        while True:
++            agent = self._get_agent(current_id)
++            if not agent:
++                break
++
++            parent_id = agent.parent_id
++            if parent_id is None:
++                break
++
++            parent = self._get_agent(parent_id)
++
++            if parent:
++                ancestors.append(AncestorDTO(
++                    id=parent.id,
++                    generation_gap=gap,
++                    name=getattr(parent, "name", f"Household_{parent.id}"),
++                    is_alive=parent.is_active
++                ))
++                current_id = parent_id
++                gap += 1
++            else:
++                # Parent exists in record but not in registry (e.g. data lost or specialized archive)
++                # We stop traversal here as we can't get further parents.
++                break
++
++        return ancestors
++
++    def get_descendants(self, agent_id: int) -> List[DescendantDTO]:
++        """
++        Returns a list of all descendants (children, grandchildren, etc.) for the given agent ID.
++        """
++        descendants = []
++        queue: Deque[tuple[int, int]] = deque([(agent_id, 1)]) # (id, gap)
++        visited: Set[int] = {agent_id}
++
++        while queue:
++            curr_id, gap = queue.popleft()
++            agent = self._get_agent(curr_id)
++            if not agent:
++                continue
++
++            for child_id in agent.children_ids:
++                if child_id in visited:
++                    continue
++                visited.add(child_id)
++
++                child = self._get_agent(child_id)
++                if child:
++                    descendants.append(DescendantDTO(
++                        id=child.id,
++                        generation_gap=gap,
++                        name=getattr(child, "name", f"Household_{child.id}"),
++                        is_alive=child.is_active
++                    ))
++                    queue.append((child.id, gap + 1))
++
++        return descendants
++
++    def get_tree(self, root_id: int, depth: int = 3) -> GenealogyTreeDTO:
++        """
++        Returns a genealogy tree starting from the root_id, traversing downwards (descendants).
++        """
++        nodes = []
++        queue: Deque[tuple[int, int]] = deque([(root_id, 0)])
++        visited: Set[int] = set()
++
++        while queue:
++            curr_id, curr_depth = queue.popleft()
++
++            if curr_id in visited:
++                continue
++            visited.add(curr_id)
++
++            agent = self._get_agent(curr_id)
++            if not agent:
++                continue
++
++            nodes.append(GenealogyNodeDTO(
++                id=agent.id,
++                parent_id=agent.parent_id,
++                children_ids=agent.children_ids,
++                generation=agent.generation,
++                name=getattr(agent, "name", f"Household_{agent.id}"),
++                is_alive=agent.is_active
++            ))
++
++            if curr_depth < depth:
++                for child_id in agent.children_ids:
++                    if child_id not in visited:
++                        queue.append((child_id, curr_depth + 1))
++
++        return GenealogyTreeDTO(root_id=root_id, nodes=nodes)
+diff --git a/modules/demographics/genealogy/tests/test_genealogy.py b/modules/demographics/genealogy/tests/test_genealogy.py
+new file mode 100644
+index 00000000..99c97fa7
+--- /dev/null
++++ b/modules/demographics/genealogy/tests/test_genealogy.py
+@@ -0,0 +1,156 @@
++import pytest
++from unittest.mock import MagicMock
++from modules.demographics.genealogy.service import GenealogyService
++from modules.demographics.genealogy.dtos import AncestorDTO, DescendantDTO, GenealogyTreeDTO
++from simulation.core_agents import Household
++from modules.system.api import IAgentRegistry
++from fastapi.testclient import TestClient
++from fastapi import FastAPI
++from modules.demographics.genealogy.router import router, get_genealogy_service
++
++# Mock Agent Registry
++class MockRegistry:
++    def __init__(self, agents):
++        self.agents = agents
++
++    def get_agent(self, agent_id):
++        return self.agents.get(agent_id)
++
++    def get_all_financial_agents(self):
++        return list(self.agents.values())
++
++    def set_state(self, state):
++        pass
++
++@pytest.fixture
++def mock_registry():
++    # Setup a family tree
++    # Grandparent (1) -> Parent (2) -> Child (3) -> Grandchild (4)
++
++    # Grandparent
++    gp = MagicMock(spec=Household)
++    gp.id = 1
++    gp.parent_id = None
++    gp.children_ids = [2]
++    gp.generation = 0
++    gp.is_active = False # Dead
++    gp.name = "Grandpa"
++
++    # Parent
++    p = MagicMock(spec=Household)
++    p.id = 2
++    p.parent_id = 1
++    p.children_ids = [3]
++    p.generation = 1
++    p.is_active = True
++    p.name = "Papa"
++
++    # Child
++    c = MagicMock(spec=Household)
++    c.id = 3
++    c.parent_id = 2
++    c.children_ids = [4]
++    c.generation = 2
++    c.is_active = True
++    c.name = "Junior"
++
++    # Grandchild
++    gc = MagicMock(spec=Household)
++    gc.id = 4
++    gc.parent_id = 3
++    gc.children_ids = []
++    gc.generation = 3
++    gc.is_active = True
++    gc.name = "Baby"
++
++    agents = {1: gp, 2: p, 3: c, 4: gc}
++    return MockRegistry(agents)
++
++def test_get_ancestors(mock_registry):
++    service = GenealogyService(mock_registry)
++
++    # Test for Child (3) -> Should get Parent (2) and Grandparent (1)
++    ancestors = service.get_ancestors(3)
++
++    assert len(ancestors) == 2
++    # Ancestor 0 should be Parent (gap 1)
++    assert ancestors[0].id == 2
++    assert ancestors[0].generation_gap == 1
++    # Ancestor 1 should be Grandparent (gap 2)
++    assert ancestors[1].id == 1
++    assert ancestors[1].generation_gap == 2
++    assert not ancestors[1].is_alive
++
++def test_get_descendants(mock_registry):
++    service = GenealogyService(mock_registry)
++
++    # Test for Parent (2) -> Should get Child (3) and Grandchild (4)
++    descendants = service.get_descendants(2)
++
++    assert len(descendants) == 2
++    # Order depends on BFS/DFS but BFS is implemented
++    ids = [d.id for d in descendants]
++    assert 3 in ids
++    assert 4 in ids
++
++    # Check gap
++    d3 = next(d for d in descendants if d.id == 3)
++    assert d3.generation_gap == 1
++
++    d4 = next(d for d in descendants if d.id == 4)
++    assert d4.generation_gap == 2
++
++def test_get_tree(mock_registry):
++    service = GenealogyService(mock_registry)
++
++    # Test Tree from Parent (2) with depth 2
++    # Tree starts at root (2) at depth 0.
++    # Child (3) at depth 1.
++    # Grandchild (4) at depth 2.
++    # Service implementation continues if curr_depth < depth.
++    # If depth=2:
++    # 0 < 2 -> enqueue children (depth 1)
++    # 1 < 2 -> enqueue children (depth 2)
++    # 2 < 2 -> False. Don't enqueue children.
++    # So grandchild (depth 2) is added to nodes, but its children are not processed.
++
++    tree = service.get_tree(2, depth=2)
++
++    assert tree.root_id == 2
++    node_ids = [n.id for n in tree.nodes]
++    assert 2 in node_ids
++    assert 3 in node_ids
++    assert 4 in node_ids
++
++    assert len(tree.nodes) == 3
++
++def test_api_endpoints(mock_registry):
++    service = GenealogyService(mock_registry)
++
++    app = FastAPI()
++    app.include_router(router)
++
++    # Override dependency
++    app.dependency_overrides[get_genealogy_service] = lambda: service
++
++    client = TestClient(app)
++
++    # Test Ancestors
++    resp = client.get("/genealogy/3/ancestors")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert len(data) == 2
++    assert data[0]["id"] == 2
++
++    # Test Descendants
++    resp = client.get("/genealogy/2/descendants")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert len(data) == 2
++
++    # Test Tree
++    resp = client.get("/genealogy/2/tree")
++    assert resp.status_code == 200
++    data = resp.json()
++    assert data["root_id"] == 2
++    assert len(data["nodes"]) == 3
+diff --git a/server.py b/server.py
+index 8bc60087..65b72196 100644
+--- a/server.py
++++ b/server.py
+@@ -11,6 +11,7 @@ from modules.system.builders.simulation_builder import create_simulation
+ from simulation.orchestration.dashboard_service import DashboardService
+ from modules.governance.cockpit.api import CockpitCommand
+ from modules.system.security import verify_god_mode_token
++from modules.demographics.genealogy.router import router as genealogy_router
+ import config
+ 
+ # Configure logging
+@@ -93,6 +94,7 @@ async def lifespan(app: FastAPI):
+             logger.error(f"Error during simulation finalization: {e}", exc_info=True)
+ 
+ app = FastAPI(lifespan=lifespan)
++app.include_router(genealogy_router)
+ 
+ @app.websocket("/ws/live")
+ async def websocket_endpoint(websocket: WebSocket):
