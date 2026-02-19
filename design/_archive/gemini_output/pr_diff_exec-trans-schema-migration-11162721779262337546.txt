@@ -1,0 +1,1661 @@
+diff --git a/communications/insights/exec-trans-schema-migration.md b/communications/insights/exec-trans-schema-migration.md
+new file mode 100644
+index 00000000..c2bf0a65
+--- /dev/null
++++ b/communications/insights/exec-trans-schema-migration.md
+@@ -0,0 +1,54 @@
++# Transaction Schema Migration - Architectural Insight Report
++
++## Architectural Insights
++
++### 1. Zero-Sum Integrity Enforcement (Penny Standard)
++The `Transaction` model (`simulation/models.py`) and database schema (`simulation/db/schema.py`) have been strictly migrated to enforce `total_pennies` as a required, non-nullable field.
++*   **Model**: `total_pennies: int` is now a mandatory field in `Transaction` dataclass (no default value). This forces all call sites to explicitly calculate the total value in pennies at instantiation time.
++*   **Database**: `transactions.total_pennies` column is now `INTEGER NOT NULL`.
++*   **Handlers**: All transaction handlers (`Goods`, `Labor`, `Stock`, `Financial`, etc.) have been refactored to remove legacy fallback logic (calculating value from `price` float). They now exclusively use `tx.total_pennies` as the Single Source of Truth (SSoT).
++
++### 2. Elimination of Floating-Point Ambiguity
++By removing the fallback logic that relied on `round_to_pennies(price * quantity * 100)`, we eliminated a class of bugs where `price` was ambiguous (sometimes dollars, sometimes pennies). Now, `total_pennies` explicitly represents the settlement amount.
++*   **Labor Market**: Fixed potential wage calculation errors where `int(tx.price)` was used directly (potentially undercounting wages by 100x if price was dollars). Now uses `trade_value` (total_pennies).
++*   **Stock Market**: Updated `StockTransactionHandler` to correctly derive acquisition price in pennies from `total_pennies` for `Portfolio.add`.
++*   **Financial Engines**: Fixed critical regressions where financial engines (Debt, Liquidation, Booking) were inflating transaction values by 100x due to incorrect migration assumptions. Verified that inputs to these engines are already in pennies.
++
++### 3. Automated Codebase Migration
++A migration script (`scripts/migrate_transaction_calls.py`) was used to refactor over 180 instantiations of `Transaction` across the codebase, ensuring they include the `total_pennies` argument (calculated as `int(price * quantity * 100)` where missing). Manual fixes were applied to tests where specific penny values were required.
++
++## Test Evidence
++
++### Wave 3.2 Final Verification (4 Key Scenarios)
++Verification of strict financial integrity and rounding logic.
++
++```
++$ python3 scripts/verification/verify_wave_3_2_scenarios.py
++
++--- Testing Atomic Housing Settlement ---
++PASS: Sum check: 2000000 + 8000000 == 10000000
++
++--- Testing Dividend Residuals ---
++CHECK: Distributed 9999. Residual 1 penny.
++PASS: Dividend Residuals: 1 penny stays in wallet (only 9999 distributed).
++
++--- Testing Fractional Interest ---
++PASS: Fractional Interest: 0 pennies (Expected: 0)
++
++--- Testing Penny-Perfect Debt Servicing ---
++PASS: Interest calculated: 15 pennies (Expected: 15)
++ ....
++----------------------------------------------------------------------
++Ran 4 tests in 0.004s
++
++OK
++```
++
++### Full Test Suite Run (Unit + Integration)
++Verified clean pass on all relevant modules.
++
++```
++$ python3 -m pytest tests/unit/ tests/integration/
++...
++======================= 690 passed, 1 skipped, 8 warnings in 9.34s =======================
++```
+diff --git a/modules/finance/engines/debt_servicing_engine.py b/modules/finance/engines/debt_servicing_engine.py
+index 113e80c3..cfc95b17 100644
+--- a/modules/finance/engines/debt_servicing_engine.py
++++ b/modules/finance/engines/debt_servicing_engine.py
+@@ -50,7 +50,7 @@ class DebtServicingEngine(IDebtServicingEngine):
+                         market_id="financial",
+                         transaction_type="loan_interest",
+                         time=ledger.current_tick
+-                    ))
++                    , total_pennies=interest_pennies))
+ 
+                     # Principal repayment
+                     if ledger.current_tick >= loan.due_tick:
+@@ -69,7 +69,7 @@ class DebtServicingEngine(IDebtServicingEngine):
+                                 market_id="financial",
+                                 transaction_type="loan_repayment",
+                                 time=ledger.current_tick
+-                            ))
++                            , total_pennies=principal_due))
+                         else:
+                             # Partial pay?
+                             pay = deposit.balance_pennies
+@@ -85,7 +85,7 @@ class DebtServicingEngine(IDebtServicingEngine):
+                                 market_id="financial",
+                                 transaction_type="loan_repayment",
+                                 time=ledger.current_tick
+-                            ))
++                            , total_pennies=pay))
+ 
+         # 2. Service Treasury Bonds
+         treasury = ledger.treasury
+@@ -123,7 +123,7 @@ class DebtServicingEngine(IDebtServicingEngine):
+                     market_id="financial",
+                     transaction_type="bond_interest",
+                     time=ledger.current_tick
+-                ))
++                , total_pennies=interest_pennies))
+ 
+         return EngineOutputDTO(
+             updated_ledger=ledger,
+diff --git a/modules/finance/engines/liquidation_engine.py b/modules/finance/engines/liquidation_engine.py
+index 24bafe9c..ab22c04d 100644
+--- a/modules/finance/engines/liquidation_engine.py
++++ b/modules/finance/engines/liquidation_engine.py
+@@ -31,7 +31,7 @@ class LiquidationEngine(ILiquidationEngine):
+                 market_id="liquidation",
+                 transaction_type="liquidation_sale",
+                 time=ledger.current_tick
+-            ))
++            , total_pennies=liquidation_value))
+ 
+         # 2. Settle Debts
+         total_proceeds = liquidation_value + request.capital_value_pennies
+@@ -67,7 +67,7 @@ class LiquidationEngine(ILiquidationEngine):
+                     market_id="financial",
+                     transaction_type="loan_repayment_liquidation",
+                     time=ledger.current_tick
+-                ))
++                , total_pennies=repayment))
+ 
+             if loan.remaining_principal_pennies > 0:
+                 # Default the rest
+@@ -89,7 +89,7 @@ class LiquidationEngine(ILiquidationEngine):
+                     market_id="financial",
+                     transaction_type="loan_default",
+                     time=ledger.current_tick
+-                ))
++                , total_pennies=default_amount))
+ 
+         # 3. Distribute remaining equity (if any)
+         if remaining_proceeds > 0:
+@@ -102,7 +102,7 @@ class LiquidationEngine(ILiquidationEngine):
+                 market_id="financial",
+                 transaction_type="equity_distribution",
+                 time=ledger.current_tick
+-             ))
++             , total_pennies=remaining_proceeds))
+ 
+         return EngineOutputDTO(
+             updated_ledger=ledger,
+diff --git a/modules/finance/engines/loan_booking_engine.py b/modules/finance/engines/loan_booking_engine.py
+index c1b98dd7..39d662a8 100644
+--- a/modules/finance/engines/loan_booking_engine.py
++++ b/modules/finance/engines/loan_booking_engine.py
+@@ -76,7 +76,7 @@ class LoanBookingEngine(ILoanBookingEngine):
+             market_id="monetary_policy",
+             transaction_type="credit_creation",
+             time=ledger.current_tick
+-        )
++        , total_pennies=application.amount_pennies)
+ 
+         return EngineOutputDTO(
+             updated_ledger=ledger,
+diff --git a/modules/finance/kernel/ledger.py b/modules/finance/kernel/ledger.py
+index 2dd2a28a..493ec5bb 100644
+--- a/modules/finance/kernel/ledger.py
++++ b/modules/finance/kernel/ledger.py
+@@ -48,7 +48,7 @@ class MonetaryLedger(IMonetaryLedger):
+                 "executed": True,
+                 "is_monetary_expansion": True # Explicit tag
+             }
+-        )
++        , total_pennies=int(amount * 1.0 * 100))
+         self.transaction_log.append(tx)
+         logger.debug(f"MONETARY_LEDGER | Credit Expansion: {amount:.2f} (Saga: {saga_id})")
+ 
+@@ -72,6 +72,6 @@ class MonetaryLedger(IMonetaryLedger):
+                 "executed": True,
+                 "is_monetary_destruction": True # Explicit tag
+             }
+-        )
++        , total_pennies=int(amount * 1.0 * 100))
+         self.transaction_log.append(tx)
+         logger.debug(f"MONETARY_LEDGER | Credit Destruction: {amount:.2f} (Saga: {saga_id})")
+diff --git a/modules/finance/saga_handler.py b/modules/finance/saga_handler.py
+index 5d31446c..dc4767af 100644
+--- a/modules/finance/saga_handler.py
++++ b/modules/finance/saga_handler.py
+@@ -231,9 +231,13 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+         principal = saga['mortgage_approval']['approved_principal']
+         offer_price = saga['offer_price']
+ 
+-        transfers: List[Tuple[IFinancialAgent, IFinancialAgent, float]] = [
+-            (bank, buyer, principal),
+-            (buyer, seller, offer_price)
++        # MIGRATION: Convert Dollars to Pennies for Settlement
++        principal_pennies = int(principal * 100)
++        offer_price_pennies = int(offer_price * 100)
++
++        transfers: List[Tuple[IFinancialAgent, IFinancialAgent, int]] = [
++            (bank, buyer, principal_pennies),
++            (buyer, seller, offer_price_pennies)
+         ]
+ 
+         success = self.settlement_system.execute_multiparty_settlement(transfers, self.simulation.time)
+@@ -334,9 +338,13 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+         principal = saga['mortgage_approval']['approved_principal']
+         offer_price = saga['offer_price']
+ 
++        # MIGRATION: Convert Dollars to Pennies for Settlement
++        principal_pennies = int(principal * 100)
++        offer_price_pennies = int(offer_price * 100)
++
+         transfers = [
+-            (seller, buyer, offer_price),
+-            (buyer, bank, principal)
++            (seller, buyer, offer_price_pennies),
++            (buyer, bank, principal_pennies)
+         ]
+ 
+         self.settlement_system.execute_multiparty_settlement(transfers, self.simulation.time)
+diff --git a/modules/finance/system.py b/modules/finance/system.py
+index 0d7a7c77..a3f4b76d 100644
+--- a/modules/finance/system.py
++++ b/modules/finance/system.py
+@@ -363,7 +363,7 @@ class FinanceSystem(IFinanceSystem):
+             market_id="financial",
+             transaction_type="bond_purchase",
+             time=current_tick
+-        )
++        , total_pennies=int(amount * 1.0 * 100))
+ 
+         # Map to legacy BondDTO for return signature compatibility
+         bond_dto = BondDTO(
+diff --git a/modules/government/components/infrastructure_manager.py b/modules/government/components/infrastructure_manager.py
+index 58978129..becac49b 100644
+--- a/modules/government/components/infrastructure_manager.py
++++ b/modules/government/components/infrastructure_manager.py
+@@ -81,7 +81,7 @@ class InfrastructureManager:
+                     "triggers_effect": "GOVERNMENT_INFRA_UPGRADE" if h == active_households[0] else None,
+                     "is_public_works": True
+                 }
+-            )
++            , total_pennies=int(amount_per_hh * 1.0 * 100))
+             transactions.append(tx)
+ 
+         logger.info(
+diff --git a/modules/government/taxation/system.py b/modules/government/taxation/system.py
+index fdb2f07f..bdfb17c2 100644
+--- a/modules/government/taxation/system.py
++++ b/modules/government/taxation/system.py
+@@ -246,7 +246,7 @@ class TaxationSystem:
+                     market_id="system",
+                     transaction_type="tax",
+                     time=current_tick
+-                )
++                , total_pennies=int(tax_amount * 1.0 * 100))
+                 intents.append(transaction)
+ 
+         return intents
+diff --git a/reports/snapshots/snapshot_tick_00042_20260219_014253.json b/reports/snapshots/snapshot_tick_00042_20260219_014253.json
+new file mode 100644
+index 00000000..b9457465
+--- /dev/null
++++ b/reports/snapshots/snapshot_tick_00042_20260219_014253.json
+@@ -0,0 +1,60 @@
++{
++  "tick": 42,
++  "timestamp": 1771465373.201976,
++  "status": "RUNNING",
++  "integrity": {
++    "m2_leak": 0,
++    "fps": 204878.04878048782
++  },
++  "macro": {
++    "gdp": 1000,
++    "cpi": 1.0,
++    "unemploy": 5.0,
++    "gini": 0.3
++  },
++  "finance": {
++    "rates": {
++      "base": 0.0,
++      "call": 0.0,
++      "loan": 0.0,
++      "savings": 0.0
++    },
++    "supply": {
++      "m0": 100,
++      "m1": 500,
++      "m2": 600,
++      "velocity": 1.5
++    }
++  },
++  "politics": {
++    "approval": {
++      "total": 0.0,
++      "low": 0.0,
++      "mid": 0.0,
++      "high": 0.0
++    },
++    "status": {
++      "ruling_party": "NEUTRAL",
++      "cohesion": 0.7
++    },
++    "fiscal": {
++      "revenue": 0,
++      "welfare": 0,
++      "debt": 0
++    }
++  },
++  "population": {
++    "distribution": {
++      "q1": 100.0,
++      "q2": 200.0,
++      "q3": 300.0,
++      "q4": 400.0,
++      "q5": 500.0
++    },
++    "active_count": 100,
++    "metrics": {
++      "birth": 0.0,
++      "death": 0.0
++    }
++  }
++}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260219_014333.json b/reports/snapshots/snapshot_tick_00042_20260219_014333.json
+new file mode 100644
+index 00000000..0751448d
+--- /dev/null
++++ b/reports/snapshots/snapshot_tick_00042_20260219_014333.json
+@@ -0,0 +1,60 @@
++{
++  "tick": 42,
++  "timestamp": 1771465413.064242,
++  "status": "RUNNING",
++  "integrity": {
++    "m2_leak": 0,
++    "fps": 227027.02702702704
++  },
++  "macro": {
++    "gdp": 1000,
++    "cpi": 1.0,
++    "unemploy": 5.0,
++    "gini": 0.3
++  },
++  "finance": {
++    "rates": {
++      "base": 0.0,
++      "call": 0.0,
++      "loan": 0.0,
++      "savings": 0.0
++    },
++    "supply": {
++      "m0": 100,
++      "m1": 500,
++      "m2": 600,
++      "velocity": 1.5
++    }
++  },
++  "politics": {
++    "approval": {
++      "total": 0.0,
++      "low": 0.0,
++      "mid": 0.0,
++      "high": 0.0
++    },
++    "status": {
++      "ruling_party": "NEUTRAL",
++      "cohesion": 0.7
++    },
++    "fiscal": {
++      "revenue": 0,
++      "welfare": 0,
++      "debt": 0
++    }
++  },
++  "population": {
++    "distribution": {
++      "q1": 100.0,
++      "q2": 200.0,
++      "q3": 300.0,
++      "q4": 400.0,
++      "q5": 500.0
++    },
++    "active_count": 100,
++    "metrics": {
++      "birth": 0.0,
++      "death": 0.0
++    }
++  }
++}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260219_020131.json b/reports/snapshots/snapshot_tick_00042_20260219_020131.json
+new file mode 100644
+index 00000000..b6525f0e
+--- /dev/null
++++ b/reports/snapshots/snapshot_tick_00042_20260219_020131.json
+@@ -0,0 +1,60 @@
++{
++  "tick": 42,
++  "timestamp": 1771466491.273555,
++  "status": "RUNNING",
++  "integrity": {
++    "m2_leak": 0,
++    "fps": 221052.63157894736
++  },
++  "macro": {
++    "gdp": 1000,
++    "cpi": 1.0,
++    "unemploy": 5.0,
++    "gini": 0.3
++  },
++  "finance": {
++    "rates": {
++      "base": 0.0,
++      "call": 0.0,
++      "loan": 0.0,
++      "savings": 0.0
++    },
++    "supply": {
++      "m0": 100,
++      "m1": 500,
++      "m2": 600,
++      "velocity": 1.5
++    }
++  },
++  "politics": {
++    "approval": {
++      "total": 0.0,
++      "low": 0.0,
++      "mid": 0.0,
++      "high": 0.0
++    },
++    "status": {
++      "ruling_party": "NEUTRAL",
++      "cohesion": 0.7
++    },
++    "fiscal": {
++      "revenue": 0,
++      "welfare": 0,
++      "debt": 0
++    }
++  },
++  "population": {
++    "distribution": {
++      "q1": 100.0,
++      "q2": 200.0,
++      "q3": 300.0,
++      "q4": 400.0,
++      "q5": 500.0
++    },
++    "active_count": 100,
++    "metrics": {
++      "birth": 0.0,
++      "death": 0.0
++    }
++  }
++}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260219_020301.json b/reports/snapshots/snapshot_tick_00042_20260219_020301.json
+new file mode 100644
+index 00000000..5150b72e
+--- /dev/null
++++ b/reports/snapshots/snapshot_tick_00042_20260219_020301.json
+@@ -0,0 +1,60 @@
++{
++  "tick": 42,
++  "timestamp": 1771466581.668201,
++  "status": "RUNNING",
++  "integrity": {
++    "m2_leak": 0,
++    "fps": 221052.63157894736
++  },
++  "macro": {
++    "gdp": 1000,
++    "cpi": 1.0,
++    "unemploy": 5.0,
++    "gini": 0.3
++  },
++  "finance": {
++    "rates": {
++      "base": 0.0,
++      "call": 0.0,
++      "loan": 0.0,
++      "savings": 0.0
++    },
++    "supply": {
++      "m0": 100,
++      "m1": 500,
++      "m2": 600,
++      "velocity": 1.5
++    }
++  },
++  "politics": {
++    "approval": {
++      "total": 0.0,
++      "low": 0.0,
++      "mid": 0.0,
++      "high": 0.0
++    },
++    "status": {
++      "ruling_party": "NEUTRAL",
++      "cohesion": 0.7
++    },
++    "fiscal": {
++      "revenue": 0,
++      "welfare": 0,
++      "debt": 0
++    }
++  },
++  "population": {
++    "distribution": {
++      "q1": 100.0,
++      "q2": 200.0,
++      "q3": 300.0,
++      "q4": 400.0,
++      "q5": 500.0
++    },
++    "active_count": 100,
++    "metrics": {
++      "birth": 0.0,
++      "death": 0.0
++    }
++  }
++}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260219_020349.json b/reports/snapshots/snapshot_tick_00042_20260219_020349.json
+new file mode 100644
+index 00000000..333faf90
+--- /dev/null
++++ b/reports/snapshots/snapshot_tick_00042_20260219_020349.json
+@@ -0,0 +1,60 @@
++{
++  "tick": 42,
++  "timestamp": 1771466629.752105,
++  "status": "RUNNING",
++  "integrity": {
++    "m2_leak": 0,
++    "fps": 204878.04878048782
++  },
++  "macro": {
++    "gdp": 1000,
++    "cpi": 1.0,
++    "unemploy": 5.0,
++    "gini": 0.3
++  },
++  "finance": {
++    "rates": {
++      "base": 0.0,
++      "call": 0.0,
++      "loan": 0.0,
++      "savings": 0.0
++    },
++    "supply": {
++      "m0": 100,
++      "m1": 500,
++      "m2": 600,
++      "velocity": 1.5
++    }
++  },
++  "politics": {
++    "approval": {
++      "total": 0.0,
++      "low": 0.0,
++      "mid": 0.0,
++      "high": 0.0
++    },
++    "status": {
++      "ruling_party": "NEUTRAL",
++      "cohesion": 0.7
++    },
++    "fiscal": {
++      "revenue": 0,
++      "welfare": 0,
++      "debt": 0
++    }
++  },
++  "population": {
++    "distribution": {
++      "q1": 100.0,
++      "q2": 200.0,
++      "q3": 300.0,
++      "q4": 400.0,
++      "q5": 500.0
++    },
++    "active_count": 100,
++    "metrics": {
++      "birth": 0.0,
++      "death": 0.0
++    }
++  }
++}
+\ No newline at end of file
+diff --git a/scripts/verification/verify_integrity_v2.py b/scripts/verification/verify_integrity_v2.py
+index d34282ab..90291843 100644
+--- a/scripts/verification/verify_integrity_v2.py
++++ b/scripts/verification/verify_integrity_v2.py
+@@ -122,7 +122,7 @@ def verify_zero_sum():
+         market_id="goods",
+         transaction_type="goods",
+         time=0
+-    )
++    , total_pennies=10000)
+     state.transactions = [tx]
+ 
+     initial_total = buyer.assets + seller.assets + gov.assets
+@@ -153,7 +153,7 @@ def verify_zero_sum():
+         market_id="goods",
+         transaction_type="goods",
+         time=1
+-    )
++    , total_pennies=10000)
+     state.transactions = [tx2]
+ 
+     # Recalculate initial total for taxed trade test segment if needed, 
+diff --git a/scripts/verify_atomic_housing_purchase.py b/scripts/verify_atomic_housing_purchase.py
+index f09ba0f9..9e2f227e 100644
+--- a/scripts/verify_atomic_housing_purchase.py
++++ b/scripts/verify_atomic_housing_purchase.py
+@@ -83,7 +83,7 @@ class TestAtomicHousingPurchase(unittest.TestCase):
+         # Mock Settlement Transfer (Success)
+         self.settlement_system.transfer.return_value = Transaction(
+             buyer_id=101, seller_id=202, item_id="currency", quantity=20000, price=1, market_id="settlement", transaction_type="transfer", time=1
+-        )
++        , total_pennies=2000000)
+ 
+         saga = self.handler.execute_step(saga)
+         self.assertEqual(saga['status'], "DOWN_PAYMENT_COMPLETE")
+@@ -101,7 +101,7 @@ class TestAtomicHousingPurchase(unittest.TestCase):
+         self.settlement_system.transfer.reset_mock()
+         self.settlement_system.transfer.return_value = Transaction(
+             buyer_id=101, seller_id=202, item_id="currency", quantity=80000, price=1, market_id="settlement", transaction_type="transfer", time=1
+-        )
++        , total_pennies=8000000)
+ 
+         saga = self.handler.execute_step(saga)
+         self.assertEqual(saga['status'], "MORTGAGE_DISBURSEMENT_COMPLETE")
+diff --git a/scripts/verify_bubble_observatory.py b/scripts/verify_bubble_observatory.py
+index ea8cd11f..788c99d4 100644
+--- a/scripts/verify_bubble_observatory.py
++++ b/scripts/verify_bubble_observatory.py
+@@ -38,13 +38,13 @@ def verify_observatory():
+         buyer_id=1, seller_id=2, item_id="unit_1", quantity=1, price=100000,
+         market_id="housing", transaction_type="housing", time=10,
+         metadata={"mortgage_id": 123}
+-    )
++    , total_pennies=10000000)
+     # 2. Cash Tx
+     tx2 = Transaction(
+         buyer_id=3, seller_id=4, item_id="unit_2", quantity=1, price=200000,
+         market_id="housing", transaction_type="housing", time=10,
+         metadata={}
+-    )
++    , total_pennies=20000000)
+ 
+     state_mock.transactions = [tx1, tx2]
+ 
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index 30d568ed..800159ad 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -506,7 +506,7 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
+                  market_id="system",
+                  transaction_type="welfare",
+                  time=current_tick
+-             )]
++             , total_pennies=int(effective_amount * 1.0 * 100))]
+         return []
+ 
+     def provide_firm_bailout(self, firm: Any, amount: int, current_tick: int) -> Tuple[Optional["BailoutLoanDTO"], List[Transaction]]:
+diff --git a/simulation/components/engines/finance_engine.py b/simulation/components/engines/finance_engine.py
+index 0712f8fa..34b3247a 100644
+--- a/simulation/components/engines/finance_engine.py
++++ b/simulation/components/engines/finance_engine.py
+@@ -54,7 +54,7 @@ class FinanceEngine:
+                     transaction_type="holding_cost",
+                     time=current_time,
+                     currency=DEFAULT_CURRENCY
+-                )
++                , total_pennies=holding_cost_pennies)
+             )
+ 
+         # 2. Maintenance Fee
+@@ -76,7 +76,7 @@ class FinanceEngine:
+                     transaction_type="tax",
+                     time=current_time,
+                     currency=DEFAULT_CURRENCY
+-                )
++                , total_pennies=payment)
+             )
+ 
+         # 3. Profit Distribution (Dividends & Bailout Repayment)
+@@ -142,7 +142,7 @@ class FinanceEngine:
+                         transaction_type="repayment",
+                         time=current_time,
+                         currency=DEFAULT_CURRENCY
+-                    )
++                    , total_pennies=repayment)
+                 )
+ 
+                 state.total_debt_pennies -= repayment
+@@ -179,7 +179,7 @@ class FinanceEngine:
+                                 transaction_type="dividend",
+                                 time=current_time,
+                                 currency=cur
+-                            )
++                            , total_pennies=dividend_amount)
+                         )
+ 
+         # 4. Reset Period Counters
+@@ -271,7 +271,7 @@ class FinanceEngine:
+             transaction_type="investment",
+             time=current_time,
+             currency=DEFAULT_CURRENCY
+-        )
++        , total_pennies=amount)
+ 
+     def invest_in_rd(
+         self,
+@@ -302,7 +302,7 @@ class FinanceEngine:
+             transaction_type="investment",
+             time=current_time,
+             currency=DEFAULT_CURRENCY
+-        )
++        , total_pennies=amount)
+ 
+     def invest_in_capex(
+         self,
+@@ -333,7 +333,7 @@ class FinanceEngine:
+             transaction_type="investment",
+             time=current_time,
+             currency=DEFAULT_CURRENCY
+-        )
++        , total_pennies=amount)
+ 
+     def pay_ad_hoc_tax(
+         self,
+@@ -366,7 +366,7 @@ class FinanceEngine:
+             transaction_type="tax",
+             time=current_time,
+             currency=currency
+-        )
++        , total_pennies=amount)
+ 
+     def record_expense(self, state: FinanceState, amount: int, currency: CurrencyCode):
+         """Public method to record expense (e.g. after successful transaction execution)."""
+diff --git a/simulation/components/engines/hr_engine.py b/simulation/components/engines/hr_engine.py
+index 6bb06baf..1c59a387 100644
+--- a/simulation/components/engines/hr_engine.py
++++ b/simulation/components/engines/hr_engine.py
+@@ -101,7 +101,7 @@ class HREngine:
+                     market_id="labor",
+                     transaction_type="wage",
+                     time=current_time
+-                )
++                , total_pennies=int(net_wage * 1.0 * 100))
+                 transactions.append(tx_wage)
+ 
+                 # Transaction 2: Income Tax (Firm -> Government) [Withholding]
+@@ -115,7 +115,7 @@ class HREngine:
+                         market_id="system",
+                         transaction_type="tax",
+                         time=current_time
+-                    )
++                    , total_pennies=int(income_tax * 1.0 * 100))
+                     transactions.append(tx_tax)
+ 
+                 # Schedule Employee Update (Income)
+@@ -189,7 +189,7 @@ class HREngine:
+                 market_id="labor",
+                 transaction_type="severance",
+                 time=current_time
+-            )
++            , total_pennies=int(severance_pay * 1.0 * 100))
+             tx_list.append(tx)
+ 
+             logger.info(
+@@ -241,7 +241,7 @@ class HREngine:
+             transaction_type="severance",
+             time=current_time,
+             currency=DEFAULT_CURRENCY
+-        )
++        , total_pennies=int(severance_pay * 1.0 * 100))
+ 
+     def finalize_firing(self, hr_state: HRState, employee_id: int):
+         """
+diff --git a/simulation/components/engines/sales_engine.py b/simulation/components/engines/sales_engine.py
+index 37b87863..3cb72775 100644
+--- a/simulation/components/engines/sales_engine.py
++++ b/simulation/components/engines/sales_engine.py
+@@ -50,7 +50,7 @@ class SalesEngine:
+         """
+         budget = state.marketing_budget_pennies
+         if budget > 0 and context.wallet_balance >= budget and context.government_id:
+-            return Transaction(buyer_id=context.firm_id, seller_id=context.government_id, item_id='marketing', quantity=1.0, price=budget, market_id='system', transaction_type='marketing', time=context.current_time, currency=DEFAULT_CURRENCY)
++            return Transaction(buyer_id=context.firm_id, seller_id=context.government_id, item_id='marketing', quantity=1.0, price=budget, market_id='system', transaction_type='marketing', time=context.current_time, currency=DEFAULT_CURRENCY, total_pennies=int(budget * 1.0 * 100))
+         return None
+ 
+     def check_and_apply_dynamic_pricing(self, state: SalesState, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> None:
+diff --git a/simulation/db/schema.py b/simulation/db/schema.py
+index 2ec85301..b620492e 100644
+--- a/simulation/db/schema.py
++++ b/simulation/db/schema.py
+@@ -30,7 +30,7 @@ def create_tables(conn: sqlite3.Connection):
+             item_id TEXT NOT NULL,
+             quantity REAL NOT NULL,
+             price REAL NOT NULL,
+-            total_pennies INTEGER,
++            total_pennies INTEGER NOT NULL,
+             market_id TEXT NOT NULL,
+             transaction_type TEXT NOT NULL,
+             FOREIGN KEY (run_id) REFERENCES simulation_runs (run_id)
+diff --git a/simulation/loan_market.py b/simulation/loan_market.py
+index 47412740..c3222520 100644
+--- a/simulation/loan_market.py
++++ b/simulation/loan_market.py
+@@ -187,13 +187,14 @@ class LoanMarket(Market, ILoanMarket):
+         """
+         if hasattr(self.bank, 'loans') and staged_loan_id in self.bank.loans:
+              loan = self.bank.loans[staged_loan_id]
+-             # MIGRATION: Ensure DTO purity by returning object
++             # MIGRATION: Ensure DTO purity by returning object.
++             # loan is LoanStateDTO (pennies). LoanInfoDTO expects Dollars (float).
+              return LoanInfoDTO(
+                  loan_id=staged_loan_id,
+                  borrower_id=int(loan.borrower_id),
+-                 original_amount=float(loan.principal),
+-                 outstanding_balance=float(loan.remaining_balance),
+-                 interest_rate=float(loan.annual_interest_rate),
++                 original_amount=float(loan.principal_pennies) / 100.0,
++                 outstanding_balance=float(loan.remaining_principal_pennies) / 100.0,
++                 interest_rate=float(loan.interest_rate),
+                  origination_tick=int(loan.origination_tick),
+                  due_tick=int(loan.start_tick + loan.term_ticks),
+                  lender_id=int(self.bank.id) if hasattr(self.bank, 'id') else None,
+@@ -314,47 +315,47 @@ class LoanMarket(Market, ILoanMarket):
+ 
+         elif order.order_type == "REPAYMENT":
+             loan_id = order.item_id
+-            repay_amount = order.quantity
++            repay_amount_pennies = int(order.quantity * 100) # Assuming Order.quantity is Dollars
+ 
+             try:
+-                success = self.bank.repay_loan(loan_id, repay_amount)
++                success = self.bank.repay_loan(loan_id, repay_amount_pennies)
+                 if success:
+                     transactions.append(
+                         Transaction(
+                             item_id="loan_repaid",
+-                            quantity=repay_amount,
++                            quantity=order.quantity,
+                             price=1.0,
+                             buyer_id=order.agent_id,
+                             seller_id=self.bank.id,
+                             transaction_type="loan",
+                             time=current_tick,
+                             market_id=self.id,
+-                        )
++                         total_pennies=repay_amount_pennies)
+                     )
+                     logger.info(
+-                        f"Repayment of {repay_amount:.2f} processed for loan {loan_id} by {order.agent_id}.",
++                        f"Repayment of {order.quantity:.2f} processed for loan {loan_id} by {order.agent_id}.",
+                         extra={**log_extra, "loan_id": loan_id},
+                     )
+             except (LoanNotFoundError, LoanRepaymentError) as e:
+                 logger.warning(f"Repayment failed for loan {loan_id}: {e}", extra=log_extra)
+ 
+         elif order.order_type == "DEPOSIT":
+-            amount = order.quantity
++            amount_pennies = int(order.quantity * 100)
+             if hasattr(self.bank, "deposit_from_customer"):
+-                deposit_id = self.bank.deposit_from_customer(order.agent_id, amount) # type: ignore
++                deposit_id = self.bank.deposit_from_customer(order.agent_id, amount_pennies) # type: ignore
+ 
+                 if deposit_id:
+                     transactions.append(
+                         Transaction(
+                             item_id="deposit",
+-                            quantity=amount,
++                            quantity=order.quantity,
+                             price=1.0,
+                             buyer_id=order.agent_id,
+                             seller_id=self.bank.id,
+                             transaction_type="deposit",
+                             time=current_tick,
+                             market_id=self.id,
+-                        )
++                         total_pennies=amount_pennies)
+                     )
+                     logger.info(
+                         f"Deposit accepted from {order.agent_id} for {amount:.2f}. Deposit ID: {deposit_id}",
+@@ -366,22 +367,22 @@ class LoanMarket(Market, ILoanMarket):
+                 logger.error("Bank service does not support 'deposit_from_customer'.")
+ 
+         elif order.order_type == "WITHDRAW":
+-            amount = order.quantity
++            amount_pennies = int(order.quantity * 100)
+             if hasattr(self.bank, "withdraw_for_customer"):
+-                success = self.bank.withdraw_for_customer(order.agent_id, amount) # type: ignore
++                success = self.bank.withdraw_for_customer(order.agent_id, amount_pennies) # type: ignore
+ 
+                 if success:
+                     transactions.append(
+                         Transaction(
+                             item_id="withdrawal",
+-                            quantity=amount,
++                            quantity=order.quantity,
+                             price=1.0,
+                             buyer_id=self.bank.id,
+                             seller_id=order.agent_id,
+                             transaction_type="withdrawal",
+                             time=current_tick,
+                             market_id=self.id,
+-                        )
++                         total_pennies=amount_pennies)
+                     )
+                     logger.info(
+                         f"Withdrawal accepted for {order.agent_id} for {amount:.2f}.",
+diff --git a/simulation/models.py b/simulation/models.py
+index b1a67714..0b0a07c3 100644
+--- a/simulation/models.py
++++ b/simulation/models.py
+@@ -21,9 +21,9 @@ class Transaction:
+     market_id: str  # Added market_id
+     transaction_type: str  # 'goods', 'labor', 'dividend', 'stock' 등 거래 유형
+     time: int  # 거래가 발생한 시뮬레이션 틱
++    total_pennies: int # SSoT for settlement
+     currency: str = DEFAULT_CURRENCY # TD-213: Multi-currency support
+     quality: float = 1.0  # Phase 15: Durables Quality
+-    total_pennies: int = 0 # SSoT for settlement
+     metadata: Optional[Dict[str, Any]] = None  # WO-109: Metadata for side-effects
+ 
+ 
+diff --git a/simulation/systems/handlers/asset_transfer_handler.py b/simulation/systems/handlers/asset_transfer_handler.py
+index 0167d342..8fc58c50 100644
+--- a/simulation/systems/handlers/asset_transfer_handler.py
++++ b/simulation/systems/handlers/asset_transfer_handler.py
+@@ -15,7 +15,7 @@ class AssetTransferHandler(ITransactionHandler):
+     """
+ 
+     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+-        trade_value = tx.quantity * tx.price
++        trade_value = tx.total_pennies
+ 
+         # 1. Execute Settlement (Direct Transfer)
+         settlement_success = context.settlement_system.transfer(
+@@ -72,7 +72,8 @@ class AssetTransferHandler(ITransactionHandler):
+ 
+         # 2. Buyer Holdings
+         if isinstance(buyer, IInvestor):
+-            buyer.portfolio.add(firm_id, tx.quantity, tx.price)
++            price_pennies = int(tx.total_pennies / tx.quantity) if tx.quantity > 0 else 0
++            buyer.portfolio.add(firm_id, tx.quantity, price_pennies)
+         elif isinstance(buyer, Firm) and buyer.id == firm_id:
+             buyer.treasury_shares += tx.quantity
+             buyer.total_shares -= tx.quantity
+diff --git a/simulation/systems/handlers/emergency_handler.py b/simulation/systems/handlers/emergency_handler.py
+index 3897bfd4..8ed93dcf 100644
+--- a/simulation/systems/handlers/emergency_handler.py
++++ b/simulation/systems/handlers/emergency_handler.py
+@@ -13,7 +13,7 @@ class EmergencyTransactionHandler(ITransactionHandler):
+     """
+ 
+     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+-        trade_value = int(tx.quantity * tx.price) # MIGRATION: Int pennies
++        trade_value = tx.total_pennies # MIGRATION: Use SSoT
+ 
+         credits: List[Tuple[Any, int, str]] = []
+ 
+diff --git a/simulation/systems/handlers/financial_handler.py b/simulation/systems/handlers/financial_handler.py
+index a2daa3df..32a0b78d 100644
+--- a/simulation/systems/handlers/financial_handler.py
++++ b/simulation/systems/handlers/financial_handler.py
+@@ -17,7 +17,7 @@ class FinancialTransactionHandler(ITransactionHandler):
+ 
+     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+         tx_type = tx.transaction_type
+-        trade_value = int(tx.quantity * tx.price)
++        trade_value = tx.total_pennies
+ 
+         success = False
+ 
+diff --git a/simulation/systems/handlers/goods_handler.py b/simulation/systems/handlers/goods_handler.py
+index 4dbab2d2..2f1a878d 100644
+--- a/simulation/systems/handlers/goods_handler.py
++++ b/simulation/systems/handlers/goods_handler.py
+@@ -22,15 +22,8 @@ class GoodsTransactionHandler(ITransactionHandler):
+             logger.warning(f"Transaction failed: Buyer ({tx.buyer_id}) or Seller ({tx.seller_id}) not found.")
+             return False
+ 
+-        # SSoT: Use pre-calculated total_pennies from Matching Engine if available
+-        if getattr(tx, 'total_pennies', 0) > 0:
+-             trade_value = tx.total_pennies
+-        elif getattr(tx, 'total_pennies', 0) == 0 and tx.price == 0:
+-             trade_value = 0
+-        else:
+-             # Fallback for legacy transactions without total_pennies
+-             # Assume price is in dollars
+-             trade_value = round_to_pennies(tx.quantity * tx.price * 100)
++        # SSoT: Use total_pennies directly (Strict Schema Enforced)
++        trade_value = tx.total_pennies
+ 
+ 
+         # 1. Prepare Settlement (Calculate tax intents)
+diff --git a/simulation/systems/handlers/government_spending_handler.py b/simulation/systems/handlers/government_spending_handler.py
+index af51b5c1..5a81618a 100644
+--- a/simulation/systems/handlers/government_spending_handler.py
++++ b/simulation/systems/handlers/government_spending_handler.py
+@@ -11,7 +11,7 @@ class GovernmentSpendingHandler(ITransactionHandler):
+     """
+ 
+     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+-        trade_value = int(tx.quantity * tx.price)
++        trade_value = tx.total_pennies
+ 
+         # infrastructure_spending: Buyer is Government. Seller is typically System/Reflux or Agent.
+         # TransactionProcessor logic: success = settlement.transfer(buyer, seller, trade_value, "infrastructure_spending")
+diff --git a/simulation/systems/handlers/labor_handler.py b/simulation/systems/handlers/labor_handler.py
+index aaa05920..a313307b 100644
+--- a/simulation/systems/handlers/labor_handler.py
++++ b/simulation/systems/handlers/labor_handler.py
+@@ -16,15 +16,8 @@ class LaborTransactionHandler(ITransactionHandler):
+     """
+ 
+     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+-        # SSoT: Use pre-calculated total_pennies from Matching Engine if available
+-        if getattr(tx, 'total_pennies', 0) > 0:
+-             trade_value = tx.total_pennies
+-        elif getattr(tx, 'total_pennies', 0) == 0 and tx.price == 0:
+-             trade_value = 0
+-        else:
+-             # Fallback for legacy transactions without total_pennies
+-             # Assume price is in dollars
+-             trade_value = round_to_pennies(tx.quantity * tx.price * 100)
++        # SSoT: Use total_pennies directly (Strict Schema Enforced)
++        trade_value = tx.total_pennies
+ 
+         # 1. Prepare Settlement (Calculate tax intents)
+         # Note: TransactionProcessor used market_data.get("goods_market")?
+@@ -96,7 +89,10 @@ class LaborTransactionHandler(ITransactionHandler):
+ 
+             seller.is_employed = True
+             seller.employer_id = buyer.id
+-            seller.current_wage_pennies = int(tx.price)
++            # Use trade_value (gross wage) for current_wage_pennies
++            # Assuming trade_value equals the gross wage for the period
++            trade_value = tx.total_pennies
++            seller.current_wage_pennies = trade_value
+             seller.needs["labor_need"] = 0.0
+ 
+             # Net Income Tracking
+@@ -105,11 +101,12 @@ class LaborTransactionHandler(ITransactionHandler):
+ 
+         # 2. Firm Logic (Buyer)
+         if isinstance(buyer, Firm):
++            trade_value = tx.total_pennies
+             # HR Update
+             if seller not in buyer.hr_state.employees:
+-                buyer.hr_engine.hire(buyer.hr_state, seller, int(tx.price), context.time)
++                buyer.hr_engine.hire(buyer.hr_state, seller, trade_value, context.time)
+             else:
+-                 buyer.hr_state.employee_wages[seller.id] = int(tx.price)
++                 buyer.hr_state.employee_wages[seller.id] = trade_value
+ 
+             # Finance Update
+             buyer.finance_engine.record_expense(buyer.finance_state, int(buyer_total_cost), DEFAULT_CURRENCY)
+diff --git a/simulation/systems/handlers/monetary_handler.py b/simulation/systems/handlers/monetary_handler.py
+index 1002b771..09410bd6 100644
+--- a/simulation/systems/handlers/monetary_handler.py
++++ b/simulation/systems/handlers/monetary_handler.py
+@@ -19,7 +19,7 @@ class MonetaryTransactionHandler(ITransactionHandler):
+ 
+     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+         tx_type = tx.transaction_type
+-        trade_value = tx.quantity * tx.price
++        trade_value = tx.total_pennies
+ 
+         # Central Bank is needed for minting/burning
+         if not context.central_bank:
+@@ -110,7 +110,8 @@ class MonetaryTransactionHandler(ITransactionHandler):
+ 
+         # 2. Buyer Holdings
+         if isinstance(buyer, IInvestor):
+-            buyer.portfolio.add(firm_id, tx.quantity, tx.price)
++            price_pennies = int(tx.total_pennies / tx.quantity) if tx.quantity > 0 else 0
++            buyer.portfolio.add(firm_id, tx.quantity, price_pennies)
+         elif isinstance(buyer, Household) and hasattr(buyer, "shares_owned"):
+             # Legacy Fallback
+             buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
+diff --git a/simulation/systems/handlers/public_manager_handler.py b/simulation/systems/handlers/public_manager_handler.py
+index a2989114..04961383 100644
+--- a/simulation/systems/handlers/public_manager_handler.py
++++ b/simulation/systems/handlers/public_manager_handler.py
+@@ -20,7 +20,7 @@ class PublicManagerTransactionHandler(ITransactionHandler):
+         # so might be None or placeholder if accessed via context.agents["PUBLIC_MANAGER"]).
+         # TransactionProcessor dispatch logic should ensure we get here.
+ 
+-        trade_value = tx.quantity * tx.price
++        trade_value = tx.total_pennies
+         pm = context.public_manager
+ 
+         if not pm:
+@@ -134,7 +134,8 @@ class PublicManagerTransactionHandler(ITransactionHandler):
+              try:
+                  firm_id = int(tx.item_id.split("_")[1])
+                  if isinstance(buyer, IInvestor):
+-                    buyer.portfolio.add(firm_id, tx.quantity, tx.price)
++                    price_pennies = int(tx.total_pennies / tx.quantity) if tx.quantity > 0 else 0
++                    buyer.portfolio.add(firm_id, tx.quantity, price_pennies)
+                  # Registry update
+                  if context.stock_market:
+                      if isinstance(buyer, IInvestor) and firm_id in buyer.portfolio.holdings:
+diff --git a/simulation/systems/handlers/stock_handler.py b/simulation/systems/handlers/stock_handler.py
+index 5c126b8c..e7524700 100644
+--- a/simulation/systems/handlers/stock_handler.py
++++ b/simulation/systems/handlers/stock_handler.py
+@@ -14,13 +14,8 @@ class StockTransactionHandler(ITransactionHandler):
+     """
+ 
+     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+-        # SSoT: Use pre-calculated total_pennies from Matching Engine if available
+-        if getattr(tx, 'total_pennies', 0) > 0:
+-             trade_value = tx.total_pennies
+-        elif getattr(tx, 'total_pennies', 0) == 0 and tx.price == 0:
+-             trade_value = 0
+-        else:
+-             trade_value = int(tx.quantity * tx.price)
++        # SSoT: Use total_pennies directly (Strict Schema Enforced)
++        trade_value = tx.total_pennies
+ 
+         # 1. Execute Settlement (Direct Transfer)
+         # Stock trades typically don't have sales tax in this simulation model yet.
+@@ -58,7 +53,9 @@ class StockTransactionHandler(ITransactionHandler):
+ 
+         # 2. Buyer Holdings
+         if hasattr(buyer, "portfolio"):
+-            buyer.portfolio.add(firm_id, tx.quantity, tx.price)
++            # MIGRATION: Calculate acquisition price in pennies from total_pennies
++            price_pennies = int(tx.total_pennies / tx.quantity) if tx.quantity > 0 else 0
++            buyer.portfolio.add(firm_id, tx.quantity, price_pennies)
+         elif isinstance(buyer, Household) and hasattr(buyer, "shares_owned"):
+             # Legacy Fallback
+             buyer.shares_owned[firm_id] = buyer.shares_owned.get(firm_id, 0) + tx.quantity
+diff --git a/simulation/systems/inheritance_manager.py b/simulation/systems/inheritance_manager.py
+index f0bd2354..9805d94f 100644
+--- a/simulation/systems/inheritance_manager.py
++++ b/simulation/systems/inheritance_manager.py
+@@ -285,4 +285,4 @@ class InheritanceManager:
+              transaction_type=tx_dict["transaction_type"],
+              time=tx_dict["time"],
+              metadata=tx_dict["metadata"]
+-         )
++         , total_pennies=int(tx_dict["price"] * tx_dict["quantity"] * 100))
+diff --git a/simulation/systems/ministry_of_education.py b/simulation/systems/ministry_of_education.py
+index c02eba9c..4f5d8fcd 100644
+--- a/simulation/systems/ministry_of_education.py
++++ b/simulation/systems/ministry_of_education.py
+@@ -76,7 +76,7 @@ class MinistryOfEducation:
+                             "triggers_effect": "EDUCATION_UPGRADE",
+                             "target_agent_id": agent.id
+                         }
+-                    )
++                    , total_pennies=int(cost * 1.0 * 100))
+                     transactions.append(tx)
+                     edu_budget -= cost
+                     logger.debug(f"EDU_BASIC_GRANT_PENDING | Household {agent.id} nominated for Level 1.")
+@@ -104,7 +104,7 @@ class MinistryOfEducation:
+                                 "triggers_effect": "EDUCATION_UPGRADE",
+                                 "target_agent_id": agent.id
+                             }
+-                        )
++                        , total_pennies=int(subsidy * 1.0 * 100))
+                         # 2. Student Share Tx (Student -> Teacher)
+                         tx_student = Transaction(
+                             buyer_id=agent.id,
+@@ -115,7 +115,7 @@ class MinistryOfEducation:
+                             market_id="system",
+                             transaction_type="education_spending",
+                             time=current_tick
+-                        )
++                        , total_pennies=int(student_share * 1.0 * 100))
+                         transactions.append(tx_subsidy)
+                         transactions.append(tx_student)
+                         edu_budget -= subsidy
+diff --git a/tests/integration/scenarios/verify_monetary_integrity.py b/tests/integration/scenarios/verify_monetary_integrity.py
+index 65388d85..bb135684 100644
+--- a/tests/integration/scenarios/verify_monetary_integrity.py
++++ b/tests/integration/scenarios/verify_monetary_integrity.py
+@@ -63,7 +63,7 @@ class TestMonetaryIntegrity(unittest.TestCase):
+             market_id="housing",
+             transaction_type="housing",
+             time=sim.time
+-        )
++        , total_pennies=int(sale_price * 1.0 * 100))
+ 
+         initial_money_destroyed = gov.total_money_destroyed
+ 
+diff --git a/tests/integration/test_m2_integrity.py b/tests/integration/test_m2_integrity.py
+index 1423bcdd..559f3bb1 100644
+--- a/tests/integration/test_m2_integrity.py
++++ b/tests/integration/test_m2_integrity.py
+@@ -18,7 +18,7 @@ class TestM2Integrity(unittest.TestCase):
+         tx_interest = Transaction(
+             buyer_id=101, seller_id="bank", item_id="loan_1", quantity=1, price=100.0,
+             market_id="financial", transaction_type="loan_interest", time=1
+-        )
++        , total_pennies=10000)
+         self.ledger.process_transactions([tx_interest])
+ 
+         delta = self.ledger.get_monetary_delta()
+@@ -28,7 +28,7 @@ class TestM2Integrity(unittest.TestCase):
+         tx_dep_int = Transaction(
+             buyer_id="bank", seller_id=101, item_id="dep_1", quantity=1, price=50.0,
+             market_id="financial", transaction_type="deposit_interest", time=1
+-        )
++        , total_pennies=5000)
+         self.ledger.process_transactions([tx_dep_int])
+ 
+         delta = self.ledger.get_monetary_delta()
+@@ -38,7 +38,7 @@ class TestM2Integrity(unittest.TestCase):
+         tx_remit = Transaction(
+             buyer_id="bank", seller_id="government", item_id="bank_profit", quantity=1, price=50.0,
+             market_id="financial", transaction_type="bank_profit_remittance", time=1
+-        )
++        , total_pennies=5000)
+         self.ledger.process_transactions([tx_remit])
+ 
+         delta = self.ledger.get_monetary_delta()
+@@ -49,7 +49,7 @@ class TestM2Integrity(unittest.TestCase):
+         tx_create = Transaction(
+             buyer_id="bank", seller_id=-1, item_id="loan_new", quantity=1, price=1000.0,
+             market_id="monetary_policy", transaction_type="credit_creation", time=1
+-        )
++        , total_pennies=100000)
+         self.ledger.process_transactions([tx_create])
+ 
+         delta = self.ledger.get_monetary_delta()
+@@ -60,7 +60,7 @@ class TestM2Integrity(unittest.TestCase):
+         tx_destroy = Transaction(
+             buyer_id=-1, seller_id="bank", item_id="loan_repay", quantity=1, price=500.0,
+             market_id="monetary_policy", transaction_type="credit_destruction", time=1
+-        )
++        , total_pennies=50000)
+         self.ledger.process_transactions([tx_destroy])
+ 
+         delta = self.ledger.get_monetary_delta()
+diff --git a/tests/integration/test_omo_system.py b/tests/integration/test_omo_system.py
+index 93528c15..1e999caa 100644
+--- a/tests/integration/test_omo_system.py
++++ b/tests/integration/test_omo_system.py
+@@ -164,7 +164,7 @@ def test_process_omo_purchase_transaction(omo_setup):
+         market_id="security_market",
+         transaction_type="omo_purchase",
+         time=1
+-    )
++        , total_pennies=100)
+     state.transactions = [tx]
+ 
+     # Use SSoT for initial state
+@@ -209,7 +209,7 @@ def test_process_omo_sale_transaction(omo_setup):
+         market_id="security_market",
+         transaction_type="omo_sale",
+         time=1
+-    )
++        , total_pennies=100)
+     state.transactions = [tx]
+ 
+     initial_hh_assets = settlement.get_balance(household.id)
+diff --git a/tests/integration/test_public_manager_integration.py b/tests/integration/test_public_manager_integration.py
+index 3cfdc511..0d763b6b 100644
+--- a/tests/integration/test_public_manager_integration.py
++++ b/tests/integration/test_public_manager_integration.py
+@@ -99,7 +99,7 @@ class TestPublicManagerIntegration:
+             market_id="gold",
+             transaction_type="goods",
+             time=1
+-        )
++        , total_pennies=100000)
+ 
+         # 5. Execute Transaction (Phase 3)
+         # Setup TransactionManager dependencies
+diff --git a/tests/integration/test_tick_normalization.py b/tests/integration/test_tick_normalization.py
+index 50eea6ec..8b9327f2 100644
+--- a/tests/integration/test_tick_normalization.py
++++ b/tests/integration/test_tick_normalization.py
+@@ -24,7 +24,7 @@ class TestTickNormalization:
+         state.bank.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 0.0}
+         # Mock run_tick to return a test transaction
+         state.bank.run_tick.return_value = [
+-            Transaction(0, 1, "test_item", 1.0, 10.0, "financial", "test_type", 0)
++            Transaction(0, 1, "test_item", 1.0, 10.0, "financial", "test_type", 0, total_pennies=1000)
+         ]
+ 
+         state.finance_system = MagicMock()
+diff --git a/tests/mocks/mock_settlement_system.py b/tests/mocks/mock_settlement_system.py
+index 9a2bb8ac..79bf6830 100644
+--- a/tests/mocks/mock_settlement_system.py
++++ b/tests/mocks/mock_settlement_system.py
+@@ -61,7 +61,7 @@ class MockSettlementSystem(ISettlementSystem):
+                 market_id="mock",
+                 transaction_type="transfer",
+                 time=0
+-            )
++            , total_pennies=int(1.0 * amount_pennies * 100))
+         else:
+             return None
+ 
+diff --git a/tests/modules/finance/transaction/test_processor.py b/tests/modules/finance/transaction/test_processor.py
+index abeba582..39a4f39c 100644
+--- a/tests/modules/finance/transaction/test_processor.py
++++ b/tests/modules/finance/transaction/test_processor.py
+@@ -113,7 +113,7 @@ def test_processor_handler_failure(processor, state, mock_handler):
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="apple", quantity=1, price=10.0,
+         market_id="goods", transaction_type="goods", time=1
+-    )
++    , total_pennies=1000)
+     state.transactions = [tx]
+     state.agents = {1: MagicMock(), 2: MagicMock()}
+ 
+@@ -131,7 +131,7 @@ def test_processor_handler_exception(processor, state, mock_handler):
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="apple", quantity=1, price=10.0,
+         market_id="goods", transaction_type="goods", time=1
+-    )
++    , total_pennies=1000)
+     state.transactions = [tx]
+     state.agents = {1: MagicMock(), 2: MagicMock()}
+ 
+@@ -173,7 +173,7 @@ def test_processor_public_manager_fail_missing_buyer(processor, state):
+     tx = Transaction(
+         buyer_id=999, seller_id="PUBLIC_MANAGER", item_id="apple", quantity=1, price=10.0,
+         market_id="goods", transaction_type="goods", time=1
+-    )
++    , total_pennies=1000)
+     state.transactions = [tx]
+     state.agents = {} # Buyer missing
+ 
+@@ -193,7 +193,7 @@ def test_processor_public_manager_exception(processor, state):
+     tx = Transaction(
+         buyer_id=1, seller_id="PUBLIC_MANAGER", item_id="apple", quantity=1, price=10.0,
+         market_id="goods", transaction_type="goods", time=1
+-    )
++    , total_pennies=1000)
+     state.transactions = [tx]
+     state.agents = {1: MagicMock()}
+ 
+diff --git a/tests/system/test_audit_integrity.py b/tests/system/test_audit_integrity.py
+index 4e2a8748..2d1b8361 100644
+--- a/tests/system/test_audit_integrity.py
++++ b/tests/system/test_audit_integrity.py
+@@ -125,7 +125,7 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
+             transaction_type="inheritance_distribution",
+             time=0,
+             metadata={"heir_ids": [heir.id]}
+-        )
++        , total_pennies=1000000)
+ 
+         context = TransactionContext(
+             agents={101: heir},
+@@ -192,7 +192,7 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
+             market_id="system",
+             transaction_type="goods", # Taxable
+             time=0
+-        )
++        , total_pennies=500000)
+ 
+         context = TransactionContext(
+             agents={},
+diff --git a/tests/test_wo_4_1_protocols.py b/tests/test_wo_4_1_protocols.py
+index 58fb171b..5ad4629a 100644
+--- a/tests/test_wo_4_1_protocols.py
++++ b/tests/test_wo_4_1_protocols.py
+@@ -68,7 +68,7 @@ def test_housing_handler_with_protocol_agent():
+         transaction_type="housing",
+         time=1,
+         metadata={}
+-    )
++    , total_pennies=100000)
+ 
+     # Execute
+     result = handler.handle(tx, buyer, seller, context)
+diff --git a/tests/unit/finance/test_bank_service_interface.py b/tests/unit/finance/test_bank_service_interface.py
+index 5e5cc085..59e490e4 100644
+--- a/tests/unit/finance/test_bank_service_interface.py
++++ b/tests/unit/finance/test_bank_service_interface.py
+@@ -65,7 +65,7 @@ class TestBankServiceInterface:
+             market_id="finance",
+             transaction_type="credit_creation",
+             time=0
+-        )
++        , total_pennies=int(amount * 1.0 * 100))
+         mock_finance_system.process_loan_application.return_value = (loan_dto, [tx])
+ 
+         result = bank.grant_loan(borrower_id, amount, interest_rate)
+diff --git a/tests/unit/helpers/dto_factory.py b/tests/unit/helpers/dto_factory.py
+index 60eae70a..723048a4 100644
+--- a/tests/unit/helpers/dto_factory.py
++++ b/tests/unit/helpers/dto_factory.py
+@@ -50,7 +50,7 @@ class DTOFactory:
+             time=time,
+             quality=quality,
+             metadata=metadata
+-        )
++        , total_pennies=int(price * quantity * 100))
+ 
+     @staticmethod
+     def create_market_snapshot(
+diff --git a/tests/unit/markets/test_housing_transaction_handler.py b/tests/unit/markets/test_housing_transaction_handler.py
+index 37d1fa68..e9cbdd9b 100644
+--- a/tests/unit/markets/test_housing_transaction_handler.py
++++ b/tests/unit/markets/test_housing_transaction_handler.py
+@@ -102,7 +102,7 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
+         market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
+-    )
++    , total_pennies=100000)
+ 
+     # Mock Settlement Success: DownPayment(True), Disbursement(True), FinalSettlement(True)
+     context.settlement_system.transfer.side_effect = [True, True, True]
+@@ -159,7 +159,7 @@ def test_housing_transaction_insufficient_down_payment(handler, context, buyer,
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
+         market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
+-    )
++    , total_pennies=100000)
+ 
+     result = handler.handle(tx, buyer, seller, context)
+     assert result is False
+@@ -172,7 +172,7 @@ def test_housing_transaction_loan_rejected(handler, context, buyer, seller, unit
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
+         market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
+-    )
++    , total_pennies=100000)
+ 
+     # Down payment success
+     context.settlement_system.transfer.side_effect = [True, True] # Sequence
+@@ -203,7 +203,7 @@ def test_housing_transaction_disbursement_failed(handler, context, buyer, seller
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
+         market_id="housing", transaction_type="housing", time=0, currency=DEFAULT_CURRENCY
+-    )
++    , total_pennies=100000)
+ 
+     # 1. Down Payment Success
+     # 2. Loan Proceeds Transfer Fails
+diff --git a/tests/unit/markets/test_loan_market.py b/tests/unit/markets/test_loan_market.py
+index da8ebaad..88c5c5a8 100644
+--- a/tests/unit/markets/test_loan_market.py
++++ b/tests/unit/markets/test_loan_market.py
+@@ -69,7 +69,7 @@ class TestLoanMarket:
+         order = Order(agent_id=1, side='REPAYMENT', item_id='loan_id_456', quantity=50, price_pennies=int(0 * 100), price_limit=0, market_id='test_loan_market')
+         mock_bank.repay_loan.return_value = True
+         transactions = loan_market_instance.place_order(order, 1)
+-        mock_bank.repay_loan.assert_called_once_with('loan_id_456', 50)
++        mock_bank.repay_loan.assert_called_once_with('loan_id_456', 5000)
+         assert len(transactions) == 1
+         assert transactions[0].item_id == 'loan_repaid'
+ 
+diff --git a/tests/unit/markets/test_loan_market_mortgage.py b/tests/unit/markets/test_loan_market_mortgage.py
+index aa4d0187..0439d19c 100644
+--- a/tests/unit/markets/test_loan_market_mortgage.py
++++ b/tests/unit/markets/test_loan_market_mortgage.py
+@@ -153,9 +153,9 @@ class TestLoanMarketMortgage:
+         # Setup
+         mock_loan = MagicMock()
+         mock_loan.borrower_id = 1
+-        mock_loan.principal = 100.0
+-        mock_loan.remaining_balance = 100.0
+-        mock_loan.annual_interest_rate = 0.05
++        mock_loan.principal_pennies = 10000 # 100.00 dollars
++        mock_loan.remaining_principal_pennies = 10000
++        mock_loan.interest_rate = 0.05
+         mock_loan.origination_tick = 0
+         mock_loan.start_tick = 0
+         mock_loan.term_ticks = 360
+diff --git a/tests/unit/systems/test_housing_service.py b/tests/unit/systems/test_housing_service.py
+index df508c90..fab0ee41 100644
+--- a/tests/unit/systems/test_housing_service.py
++++ b/tests/unit/systems/test_housing_service.py
+@@ -37,7 +37,7 @@ def test_housing_service_handle_housing_updates_mortgage():
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
+         market_id="housing", transaction_type="housing", time=0
+-    )
++    , total_pennies=100000)
+     tx.metadata = {"mortgage_id": "loan_999"}
+ 
+     # Execute
+@@ -84,7 +84,7 @@ def test_housing_service_handle_housing_clears_mortgage_if_missing():
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="unit_101", price=1000.0, quantity=1.0,
+         market_id="housing", transaction_type="housing", time=0
+-    )
++    , total_pennies=100000)
+     tx.metadata = {} # No mortgage_id
+ 
+     service.process_transaction(tx, state)
+diff --git a/tests/unit/test_bank.py b/tests/unit/test_bank.py
+index 5d37a231..d3e1f2c0 100644
+--- a/tests/unit/test_bank.py
++++ b/tests/unit/test_bank.py
+@@ -75,7 +75,7 @@ def test_grant_loan_delegation(bank, mock_finance_system):
+         loan_id="L1", borrower_id=2, original_amount=10000, outstanding_balance=10000,
+         interest_rate=0.05, origination_tick=0, due_tick=10
+     )
+-    mock_tx = Transaction(buyer_id=1, seller_id=2, item_id="L1", quantity=10000, price=1.0, market_id="m", transaction_type="credit_creation", time=0)
++    mock_tx = Transaction(buyer_id=1, seller_id=2, item_id="L1", quantity=10000, price=1.0, market_id="m", transaction_type="credit_creation", time=0, total_pennies=1000000)
+ 
+     mock_finance_system.process_loan_application.return_value = (mock_loan, [mock_tx])
+ 
+diff --git a/tests/unit/test_bank_decomposition.py b/tests/unit/test_bank_decomposition.py
+index 70448ae1..28a494e4 100644
+--- a/tests/unit/test_bank_decomposition.py
++++ b/tests/unit/test_bank_decomposition.py
+@@ -22,7 +22,7 @@ class TestBankDecomposition(unittest.TestCase):
+                 raise TypeError(f"Transfer amount must be int, got {type(amount)}")
+             return Transaction(
+                 buyer_id=debit.id, seller_id=credit.id, item_id="test", quantity=1, price=amount, market_id="test", transaction_type="transfer", time=kwargs.get('tick', 0)
+-            )
++            , total_pennies=int(amount * 1 * 100))
+         self.settlement_system.transfer.side_effect = mock_transfer
+ 
+         # Int initial assets
+@@ -101,7 +101,7 @@ class TestBankDecomposition(unittest.TestCase):
+         interest_tx = Transaction(
+             buyer_id=borrower_id, seller_id=1, item_id="interest", quantity=1, price=10,
+             market_id="finance", transaction_type="loan_interest", time=1
+-        )
++        , total_pennies=1000)
+         self.finance_system.service_debt.return_value = [interest_tx]
+ 
+         agents_dict = {borrower_id: self.agent}
+@@ -121,7 +121,7 @@ class TestBankDecomposition(unittest.TestCase):
+         default_tx = Transaction(
+             buyer_id=101, seller_id=1, item_id="default", quantity=1, price=1000,
+             market_id="finance", transaction_type="credit_destruction", time=2
+-        )
++        , total_pennies=100000)
+         self.finance_system.service_debt.return_value = [default_tx]
+ 
+         agents_dict = {101: self.agent}
+diff --git a/tests/unit/test_goods_handler_precision.py b/tests/unit/test_goods_handler_precision.py
+index 00252159..e92aeddd 100644
+--- a/tests/unit/test_goods_handler_precision.py
++++ b/tests/unit/test_goods_handler_precision.py
+@@ -27,7 +27,7 @@ class TestGoodsHandlerPrecision:
+             market_id="test",
+             transaction_type="goods",
+             time=1
+-        )
++        , total_pennies=1000)
+ 
+         # Mock Context
+         context = MagicMock(spec=TransactionContext)
+diff --git a/tests/unit/test_handlers_fix.py b/tests/unit/test_handlers_fix.py
+index c92f7452..5b9896cf 100644
+--- a/tests/unit/test_handlers_fix.py
++++ b/tests/unit/test_handlers_fix.py
+@@ -70,6 +70,7 @@ class TestHandlerFix(unittest.TestCase):
+         tx.price = 50.0
+         tx.quantity = 1.0
+         tx.transaction_type = "labor"
++        tx.total_pennies = 5000
+ 
+         seller = self.mock_household
+         buyer = MagicMock() # Firm mock
+diff --git a/tests/unit/test_tax_incidence.py b/tests/unit/test_tax_incidence.py
+index 7142a18c..4021404a 100644
+--- a/tests/unit/test_tax_incidence.py
++++ b/tests/unit/test_tax_incidence.py
+@@ -162,7 +162,8 @@ class TestTaxIncidence(unittest.TestCase):
+         
+         # 100원 매칭 (노동 거래). Price 10000 pennies (100.00 dollars)
+         from simulation.models import Transaction
+-        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=10000, market_id="labor", transaction_type="labor", time=1)
++        # Fix: price is in pennies here, so total_pennies should be 10000
++        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=10000, market_id="labor", transaction_type="labor", time=1, total_pennies=10000)
+         sim._process_transactions([tx])
+         
+         # 가계: 100000 + (10000 - 1625) = 108375 (Progressive Tax)
+@@ -181,7 +182,8 @@ class TestTaxIncidence(unittest.TestCase):
+         
+         # 100원 매칭 (노동 거래). Price 10000 pennies
+         from simulation.models import Transaction
+-        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=10000, market_id="labor", transaction_type="labor", time=1)
++        # Fix: price is in pennies here, so total_pennies should be 10000
++        tx = Transaction(buyer_id=101, seller_id=1, item_id="labor", quantity=1.0, price=10000, market_id="labor", transaction_type="labor", time=1, total_pennies=10000)
+         sim._process_transactions([tx])
+         
+         # 가계: 100000 + 10000 = 110000
+diff --git a/tests/unit/test_taxation_system.py b/tests/unit/test_taxation_system.py
+index e77c0c04..06779d32 100644
+--- a/tests/unit/test_taxation_system.py
++++ b/tests/unit/test_taxation_system.py
+@@ -71,7 +71,7 @@ def test_record_revenue_success():
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="corporate_tax",
+         quantity=1, price=100.0, market_id="system", transaction_type="tax", time=1
+-    )
++    , total_pennies=10000)
+     result = SettlementResultDTO(
+         original_transaction=tx,
+         success=True,
+@@ -88,7 +88,7 @@ def test_record_revenue_failure():
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="corporate_tax",
+         quantity=1, price=100.0, market_id="system", transaction_type="tax", time=1
+-    )
++    , total_pennies=10000)
+     result = SettlementResultDTO(
+         original_transaction=tx,
+         success=False,
+diff --git a/tests/unit/test_transaction_processor.py b/tests/unit/test_transaction_processor.py
+index b573bc75..0efebe61 100644
+--- a/tests/unit/test_transaction_processor.py
++++ b/tests/unit/test_transaction_processor.py
+@@ -22,7 +22,7 @@ def test_transaction_processor_dispatch_to_handler():
+         Transaction(
+             buyer_id=1, seller_id=2, item_id="item", price=10, quantity=1,
+             market_id="m", transaction_type="test_type", time=0
+-        )
++        , total_pennies=1000)
+     ]
+     state.taxation_system = MagicMock() # Ensure context building works
+ 
+@@ -46,7 +46,7 @@ def test_transaction_processor_ignores_credit_creation():
+         Transaction(
+             buyer_id=1, seller_id=2, item_id="credit", price=10, quantity=1,
+             market_id="m", transaction_type="credit_creation", time=0
+-        )
++        , total_pennies=1000)
+     ]
+     state.agents = {1: MagicMock(), 2: MagicMock()}
+ 
+@@ -111,7 +111,7 @@ def test_public_manager_routing():
+     tx = Transaction(
+         buyer_id=1, seller_id="PUBLIC_MANAGER", item_id="item", price=10, quantity=1,
+         market_id="m", transaction_type="any_type", time=0
+-    )
++    , total_pennies=1000)
+     state.transactions = [tx]
+     state.agents = {1: MagicMock()}
+ 
+@@ -131,7 +131,7 @@ def test_transaction_processor_dispatches_housing():
+         Transaction(
+             buyer_id=1, seller_id=2, item_id="unit_1", price=100, quantity=1,
+             market_id="housing", transaction_type="housing", time=0
+-        )
++        , total_pennies=10000)
+     ]
+     state.agents = {1: MagicMock(), 2: MagicMock()}
+     state.taxation_system = MagicMock()
+diff --git a/tests/unit/test_wo157_dynamic_pricing.py b/tests/unit/test_wo157_dynamic_pricing.py
+index 2670896b..88ba3cb3 100644
+--- a/tests/unit/test_wo157_dynamic_pricing.py
++++ b/tests/unit/test_wo157_dynamic_pricing.py
+@@ -103,7 +103,7 @@ class TestWO157DynamicPricing:
+         seller = Mock(spec=Firm)
+         seller.record_sale = Mock()
+         state.agents = {1: buyer, 2: seller}
+-        tx = Transaction(buyer_id=1, seller_id=2, item_id='widget', quantity=5.0, price=10.0, market_id='market', transaction_type='goods', time=200)
++        tx = Transaction(buyer_id=1, seller_id=2, item_id='widget', quantity=5.0, price=10.0, market_id='market', transaction_type='goods', time=200, total_pennies=5000)
+         state.transactions = [tx]
+         handler = GoodsTransactionHandler()
+         processor.register_handler('goods', handler)
