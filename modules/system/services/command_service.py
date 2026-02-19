@@ -3,6 +3,7 @@ from typing import List, Any, Optional, Protocol, Dict, Union, runtime_checkable
 from dataclasses import dataclass, field
 import logging
 from uuid import UUID
+from collections import deque
 
 from simulation.dtos.commands import GodCommandDTO, GodResponseDTO
 from modules.system.api import IGlobalRegistry, OriginType, IAgentRegistry, RegistryEntry, IRestorableRegistry
@@ -10,11 +11,12 @@ from modules.system.constants import ID_CENTRAL_BANK
 from simulation.finance.api import ISettlementSystem, IFinancialAgent
 from modules.simulation.api import IInventoryHandler
 from modules.finance.api import IBank
-from collections import deque
+
+from modules.governance.cockpit.api import CockpitCommand, CockpitCommandType, ICommandService, SetTaxRatePayload, SetBaseRatePayload
+from modules.governance.api import SystemCommand, SetTaxRateCommand, SetInterestRateCommand
+from modules.api.protocols import ISectorAgent
 
 logger = logging.getLogger(__name__)
-
-from modules.api.protocols import ICommandService, ISectorAgent
 
 @dataclass
 class UndoRecord:
@@ -61,6 +63,68 @@ class CommandService:
         self.agent_registry = agent_registry
         self.undo_stack = UndoStack()
         self._command_queue: deque = deque()
+        self._system_command_queue: deque = deque()
+
+    def enqueue_command(self, command: CockpitCommand) -> None:
+        """
+        Implements ICommandService.
+        Maps CockpitCommand to either GodCommandDTO (System Control) or SystemCommand (Governance).
+        Uses strictly typed payload validation where possible.
+        """
+        logger.info(f"CommandService received CockpitCommand: {command.type}")
+
+        if command.type == "PAUSE":
+             self.queue_command(GodCommandDTO(
+                 target_domain="System",
+                 parameter_key="PAUSE_STATE",
+                 new_value=True,
+                 command_type="PAUSE_STATE"
+             ))
+        elif command.type == "RESUME":
+             self.queue_command(GodCommandDTO(
+                 target_domain="System",
+                 parameter_key="PAUSE_STATE",
+                 new_value=False,
+                 command_type="PAUSE_STATE"
+             ))
+        elif command.type == "STEP":
+             self.queue_command(GodCommandDTO(
+                 target_domain="System",
+                 parameter_key="STEP",
+                 new_value=None,
+                 command_type="TRIGGER_EVENT"
+             ))
+        elif command.type == "SET_TAX_RATE":
+             try:
+                 # Validate payload strictly using constructor (works for V1 and V2)
+                 payload_dto = SetTaxRatePayload(**command.payload)
+                 sys_cmd = SetTaxRateCommand(
+                     tax_type=payload_dto.tax_type,
+                     new_rate=payload_dto.rate
+                 )
+                 self._system_command_queue.append(sys_cmd)
+             except Exception as e:
+                 logger.error(f"Failed to map SET_TAX_RATE: {e}")
+
+        elif command.type == "SET_BASE_RATE":
+             try:
+                 # Validate payload strictly using constructor
+                 payload_dto = SetBaseRatePayload(**command.payload)
+                 sys_cmd = SetInterestRateCommand(
+                     rate_type="base_rate",
+                     new_rate=payload_dto.rate
+                 )
+                 self._system_command_queue.append(sys_cmd)
+             except Exception as e:
+                 logger.error(f"Failed to map SET_BASE_RATE: {e}")
+        else:
+            logger.warning(f"Unknown CockpitCommand type: {command.type}")
+
+    def pop_system_commands(self) -> List[SystemCommand]:
+        """Drains the internal system command queue."""
+        commands = list(self._system_command_queue)
+        self._system_command_queue.clear()
+        return commands
 
     def queue_command(self, command: GodCommandDTO) -> None:
         """Adds a command to the internal queue for later processing."""

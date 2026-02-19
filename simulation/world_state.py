@@ -109,7 +109,7 @@ class WorldState:
         self.effects_queue: List[Dict[str, Any]] = []  # WO-109: Queue for side-effects
         self.inactive_agents: Dict[int, Any] = {}  # WO-109: Store inactive agents for transaction processing
         from collections import deque
-        self.system_command_queue: List[SystemCommand] = [] # TD-255: Cockpit Event Queue
+        self.system_commands: List[SystemCommand] = [] # TD-255: Cockpit Event Queue
         self.god_command_queue: deque[GodCommandDTO] = deque() # FOUND-03: Thread-safe Phase 0 Queue
 
         # Production Integration (INT-01)

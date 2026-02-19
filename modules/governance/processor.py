@@ -22,14 +22,16 @@ class SystemCommandProcessor(ISystemCommandHandler):
         """
         Executes a given command, modifying and returning the simulation state.
         """
-        cmd_type = command['command_type']
+        # Pydantic Model access
+        cmd_type = command.command_type
 
         logger.info(
             f"SYSTEM_COMMAND | Executing {cmd_type.name}",
-            extra={"tick": state.time, "command": command}
+            extra={"tick": state.time, "command": command.model_dump()}
         )
 
         if cmd_type == SystemCommandType.SET_TAX_RATE:
+            # We cast for type checker, runtime assumes correct structure based on enum
             self._handle_set_tax_rate(cast(SetTaxRateCommand, command), state)
         elif cmd_type == SystemCommandType.SET_INTEREST_RATE:
             self._handle_set_interest_rate(cast(SetInterestRateCommand, command), state)
@@ -39,8 +41,8 @@ class SystemCommandProcessor(ISystemCommandHandler):
         return state
 
     def _handle_set_tax_rate(self, command: SetTaxRateCommand, state: SimulationState):
-        tax_type = command['tax_type']
-        new_rate = command['new_rate']
+        tax_type = command.tax_type
+        new_rate = command.new_rate
 
         if state.government is None:
             logger.error("SYSTEM_COMMAND | Government agent is None.")
@@ -58,8 +60,6 @@ class SystemCommandProcessor(ISystemCommandHandler):
             government.corporate_tax_rate = new_rate
 
             # Protocol IGovernment defines fiscal_policy as IFiscalPolicyHolder
-            # It should exist, but could be None if implementation allows (though types suggest it shouldn't be optional in protocol def)
-            # However, implementation might initialize it as None. Safe to check truthiness.
             if government.fiscal_policy:
                 government.fiscal_policy.corporate_tax_rate = new_rate
 
@@ -78,8 +78,8 @@ class SystemCommandProcessor(ISystemCommandHandler):
             logger.warning(f"SYSTEM_COMMAND | Unknown tax type: {tax_type}")
 
     def _handle_set_interest_rate(self, command: SetInterestRateCommand, state: SimulationState):
-        rate_type = command['rate_type']
-        new_rate = command['new_rate']
+        rate_type = command.rate_type
+        new_rate = command.new_rate
 
         if state.central_bank is None:
             logger.error("SYSTEM_COMMAND | Central Bank agent is None.")

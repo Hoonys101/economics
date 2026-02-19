@@ -1,13 +1,14 @@
 from __future__ import annotations
-from typing import TypedDict, Literal, Union, Protocol, TYPE_CHECKING, Any, runtime_checkable
+from typing import Literal, Union, Protocol, TYPE_CHECKING, Any, runtime_checkable
 from enum import Enum
+from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
 
 # --- Command Types ---
 
-class SystemCommandType(Enum):
+class SystemCommandType(str, Enum):
     """Defines the types of available system-level manual interventions."""
     SET_TAX_RATE = "SET_TAX_RATE"
     SET_INTEREST_RATE = "SET_INTEREST_RATE"
@@ -15,17 +16,19 @@ class SystemCommandType(Enum):
 
 # --- DTO Definitions ---
 
-class BaseSystemCommand(TypedDict):
+class BaseSystemCommand(BaseModel):
     """Base structure for all system commands."""
     command_type: SystemCommandType
 
 class SetTaxRateCommand(BaseSystemCommand):
     """Command to set a specific tax rate for the government."""
+    command_type: Literal[SystemCommandType.SET_TAX_RATE] = SystemCommandType.SET_TAX_RATE
     tax_type: Literal['corporate', 'income']
     new_rate: float
 
 class SetInterestRateCommand(BaseSystemCommand):
     """Command to set a specific interest rate for the central bank."""
+    command_type: Literal[SystemCommandType.SET_INTEREST_RATE] = SystemCommandType.SET_INTEREST_RATE
     rate_type: Literal['base_rate']
     new_rate: float
 

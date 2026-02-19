@@ -136,6 +136,32 @@ class Simulation:
             while self.world_state.god_command_queue:
                 commands.append(self.world_state.god_command_queue.popleft())
 
+        # Drain God Commands from CommandService (Source: Cockpit/GodMode)
+        service_god_commands = self.command_service.pop_commands()
+        if service_god_commands:
+            # We must handle PAUSE/STEP here too if they came via CommandService
+            for cmd in list(service_god_commands): # Iterate copy to allow removal
+                if cmd.command_type == "PAUSE_STATE":
+                    should_pause = bool(cmd.new_value)
+                    self.is_paused = should_pause
+                    logger.info(f"Simulation {'PAUSED' if should_pause else 'RESUMED'} by CommandService.")
+                    service_god_commands.remove(cmd)
+                elif cmd.command_type == "TRIGGER_EVENT" and cmd.parameter_key == "STEP":
+                    self.step_requested = True
+                    logger.info("Simulation STEP requested by CommandService.")
+                    service_god_commands.remove(cmd)
+
+            commands.extend(service_god_commands)
+
+        # Drain System Commands from CommandService and push to WorldState (Source: Cockpit Governance)
+        # These are executed by TickOrchestrator -> Phase_SystemCommands
+        system_commands = self.command_service.pop_system_commands()
+        if system_commands:
+            if not self.world_state.system_commands:
+                self.world_state.system_commands = []
+            self.world_state.system_commands.extend(system_commands)
+            logger.info(f"System Commands Queued for Tick {self.world_state.time}: {len(system_commands)}")
+
         if not commands:
             return
 
@@ -164,6 +190,7 @@ class Simulation:
              logger.info(
                  f"Baseline Money Supply updated by {total_net_injection}. New Baseline: {self.world_state.baseline_money_supply}"
              )
+
     def run_tick(self, injectable_sensory_dto: Optional[GovernmentSensoryDTO] = None) -> None:
         self._process_commands()
 
