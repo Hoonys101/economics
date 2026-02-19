@@ -14,11 +14,30 @@ from modules.government.engines.execution_engine import PolicyExecutionEngine
 from simulation.dtos.api import MarketSnapshotDTO
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.ai.enums import PolicyActionTag
+from simulation.ai.api import Personality
 
 class TestGovernmentRefactor:
 
     @pytest.fixture
     def mock_config(self):
+        config = MagicMock()
+        config.INITIAL_HOUSEHOLD_AGE_RANGE = (20, 40)
+        config.INITIAL_NEEDS = {"survival": 0.0}
+        config.TICKS_PER_YEAR = 100
+        config.PRICE_MEMORY_LENGTH = 10
+        config.WAGE_MEMORY_LENGTH = 10
+        config.INITIAL_APTITUDE_DISTRIBUTION = (0.5, 0.1)
+        config.CONFORMITY_RANGES = {}
+        config.VALUE_ORIENTATION_MAPPING = {}
+        config.INITIAL_HOUSEHOLD_ASSETS_MEAN = 100.0
+        config.NEWBORN_INITIAL_NEEDS = {"survival": 0.0}
+        config.MITOSIS_MUTATION_PROBABILITY = 0.0
+        config.INITIAL_WAGE = 10.0
+        config.DEFAULT_VALUE_ORIENTATION = "Growth"
+        return config
+
+    @pytest.fixture
+    def mock_context(self, mock_config):
         config = MagicMock()
         config.GOVERNMENT_POLICY_MODE = "TAYLOR_RULE"
         config.INCOME_TAX_RATE = 0.1
@@ -40,30 +59,22 @@ class TestGovernmentRefactor:
         gov.finance_system = MagicMock()
         return gov
 
-    def test_decision_engine_taylor_rule(self, mock_config):
-        """Verify DecisionEngine produces correct PolicyDecisionDTO."""
-        # Check if GovernmentDecisionEngine exists, otherwise skip or adapt
-        try:
-            from modules.government.engines.decision_engine import GovernmentDecisionEngine
-            engine = GovernmentDecisionEngine(mock_config)
-        except ImportError:
-            pytest.skip("GovernmentDecisionEngine not found/deprecated")
+    def test_fiscal_engine_taylor_rule(self, mock_config):
+        """Verify FiscalEngine produces correct PolicyDecisionDTO."""
+        from modules.government.engines.fiscal_engine import FiscalEngine
+        from modules.government.engines.api import FiscalStateDTO
+        
+        engine = FiscalEngine(mock_config)
 
-        state = GovernmentStateDTO(
+        state = FiscalStateDTO(
             tick=1,
             assets={"USD": 1000},
             total_debt=0,
             income_tax_rate=0.1,
             corporate_tax_rate=0.2,
-            fiscal_policy=MagicMock(),
-            ruling_party=MagicMock(),
             approval_rating=0.5,
-            potential_gdp=1000.0,
             welfare_budget_multiplier=1.0,
-            policy_lockouts={},
-            sensory_data=MagicMock(),
-            gdp_history=[],
-            fiscal_stance=0.0
+            potential_gdp=1000.0
         )
 
         # Scenario: Recession (GDP < Potential)
@@ -72,8 +83,13 @@ class TestGovernmentRefactor:
             market_signals={},
             market_data={"total_production": 800.0}
         )
+        # Manually attach extra attributes if the Engine expects them but DTO doesn't have them
+        # (Or fix the Engine to not expect them if they aren't in DTO. 
+        # But here we are fixing the test to match the DTO definition).
+        # It seems the FiscalEngine might be using them. 
+        # For now, let's stick to the DTO signature.
 
-        decision = engine.decide(state, market_snapshot, MagicMock())
+        decision = engine.decide(state, market_snapshot, [])
 
         assert isinstance(decision, PolicyDecisionDTO)
         # assert decision.action_tag == PolicyActionTag.KEYNESIAN_FISCAL # Stimulus
@@ -125,6 +141,7 @@ class TestGovernmentRefactor:
         government.potential_gdp = 1000.0
         government.income_tax_rate = 0.1
 
+        government.personality = Personality.GROWTH_ORIENTED
         market_data = {"total_production": 800.0} # Recession
 
         # Run Decision Logic

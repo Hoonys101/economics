@@ -10,8 +10,14 @@ def test_tax_collection_and_bailouts(government):
     """
     initial_gov_assets = government.total_wealth
 
-    # 1. Manual Tax Collection Test (Legacy direct call)
-    government.collect_tax(100, "test_tax", 1, 1)
+    # 1. Manual Tax Collection Test (Simulate via revenue recording)
+    government.record_revenue({
+        "success": True,
+        "amount_collected": 100,
+        "tax_type": "test_tax",
+        "payer_id": 1,
+        "payee_id": government.id
+    })
 
     # 2. Bailout Test (now a loan, returns transactions)
     mock_firm = Mock()

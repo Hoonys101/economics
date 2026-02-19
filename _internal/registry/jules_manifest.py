@@ -16,31 +16,17 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "exec-test-modernization": {
-        "title": "Execute Test Modernization & Stabilization",
+    "exec-test-regression-fix": {
+        "title": "Fix 3 Specific Test Regressions (Factory, Fiscal DTO, Mocks)",
         "instruction": (
-            "Align the test suite with Phase 19/20 architecture as per the modernization spec.\n\n"
-            "**Core Tasks:**\n"
-            "1. **Conftest**: Add `mock_household_factory_context` fixture to `tests/conftest.py`.\n"
-            "2. **Audit Integrity**: Refactor `tests/system/test_audit_integrity.py` to use real `HouseholdFactory` + `mock_context` to verify birth gift transfers.\n"
-            "3. **Mock IDs**: Ensure all mocks in `tests/unit/test_transaction_handlers.py` have explicit `id` attributes.\n"
-            "4. **Factory Tests**: Update `tests/simulation/factories/test_agent_factory.py` to use `HouseholdFactoryContext`.\n"
-            "5. **Engine Tests**: Update `tests/integration/test_government_refactor_behavior.py` to test `FiscalEngine` directly.\n"
-            "6. **Government Tests**: Remove `collect_tax` calls in `tests/integration/test_government_fiscal_policy.py` and `tests/unit/test_tax_collection.py`, replacing them with `settlement_system.transfer` or service-level recording.\n\n"
-            "**Verification**: The goal is 100% test pass rate for the affected files."
-        ),
-        "file": "design/3_work_artifacts/spec/TEST_MODERNIZATION_SPEC.md"
-    },
-    "exec-test-failure-fix": {
-        "title": "Restore Test Suite: Fix 10 Failures in Fiscal/Demographics/Auth",
-        "instruction": (
-            "Restore the test suite to a Green State as per the specific instructions in the spec.\n\n"
+            "Fix the 3 specific test regressions identified in the regression spec.\n\n"
             "**Key Instructions:**\n"
-            "1. **Fiscal/Taxation**: Replace `collect_tax` assertions in `test_transaction_handlers.py`, `test_tax_collection.py`, and `test_government_fiscal_policy.py` with `record_revenue` and `settle_atomic`. Ensure all agent mocks have explicit `.id` attributes.\n"
-            "2. **Demographics**: In `test_audit_integrity.py`, use a REAL `HouseholdFactory` with a mock `HouseholdFactoryContext` instead of mocking the factory class. Verify the birth gift transfer call.\n"
-            "3. **Auth**: Update `test_websocket_auth.py` and `test_server_auth.py` to catch BOTH `InvalidStatus` and `InvalidMessage` from websockets, as library version v14+ behavior changed.\n\n"
-            "**Constraint**: Do NOT modify simulation logic in `modules/`. Only modify files in `tests/` or create test-specific utilities."
+            "1. **AgentFactory**: Add the missing `mock_config_module` fixture to `tests/simulation/factories/test_agent_factory.py`.\n"
+            "2. **FiscalEngine**: Update `modules/government/engines/fiscal_engine.py` to access `MarketSnapshotDTO` and `FiscalStateDTO` using dot notation (attribute access), NOT dictionary subscription.\n"
+            "3. **Integration Tests**: In `tests/integration/test_government_refactor_behavior.py`, ensure `mock_config` provides concrete float/int values for `WEALTH_TAX_THRESHOLD`, `UNEMPLOYMENT_BENEFIT_RATIO`, etc., to prevent `MagicMock < float` errors.\n\n"
+            "**Constraint**: Ensure DTOs are treated as objects in the Engine and Mocks are strictly typed in tests."
         ),
-        "file": "design/3_work_artifacts/spec/TEST_FAILURE_FIX_SPEC.md"
+        "file": "design/3_work_artifacts/spec/TEST_REGRESSION_FIX_SPEC.md",
+        "wait": 30
     },
 }
