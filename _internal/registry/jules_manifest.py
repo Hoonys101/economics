@@ -29,4 +29,25 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "file": "design/3_work_artifacts/spec/TEST_REGRESSION_FIX_SPEC.md",
         "wait": 30
     },
+    "exec-test-regression-fix-v2": {
+        "title": "Fix FiscalEngine Test Regressions (DTO Instantiation)",
+        "instruction": (
+            "Fix the persistent `AttributeError: 'dict' object has no attribute 'market_data'` in `tests/modules/government/engines/test_fiscal_engine.py`.\n\n"
+            "**Key Instructions:**\n"
+            "1. **Import DTO**: Add `from modules.system.api import MarketSnapshotDTO` to `tests/modules/government/engines/test_fiscal_engine.py`.\n"
+            "2. **Refactor Tests**: specificially `test_decide_expansionary`, `test_decide_contractionary`, `test_evaluate_bailout_solvent`, and `test_evaluate_bailout_insolvent`.\n"
+            "3. **Instantiation**: Replace raw dictionary `market` objects with proper `MarketSnapshotDTO` instances, ensuring `market_data` is populate correctly as a nested dictionary.\n"
+            "   Example:\n"
+            "   ```python\n"
+            "   market = MarketSnapshotDTO(\n"
+            "       tick=100,\n"
+            "       market_signals={},\n"
+            "       market_data={'current_gdp': 1000.0, 'inflation_rate_annual': 0.02} ...\n"
+            "   )\n"
+            "   ```\n"
+            "**Goal**: Eliminate `AttributeError` by ensuring `FiscalEngine` receives a valid DTO."
+        ),
+        "file": "design/3_work_artifacts/spec/TEST_REGRESSION_FIX_V2_SPEC.md",
+        "wait": 30
+    },
 }

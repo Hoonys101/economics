@@ -24,4 +24,25 @@ from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
     # Add missions here
+    "analyze-test-regressions-v2": {
+        "title": "Analyze Persistent 'AttributeError: dict object has no attribute market_data'",
+        "worker": "spec",
+        "instruction": (
+            "Analyze the persistent `AttributeError: 'dict' object has no attribute 'market_data'` failures.\n\n"
+            "**Context**:\n"
+            "We recently updated `modules/government/engines/fiscal_engine.py` to use dot notation for `MarketSnapshotDTO` access. However, multiple tests (integration and unit) are failing because they are still passing raw dictionaries instead of `MarketSnapshotDTO` objects to `FiscalEngine.decide`.\n\n"
+            "**Objectives**:\n"
+            "1. Identify all test files passing raw dicts to `FiscalEngine`.\n"
+            "2. Design a comprehensive fix that updates these tests to pass valid `MarketSnapshotDTO` objects.\n"
+            "3. Ensure `test_government_fiscal_policy.py` and `test_fiscal_engine.py` are covered.\n\n"
+            "**Output**: A spec `TEST_REGRESSION_FIX_V2_SPEC.md` detailing the required test updates."
+        ),
+        "context_files": [
+            "modules/government/engines/fiscal_engine.py",
+            "tests/integration/test_government_fiscal_policy.py",
+            "tests/modules/government/engines/test_fiscal_engine.py",
+            "simulation/dtos/api.py"
+        ],
+        "output_path": "design/3_work_artifacts/spec/TEST_REGRESSION_FIX_V2_SPEC.md"
+    },
 }

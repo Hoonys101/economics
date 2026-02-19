@@ -2,5 +2,28 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {}
+  "missions": {
+    "analyze-test-regressions-v2": {
+      "key": "analyze-test-regressions-v2",
+      "title": "Analyze Persistent 'AttributeError: dict object has no attribute market_data'",
+      "type": "gemini",
+      "instruction_raw": "Analyze the persistent `AttributeError: 'dict' object has no attribute 'market_data'` failures.\n\n**Context**:\nWe recently updated `modules/government/engines/fiscal_engine.py` to use dot notation for `MarketSnapshotDTO` access. However, multiple tests (integration and unit) are failing because they are still passing raw dictionaries instead of `MarketSnapshotDTO` objects to `FiscalEngine.decide`.\n\n**Objectives**:\n1. Identify all test files passing raw dicts to `FiscalEngine`.\n2. Design a comprehensive fix that updates these tests to pass valid `MarketSnapshotDTO` objects.\n3. Ensure `test_government_fiscal_policy.py` and `test_fiscal_engine.py` are covered.\n\n**Output**: A spec `TEST_REGRESSION_FIX_V2_SPEC.md` detailing the required test updates.",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "modules/government/engines/fiscal_engine.py",
+        "tests/integration/test_government_fiscal_policy.py",
+        "tests/modules/government/engines/test_fiscal_engine.py",
+        "simulation/dtos/api.py"
+      ],
+      "output_path": "design/3_work_artifacts/spec/TEST_REGRESSION_FIX_V2_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    }
+  }
 }

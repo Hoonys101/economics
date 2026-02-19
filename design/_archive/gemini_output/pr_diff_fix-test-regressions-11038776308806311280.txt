@@ -1,0 +1,188 @@
+diff --git a/communications/insights/exec-test-regression-fix.md b/communications/insights/exec-test-regression-fix.md
+new file mode 100644
+index 00000000..cbd8f476
+--- /dev/null
++++ b/communications/insights/exec-test-regression-fix.md
+@@ -0,0 +1,44 @@
++# Execution Insight: Test Regression Fixes
++
++## 1. Architectural Insights
++
++### DTO Purity & Dataclass vs TypedDict Conflict
++We encountered a regression where `FiscalEngine` (using `modules.government.engines.api`) was expecting a `TypedDict` style `MarketSnapshotDTO` (supporting subscript access `market["current_gdp"]`), while the core system (represented by `simulation.dtos.api` and `modules.system.api`) had evolved `MarketSnapshotDTO` into a `dataclass`.
++
++The decision was made to **align the Engine with the Core System**, updating `FiscalEngine` to use the `dataclass` definition and dot notation (`market.market_data`). This reinforces the **DTO Purity** guardrail by moving away from loose dictionaries towards structured objects.
++
++This also required updating `Government` agent to construct the correct `MarketSnapshotDTO` dataclass instead of a raw dictionary when invoking the engine, ensuring consistent type contracts across the boundary.
++
++### Mock Discipline & Protocol Fidelity
++Several tests failed due to "Mock Drift" where `MagicMock` objects were leaking into arithmetic operations (`<` not supported between `MagicMock` and `float`) or formatting strings. This occurred because the `mock_config` fixture relied on `MagicMock`'s default behavior of returning new mocks for accessed attributes.
++
++To fix this, we enforced stricter mock configuration in tests:
++1.  **Explicit Values:** Key configuration parameters (`INCOME_TAX_RATE`, `CB_INFLATION_TARGET`, etc.) are now explicitly set to concrete values (floats/bools) in the `mock_config` fixture.
++2.  **Fixture Alignment:** The `test_agent_factory.py` was using a mismatched fixture name (`mock_config_module` vs `mock_config`), which was corrected to use the global `conftest.py` fixture, reducing duplication and setup errors.
++
++### Factory Integrity
++The `HouseholdFactory` enforces a strict **Zero-Sum Integrity** policy where it initializes agent assets to 0, expecting the caller (or a settlement system transfer) to fund the agent. The test `test_create_household` was asserting legacy behavior (direct asset injection). We updated the test to verify the `initial_assets_record` in the state DTO instead of the active wallet balance, respecting the factory's design contract.
++
++## 2. Test Evidence
++
++```
++tests/simulation/factories/test_agent_factory.py::test_create_household PASSED [ 16%]
++tests/simulation/factories/test_agent_factory.py::test_create_newborn
++-------------------------------- live log call ---------------------------------
++INFO     simulation.factories.household_factory:ai_driven_household_engine.py:43 AIDrivenHouseholdDecisionEngine initialized (Modularized).
++PASSED                                                                   [ 33%]
++tests/integration/test_government_refactor_behavior.py::TestGovernmentRefactor::test_fiscal_engine_taylor_rule PASSED [ 50%]
++tests/integration/test_government_refactor_behavior.py::TestGovernmentRefactor::test_execution_engine_state_update PASSED [ 66%]
++tests/integration/test_government_refactor_behavior.py::TestGovernmentRefactor::test_orchestrator_integration
++-------------------------------- live log setup --------------------------------
++INFO     simulation.agents.government:government.py:163 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 100000})
++-------------------------------- live log call ---------------------------------
++INFO     modules.common.utils.shadow_logger:shadow_logger.py:36 ShadowLogger initialized at logs/shadow_hand_stage1.csv
++PASSED                                                                   [ 83%]
++tests/integration/test_government_refactor_behavior.py::TestGovernmentRefactor::test_social_policy_execution
++-------------------------------- live log setup --------------------------------
++INFO     simulation.agents.government:government.py:163 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 100000})
++PASSED                                                                   [100%]
++
++============================== 6 passed in 0.35s ===============================
++```
+diff --git a/modules/government/engines/fiscal_engine.py b/modules/government/engines/fiscal_engine.py
+index 6ffaf58e..9dc8a91a 100644
+--- a/modules/government/engines/fiscal_engine.py
++++ b/modules/government/engines/fiscal_engine.py
+@@ -7,8 +7,7 @@ from modules.government.engines.api import (
+     FiscalDecisionDTO,
+     GrantedBailoutDTO
+ )
+-from modules.finance.engines.api import MarketSnapshotDTO
+-from modules.system.api import CurrencyCode
++from modules.system.api import MarketSnapshotDTO, CurrencyCode
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -45,7 +44,8 @@ class FiscalEngine(IFiscalEngine):
+         return decision
+ 
+     def _calculate_tax_rates(self, state: FiscalStateDTO, market: MarketSnapshotDTO):
+-        current_gdp = market["current_gdp"]
++        # Access current_gdp from market_data (safe access with default)
++        current_gdp = market.market_data.get("current_gdp", 0.0)
+         potential_gdp = state["potential_gdp"]
+ 
+         # Default fallback
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index 3191e4ce..559639f0 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -297,12 +297,12 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
+             "potential_gdp": self.potential_gdp
+         }
+ 
+-        # Prepare Market Snapshot DTO (TypedDict for Engines)
+-        engine_market_snapshot = {
+-            "tick": current_tick,
+-            "inflation_rate_annual": self.sensory_data.inflation_sma if self.sensory_data else 0.0,
+-            "current_gdp": current_gdp
+-        }
++        # Prepare Market Snapshot DTO (Dataclass for Engines)
++        engine_market_snapshot = MarketSnapshotDTO(
++            tick=current_tick,
++            market_signals={},
++            market_data={"current_gdp": current_gdp}
++        )
+ 
+         # 2. Call Fiscal Engine
+         decision = self.fiscal_engine.decide(fiscal_state, engine_market_snapshot, [])
+diff --git a/tests/integration/test_government_refactor_behavior.py b/tests/integration/test_government_refactor_behavior.py
+index 18a0594e..1bb3c458 100644
+--- a/tests/integration/test_government_refactor_behavior.py
++++ b/tests/integration/test_government_refactor_behavior.py
+@@ -34,6 +34,17 @@ class TestGovernmentRefactor:
+         config.MITOSIS_MUTATION_PROBABILITY = 0.0
+         config.INITIAL_WAGE = 10.0
+         config.DEFAULT_VALUE_ORIENTATION = "Growth"
++
++        # Added for FiscalEngine
++        config.INCOME_TAX_RATE = 0.1
++        config.CORPORATE_TAX_RATE = 0.2
++        config.FISCAL_SENSITIVITY_ALPHA = 0.5
++        config.AUTO_COUNTER_CYCLICAL_ENABLED = True
++
++        # Added for Social Policy (Wealth Tax)
++        config.ANNUAL_WEALTH_TAX_RATE = 0.02
++        config.TICKS_PER_YEAR = 100
++        config.CB_INFLATION_TARGET = 0.02
+         return config
+ 
+     @pytest.fixture
+@@ -81,7 +92,10 @@ class TestGovernmentRefactor:
+         market_snapshot = MarketSnapshotDTO(
+             tick=1,
+             market_signals={},
+-            market_data={"total_production": 800.0}
++            market_data={
++                "total_production": 800.0,
++                "current_gdp": 800.0  # Added for FiscalEngine
++            }
+         )
+         # Manually attach extra attributes if the Engine expects them but DTO doesn't have them
+         # (Or fix the Engine to not expect them if they aren't in DTO. 
+@@ -91,7 +105,9 @@ class TestGovernmentRefactor:
+ 
+         decision = engine.decide(state, market_snapshot, [])
+ 
+-        assert isinstance(decision, PolicyDecisionDTO)
++        # assert isinstance(decision, PolicyDecisionDTO) # FiscalEngine returns FiscalDecisionDTO (TypedDict)
++        assert isinstance(decision, dict)
++        assert "new_income_tax_rate" in decision
+         # assert decision.action_tag == PolicyActionTag.KEYNESIAN_FISCAL # Stimulus
+         # assert decision.parameters["income_tax_rate"] < 0.1 # Tax Cut
+         # assert "potential_gdp" in decision.parameters
+diff --git a/tests/simulation/factories/test_agent_factory.py b/tests/simulation/factories/test_agent_factory.py
+index 0cac79f8..ebd5419e 100644
+--- a/tests/simulation/factories/test_agent_factory.py
++++ b/tests/simulation/factories/test_agent_factory.py
+@@ -8,10 +8,19 @@ from simulation.ai.api import Personality
+ from modules.simulation.dtos.api import HouseholdConfigDTO
+ 
+ @pytest.fixture
+-def mock_context(mock_config_module):
++def mock_context(mock_config):
++    household_config = MagicMock()
++    # Mock conformity_ranges to return default tuple
++    household_config.conformity_ranges.get.return_value = (0.3, 0.7)
++    # Mock initial mean assets
++    household_config.initial_household_assets_mean = 50000
++
++    # Ensure core config has required attribute
++    mock_config.MITOSIS_MUTATION_PROBABILITY = 0.05
++
+     context = HouseholdFactoryContext(
+-        core_config_module=mock_config_module,
+-        household_config_dto=MagicMock(),
++        core_config_module=mock_config,
++        household_config_dto=household_config,
+         goods_data=[],
+         loan_market=MagicMock(),
+         ai_training_manager=MagicMock(),
+@@ -41,7 +50,8 @@ def test_create_household(mock_context):
+     assert agent.id == 1
+     assert agent.age == 25.0
+     assert agent.gender == "M"
+-    assert agent.assets == 100.0
++    assert agent.assets == 0.0
++    assert agent._econ_state.initial_assets_record_pennies == 100
+ 
+ def test_create_newborn(mock_context):
+     factory = HouseholdFactory(mock_context)
+@@ -50,7 +60,7 @@ def test_create_newborn(mock_context):
+     parent.id = 1
+     parent.generation = 1
+     parent.talent = Talent(base_learning_rate=1.0, max_potential={})
+-    parent.personality = Personality.Growth
++    parent.personality = Personality.GROWTH_ORIENTED
+     parent.value_orientation = "Growth"
+ 
+     child = factory.create_newborn(
