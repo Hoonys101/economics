@@ -6,9 +6,10 @@ import os
 from contextlib import asynccontextmanager
 # from dataclasses import asdict # Removed as we use Pydantic now
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status, HTTPException
 from modules.system.builders.simulation_builder import create_simulation
 from simulation.orchestration.dashboard_service import DashboardService
+from simulation.orchestration.agent_service import AgentService
 from modules.governance.cockpit.api import CockpitCommand
 from modules.system.security import verify_god_mode_token
 from modules.demographics.genealogy.router import router as genealogy_router
@@ -21,6 +22,7 @@ logger = logging.getLogger("server")
 # Global State
 sim = None
 dashboard_service = None
+agent_service = None
 background_task = None
 is_running = False
 is_ready = False
@@ -53,7 +55,7 @@ async def simulation_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global sim, dashboard_service, background_task, is_running, is_ready
+    global sim, dashboard_service, agent_service, background_task, is_running, is_ready
 
     # Startup
     logger.info("Initializing simulation...")
@@ -61,6 +63,7 @@ async def lifespan(app: FastAPI):
         # overrides can be passed here if needed
         sim = create_simulation()
         dashboard_service = DashboardService(sim)
+        agent_service = AgentService(sim)
 
         is_running = True
         background_task = asyncio.create_task(simulation_loop())
@@ -169,6 +172,38 @@ async def command_endpoint(websocket: WebSocket):
         logger.info("Cockpit disconnected from /ws/command")
     except Exception as e:
         logger.error(f"Command WebSocket error: {e}")
+
+@app.websocket("/ws/agents")
+async def agents_websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    logger.info("Client connected to /ws/agents")
+    try:
+        while True:
+            if is_ready and agent_service:
+                # Serves List[AgentBasicDTO]
+                # Default limit 500, could be parameterized via query params in connection
+                agents = agent_service.get_agents_basic(limit=500)
+                data = [a.model_dump() for a in agents]
+
+                await websocket.send_json(data)
+
+            # Throttle to 1Hz
+            await asyncio.sleep(1.0)
+    except WebSocketDisconnect:
+        logger.info("Client disconnected from /ws/agents")
+    except Exception as e:
+        logger.error(f"Agents WebSocket error: {e}")
+
+@app.get("/api/v1/inspector/{agent_id}")
+async def get_agent_detail(agent_id: int):
+    if not is_ready or not agent_service:
+        raise HTTPException(status_code=503, detail="Simulation not ready")
+
+    agent = agent_service.get_agent_detail(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    return agent
 
 @app.get("/")
 def read_root():
