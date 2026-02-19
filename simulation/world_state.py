@@ -154,6 +154,27 @@ class WorldState:
 
         self.baseline_money_supply: float = 0.0
 
+    @property
+    def government(self) -> Optional[Government]:
+        """
+        Proxy property to access the primary government agent.
+        Resolves the singleton mismatch by delegating to self.governments[0].
+        """
+        if self.governments:
+            return self.governments[0]
+        return None
+
+    @government.setter
+    def government(self, value: Government) -> None:
+        """
+        Setter for the government property.
+        Ensures synchronization with self.governments list (SSoT).
+        """
+        if not self.governments:
+            self.governments.append(value)
+        else:
+            self.governments[0] = value
+
     def calculate_base_money(self) -> Dict[CurrencyCode, int]:
         """
         Calculates M0 (Base Money) for each currency.
