@@ -84,6 +84,13 @@ class TickOrchestrator:
         if state.government and hasattr(state.government, "reset_tick_flow"):
             state.government.reset_tick_flow()
 
+        # LIFECYCLE FIX: Process Inter-Tick Queue (Lifecycle events from previous tick)
+        if state.inter_tick_queue:
+            count = len(state.inter_tick_queue)
+            state.logger.info(f"LIFECYCLE_QUEUE | Promoting {count} transactions from inter-tick queue.")
+            state.transactions.extend(state.inter_tick_queue)
+            state.inter_tick_queue.clear()
+
         # 1. Create the comprehensive state DTO for this tick
         sim_state = self._create_simulation_state_dto(injectable_sensory_dto)
 
