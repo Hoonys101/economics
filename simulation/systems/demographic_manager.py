@@ -97,6 +97,23 @@ class DemographicManager(IDemographicManager):
         
         self.logger.info(f"LIFE_END | Agent {getattr(agent, 'id', 'unknown')} terminated. Cause: {cause}")
 
+        # --- Inheritance Pipeline ---
+        # Trigger asset distribution/escheatment via InheritanceManager
+        if hasattr(self, 'world_state') and self.world_state and self.world_state.inheritance_manager:
+            try:
+                # InheritanceManager.process_death(deceased, government, simulation)
+                # simulation param expects WorldState or similar context
+                self.world_state.inheritance_manager.process_death(
+                    deceased=agent,
+                    government=self.world_state.government,
+                    simulation=self.world_state
+                )
+                self.logger.info(f"INHERITANCE_PROCESSED | Agent {agent.id} assets distributed.")
+            except Exception as e:
+                self.logger.error(f"INHERITANCE_FAIL | Failed to process inheritance for {agent.id}: {e}")
+        else:
+             self.logger.warning(f"INHERITANCE_SKIPPED | WorldState or InheritanceManager missing for agent {agent.id}")
+
     def update_labor_hours(self, gender: str, delta: float) -> None:
         """Updates labor hour running totals (called by agents on time allocation change)."""
         if gender in self._stats_cache:
