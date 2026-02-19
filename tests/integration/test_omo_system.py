@@ -2,7 +2,8 @@ import pytest
 from unittest.mock import MagicMock, Mock
 from typing import List, Any, Dict
 from simulation.systems.central_bank_system import CentralBankSystem
-from simulation.systems.transaction_manager import TransactionManager
+from simulation.systems.transaction_processor import TransactionProcessor
+from simulation.systems.handlers.monetary_handler import MonetaryTransactionHandler
 from simulation.systems.settlement_system import SettlementSystem
 from simulation.models import Order, Transaction
 from modules.finance.api import OMOInstructionDTO, IFinancialEntity, IFinancialAgent, InsufficientFundsError
@@ -102,18 +103,23 @@ def omo_setup():
     }
     state.government = gov_agent
     state.transactions = []
+    state.time = 1
+    state.settlement_system = settlement
+    state.central_bank = cb_agent
+    state.logger = logger
+    state.bank = None
+    state.inactive_agents = {}
+    state.taxation_system = None
+    state.stock_market = None
+    state.real_estate_units = []
+    state.market_data = {}
+    state.shareholder_registry = None
 
-    tx_manager = TransactionManager(
-        registry=MagicMock(),
-        accounting_system=MagicMock(),
-        settlement_system=settlement,
-        central_bank_system=cb_system,
-        config=MagicMock(),
-        escrow_agent=MagicMock(),
-        logger=logger
-    )
+    tp = TransactionProcessor(config_module=MagicMock())
+    tp.register_handler("omo_purchase", MonetaryTransactionHandler())
+    tp.register_handler("omo_sale", MonetaryTransactionHandler())
 
-    return cb_system, tx_manager, state, cb_agent, gov_agent, household, settlement
+    return cb_system, tp, state, cb_agent, gov_agent, household, settlement
 
 def test_execute_omo_purchase_order_creation(omo_setup):
     cb_system, _, _, _, _, _, _ = omo_setup
@@ -150,7 +156,7 @@ def test_execute_omo_sale_order_creation(omo_setup):
     assert orders[0].market_id == "security_market"
 
 def test_process_omo_purchase_transaction(omo_setup):
-    cb_system, tx_manager, state, cb_agent, gov_agent, household, settlement = omo_setup
+    cb_system, tp, state, cb_agent, gov_agent, household, settlement = omo_setup
 
     # Household sells bond to CB (OMO Purchase by CB)
     # CB pays Household (Minting new money)
@@ -173,17 +179,14 @@ def test_process_omo_purchase_transaction(omo_setup):
 
     # Audit M2 before (Sum of non-CB agents)
     # M2 = Household(500) + Gov(1000) = 1500
-    initial_m2 = settlement.audit_total_m2(expected_total=None) # Returns bool, but logs value.
-    # We can calculate manually for assertion or trust audit_total_m2 logic.
-    # Let's calculate manually using settlement.get_balance
     m2_before = settlement.get_balance(household.id) + settlement.get_balance(gov_agent.id)
 
-    tx_manager.execute(state)
+    tp.execute(state)
 
     # Verify Household got paid via SSoT
     assert settlement.get_balance(household.id) == initial_hh_assets + trade_price
 
-    # Verify Gov Ledger Updated (Minting) - TransactionManager updates this manually on gov agent
+    # Verify Gov Ledger Updated (Minting)
     assert gov_agent.total_money_issued == initial_money_issued + trade_price
 
     # Verify Zero-Sum Integrity (M2 Expansion)
@@ -195,7 +198,7 @@ def test_process_omo_purchase_transaction(omo_setup):
     assert settlement.audit_total_m2(expected_total=m2_after) is True
 
 def test_process_omo_sale_transaction(omo_setup):
-    cb_system, tx_manager, state, cb_agent, gov_agent, household, settlement = omo_setup
+    cb_system, tp, state, cb_agent, gov_agent, household, settlement = omo_setup
 
     # Household buys bond from CB (OMO Sale by CB)
     # Household pays CB (Burning money)
@@ -217,7 +220,7 @@ def test_process_omo_sale_transaction(omo_setup):
 
     m2_before = settlement.get_balance(household.id) + settlement.get_balance(gov_agent.id)
 
-    tx_manager.execute(state)
+    tp.execute(state)
 
     # Verify Household paid via SSoT
     assert settlement.get_balance(household.id) == initial_hh_assets - trade_price

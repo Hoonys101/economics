@@ -78,6 +78,13 @@ class MonetaryTransactionHandler(ITransactionHandler):
             success = context.settlement_system.transfer(
                 buyer, seller, int(trade_value), tx_type
             )
+            if success and context.central_bank and seller.id == context.central_bank.id:
+                if hasattr(context.government, "total_money_destroyed"):
+                    context.government.total_money_destroyed += trade_value
+                context.logger.info(
+                    f"QT | Central Bank sold bond/asset {trade_value:.2f}.",
+                    extra={"tick": context.time, "tag": "QT"}
+                )
 
         return success is not None
 
