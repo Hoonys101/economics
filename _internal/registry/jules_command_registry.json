@@ -3,23 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "fix-gov-structure": {
-      "key": "fix-gov-structure",
-      "title": "Structural Fix: Government Singleton/List Mismatch",
-      "type": "jules",
-      "instruction_raw": "Implement the 'Property Proxy' pattern to resolve the Government Singleton vs List mismatch.\n\n**Key Tasks:**\n1. **Refactor WorldState** (`simulation/world_state.py`): \n   - Add `@property` for `government` to access `governments[0]`.\n   - Add `@government.setter` to sync with `governments` list.\n   - Ensure `governments` is the SSoT.\n2. **Update Initializer** (`simulation/initialization/initializer.py`):\n   - Change direct `sim.government` assignment to `sim.world_state.governments.append(gov)`.\n3. **Verify**:\n   - Create a new test `tests/unit/test_government_structure.py` to verify singleton/list synchronization and initializer integrity.\n\n**Reference:** `design/3_work_artifacts/spec/STRUCT_GOV_FIX_SPEC.md`",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/spec/STRUCT_GOV_FIX_SPEC.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "cleanup-deprecations": {
       "key": "cleanup-deprecations",
       "title": "Hygiene: Cleanup Deprecated Code (Track B)",
