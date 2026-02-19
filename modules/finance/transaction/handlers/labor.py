@@ -5,7 +5,7 @@ from simulation.dtos.api import SimulationState
 from simulation.systems.api import ISpecializedTransactionHandler
 from modules.finance.utils.currency_math import round_to_pennies
 from modules.government.constants import DEFAULT_BASIC_FOOD_PRICE
-from modules.finance.transaction.handlers.protocols import ITaxCollector
+from modules.finance.transaction.handlers.protocols import ITaxCollector, IIncomeTracker
 
 logger = logging.getLogger(__name__)
 
@@ -86,5 +86,8 @@ class LaborTransactionHandler(ISpecializedTransactionHandler):
                 # Then collect tax from household
                 if isinstance(government, ITaxCollector):
                     government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
+
+        if success and isinstance(seller, IIncomeTracker):
+            seller.add_labor_income(trade_value)
 
         return success

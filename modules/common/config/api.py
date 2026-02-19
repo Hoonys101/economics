@@ -153,30 +153,30 @@ class HouseholdConfigDTO(BaseConfigDTO):
     assets_death_threshold: float
     household_death_turns_threshold: int
     household_investment_budget_ratio: float
-    household_min_assets_for_investment: float
+    household_min_assets_for_investment: int
     stock_sell_profit_threshold: float
     stock_buy_discount_threshold: float
     stock_investment_diversification_count: int
     stock_investment_equity_delta_threshold: float
-    panic_selling_asset_threshold: float
+    panic_selling_asset_threshold: int
     reproduction_age_start: int
     reproduction_age_end: int
     childcare_time_required: float
     housework_base_hours: float
     social_capillarity_cost: float
     unnamed_child_mortality_rate: float
-    child_monthly_cost: float
+    child_monthly_cost: int
     opportunity_cost_factor: float
     raising_years: int
     child_emotional_value_base: float
     old_age_support_rate: float
     support_years: int
-    household_low_asset_threshold: float
+    household_low_asset_threshold: int
     household_low_asset_wage: float
     household_default_wage: float
     household_assets_threshold_for_labor_supply: float
     forced_labor_exploration_probability: float
-    default_fallback_price: float
+    default_fallback_price: int
 
 
 class IConfigManager(ABC):

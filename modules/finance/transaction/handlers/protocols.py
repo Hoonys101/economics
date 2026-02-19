@@ -1,4 +1,4 @@
-from typing import Protocol, runtime_checkable, Any
+from typing import Protocol, runtime_checkable, Any, Optional
 
 @runtime_checkable
 class ISolvent(Protocol):
@@ -21,4 +21,16 @@ class ITaxCollector(Protocol):
         ...
 
     def record_revenue(self, data: Any) -> None:
+        ...
+
+@runtime_checkable
+class IIncomeTracker(Protocol):
+    """Protocol for entities that track their income sources."""
+    def add_labor_income(self, amount: int) -> None:
+        ...
+
+@runtime_checkable
+class IConsumptionTracker(Protocol):
+    """Protocol for entities that track their consumption expenditure."""
+    def add_consumption_expenditure(self, amount: int, item_id: Optional[str] = None) -> None:
         ...

@@ -122,7 +122,7 @@ class HouseholdConfigDTO:
     survival_need_consumption_threshold: float
     target_food_buffer_quantity: float
     food_purchase_max_per_tick: float
-    assets_threshold_for_other_actions: float # Ratio or absolute? If absolute currency, should be int. Assuming Ratio for now based on name.
+    assets_threshold_for_other_actions: int # Absolute currency value in pennies
 
     # Wage & Employment
     wage_decay_rate: float
@@ -189,9 +189,9 @@ class HouseholdConfigDTO:
     quality_pref_miser_max: float
     wage_recovery_rate: float
     learning_efficiency: float
-    default_fallback_price: float
+    default_fallback_price: int
     need_medium_threshold: float
-    panic_selling_asset_threshold: float
+    panic_selling_asset_threshold: int
     perceived_price_update_factor: float
     social_status_asset_weight: float
     social_status_luxury_weight: float
@@ -225,7 +225,7 @@ class HouseholdConfigDTO:
     survival_budget_allocation: float
     food_consumption_utility: float
     survival_critical_turns: float
-    household_low_asset_threshold: float # Ratio or int?
+    household_low_asset_threshold: int
 
 @dataclass
 class FirmConfigDTO:

@@ -93,6 +93,10 @@ class EconStateDTO:
     labor_income_this_tick_pennies: int
     capital_income_this_tick_pennies: int
 
+    # Expenditure Tracking (Transient per tick)
+    consumption_expenditure_this_tick_pennies: int
+    food_expenditure_this_tick_pennies: int
+
     # Legacy / Compatibility
     credit_frozen_until_tick: int = 0
     initial_assets_record_pennies: int = 0
