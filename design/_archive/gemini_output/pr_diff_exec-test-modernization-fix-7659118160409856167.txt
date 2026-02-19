@@ -1,0 +1,817 @@
+diff --git a/communications/insights/exec-test-modernization-fix.md b/communications/insights/exec-test-modernization-fix.md
+new file mode 100644
+index 00000000..2299adb6
+--- /dev/null
++++ b/communications/insights/exec-test-modernization-fix.md
+@@ -0,0 +1,63 @@
++# Insight Report: Full-Suite Test Modernization Fix
++
++## [Architectural Insights]
++
++### Technical Debt Identified & Addressed
++1.  **Integer Math vs. Legacy Floats**: The codebase is migrating to using integer pennies as the Single Source of Truth (SSoT) for monetary values. Several tests were still using legacy float logic (`price=10.0` meaning 10 dollars) while the underlying systems were upgraded to treat inputs as pennies or requiring explicit `total_pennies`.
++    *   **Decision**: Updated `tests/unit/test_transaction_processor.py` and `tests/modules/finance/transaction/test_processor.py` to set `total_pennies` explicitly and verify integer results.
++    *   **Decision**: Updated `tests/unit/systems/handlers/test_housing_handler.py` to use integer pennies for `get_balance` mocks and `transfer` verification, aligning with the `HousingTransactionHandler` implementation.
++
++2.  **Protocol Fidelity & Mocking**:
++    *   **Issue**: `MagicMock` does not satisfy `@runtime_checkable` Protocol `isinstance()` checks (e.g., `isinstance(mock, IAgingFirm)` returns `False`).
++    *   **Decision**: In `tests/integration/test_wo167_grace_protocol.py`, I replaced generic mocks with concrete dummy classes (`DummyFirm`, `DummyMarket`) that explicitly inherit from and implement the required Protocols (`IAgingFirm`, `ICurrencyHolder`, `IMarket`). This ensures that logic gated by `isinstance` checks executes correctly during tests.
++
++3.  **Missing Dependencies in Tests**:
++    *   **Issue**: `AgentLifecycleManager` now requires `IHouseholdFactory` dependency, but tests were instantiating it without it, causing `ValueError`.
++    *   **Decision**: Updated `tests/unit/test_lifecycle_reset.py` and `tests/integration/test_wo167_grace_protocol.py` to inject a mock `household_factory`.
++
++4.  **Missing Imports**:
++    *   **Issue**: `simulation/systems/transaction_processor.py` was using `round_to_pennies` without importing it, causing runtime errors in legacy fallback paths.
++    *   **Decision**: Added the missing import.
++
++## [Test Evidence]
++
++```
++tests/unit/test_transaction_processor.py::test_transaction_processor_dispatch_to_handler PASSED [  5%]
++tests/unit/test_transaction_processor.py::test_transaction_processor_ignores_credit_creation PASSED [ 10%]
++tests/unit/test_transaction_processor.py::test_goods_handler_uses_atomic_settlement
++-------------------------------- live log call ---------------------------------
++WARNING  simulation.systems.handlers.goods_handler:goods_handler.py:119 GOODS_HANDLER_WARN | Seller 2 does not implement IInventoryHandler
++WARNING  simulation.systems.handlers.goods_handler:goods_handler.py:129 GOODS_HANDLER_WARN | Buyer 1 does not implement IInventoryHandler
++PASSED                                                                   [ 15%]
++tests/unit/test_transaction_processor.py::test_public_manager_routing PASSED [ 20%]
++tests/unit/test_transaction_processor.py::test_transaction_processor_dispatches_housing PASSED [ 25%]
++tests/modules/finance/transaction/test_processor.py::test_processor_dispatch_success PASSED [ 30%]
++tests/modules/finance/transaction/test_processor.py::test_processor_dispatch_legacy_price PASSED [ 35%]
++tests/modules/finance/transaction/test_processor.py::test_processor_handler_failure PASSED [ 40%]
++tests/modules/finance/transaction/test_processor.py::test_processor_handler_exception PASSED [ 45%]
++tests/modules/finance/transaction/test_processor.py::test_processor_public_manager PASSED [ 50%]
++tests/modules/finance/transaction/test_processor.py::test_processor_public_manager_fail_missing_buyer PASSED [ 55%]
++tests/modules/finance/transaction/test_processor.py::test_processor_public_manager_exception PASSED [ 60%]
++tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_disbursement_failure
++-------------------------------- live log call ---------------------------------
++CRITICAL modules.market.handlers.housing_transaction_handler:housing_transaction_handler.py:153 HOUSING | Failed to move loan proceeds from Bank to Escrow for 3
++PASSED                                                                   [ 65%]
++tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_government_seller
++-------------------------------- live log call ---------------------------------
++INFO     modules.market.handlers.housing_transaction_handler:housing_transaction_handler.py:185 HOUSING | Success: Unit 101 sold to 3. Price: 1000000
++PASSED                                                                   [ 70%]
++tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_payment_failure
++-------------------------------- live log call ---------------------------------
++CRITICAL modules.market.handlers.housing_transaction_handler:housing_transaction_handler.py:163 HOUSING | CRITICAL: Failed to pay seller 4 from escrow.
++PASSED                                                                   [ 75%]
++tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_purchase_success
++-------------------------------- live log call ---------------------------------
++INFO     modules.market.handlers.housing_transaction_handler:housing_transaction_handler.py:185 HOUSING | Success: Unit 101 sold to 3. Price: 1000000
++PASSED                                                                   [ 80%]
++tests/unit/test_lifecycle_reset.py::TestLifecycleReset::test_reset_tick_state PASSED [ 85%]
++tests/unit/test_lifecycle_reset.py::TestLifecycleReset::test_household_reset_logic PASSED [ 90%]
++tests/integration/test_wo167_grace_protocol.py::TestGraceProtocol::test_firm_grace_protocol PASSED [ 95%]
++tests/integration/test_wo167_grace_protocol.py::TestGraceProtocol::test_household_grace_protocol PASSED [100%]
++
++============================== 20 passed in 0.58s ==============================
++```
+diff --git a/reports/snapshots/snapshot_tick_00001_20260218_182903.json b/reports/snapshots/snapshot_tick_00001_20260218_182903.json
+deleted file mode 100644
+index 6561c42c..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260218_182903.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771406943.983998,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 223.36385972749608
+-  },
+-  "macro": {
+-    "gdp": 0.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 1000.0,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260219_085035.json b/reports/snapshots/snapshot_tick_00001_20260219_085035.json
+deleted file mode 100644
+index 95c88125..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260219_085035.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771458635.376852,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0,
+-    "fps": 133.99437223636608
+-  },
+-  "macro": {
+-    "gdp": 0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100,
+-      "m1": 500,
+-      "m2": 1000,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100,
+-      "welfare": 0,
+-      "debt": 0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00001_20260219_094831.json b/reports/snapshots/snapshot_tick_00001_20260219_094831.json
+deleted file mode 100644
+index f155bb9c..00000000
+--- a/reports/snapshots/snapshot_tick_00001_20260219_094831.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 1,
+-  "timestamp": 1771462111.112306,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0,
+-    "fps": 290.7822041291073
+-  },
+-  "macro": {
+-    "gdp": 0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.0
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 5.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100,
+-      "m1": 500,
+-      "m2": 1000,
+-      "velocity": 0.0
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.6,
+-      "low": 0.6,
+-      "mid": 0.6,
+-      "high": 0.6
+-    },
+-    "status": {
+-      "ruling_party": "BLUE",
+-      "cohesion": 0.5
+-    },
+-    "fiscal": {
+-      "revenue": 100,
+-      "welfare": 0,
+-      "debt": 0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 0.0,
+-      "q2": 0.0,
+-      "q3": 0.0,
+-      "q4": 0.0,
+-      "q5": 0.0
+-    },
+-    "active_count": 0,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260218_182852.json b/reports/snapshots/snapshot_tick_00042_20260218_182852.json
+deleted file mode 100644
+index ba01030e..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260218_182852.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771406932.641644,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0.0,
+-    "fps": 83832.33532934131
+-  },
+-  "macro": {
+-    "gdp": 1000.0,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100.0,
+-      "m1": 500.0,
+-      "m2": 600.0,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0.0,
+-      "welfare": 0.0,
+-      "debt": 0.0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260219_085022.json b/reports/snapshots/snapshot_tick_00042_20260219_085022.json
+deleted file mode 100644
+index 895c72b5..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260219_085022.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771458622.460061,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0,
+-    "fps": 99290.78014184398
+-  },
+-  "macro": {
+-    "gdp": 1000,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100,
+-      "m1": 500,
+-      "m2": 600,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0,
+-      "welfare": 0,
+-      "debt": 0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/reports/snapshots/snapshot_tick_00042_20260219_094817.json b/reports/snapshots/snapshot_tick_00042_20260219_094817.json
+deleted file mode 100644
+index 3a3150ff..00000000
+--- a/reports/snapshots/snapshot_tick_00042_20260219_094817.json
++++ /dev/null
+@@ -1,60 +0,0 @@
+-{
+-  "tick": 42,
+-  "timestamp": 1771462097.888972,
+-  "status": "RUNNING",
+-  "integrity": {
+-    "m2_leak": 0,
+-    "fps": 52631.57894736842
+-  },
+-  "macro": {
+-    "gdp": 1000,
+-    "cpi": 1.0,
+-    "unemploy": 5.0,
+-    "gini": 0.3
+-  },
+-  "finance": {
+-    "rates": {
+-      "base": 0.0,
+-      "call": 0.0,
+-      "loan": 0.0,
+-      "savings": 0.0
+-    },
+-    "supply": {
+-      "m0": 100,
+-      "m1": 500,
+-      "m2": 600,
+-      "velocity": 1.5
+-    }
+-  },
+-  "politics": {
+-    "approval": {
+-      "total": 0.0,
+-      "low": 0.0,
+-      "mid": 0.0,
+-      "high": 0.0
+-    },
+-    "status": {
+-      "ruling_party": "NEUTRAL",
+-      "cohesion": 0.7
+-    },
+-    "fiscal": {
+-      "revenue": 0,
+-      "welfare": 0,
+-      "debt": 0
+-    }
+-  },
+-  "population": {
+-    "distribution": {
+-      "q1": 100.0,
+-      "q2": 200.0,
+-      "q3": 300.0,
+-      "q4": 400.0,
+-      "q5": 500.0
+-    },
+-    "active_count": 100,
+-    "metrics": {
+-      "birth": 0.0,
+-      "death": 0.0
+-    }
+-  }
+-}
+\ No newline at end of file
+diff --git a/simulation/systems/transaction_processor.py b/simulation/systems/transaction_processor.py
+index 62230b77..a211be45 100644
+--- a/simulation/systems/transaction_processor.py
++++ b/simulation/systems/transaction_processor.py
+@@ -8,6 +8,7 @@ from simulation.systems.api import (
+     TransactionContext,
+ )
+ from simulation.dtos.settlement_dtos import SettlementResultDTO
++from modules.finance.utils.currency_math import round_to_pennies
+ 
+ if TYPE_CHECKING:
+     from simulation.dtos.api import SimulationState
+diff --git a/tests/integration/test_wo167_grace_protocol.py b/tests/integration/test_wo167_grace_protocol.py
+index 7096f739..5529026d 100644
+--- a/tests/integration/test_wo167_grace_protocol.py
++++ b/tests/integration/test_wo167_grace_protocol.py
+@@ -4,10 +4,64 @@ from simulation.core_agents import Household
+ from simulation.firms import Firm
+ from simulation.components.state.firm_state_models import FinanceState
+ from simulation.systems.lifecycle_manager import AgentLifecycleManager
++from simulation.systems.lifecycle.aging_system import IAgingFirm
++from simulation.interfaces.market_interface import IMarket
+ from simulation.dtos.api import SimulationState
+ from simulation.models import Order
+ from modules.market.api import OrderDTO
+ from tests.utils.factories import create_firm_config_dto, create_household_config_dto
++from modules.system.api import ICurrencyHolder, DEFAULT_CURRENCY
++from typing import Dict, List
++
++# Concrete Mock Class for Firm
++class DummyFirm(IAgingFirm, ICurrencyHolder):
++    def __init__(self, config):
++        self.id = 1
++        self.is_active = True
++        self.age = 10
++        self.needs = {'liquidity_need': 0.0}
++        self.inventory = {'wood': 10.0}
++        self.last_prices = {'wood': 10.0}
++        self.finance_state = FinanceState()
++        self.finance_engine = MagicMock()
++        self.wallet = MagicMock()
++        self.wallet.get_balance.return_value = 0
++        self.config = config
++        self.logger = MagicMock()
++        self._balance = 0 # Pennies
++
++    def get_all_items(self):
++        return self.inventory
++
++    def get_balance(self, currency):
++        return self._balance
++
++    def get_assets_by_currency(self):
++        return {DEFAULT_CURRENCY: self._balance}
++
++    def deposit(self, amount, currency):
++        pass
++
++    def withdraw(self, amount, currency):
++        pass
++
++# Concrete Mock Class for Market
++class DummyMarket(IMarket):
++    def __init__(self):
++        self.id = "wood"
++        self.buy_orders: Dict[str, List[Order]] = {}
++        self.sell_orders: Dict[str, List[Order]] = {}
++        self.matched_transactions = []
++        self.avg_price = 10.0 # Used by tests
++
++    def get_daily_avg_price(self) -> float:
++        return self.avg_price
++
++    def get_daily_volume(self) -> float:
++        return 0.0
++
++    def get_price(self, item_id: str) -> float:
++        return self.avg_price
+ 
+ class TestGraceProtocol:
+ 
+@@ -17,34 +71,35 @@ class TestGraceProtocol:
+         config.ASSETS_CLOSURE_THRESHOLD = 0.0
+         config.FIRM_CLOSURE_TURNS_THRESHOLD = 5
+         config.LIQUIDITY_NEED_INCREASE_RATE = 1.0
+-        firm = MagicMock()
+-        firm.id = 1
+-        firm.is_active = True
+-        firm.age = 10
+-        firm.needs = {'liquidity_need': 0.0}
+-        firm.inventory = {'wood': 10.0}
+-        firm.last_prices = {'wood': 10.0}
+-        firm.get_financial_snapshot.return_value = {}
+-        firm.finance_state = FinanceState()
+-        firm.finance_engine = MagicMock()
+-        firm.wallet = MagicMock()
+-        firm.wallet.get_balance.return_value = 0.0
+-        firm.config = config
+-        firm.get_all_items.return_value = {'wood': 10.0}
+-        firm.logger = MagicMock()
++
++        firm = DummyFirm(config)
++
+         return (firm, config)
+ 
+     def test_firm_grace_protocol(self, setup_firm_state):
+         firm, config = setup_firm_state
+-        market_mock = MagicMock()
+-        market_mock.avg_price = 10.0
+-        markets = {'wood': market_mock}
++        market = DummyMarket()
++
++        markets = {'wood': market}
+         state = MagicMock(spec=SimulationState)
+         state.firms = [firm]
+         state.markets = markets
+         state.time = 1
+-        manager = AgentLifecycleManager(config, MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock())
+-        firm.wallet.get_balance.return_value = -10.0
++        manager = AgentLifecycleManager(
++            config_module=config,
++            demographic_manager=MagicMock(),
++            inheritance_manager=MagicMock(),
++            firm_system=MagicMock(),
++            settlement_system=MagicMock(),
++            public_manager=MagicMock(),
++            logger=MagicMock(),
++            household_factory=MagicMock()
++        )
++
++        # firm.wallet.get_balance.return_value = -10.0 # This was for MagicMock
++        # Update dummy firm balance
++        firm._balance = -1000 # Pennies (-10.0)
++
+         manager.aging_system._process_firm_lifecycle(state)
+         assert firm.finance_state.is_distressed is True
+         assert firm.finance_state.distress_tick_counter == 1
+@@ -89,10 +144,19 @@ class TestGraceProtocol:
+         state.markets = {}
+         state.stock_market = stock_market_mock
+         state.time = 1
+-        manager = AgentLifecycleManager(config, MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock())
++        manager = AgentLifecycleManager(
++            config_module=config,
++            demographic_manager=MagicMock(),
++            inheritance_manager=MagicMock(),
++            firm_system=MagicMock(),
++            settlement_system=MagicMock(),
++            public_manager=MagicMock(),
++            logger=MagicMock(),
++            household_factory=MagicMock()
++        )
+         manager.aging_system._process_household_lifecycle(state)
+         assert hh.distress_tick_counter == 1
+         assert stock_market_mock.place_order.called
+         order = stock_market_mock.place_order.call_args[0][0]
+         assert isinstance(order, OrderDTO)
+-        assert order.item_id == 'stock_1'
+\ No newline at end of file
++        assert order.item_id == 'stock_1'
+diff --git a/tests/modules/finance/transaction/test_processor.py b/tests/modules/finance/transaction/test_processor.py
+index 1592647d..abeba582 100644
+--- a/tests/modules/finance/transaction/test_processor.py
++++ b/tests/modules/finance/transaction/test_processor.py
+@@ -106,7 +106,7 @@ def test_processor_dispatch_legacy_price(processor, state, mock_handler):
+ 
+     assert len(results) == 1
+     assert results[0].success is True
+-    assert results[0].amount_settled == 20.0 # 2 * 10.0
++    assert results[0].amount_settled == 2000.0 # 2 * 10.0 * 100 pennies = 2000
+ 
+ def test_processor_handler_failure(processor, state, mock_handler):
+     """Test that if handler returns False, result is failure."""
+diff --git a/tests/unit/systems/handlers/test_housing_handler.py b/tests/unit/systems/handlers/test_housing_handler.py
+index b59830f8..ed98002c 100644
+--- a/tests/unit/systems/handlers/test_housing_handler.py
++++ b/tests/unit/systems/handlers/test_housing_handler.py
+@@ -15,7 +15,7 @@ class DummyHousingParticipant(IHousingTransactionParticipant, IResident):
+     owned_properties = []
+     residing_property_id = None
+     is_homeless = True
+-    def get_balance(self, currency): return 20000.0
++    def get_balance(self, currency): return 2000000 # Pennies
+     def add_property(self, pid): pass
+     def remove_property(self, pid): pass
+     def deposit(self, amt, currency): pass
+@@ -24,7 +24,7 @@ class DummyHousingParticipant(IHousingTransactionParticipant, IResident):
+ class DummySeller(IPropertyOwner):
+     id = 4
+     owned_properties = [101]
+-    def get_balance(self, currency): return 50000.0
++    def get_balance(self, currency): return 5000000 # Pennies
+     def add_property(self, pid): pass
+     def remove_property(self, pid): pass
+     def deposit(self, amt, currency): pass
+@@ -59,7 +59,7 @@ class TestHousingTransactionHandler(unittest.TestCase):
+         # Mock Agents
+         self.buyer = create_autospec(DummyHousingParticipant, instance=True)
+         self.buyer.id = 3
+-        self.buyer.get_balance.return_value = 20000.0
++        self.buyer.get_balance.return_value = 2000000 # Pennies
+         self.buyer.current_wage = 20.0
+         self.buyer.owned_properties = []
+         self.buyer.residing_property_id = None
+@@ -67,7 +67,7 @@ class TestHousingTransactionHandler(unittest.TestCase):
+ 
+         self.seller = create_autospec(DummySeller, instance=True)
+         self.seller.id = 4
+-        self.seller.get_balance.return_value = 50000.0
++        self.seller.get_balance.return_value = 5000000 # Pennies
+         self.seller.owned_properties = [101]
+ 
+         # Mock Escrow Agent
+@@ -108,15 +108,16 @@ class TestHousingTransactionHandler(unittest.TestCase):
+             quantity=1.0,
+             market_id="housing",
+             transaction_type="housing",
+-            time=100
++            time=100,
++            total_pennies=1000000
+         )
+ 
+         success = self.handler.handle(tx, self.buyer, self.seller, self.state)
+ 
+         self.assertTrue(success)
+ 
+-        loan_amount = 8000.0 # 80% LTV of 10000
+-        down_payment = 2000.0
++        loan_amount = 800000 # 80% LTV of 1,000,000
++        down_payment = 200000 # 20%
+ 
+         # 1. Down Payment (Buyer -> Escrow)
+         self.state.settlement_system.transfer.assert_any_call(
+@@ -133,7 +134,7 @@ class TestHousingTransactionHandler(unittest.TestCase):
+ 
+         # 4. Final Settlement (Escrow -> Seller)
+         self.state.settlement_system.transfer.assert_any_call(
+-            self.escrow_agent, self.seller, 10000.0, f"final_settlement:unit_101", tick=100, currency=DEFAULT_CURRENCY
++            self.escrow_agent, self.seller, 1000000, f"final_settlement:unit_101", tick=100, currency=DEFAULT_CURRENCY
+         )
+ 
+         # 5. Mortgage Update
+@@ -152,7 +153,8 @@ class TestHousingTransactionHandler(unittest.TestCase):
+             quantity=1.0,
+             market_id="housing",
+             transaction_type="housing",
+-            time=100
++            time=100,
++            total_pennies=1000000
+         )
+ 
+         # Sequence of transfer results:
+@@ -184,7 +186,8 @@ class TestHousingTransactionHandler(unittest.TestCase):
+             quantity=1.0,
+             market_id="housing",
+             transaction_type="housing",
+-            time=100
++            time=100,
++            total_pennies=1000000
+         )
+ 
+         # Sequence:
+@@ -213,11 +216,11 @@ class TestHousingTransactionHandler(unittest.TestCase):
+ 
+         self.assertEqual(calls[3][0][0], self.escrow_agent)
+         self.assertEqual(calls[3][0][1], self.state.bank)
+-        self.assertEqual(calls[3][0][2], 8000.0)
++        self.assertEqual(calls[3][0][2], 800000)
+ 
+         self.assertEqual(calls[4][0][0], self.escrow_agent)
+         self.assertEqual(calls[4][0][1], self.buyer)
+-        self.assertEqual(calls[4][0][2], 2000.0)
++        self.assertEqual(calls[4][0][2], 200000)
+ 
+         self.assertIsNone(self.unit.mortgage_id)
+ 
+@@ -230,7 +233,8 @@ class TestHousingTransactionHandler(unittest.TestCase):
+             quantity=1.0,
+             market_id="housing",
+             transaction_type="housing",
+-            time=100
++            time=100,
++            total_pennies=1000000
+         )
+ 
+         # Pass government as seller
+@@ -240,5 +244,5 @@ class TestHousingTransactionHandler(unittest.TestCase):
+ 
+         # Verify transfer to Government
+         self.state.settlement_system.transfer.assert_any_call(
+-            self.escrow_agent, self.state.government, 10000.0, f"final_settlement:unit_101", tick=100, currency=DEFAULT_CURRENCY
++            self.escrow_agent, self.state.government, 1000000, f"final_settlement:unit_101", tick=100, currency=DEFAULT_CURRENCY
+         )
+diff --git a/tests/unit/test_lifecycle_reset.py b/tests/unit/test_lifecycle_reset.py
+index ff0265e2..74d71f13 100644
+--- a/tests/unit/test_lifecycle_reset.py
++++ b/tests/unit/test_lifecycle_reset.py
+@@ -13,7 +13,8 @@ class TestLifecycleReset:
+             firm_system=MagicMock(),
+             settlement_system=MagicMock(),
+             public_manager=MagicMock(),
+-            logger=MagicMock()
++            logger=MagicMock(),
++            household_factory=MagicMock()
+         )
+ 
+         household = MagicMock()
+diff --git a/tests/unit/test_transaction_processor.py b/tests/unit/test_transaction_processor.py
+index 5aa5ca88..b573bc75 100644
+--- a/tests/unit/test_transaction_processor.py
++++ b/tests/unit/test_transaction_processor.py
+@@ -68,7 +68,10 @@ def test_goods_handler_uses_atomic_settlement():
+ 
+     buyer = MagicMock(spec=IFinancialAgent)
+     buyer.id = 1
+-    buyer.get_balance.return_value = 100.0 # Set assets for solvency check
++    # Solvency check requires enough assets.
++    # Price is 10.0, so 1000 pennies.
++    # Buyer balance must be >= 1000 pennies.
++    buyer.get_balance.return_value = 10000 # 10000 pennies ($100)
+     buyer.inventory = {}
+     seller = MagicMock()
+     seller.id = 2
+@@ -76,7 +79,8 @@ def test_goods_handler_uses_atomic_settlement():
+ 
+     tx = Transaction(
+         buyer_id=1, seller_id=2, item_id="apple", price=10.0, quantity=1.0,
+-        market_id="goods", transaction_type="goods", time=0
++        market_id="goods", transaction_type="goods", time=0,
++        total_pennies=1000 # Explicitly set pennies
+     )
+ 
+     # Execute
+@@ -88,10 +92,10 @@ def test_goods_handler_uses_atomic_settlement():
+     # args: (buyer, credits, time)
+     assert args[0][0] == buyer
+     credits = args[0][1]
+-    # Expect [(seller, 10.0, ...)]
++    # Expect [(seller, 1000, ...)] - integer pennies
+     assert len(credits) == 1
+     assert credits[0][0] == seller
+-    assert credits[0][1] == 10.0
++    assert credits[0][1] == 1000
+ 
+ def test_public_manager_routing():
+     config = MagicMock()

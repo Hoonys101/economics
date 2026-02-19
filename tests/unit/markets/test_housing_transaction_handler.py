@@ -119,20 +119,20 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
     # Down payment (20% of 1000 = 200)
     # Loan (80% of 1000 = 800)
 
-    # 1. Down Payment: Buyer -> Escrow (200)
-    context.settlement_system.transfer.assert_any_call(buyer, escrow_agent, 200.0, "escrow_hold:down_payment:unit_101", tick=0, currency=DEFAULT_CURRENCY)
+    # 1. Down Payment: Buyer -> Escrow (20000)
+    context.settlement_system.transfer.assert_any_call(buyer, escrow_agent, 20000, "escrow_hold:down_payment:unit_101", tick=0, currency=DEFAULT_CURRENCY)
 
     # 2. Loan Grant called
     context.bank.grant_loan.assert_called()
 
     # 2b. Deposit Neutralization (Withdrawal)
-    context.bank.withdraw_for_customer.assert_called_with(1, 800.0)
+    context.bank.withdraw_for_customer.assert_called_with(1, 80000)
 
-    # 3. Disbursement: BANK -> Escrow (800)
-    context.settlement_system.transfer.assert_any_call(context.bank, escrow_agent, 800.0, "escrow_hold:loan_proceeds:unit_101", tick=0, currency=DEFAULT_CURRENCY)
+    # 3. Disbursement: BANK -> Escrow (80000)
+    context.settlement_system.transfer.assert_any_call(context.bank, escrow_agent, 80000, "escrow_hold:loan_proceeds:unit_101", tick=0, currency=DEFAULT_CURRENCY)
 
-    # 4. Final Settlement: Escrow -> Seller (1000)
-    context.settlement_system.transfer.assert_any_call(escrow_agent, seller, 1000.0, "final_settlement:unit_101", tick=0, currency=DEFAULT_CURRENCY)
+    # 4. Final Settlement: Escrow -> Seller (100000)
+    context.settlement_system.transfer.assert_any_call(escrow_agent, seller, 100000, "final_settlement:unit_101", tick=0, currency=DEFAULT_CURRENCY)
 
     # 5. Side Effects
     assert unit.owner_id == buyer.id
