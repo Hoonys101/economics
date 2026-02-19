@@ -31,4 +31,16 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         ),
         "file": "design/3_work_artifacts/spec/TEST_MODERNIZATION_SPEC.md"
     },
+    "exec-test-failure-fix": {
+        "title": "Restore Test Suite: Fix 10 Failures in Fiscal/Demographics/Auth",
+        "instruction": (
+            "Restore the test suite to a Green State as per the specific instructions in the spec.\n\n"
+            "**Key Instructions:**\n"
+            "1. **Fiscal/Taxation**: Replace `collect_tax` assertions in `test_transaction_handlers.py`, `test_tax_collection.py`, and `test_government_fiscal_policy.py` with `record_revenue` and `settle_atomic`. Ensure all agent mocks have explicit `.id` attributes.\n"
+            "2. **Demographics**: In `test_audit_integrity.py`, use a REAL `HouseholdFactory` with a mock `HouseholdFactoryContext` instead of mocking the factory class. Verify the birth gift transfer call.\n"
+            "3. **Auth**: Update `test_websocket_auth.py` and `test_server_auth.py` to catch BOTH `InvalidStatus` and `InvalidMessage` from websockets, as library version v14+ behavior changed.\n\n"
+            "**Constraint**: Do NOT modify simulation logic in `modules/`. Only modify files in `tests/` or create test-specific utilities."
+        ),
+        "file": "design/3_work_artifacts/spec/TEST_FAILURE_FIX_SPEC.md"
+    },
 }
