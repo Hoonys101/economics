@@ -38,9 +38,15 @@ class TestTaxIncidence(unittest.TestCase):
             action_proposal_engine=self.action_proposal_engine,
             state_builder=self.state_builder
         )
+        # Preserve original config
+        self.original_income_tax_payer = getattr(cfg, "INCOME_TAX_PAYER", "HOUSEHOLD")
+        self.original_income_tax_rate = getattr(cfg, "INCOME_TAX_RATE", 0.0)
 
     def tearDown(self):
         self.repository.close()
+        # Restore config
+        cfg.INCOME_TAX_PAYER = self.original_income_tax_payer
+        cfg.INCOME_TAX_RATE = self.original_income_tax_rate
 
     def _create_household(self, id: int, assets: float):
         mock_de = MagicMock(spec=IDecisionEngine)
@@ -114,6 +120,9 @@ class TestTaxIncidence(unittest.TestCase):
         sim.world_state.government = gov
         sim.world_state.agents[999] = gov
 
+        # Ensure gov uses the test-configured tax rate (since cfg might be read during init)
+        gov.income_tax_rate = cfg.INCOME_TAX_RATE
+
         # SettlementSystem
         from simulation.systems.settlement_system import SettlementSystem
         sim.settlement_system = SettlementSystem(logger=logger)
@@ -122,8 +131,10 @@ class TestTaxIncidence(unittest.TestCase):
         f.settlement_system = sim.settlement_system
         gov.settlement_system = sim.settlement_system
 
-        # TransactionManager components
-        from simulation.systems.transaction_manager import TransactionManager
+        # TransactionProcessor components
+        from simulation.systems.transaction_processor import TransactionProcessor
+        from simulation.systems.handlers.labor_handler import LaborTransactionHandler
+        from simulation.systems.handlers.financial_handler import FinancialTransactionHandler
         from simulation.systems.registry import Registry
         from simulation.systems.accounting import AccountingSystem
         from simulation.systems.central_bank_system import CentralBankSystem
@@ -140,22 +151,19 @@ class TestTaxIncidence(unittest.TestCase):
             return sim.world_state.agents.get(aid)
         mock_agent_registry.get_agent.side_effect = get_agent_side_effect
         sim.settlement_system.agent_registry = mock_agent_registry
-        sim.world_state.transaction_processor = TransactionManager(
-            registry=sim.registry,
-            accounting_system=sim.accounting_system,
-            settlement_system=sim.settlement_system,
-            central_bank_system=sim.central_bank_system,
-            escrow_agent=MagicMock(),
-            config=cfg,
-            handlers={},
-            logger=logger
-        )
+
+        sim.transaction_processor = TransactionProcessor(config_module=cfg)
+        sim.transaction_processor.register_handler("labor", LaborTransactionHandler())
+        sim.transaction_processor.register_handler("tax", FinancialTransactionHandler())
+        sim.world_state.transaction_processor = sim.transaction_processor
 
         return sim
 
     def test_household_payer_scenario(self):
         """가계가 세금을 납부하는 경우 (원천징수)"""
         cfg.INCOME_TAX_PAYER = "HOUSEHOLD"
+        cfg.INCOME_TAX_RATE = 0.1 # Match TAX_RATE_BASE for 1.0 adjustment
+
         h = self._create_household(1, 100000)
         f = self._create_firm(101, 500000)
         sim = self._setup_simulation(h, f)
@@ -176,6 +184,8 @@ class TestTaxIncidence(unittest.TestCase):
     def test_firm_payer_scenario(self):
         """기업이 세금을 납부하는 경우 (추가 납부)"""
         cfg.INCOME_TAX_PAYER = "FIRM"
+        cfg.INCOME_TAX_RATE = 0.1 # Match TAX_RATE_BASE for 1.0 adjustment
+
         h = self._create_household(1, 100000)
         f = self._create_firm(101, 500000)
         sim = self._setup_simulation(h, f)
