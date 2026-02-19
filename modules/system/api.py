@@ -236,6 +236,7 @@ class ICurrencyHolder(Protocol):
     def get_assets_by_currency(self) -> Dict[CurrencyCode, int]:
         ...
 
+@runtime_checkable
 class IAssetRecoverySystem(Protocol):
     """
     Interface for the Public Manager acting as a receiver of assets.

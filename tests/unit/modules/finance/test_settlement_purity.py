@@ -26,10 +26,6 @@ class TestSettlementPurity:
         assert isinstance(settlement_sys, IMonetaryAuthority), \
             "SettlementSystem must implement IMonetaryAuthority protocol"
 
-        # Explicitly check for new methods
-        assert hasattr(settlement_sys, "register_account")
-        assert hasattr(settlement_sys, "deregister_account")
-
     def test_finance_system_uses_monetary_authority(self):
         """
         Verify that FinanceSystem accepts an IMonetaryAuthority mock

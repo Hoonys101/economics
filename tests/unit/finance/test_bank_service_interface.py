@@ -31,12 +31,7 @@ class TestBankServiceInterface:
         return bank
 
     def test_bank_methods_presence(self, bank):
-        assert hasattr(bank, 'grant_loan')
-        assert hasattr(bank, 'repay_loan')
-        assert hasattr(bank, 'get_balance')
-        assert hasattr(bank, 'get_debt_status')
-        assert hasattr(bank, '_deposit')
-        assert hasattr(bank, '_withdraw')
+        assert isinstance(bank, IBankService)
 
     def test_grant_loan(self, bank, mock_finance_system):
         borrower_id = "101"

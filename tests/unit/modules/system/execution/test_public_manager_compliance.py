@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from modules.system.execution.public_manager import PublicManager
 from modules.finance.api import IFinancialAgent, InsufficientFundsError
-from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO
+from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, IAssetRecoverySystem
 
 class TestPublicManagerCompliance:
 
@@ -27,11 +27,7 @@ class TestPublicManagerCompliance:
 
     def test_implements_asset_recovery_system(self, public_manager):
         """Verify PublicManager implements IAssetRecoverySystem."""
-        assert hasattr(public_manager, 'process_bankruptcy_event')
-        assert hasattr(public_manager, 'generate_liquidation_orders')
-        assert hasattr(public_manager, 'deposit_revenue')
-        assert hasattr(public_manager, 'confirm_sale')
-        assert hasattr(public_manager, 'get_status_report')
+        assert isinstance(public_manager, IAssetRecoverySystem)
 
     def test_bankruptcy_processing_id_handling(self, public_manager):
         """Verify handling of bankruptcy events."""
