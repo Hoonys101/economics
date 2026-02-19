@@ -3,19 +3,22 @@ from unittest.mock import MagicMock
 from modules.governance.api import SystemCommandType, SetTaxRateCommand, SetInterestRateCommand, IGovernment, ICentralBank
 from modules.governance.processor import SystemCommandProcessor
 from simulation.dtos.api import SimulationState
+from simulation.agents.government import Government
+from simulation.systems.central_bank_system import CentralBankSystem
+from modules.government.dtos import FiscalPolicyDTO
 
 @pytest.fixture
 def mock_simulation_state():
     state = MagicMock(spec=SimulationState)
     state.time = 100
-    # Use MagicMock(spec=IGovernment) to satisfy protocol check
-    state.government = MagicMock(spec=IGovernment)
-    state.central_bank = MagicMock(spec=ICentralBank)
+    # Use MagicMock(spec=Government) to satisfy protocol check and prevent drift
+    state.government = MagicMock(spec=Government)
+    state.central_bank = MagicMock(spec=CentralBankSystem)
 
     # Setup government attributes
     state.government.corporate_tax_rate = 0.2
     state.government.income_tax_rate = 0.1
-    state.government.fiscal_policy = MagicMock()
+    state.government.fiscal_policy = MagicMock(spec=FiscalPolicyDTO)
     state.government.fiscal_policy.corporate_tax_rate = 0.2
     state.government.fiscal_policy.income_tax_rate = 0.1
 
@@ -71,15 +74,7 @@ def test_missing_government(mock_simulation_state):
 
 def test_protocol_guardrails(mock_simulation_state):
     # Setup an object that does NOT satisfy IGovernment
-    mock_simulation_state.government = MagicMock() # Not spec=IGovernment
-    # Explicitly remove an attribute required by IGovernment to fail isinstance check
-    # IGovernment requires: corporate_tax_rate, income_tax_rate, fiscal_policy
-    # MagicMock has all attributes by default.
-    # To make isinstance(mock, Protocol) fail, we need to ensure it DOESN'T implement it.
-    # runtime_checkable checks for presence of attributes.
-    # deleting an attribute from MagicMock instance is tricky because it regenerates on access unless we del it from __dict__ or spec it differently.
-
-    # Better approach: Create a dummy class that misses attributes
+    # We use a dummy class that definitely doesn't implement the protocol
     class NotGovernment:
         pass
 
@@ -97,9 +92,6 @@ def test_protocol_guardrails(mock_simulation_state):
     # Assert nothing happened (because it returned early)
     # Since NotGovernment doesn't have tax rates, we can't check them.
     # But we can check that no exception was raised (handled gracefully)
-    # and that the logger was called (if we could verify logs, but here just ensure safe execution).
 
-    # If logic proceeded, it would have tried to access attributes on NotGovernment and crashed (AttributeError).
-    # Since it didn't crash, the guardrail worked (or it crashed inside and was caught? No, execute doesn't catch generic Exception).
-
+    # We can also verify that execute returned safely.
     pass

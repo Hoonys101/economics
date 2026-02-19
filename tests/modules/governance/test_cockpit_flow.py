@@ -8,6 +8,8 @@ from modules.system.registry import GlobalRegistry, AgentRegistry
 from simulation.systems.settlement_system import SettlementSystem
 from simulation.world_state import WorldState
 from simulation.dtos.api import SimulationState
+from simulation.agents.government import Government
+from modules.government.dtos import FiscalPolicyDTO
 
 @pytest.fixture
 def mock_deps():
@@ -45,11 +47,15 @@ def test_cockpit_command_flow_tax_rate(mock_deps):
     )
 
     # Setup World State
-    sim.world_state.government = MagicMock()
+    # Use spec=Government to prevent Mock Drift and ensure Protocol Fidelity
+    sim.world_state.government = MagicMock(spec=Government)
     sim.world_state.government.corporate_tax_rate = 0.2
     sim.world_state.government.income_tax_rate = 0.1
-    sim.world_state.government.fiscal_policy = MagicMock()
+
+    # Use spec=FiscalPolicyDTO for nested object
+    sim.world_state.government.fiscal_policy = MagicMock(spec=FiscalPolicyDTO)
     sim.world_state.government.fiscal_policy.corporate_tax_rate = 0.2
+    sim.world_state.government.fiscal_policy.income_tax_rate = 0.1 # Ensure all required fields are present if needed
 
     sim.world_state.time = 1
 
