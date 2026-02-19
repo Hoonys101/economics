@@ -188,6 +188,31 @@ class OrderBookMarket(Market):
             extra={"market_id": self.id, "tags": ["market_clear"]},
         )
 
+    def cancel_orders(self, agent_id: str) -> None:
+        """
+        Cancels all orders for the specified agent.
+        Iterates through buy and sell orders and removes any belonging to the agent.
+        """
+        removed_count = 0
+
+        # Iterate over buy orders
+        for item_id, orders in self._buy_orders.items():
+            original_len = len(orders)
+            self._buy_orders[item_id] = [o for o in orders if o.agent_id != agent_id]
+            removed_count += original_len - len(self._buy_orders[item_id])
+
+        # Iterate over sell orders
+        for item_id, orders in self._sell_orders.items():
+            original_len = len(orders)
+            self._sell_orders[item_id] = [o for o in orders if o.agent_id != agent_id]
+            removed_count += original_len - len(self._sell_orders[item_id])
+
+        if removed_count > 0:
+            self.logger.info(
+                f"CANCEL_ORDERS | Removed {removed_count} orders for agent {agent_id}",
+                extra={"market_id": self.id, "agent_id": agent_id, "removed_count": removed_count}
+            )
+
     def place_order(self, order_dto: CanonicalOrderDTO, current_time: int):
         """시장에 주문을 제출합니다. 매칭은 별도의 메서드로 처리됩니다.
         WO-136: Checks dynamic circuit breakers before accepting.

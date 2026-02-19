@@ -45,6 +45,9 @@ class DeathSystem(IDeathSystem):
         inactive_firms = [f for f in state.firms if not f.is_active]
 
         for firm in inactive_firms:
+            # 0. Cancel Orders (Atomicity Fix)
+            self._cancel_agent_orders(firm.id, state)
+
             # Delegate strictly to LiquidationManager
             if isinstance(firm, ILiquidatable):
                  self.liquidation_manager.initiate_liquidation(firm, state)
@@ -74,6 +77,9 @@ class DeathSystem(IDeathSystem):
         inactive_households = [h for h in state.households if not h.is_active]
 
         for household in inactive_households:
+             # 0. Cancel Orders (Atomicity Fix)
+             self._cancel_agent_orders(household.id, state)
+
              # Preserve for history/logging if needed
              if state.inactive_agents is not None:
                  state.inactive_agents[household.id] = household
@@ -127,6 +133,23 @@ class DeathSystem(IDeathSystem):
         if hasattr(state, 'escrow_agent') and state.escrow_agent: state.agents[state.escrow_agent.id] = state.escrow_agent
 
         return transactions
+
+    def _cancel_agent_orders(self, agent_id: str | int, state: SimulationState) -> None:
+        """
+        Scrub agent orders from all markets to ensure atomicity.
+        """
+        if not state.markets:
+            return
+
+        for market in state.markets.values():
+            # Check for cancel_orders method (Protocol compliance)
+            if isinstance(market, IMarket):
+                try:
+                    market.cancel_orders(agent_id)
+                except Exception as e:
+                    self.logger.error(
+                        f"ORDER_SCRUB_FAIL | Failed to cancel orders for agent {agent_id} in market {getattr(market, 'id', 'unknown')}: {e}"
+                    )
 
     def _calculate_inventory_value(self, inventory: dict, markets: dict) -> int:
         """

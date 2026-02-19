@@ -19,7 +19,7 @@
 | **TD-ARCH-GOV-MISMATCH** | Architecture | **Singleton vs List**: `WorldState` has `governments` (List) vs Singelton `government`. | **Medium**: Logic Fragility. | **Identified** |
 | **TD-GOV-SOLVENCY** | Government | **Binary Gates**: Spending modules use all-or-nothing logic; lack partial execution/solvency pre-checks. | **Medium**: Economic Stall. | **Audit Done** |
 | **TD-CRIT-LIFECYCLE-ATOM** | Lifecycle | **Agent Startup Atomicity**: Firm registration (Registry) must occur *before* financial initialization (Transfer). | **Critical**: Runtime Crash. | Open |
-| **TD-SYS-QUEUE-SCRUB** | Lifecycle | **Lifecycle Queue Scrubbing**: `AgentLifecycleManager` fails to remove stale IDs from `inter_tick_queue` and `effects_queue`. | **High**: Logic Leak. | Open |
+| **TD-SYS-QUEUE-SCRUB** | Lifecycle | **Lifecycle Queue Scrubbing**: AgentLifecycleManager fails to remove stale IDs from queues. (Partial Fix: Market orders are now scrubbed via `fix-agent-lifecycle-atomicity`). | **High**: Logic Leak. | **In Progress** |
 | **TD-GOV-SPEND-GATE** | Government | **Binary Spending Gates**: Infrastructure/Welfare modules need "Partial Execution" support. | **High**: Economic Stall. | Open |
 | **TD-CRIT-FLOAT-MA** | Finance | **M&A Float Violation**: `MAManager` and `StockMarket` calculate and transfer `float` values. | **Critical**: Type Error. | Open |
 | **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Fiscal Handlers**: `bailout`, `bond_issuance` types not registered in `TransactionProcessor`. | **Medium**: Runtime Failure. | Open |

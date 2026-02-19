@@ -36,6 +36,7 @@ class StockMarket(Market):
         self.config_module = config_module
         self.logger = logger or logging.getLogger(__name__)
         self.shareholder_registry = shareholder_registry
+        self.matched_transactions: List[Transaction] = []
         self.buy_orders: Dict[int, List[ManagedOrder]] = defaultdict(list)
         self.sell_orders: Dict[int, List[ManagedOrder]] = defaultdict(list)
         self.last_prices: Dict[int, float] = {}
@@ -251,3 +252,34 @@ class StockMarket(Market):
         self.buy_orders.clear()
         self.sell_orders.clear()
         self.reset_daily_stats()
+
+    def cancel_orders(self, agent_id: str) -> None:
+        """
+        Cancels all orders for the specified agent.
+        """
+        removed_count = 0
+
+        # Iterate over buy orders
+        for firm_id, orders in self.buy_orders.items():
+            original_len = len(orders)
+            # ManagedOrder.order is CanonicalOrderDTO
+            self.buy_orders[firm_id] = [
+                m for m in orders
+                if str(m.order.agent_id) != str(agent_id) and m.order.agent_id != agent_id
+            ]
+            removed_count += original_len - len(self.buy_orders[firm_id])
+
+        # Iterate over sell orders
+        for firm_id, orders in self.sell_orders.items():
+            original_len = len(orders)
+            self.sell_orders[firm_id] = [
+                m for m in orders
+                if str(m.order.agent_id) != str(agent_id) and m.order.agent_id != agent_id
+            ]
+            removed_count += original_len - len(self.sell_orders[firm_id])
+
+        if removed_count > 0:
+            self.logger.info(
+                f"CANCEL_ORDERS | Removed {removed_count} stock orders for agent {agent_id}",
+                extra={"market_id": self.id, "agent_id": agent_id, "removed_count": removed_count}
+            )

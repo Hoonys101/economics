@@ -19,3 +19,7 @@ class IMarket(Protocol):
     def get_price(self, item_id: str) -> float:
         """Returns the current market price for the given item."""
         ...
+
+    def cancel_orders(self, agent_id: str) -> None:
+        """Cancels all orders for the specified agent."""
+        ...

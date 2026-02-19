@@ -243,6 +243,7 @@ class IHousingTransactionParticipant(IPropertyOwner, IFinancialAgent, Protocol):
         """Indicates if the agent is currently homeless."""
         ...
 
+@runtime_checkable
 class IMarket(Protocol):
     """
     Standard interface for all market types.
@@ -266,4 +267,8 @@ class IMarket(Protocol):
 
     def clear_orders(self) -> None:
         """Clears all orders for the current tick."""
+        ...
+
+    def cancel_orders(self, agent_id: str) -> None:
+        """Cancels all orders for the specified agent."""
         ...
