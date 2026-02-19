@@ -3,26 +3,28 @@
     "version": "1.0"
   },
   "missions": {
-    "analyze-test-regressions-v2": {
-      "key": "analyze-test-regressions-v2",
-      "title": "Analyze Persistent 'AttributeError: dict object has no attribute market_data'",
+    "analyze-runtime-structural-failures": {
+      "key": "analyze-runtime-structural-failures",
+      "title": "Structural Runtime Failure & Cleanup Analysis",
       "type": "gemini",
-      "instruction_raw": "Analyze the persistent `AttributeError: 'dict' object has no attribute 'market_data'` failures.\n\n**Context**:\nWe recently updated `modules/government/engines/fiscal_engine.py` to use dot notation for `MarketSnapshotDTO` access. However, multiple tests (integration and unit) are failing because they are still passing raw dictionaries instead of `MarketSnapshotDTO` objects to `FiscalEngine.decide`.\n\n**Objectives**:\n1. Identify all test files passing raw dicts to `FiscalEngine`.\n2. Design a comprehensive fix that updates these tests to pass valid `MarketSnapshotDTO` objects.\n3. Ensure `test_government_fiscal_policy.py` and `test_fiscal_engine.py` are covered.\n\n**Output**: A spec `TEST_REGRESSION_FIX_V2_SPEC.md` detailing the required test updates.",
+      "instruction_raw": "\n\ubd84\uc11d \ubaa9\ud45c: \uc2dc\ubbac\ub808\uc774\uc158 \ub7f0\ud0c0\uc784 \uc911 \ubc1c\uc0dd\ud558\ub294 \uad6c\uc870\uc801 \uc624\ub958\uc758 \uadfc\ubcf8 \uc6d0\uc778 \ud30c\uc545.\n\n\ubd84\uc11d \ub300\uc0c1:\n1. 'Destination account does not exist: 120' \uc624\ub958:\n   - Agent 120 (\ub610\ub294 \ub2e4\ub978 ID)\uc774 Liquidation/Death \uc774\ud6c4\uc5d0\ub3c4 \uc65c \ud2b8\ub79c\uc7ad\uc158\uc758 \ub300\uc0c1\uc73c\ub85c \ub0a8\uc544\uc788\ub294\uc9c0 \ubd84\uc11d.\n   - DeathSystem\uc758 \uc5d0\uc774\uc804\ud2b8 \uc81c\uac70 \ub85c\uc9c1\uacfc TransactionProcessor\uc758 \uc5d0\uc774\uc804\ud2b8 \ucc38\uc870 \ub85c\uc9c1 \uac04\uc758 \uc815\ud569\uc131 \uc720\ubb34 \ud655\uc778.\n2. 'No handler for tx type: bond_interest' \uacbd\uace0:\n   - FiscalEngine\uc774 \uc0dd\uc131\ud558\ub294 bond_interest \ud2b8\ub79c\uc7ad\uc158\uc774 \uc2dc\uc2a4\ud15c\uc5d0 \uc65c \ub204\ub77d\ub418\uc5c8\ub294\uc9c0 \ud655\uc778.\n3. 'Insufficient funds' \uc624\ub958:\n   - \uc815\ubd80 \ub610\ub294 \uc911\uc559\uc740\ud589\uc774 \uc608\uc0b0 \ubc94\uc704\ub97c \ucd08\uacfc\ud558\uc5ec \uc9d1\ud589\uc744 \uc2dc\ub3c4\ud558\ub294 \ucf54\ub4dc \uacbd\ub85c \uc2dd\ubcc4.\n   - '\uc608\uc0b0 \uc5c6\uc774\ub294 \uc9d1\ud589 \uc5c6\ub2e4'\ub294 \uc6d0\uce59\uc774 \uc704\ubc30\ub418\ub294 \uc9c0\uc810 \ud0d0\uc0c9.\n\n\uacb0\uacfc\ubb3c:\n- \uac01 \uc624\ub958\ubcc4 root cause \ubd84\uc11d \ub9ac\ud3ec\ud2b8.\n- \uad6c\uc870\uc801 \ud574\uacb0\uc744 \uc704\ud55c 'Integrity Guard' \ubc0f 'Cleanup Sync' \uc124\uacc4 \uc81c\uc548.\n",
       "status": "pending",
       "created_at": "",
       "command": null,
       "file_path": null,
       "wait": false,
       "session_id": null,
-      "worker": "spec",
+      "worker": "audit",
       "context_files": [
-        "modules/government/engines/fiscal_engine.py",
-        "tests/integration/test_government_fiscal_policy.py",
-        "tests/modules/government/engines/test_fiscal_engine.py",
-        "simulation/dtos/api.py"
+        "simulation/systems/settlement_system.py",
+        "simulation/systems/transaction_processor.py",
+        "simulation/systems/lifecycle_manager.py",
+        "simulation/systems/handlers/financial_handler.py",
+        "modules/system/builders/simulation_builder.py",
+        "reports/diagnostics/runtime_audit.log"
       ],
-      "output_path": "design/3_work_artifacts/spec/TEST_REGRESSION_FIX_V2_SPEC.md",
-      "model": null,
+      "output_path": "reports/diagnostics/structural_analysis_report.md",
+      "model": "gemini-2.0-pro-exp-02-05",
       "audit_requirements": null
     }
   }

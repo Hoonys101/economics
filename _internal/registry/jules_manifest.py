@@ -16,62 +16,29 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "exec-test-regression-fix": {
-        "title": "Fix 3 Specific Test Regressions (Factory, Fiscal DTO, Mocks)",
-        "instruction": (
-            "Fix the 3 specific test regressions identified in the regression spec.\n\n"
-            "**Key Instructions:**\n"
-            "1. **AgentFactory**: Add the missing `mock_config_module` fixture to `tests/simulation/factories/test_agent_factory.py`.\n"
-            "2. **FiscalEngine**: Update `modules/government/engines/fiscal_engine.py` to access `MarketSnapshotDTO` and `FiscalStateDTO` using dot notation (attribute access), NOT dictionary subscription.\n"
-            "3. **Integration Tests**: In `tests/integration/test_government_refactor_behavior.py`, ensure `mock_config` provides concrete float/int values for `WEALTH_TAX_THRESHOLD`, `UNEMPLOYMENT_BENEFIT_RATIO`, etc., to prevent `MagicMock < float` errors.\n\n"
-            "**Constraint**: Ensure DTOs are treated as objects in the Engine and Mocks are strictly typed in tests."
-        ),
-        "file": "design/3_work_artifacts/spec/TEST_REGRESSION_FIX_SPEC.md",
-        "wait": 30
-    },
-    "exec-test-regression-fix-v2": {
-        "title": "Fix FiscalEngine Test Regressions (DTO Instantiation)",
-        "instruction": (
-            "Fix the persistent `AttributeError: 'dict' object has no attribute 'market_data'` in `tests/modules/government/engines/test_fiscal_engine.py`.\n\n"
-            "**Key Instructions:**\n"
-            "1. **Import DTO**: Add `from modules.system.api import MarketSnapshotDTO` to `tests/modules/government/engines/test_fiscal_engine.py`.\n"
-            "2. **Refactor Tests**: specificially `test_decide_expansionary`, `test_decide_contractionary`, `test_evaluate_bailout_solvent`, and `test_evaluate_bailout_insolvent`.\n"
-            "3. **Instantiation**: Replace raw dictionary `market` objects with proper `MarketSnapshotDTO` instances, ensuring `market_data` is populate correctly as a nested dictionary.\n"
-            "   Example:\n"
-            "   ```python\n"
-            "   market = MarketSnapshotDTO(\n"
-            "       tick=100,\n"
-            "       market_signals={},\n"
-            "       market_data={'current_gdp': 1000.0, 'inflation_rate_annual': 0.02} ...\n"
-            "   )\n"
-            "   ```\n"
-            "**Goal**: Eliminate `AttributeError` by ensuring `FiscalEngine` receives a valid DTO."
-        ),
-        "file": "design/3_work_artifacts/spec/TEST_REGRESSION_FIX_V2_SPEC.md",
-        "wait": 30
-    },
-    "exec-final-test-fix": {
-        "title": "Fix Final Test Regression (Government.py DTO Instantiation)",
-        "instruction": (
-            "Fix the `AttributeError: 'dict' object has no attribute 'market_data'` error in `simulation/agents/government.py`.\n\n"
-            "**Key Instructions:**\n"
-            "1. Locate the `provide_firm_bailout` method in `simulation/agents/government.py`.\n"
-            "2. Find the `market_snapshot` declaration (roughly line 522).\n"
-            "3. Replace the raw dictionary instantiation with a proper `MarketSnapshotDTO` instance.\n"
-            "   Example:\n"
-            "   ```python\n"
-            "   market_snapshot = MarketSnapshotDTO(\n"
-            "       tick=current_tick,\n"
-            "       market_signals={},\n"
-            "       market_data={\n"
-            "           \"inflation_rate_annual\": 0.0,\n"
-            "           \"current_gdp\": 0.0\n"
-            "       }\n"
-            "   )\n"
-            "   ```\n"
-            "**Goal**: Ensure `self.fiscal_engine.decide` receives the correct DTO dataclass, resolving the integration test failure."
-        ),
-        "file": "simulation/agents/government.py",
-        "wait": 30
-    },
+    "implement-runtime-structural-fixes": {
+        "title": "Implement Structural Runtime Stability Fixes",
+        "instruction": """
+구현 목표: 런타임 진단 로그에 기반한 구조적 결함 해결 및 'No Budget, No Execution' 원칙 강제.
+
+수정 사항:
+1. simulation/systems/firm_management.py:
+   - spawn_firm()에서 final_startup_cost를 int()로 캐스팅하여 SettlementSystem 타입 오류 해결.
+2. simulation/systems/transaction_processor.py:
+   - 트랜잭션 처리 전 buyer, seller 존재 여부 확인 로직 추가 (Agent Existential Guard).
+3. simulation/initialization/initializer.py:
+   - bond_interest -> MonetaryTransactionHandler 연결.
+   - holding_cost -> FinancialTransactionHandler 연결.
+4. simulation/systems/settlement_system.py:
+   - _prepare_seamless_funds() 내의 자동 은행 인출(Reflexive Liquidity) 로직 제거.
+5. simulation/systems/handlers/financial_handler.py:
+   - holding_cost 트랜잭션 타입 지원 추가.
+6. simulation/systems/handlers/monetary_handler.py:
+   - bond_interest 트랜잭션 타입 지원 추가.
+
+검증: 
+- 각각의 수정을 완료하고 python diagnose_runtime.py를 실행하여 로그에서 TypeError 및 Missing Handler 오류가 사라졌는지 확인.
+""",
+        "wait": True
+    }
 }

@@ -23,26 +23,35 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
-    "analyze-test-regressions-v2": {
-        "title": "Analyze Persistent 'AttributeError: dict object has no attribute market_data'",
-        "worker": "spec",
-        "instruction": (
-            "Analyze the persistent `AttributeError: 'dict' object has no attribute 'market_data'` failures.\n\n"
-            "**Context**:\n"
-            "We recently updated `modules/government/engines/fiscal_engine.py` to use dot notation for `MarketSnapshotDTO` access. However, multiple tests (integration and unit) are failing because they are still passing raw dictionaries instead of `MarketSnapshotDTO` objects to `FiscalEngine.decide`.\n\n"
-            "**Objectives**:\n"
-            "1. Identify all test files passing raw dicts to `FiscalEngine`.\n"
-            "2. Design a comprehensive fix that updates these tests to pass valid `MarketSnapshotDTO` objects.\n"
-            "3. Ensure `test_government_fiscal_policy.py` and `test_fiscal_engine.py` are covered.\n\n"
-            "**Output**: A spec `TEST_REGRESSION_FIX_V2_SPEC.md` detailing the required test updates."
-        ),
+    "analyze-runtime-structural-failures": {
+        "title": "Structural Runtime Failure & Cleanup Analysis",
+        "worker": "audit",
+        "instruction": """
+분석 목표: 시뮬레이션 런타임 중 발생하는 구조적 오류의 근본 원인 파악.
+
+분석 대상:
+1. 'Destination account does not exist: 120' 오류:
+   - Agent 120 (또는 다른 ID)이 Liquidation/Death 이후에도 왜 트랜잭션의 대상으로 남아있는지 분석.
+   - DeathSystem의 에이전트 제거 로직과 TransactionProcessor의 에이전트 참조 로직 간의 정합성 유무 확인.
+2. 'No handler for tx type: bond_interest' 경고:
+   - FiscalEngine이 생성하는 bond_interest 트랜잭션이 시스템에 왜 누락되었는지 확인.
+3. 'Insufficient funds' 오류:
+   - 정부 또는 중앙은행이 예산 범위를 초과하여 집행을 시도하는 코드 경로 식별.
+   - '예산 없이는 집행 없다'는 원칙이 위배되는 지점 탐색.
+
+결과물:
+- 각 오류별 root cause 분석 리포트.
+- 구조적 해결을 위한 'Integrity Guard' 및 'Cleanup Sync' 설계 제안.
+""",
         "context_files": [
-            "modules/government/engines/fiscal_engine.py",
-            "tests/integration/test_government_fiscal_policy.py",
-            "tests/modules/government/engines/test_fiscal_engine.py",
-            "simulation/dtos/api.py"
+            "simulation/systems/settlement_system.py",
+            "simulation/systems/transaction_processor.py",
+            "simulation/systems/lifecycle_manager.py",
+            "simulation/systems/handlers/financial_handler.py",
+            "modules/system/builders/simulation_builder.py",
+            "reports/diagnostics/runtime_audit.log"
         ],
-        "output_path": "design/3_work_artifacts/spec/TEST_REGRESSION_FIX_V2_SPEC.md"
-    },
+        "output_path": "reports/diagnostics/structural_analysis_report.md",
+        "model": "gemini-2.0-pro-exp-02-05"
+    }
 }
