@@ -12,8 +12,8 @@ def test_indicator_aggregation(simple_household, mock_config_module):
     tracker = EconomicIndicatorTracker(config_module=mock_config_module)
 
     # Setup Household state
-    # tracker calculates total_consumption from household._econ_state.current_consumption
-    simple_household._econ_state.current_consumption = 10.0
+    # tracker calculates total_consumption from household._econ_state.consumption_expenditure_this_tick_pennies
+    simple_household._econ_state.consumption_expenditure_this_tick_pennies = 1000
     simple_household.is_active = True
 
     # Act
@@ -32,4 +32,4 @@ def test_indicator_aggregation(simple_household, mock_config_module):
     print(f"Latest metrics: {latest_metrics}")
 
     assert "total_consumption" in latest_metrics
-    assert latest_metrics["total_consumption"] == 10.0
+    assert latest_metrics["total_consumption"] == 1000

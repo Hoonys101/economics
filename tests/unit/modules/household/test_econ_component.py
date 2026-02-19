@@ -61,7 +61,9 @@ class TestEconComponent:
             price_memory_length=10,
             adaptation_rate=0.1,
             labor_income_this_tick_pennies=0,
-            capital_income_this_tick_pennies=0
+            capital_income_this_tick_pennies=0,
+            consumption_expenditure_this_tick_pennies=0,
+            food_expenditure_this_tick_pennies=0
         )
 
     def test_update_perceived_prices_basic(self, econ_state, mock_config):
