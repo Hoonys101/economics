@@ -193,6 +193,8 @@ class Household(
             adaptation_rate=adaptation_rate,
             labor_income_this_tick_pennies=0,
             capital_income_this_tick_pennies=0,
+            consumption_expenditure_this_tick_pennies=0,
+            food_expenditure_this_tick_pennies=0,
             initial_assets_record_pennies=initial_assets_record if initial_assets_record is not None else 0
         )
 
@@ -491,7 +493,7 @@ class Household(
             agent_id=self.id,
             labor_income_this_tick=self._econ_state.labor_income_this_tick_pennies,
             capital_income_this_tick=self._econ_state.capital_income_this_tick_pennies,
-            consumption_this_tick=self._econ_state.current_consumption,
+            consumption_this_tick=self._econ_state.consumption_expenditure_this_tick_pennies,
             utility_this_tick=None,
             savings_rate_this_tick=None
         )
@@ -1016,6 +1018,24 @@ class Household(
         """Adds to labor income tracker (called by Handlers)."""
         self._econ_state.labor_income_this_tick_pennies += amount
 
+    def add_consumption_expenditure(self, amount: int, item_id: Optional[str] = None) -> None:
+        """
+        Adds to consumption expenditure tracker (called by Handlers).
+        Implements IConsumptionTracker.
+        """
+        self._econ_state.consumption_expenditure_this_tick_pennies += amount
+
+        # Simple heuristic for food identification or use goods data
+        is_food = False
+        if item_id:
+             if "food" in item_id.lower():
+                 is_food = True
+             elif item_id in self.goods_info_map and self.goods_info_map[item_id].get("type") == "food":
+                 is_food = True
+
+        if is_food:
+            self._econ_state.food_expenditure_this_tick_pennies += amount
+
     def trigger_emergency_liquidation(self) -> List[Order]:
         """
         WO-167: Trigger panic selling/liquidation for distress.
@@ -1038,6 +1058,8 @@ class Household(
         """
         self._econ_state.labor_income_this_tick_pennies = 0
         self._econ_state.capital_income_this_tick_pennies = 0
+        self._econ_state.consumption_expenditure_this_tick_pennies = 0
+        self._econ_state.food_expenditure_this_tick_pennies = 0
         self._econ_state.current_consumption = 0.0
         self._econ_state.current_food_consumption = 0.0
         self.logger.debug(

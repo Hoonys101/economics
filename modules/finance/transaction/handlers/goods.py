@@ -4,7 +4,7 @@ from simulation.models import Transaction
 from simulation.dtos.api import SimulationState
 from simulation.systems.api import ISpecializedTransactionHandler
 from modules.finance.utils.currency_math import round_to_pennies
-from modules.finance.transaction.handlers.protocols import ISolvent, ITaxCollector
+from modules.finance.transaction.handlers.protocols import ISolvent, ITaxCollector, IConsumptionTracker
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +110,10 @@ class GoodsTransactionHandler(ISpecializedTransactionHandler):
                         "payee_id": government.id,
                         "error_message": None
                     })
+
+            # Track Consumption Expenditure (Confirmed Success)
+            if isinstance(buyer, IConsumptionTracker):
+                buyer.add_consumption_expenditure(total_cost, item_id=tx.item_id)
 
             return True
 

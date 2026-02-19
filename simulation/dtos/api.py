@@ -64,10 +64,10 @@ class EconomicIndicatorData:
     food_trade_volume: Optional[float] = None
     avg_goods_price: Optional[float] = None
     total_production: Optional[float] = None
-    total_consumption: Optional[float] = None
+    total_consumption: Optional[int] = None
     total_household_assets: Optional[int] = None # Changed for Reporting DTO Hardening (Pennies)
     total_firm_assets: Optional[int] = None # Changed for Reporting DTO Hardening (Pennies)
-    total_food_consumption: Optional[float] = None
+    total_food_consumption: Optional[int] = None
     total_inventory: Optional[float] = None
     avg_survival_need: Optional[float] = None
     total_labor_income: Optional[int] = None # Changed for Reporting DTO Hardening (Pennies)

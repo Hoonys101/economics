@@ -331,12 +331,12 @@ class EconomicIndicatorTracker:
         record["total_production"] = total_production
 
         total_consumption = sum(
-            h._econ_state.current_consumption for h in households if h._bio_state.is_active
+            h._econ_state.consumption_expenditure_this_tick_pennies for h in households if h._bio_state.is_active
         )
         record["total_consumption"] = total_consumption
 
         total_food_consumption = sum(
-            h._econ_state.current_food_consumption
+            h._econ_state.food_expenditure_this_tick_pennies
             for h in households
             if isinstance(h, Household) and h._bio_state.is_active
         )
