@@ -187,11 +187,14 @@ def test_newborn_receives_initial_needs_from_config(mock_config, mock_simulation
     assert child.parent_id == parent_agent.id
     assert child.age == 0.0
 
-    # Verify asset transfer happened
+    # Verify asset transfer delegation
     expected_gift = parent_agent.assets * 0.1
-    # Check if transfer was called on the mock simulation's settlement system
-    # Since we didn't inject into manager.settlement_system in this test (it's None),
-    # the manager falls back to simulation.settlement_system (which is mock_simulation.settlement_system)
-    mock_simulation.settlement_system.transfer.assert_called_once_with(
-        parent_agent, child, expected_gift, "BIRTH_GIFT"
+    # DemographicManager delegates transfer to factory via initial_assets arg
+    # Note: next_agent_id was 101, then incremented to 102. The call used 101.
+    mock_factory.create_newborn.assert_called_once_with(
+        parent=parent_agent,
+        new_id=101,
+        initial_assets=int(expected_gift),
+        current_tick=mock_simulation.time,
+        simulation=mock_simulation
     )

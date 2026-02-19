@@ -87,31 +87,11 @@ def test_calculate_corporate_tax_delegation(government_setup):
         env["government"].corporate_tax_rate # Should pass the current rate (0.25)
     )
 
-def test_collect_tax_delegation(government_setup):
-    """Test if collect_tax uses SettlementSystem and TaxService.record_revenue."""
+def test_collect_tax_removed(government_setup):
+    """Verify that collect_tax is removed."""
     env = government_setup
-    amount = 1000
-    tax_type = 'income'
-    source_id = 101
-    current_tick = 50
-
-    # Ensure settlement_system is present
-    env["government"].settlement_system = Mock()
-    env["government"].settlement_system.transfer.return_value = True
-
-    env["government"].collect_tax(amount, tax_type, source_id, current_tick)
-
-    # Note: Government.collect_tax calls settlement_system.transfer(payer, self, amount, memo)
-    env["government"].settlement_system.transfer.assert_called_once_with(
-        source_id,
-        env["government"],
-        amount,
-        f"{tax_type} collection"
-    )
-
-    # And delegates recording to TaxService
-    env["mock_tax_service"].record_revenue.assert_called_once()
-    assert env["mock_tax_service"].record_revenue.call_args[0][0]['amount_collected'] == amount
+    with pytest.raises(AttributeError):
+        env["government"].collect_tax(100, "test", Mock(), 1)
 
 def test_run_public_education_delegation(government_setup):
     """Test if run_public_education delegates to MinistryOfEducation."""

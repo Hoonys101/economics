@@ -224,35 +224,6 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
     def process_monetary_transactions(self, transactions: List[Transaction]):
         self.monetary_ledger.process_transactions(transactions)
 
-    def collect_tax(self, amount: int, tax_type: str, payer: Any, current_tick: int) -> "TaxCollectionResult":
-        warnings.warn(
-            "Government.collect_tax is deprecated. Use settlement.settle_atomic and government.record_revenue() instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        payer_id = payer.id if hasattr(payer, 'id') else str(payer)
-        if not self.settlement_system:
-            logger.error("Government has no SettlementSystem linked. Cannot collect tax.")
-            return {
-                "success": False,
-                "amount_collected": 0,
-                "tax_type": tax_type,
-                "payer_id": payer_id,
-                "payee_id": self.id,
-                "error_message": "No SettlementSystem linked"
-            }
-        success = self.settlement_system.transfer(payer, self, amount, f"{tax_type} collection")
-        result = {
-            "success": bool(success),
-            "amount_collected": amount if success else 0,
-            "tax_type": tax_type,
-            "payer_id": payer_id,
-            "payee_id": self.id,
-            "error_message": None if success else "Transfer failed"
-        }
-        self.record_revenue(result)
-        return result
-
     def record_revenue(self, result: "TaxCollectionResult"):
         self.tax_service.record_revenue(result)
 

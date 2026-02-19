@@ -71,21 +71,45 @@ class LaborTransactionHandler(ISpecializedTransactionHandler):
              sys_logger.warning("LaborTransactionHandler: Government does not implement ITaxCollector.")
 
         if tax_payer == "FIRM":
-            # Firm pays Wage to Household
-            success = settlement.transfer(buyer, seller, trade_value, f"labor_wage:{tx.transaction_type}")
-            if success and tax_amount > 0:
-                 # Then Firm pays Tax to Gov
-                 # Using collect_tax which should handle transfer and recording
-                if isinstance(government, ITaxCollector):
-                    government.collect_tax(tax_amount, "income_tax_firm", buyer, current_time)
+            # Firm pays Wage to Household AND Tax to Gov Atomically
+            credits = [(seller, trade_value, f"labor_wage:{tx.transaction_type}")]
+            if tax_amount > 0:
+                credits.append((government, tax_amount, "income_tax_firm"))
+
+            success = settlement.settle_atomic(
+                debit_agent=buyer,
+                credits_list=credits,
+                tick=current_time
+            )
+
+            if success and tax_amount > 0 and isinstance(government, ITaxCollector):
+                government.record_revenue({
+                    "success": True,
+                    "amount_collected": tax_amount,
+                    "tax_type": "income_tax_firm",
+                    "payer_id": buyer.id,
+                    "payee_id": government.id
+                })
         else:
             # Household pays tax (Withholding model)
             # Pay GROSS wage to household
             success = settlement.transfer(buyer, seller, trade_value, f"labor_wage_gross:{tx.transaction_type}")
             if success and tax_amount > 0:
                 # Then collect tax from household
-                if isinstance(government, ITaxCollector):
-                    government.collect_tax(tax_amount, "income_tax_household", seller, current_time)
+                tax_success = settlement.settle_atomic(
+                    debit_agent=seller,
+                    credits_list=[(government, tax_amount, "income_tax_household")],
+                    tick=current_time
+                )
+
+                if tax_success and isinstance(government, ITaxCollector):
+                    government.record_revenue({
+                        "success": True,
+                        "amount_collected": tax_amount,
+                        "tax_type": "income_tax_household",
+                        "payer_id": seller.id,
+                        "payee_id": government.id
+                    })
 
         if success and isinstance(seller, IIncomeTracker):
             seller.add_labor_income(trade_value)
