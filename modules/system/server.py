@@ -5,6 +5,7 @@ import logging
 import http
 import secrets
 import websockets
+from websockets import Response, Headers
 from modules.system.security import verify_god_mode_token
 from dataclasses import asdict, is_dataclass
 from typing import Optional, List, Dict
@@ -82,9 +83,8 @@ class SimulationServer:
         token = request.headers.get("X-GOD-MODE-TOKEN")
         if not verify_god_mode_token(token, self.god_mode_token):
             logger.warning(f"Unauthorized connection attempt to {request.path}. Token provided: {'Yes' if token else 'No'}")
-            # Return tuple (status, headers, body) to reject
-            # headers can be a list of tuples or dict.
-            return (http.HTTPStatus.UNAUTHORIZED, [], b"Unauthorized: Invalid God Token")
+            # Websockets 14.0+ requires a Response object for rejection
+            return Response(http.HTTPStatus.UNAUTHORIZED, "Unauthorized", Headers(), b"Unauthorized: Invalid God Token")
 
         # Log successful authentication
         logger.debug(f"Authorized connection established for {request.path}")

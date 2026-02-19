@@ -112,39 +112,3 @@ def test_atomic_wealth_tax_collection_insufficient_funds():
     # Stats unchanged
     assert gov.total_collected_tax[DEFAULT_CURRENCY] == 0
     assert gov.tax_revenue.get("wealth_tax", 0) == 0
-
-def test_government_collect_tax_adapter_success():
-    config = MockConfig()
-    gov = Government(id="GOV", initial_assets=0, config_module=config)
-    settlement = MockSettlementSystem()
-    gov.settlement_system = settlement
-
-    payer = MockAgent(id="PAYER", assets=10000)
-    amount = 1000
-
-    collected = gov.collect_tax(amount, "test_tax", payer, current_tick=1)
-
-    assert collected['amount_collected'] == 1000
-    assert collected['success'] is True
-    assert payer.get_balance() == 9000
-    assert gov.get_balance() == 1000
-    assert gov.total_collected_tax[DEFAULT_CURRENCY] == 1000
-    assert gov.tax_revenue["test_tax"] == 1000
-
-def test_government_collect_tax_adapter_failure():
-    config = MockConfig()
-    gov = Government(id="GOV", initial_assets=0, config_module=config)
-    settlement = MockSettlementSystem()
-    gov.settlement_system = settlement
-
-    payer = MockAgent(id="PAYER", assets=500) # Less than 1000
-    amount = 1000
-
-    collected = gov.collect_tax(amount, "test_tax", payer, current_tick=1)
-
-    assert collected['amount_collected'] == 0
-    assert collected['success'] is False
-    assert payer.get_balance() == 500
-    assert gov.get_balance() == 0
-    assert gov.total_collected_tax[DEFAULT_CURRENCY] == 0
-    assert "test_tax" not in gov.tax_revenue

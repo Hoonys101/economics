@@ -4,14 +4,15 @@ from modules.finance.transaction.handlers import GoodsTransactionHandler, LaborT
 from modules.finance.transaction.handlers.protocols import ISolvent, ITaxCollector
 from simulation.models import Transaction
 from simulation.dtos.api import SimulationState
+from simulation.agents.government import Government
 
 class TestGoodsTransactionHandler(unittest.TestCase):
     def setUp(self):
         self.handler = GoodsTransactionHandler()
         self.settlement = MagicMock()
 
-        # Mock Government with ITaxCollector protocol
-        self.government = MagicMock(spec=ITaxCollector)
+        # Mock Government with Government class spec
+        self.government = MagicMock(spec=Government)
         self.government.id = 99
 
         self.escrow_agent = MagicMock()
@@ -110,8 +111,11 @@ class TestLaborTransactionHandler(unittest.TestCase):
         self.handler = LaborTransactionHandler()
         self.settlement = MagicMock()
 
-        # Mock Government with ITaxCollector protocol
-        self.government = MagicMock(spec=ITaxCollector)
+        # Mock Government with Government spec to allow 'id' attribute access and ITaxCollector compliance
+        self.government = MagicMock(spec=Government)
+        # MagicMock with spec doesn't automatically set attributes unless defined in class or created on mock.
+        # But access checks are strict. Government has id.
+        self.government.id = 99
 
         self.config = MagicMock()
         self.logger = MagicMock()
@@ -144,6 +148,7 @@ class TestLaborTransactionHandler(unittest.TestCase):
         # Mock Gov tax calc
         self.government.calculate_income_tax.return_value = 200 # 10%
         self.settlement.transfer.return_value = True
+        self.settlement.settle_atomic.return_value = True # For tax settlement
 
         success = self.handler.handle(tx, self.buyer, self.seller, self.state)
 
@@ -152,8 +157,15 @@ class TestLaborTransactionHandler(unittest.TestCase):
         # Verify Wage Transfer (Buyer -> Seller) Gross
         self.settlement.transfer.assert_called_with(self.buyer, self.seller, 2000, "labor_wage_gross:labor")
 
-        # Verify Tax Collection (Gov collects from Seller/Household)
-        self.government.collect_tax.assert_called_with(200, "income_tax_household", self.seller, 100)
+        # Verify Tax Collection (Gov collects from Seller/Household via settle_atomic)
+        self.settlement.settle_atomic.assert_called_with(
+            debit_agent=self.seller,
+            credits_list=[(self.government, 200, "income_tax_household")],
+            tick=100
+        )
+
+        # Verify Record Revenue called
+        self.government.record_revenue.assert_called()
 
     def test_labor_firm_tax_payer(self):
         self.config.INCOME_TAX_PAYER = "FIRM"
@@ -165,15 +177,26 @@ class TestLaborTransactionHandler(unittest.TestCase):
         )
 
         self.government.calculate_income_tax.return_value = 200
-        self.settlement.transfer.return_value = True
+        self.settlement.settle_atomic.return_value = True
 
         success = self.handler.handle(tx, self.buyer, self.seller, self.state)
 
         self.assertTrue(success)
 
-        # Verify Wage Transfer (Buyer -> Seller) Net? No, code says "trade_value" (Gross)
-        # "Firm pays Wage to Household"
-        self.settlement.transfer.assert_called_with(self.buyer, self.seller, 2000, "labor_wage:labor")
+        # Verify Wage Transfer (Firm pays Wage to Household AND Tax to Gov Atomically)
+        # Expected credits_list: [(seller, 2000, "labor_wage:labor"), (government, 200, "income_tax_firm")]
 
-        # Verify Tax Collection (Gov collects from Buyer/Firm)
-        self.government.collect_tax.assert_called_with(200, "income_tax_firm", self.buyer, 100)
+        call_args = self.settlement.settle_atomic.call_args
+        self.assertIsNotNone(call_args)
+        kwargs = call_args.kwargs
+
+        self.assertEqual(kwargs['debit_agent'], self.buyer)
+        credits = kwargs['credits_list']
+        self.assertEqual(len(credits), 2)
+
+        # Check credits content roughly
+        self.assertIn((self.seller, 2000, "labor_wage:labor"), credits)
+        self.assertIn((self.government, 200, "income_tax_firm"), credits)
+
+        # Verify Record Revenue called
+        self.government.record_revenue.assert_called()

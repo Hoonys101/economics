@@ -90,15 +90,18 @@ class TestEconomicIntegrityAudit(unittest.TestCase):
         # Execute
         dm.process_births(simulation, birth_requests)
 
-        # Expected Gift: 10% of 10000 = 1000 pennies
-        args = self.settlement_system.transfer.call_args
+        # Verify that create_newborn was called with correct initial_assets (integer)
+        # We don't check settlement_system.transfer because the factory is mocked, so it won't execute the transfer.
+        # The logic for rounding happens in DemographicManager before calling create_newborn.
+
+        args = mock_factory_instance.create_newborn.call_args
         if args:
-            # args[0] are positional args: (debit, credit, amount, memo)
-            amount = args[0][2]
-            self.assertEqual(amount, 1000)
-            self.assertIsInstance(amount, int)
+            kwargs = args.kwargs
+            initial_assets = kwargs.get('initial_assets')
+            self.assertEqual(initial_assets, 1000)
+            self.assertIsInstance(initial_assets, int)
         else:
-            self.fail("No transfer call detected")
+            self.fail("create_newborn not called")
 
     def test_inheritance_distribution(self):
         """

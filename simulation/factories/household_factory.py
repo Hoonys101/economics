@@ -175,10 +175,10 @@ class HouseholdFactory(IHouseholdFactory):
         if initial_assets > 0:
             if self.context.settlement_system:
                 self.context.settlement_system.transfer(
-                    sender=parent,
-                    receiver=child,
+                    debit_agent=parent,
+                    credit_agent=child,
                     amount=initial_assets,
-                    transaction_type="BIRTH_GIFT",
+                    memo="BIRTH_GIFT",
                     tick=current_tick
                 )
             else:
