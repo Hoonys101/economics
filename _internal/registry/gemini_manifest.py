@@ -23,5 +23,30 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "spec-comprehensive-liquidation-plan": {
+        "title": "SPEC: Comprehensive Post-Wave Liquidation Plan",
+        "worker": "spec",
+        "instruction": "Analyze all remaining items in TECH_DEBT_LEDGER.md after the current transition (Wave 1 & 2). Create a multi-wave liquidation plan for the next phase. Group tasks that modify the same files (e.g., config, testing, finance) to avoid merge conflicts. Optimize for parallel execution by Gemini (specs) and Jules (code). Output a structured markdown plan.",
+        "context_files": [
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
+            "design/2_operations/ledgers/TECH_DEBT_HISTORY.md",
+            "PROJECT_STATUS.md"
+        ],
+        "output_path": "design/4_hard_planning/FUTURE_LIQUIDATION_ROADMAP.md"
+    },
+    "spec-lifecycle-init-fix": {
+        "title": "SPEC: Lifecycle Manager Initialization & Cycle Fix",
+        "worker": "spec",
+        "instruction": "Analyze the 'ValueError: IHouseholdFactory is mandatory' failure in AgentLifecycleManager. Investigate potential import cycles between AgentLifecycleManager, HouseholdFactory, and BirthSystem. Propose a fix that allows clean initialization for both production and test environments (mocks). Also address the DeprecationWarnings related to Government.collect_tax and HouseholdFactory locations.",
+        "context_files": [
+            "simulation/systems/lifecycle_manager.py",
+            "simulation/systems/lifecycle/birth_system.py",
+            "simulation/factories/household_factory.py",
+            "modules/household/api.py",
+            "simulation/systems/api.py",
+            "tests/unit/test_lifecycle_reset.py",
+            "tests/integration/test_wo167_grace_protocol.py"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_LIFECYCLE_INIT_FIX_SPEC.md"
+    }
 }

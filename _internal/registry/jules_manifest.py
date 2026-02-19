@@ -16,22 +16,22 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "exec-lifecycle-decomposition": {
-        "title": "EXEC: LifecycleManager Decomposition",
-        "file": "design/3_work_artifacts/specs/MISSION_lifecycle_decomposition_SPEC.md",
-        "instruction": "Implement the LifecycleManager decomposition as per the provided spec. Extract AgingSystem, BirthSystem, and DeathSystem into separate classes in simulation/systems/lifecycle/ and update the manager to orchestrate them.",
-        "wait": False
-    },
     "exec-match-engine-int-math": {
         "title": "EXEC: MatchingEngine Integer Math Hardening",
-        "file": "design/3_work_artifacts/specs/MISSION_MATCH_ENGINE_INT_SPEC.md",
-        "instruction": "Refactor MatchingEngine to use strict integer math for prices and execution values. Follow the rounding and mid-price formulas defined in the spec.",
+        "file": "design/4_hard_planning/FUTURE_LIQUIDATION_ROADMAP.md",
+        "instruction": "Refactor MatchingEngine (Goods/Labor/Stock) to use strict integer math for prices and quantities. Implement RoundingPolicy.FLOOR as specified in Wave 3.1 of the roadmap.",
         "wait": False
     },
-    "exec-dto-reporting-pennies": {
-        "title": "EXEC: Reporting DTO Penny Hardening",
-        "file": "design/3_work_artifacts/specs/MISSION_REPORTING_DTO_INT_SPEC.md",
-        "instruction": "Refactor monetary fields in reporting DTOs (api.py) to use integer pennies as specified. Ensure averages and stats remain float.",
+    "exec-trans-schema-migration": {
+        "title": "EXEC: Transaction Schema Migration",
+        "file": "design/4_hard_planning/FUTURE_LIQUIDATION_ROADMAP.md",
+        "instruction": "Update simulation/models.py (Transaction) to include unit_price_pennies and total_pennies. Create a SQL migration script for the database backfill as specified in Wave 3.2.",
+        "wait": False
+    },
+    "exec-lifecycle-init-fix": {
+        "title": "EXEC: Lifecycle Manager Initialization & Cycle Fix",
+        "file": "design/3_work_artifacts/specs/MISSION_LIFECYCLE_INIT_FIX_SPEC.md",
+        "instruction": "Follow MISSION_LIFECYCLE_INIT_FIX_SPEC.md: 1) Make household_factory mandatory in AgentLifecycleManager.__init__. 2) Update tests tests/unit/test_lifecycle_reset.py and tests/integration/test_wo167_grace_protocol.py to inject mock factories. 3) Ensure no circular imports.",
         "wait": False
     }
 }

@@ -3,7 +3,7 @@
 | ID | Module / Component | Description | Priority / Impact | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **TD-MKT-FLOAT-MATCH** | Markets | **Market Precision Leak**: `MatchingEngine` internal paths still use legacy `float`. | **Critical**: Financial Halo. | **Partial** |
-| **TD-ARCH-LIFE-GOD** | Systems | **God Manager**: `LifecycleManager` monolithically handles Birth, Death, Aging, Liquidation. | **Medium**: Coupling. | **Identified** |
+| **TD-ARCH-LIFE-GOD** | Systems | **God Manager**: `LifecycleManager` monolithically handles Birth, Death, Aging, Liquidation. | **Medium**: Coupling. | **Resolved** |
 | **TD-CONF-GHOST-BIND** | Config | **Ghost Constants**: Modules bind config values at import time, preventing runtime hot-swap. | **Medium**: Dynamic Tuning. | **Identified** |
 | **TD-INT-PENNIES-FRAGILITY** | System | **Penny-Float Duality**: Widespread `hasattr`/`getattr` for `xxx_pennies` vs `xxx`. Needs Unified API. | **High**: Logic Inconsistency. | **Resolved** |
 | **TD-TEST-TX-MOCK-LAG** | Testing | **Transaction Test Lag**: `test_transaction_engine.py` mocks are out of sync with `ITransactionParticipant` (overdraft support). | **Low**: Test Flakiness. | **Identified** |
@@ -16,7 +16,7 @@
 | **TD-TEST-SSOT-SYNC** | Testing | **SSoT Balance Mismatch**: Tests assert against legacy `.assets` attributes instead of `SettlementSystem`. | **High**: Verification Validity. | **Resolved** |
 | **TD-TRANS-LEGACY-PRICING** | Transaction | **Float Cast Bridge**: `TransactionProcessor` converts integer `total_pennies` back to `float` for `SettlementResultDTO` compatibility. | **Medium**: Precision Risk. | **Resolved** |
 | **TD-TRANS-INT-SCHEMA** | Transaction | **Schema Lag**: `Transaction` model (simulation/models.py) still uses `float` price. | **High**: Persistence Drift. | **Identified** |
-| **TD-DTO-RED-ZONE** | DTO/API | **Reporting Leakage**: `api.py` DTOs heavily float-based for analytics/export. | **High**: Reporting Inaccuracy. | **Identified** |
+| **TD-DTO-RED-ZONE** | DTO/API | **Reporting Leakage**: `api.py` DTOs heavily float-based for analytics/export. | **High**: Reporting Inaccuracy. | **Resolved** |
 
 ---
 > [!NOTE]

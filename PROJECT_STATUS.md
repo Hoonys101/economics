@@ -15,15 +15,13 @@
 
 ## 1. 현재 개발 단계
 
-- **현재 단계:**
-    - **`Phase 16.2: Economic Narrative & Visualization (Watchtower V2)`** 👁️ **[ACTIVE]**
-        - **Achievement**: Established Economic Narrative, E2E Verification of Agent Soul, and Watchtower V2 (WebSocket) connectivity.
+    - **`Phase 19: Deep Integrity Liquidation (Wave 3-5)`** ⚖️ **[ACTIVE]**
+        - **Achievement**: Liquidating remaining technical debt via the "Future Liquidation Roadmap".
         - **Status**:
-            - [x] **Narrative**: Defined "Digital Soul", "Atomic Value", "Invisible Coordination". ✅ (2026-02-14)
-            - [x] **E2E Verification**: Verified Agent Survival & Zero-Sum Integrity. ✅ (2026-02-14)
-            - [x] **Visualization**: Watchtower V2 wired via WebSockets. ✅ (2026-02-14)
-            - [x] **Economic Narrative**: Established "M2 Neutrality" (interest is redistribution) and "Demographic NPV" calibration benchmarks. ✅ (2026-02-17)
-            - [x] **Architectural Win**: Implemented **CES Lite (Component-based Engine & Shell)** for Firm agents, eliminating God Classes. ✅ (2026-02-17)
+            - [x] **Wave 1 & 2 (Cleanup)**: Merged `penny-hardening-reporting-dtos` and `lifecycle-decomposition`. ✅ (2026-02-19)
+            - [ ] **Wave 3 (Market & Data)**: Refactoring `MatchingEngine` and `Transaction` schema. [RE-INITIATED]
+            - [ ] **Wave 4 (Structural)**: Deprecating `TransactionManager`.
+            - [ ] **Wave 5 (Hygiene)**: Finalizing `ConfigProxy` and UI Purity.
 
     - **`Phase 18: Parallel Technical Debt Clearance`** ⚖️ **[COMPLETED]**
         - **Achievement**: Executing parallel liquidation of long-standing structural debts.
