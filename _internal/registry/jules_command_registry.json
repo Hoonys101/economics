@@ -3,23 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "exec-cockpit-be-1": {
-      "key": "exec-cockpit-be-1",
-      "title": "Cockpit 2.0 BE-1: Pydantic DTOs + GlobalRegistry",
-      "type": "jules",
-      "instruction_raw": "Implement Phase 1 of the Cockpit 2.0 Backend. SCOPE IS LIMITED TO:\n\n1. **Pydantic DTO Migration**: Migrate simulation/dtos/watchtower.py from dataclasses to pydantic.BaseModel. The models MUST exactly match the API Contract in design/3_work_artifacts/specs/MISSION_COCKPIT_API_CONTRACT.md. Import the canonical models (WatchtowerSnapshotResponse, CockpitCommand, etc.) from modules/governance/cockpit/api.py.\n\n2. **GlobalRegistry**: Implement modules/core/global_registry.py as specified in the backend spec. Create the IGlobalRegistry Protocol, RegistryEntry, OriginType enum, and the singleton accessor. Add seed_registry() to initialize from config.py values.\n\n3. **DashboardService Hardening**: Update simulation/orchestration/dashboard_service.py to construct WatchtowerSnapshotResponse (Pydantic) instead of dataclass-based snapshots. Use .model_dump(mode='json').\n\n4. **Tests**: Create tests/unit/test_cockpit_models.py and tests/unit/test_global_registry.py.\n\nDO NOT touch: DeathSystem, Genealogy, server.py endpoints. Those are in BE-2.",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_COCKPIT_BACKEND_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "exec-cockpit-be-2": {
       "key": "exec-cockpit-be-2",
       "title": "Cockpit 2.0 BE-2: Genealogy System + API Endpoints",
