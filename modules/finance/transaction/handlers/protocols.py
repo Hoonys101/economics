@@ -17,9 +17,6 @@ class ITaxCollector(Protocol):
     def calculate_income_tax(self, income: int, deduction: int) -> int:
         ...
 
-    def collect_tax(self, amount: int, tax_type: str, payer: Any, current_tick: int) -> Any:
-        ...
-
     def record_revenue(self, data: Any) -> None:
         ...
 

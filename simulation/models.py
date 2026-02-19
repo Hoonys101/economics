@@ -28,25 +28,6 @@ class Transaction:
 
 
 @dataclass
-class StockOrder:
-    """
-    DEPRECATED: Use CanonicalOrderDTO instead.
-    Legacy DTO for Stock Market orders. Will be removed in Phase 10.
-    """
-
-    agent_id: int          # 주문 제출자 ID
-    order_type: str        # "BUY" or "SELL"
-    firm_id: int           # 대상 기업 ID
-    quantity: float        # 주문 수량
-    price: int             # Changed from float to int (pennies)
-    market_id: str = "stock_market"
-    id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
-
-    def __post_init__(self):
-        warnings.warn("StockOrder is deprecated. Use CanonicalOrderDTO instead.", DeprecationWarning, stacklevel=2)
-
-
-@dataclass
 class Share:
     """주식 보유 정보를 담는 데이터 클래스"""
     

@@ -33,9 +33,3 @@ class GovernmentFiscalProxy(IFinancialAgent):
     @property
     def total_wealth(self) -> int:
         return self._government.total_wealth
-
-    def collect_tax(self, amount: float, tax_type: str, payer: Any, current_tick: int) -> TaxCollectionResult:
-        """
-        Proxies the tax collection request to the government.
-        """
-        return self._government.collect_tax(amount, tax_type, payer, current_tick)

@@ -15,11 +15,19 @@ class TestGovernmentTax:
         config.TAX_BRACKETS = [] # Add this to avoid error in TaxAgency init if it checks
 
         gov = Government(id=1, initial_assets=1000.0, config_module=config)
-        gov.tax_agency = MagicMock()
+        # Mocking internals for isolation
+        gov.tax_service = MagicMock()
         gov.settlement_system = MagicMock()
+
+        # We need to mock get_total_collected_tax because it's a property that calls tax_service
+        gov.tax_service.get_total_collected_tax.return_value = {"USD": 0.0}
+        gov.tax_service.get_revenue_this_tick.return_value = {"USD": 0.0}
+        gov.tax_service.get_tax_revenue.return_value = {}
+
         return gov
 
-    def test_record_revenue_success(self, government):
+    def test_record_revenue_delegation(self, government):
+        """Test that Government.record_revenue delegates to TaxService."""
         # Arrange
         result: TaxCollectionResult = {
             "success": True,
@@ -29,74 +37,14 @@ class TestGovernmentTax:
             "payee_id": 1,
             "error_message": None
         }
-        from modules.system.api import DEFAULT_CURRENCY
-        # Snapshot initial values (dicts)
-        initial_total = government.total_collected_tax.get(DEFAULT_CURRENCY, 0.0)
-        initial_revenue = government.revenue_this_tick.get(DEFAULT_CURRENCY, 0.0)
 
         # Act
         government.record_revenue(result)
 
         # Assert
-        assert government.total_collected_tax[DEFAULT_CURRENCY] == initial_total + 100.0
-        assert government.revenue_this_tick[DEFAULT_CURRENCY] == initial_revenue + 100.0
-        assert government.tax_revenue["income_tax"] == 100.0
+        government.tax_service.record_revenue.assert_called_once_with(result)
 
-    def test_record_revenue_failure(self, government):
-        # Arrange
-        result: TaxCollectionResult = {
-            "success": False,
-            "amount_collected": 0.0,
-            "tax_type": "income_tax",
-            "payer_id": 101,
-            "payee_id": 1,
-            "error_message": "Insufficient funds"
-        }
-        initial_total = government.total_collected_tax
-
-        # Act
-        government.record_revenue(result)
-
-        # Assert
-        assert government.total_collected_tax == initial_total
-        assert "income_tax" not in government.tax_revenue
-
-    def test_collect_tax_legacy(self, government):
-        # Arrange
-        payer = MagicMock()
-        payer.id = 101
-        amount = 50.0
-        tax_type = "wealth_tax"
-        current_tick = 10
-
-        government.settlement_system.transfer.return_value = True
-
-        # Act
-        with pytest.warns(DeprecationWarning, match="Government.collect_tax is deprecated"):
-            result = government.collect_tax(amount, tax_type, payer, current_tick)
-
-        # Assert
-        government.settlement_system.transfer.assert_called_once_with(
-            payer, government, amount, f"{tax_type} collection"
-        )
-
-        from modules.system.api import DEFAULT_CURRENCY
-        assert result["success"] is True
-        assert result["amount_collected"] == amount
-        assert result["tax_type"] == tax_type
-        # Verify total collected tax (dict)
-        assert government.total_collected_tax[DEFAULT_CURRENCY] == 50.0 # Should have called record_revenue internally
-
-    def test_collect_tax_no_settlement_system(self, government):
-        # Arrange
-        government.settlement_system = None
-        payer = MagicMock()
-        payer.id = 101
-
-        # Act
-        with pytest.warns(DeprecationWarning):
-            result = government.collect_tax(100.0, "tax", payer, 1)
-
-        # Assert
-        assert result["success"] is False
-        assert result["error_message"] == "No SettlementSystem linked"
+    def test_collect_tax_removed(self, government):
+        """Verify that collect_tax is removed."""
+        with pytest.raises(AttributeError):
+            government.collect_tax(100, "test", MagicMock(), 1)

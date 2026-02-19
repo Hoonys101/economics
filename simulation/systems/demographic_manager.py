@@ -162,7 +162,14 @@ class DemographicManager(IDemographicManager):
                     )
                     self.household_factory = HouseholdFactory(context)
 
-                child = self.household_factory.create_newborn(parent, simulation, child_id)
+                # Pass explicit keyword arguments to match factory signature
+                child = self.household_factory.create_newborn(
+                    parent=parent,
+                    new_id=child_id,
+                    initial_assets=initial_gift_pennies,
+                    current_tick=getattr(simulation, 'time', 0),
+                    simulation=simulation
+                )
                 
                 # Update parent linkage
                 parent.children_ids.append(child_id)
@@ -171,13 +178,6 @@ class DemographicManager(IDemographicManager):
                 self.register_birth(child)
                 
                 new_children.append(child)
-
-                if initial_gift_pennies > 0:
-                    settlement = self.settlement_system or getattr(simulation, "settlement_system", None)
-                    if settlement:
-                         settlement.transfer(parent, child, initial_gift_pennies, "BIRTH_GIFT")
-                    else:
-                         self.logger.error("BIRTH_ERROR | SettlementSystem not found.")
 
                 self.logger.info(f"BIRTH | Parent {parent.id} -> Child {child.id}")
             except Exception as e:
