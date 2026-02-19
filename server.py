@@ -124,6 +124,8 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.websocket("/ws/command")
 async def command_endpoint(websocket: WebSocket):
     token = websocket.headers.get("X-GOD-MODE-TOKEN")
+    if not token:
+        token = websocket.query_params.get("token")
     expected_token = config.GOD_MODE_TOKEN
 
     if not verify_god_mode_token(token, expected_token):
