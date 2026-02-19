@@ -15,8 +15,8 @@
 | **TD-CRIT-FLOAT-CORE** | Finance | **Float Core**: `SettlementSystem` and `MatchingEngine` use `float` instead of `int` pennies. (Ongoing: M&A/StockMarket indices) | **Critical**: Determinism. | **Audit Done** |
 | **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Handler**: `bailout`, `bond_issuance` tx types not registered. | **High**: Runtime Failure. | **Audit Done** |
 | **TD-RUNTIME-DEST-MISS** | Lifecycle | **Ghost Destination**: Transactions failing for non-existent agents (Sequence error in `spawn_firm`). | **High**: Runtime Failure. | **Audit Done** |
-| **TD-TEST-MOCK-STALE** | Testing | **Stale Mocks**: `WorldState` mocks used deprecated `system_command_queue`. | **High**: Test Blindness. | **Resolved** |
-| **TD-ARCH-GOV-MISMATCH** | Architecture | **Singleton vs List**: `WorldState` has `governments` (List) vs Singelton `government`. | **Medium**: Logic Fragility. | **Identified** |
+| **TD-TEST-MOCK-STALE** | Testing | **Stale Mocks**: `WorldState` mocks used deprecated `system_command_queue`. | **High**: Test Blindness. | **Identified** |
+| **TD-ARCH-GOV-MISMATCH** | Architecture | **Singleton vs List**: `WorldState` has `governments` (List) vs Singleton `government`. | **Medium**: Logic Fragility. | **Audit Confirmed** |
 | **TD-GOV-SOLVENCY** | Government | **Binary Gates**: Spending modules use all-or-nothing logic; lack partial execution/solvency pre-checks. | **Medium**: Economic Stall. | **Audit Done** |
 | **TD-CRIT-LIFECYCLE-ATOM** | Lifecycle | **Agent Startup Atomicity**: Firm registration (Registry) must occur *before* financial initialization (Transfer). | **Critical**: Runtime Crash. | Open |
 | **TD-SYS-QUEUE-SCRUB** | Lifecycle | **Lifecycle Queue Scrubbing**: AgentLifecycleManager fails to remove stale IDs from queues. (Partial Fix: Market orders are now scrubbed via `fix-agent-lifecycle-atomicity`). | **High**: Logic Leak. | **In Progress** |
@@ -26,6 +26,9 @@
 | **TD-PROTO-MONETARY** | Transaction | **Monetary Protocol Violation**: `MonetaryTransactionHandler` uses `hasattr` instead of Protocols. | **Low**: Logic Fragility. | Open |
 | **TD-DX-AUTO-CRYSTAL** | DX / Ops | **Crystallization Overhead**: Manual Gemini Manifest registration required for session distillation. Needs "one-click" `session-go` integration. | **Medium**: DX Friction. | Open |
 | **TD-LIFECYCLE-STALE** | Lifecycle | **Queue Pollution**: Missing scrubbing of `inter_tick_queue` after agent liquidation. | **Medium**: Determinism. | **Audit Done** |
+| **TD-TEST-COCKPIT-MOCK** | Testing | **Cockpit 2.0 Mock Regressions**: Tests use deprecated `system_command_queue` instead of `system_commands`. | **High**: Silent Test Failure. | **Identified** |
+| **TD-TEST-LIFE-STALE** | Testing | **Stale Lifecycle Logic**: `test_engine.py` calls refactored `_handle_agent_liquidation`. | **High**: Test Breakdown. | **Identified** |
+| **TD-TEST-TAX-DEPR** | Testing | **Deprecated Tax API in Tests**: `test_transaction_handlers.py` still uses `collect_tax`. | **Medium**: Tech Debt. | **Identified** |
 
 ---
 > [!NOTE]

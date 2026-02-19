@@ -7,7 +7,7 @@
       "key": "analyze-runtime-structural-failures",
       "title": "Structural Runtime Failure & Cleanup Analysis",
       "type": "gemini",
-      "instruction_raw": "\ucd08\uae30 \ubd84\uc11d \uc644\ub8cc. reports/diagnostics/structural_analysis_report.md \ucc38\uace0.",
+      "instruction_raw": "\ucd08\uae30 \ubd84\uc11d \uc644\ub8cc. design/_archive/insights/2026-02-19_Structural_Analysis_Report.md \ucc38\uace0.",
       "status": "pending",
       "created_at": "",
       "command": null,
@@ -16,7 +16,7 @@
       "session_id": null,
       "worker": "audit",
       "context_files": [
-        "reports/diagnostics/structural_analysis_report.md"
+        "design/_archive/insights/2026-02-19_Structural_Analysis_Report.md"
       ],
       "output_path": "reports/diagnostics/structural_analysis_summary.md",
       "model": null,
@@ -35,9 +35,9 @@
       "session_id": null,
       "worker": "audit",
       "context_files": [
-        "design/3_work_artifacts/specs/AGENT_LIFECYCLE_STABILITY.md"
+        "design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md"
       ],
-      "output_path": "design/3_work_artifacts/specs/AGENT_LIFECYCLE_STABILITY.md",
+      "output_path": "design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md",
       "model": null,
       "audit_requirements": null
     },
@@ -54,9 +54,9 @@
       "session_id": null,
       "worker": "audit",
       "context_files": [
-        "design/3_work_artifacts/specs/HANDLER_ALIGNMENT_MAP.md"
+        "design/_archive/insights/2026-02-19_Handler_Alignment_Map.md"
       ],
-      "output_path": "design/3_work_artifacts/specs/HANDLER_ALIGNMENT_MAP.md",
+      "output_path": "design/_archive/insights/2026-02-19_Handler_Alignment_Map.md",
       "model": null,
       "audit_requirements": null
     },
@@ -73,9 +73,9 @@
       "session_id": null,
       "worker": "audit",
       "context_files": [
-        "design/3_work_artifacts/specs/GOVT_SOLVENCY_GUARDRAILS.md"
+        "design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md"
       ],
-      "output_path": "design/3_work_artifacts/specs/GOVT_SOLVENCY_GUARDRAILS.md",
+      "output_path": "design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md",
       "model": null,
       "audit_requirements": null
     },
@@ -92,9 +92,9 @@
       "session_id": null,
       "worker": "audit",
       "context_files": [
-        "design/3_work_artifacts/specs/MA_PENNIES_MIGRATION_PLAN.md"
+        "design/_archive/insights/2026-02-19_MA_Penny_Migration.md"
       ],
-      "output_path": "design/3_work_artifacts/specs/MA_PENNIES_MIGRATION_PLAN.md",
+      "output_path": "design/_archive/insights/2026-02-19_MA_Penny_Migration.md",
       "model": null,
       "audit_requirements": null
     },
@@ -111,11 +111,11 @@
       "session_id": null,
       "worker": "crystallizer",
       "context_files": [
-        "design/3_work_artifacts/specs/AGENT_LIFECYCLE_STABILITY.md",
-        "design/3_work_artifacts/specs/GOVT_SOLVENCY_GUARDRAILS.md",
-        "design/3_work_artifacts/specs/HANDLER_ALIGNMENT_MAP.md",
-        "design/3_work_artifacts/specs/MA_PENNIES_MIGRATION_PLAN.md",
-        "reports/diagnostics/structural_analysis_report.md"
+        "design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md",
+        "design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md",
+        "design/_archive/insights/2026-02-19_Handler_Alignment_Map.md",
+        "design/_archive/insights/2026-02-19_MA_Penny_Migration.md",
+        "design/_archive/insights/2026-02-19_Structural_Analysis_Report.md"
       ],
       "output_path": "design/3_work_artifacts/drafts/STRUCTURAL_INTEGRITY_CRYSTALLIZATION.md",
       "model": null,

@@ -1,0 +1,380 @@
+diff --git a/communications/insights/fix-agent-lifecycle-atomicity.md b/communications/insights/fix-agent-lifecycle-atomicity.md
+new file mode 100644
+index 00000000..f7bea32a
+--- /dev/null
++++ b/communications/insights/fix-agent-lifecycle-atomicity.md
+@@ -0,0 +1,19 @@
++# Fix Agent Lifecycle Atomicity & Queue Scrubbing
++
++## Architectural Insights
++1.  **Protocol Purity Enforcement**: The `DeathSystem` now strictly checks for `isinstance(market, IMarket)` before attempting to cancel orders. This required updating `IMarket` in `modules/market/api.py` (adding `@runtime_checkable`) and `simulation/interfaces/market_interface.py` (adding `cancel_orders`).
++2.  **StockMarket Compliance**: The `StockMarket` class was found to be technically non-compliant with the `Market` base class contract (missing `matched_transactions` initialization). This was fixed to ensure it passes `isinstance` checks against `IMarket` and behaves consistently with other markets.
++3.  **Atomicity Strategy**: Order cancellation is now the *first* step in the liquidation process (`_handle_agent_liquidation`), ensuring that assets are not locked in phantom orders while the agent is being liquidated. This prevents race conditions where a dead agent might "trade" in the matching phase.
++4.  **Market Interface Evolution**: `IMarket` has evolved from a purely read-only snapshot interface to include `cancel_orders`, acknowledging that system-level components need privileged access to manage market state for lifecycle events.
++
++## Test Evidence
++All relevant tests passed, including new unit tests for cancellation logic and the regression test for `DeathSystem`.
++
++```
++tests/unit/markets/test_order_book_market_cancellation.py::TestOrderBookMarketCancellation::test_cancel_orders_removes_agent_orders PASSED [ 16%]
++tests/unit/markets/test_order_book_market_cancellation.py::TestOrderBookMarketCancellation::test_cancel_orders_no_effect_if_no_orders PASSED [ 33%]
++tests/unit/markets/test_stock_market_cancellation.py::TestStockMarketCancellation::test_cancel_orders_removes_agent_orders PASSED [ 50%]
++tests/unit/markets/test_stock_market_cancellation.py::TestStockMarketCancellation::test_cancel_orders_mixed_int_str_id PASSED [ 66%]
++tests/unit/systems/lifecycle/test_death_system.py::TestDeathSystem::test_firm_liquidation PASSED [ 83%]
++tests/unit/systems/lifecycle/test_death_system.py::TestDeathSystem::test_firm_liquidation_cancels_orders PASSED [100%]
++```
+diff --git a/design/2_operations/ledgers/TECH_DEBT_LEDGER.md b/design/2_operations/ledgers/TECH_DEBT_LEDGER.md
+index d6689fbf..1eaeaf10 100644
+--- a/design/2_operations/ledgers/TECH_DEBT_LEDGER.md
++++ b/design/2_operations/ledgers/TECH_DEBT_LEDGER.md
+@@ -19,7 +19,7 @@
+ | **TD-ARCH-GOV-MISMATCH** | Architecture | **Singleton vs List**: `WorldState` has `governments` (List) vs Singelton `government`. | **Medium**: Logic Fragility. | **Identified** |
+ | **TD-GOV-SOLVENCY** | Government | **Binary Gates**: Spending modules use all-or-nothing logic; lack partial execution/solvency pre-checks. | **Medium**: Economic Stall. | **Audit Done** |
+ | **TD-CRIT-LIFECYCLE-ATOM** | Lifecycle | **Agent Startup Atomicity**: Firm registration (Registry) must occur *before* financial initialization (Transfer). | **Critical**: Runtime Crash. | Open |
+-| **TD-SYS-QUEUE-SCRUB** | Lifecycle | **Lifecycle Queue Scrubbing**: `AgentLifecycleManager` fails to remove stale IDs from `inter_tick_queue` and `effects_queue`. | **High**: Logic Leak. | Open |
++| **TD-SYS-QUEUE-SCRUB** | Lifecycle | **Lifecycle Queue Scrubbing**: AgentLifecycleManager fails to remove stale IDs from queues. (Partial Fix: Market orders are now scrubbed via `fix-agent-lifecycle-atomicity`). | **High**: Logic Leak. | **In Progress** |
+ | **TD-GOV-SPEND-GATE** | Government | **Binary Spending Gates**: Infrastructure/Welfare modules need "Partial Execution" support. | **High**: Economic Stall. | Open |
+ | **TD-CRIT-FLOAT-MA** | Finance | **M&A Float Violation**: `MAManager` and `StockMarket` calculate and transfer `float` values. | **Critical**: Type Error. | Open |
+ | **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Fiscal Handlers**: `bailout`, `bond_issuance` types not registered in `TransactionProcessor`. | **Medium**: Runtime Failure. | Open |
+diff --git a/modules/market/api.py b/modules/market/api.py
+index 06433a75..1bf10c83 100644
+--- a/modules/market/api.py
++++ b/modules/market/api.py
+@@ -243,6 +243,7 @@ class IHousingTransactionParticipant(IPropertyOwner, IFinancialAgent, Protocol):
+         """Indicates if the agent is currently homeless."""
+         ...
+ 
++@runtime_checkable
+ class IMarket(Protocol):
+     """
+     Standard interface for all market types.
+@@ -267,3 +268,7 @@ class IMarket(Protocol):
+     def clear_orders(self) -> None:
+         """Clears all orders for the current tick."""
+         ...
++
++    def cancel_orders(self, agent_id: str) -> None:
++        """Cancels all orders for the specified agent."""
++        ...
+diff --git a/simulation/interfaces/market_interface.py b/simulation/interfaces/market_interface.py
+index 37d83f49..a03f1197 100644
+--- a/simulation/interfaces/market_interface.py
++++ b/simulation/interfaces/market_interface.py
+@@ -19,3 +19,7 @@ class IMarket(Protocol):
+     def get_price(self, item_id: str) -> float:
+         """Returns the current market price for the given item."""
+         ...
++
++    def cancel_orders(self, agent_id: str) -> None:
++        """Cancels all orders for the specified agent."""
++        ...
+diff --git a/simulation/markets/order_book_market.py b/simulation/markets/order_book_market.py
+index 3e470e78..5b9f7b09 100644
+--- a/simulation/markets/order_book_market.py
++++ b/simulation/markets/order_book_market.py
+@@ -188,6 +188,31 @@ class OrderBookMarket(Market):
+             extra={"market_id": self.id, "tags": ["market_clear"]},
+         )
+ 
++    def cancel_orders(self, agent_id: str) -> None:
++        """
++        Cancels all orders for the specified agent.
++        Iterates through buy and sell orders and removes any belonging to the agent.
++        """
++        removed_count = 0
++
++        # Iterate over buy orders
++        for item_id, orders in self._buy_orders.items():
++            original_len = len(orders)
++            self._buy_orders[item_id] = [o for o in orders if o.agent_id != agent_id]
++            removed_count += original_len - len(self._buy_orders[item_id])
++
++        # Iterate over sell orders
++        for item_id, orders in self._sell_orders.items():
++            original_len = len(orders)
++            self._sell_orders[item_id] = [o for o in orders if o.agent_id != agent_id]
++            removed_count += original_len - len(self._sell_orders[item_id])
++
++        if removed_count > 0:
++            self.logger.info(
++                f"CANCEL_ORDERS | Removed {removed_count} orders for agent {agent_id}",
++                extra={"market_id": self.id, "agent_id": agent_id, "removed_count": removed_count}
++            )
++
+     def place_order(self, order_dto: CanonicalOrderDTO, current_time: int):
+         """시장에 주문을 제출합니다. 매칭은 별도의 메서드로 처리됩니다.
+         WO-136: Checks dynamic circuit breakers before accepting.
+diff --git a/simulation/markets/stock_market.py b/simulation/markets/stock_market.py
+index dbf01bc8..2e3c3073 100644
+--- a/simulation/markets/stock_market.py
++++ b/simulation/markets/stock_market.py
+@@ -36,6 +36,7 @@ class StockMarket(Market):
+         self.config_module = config_module
+         self.logger = logger or logging.getLogger(__name__)
+         self.shareholder_registry = shareholder_registry
++        self.matched_transactions: List[Transaction] = []
+         self.buy_orders: Dict[int, List[ManagedOrder]] = defaultdict(list)
+         self.sell_orders: Dict[int, List[ManagedOrder]] = defaultdict(list)
+         self.last_prices: Dict[int, float] = {}
+@@ -250,4 +251,35 @@ class StockMarket(Market):
+         """
+         self.buy_orders.clear()
+         self.sell_orders.clear()
+-        self.reset_daily_stats()
+\ No newline at end of file
++        self.reset_daily_stats()
++
++    def cancel_orders(self, agent_id: str) -> None:
++        """
++        Cancels all orders for the specified agent.
++        """
++        removed_count = 0
++
++        # Iterate over buy orders
++        for firm_id, orders in self.buy_orders.items():
++            original_len = len(orders)
++            # ManagedOrder.order is CanonicalOrderDTO
++            self.buy_orders[firm_id] = [
++                m for m in orders
++                if str(m.order.agent_id) != str(agent_id) and m.order.agent_id != agent_id
++            ]
++            removed_count += original_len - len(self.buy_orders[firm_id])
++
++        # Iterate over sell orders
++        for firm_id, orders in self.sell_orders.items():
++            original_len = len(orders)
++            self.sell_orders[firm_id] = [
++                m for m in orders
++                if str(m.order.agent_id) != str(agent_id) and m.order.agent_id != agent_id
++            ]
++            removed_count += original_len - len(self.sell_orders[firm_id])
++
++        if removed_count > 0:
++            self.logger.info(
++                f"CANCEL_ORDERS | Removed {removed_count} stock orders for agent {agent_id}",
++                extra={"market_id": self.id, "agent_id": agent_id, "removed_count": removed_count}
++            )
+\ No newline at end of file
+diff --git a/simulation/systems/lifecycle/death_system.py b/simulation/systems/lifecycle/death_system.py
+index c3f9e891..c7e8a24b 100644
+--- a/simulation/systems/lifecycle/death_system.py
++++ b/simulation/systems/lifecycle/death_system.py
+@@ -45,6 +45,9 @@ class DeathSystem(IDeathSystem):
+         inactive_firms = [f for f in state.firms if not f.is_active]
+ 
+         for firm in inactive_firms:
++            # 0. Cancel Orders (Atomicity Fix)
++            self._cancel_agent_orders(firm.id, state)
++
+             # Delegate strictly to LiquidationManager
+             if isinstance(firm, ILiquidatable):
+                  self.liquidation_manager.initiate_liquidation(firm, state)
+@@ -74,6 +77,9 @@ class DeathSystem(IDeathSystem):
+         inactive_households = [h for h in state.households if not h.is_active]
+ 
+         for household in inactive_households:
++             # 0. Cancel Orders (Atomicity Fix)
++             self._cancel_agent_orders(household.id, state)
++
+              # Preserve for history/logging if needed
+              if state.inactive_agents is not None:
+                  state.inactive_agents[household.id] = household
+@@ -128,6 +134,23 @@ class DeathSystem(IDeathSystem):
+ 
+         return transactions
+ 
++    def _cancel_agent_orders(self, agent_id: str | int, state: SimulationState) -> None:
++        """
++        Scrub agent orders from all markets to ensure atomicity.
++        """
++        if not state.markets:
++            return
++
++        for market in state.markets.values():
++            # Check for cancel_orders method (Protocol compliance)
++            if isinstance(market, IMarket):
++                try:
++                    market.cancel_orders(agent_id)
++                except Exception as e:
++                    self.logger.error(
++                        f"ORDER_SCRUB_FAIL | Failed to cancel orders for agent {agent_id} in market {getattr(market, 'id', 'unknown')}: {e}"
++                    )
++
+     def _calculate_inventory_value(self, inventory: dict, markets: dict) -> int:
+         """
+         Calculates total inventory value in integer pennies.
+diff --git a/tests/unit/markets/test_order_book_market_cancellation.py b/tests/unit/markets/test_order_book_market_cancellation.py
+new file mode 100644
+index 00000000..84441aa3
+--- /dev/null
++++ b/tests/unit/markets/test_order_book_market_cancellation.py
+@@ -0,0 +1,52 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.markets.order_book_market import OrderBookMarket
++from modules.market.api import CanonicalOrderDTO
++
++class TestOrderBookMarketCancellation:
++
++    @pytest.fixture
++    def market(self):
++        return OrderBookMarket(market_id="test_market", logger=MagicMock())
++
++    def test_cancel_orders_removes_agent_orders(self, market):
++        # Setup orders
++        order1 = CanonicalOrderDTO(
++            agent_id="agent1", side="BUY", item_id="item1", quantity=10,
++            price_pennies=1000, price_limit=10.0, market_id="test_market"
++        )
++        order2 = CanonicalOrderDTO(
++            agent_id="agent2", side="BUY", item_id="item1", quantity=5,
++            price_pennies=1100, price_limit=11.0, market_id="test_market"
++        )
++        order3 = CanonicalOrderDTO(
++            agent_id="agent1", side="SELL", item_id="item1", quantity=5,
++            price_pennies=2000, price_limit=20.0, market_id="test_market"
++        )
++
++        market.place_order(order1, 1)
++        market.place_order(order2, 1)
++        market.place_order(order3, 1)
++
++        assert len(market._buy_orders["item1"]) == 2
++        assert len(market._sell_orders["item1"]) == 1
++
++        # Cancel agent1 orders
++        market.cancel_orders("agent1")
++
++        assert len(market._buy_orders["item1"]) == 1
++        assert market._buy_orders["item1"][0].agent_id == "agent2"
++        assert len(market._sell_orders["item1"]) == 0
++
++    def test_cancel_orders_no_effect_if_no_orders(self, market):
++         # Setup orders for agent2 only
++        order2 = CanonicalOrderDTO(
++            agent_id="agent2", side="BUY", item_id="item1", quantity=5,
++            price_pennies=1100, price_limit=11.0, market_id="test_market"
++        )
++        market.place_order(order2, 1)
++
++        market.cancel_orders("agent1")
++
++        assert len(market._buy_orders["item1"]) == 1
++        assert market._buy_orders["item1"][0].agent_id == "agent2"
+diff --git a/tests/unit/markets/test_stock_market_cancellation.py b/tests/unit/markets/test_stock_market_cancellation.py
+new file mode 100644
+index 00000000..43d2609c
+--- /dev/null
++++ b/tests/unit/markets/test_stock_market_cancellation.py
+@@ -0,0 +1,63 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.markets.stock_market import StockMarket
++from modules.market.api import CanonicalOrderDTO
++
++class TestStockMarketCancellation:
++
++    @pytest.fixture
++    def market(self):
++        shareholder_registry = MagicMock()
++        config = MagicMock()
++        config.STOCK_PRICE_LIMIT_RATE = 0.1
++        config.STOCK_BOOK_VALUE_MULTIPLIER = 1.0
++        return StockMarket(config_module=config, shareholder_registry=shareholder_registry, logger=MagicMock())
++
++    def test_cancel_orders_removes_agent_orders(self, market):
++        # Setup orders
++        # Stock market uses firm_id as item_id roughly (stock_100)
++        market.reference_prices[100] = 10.0
++
++        order1 = CanonicalOrderDTO(
++            agent_id="agent1", side="BUY", item_id="stock_100", quantity=10,
++            price_pennies=1000, price_limit=10.0, market_id="stock_market"
++        )
++        order2 = CanonicalOrderDTO(
++            agent_id="agent2", side="BUY", item_id="stock_100", quantity=5,
++            price_pennies=1100, price_limit=11.0, market_id="stock_market"
++        )
++        order3 = CanonicalOrderDTO(
++            agent_id="agent1", side="SELL", item_id="stock_100", quantity=5,
++            price_pennies=2000, price_limit=20.0, market_id="stock_market"
++        )
++
++        market.place_order(order1, 1)
++        market.place_order(order2, 1)
++        market.place_order(order3, 1)
++
++        assert len(market.buy_orders[100]) == 2
++        assert len(market.sell_orders[100]) == 1
++
++        # Cancel agent1 orders
++        market.cancel_orders("agent1")
++
++        assert len(market.buy_orders[100]) == 1
++        assert market.buy_orders[100][0].order.agent_id == "agent2"
++        assert len(market.sell_orders[100]) == 0
++
++    def test_cancel_orders_mixed_int_str_id(self, market):
++        # Stock market handles mixed ID types in cancel logic?
++        market.reference_prices[100] = 10.0
++
++        order1 = CanonicalOrderDTO(
++            agent_id=123, side="BUY", item_id="stock_100", quantity=10,
++            price_pennies=1000, price_limit=10.0, market_id="stock_market"
++        )
++        market.place_order(order1, 1)
++
++        assert len(market.buy_orders[100]) == 1
++
++        # Cancel using string "123"
++        market.cancel_orders("123")
++
++        assert len(market.buy_orders[100]) == 0
+diff --git a/tests/unit/systems/lifecycle/test_death_system.py b/tests/unit/systems/lifecycle/test_death_system.py
+index a9ed8ebe..9890d614 100644
+--- a/tests/unit/systems/lifecycle/test_death_system.py
++++ b/tests/unit/systems/lifecycle/test_death_system.py
+@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
+ from simulation.systems.lifecycle.death_system import DeathSystem
+ from simulation.dtos.api import SimulationState
+ from simulation.firms import Firm
++from simulation.interfaces.market_interface import IMarket
+ 
+ class TestDeathSystem:
+     @pytest.fixture
+@@ -43,3 +44,35 @@ class TestDeathSystem:
+ 
+         # Verify removal from global list
+         assert firm not in state.firms
++
++    def test_firm_liquidation_cancels_orders(self, death_system):
++        firm = MagicMock(spec=Firm)
++        firm.is_active = False
++        firm.id = 1
++        firm.get_all_items.return_value = {}
++        firm.hr_state = MagicMock()
++        firm.hr_state.employees = []
++        firm.liquidate_assets.return_value = {}
++
++        # Setup Market
++        # Use spec=IMarket so isinstance(mock_market, IMarket) returns True
++        mock_market = MagicMock(spec=IMarket)
++        # Ensure methods exist on the mock
++        mock_market.cancel_orders = MagicMock()
++        mock_market.id = "test_market"
++        mock_market.buy_orders = {}
++        mock_market.sell_orders = {}
++        mock_market.matched_transactions = []
++
++        state = MagicMock()
++        state.firms = [firm]
++        state.households = []
++        state.agents = {1: firm}
++        state.time = 1
++        state.markets = {"test_market": mock_market}
++        state.inactive_agents = {}
++        state.government = None
++
++        death_system.execute(state)
++
++        mock_market.cancel_orders.assert_called_with(firm.id)

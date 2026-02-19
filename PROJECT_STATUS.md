@@ -124,4 +124,9 @@ severe architectural violations threatening financial and data integrity.
 **최신 감사 보고서**: [PROJECT_WATCHTOWER_AUDIT_REPORT_20260211.md](./reports/audits/PROJECT_WATCHTOWER_AUDIT_REPORT_20260211.md) (2026-02-11)
 - **결론**: **CRITICAL**. A new system-wide audit reveals persistent and severe violations...
 - **추가조치**: **Liquidation Sprint (2026-02-12) 완료**. Three core integrity protocols (Lifecycle, Inventory, Finance) are now programmatically enforced.
-- **Audit Harvest (2026-02-19)**: Harvested 3 reports from remote branches; all confirmed to be redundant failures of `test_fiscal_integrity.py` already resolved on `main` (TD-TEST-SSOT-SYNC).
+- **Audit Harvest (2026-02-20)**: Harvested 3 reports (`origin/fix-economic-integrity-audit-*`, `origin/audit-parity-verification-*`, `origin/audit-structural-report-*`).
+    - **Key Findings**: 
+        - [x] **Silent Coverage Loss**: Many tests use deprecated `system_command_queue`, causing cockpit interventions to be ignored during testing.
+        - [x] **Naming Drift**: Identified `government`/`governments` and `god_commands`/`god_command_queue` mismatches between `WorldState` and `SimulationState` DTOs.
+        - [x] **Stale Method Access**: Refactoring of `AgentLifecycleManager` broke `test_engine.py` due to private method removal.
+    - **Action**: Added corresponding IDs to `TECH_DEBT_LEDGER.md` (TD-TEST-COCKPIT-MOCK, TD-ARCH-GOV-Mismatch). Liquidation planned for Phase 23.
