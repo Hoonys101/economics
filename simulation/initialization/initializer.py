@@ -183,7 +183,9 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.bank.settlement_system = sim.settlement_system
         sim.agents[sim.bank.id] = sim.bank
         sim.next_agent_id += 1
-        sim.government = Government(id=sim.next_agent_id, initial_assets=0.0, config_module=self.config, strategy=sim.strategy)
+        sim.world_state.governments.clear()
+        gov = Government(id=sim.next_agent_id, initial_assets=0.0, config_module=self.config, strategy=sim.strategy)
+        sim.world_state.governments.append(gov)
         sim.government.settlement_system = sim.settlement_system
         sim.agents[sim.government.id] = sim.government
         sim.next_agent_id += 1
