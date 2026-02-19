@@ -1,0 +1,151 @@
+diff --git a/communications/insights/fix-mock-regressions.md b/communications/insights/fix-mock-regressions.md
+new file mode 100644
+index 00000000..8914affa
+--- /dev/null
++++ b/communications/insights/fix-mock-regressions.md
+@@ -0,0 +1,55 @@
++# Fix Mock Attribute Regressions (Cockpit 2.0)
++
++## [Architectural Insights]
++
++### Mock Drift and Protocol Fidelity
++The previous implementation of `tests/modules/governance/test_cockpit_flow.py` and `tests/modules/governance/test_system_command_processor.py` utilized `MagicMock()` without specifying a `spec`. This approach allows "Mock Drift", where tests rely on attributes that do not exist in the real class, and fails to enforce "Protocol Fidelity" because generic mocks do not satisfy `isinstance(mock, Protocol)` checks for `@runtime_checkable` protocols unless specific attributes are manually set.
++
++### Solution Strategy
++1.  **Spec-Based Mocking**: We are replacing generic `MagicMock()` with `MagicMock(spec=RealClass)` (e.g., `Government`, `CentralBankSystem`). This ensures that:
++    *   The mock only exposes attributes that exist on the real class (preventing drift).
++    *   The mock satisfies `isinstance(mock, Protocol)` checks if the real class implements the protocol (enforcing fidelity).
++2.  **DTO Compliance**: We are also mocking `fiscal_policy` with `MagicMock(spec=FiscalPolicyDTO)` to ensure that nested data structures also adhere to the expected schema.
++
++## [Test Evidence]
++
++```
++tests/modules/governance/test_cockpit_flow.py::test_cockpit_command_flow_tax_rate
++-------------------------------- live log call ---------------------------------
++INFO     modules.system.services.command_service:command_service.py:74 CommandService received CockpitCommand: SET_TAX_RATE
++INFO     simulation.engine:engine.py:163 System Commands Queued for Tick 1: 1
++INFO     simulation.orchestration.phases.system_commands:system_commands.py:29 SYSTEM_COMMANDS_PHASE | Processing 1 commands.
++INFO     modules.governance.processor:processor.py:28 SYSTEM_COMMAND | Executing SET_TAX_RATE
++INFO     modules.governance.processor:processor.py:66 SYSTEM_COMMAND | Corporate Tax Rate: 0.2 -> 0.35
++PASSED                                                                   [ 14%]
++tests/modules/governance/test_cockpit_flow.py::test_cockpit_command_flow_pause
++-------------------------------- live log call ---------------------------------
++INFO     modules.system.services.command_service:command_service.py:74 CommandService received CockpitCommand: PAUSE
++INFO     simulation.engine:engine.py:147 Simulation PAUSED by CommandService.
++PASSED                                                                   [ 28%]
++tests/modules/governance/test_system_command_processor.py::test_set_corporate_tax_rate
++-------------------------------- live log call ---------------------------------
++INFO     modules.governance.processor:processor.py:28 SYSTEM_COMMAND | Executing SET_TAX_RATE
++INFO     modules.governance.processor:processor.py:66 SYSTEM_COMMAND | Corporate Tax Rate: 0.2 -> 0.25
++PASSED                                                                   [ 42%]
++tests/modules/governance/test_system_command_processor.py::test_set_income_tax_rate
++-------------------------------- live log call ---------------------------------
++INFO     modules.governance.processor:processor.py:28 SYSTEM_COMMAND | Executing SET_TAX_RATE
++INFO     modules.governance.processor:processor.py:75 SYSTEM_COMMAND | Income Tax Rate: 0.1 -> 0.15
++PASSED                                                                   [ 57%]
++tests/modules/governance/test_system_command_processor.py::test_set_base_interest_rate
++-------------------------------- live log call ---------------------------------
++INFO     modules.governance.processor:processor.py:28 SYSTEM_COMMAND | Executing SET_INTEREST_RATE
++INFO     modules.governance.processor:processor.py:98 SYSTEM_COMMAND | CB Base Rate: 0.05 -> 0.03
++PASSED                                                                   [ 71%]
++tests/modules/governance/test_system_command_processor.py::test_missing_government
++-------------------------------- live log call ---------------------------------
++INFO     modules.governance.processor:processor.py:28 SYSTEM_COMMAND | Executing SET_TAX_RATE
++ERROR    modules.governance.processor:processor.py:48 SYSTEM_COMMAND | Government agent is None.
++PASSED                                                                   [ 85%]
++tests/modules/governance/test_system_command_processor.py::test_protocol_guardrails
++-------------------------------- live log call ---------------------------------
++INFO     modules.governance.processor:processor.py:28 SYSTEM_COMMAND | Executing SET_TAX_RATE
++ERROR    modules.governance.processor:processor.py:53 SYSTEM_COMMAND | Government agent <class 'tests.modules.governance.test_system_command_processor.test_protocol_guardrails.<locals>.NotGovernment'> does not satisfy IGovernment protocol.
++PASSED                                                                   [100%]
++```
+diff --git a/tests/modules/governance/test_cockpit_flow.py b/tests/modules/governance/test_cockpit_flow.py
+index b554bc0e..9af8dfa8 100644
+--- a/tests/modules/governance/test_cockpit_flow.py
++++ b/tests/modules/governance/test_cockpit_flow.py
+@@ -8,6 +8,8 @@ from modules.system.registry import GlobalRegistry, AgentRegistry
+ from simulation.systems.settlement_system import SettlementSystem
+ from simulation.world_state import WorldState
+ from simulation.dtos.api import SimulationState
++from simulation.agents.government import Government
++from modules.government.dtos import FiscalPolicyDTO
+ 
+ @pytest.fixture
+ def mock_deps():
+@@ -45,11 +47,15 @@ def test_cockpit_command_flow_tax_rate(mock_deps):
+     )
+ 
+     # Setup World State
+-    sim.world_state.government = MagicMock()
++    # Use spec=Government to prevent Mock Drift and ensure Protocol Fidelity
++    sim.world_state.government = MagicMock(spec=Government)
+     sim.world_state.government.corporate_tax_rate = 0.2
+     sim.world_state.government.income_tax_rate = 0.1
+-    sim.world_state.government.fiscal_policy = MagicMock()
++
++    # Use spec=FiscalPolicyDTO for nested object
++    sim.world_state.government.fiscal_policy = MagicMock(spec=FiscalPolicyDTO)
+     sim.world_state.government.fiscal_policy.corporate_tax_rate = 0.2
++    sim.world_state.government.fiscal_policy.income_tax_rate = 0.1 # Ensure all required fields are present if needed
+ 
+     sim.world_state.time = 1
+ 
+diff --git a/tests/modules/governance/test_system_command_processor.py b/tests/modules/governance/test_system_command_processor.py
+index 966d587d..4f35340f 100644
+--- a/tests/modules/governance/test_system_command_processor.py
++++ b/tests/modules/governance/test_system_command_processor.py
+@@ -3,19 +3,22 @@ from unittest.mock import MagicMock
+ from modules.governance.api import SystemCommandType, SetTaxRateCommand, SetInterestRateCommand, IGovernment, ICentralBank
+ from modules.governance.processor import SystemCommandProcessor
+ from simulation.dtos.api import SimulationState
++from simulation.agents.government import Government
++from simulation.systems.central_bank_system import CentralBankSystem
++from modules.government.dtos import FiscalPolicyDTO
+ 
+ @pytest.fixture
+ def mock_simulation_state():
+     state = MagicMock(spec=SimulationState)
+     state.time = 100
+-    # Use MagicMock(spec=IGovernment) to satisfy protocol check
+-    state.government = MagicMock(spec=IGovernment)
+-    state.central_bank = MagicMock(spec=ICentralBank)
++    # Use MagicMock(spec=Government) to satisfy protocol check and prevent drift
++    state.government = MagicMock(spec=Government)
++    state.central_bank = MagicMock(spec=CentralBankSystem)
+ 
+     # Setup government attributes
+     state.government.corporate_tax_rate = 0.2
+     state.government.income_tax_rate = 0.1
+-    state.government.fiscal_policy = MagicMock()
++    state.government.fiscal_policy = MagicMock(spec=FiscalPolicyDTO)
+     state.government.fiscal_policy.corporate_tax_rate = 0.2
+     state.government.fiscal_policy.income_tax_rate = 0.1
+ 
+@@ -71,15 +74,7 @@ def test_missing_government(mock_simulation_state):
+ 
+ def test_protocol_guardrails(mock_simulation_state):
+     # Setup an object that does NOT satisfy IGovernment
+-    mock_simulation_state.government = MagicMock() # Not spec=IGovernment
+-    # Explicitly remove an attribute required by IGovernment to fail isinstance check
+-    # IGovernment requires: corporate_tax_rate, income_tax_rate, fiscal_policy
+-    # MagicMock has all attributes by default.
+-    # To make isinstance(mock, Protocol) fail, we need to ensure it DOESN'T implement it.
+-    # runtime_checkable checks for presence of attributes.
+-    # deleting an attribute from MagicMock instance is tricky because it regenerates on access unless we del it from __dict__ or spec it differently.
+-
+-    # Better approach: Create a dummy class that misses attributes
++    # We use a dummy class that definitely doesn't implement the protocol
+     class NotGovernment:
+         pass
+ 
+@@ -97,9 +92,6 @@ def test_protocol_guardrails(mock_simulation_state):
+     # Assert nothing happened (because it returned early)
+     # Since NotGovernment doesn't have tax rates, we can't check them.
+     # But we can check that no exception was raised (handled gracefully)
+-    # and that the logger was called (if we could verify logs, but here just ensure safe execution).
+-
+-    # If logic proceeded, it would have tried to access attributes on NotGovernment and crashed (AttributeError).
+-    # Since it didn't crash, the guardrail worked (or it crashed inside and was caught? No, execute doesn't catch generic Exception).
+ 
++    # We can also verify that execute returned safely.
+     pass

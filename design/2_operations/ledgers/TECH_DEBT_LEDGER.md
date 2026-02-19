@@ -12,6 +12,8 @@
 | **TD-DEPR-GOV-TAX** | Government | **Legacy API**: `Government.collect_tax` is deprecated. Use `settle_atomic`. | **Low**: Technical Debt. | Open |
 | **TD-DEPR-FACTORY** | Factory | **Stale Path**: `agent_factory.HouseholdFactory` is stale. Use `household_factory`. | **Low**: Technical Debt. | Open |
 | **TD-DEPR-STOCK-DTO** | Market | **Legacy DTO**: `StockOrder` is deprecated. Use `CanonicalOrderDTO`. | **Low**: Technical Debt. | Open |
+| **TD-TEST-MOCK-STALE** | Testing | **Stale Mocks**: `WorldState` mocks used deprecated `system_command_queue`. | **High**: Test Blindness. | **Resolved** |
+| **TD-ARCH-GOV-MISMATCH** | Architecture | **Singleton vs List**: `WorldState` has `governments` (List) but `TickOrchestrator` uses `government` (Singleton). | **Medium**: Logic Fragility. | **Identified** |
 
 ---
 > [!NOTE]
@@ -34,3 +36,10 @@
 - **Symptom**: Similar transaction processing logic exists in `TransactionManager` (Legacy) and `TransactionProcessor` (New).
 - **Risk**: Fixes applied to one might not apply to the other, leading to divergent behavior.
 - **Solution**: Deprecate `TransactionManager` and route all traffic through `TransactionProcessor`.
+
+---
+### ID: TD-ARCH-GOV-MISMATCH
+### Title: Government Structure Mismatch (Singleton vs List)
+- **Symptom**: `WorldState` definitions use `self.governments: List[Government]`, but `TickOrchestrator` and `Simulation` initialization often treat it as a singleton `self.government`.
+- **Risk**: Semantic confusion and potential runtime errors if multiple governments are ever introduced. Accessing `state.government` relies on dynamic attribute injection or backward compatibility properties not explicitly defined in the type hint.
+- **Solution**: Standardize on `governments` (List) or explicit `primary_government` property.

@@ -23,30 +23,54 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "audit-mock-attribute-sync": {
-        "title": "Systemic Audit: Mock Attribute Regressions (Cockpit 2.0)",
-        "worker": "audit",
+    "analyze-gov-structure": {
+        "title": "Structural Analysis: Government Singleton vs List",
+        "worker": "spec",
         "instruction": (
-            "Scan the entire `tests/` directory to identify all Mock/MagicMock setups that use "
-            "deprecated attribute names, specifically focusing on the recent Cockpit 2.0 refactor.\n\n"
-            "**Target Mismatch:**\n"
-            "- Old: `system_command_queue` (List-like)\n"
-            "- New: `system_commands` (List[SystemCommand])\n\n"
+            "Analyze the usage of `government` (singleton) versus `governments` (list) in `WorldState` and `Simulation`.\n\n"
+            "**Context:**\n"
+            "- `WorldState` defines `self.governments: List[Government] = []`.\n"
+            "- `TickOrchestrator` and tests often access `state.government`.\n"
+            "- Determining how `state.government` is currently populated (likely dynamic injection in `Simulation`).\n\n"
             "**Objective:**\n"
-            "1. Find every file in `tests/` where `system_command_queue` is assigned to a Mock or MagicMock.\n"
-            "2. Identify if there are other stale attributes on `WorldState` mocks (e.g. `god_command_queue` vs naming in world_state.py).\n"
-            "3. Provide a list of files and line numbers that need fixing.\n"
-            "4. Check for `AttributeError: Mock object has no attribute...` patterns in recent failure logs if available."
+            "1. Identify where `state.government` is being set (e.g., `initializer.py`, `simulation.py`).\n"
+            "2. Propose a structural fix: either add a proper `@property` to `WorldState` or refactor all consumers to use `governments[0]`.\n"
+            "3. Assess impact on `TickOrchestrator`, `SimulationState` DTO, and tests."
         ),
         "context_files": [
             "simulation/world_state.py",
-            "simulation/orchestration/tick_orchestrator.py",
-            "tests/orchestration/test_state_synchronization.py",
-            "tests/modules/governance/test_cockpit_flow.py",
-            "tests/integration/test_tick_normalization.py",
-            "tests/integration/test_cockpit_integration.py",
-            "tests/integration/test_lifecycle_cycle.py"
+            "simulation/engine.py",
+            "simulation/initialization/initializer.py",
+            "simulation/orchestration/tick_orchestrator.py"
         ],
-        "output_path": "design/3_work_artifacts/reports/AUDIT_MOCK_REGRESSIONS.md"
+        "output_path": "design/3_work_artifacts/spec/STRUCT_GOV_FIX_SPEC.md"
+    },
+    "analyze-deprecations": {
+        "title": "Hygiene Analysis: Deprecation Cleanup (Track B)",
+        "worker": "spec",
+        "instruction": (
+            "Analyze the usage of deprecated components and design a refactoring plan.\n\n"
+            "**Deprecated targets:**\n"
+            "1. `Government.collect_tax` -> `settlement.settle_atomic`\n"
+            "2. `HouseholdFactory` (old) -> `simulation.factories.household_factory`\n"
+            "3. `StockOrder` -> `CanonicalOrderDTO`\n\n"
+            "**Objective:**\n"
+            "1. Review the provided context files to understand how deprecated aliases are used.\n"
+            "2. For each category, provide a specific `sed` or refactoring pattern.\n"
+            "3. Identify any logic changes required (e.g., parameter differences between old/new factories).\n"
+            "4. Output a `MISSION_spec` for Jules to execute the cleanup."
+        ),
+        "context_files": [
+            "tests/unit/agents/test_government.py",
+            "tests/integration/test_government_tax.py",
+            "tests/simulation/factories/test_agent_factory.py",
+            "tests/unit/test_household_factory.py",
+            "tests/unit/systems/test_demographic_manager_newborn.py",
+            "tests/unit/modules/demographics/test_event_consistency.py",
+            "tests/system/test_audit_integrity.py",
+            "tests/unit/test_market_adapter.py",
+            "tests/unit/test_stock_market.py"
+        ],
+        "output_path": "design/3_work_artifacts/spec/DEPRECATION_CLEANUP_SPEC.md"
     },
 }

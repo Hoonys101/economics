@@ -16,27 +16,43 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "fix-mock-regressions": {
-        "title": "Fix Mock Attribute Regressions (Cockpit 2.0)",
+    "fix-gov-structure": {
+        "title": "Structural Fix: Government Singleton/List Mismatch",
         "command": "create",
         "instruction": (
-            "Fix the deprecated `system_command_queue` attribute in WorldState mocks based on the audit report.\n\n"
-            "**Target Files:**\n"
-            "1. `tests/orchestration/test_state_synchronization.py`\n"
-            "2. `tests/modules/governance/test_cockpit_flow.py`\n"
-            "3. `tests/integration/test_tick_normalization.py`\n"
-            "4. `tests/integration/test_cockpit_integration.py`\n\n"
-            "**Required Changes:**\n"
-            "- Rename `ws.system_command_queue` (or `state.system_command_queue`) to `ws.system_commands` (or `state.system_commands`).\n"
-            "- Ensure `system_commands` is initialized as a `list` (`[]`), NOT a `deque`.\n"
-            "- Verify `god_command_queue` usage is consistent with `WorldState` (should be `deque`).\n"
-            "- Fix unrelated `AttributeError` in `tests/system/test_engine.py` (AgentLifecycleManager) by invoking the correct DeathSystem or LiquidationManager method if possible.\n"
-            "- Run the specific tests to verify fixes.\n\n"
-            "**Reference:**\n"
-            "- `design/3_work_artifacts/reports/AUDIT_MOCK_REGRESSIONS.md` (Audit Report)\n"
-            "- `simulation/world_state.py` (Source of Truth)"
+            "Implement the 'Property Proxy' pattern to resolve the Government Singleton vs List mismatch.\n\n"
+            "**Key Tasks:**\n"
+            "1. **Refactor WorldState** (`simulation/world_state.py`): \n"
+            "   - Add `@property` for `government` to access `governments[0]`.\n"
+            "   - Add `@government.setter` to sync with `governments` list.\n"
+            "   - Ensure `governments` is the SSoT.\n"
+            "2. **Update Initializer** (`simulation/initialization/initializer.py`):\n"
+            "   - Change direct `sim.government` assignment to `sim.world_state.governments.append(gov)`.\n"
+            "3. **Verify**:\n"
+            "   - Create a new test `tests/unit/test_government_structure.py` to verify singleton/list synchronization and initializer integrity.\n\n"
+            "**Reference:** `design/3_work_artifacts/spec/STRUCT_GOV_FIX_SPEC.md`"
         ),
-        "file": "design/3_work_artifacts/reports/AUDIT_MOCK_REGRESSIONS.md",
+        "file": "design/3_work_artifacts/spec/STRUCT_GOV_FIX_SPEC.md",
+        "wait": True
+    },
+    "cleanup-deprecations": {
+        "title": "Hygiene: Cleanup Deprecated Code (Track B)",
+        "command": "create",
+        "instruction": (
+            "Refactor deprecated code to enforce Zero-Sum Integrity and SEO patterns.\n\n"
+            "**Key Tasks:**\n"
+            "1. **Government.collect_tax** (`simulation/agents/government.py`):\n"
+            "   - Deprecate/Replace with `settlement.settle_atomic`.\n"
+            "   - Update all call sites in `tests/` to use atomic settlement logic.\n"
+            "2. **HouseholdFactory** (`simulation/systems/demographic_manager.py`):\n"
+            "   - Migrate to `simulation.factories.agent_factory` methodology.\n"
+            "   - Inject `simulation` context where required.\n"
+            "3. **StockOrder** (`simulation/models.py`):\n"
+            "   - Remove class and enforce `CanonicalOrderDTO`.\n"
+            "   - Update `tests/unit/test_market_adapter.py`.\n\n"
+            "**Reference:** `design/3_work_artifacts/spec/DEPRECATION_CLEANUP_SPEC.md`"
+        ),
+        "file": "design/3_work_artifacts/spec/DEPRECATION_CLEANUP_SPEC.md",
         "wait": True
     },
 }
