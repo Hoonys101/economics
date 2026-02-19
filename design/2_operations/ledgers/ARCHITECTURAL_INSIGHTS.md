@@ -171,3 +171,15 @@
     - **Optimization**: Introduced a dual-index system (Bank -> Set[Agents], Agent -> Set[Banks]) in `SettlementSystem` to accelerate bank-run and liquidation scenarios. Avoids global registry scans during God-mode interventions.
     - **Implementation**: Synchronized index updates with `AgentLifecycleManager` and `FinanceSystem` to maintain SSoT integrity. Updated `ISettlementSystem` protocol to enforce these stateful registry contracts.
     - [Insight Report](../_archive/insights/2026-02-14_Settlement_Stress_Scale_Optimization.md)
+- **[2026-02-19] Registration-before-Transfer (Atomic Lifecycle)**
+    - **Problem**: "Ghost Destination" runtime crashes occurred when `FirmSystem` attempted to transfer startup capital before the firm was registered in the `AgentRegistry`.
+    - **Principle**: **"Registration is the prerequisite for existence."** No financial or physical interaction (transfers, inventory moves) can occur until an entity has a valid, observable global ID in the SSoT Registry.
+    - **Implementation**: Reordered `spawn_firm` to ensure `registry.register()` completes before capital disbursement.
+- **[2026-02-19] Solvency Guardrails & Pre-flight Checks (TD-GOV-SOLVENCY)**
+    - **Problem**: "All-or-Nothing" logic in government modules caused systemic stalls when a single large batch execution failed due to insufficient funds (Treasury crunch).
+    - **Principle**: **"Budgetary perception must precede execution."** Intelligent agents must perform an internal solvency check (Pre-flight cost estimation) against their DTO state before committing intents to the system queue.
+    - **Implementation**: Introduced `SolvencyException` and "Partial Execution" strategies for infrastructure/welfare modules.
+- **[2026-02-19] Deep Integer Core & Type Integrity (Penny Standard Expansion)**
+    - **Problem**: M&A calculations (taking premium percentages) resulted in `float` values being passed to the hardened `SettlementSystem`, causing runtime `TypeError`.
+    - **Principle**: **"Type integrity must be enforced at the source, not just the sink."** Downstream hardening of central systems (Settlement) requires corresponding hardening of all internal logic ledgers (Indices, M&A models) to use integer pennies exclusively.
+    - **Implementation**: Forced `round_to_pennies()` at the calculation boundary of the M&A Manager.

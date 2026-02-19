@@ -16,29 +16,28 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "implement-runtime-structural-fixes": {
-        "title": "Implement Structural Runtime Stability Fixes",
-        "instruction": """
-구현 목표: 런타임 진단 로그에 기반한 구조적 결함 해결 및 'No Budget, No Execution' 원칙 강제.
-
-수정 사항:
-1. simulation/systems/firm_management.py:
-   - spawn_firm()에서 final_startup_cost를 int()로 캐스팅하여 SettlementSystem 타입 오류 해결.
-2. simulation/systems/transaction_processor.py:
-   - 트랜잭션 처리 전 buyer, seller 존재 여부 확인 로직 추가 (Agent Existential Guard).
-3. simulation/initialization/initializer.py:
-   - bond_interest -> MonetaryTransactionHandler 연결.
-   - holding_cost -> FinancialTransactionHandler 연결.
-4. simulation/systems/settlement_system.py:
-   - _prepare_seamless_funds() 내의 자동 은행 인출(Reflexive Liquidity) 로직 제거.
-5. simulation/systems/handlers/financial_handler.py:
-   - holding_cost 트랜잭션 타입 지원 추가.
-6. simulation/systems/handlers/monetary_handler.py:
-   - bond_interest 트랜잭션 타입 지원 추가.
-
-검증: 
-- 각각의 수정을 완료하고 python diagnose_runtime.py를 실행하여 로그에서 TypeError 및 Missing Handler 오류가 사라졌는지 확인.
-""",
+    "fix-agent-lifecycle-atomicity": {
+        "title": "Fix Agent Lifecycle Atomicity & Queue Scrubbing",
+        "instruction": "2026-02-19_Agent_Lifecycle_Atomicity.md 명세에 따라 Firm Startup 순서를 교정(등록 후 이체)하고, AgentLifecycleManager에 inter_tick_queue 클리닝 로직을 추가하세요.",
+        "file": "design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md",
+        "wait": True
+    },
+    "fix-government-solvency-guardrails": {
+        "title": "Implement Government Solvency Guardrails",
+        "instruction": "2026-02-19_Govt_Solvency_Guardrails.md 명세에 따라 SettlementSystem에 SolvencyException을 도입하고, 지출 모듈에 부분 집행(Partial Execution) 및 사전 예산 체크를 구현하세요.",
+        "file": "design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md",
+        "wait": True
+    },
+    "fix-handler-alignment": {
+        "title": "Register Missing Fiscal & Monetary Handlers",
+        "instruction": "2026-02-19_Handler_Alignment_Map.md 명세에 따라 bailout, bond_issuance 등 누락된 트랜잭션 타입의 핸들러를 SimulationInitializer에 등록하세요.",
+        "file": "design/_archive/insights/2026-02-19_Handler_Alignment_Map.md",
+        "wait": True
+    },
+    "fix-ma-pennies-migration": {
+        "title": "Migrate M&A & StockMarket to Penny Standard",
+        "instruction": "2026-02-19_MA_Penny_Migration.md 명세에 따라 MAManager의 모든 가격 계산에 round_to_pennies()를 적용하고 StockMarket의 가격 지표를 정수(int)로 전환하세요.",
+        "file": "design/_archive/insights/2026-02-19_MA_Penny_Migration.md",
         "wait": True
     }
 }

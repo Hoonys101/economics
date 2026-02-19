@@ -15,19 +15,25 @@
 
 ## 1. 현재 개발 단계
 
-    - **`Phase 19: Post-Wave Technical Debt Liquidation (Wave 3-5)`** ⚖️ **[ACTIVE]**
+    - **`Phase 22: Structural Fix Implementation`** 🛠️ ⏳ (In Progress)
+        - **Goal**: Implement registered missions: Lifecycle Atomicity, Solvency Guardrails, Handler Alignment, and M&A Penny Migration.
         - **Status**: ACTIVE
+        - **Next**: Activate Jules missions and verify baseline integrity.
+
+    - **`Phase 21: Structural Runtime Diagnosis & Architecture Restoration`** 🛡️ ✅ (2026-02-19)
+        - **Achievement**: Identified root causes of "Ghost Destination" crashes and "Float Penny Leaks" via Gemini-led structural audit.
+        - **Status**: COMPLETED
+        - **成果**: 4대 핵심 명세서(Lifecycle, Solvency, Handlers, M&A) 작성 및 Jules 미션 장전 완료.
+
+    - **`Phase 19: Post-Wave Technical Debt Liquidation (Wave 3-5)`** ⚖️ ✅ (2026-02-19)
+        - **Status**: COMPLETED
         - **Focus**: Market Engine Refactoring & Data Integrity (Wave 3)
-        - **Achievement**: Liquidating remaining technical debt via the "Future Liquidation Roadmap".
-        - **Current Progress (Wave 3)**:
-            - [x] 3.1. Matching Engine Integer Hardening (`exec-match-engine-int-math`) - **MERGED**
-            - [x] 3.2. Transaction Schema Migration (`exec-trans-schema-migration`) - **MERGED**
-            - [x] Hotfix: Lifecycle Manager Initialization (`exec-lifecycle-init-fix`) - **MERGED**
+        - **Achievement**: Successfully merged Matching Engine Integer Hardening and Transaction Schema Migration.
         - **Overall Status**:
-            - [x] **Wave 1 & 2 (Cleanup)**: Merged `penny-hardening-reporting-dtos` and `lifecycle-decomposition`. ✅ (2026-02-19)
-            - [x] **Wave 3 (Market & Data)**: Refactoring `MatchingEngine` and `Transaction` schema. ✅ (2026-02-19)
-            - [x] **Wave 4 (Structural)**: Deprecating `TransactionManager`. ✅ (2026-02-19)
-            - [ ] **Wave 5 (Hygiene)**: Finalizing `ConfigProxy` and UI Purity.
+            - [x] **Wave 1 & 2 (Cleanup)**: Merged `penny-hardening-reporting-dtos` and `lifecycle-decomposition`. ✅
+            - [x] **Wave 3 (Market & Data)**: Refactoring `MatchingEngine` and `Transaction` schema. ✅
+            - [x] **Wave 4 (Structural)**: Deprecating `TransactionManager`. ✅
+            - [x] **Wave 5 (Hygiene)**: Finalizing `ConfigProxy` and UI Purity. ✅
 
     - **`Phase 18: Parallel Technical Debt Clearance`** ⚖️ **[COMPLETED]**
         - **Achievement**: Executing parallel liquidation of long-standing structural debts.
@@ -55,10 +61,10 @@
             - [x] **SEO Hardening**: Refactored `TaxService` and `FinanceSystem` to use DTO Snapshots. ✅
             - [x] **Finance Purity**: Enforced `State_In -> State_Out` pattern in debt and loan engines. ✅
             - [x] **QE Restoration**: Restored Quantitative Easing logic and enabled related tests. ✅
-            - [x] **Verification**: 100% test pass rate (580/580) with zero architectural leaks. 💎 ✅
-
-    - **`Phase 15.1: Critical Liquidation Sprint (Triple-Debt Bundle)`** 🛡️ ✅ (2026-02-12)
-        - **Achievement**: Systematically eliminated the most severe architectural violations threatening financial and data integrity.
+            - [x] **Verification**: 100% test pass### 2.7 [아키텍처 복원 (Architecture Restoration)](../../PROJECT_STATUS.md)
+- **개념**: 구현 과정에서 발생하는 '설계 드리프트(Design Drift)'를 탐지하고, 원래의 '신성한 시퀀스'와 'Penny Standard'로 시스템을 강제 정렬하는 작업.
+- **핵심**: 런타임 진단을 통한 구조적 결함 식별, 원자적 생애주기 보장(Registration-before-Transfer), 그리고 모든 도메인(M&A 포함)의 정수화 강제.
+severe architectural violations threatening financial and data integrity.
         - **Status**:
             - [x] **Lifecycle Pulse**: Implemented `HouseholdFactory` and `reset_tick_state` to enforce "Late-Reset" and Zero-Sum birth. ✅
             - [x] **Inventory Slot Protocol**: Standardized multi-slot inventory management; eliminated `Registry` duplication. ✅

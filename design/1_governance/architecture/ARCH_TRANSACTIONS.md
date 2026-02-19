@@ -17,13 +17,13 @@
 - 낙관적 업데이트(Optimistic Update)는 경제 내의 데이터 드리프트(Data Drift)와 제로섬 위반의 주요 원인이므로 금지됩니다.
 
 
-### 2.2 Zero-Sum Distribution & Precision (제로섬 분배 및 정밀도)
-- **정수 산술 기반**: 화폐 분배 시 부동 소수점 오차 누적을 원천 차단하기 위해, 내부적으로 정수(Cents 단위) 연산을 우선하거나 분배 후 잔액을 철저히 마지막 대상에게 귀속시킵니다.
+### 2.2 Zero-Sum Distribution & Precision (Zero-Float Mandate)
+- **Absolute Integer Core**: All financial modules, including M&A, Stock Market discovery, and Government budgeting, MUST operate in integer pennies. **No floats** are permitted at the settlement boundary.
+- **Rounding Policy**: Any fractional calculation (interest, tax, premiums) must use explicit quantization (`round_to_pennies`) before transmission to the `SettlementSystem`.
 - **나머지 처리**: N명에게 분배 시, N-1명에게는 `floor` 금액을 배분하고 마지막 1명에게 남은 모든 차액을 배분하여 시스템 내 총 통화량의 보존 법칙을 성립시킵니다.
 
 ### 2.3 Automatic Escheatment (귀속 원칙)
 - 소유자가 불분명한 자산(파산한 기업의 잔여 자산, 처리되지 않은 벌금 등)은 임시 보관소(`Reflux Sink`)에 머물지 않고 즉시 국가(`Government`)로 귀속됩니다.
-- **Anti-Pattern**: `EconomicRefluxSystem`과 같은 출처 불명의 자금 저장소 사용을 금지합니다.
 
 ## 3. 트랜잭션 처리 구조 (Pipeline Architecture)
 
@@ -65,12 +65,12 @@
 
 에이전트의 유동성 흐름을 극대화하기 위해 다음 결제 로직을 강제합니다.
 
-1.  **우선 순위**: 모든 거래 시 **현금(Cash)**을 우선 사용합니다.
-2.  **부곡분 충당 (Auto-Withdrawal)**: 현금이 부족할 경우, `SettlementSystem`은 에이전트의 명시적 요청 없이도 은행 예금에서 부족분을 자동으로 인출하여 결제를 완성합니다.
+1.  **우선 순위**: 모든 거래 시 **현금(Cash)**을 사용합니다.
+2.  **No Reflexive Liquidity (Budget Constraint)**: `SettlementSystem`은 더 이상 부족분을 은행 예금에서 자동으로 인출하지 않습니다 (Legacy "Seamless" policy deprecated). 에이전트는 결제를 위해 충분한 현금을 스스로 확보해야 하며, 부족 시 `SETTLEMENT_FAIL`이 발생합니다.
 3.  **정산 일관성**:
-    -   구매자(Buyer)는 현금이 부족해도 예금이 있다면 결제에 성공합니다.
-    -   판매자(Seller)는 거래 대금을 기본적으로 현금으로 수취하거나, 설정에 따라 즉시 예금으로 전환할 수 있습니다.
-4.  **효과**: 통화 유통 속도(Velocity)를 인위적인 '인출 행동'에 제약받지 않고 시뮬레이션할 수 있습니다.
+    -   구매자(Buyer)는 잔액 부족 시 결제에 실패하며, 이는 상위 모듈에서 `SolvencyException`으로 처리되어야 합니다.
+    -   판매자(Seller)는 거래 대금을 현금으로 수취합니다.
+4.  **효과**: "예산 없이는 집행 없다"는 원칙을 강제하여, 경제 내의 실제 유동성 압박과 신용 주기를 정확히 시뮬레이션합니다.
 ## 8. 통화량 회계 (Money Supply Accounting - M2)
 
 시뮬레이션의 M2 통화량은 다음의 합으로 정의되며, 중복 합산을 엄격히 금지합니다.

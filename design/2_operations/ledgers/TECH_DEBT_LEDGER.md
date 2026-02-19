@@ -12,11 +12,20 @@
 | **TD-DEPR-GOV-TAX** | Government | **Legacy API**: `Government.collect_tax` is deprecated. Use `settle_atomic`. | **Low**: Technical Debt. | **Resolved** |
 | **TD-DEPR-FACTORY** | Factory | **Stale Path**: `agent_factory.HouseholdFactory` is stale. Use `household_factory`. | **Low**: Technical Debt. | **Resolved** |
 | **TD-DEPR-STOCK-DTO** | Market | **Legacy DTO**: `StockOrder` is deprecated. Use `CanonicalOrderDTO`. | **Low**: Technical Debt. | Open |
-| **TD-CRIT-FLOAT-CORE** | Finance | **Float Core**: `SettlementSystem` and `MatchingEngine` use `float` instead of `int` pennies. | **Critical**: Determinism. | **Identified** |
-| **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Handler**: `bond_interest` tx type not registered in `TransactionExecutor`. | **High**: Runtime Failure. | **Identified** |
-| **TD-RUNTIME-DEST-MISS** | Lifecycle | **Ghost Destination**: Transactions failing with "Destination account does not exist: 120". | **High**: Runtime Failure. | **Identified** |
+| **TD-CRIT-FLOAT-CORE** | Finance | **Float Core**: `SettlementSystem` and `MatchingEngine` use `float` instead of `int` pennies. (Ongoing: M&A/StockMarket indices) | **Critical**: Determinism. | **Audit Done** |
+| **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Handler**: `bailout`, `bond_issuance` tx types not registered. | **High**: Runtime Failure. | **Audit Done** |
+| **TD-RUNTIME-DEST-MISS** | Lifecycle | **Ghost Destination**: Transactions failing for non-existent agents (Sequence error in `spawn_firm`). | **High**: Runtime Failure. | **Audit Done** |
 | **TD-TEST-MOCK-STALE** | Testing | **Stale Mocks**: `WorldState` mocks used deprecated `system_command_queue`. | **High**: Test Blindness. | **Resolved** |
-| **TD-ARCH-GOV-MISMATCH** | Architecture | **Singleton vs List**: `WorldState` has `governments` (List) but `TickOrchestrator` uses `government` (Singleton). | **Medium**: Logic Fragility. | **Identified** |
+| **TD-ARCH-GOV-MISMATCH** | Architecture | **Singleton vs List**: `WorldState` has `governments` (List) vs Singelton `government`. | **Medium**: Logic Fragility. | **Identified** |
+| **TD-GOV-SOLVENCY** | Government | **Binary Gates**: Spending modules use all-or-nothing logic; lack partial execution/solvency pre-checks. | **Medium**: Economic Stall. | **Audit Done** |
+| **TD-CRIT-LIFECYCLE-ATOM** | Lifecycle | **Agent Startup Atomicity**: Firm registration (Registry) must occur *before* financial initialization (Transfer). | **Critical**: Runtime Crash. | Open |
+| **TD-SYS-QUEUE-SCRUB** | Lifecycle | **Lifecycle Queue Scrubbing**: `AgentLifecycleManager` fails to remove stale IDs from `inter_tick_queue` and `effects_queue`. | **High**: Logic Leak. | Open |
+| **TD-GOV-SPEND-GATE** | Government | **Binary Spending Gates**: Infrastructure/Welfare modules need "Partial Execution" support. | **High**: Economic Stall. | Open |
+| **TD-CRIT-FLOAT-MA** | Finance | **M&A Float Violation**: `MAManager` and `StockMarket` calculate and transfer `float` values. | **Critical**: Type Error. | Open |
+| **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Fiscal Handlers**: `bailout`, `bond_issuance` types not registered in `TransactionProcessor`. | **Medium**: Runtime Failure. | Open |
+| **TD-PROTO-MONETARY** | Transaction | **Monetary Protocol Violation**: `MonetaryTransactionHandler` uses `hasattr` instead of Protocols. | **Low**: Logic Fragility. | Open |
+| **TD-DX-AUTO-CRYSTAL** | DX / Ops | **Crystallization Overhead**: Manual Gemini Manifest registration required for session distillation. Needs "one-click" `session-go` integration. | **Medium**: DX Friction. | Open |
+| **TD-LIFECYCLE-STALE** | Lifecycle | **Queue Pollution**: Missing scrubbing of `inter_tick_queue` after agent liquidation. | **Medium**: Determinism. | **Audit Done** |
 
 ---
 > [!NOTE]
@@ -41,8 +50,22 @@
 - **Solution**: Deprecate `TransactionManager` and route all traffic through `TransactionProcessor`.
 
 ---
-### ID: TD-ARCH-GOV-MISMATCH
-### Title: Government Structure Mismatch (Singleton vs List)
-- **Symptom**: `WorldState` definitions use `self.governments: List[Government]`, but `TickOrchestrator` and `Simulation` initialization often treat it as a singleton `self.government`.
-- **Risk**: Semantic confusion and potential runtime errors if multiple governments are ever introduced. Accessing `state.government` relies on dynamic attribute injection or backward compatibility properties not explicitly defined in the type hint.
-- **Solution**: Standardize on `governments` (List) or explicit `primary_government` property.
+### ID: TD-GOV-SOLVENCY
+### Title: Government Budget Guardrails (Binary Gates)
+- **Symptom**: Infrastructure investment fails entirely if Treasury < 100% of requirement, even if 99% exists.
+- **Risk**: Economic stagnation during minor fiscal deficits.
+- **Solution**: Implement `PartialExecutionResultDTO` and `SolvencyException` with proactive balance checks via `SettlementSystem`.
+
+---
+### ID: TD-LIFECYCLE-STALE
+### Title: Persistent Queue Pollution (Stale IDs)
+- **Symptom**: Transactions for dead agents linger in `inter_tick_queue`.
+- **Risk**: Ghost transactions attempts bloat logs and may trigger logic errors if IDs are reused.
+- **Solution**: Implement a `ScrubbingPhase` in `AgentLifecycleManager` to purge invalid IDs from all queues.
+
+---
+### ID: TD-CRIT-FLOAT-CORE (M&A Expansion)
+### Title: M&A and Stock Market Float Violation
+- **Symptom**: `MAManager` passes `float` offer prices to `SettlementSystem.transfer`, causing `TypeError`.
+- **Risk**: Runtime crash during hostile takeovers or mergers.
+- **Solution**: Quantize all M&A valuations using `round_to_pennies()` before settlement boundary.

@@ -1,8 +1,8 @@
-# HANDOVER: 2026-02-17 (Phase 16.2 & 18 Complete - Post-Merge Resilience)
+# HANDOVER: 2026-02-19 (Phase 21 Complete - Structural Runtime Diagnosis)
 
 ## 1. Executive Summary
 
-This session successfully achieved **Post-Merge Resilience**, liquidating 27 critical failures that followed the integration of the Parallel Debt Clearance. The simulation now operates with **100% test coverage (807 PASSED)** and **0.0000% monetary leakage**. We have successfully enforced the **"Sacred Sequence"** in systems logic and the **"Stateless Orchestrator"** pattern in agents.
+This session focused on identifying and specifying fixes for critical structural failures observed during simulation runtime. We successfully transitioned from symptomatic fixes to **Systemic Root Cause Analysis** using Gemini. Four core specifications have been generated to guide the implementation phase.
 
 ---
 
@@ -10,35 +10,37 @@ This session successfully achieved **Post-Merge Resilience**, liquidating 27 cri
 
 | Component | Achievement | Status |
 |:----------|:------------|:-------|
-| **Mission Registry** | Implemented JSON-based mission persistence for Gemini/Jules. | ✅ |
-| **Debt Clearance** | Liquidated `TD-DTO-DESYNC-2026` and `TD-TEST-SSOT-SYNC`. | ✅ |
-| **Watchtower V2** | WebSocket connectivity confirmed; "Watchtower Audit" complete. | ✅ |
-| **Integrity** | Verified **0.0000% leakage** and **807/807 Test Pass Rate**. | ✅ |
+| **Diagnostics** | Executed `diagnose_runtime.py` and captured trace logs. | ✅ |
+| **Analysis** | Generated [Structural Analysis Report](file:///c:/coding/economics/reports/diagnostics/structural_analysis_report.md). | ✅ |
+| **Specifications**| Created four detailed specs for Lifecycle, Solvency, Handlers, and M&A. | ✅ |
+| **Tech Debt** | Updated `TECH_DEBT_LEDGER.md` with granular systemic risk items. | ✅ |
 
 ---
 
-## 3. Road to Phase 16.3: "The Integer Core" ⚖️
+## 3. Road to Phase 22: "Structural Integrity Enforcement" ⚖️
 
-### 🔴 Strategic Directive: Numerical Hardening
-1. **Float-to-Int Migration (TD-CRIT-FLOAT-SETTLE)**: Next major mission to eliminate residual `float` usage in `SettlementSystem` and `MatchingEngine`.
-2. **Transaction Redundancy**: Deprecate legacy `TransactionManager` in favor of the unified `TransactionProcessor`.
-3. **Watchtower UX**: Enhance visualization for "Agent Soul" telemetry.
+### 🔴 Strategic Directive: Immediate Fixes Required
+1. **Agent Startup Sequence (TD-RUNTIME-DEST-MISS)**: `spawn_firm` is transferring money *before* agent registration. This must be reversed to prevent "Destination unknown" crashes.
+2. **M&A Penny Standard (TD-CRIT-FLOAT-CORE)**: `MAManager` still calculates in `float`, triggering `TypeError` in the hardened `SettlementSystem`.
+3. **Ghost ID Scrubbing (TD-LIFECYCLE-STALE)**: Post-liquidation cleanup is missing for `inter_tick_queue`.
+4. **Bailout Handler**: Missing registration for `bailout` transaction type in `SimulationInitializer`.
 
 ---
 
-## 4. Key Technical Decisions (Session 2026-02-17)
+## 4. Work Artifacts (Ready for Execution)
 
-1. **Contractual Context Auto-Injection**: `launcher.py` now automatically feeds relevant DTO/API files to agents during mission drafting to prevent contract fractures.
-2. **SSoT-First Testing**: All financial test assertions now query the `SettlementSystem` exclusively, ending the reliance on stale agent attributes.
-3. **Zero-Sum Enforcement**: Birth and Death events are now strictly orchestrated to ensure no currency is created or destroyed without a corresponding system entry.
+- [Agent Lifecycle Stability](file:///c:/coding/economics/design/3_work_artifacts/specs/AGENT_LIFECYCLE_STABILITY.md)
+- [Government Solvency Guardrails](file:///c:/coding/economics/design/3_work_artifacts/specs/GOVT_SOLVENCY_GUARDRAILS.md)
+- [Handler Alignment Map](file:///c:/coding/economics/design/3_work_artifacts/specs/HANDLER_ALIGNMENT_MAP.md)
+- [M&A Pennies Migration Plan](file:///c:/coding/economics/design/3_work_artifacts/specs/MA_PENNIES_MIGRATION_PLAN.md)
 
 ---
 
 ## 5. Next Session Objectives
 
-- **Mission**: Execute `TD-CRIT-FLOAT-SETTLE` (Operation Penny Global).
-- **Mission**: Clean up `TransactionManager` legacy residue.
-- **Verification**: Scale simulation to 1000+ agents to stress the integer-based `SettlementSystem`.
+- **Execution**: Apply the `spawn_firm` sequence fix.
+- **Execution**: Register the `bailout` handler.
+- **Verification**: Run the full simulation with the new "Solvency Exceptions" to confirm stability during fiscal stress.
 
 ---
-*Report updated by Antigravity (Architect & Lead) following Watchtower Audit.*
+*Report updated by Antigravity (Architect & Lead) following Structural Diagnosis Session.*

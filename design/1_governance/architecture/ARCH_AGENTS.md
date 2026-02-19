@@ -64,6 +64,8 @@ To eliminate technical debt, circular dependencies, and hidden side effects, all
 2. **Side-Effect Isolation**: Engines calculate; Orchestrators execute. An engine returns a `DecisionDTO` or `ActionDTO`; it never directly calls `market.place_order()` or `wallet.withdraw()`.
 3. **Snapshot-Based Decisions**: All decision engines MUST use `HouseholdSnapshotDTO` or equivalent as the single source of truth for the agent's current state.
 4. **Zero-Sum Enforcement**: Every fiscal/monetary transaction result must be balanced to zero.
+5. **Atomic Startup Sequence**: New agents MUST be registered in the `AgentRegistry` and `SimulationState.agents` BEFORE any initial capital transfers are attempted. (Prevents "Ghost Destination" crashes).
+6. **Post-Liquidation Scrubbing**: Agent liquidation MUST trigger a mandatory scrubbing of all system-level queues (`inter_tick_queue`, `effects_queue`) to purge references to the dead agent.
 
 This pattern is the non-negotiable standard for all refactoring sprints.
 

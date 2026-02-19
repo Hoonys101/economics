@@ -1,62 +1,70 @@
-# Technical Handover Report: MISSION_FLOAT_LIQUIDATION & TRANSACTION_STANDARDIZATION
+# Architectural Handover Report: Phase 4.1 Stabilization & Hardening
 
-## Executive Summary
-This session successfully completed the core transition of the financial engine to the **Penny Standard (Integer Math)**, resolving the most critical risks associated with floating-point drift in settlement. We have established a robust **Specialized Transaction Handler** architecture and stabilized the test suite through strict Protocol enforcement. The system is now prepared for the "Final Lockdown" phase of architectural boundaries.
+## 1. Accomplishments
 
----
+### 1.1. Integer Penny Hardening (The "Penny Standard")
+The simulation's financial core has been successfully migrated to an **Integer Penny Standard** to eliminate floating-point drift and ensure absolute zero-sum integrity.
+*   **SSoT Migration**: `Transaction.total_pennies` (int) is now the Single Source of Truth for all settlements. Legacy `price` (float) is relegated to a derived display value.
+*   **Engine Hardening**: `MatchingEngine` (Goods/Labor) and `StockMatchingEngine` now use integer math for price discovery (Mid-Price `// 2`) and trade value calculation (`floor` rounding).
+*   **Reporting Parity**: All Reporting DTOs (`TransactionData`, `AgentStateData`, `EconomicIndicatorData`) have been hardened. GDP and aggregate assets are now calculated as discrete integer sums.
 
-## 1. Accomplishments & Architectural Changes
+### 1.2. Cockpit 2.0 & Global Registry
+The governance and monitoring infrastructure has transitioned to a modern, type-safe architecture.
+*   **Pydantic DTOs**: Migrated from loose `dataclasses` and `TypedDicts` to `pydantic.BaseModel` for all telemetry and commands, enabling runtime validation and strict schema enforcement.
+*   **Dual-WebSocket Architecture**: Implemented `/ws/live` for high-frequency telemetry and `/ws/command` for authenticated, low-latency intervention.
+*   **Global Registry**: A centralized, layered configuration system (`SYSTEM`, `CONFIG`, `USER`, `GOD_MODE`) now manages simulation parameters with priority-based locking.
 
-### 1.1. Penny Standard & Float Liquidation
-- **Global Integer Migration**: Standardized `ICurrencyHolder` and `ISettlementSystem` to operate exclusively on integer `pennies`.
-- **DTO Modernization**: Updated `GoodsInfoDTO`, `MarketContextDTO`, and `HousingMarketUnitDTO` to use `int` for all price/balance fields, eliminating "Float Dust" at boundary layers.
-- **Liquidation Logic**: Refactored `InventoryLiquidationHandler` and `LiquidationManager` to strictly output integer pennies, ensuring Zero-Sum integrity during agent death/bankruptcy.
+### 1.3. Lifecycle & Genealogy System
+The agent lifecycle has been decomposed for modularity and historical analysis.
+*   **Service Decomposition**: `AgingSystem`, `BirthSystem`, and `DeathSystem` are now decoupled components managed by the `AgentLifecycleManager`.
+*   **Genealogy Service**: A new dedicated service tracks agent lineage (Ancestors/Descendants) and life history (`AgentSurvivalData`), accessible via a dedicated REST API.
 
-### 1.2. Transaction Integration Layer (Phase 1-3)
-- **Specialized Handlers**: Implemented `GoodsTransactionHandler` and `LaborTransactionHandler` to encapsulate complex domain logic (Escrow, Tax withholding).
-- **Dispatcher Pattern**: Refactored `TransactionProcessor` to route transactions dynamically to specialized handlers, improving modularity and testability.
-- **Registry Restoration**: Re-enabled inventory update logic in the `Registry` to ensure that financial settlement and physical state updates remain synchronized but decoupled.
-
-### 1.3. Protocol & Test Stabilization
-- **Mock Purity**: Resolved widespread test failures caused by `MagicMock` protocol compliance issues (using `spec=Protocol` to satisfy `@runtime_checkable`).
-- **SSO Synchronization**: Fixed the `SettlementSystem` dependency on `IAgentRegistry` in unit tests, ensuring balance lookups use the correct architectural path.
+### 1.4. Transaction Routing & Removal of Legacy Manager
+*   The monolithic `TransactionManager` has been completely replaced by the `TransactionProcessor`.
+*   **Modular Handlers**: Transactions are now routed via specialized handlers (`Monetary`, `Financial`, `Labor`, `Housing`, etc.) that implement the `ITransactionHandler` protocol.
 
 ---
 
 ## 2. Economic Insights
 
-- **Zero-Sum Integrity**: The move to integer-only settlement in the `SettlementSystem` has effectively eliminated M2 supply drift. Discrepancies previously attributed to "market noise" were identified as floating-point truncation artifacts.
-- **Market Friction (Integer Flooring)**: Implementation of integer division (`// 2`) for mid-price discovery introduces a deterministic 0.5 penny bias (Market Friction). This effectively acts as a negligible "transaction cost" that preserves the total money supply without requiring complex rounding collectors.
-- **Tax/Escrow Robustness**: Moving tax withholding (Labor) and Escrow (Goods) into specialized handlers has clarified the "Cash Flow" of the government, making fiscal impact analysis more predictable.
+*   **Liquidity Sensitivity**: The removal of "Reflexive Liquidity" (automatic bank withdrawals) has exposed the true cash-flow constraints of agents. Agents now face `SETTLEMENT_FAIL` if they do not proactively manage their liquid cash, leading to more realistic "economic stalls" during credit crunches.
+*   **Binary Fiscal Gates**: Audit of government spending modules revealed that "all-or-nothing" distribution logic causes systemic failure. If the Treasury lacks 100% of the funds for a welfare/infrastructure batch, the entire operation is aborted, suggesting a need for partial execution strategies.
+*   **Penny-Perfect GDP**: Hardening revealed that previous GDP calculations (summing float quantities) were dimensionally incorrect. The new expenditure-based integer tracking provides a true monetary GDP metric.
 
 ---
 
 ## 3. Pending Tasks & Technical Debt
 
-### 3.1. Immediate Technical Debt
-- **`TD-MKT-FLOAT-MATCH` (Critical)**: The `MatchingEngine` still uses legacy float calculations for mid-prices in some paths. This must be refactored to `price_pennies` immediately.
-- **`TD-TRANS-INT-SCHEMA`**: The `Transaction` model (simulation/models.py) still carries a float `price`. It needs a schema migration to `total_pennies` to avoid back-calculation drift.
-- **`TD-DTO-RED-ZONE`**: `simulation/dtos/api.py` remains heavily float-based for analytics and state export. This creates a "Red Zone" where precision is lost during reporting.
+### 3.1. M&A Module Penny Migration (Critical)
+*   **Status**: ❌ Violation.
+*   **Issue**: `MAManager` and hostile takeover logic still calculate values as `float` and pass them to the `SettlementSystem`.
+*   **Risk**: Immediate `TypeError` crashes during corporate mergers because the `SettlementSystem` now strictly forbids non-integer transfers.
 
-### 3.2. Unfinished Missions
-- **Lifecycle Decomposition**: `LifecycleManager` is still monolithic. The transition to `AgingSystem`, `BirthSystem`, and `DeathSystem` (as per `lifecycle_decomposition_spec.md`) is planned but not executed.
-- **Architectural Lockdown**: Static analysis rules (`SEO-001`, `DTO-001`) to block direct access to `.inventory` and `.wallet` are designed but require the implementation of the `audit_architecture.py` scanner.
-- **Welfare Fix**: `WelfareService` currently has a broken constructor for `BailoutCovenant` (`executive_salary_freeze` vs `executive_bonus_allowed`).
+### 3.2. Firm Startup Sequence
+*   **Status**: ❌ Out of Sequence.
+*   **Issue**: `FirmSystem.spawn_firm` attempts to transfer startup capital *before* the firm is registered in the `AgentRegistry`.
+*   **Risk**: Transfers fail with `Destination account does not exist` errors, preventing new firm entry.
+
+### 3.3. Stale ID Scrubbing
+*   **Status**: ❌ Missing.
+*   **Issue**: Liquidated/Dead agents are not automatically cleared from `inter_tick_queue` or `effects_queue`.
+*   **Task**: Implement a `ScrubbingPhase` in the `AgentLifecycleManager` to filter stale IDs from system-level queues.
+
+### 3.4. Tracker Unit Unification
+*   **Status**: ⚠️ Partial.
+*   **Issue**: The legacy `Tracker` class still uses floats for some heuristics, while `AnalyticsSystem` uses pennies.
+*   **Task**: Unify `Tracker` to use integer pennies to prevent internal "unit-mismatch" logic errors.
+
+### 3.5 Automated Crystallization (DX)
+*   **Status**: ❌ Manual Overhead.
+*   **Issue**: Session closure currently requires manual Gemini Manifest registration for insight extraction.
+*   **Task**: Implement "one-click" crystallization in `session-go.bat` that bypasses or auto-registers manifest entries.
 
 ---
 
 ## 4. Verification Status
 
-| Component | Status | Note |
-| :--- | :--- | :--- |
-| **SettlementSystem** | ✅ Stable | Penny Standard enforced. |
-| **TransactionProcessor**| ✅ Stable | specialized handlers active. |
-| **Market Engine** | ⚠️ Partial | Internal math still leaking floats (TD-MKT-FLOAT-MATCH). |
-| **Lifecycle** | ❌ Legacy | Still using monolithic Manager. |
-| **Test Suite** | ✅ Passed | 848 passed, 1 skipped. |
-
-**Final Verdict**: The engine's "heart" is integer-safe, but the "veins" (DTOs) and "skin" (Market interfaces) still require one final purge of floating-point logic to achieve 100% Zero-Sum compliance across all layers.
-
----
-**Handover generated by Gemini-CLI (Subordinate Worker)**
-*Directives for next session: Execute DTO Red-Zone Refactor and decompose LifecycleManager.*
+*   **Test Suite Summary**: **861 Tests Passed**.
+*   **Regression Fixes**: Resolved major regressions in `Government` and `FiscalEngine` where `MarketSnapshotDTO` naming collisions (TypedDict vs. Dataclass) were causing `AttributeError`.
+*   **Protocol Compliance**: Successfully transitioned from `hasattr` checks to ` @runtime_checkable` Protocol verification across the `PublicManager` and `SettlementSystem`.
+*   **Runtime Stability**: Playwright verification confirmed the Frontend HUD and Macro Canvas correctly consume the new Pydantic-based WebSocket stream.

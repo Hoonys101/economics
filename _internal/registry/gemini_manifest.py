@@ -26,32 +26,62 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
     "analyze-runtime-structural-failures": {
         "title": "Structural Runtime Failure & Cleanup Analysis",
         "worker": "audit",
+        "instruction": "초기 분석 완료. design/_archive/insights/2026-02-19_Structural_Analysis_Report.md 참고.",
+        "context_files": ["design/_archive/insights/2026-02-19_Structural_Analysis_Report.md"],
+        "output_path": "reports/diagnostics/structural_analysis_summary.md"
+    },
+    "audit-structural-integrity-crystallization": {
+        "title": "Structural Integrity Wisdom Crystallization",
+        "worker": "crystallizer",
         "instruction": """
-분석 목표: 시뮬레이션 런타임 중 발생하는 구조적 오류의 근본 원인 파악.
+목표: 이번 '구조적 안정성 진단' 세션에서 얻은 건축학적 통찰을 영구 지식 자산으로 전환.
 
-분석 대상:
-1. 'Destination account does not exist: 120' 오류:
-   - Agent 120 (또는 다른 ID)이 Liquidation/Death 이후에도 왜 트랜잭션의 대상으로 남아있는지 분석.
-   - DeathSystem의 에이전트 제거 로직과 TransactionProcessor의 에이전트 참조 로직 간의 정합성 유무 확인.
-2. 'No handler for tx type: bond_interest' 경고:
-   - FiscalEngine이 생성하는 bond_interest 트랜잭션이 시스템에 왜 누락되었는지 확인.
-3. 'Insufficient funds' 오류:
-   - 정부 또는 중앙은행이 예산 범위를 초과하여 집행을 시도하는 코드 경로 식별.
-   - '예산 없이는 집행 없다'는 원칙이 위배되는 지점 탐색.
+추출 대상:
+1. 'Registration-before-Transfer' (원자적 생애주기 시퀀스)의 중요성과 구현 지침.
+2. 'Solvency Guardrails' (예산 기반 지출 제어)의 설계 패턴.
+3. 'Penny Standard Expansion' (M&A 및 시장 지표의 정수화)의 기술적 교훈.
+4. 'Queue Scrubbing' (시스템 큐 클리닝)을 통한 참조 무결성 확보 방안.
 
 결과물:
-- 각 오류별 root cause 분석 리포트.
-- 구조적 해결을 위한 'Integrity Guard' 및 'Cleanup Sync' 설계 제안.
+- ARCHITECTURAL_INSIGHTS.md에 추가할 마크다운 스니펫.
+- 각 통찰별 '가동 가능한(Actionable)' 설계 원칙 요약.
 """,
         "context_files": [
-            "simulation/systems/settlement_system.py",
-            "simulation/systems/transaction_processor.py",
-            "simulation/systems/lifecycle_manager.py",
-            "simulation/systems/handlers/financial_handler.py",
-            "modules/system/builders/simulation_builder.py",
-            "reports/diagnostics/runtime_audit.log"
+            "design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md",
+            "design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md",
+            "design/_archive/insights/2026-02-19_Handler_Alignment_Map.md",
+            "design/_archive/insights/2026-02-19_MA_Penny_Migration.md",
+            "design/_archive/insights/2026-02-19_Structural_Analysis_Report.md"
         ],
-        "output_path": "reports/diagnostics/structural_analysis_report.md",
-        "model": "gemini-2.0-pro-exp-02-05"
+        "output_path": "design/3_work_artifacts/drafts/STRUCTURAL_INTEGRITY_CRYSTALLIZATION.md"
+    },
+    # Previous granular audit missions (Restored for persistence)
+    "audit-agent-lifecycle-atomicity": {
+        "title": "Agent Lifecycle & Transaction Routing Atomicity Audit",
+        "worker": "audit",
+        "instruction": "AGENT_LIFECYCLE_STABILITY.md 생성을 위해 기수행됨.",
+        "context_files": ["design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md"],
+        "output_path": "design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md"
+    },
+    "audit-fiscal-monetary-handlers": {
+        "title": "Fiscal & Monetary Transaction Handler Alignment Audit",
+        "worker": "audit",
+        "instruction": "HANDLER_ALIGNMENT_MAP.md 생성을 위해 기수행됨.",
+        "context_files": ["design/_archive/insights/2026-02-19_Handler_Alignment_Map.md"],
+        "output_path": "design/_archive/insights/2026-02-19_Handler_Alignment_Map.md"
+    },
+    "audit-government-solvency-checks": {
+        "title": "Government Budget Guardrails & Solvency Check Audit",
+        "worker": "audit",
+        "instruction": "GOVT_SOLVENCY_GUARDRAILS.md 생성을 위해 기수행됨.",
+        "context_files": ["design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md"],
+        "output_path": "design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md"
+    },
+    "audit-ma-pennies-migration": {
+        "title": "M&A Module Penny Standard Migration Audit",
+        "worker": "audit",
+        "instruction": "MA_PENNIES_MIGRATION_PLAN.md 생성을 위해 기수행됨.",
+        "context_files": ["design/_archive/insights/2026-02-19_MA_Penny_Migration.md"],
+        "output_path": "design/_archive/insights/2026-02-19_MA_Penny_Migration.md"
     }
 }

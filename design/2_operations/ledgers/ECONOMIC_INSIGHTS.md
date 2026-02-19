@@ -25,6 +25,9 @@
 - **[2026-02-14] Phase 0 Intercept & Command Atomicity**
     - Formalized the "Phase 0" slot in the Tick Orchestrator for handling external interventions. Implemented "Immediate Batch Execution" where commands are drained and executed atomically *before* simulation causality begins, preventing race conditions and double-execution bugs.
     - [Insight Report](../_archive/insights/2026-02-13_Phase0_Intercept_M2_Integrity.md)
+- **[2026-02-19] Lifecycle-Settlement Atomicity**
+    - **Insight**: Economic continuity requires that legal existence (Registration) strictly precedes financial existence (Capitalization). Reversing this order creates "Ghost Destinations" that crash the settlement layer.
+    - [Insight Report](../_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md)
 
 ---
 
@@ -55,6 +58,9 @@
 - **[2026-02-12] The Penny Standard: Integer Enforcement**
     - Identified critical system failures caused by floating-point drift in financial transfers. Mandated explicit `int()` casting at all `SettlementSystem` boundaries. Money in this simulation is discrete, not continuous.
     - [Insight Report](../_archive/insights/2026-02-12_Penny_Standard_Integer_Enforcement.md)
+- **[2026-02-19] The Penny Standard vs. Valuation Math**
+    - **Insight**: While valuation models (M&A, Stock Pricing) naturally use floating-point math, the Settlement Boundary must act as a hard "Quantization Gate." Passing raw floats from valuation to settlement causes system-wide integrity failures.
+    - [Insight Report](../_archive/insights/2026-02-19_MA_Penny_Migration.md)
 - **[2026-02-13] Solvency & Asset Liquidation Discounting**
     - Established the principle of conservative valuation for solvency checks. Inventory and illiquid assets should be valued at a "liquidation discount" (e.g., 50%) to prevent over-leveraging and systemic collapse.
     - [Insight Report](../_archive/insights/2026-02-13_Solvency_Aggregation_Challenges.md)

@@ -7,7 +7,7 @@
       "key": "analyze-runtime-structural-failures",
       "title": "Structural Runtime Failure & Cleanup Analysis",
       "type": "gemini",
-      "instruction_raw": "\n\ubd84\uc11d \ubaa9\ud45c: \uc2dc\ubbac\ub808\uc774\uc158 \ub7f0\ud0c0\uc784 \uc911 \ubc1c\uc0dd\ud558\ub294 \uad6c\uc870\uc801 \uc624\ub958\uc758 \uadfc\ubcf8 \uc6d0\uc778 \ud30c\uc545.\n\n\ubd84\uc11d \ub300\uc0c1:\n1. 'Destination account does not exist: 120' \uc624\ub958:\n   - Agent 120 (\ub610\ub294 \ub2e4\ub978 ID)\uc774 Liquidation/Death \uc774\ud6c4\uc5d0\ub3c4 \uc65c \ud2b8\ub79c\uc7ad\uc158\uc758 \ub300\uc0c1\uc73c\ub85c \ub0a8\uc544\uc788\ub294\uc9c0 \ubd84\uc11d.\n   - DeathSystem\uc758 \uc5d0\uc774\uc804\ud2b8 \uc81c\uac70 \ub85c\uc9c1\uacfc TransactionProcessor\uc758 \uc5d0\uc774\uc804\ud2b8 \ucc38\uc870 \ub85c\uc9c1 \uac04\uc758 \uc815\ud569\uc131 \uc720\ubb34 \ud655\uc778.\n2. 'No handler for tx type: bond_interest' \uacbd\uace0:\n   - FiscalEngine\uc774 \uc0dd\uc131\ud558\ub294 bond_interest \ud2b8\ub79c\uc7ad\uc158\uc774 \uc2dc\uc2a4\ud15c\uc5d0 \uc65c \ub204\ub77d\ub418\uc5c8\ub294\uc9c0 \ud655\uc778.\n3. 'Insufficient funds' \uc624\ub958:\n   - \uc815\ubd80 \ub610\ub294 \uc911\uc559\uc740\ud589\uc774 \uc608\uc0b0 \ubc94\uc704\ub97c \ucd08\uacfc\ud558\uc5ec \uc9d1\ud589\uc744 \uc2dc\ub3c4\ud558\ub294 \ucf54\ub4dc \uacbd\ub85c \uc2dd\ubcc4.\n   - '\uc608\uc0b0 \uc5c6\uc774\ub294 \uc9d1\ud589 \uc5c6\ub2e4'\ub294 \uc6d0\uce59\uc774 \uc704\ubc30\ub418\ub294 \uc9c0\uc810 \ud0d0\uc0c9.\n\n\uacb0\uacfc\ubb3c:\n- \uac01 \uc624\ub958\ubcc4 root cause \ubd84\uc11d \ub9ac\ud3ec\ud2b8.\n- \uad6c\uc870\uc801 \ud574\uacb0\uc744 \uc704\ud55c 'Integrity Guard' \ubc0f 'Cleanup Sync' \uc124\uacc4 \uc81c\uc548.\n",
+      "instruction_raw": "\ucd08\uae30 \ubd84\uc11d \uc644\ub8cc. reports/diagnostics/structural_analysis_report.md \ucc38\uace0.",
       "status": "pending",
       "created_at": "",
       "command": null,
@@ -16,15 +16,109 @@
       "session_id": null,
       "worker": "audit",
       "context_files": [
-        "simulation/systems/settlement_system.py",
-        "simulation/systems/transaction_processor.py",
-        "simulation/systems/lifecycle_manager.py",
-        "simulation/systems/handlers/financial_handler.py",
-        "modules/system/builders/simulation_builder.py",
-        "reports/diagnostics/runtime_audit.log"
+        "reports/diagnostics/structural_analysis_report.md"
       ],
-      "output_path": "reports/diagnostics/structural_analysis_report.md",
-      "model": "gemini-2.0-pro-exp-02-05",
+      "output_path": "reports/diagnostics/structural_analysis_summary.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "audit-agent-lifecycle-atomicity": {
+      "key": "audit-agent-lifecycle-atomicity",
+      "title": "Agent Lifecycle & Transaction Routing Atomicity Audit",
+      "type": "gemini",
+      "instruction_raw": "AGENT_LIFECYCLE_STABILITY.md \uc0dd\uc131\uc744 \uc704\ud574 \uae30\uc218\ud589\ub428.",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "audit",
+      "context_files": [
+        "design/3_work_artifacts/specs/AGENT_LIFECYCLE_STABILITY.md"
+      ],
+      "output_path": "design/3_work_artifacts/specs/AGENT_LIFECYCLE_STABILITY.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "audit-fiscal-monetary-handlers": {
+      "key": "audit-fiscal-monetary-handlers",
+      "title": "Fiscal & Monetary Transaction Handler Alignment Audit",
+      "type": "gemini",
+      "instruction_raw": "HANDLER_ALIGNMENT_MAP.md \uc0dd\uc131\uc744 \uc704\ud574 \uae30\uc218\ud589\ub428.",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "audit",
+      "context_files": [
+        "design/3_work_artifacts/specs/HANDLER_ALIGNMENT_MAP.md"
+      ],
+      "output_path": "design/3_work_artifacts/specs/HANDLER_ALIGNMENT_MAP.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "audit-government-solvency-checks": {
+      "key": "audit-government-solvency-checks",
+      "title": "Government Budget Guardrails & Solvency Check Audit",
+      "type": "gemini",
+      "instruction_raw": "GOVT_SOLVENCY_GUARDRAILS.md \uc0dd\uc131\uc744 \uc704\ud574 \uae30\uc218\ud589\ub428.",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "audit",
+      "context_files": [
+        "design/3_work_artifacts/specs/GOVT_SOLVENCY_GUARDRAILS.md"
+      ],
+      "output_path": "design/3_work_artifacts/specs/GOVT_SOLVENCY_GUARDRAILS.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "audit-ma-pennies-migration": {
+      "key": "audit-ma-pennies-migration",
+      "title": "M&A Module Penny Standard Migration Audit",
+      "type": "gemini",
+      "instruction_raw": "MA_PENNIES_MIGRATION_PLAN.md \uc0dd\uc131\uc744 \uc704\ud574 \uae30\uc218\ud589\ub428.",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "audit",
+      "context_files": [
+        "design/3_work_artifacts/specs/MA_PENNIES_MIGRATION_PLAN.md"
+      ],
+      "output_path": "design/3_work_artifacts/specs/MA_PENNIES_MIGRATION_PLAN.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "audit-structural-integrity-crystallization": {
+      "key": "audit-structural-integrity-crystallization",
+      "title": "Structural Integrity Wisdom Crystallization",
+      "type": "gemini",
+      "instruction_raw": "\n\ubaa9\ud45c: \uc774\ubc88 '\uad6c\uc870\uc801 \uc548\uc815\uc131 \uc9c4\ub2e8' \uc138\uc158\uc5d0\uc11c \uc5bb\uc740 \uac74\ucd95\ud559\uc801 \ud1b5\ucc30\uc744 \uc601\uad6c \uc9c0\uc2dd \uc790\uc0b0\uc73c\ub85c \uc804\ud658.\n\n\ucd94\ucd9c \ub300\uc0c1:\n1. 'Registration-before-Transfer' (\uc6d0\uc790\uc801 \uc0dd\uc560\uc8fc\uae30 \uc2dc\ud000\uc2a4)\uc758 \uc911\uc694\uc131\uacfc \uad6c\ud604 \uc9c0\uce68.\n2. 'Solvency Guardrails' (\uc608\uc0b0 \uae30\ubc18 \uc9c0\ucd9c \uc81c\uc5b4)\uc758 \uc124\uacc4 \ud328\ud134.\n3. 'Penny Standard Expansion' (M&A \ubc0f \uc2dc\uc7a5 \uc9c0\ud45c\uc758 \uc815\uc218\ud654)\uc758 \uae30\uc220\uc801 \uad50\ud6c8.\n4. 'Queue Scrubbing' (\uc2dc\uc2a4\ud15c \ud050 \ud074\ub9ac\ub2dd)\uc744 \ud1b5\ud55c \ucc38\uc870 \ubb34\uacb0\uc131 \ud655\ubcf4 \ubc29\uc548.\n\n\uacb0\uacfc\ubb3c:\n- ARCHITECTURAL_INSIGHTS.md\uc5d0 \ucd94\uac00\ud560 \ub9c8\ud06c\ub2e4\uc6b4 \uc2a4\ub2c8\ud3ab.\n- \uac01 \ud1b5\ucc30\ubcc4 '\uac00\ub3d9 \uac00\ub2a5\ud55c(Actionable)' \uc124\uacc4 \uc6d0\uce59 \uc694\uc57d.\n",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "crystallizer",
+      "context_files": [
+        "design/3_work_artifacts/specs/AGENT_LIFECYCLE_STABILITY.md",
+        "design/3_work_artifacts/specs/GOVT_SOLVENCY_GUARDRAILS.md",
+        "design/3_work_artifacts/specs/HANDLER_ALIGNMENT_MAP.md",
+        "design/3_work_artifacts/specs/MA_PENNIES_MIGRATION_PLAN.md",
+        "reports/diagnostics/structural_analysis_report.md"
+      ],
+      "output_path": "design/3_work_artifacts/drafts/STRUCTURAL_INTEGRITY_CRYSTALLIZATION.md",
+      "model": null,
       "audit_requirements": null
     }
   }
