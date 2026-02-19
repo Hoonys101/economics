@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from modules.government.engines.fiscal_engine import FiscalEngine
 from modules.government.engines.api import FiscalStateDTO, FiscalRequestDTO, FirmBailoutRequestDTO, FirmFinancialsDTO
-from modules.finance.engines.api import MarketSnapshotDTO
+from modules.system.api import MarketSnapshotDTO
 from modules.system.api import DEFAULT_CURRENCY
 
 @pytest.fixture
@@ -33,11 +33,15 @@ class TestFiscalEngine:
             "potential_gdp": 1000.0
         }
 
-        market: MarketSnapshotDTO = {
-            "tick": 100,
+        market_data = {
             "inflation_rate_annual": 0.02,
             "current_gdp": 900.0 # Gap = (900-1000)/1000 = -0.1
         }
+        market = MarketSnapshotDTO(
+            tick=100,
+            market_signals={},
+            market_data=market_data
+        )
 
         requests = []
 
@@ -63,11 +67,15 @@ class TestFiscalEngine:
             "potential_gdp": 1000.0
         }
 
-        market: MarketSnapshotDTO = {
-            "tick": 100,
+        market_data = {
             "inflation_rate_annual": 0.02,
             "current_gdp": 1100.0 # Gap = 0.1
         }
+        market = MarketSnapshotDTO(
+            tick=100,
+            market_signals={},
+            market_data=market_data
+        )
 
         decision = fiscal_engine.decide(state, market, [])
 
@@ -88,7 +96,12 @@ class TestFiscalEngine:
             "welfare_budget_multiplier": 1.0,
             "potential_gdp": 1000.0
         }
-        market = {"tick": 100, "current_gdp": 1000.0, "inflation_rate_annual": 0.0}
+        market_data = {"current_gdp": 1000.0, "inflation_rate_annual": 0.0}
+        market = MarketSnapshotDTO(
+            tick=100,
+            market_signals={},
+            market_data=market_data
+        )
 
         req: FiscalRequestDTO = {
             "bailout_request": {
@@ -120,7 +133,12 @@ class TestFiscalEngine:
             "welfare_budget_multiplier": 1.0,
             "potential_gdp": 1000.0
         }
-        market = {"tick": 100, "current_gdp": 1000.0, "inflation_rate_annual": 0.0}
+        market_data = {"current_gdp": 1000.0, "inflation_rate_annual": 0.0}
+        market = MarketSnapshotDTO(
+            tick=100,
+            market_signals={},
+            market_data=market_data
+        )
 
         req: FiscalRequestDTO = {
             "bailout_request": {
