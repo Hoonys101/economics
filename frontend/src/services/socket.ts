@@ -10,7 +10,7 @@ class SocketService {
     private snapshotCallbacks: SnapshotCallback[] = [];
     private statusCallbacks: StatusCallback[] = [];
     private reconnectInterval: number = 2000;
-    private token: string = "default-god-token"; // Should match config.GOD_MODE_TOKEN default
+    private token: string = import.meta.env.VITE_GOD_MODE_TOKEN || "default-god-token";
 
     constructor() {
         // Auto-connect on instantiation
