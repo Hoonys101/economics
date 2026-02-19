@@ -68,7 +68,10 @@ def test_goods_handler_uses_atomic_settlement():
 
     buyer = MagicMock(spec=IFinancialAgent)
     buyer.id = 1
-    buyer.get_balance.return_value = 100.0 # Set assets for solvency check
+    # Solvency check requires enough assets.
+    # Price is 10.0, so 1000 pennies.
+    # Buyer balance must be >= 1000 pennies.
+    buyer.get_balance.return_value = 10000 # 10000 pennies ($100)
     buyer.inventory = {}
     seller = MagicMock()
     seller.id = 2
@@ -76,7 +79,8 @@ def test_goods_handler_uses_atomic_settlement():
 
     tx = Transaction(
         buyer_id=1, seller_id=2, item_id="apple", price=10.0, quantity=1.0,
-        market_id="goods", transaction_type="goods", time=0
+        market_id="goods", transaction_type="goods", time=0,
+        total_pennies=1000 # Explicitly set pennies
     )
 
     # Execute
@@ -88,10 +92,10 @@ def test_goods_handler_uses_atomic_settlement():
     # args: (buyer, credits, time)
     assert args[0][0] == buyer
     credits = args[0][1]
-    # Expect [(seller, 10.0, ...)]
+    # Expect [(seller, 1000, ...)] - integer pennies
     assert len(credits) == 1
     assert credits[0][0] == seller
-    assert credits[0][1] == 10.0
+    assert credits[0][1] == 1000
 
 def test_public_manager_routing():
     config = MagicMock()

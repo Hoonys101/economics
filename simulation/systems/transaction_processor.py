@@ -8,6 +8,7 @@ from simulation.systems.api import (
     TransactionContext,
 )
 from simulation.dtos.settlement_dtos import SettlementResultDTO
+from modules.finance.utils.currency_math import round_to_pennies
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState

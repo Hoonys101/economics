@@ -106,7 +106,7 @@ def test_processor_dispatch_legacy_price(processor, state, mock_handler):
 
     assert len(results) == 1
     assert results[0].success is True
-    assert results[0].amount_settled == 20.0 # 2 * 10.0
+    assert results[0].amount_settled == 2000.0 # 2 * 10.0 * 100 pennies = 2000
 
 def test_processor_handler_failure(processor, state, mock_handler):
     """Test that if handler returns False, result is failure."""

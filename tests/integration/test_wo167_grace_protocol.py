@@ -4,10 +4,64 @@ from simulation.core_agents import Household
 from simulation.firms import Firm
 from simulation.components.state.firm_state_models import FinanceState
 from simulation.systems.lifecycle_manager import AgentLifecycleManager
+from simulation.systems.lifecycle.aging_system import IAgingFirm
+from simulation.interfaces.market_interface import IMarket
 from simulation.dtos.api import SimulationState
 from simulation.models import Order
 from modules.market.api import OrderDTO
 from tests.utils.factories import create_firm_config_dto, create_household_config_dto
+from modules.system.api import ICurrencyHolder, DEFAULT_CURRENCY
+from typing import Dict, List
+
+# Concrete Mock Class for Firm
+class DummyFirm(IAgingFirm, ICurrencyHolder):
+    def __init__(self, config):
+        self.id = 1
+        self.is_active = True
+        self.age = 10
+        self.needs = {'liquidity_need': 0.0}
+        self.inventory = {'wood': 10.0}
+        self.last_prices = {'wood': 10.0}
+        self.finance_state = FinanceState()
+        self.finance_engine = MagicMock()
+        self.wallet = MagicMock()
+        self.wallet.get_balance.return_value = 0
+        self.config = config
+        self.logger = MagicMock()
+        self._balance = 0 # Pennies
+
+    def get_all_items(self):
+        return self.inventory
+
+    def get_balance(self, currency):
+        return self._balance
+
+    def get_assets_by_currency(self):
+        return {DEFAULT_CURRENCY: self._balance}
+
+    def deposit(self, amount, currency):
+        pass
+
+    def withdraw(self, amount, currency):
+        pass
+
+# Concrete Mock Class for Market
+class DummyMarket(IMarket):
+    def __init__(self):
+        self.id = "wood"
+        self.buy_orders: Dict[str, List[Order]] = {}
+        self.sell_orders: Dict[str, List[Order]] = {}
+        self.matched_transactions = []
+        self.avg_price = 10.0 # Used by tests
+
+    def get_daily_avg_price(self) -> float:
+        return self.avg_price
+
+    def get_daily_volume(self) -> float:
+        return 0.0
+
+    def get_price(self, item_id: str) -> float:
+        return self.avg_price
 
 class TestGraceProtocol:
 
@@ -17,34 +71,35 @@ class TestGraceProtocol:
         config.ASSETS_CLOSURE_THRESHOLD = 0.0
         config.FIRM_CLOSURE_TURNS_THRESHOLD = 5
         config.LIQUIDITY_NEED_INCREASE_RATE = 1.0
-        firm = MagicMock()
-        firm.id = 1
-        firm.is_active = True
-        firm.age = 10
-        firm.needs = {'liquidity_need': 0.0}
-        firm.inventory = {'wood': 10.0}
-        firm.last_prices = {'wood': 10.0}
-        firm.get_financial_snapshot.return_value = {}
-        firm.finance_state = FinanceState()
-        firm.finance_engine = MagicMock()
-        firm.wallet = MagicMock()
-        firm.wallet.get_balance.return_value = 0.0
-        firm.config = config
-        firm.get_all_items.return_value = {'wood': 10.0}
-        firm.logger = MagicMock()
+
+        firm = DummyFirm(config)
+
         return (firm, config)
 
     def test_firm_grace_protocol(self, setup_firm_state):
         firm, config = setup_firm_state
-        market_mock = MagicMock()
-        market_mock.avg_price = 10.0
-        markets = {'wood': market_mock}
+        market = DummyMarket()
+
+        markets = {'wood': market}
         state = MagicMock(spec=SimulationState)
         state.firms = [firm]
         state.markets = markets
         state.time = 1
-        manager = AgentLifecycleManager(config, MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock())
-        firm.wallet.get_balance.return_value = -10.0
+        manager = AgentLifecycleManager(
+            config_module=config,
+            demographic_manager=MagicMock(),
+            inheritance_manager=MagicMock(),
+            firm_system=MagicMock(),
+            settlement_system=MagicMock(),
+            public_manager=MagicMock(),
+            logger=MagicMock(),
+            household_factory=MagicMock()
+        )
+
+        # firm.wallet.get_balance.return_value = -10.0 # This was for MagicMock
+        # Update dummy firm balance
+        firm._balance = -1000 # Pennies (-10.0)
+
         manager.aging_system._process_firm_lifecycle(state)
         assert firm.finance_state.is_distressed is True
         assert firm.finance_state.distress_tick_counter == 1
@@ -89,7 +144,16 @@ class TestGraceProtocol:
         state.markets = {}
         state.stock_market = stock_market_mock
         state.time = 1
-        manager = AgentLifecycleManager(config, MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock())
+        manager = AgentLifecycleManager(
+            config_module=config,
+            demographic_manager=MagicMock(),
+            inheritance_manager=MagicMock(),
+            firm_system=MagicMock(),
+            settlement_system=MagicMock(),
+            public_manager=MagicMock(),
+            logger=MagicMock(),
+            household_factory=MagicMock()
+        )
         manager.aging_system._process_household_lifecycle(state)
         assert hh.distress_tick_counter == 1
         assert stock_market_mock.place_order.called

@@ -13,7 +13,8 @@ class TestLifecycleReset:
             firm_system=MagicMock(),
             settlement_system=MagicMock(),
             public_manager=MagicMock(),
-            logger=MagicMock()
+            logger=MagicMock(),
+            household_factory=MagicMock()
         )
 
         household = MagicMock()

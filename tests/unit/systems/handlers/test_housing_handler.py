@@ -15,7 +15,7 @@ class DummyHousingParticipant(IHousingTransactionParticipant, IResident):
     owned_properties = []
     residing_property_id = None
     is_homeless = True
-    def get_balance(self, currency): return 20000.0
+    def get_balance(self, currency): return 2000000 # Pennies
     def add_property(self, pid): pass
     def remove_property(self, pid): pass
     def deposit(self, amt, currency): pass
@@ -24,7 +24,7 @@ class DummyHousingParticipant(IHousingTransactionParticipant, IResident):
 class DummySeller(IPropertyOwner):
     id = 4
     owned_properties = [101]
-    def get_balance(self, currency): return 50000.0
+    def get_balance(self, currency): return 5000000 # Pennies
     def add_property(self, pid): pass
     def remove_property(self, pid): pass
     def deposit(self, amt, currency): pass
@@ -59,7 +59,7 @@ class TestHousingTransactionHandler(unittest.TestCase):
         # Mock Agents
         self.buyer = create_autospec(DummyHousingParticipant, instance=True)
         self.buyer.id = 3
-        self.buyer.get_balance.return_value = 20000.0
+        self.buyer.get_balance.return_value = 2000000 # Pennies
         self.buyer.current_wage = 20.0
         self.buyer.owned_properties = []
         self.buyer.residing_property_id = None
@@ -67,7 +67,7 @@ class TestHousingTransactionHandler(unittest.TestCase):
 
         self.seller = create_autospec(DummySeller, instance=True)
         self.seller.id = 4
-        self.seller.get_balance.return_value = 50000.0
+        self.seller.get_balance.return_value = 5000000 # Pennies
         self.seller.owned_properties = [101]
 
         # Mock Escrow Agent
@@ -108,15 +108,16 @@ class TestHousingTransactionHandler(unittest.TestCase):
             quantity=1.0,
             market_id="housing",
             transaction_type="housing",
-            time=100
+            time=100,
+            total_pennies=1000000
         )
 
         success = self.handler.handle(tx, self.buyer, self.seller, self.state)
 
         self.assertTrue(success)
 
-        loan_amount = 8000.0 # 80% LTV of 10000
-        down_payment = 2000.0
+        loan_amount = 800000 # 80% LTV of 1,000,000
+        down_payment = 200000 # 20%
 
         # 1. Down Payment (Buyer -> Escrow)
         self.state.settlement_system.transfer.assert_any_call(
@@ -133,7 +134,7 @@ class TestHousingTransactionHandler(unittest.TestCase):
 
         # 4. Final Settlement (Escrow -> Seller)
         self.state.settlement_system.transfer.assert_any_call(
-            self.escrow_agent, self.seller, 10000.0, f"final_settlement:unit_101", tick=100, currency=DEFAULT_CURRENCY
+            self.escrow_agent, self.seller, 1000000, f"final_settlement:unit_101", tick=100, currency=DEFAULT_CURRENCY
         )
 
         # 5. Mortgage Update
@@ -152,7 +153,8 @@ class TestHousingTransactionHandler(unittest.TestCase):
             quantity=1.0,
             market_id="housing",
             transaction_type="housing",
-            time=100
+            time=100,
+            total_pennies=1000000
         )
 
         # Sequence of transfer results:
@@ -184,7 +186,8 @@ class TestHousingTransactionHandler(unittest.TestCase):
             quantity=1.0,
             market_id="housing",
             transaction_type="housing",
-            time=100
+            time=100,
+            total_pennies=1000000
         )
 
         # Sequence:
@@ -213,11 +216,11 @@ class TestHousingTransactionHandler(unittest.TestCase):
 
         self.assertEqual(calls[3][0][0], self.escrow_agent)
         self.assertEqual(calls[3][0][1], self.state.bank)
-        self.assertEqual(calls[3][0][2], 8000.0)
+        self.assertEqual(calls[3][0][2], 800000)
 
         self.assertEqual(calls[4][0][0], self.escrow_agent)
         self.assertEqual(calls[4][0][1], self.buyer)
-        self.assertEqual(calls[4][0][2], 2000.0)
+        self.assertEqual(calls[4][0][2], 200000)
 
         self.assertIsNone(self.unit.mortgage_id)
 
@@ -230,7 +233,8 @@ class TestHousingTransactionHandler(unittest.TestCase):
             quantity=1.0,
             market_id="housing",
             transaction_type="housing",
-            time=100
+            time=100,
+            total_pennies=1000000
         )
 
         # Pass government as seller
@@ -240,5 +244,5 @@ class TestHousingTransactionHandler(unittest.TestCase):
 
         # Verify transfer to Government
         self.state.settlement_system.transfer.assert_any_call(
-            self.escrow_agent, self.state.government, 10000.0, f"final_settlement:unit_101", tick=100, currency=DEFAULT_CURRENCY
+            self.escrow_agent, self.state.government, 1000000, f"final_settlement:unit_101", tick=100, currency=DEFAULT_CURRENCY
         )
