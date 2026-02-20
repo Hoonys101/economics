@@ -4,10 +4,13 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from modules.simulation.dtos.api import FirmConfigDTO, FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
-from modules.system.api import MarketSnapshotDTO
+from modules.system.api import MarketSnapshotDTO, MarketContextDTO
 from modules.simulation.api import IInventoryHandler
 from modules.finance.api import IFinancialAgent
-from simulation.models import Order
+from simulation.models import Order, Transaction
+
+# DTO Imports for Protocols
+from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingContextDTO, MarketingAdjustmentResultDTO
 
 # ==============================================================================
 # 1. ARCHITECTURAL RESOLUTION: ASSET PROTOCOLS
@@ -215,10 +218,29 @@ class IFinanceEngine(Protocol):
     def plan_budget(self, input_dto: FinanceDecisionInputDTO) -> BudgetPlanDTO:
         ...
 
+    def get_estimated_unit_cost(self, finance_state: Any, item_id: str, config: FirmConfigDTO) -> int:
+         """Calculates estimated unit cost for an item."""
+         ...
+
+    def record_expense(self, finance_state: Any, amount: int, currency: Any) -> None:
+         ...
+
+    def calculate_valuation(self, finance_state: Any, balances: Any, config: Any, inventory_value: int, capital_stock: int, context: Any) -> int:
+        ...
+
+    def generate_financial_transactions(self, finance_state: Any, firm_id: int, balances: Any, config: Any, current_time: int, context: Any, inventory_value: int) -> List[Transaction]:
+        ...
+
 @runtime_checkable
 class IHREngine(Protocol):
     """Stateless engine for human resources management."""
     def manage_workforce(self, input_dto: HRDecisionInputDTO) -> HRDecisionOutputDTO:
+        ...
+
+    def process_payroll(self, hr_state: Any, context: Any, config: Any) -> Any:
+        ...
+
+    def finalize_firing(self, hr_state: Any, employee_id: int) -> None:
         ...
 
 @runtime_checkable
@@ -275,6 +297,44 @@ class IRDEngine(Protocol):
         Calculates the outcome of R&D spending.
         Returns a DTO describing improvements to quality or technology.
         """
+        ...
+
+@runtime_checkable
+class ISalesEngine(Protocol):
+    """
+    Stateless Engine for Sales operations.
+    Handles pricing, marketing, and order generation.
+    """
+    def post_ask(self, state: Any, context: SalesPostAskContextDTO) -> Order:
+        """Posts an ask order to the market."""
+        ...
+
+    def adjust_marketing_budget(self, state: Any, market_context: MarketContextDTO, revenue_this_turn: int, last_revenue: int=0, last_marketing_spend: int=0) -> MarketingAdjustmentResultDTO:
+        """Adjusts marketing budget based on ROI or simple heuristic."""
+        ...
+
+    def generate_marketing_transaction(self, state: Any, context: SalesMarketingContextDTO) -> Optional[Transaction]:
+        """Generates marketing spend transaction."""
+        ...
+
+    def check_and_apply_dynamic_pricing(self, state: Any, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> None:
+        """Overrides prices in orders if dynamic pricing logic dictates."""
+        ...
+
+@runtime_checkable
+class IBrandEngine(Protocol):
+    """
+    Stateless engine for managing firm brand equity.
+    """
+    def update(
+        self,
+        state: Any,
+        config: FirmConfigDTO,
+        marketing_spend: float,
+        actual_quality: float,
+        firm_id: int
+    ) -> None:
+        """Updates brand assets in the SalesState based on marketing spend and quality."""
         ...
 
 # ==============================================================================
@@ -346,6 +406,8 @@ __all__ = [
     'IAssetManagementEngine',
     'IPricingEngine',
     'IRDEngine',
+    'ISalesEngine',
+    'IBrandEngine',
     'IFirmComponent',
     'IInventoryComponent',
     'InventoryComponentConfigDTO',
