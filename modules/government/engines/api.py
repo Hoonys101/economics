@@ -1,7 +1,9 @@
-from typing import TypedDict, List, Dict, Optional, Protocol, runtime_checkable
+from typing import List, Dict, Optional, Protocol, runtime_checkable
+from dataclasses import dataclass, field
 from modules.system.api import CurrencyCode, MarketSnapshotDTO
 
-class FiscalStateDTO(TypedDict):
+@dataclass(frozen=True)
+class FiscalStateDTO:
     """Input state from Government agent."""
     tick: int
     assets: Dict[CurrencyCode, float]
@@ -12,28 +14,33 @@ class FiscalStateDTO(TypedDict):
     welfare_budget_multiplier: float
     potential_gdp: float
 
-class FirmFinancialsDTO(TypedDict):
+@dataclass(frozen=True)
+class FirmFinancialsDTO:
     """A snapshot of a firm's health, NOT the live object."""
     assets: float
     profit: float
     is_solvent: bool
 
-class FirmBailoutRequestDTO(TypedDict):
+@dataclass(frozen=True)
+class FirmBailoutRequestDTO:
     firm_id: int
     requested_amount: float
     firm_financials: FirmFinancialsDTO
 
-class FiscalRequestDTO(TypedDict): # Union of all possible requests
+@dataclass(frozen=True)
+class FiscalRequestDTO: # Union of all possible requests
     bailout_request: Optional[FirmBailoutRequestDTO]
     # ... other request types in the future
 
-class GrantedBailoutDTO(TypedDict):
+@dataclass(frozen=True)
+class GrantedBailoutDTO:
     firm_id: int
     amount: float
     interest_rate: float
     term: int
 
-class FiscalDecisionDTO(TypedDict):
+@dataclass(frozen=True)
+class FiscalDecisionDTO:
     """Output decisions from the FiscalEngine."""
     new_income_tax_rate: Optional[float]
     new_corporate_tax_rate: Optional[float]

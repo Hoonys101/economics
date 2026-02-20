@@ -53,10 +53,10 @@ class FiscalEngine(IFiscalEngine):
     def _calculate_tax_rates(self, state: FiscalStateDTO, market: MarketSnapshotDTO):
         # Access current_gdp from market_data (safe access with default)
         current_gdp = market.market_data.get("current_gdp", 0.0)
-        potential_gdp = state["potential_gdp"]
+        potential_gdp = state.potential_gdp
 
         # Debt check
-        total_debt = state["total_debt"]
+        total_debt = state.total_debt
         debt_to_gdp = 0.0
         if potential_gdp > 0:
             debt_to_gdp = total_debt / potential_gdp
@@ -64,8 +64,8 @@ class FiscalEngine(IFiscalEngine):
              debt_to_gdp = total_debt / current_gdp
 
         # Default fallback
-        new_income_tax_rate = state["income_tax_rate"]
-        new_corporate_tax_rate = state["corporate_tax_rate"]
+        new_income_tax_rate = state.income_tax_rate
+        new_corporate_tax_rate = state.corporate_tax_rate
         fiscal_stance = 0.0
 
         if potential_gdp > 0:
@@ -110,8 +110,8 @@ class FiscalEngine(IFiscalEngine):
         return new_income_tax_rate, new_corporate_tax_rate, fiscal_stance
 
     def _calculate_welfare_multiplier(self, state: FiscalStateDTO) -> float:
-        total_debt = state["total_debt"]
-        potential_gdp = state["potential_gdp"]
+        total_debt = state.total_debt
+        potential_gdp = state.potential_gdp
 
         if potential_gdp <= 0:
             return 1.0
@@ -131,9 +131,9 @@ class FiscalEngine(IFiscalEngine):
         return 1.0
 
     def _evaluate_bailouts(self, requests: List[FiscalRequestDTO], state: FiscalStateDTO) -> List[GrantedBailoutDTO]:
-        total_debt = state["total_debt"]
-        potential_gdp = state["potential_gdp"]
-        current_assets = state["assets"].get(DEFAULT_CURRENCY, 0.0)
+        total_debt = state.total_debt
+        potential_gdp = state.potential_gdp
+        current_assets = state.assets.get(DEFAULT_CURRENCY, 0.0)
 
         debt_to_gdp = 0.0
         if potential_gdp > 0:
@@ -145,9 +145,9 @@ class FiscalEngine(IFiscalEngine):
 
         granted = []
         for req in requests:
-            if req.get("bailout_request"):
-                bailout_req = req["bailout_request"]
-                amount = bailout_req["requested_amount"]
+            if req.bailout_request:
+                bailout_req = req.bailout_request
+                amount = bailout_req.requested_amount
 
                 # Check 1: Can we afford it liquidly?
                 # Ideally we check bond capacity too, but "Solvency Guardrails" implies prudence.
@@ -164,13 +164,13 @@ class FiscalEngine(IFiscalEngine):
                 if not can_afford:
                     continue
 
-                financials = bailout_req["firm_financials"]
-                is_solvent = financials["is_solvent"]
+                financials = bailout_req.firm_financials
+                is_solvent = financials.is_solvent
 
                 if is_solvent:
                     # Grant bailout
                     granted.append(GrantedBailoutDTO(
-                        firm_id=bailout_req["firm_id"],
+                        firm_id=bailout_req.firm_id,
                         amount=amount,
                         interest_rate=0.05, # Default term
                         term=50 # Default term ticks

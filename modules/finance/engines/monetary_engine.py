@@ -26,11 +26,12 @@ class MonetaryEngine(IMonetaryEngine):
         market: MarketSnapshotDTO
     ) -> MonetaryDecisionDTO:
 
-        current_gdp = market["current_gdp"]
-        potential_gdp = state["potential_gdp"]
-        inflation_rate = market["inflation_rate_annual"]
-        inflation_target = state["inflation_target"]
-        current_base_rate = state["current_base_rate"]
+        current_gdp = market.market_data.get("current_gdp", 0.0)
+        inflation_rate = market.market_data.get("inflation_rate_annual", 0.0)
+
+        potential_gdp = state.potential_gdp
+        inflation_target = state.inflation_target
+        current_base_rate = state.current_base_rate
 
         # 1. Calculate Output Gap
         output_gap = 0.0
@@ -47,11 +48,11 @@ class MonetaryEngine(IMonetaryEngine):
                       self.beta * output_gap
 
         # 3. Apply Strategy Overrides (WO-136)
-        if state.get("override_target_rate") is not None:
-             taylor_rate = state["override_target_rate"]
+        if state.override_target_rate is not None:
+             taylor_rate = state.override_target_rate
 
-        if state.get("rate_multiplier") is not None:
-             taylor_rate *= state["rate_multiplier"]
+        if state.rate_multiplier is not None:
+             taylor_rate *= state.rate_multiplier
 
         # 4. ZLB (Zero Lower Bound)
         target_rate = max(0.0, taylor_rate)

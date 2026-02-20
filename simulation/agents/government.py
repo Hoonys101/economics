@@ -286,16 +286,16 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             self.potential_gdp = (alpha * current_gdp) + ((1-alpha) * self.potential_gdp)
 
         # 1. Gather State into DTO
-        fiscal_state: FiscalStateDTO = {
-            "tick": current_tick,
-            "assets": self.wallet.get_all_balances(),
-            "total_debt": self.total_debt,
-            "income_tax_rate": self.income_tax_rate,
-            "corporate_tax_rate": self.corporate_tax_rate,
-            "approval_rating": self.approval_rating,
-            "welfare_budget_multiplier": self.welfare_budget_multiplier,
-            "potential_gdp": self.potential_gdp
-        }
+        fiscal_state = FiscalStateDTO(
+            tick=current_tick,
+            assets=self.wallet.get_all_balances(),
+            total_debt=self.total_debt,
+            income_tax_rate=self.income_tax_rate,
+            corporate_tax_rate=self.corporate_tax_rate,
+            approval_rating=self.approval_rating,
+            welfare_budget_multiplier=self.welfare_budget_multiplier,
+            potential_gdp=self.potential_gdp
+        )
 
         # Prepare Market Snapshot DTO (Dataclass for Engines)
         engine_market_snapshot = MarketSnapshotDTO(
@@ -308,12 +308,12 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
         decision = self.fiscal_engine.decide(fiscal_state, engine_market_snapshot, [])
 
         # 3. Apply Changes
-        if decision["new_income_tax_rate"] is not None:
-            self.income_tax_rate = decision["new_income_tax_rate"]
-        if decision["new_corporate_tax_rate"] is not None:
-            self.corporate_tax_rate = decision["new_corporate_tax_rate"]
-        if decision["new_welfare_budget_multiplier"] is not None:
-            self.welfare_budget_multiplier = decision["new_welfare_budget_multiplier"]
+        if decision.new_income_tax_rate is not None:
+            self.income_tax_rate = decision.new_income_tax_rate
+        if decision.new_corporate_tax_rate is not None:
+            self.corporate_tax_rate = decision.new_corporate_tax_rate
+        if decision.new_welfare_budget_multiplier is not None:
+            self.welfare_budget_multiplier = decision.new_welfare_budget_multiplier
 
         logger.debug(
             f"FISCAL_POLICY_EXECUTED | Tick: {current_tick} | IncomeTax: {self.income_tax_rate:.2f} | CorpTax: {self.corporate_tax_rate:.2f}",
@@ -488,31 +488,31 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
         if self.finance_system:
              is_solvent = self.finance_system.evaluate_solvency(firm, current_tick)
 
-        financials: FirmFinancialsDTO = {
-            "assets": int(firm.total_wealth) if hasattr(firm, 'total_wealth') else (int(firm.assets) if hasattr(firm, 'assets') else 0),
-            "profit": 0,
-            "is_solvent": is_solvent
-        }
+        financials = FirmFinancialsDTO(
+            assets=float(int(firm.total_wealth) if hasattr(firm, 'total_wealth') else (int(firm.assets) if hasattr(firm, 'assets') else 0)),
+            profit=0.0,
+            is_solvent=is_solvent
+        )
 
-        bailout_req: FirmBailoutRequestDTO = {
-            "firm_id": firm.id,
-            "requested_amount": amount,
-            "firm_financials": financials
-        }
+        bailout_req = FirmBailoutRequestDTO(
+            firm_id=firm.id,
+            requested_amount=float(amount),
+            firm_financials=financials
+        )
 
-        request: FiscalRequestDTO = {"bailout_request": bailout_req}
+        request = FiscalRequestDTO(bailout_request=bailout_req)
 
         # 2. Call Engine
-        fiscal_state: FiscalStateDTO = {
-            "tick": current_tick,
-            "assets": self.wallet.get_all_balances(),
-            "total_debt": self.total_debt,
-            "income_tax_rate": self.income_tax_rate,
-            "corporate_tax_rate": self.corporate_tax_rate,
-            "approval_rating": self.approval_rating,
-            "welfare_budget_multiplier": self.welfare_budget_multiplier,
-            "potential_gdp": self.potential_gdp
-        }
+        fiscal_state = FiscalStateDTO(
+            tick=current_tick,
+            assets=self.wallet.get_all_balances(),
+            total_debt=self.total_debt,
+            income_tax_rate=self.income_tax_rate,
+            corporate_tax_rate=self.corporate_tax_rate,
+            approval_rating=self.approval_rating,
+            welfare_budget_multiplier=self.welfare_budget_multiplier,
+            potential_gdp=self.potential_gdp
+        )
         market_snapshot = MarketSnapshotDTO(
             tick=current_tick,
             market_signals={},
@@ -525,15 +525,15 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
         decision = self.fiscal_engine.decide(fiscal_state, market_snapshot, [request])
 
         # 3. Execute Decision
-        if decision["bailouts_to_grant"]:
-            grant = decision["bailouts_to_grant"][0]
+        if decision.bailouts_to_grant:
+            grant = decision.bailouts_to_grant[0]
 
             if self.finance_system:
-                loan, txs = self.finance_system.grant_bailout_loan(firm, grant["amount"], current_tick)
+                loan, txs = self.finance_system.grant_bailout_loan(firm, grant.amount, current_tick)
 
                 cur = DEFAULT_CURRENCY
                 if cur not in self.expenditure_this_tick: self.expenditure_this_tick[cur] = 0
-                self.expenditure_this_tick[cur] += grant["amount"]
+                self.expenditure_this_tick[cur] += grant.amount
 
                 return loan, txs
 

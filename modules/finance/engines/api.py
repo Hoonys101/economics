@@ -1,22 +1,20 @@
-from typing import TypedDict, Protocol, runtime_checkable, Optional
+from typing import List, Optional, Protocol, runtime_checkable
+from dataclasses import dataclass
+from modules.system.api import MarketSnapshotDTO
 
-class MonetaryStateDTO(TypedDict):
+@dataclass(frozen=True)
+class MonetaryStateDTO:
     """Input state from CentralBank agent."""
     tick: int
     current_base_rate: float
     potential_gdp: float # Calculated and owned by the agent
     inflation_target: float
     # Optional Strategy Overrides (WO-136)
-    override_target_rate: Optional[float]
-    rate_multiplier: Optional[float]
+    override_target_rate: Optional[float] = None
+    rate_multiplier: Optional[float] = None
 
-class MarketSnapshotDTO(TypedDict):
-    """Shared market data for both engines."""
-    tick: int
-    inflation_rate_annual: float
-    current_gdp: float
-
-class MonetaryDecisionDTO(TypedDict):
+@dataclass(frozen=True)
+class MonetaryDecisionDTO:
     """Output decision from the MonetaryEngine."""
     new_base_rate: float
 

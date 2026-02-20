@@ -4,10 +4,10 @@ import numpy as np
 from modules.finance.api import InsufficientFundsError, IFinancialAgent, IFinancialEntity, IBank
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
-from modules.system.api import ICurrencyHolder, CurrencyCode, DEFAULT_CURRENCY
+from modules.system.api import ICurrencyHolder, CurrencyCode, DEFAULT_CURRENCY, MarketSnapshotDTO
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.finance.engines.monetary_engine import MonetaryEngine
-from modules.finance.engines.api import MonetaryStateDTO, MarketSnapshotDTO
+from modules.finance.engines.api import MonetaryStateDTO
 
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
@@ -149,27 +149,30 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity):
              rate_multiplier = self.strategy.base_interest_rate_multiplier
 
         # C. Construct DTOs
-        state: MonetaryStateDTO = {
-            "tick": current_tick,
-            "current_base_rate": self.base_rate,
-            "potential_gdp": self.potential_gdp,
-            "inflation_target": self.inflation_target,
-            "override_target_rate": override_target_rate,
-            "rate_multiplier": rate_multiplier
-        }
+        state = MonetaryStateDTO(
+            tick=current_tick,
+            current_base_rate=self.base_rate,
+            potential_gdp=self.potential_gdp,
+            inflation_target=self.inflation_target,
+            override_target_rate=override_target_rate,
+            rate_multiplier=rate_multiplier
+        )
 
-        snapshot: MarketSnapshotDTO = {
-            "tick": current_tick,
-            "inflation_rate_annual": inflation_rate,
-            "current_gdp": current_gdp
-        }
+        snapshot = MarketSnapshotDTO(
+            tick=current_tick,
+            market_signals={},
+            market_data={
+                "inflation_rate_annual": inflation_rate,
+                "current_gdp": current_gdp
+            }
+        )
 
         # D. Call Engine
         decision = self.monetary_engine.calculate_rate(state, snapshot)
 
         # E. Apply Decision
         old_rate = self.base_rate
-        self.base_rate = decision["new_base_rate"]
+        self.base_rate = decision.new_base_rate
 
         # Logging (retained for consistency)
         # Re-calc output gap for logging only
