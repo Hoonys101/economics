@@ -65,7 +65,13 @@ class LaborManager:
                     logger.info(f'RESERVATION_WAGE | Household {household.id} refused labor. Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f}', extra={'tick': current_time, 'agent_id': household.id, 'tags': ['labor_refusal']})
             else:
                 # Prepare Brand Info for Utility-Based Matching
-                agent_data = getattr(household, 'agent_data', {})
+                if hasattr(household, 'agent_data'):
+                    agent_data = household.agent_data
+                elif hasattr(household, 'get_agent_data'):
+                    agent_data = household.get_agent_data()
+                else:
+                    agent_data = {}
+
                 brand_info = {
                     'labor_skill': agent_data.get('labor_skill', 1.0),
                     'education_level': agent_data.get('education_level', 0),
