@@ -90,6 +90,8 @@ def test_system2_planner_guidance(firm_mock):
     firm_state = MagicMock()
     firm_state.finance.revenue_this_turn = 5000.0
     firm_state.finance.balance = 300000.0
+    firm_state.finance.total_debt_pennies = 0
+    firm_state.finance.average_interest_rate = 0.0
     firm_state.production.automation_level = 0.0
     firm_state.hr.employees_data = {1: {'wage': 1000.0}, 2: {'wage': 1000.0}}
     firm_state.agent_data = {"personality": Personality.CASH_COW}

@@ -22,6 +22,9 @@ class TestFinanceEngine:
         fin_state.total_debt_pennies = 0
         fin_state.profit_history = [5000]
         fin_state.dividend_rate = 0.1
+        fin_state.altman_z_score = 3.0 # Healthy
+        fin_state.consecutive_loss_turns = 0
+        fin_state.average_interest_rate = 0.05
 
         prod_state = MagicMock(spec=ProductionStateDTO)
         sales_state = MagicMock(spec=SalesStateDTO)
@@ -56,18 +59,40 @@ class TestFinanceEngine:
         assert plan.labor_budget_pennies == 60000
         assert plan.capital_budget_pennies == 20000
 
-    def test_plan_budget_with_debt(self, engine, mock_input):
+    def test_plan_budget_with_debt_healthy(self, engine, mock_input):
         mock_input.firm_snapshot.finance.total_debt_pennies = 1000000
+        # Healthy: Z > 1.8, Losses <= 4
+        mock_input.firm_snapshot.finance.altman_z_score = 3.0
+        mock_input.firm_snapshot.finance.consecutive_loss_turns = 0
 
         plan = engine.plan_budget(mock_input)
 
-        # 1% repayment = 10000
-        assert plan.debt_repayment_pennies == 10000
-        assert plan.total_budget_pennies == 100000 # Balance
-        # Available for ops = 90000
+        # 0.5% repayment = 5000
+        assert plan.debt_repayment_pennies == 5000
 
-        # 60% of 90000
-        assert plan.labor_budget_pennies == 54000
+        # Interest: 1,000,000 * 0.05 / 365 = 136
+        interest = 136
+        expected_budget = 100000 - interest
+        assert plan.total_budget_pennies == 100000
+        # Note: BudgetPlanDTO returns total_budget_pennies as the INPUT balance?
+        # Let's check logic: return BudgetPlanDTO(total_budget_pennies=balance, ...)
+        # Yes, balance is passed through.
+        # But allocation should sum up to balance - interest - repayment?
+        # Labor = 60% of (Balance - Interest - Repayment)
+        # 100000 - 136 - 5000 = 94864
+        # 60% of 94864 = 56918
+        assert plan.labor_budget_pennies == 56918
+
+    def test_plan_budget_with_debt_distressed(self, engine, mock_input):
+        mock_input.firm_snapshot.finance.total_debt_pennies = 1000000
+        # Distressed: Z < 1.8
+        mock_input.firm_snapshot.finance.altman_z_score = 1.0
+        mock_input.firm_snapshot.finance.consecutive_loss_turns = 0
+
+        plan = engine.plan_budget(mock_input)
+
+        # 5% repayment = 50000
+        assert plan.debt_repayment_pennies == 50000
 
     def test_plan_budget_returns_integers(self, engine, mock_input):
         """Zero-Sum Boundary Check: Output must be quantized integer pennies."""

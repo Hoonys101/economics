@@ -85,10 +85,15 @@ class FirmSystem2Planner:
         # 2. Forecast Costs (Status Quo)
         current_maintenance = getattr(self.config, "FIRM_MAINTENANCE_FEE", 50.0)
 
+        # AI Debt Awareness: Include Interest Expense
+        total_debt = getattr(firm_state.finance, 'total_debt_pennies', 0)
+        avg_interest_rate = getattr(firm_state.finance, 'average_interest_rate', 0.0)
+        daily_interest = (total_debt * avg_interest_rate) / 365.0
+
         # 3. Scenario Analysis: Automation Investment
 
         # Scenario A: Status Quo
-        npv_status_quo = self._calculate_npv(base_revenue, current_wages, current_maintenance, 0.0)
+        npv_status_quo = self._calculate_npv(base_revenue, current_wages, current_maintenance, 0.0, daily_interest)
 
         # Scenario B: High Automation (Target 0.8)
         target_a = 0.8
@@ -107,7 +112,7 @@ class FirmSystem2Planner:
         projected_wages_automated = current_wages - wage_savings
 
         # NPV Automated = NPV(Revenue, Lower Wages) - Investment Cost
-        npv_automated = self._calculate_npv(base_revenue, projected_wages_automated, current_maintenance, 0.0) - investment_cost
+        npv_automated = self._calculate_npv(base_revenue, projected_wages_automated, current_maintenance, 0.0, daily_interest) - investment_cost
 
         # 4. Strategic Decision
         target_automation = current_a
@@ -144,13 +149,13 @@ class FirmSystem2Planner:
         self.cached_guidance = guidance
         return guidance
 
-    def _calculate_npv(self, revenue, wages, maintenance, investment_flow):
+    def _calculate_npv(self, revenue, wages, maintenance, investment_flow, interest_expense=0.0):
         npv = 0.0
         growth_rate = 0.01
 
         for t in range(1, self.horizon + 1):
             rev = revenue * ((1 + growth_rate) ** t)
-            cost = wages + maintenance
+            cost = wages + maintenance + interest_expense
             cash_flow = rev - cost - investment_flow
 
             discount = self.discount_rate ** t

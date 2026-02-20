@@ -35,6 +35,8 @@ class FinanceStateDTO:
     treasury_shares: float
     dividend_rate: float
     is_publicly_traded: bool
+    total_debt_pennies: int = 0
+    average_interest_rate: float = 0.0
 
 @dataclass(frozen=True)
 class ProductionStateDTO:
