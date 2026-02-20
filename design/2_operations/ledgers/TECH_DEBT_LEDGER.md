@@ -23,7 +23,7 @@
 | **TD-INT-BANK-ROLLBACK** | Finance | **Rollback Coupling**: Bank rollback logic dependent on `hasattr` implementation. | **Low**: Leak. | Open |
 | **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Handler**: `bailout`, `bond_issuance` tx types not registered. | **High**: Failure. | Audit Done |
 | **TD-PROTO-MONETARY** | Transaction | **Monetary Protocol Violation**: `MonetaryHandler` uses `hasattr` instead of Protocols. | **Low**: Fragility. | Open |
-| **TD-AI-DEBT-AWARE** | AI | **Constraint Blindness**: AI spams spend intents at debt ceiling. | **Medium**: AI Performance. | **RESOLVED** |
+| **TD-AI-DEBT-AWARE** | AI | **Constraint Blindness**: AI spams spend intents at debt ceiling; NPV ignores debt. | **Medium**: AI Performance. | Open |
 | **TD-CONF-MAGIC-NUMBERS** | Config | **Magic Numbers**: Hardcoded constants in `FinanceEngine` (Z-Score, Divisors). | **Low**: Configurability. | **RESOLVED** |
 | **TD-ARCH-LOAN-CIRCULAR** | Architecture | **Circular Dependency**: Firm depends on concrete `LoanMarket` for debt status. | **Medium**: Coupling. | **RESOLVED** |
 | **TD-ECON-WAR-STIMULUS** | Economic | **Fiscal Masking**: Stimulus prevents GDP 0 but masks wage-affordability imbalances. | **Medium**: Policy. | Open |
@@ -51,7 +51,8 @@
 - **Title**: Parent Pointer Pollution
 - **Symptom**: `Department` classes in `Firm` initialized with `self.parent = firm`.
 - **Risk**: Circular dependencies and "God-class" sprawl. Departments modify state in other departments directly.
-- **Solution**: Refactor to stateless engines. Pass explicit DTOs.
+- **Solution**: Remove `.attach(self)` from `InventoryComponent` and `FinancialComponent`. Ensure Departments move to Stateless Engines (Engines done, Components pending).
+- **Current Status**: ⚠️ Partial. Engines migrated, but state components still use bi-directional links.
 - **Related**: [MISSION_firm_ai_hardening_spec.md](../../../artifacts/specs/MISSION_firm_ai_hardening_spec.md)
 
 ### ID: TD-ARCH-FIRM-MUTATION
@@ -108,7 +109,8 @@
 - **Title**: AI Constraint Blindness (Log Spam)
 - **Symptom**: AI proposes aggressive investments while in a debt spiral.
 - **Risk**: Inefficient decision-making. AI fails to "learn" the barrier.
-- **Solution**: Add `current_debt_ratio` to AI input DTO and penalize rejected intents in reward function.
+- **Solution**: Update `FirmSystem2Planner._calculate_npv` to include debt interest and repayment flows. Pass `current_debt_ratio` in AI input DTO.
+- **Current Status**: ❌ Open. Audit confirms AI planner remains strategically blind to debt, causing "Intent Spamming".
 
 ### ID: TD-ECON-WAR-STIMULUS
 - **Title**: Fiscal Imbalance & Stimulus Dependency
