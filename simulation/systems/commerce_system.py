@@ -198,6 +198,14 @@ class CommerceSystem(ICommerceSystem):
                 household.consume("basic_food", c_amt, current_time)
                 consumed_items["basic_food"] = c_amt
 
+            # Phase 4.1: Service Consumption (Education)
+            # Check for education service in inventory (purchased previously or via budget)
+            edu_amt = household.get_quantity("education_service")
+            if edu_amt > 0:
+                # Consume all available education service
+                household.consume("education_service", edu_amt, current_time)
+                consumed_items["education_service"] = edu_amt
+
             # 3. Leisure Effect
             leisure_hours = time_allocation.get(household.id, 0.0)
             effect_dto = household.apply_leisure_effect(leisure_hours, consumed_items)

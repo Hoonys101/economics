@@ -51,6 +51,61 @@ class HouseholdAI(BaseAIEngine):
     def set_ai_decision_engine(self, engine: "AIDecisionEngine"):
         self.ai_decision_engine = engine
 
+    def _apply_perceptual_filters(self, agent_data: Dict[str, Any], market_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Applies perceptual distortion based on market_insight.
+        > 0.8: Real-time (0-lag)
+        > 0.3: 3-tick Moving Average
+        < 0.3: 5-tick Lag + Noise
+        """
+        insight = agent_data.get("market_insight", 0.5)
+        # Handle case where insight is None
+        if insight is None:
+            insight = 0.5
+
+        # Optimization: If insight is high, return raw data (0-copy if possible)
+        if insight > 0.8:
+            return market_data
+
+        filtered_data = market_data.copy()
+
+        # We need access to history which is in market_snapshot.market_signals usually.
+        # But here we only have market_data dict.
+        # We rely on 'price_history_7d' being present in market_signals if injected via market_data,
+        # OR market_data itself containing history.
+        # However, _get_common_state uses 'debt_data' from market_data.
+        # It doesn't use price directly for state discretization in _get_common_state!
+        # _get_common_state uses: assets, needs, debt_ratio, interest_burden.
+        # Debt metrics might be distorted?
+        # The prompt implies market prices/signals are distorted.
+
+        # Since _get_common_state does NOT use prices, the perceptual filter here
+        # is largely symbolic unless we distort debt info or if we add price awareness later.
+        # BUT, the filtered_market_data is passed to _get_common_state.
+
+        # Let's distort 'debt_data' if possible, or leave as placeholder for when price is used.
+        # Currently _get_common_state uses:
+        # debt_info = market_data.get("debt_data", ...).get(self.agent_id, ...)
+
+        if insight < 0.3:
+            # Distort debt perception (Lemons)
+            debt_data = filtered_data.get("debt_data", {})
+            my_debt = debt_data.get(self.agent_id, {})
+            if my_debt:
+                # Underestimate burden? Or overestimate?
+                # "Lemons" might panic, so maybe overestimate burden?
+                new_burden = my_debt.get("daily_interest_burden", 0.0) * 1.05 # +5% noise/panic
+                # We can't easily modify nested dict without deep copy,
+                # but let's try to minimal copy
+                new_my_debt = my_debt.copy()
+                new_my_debt["daily_interest_burden"] = new_burden
+
+                new_debt_data = debt_data.copy()
+                new_debt_data[self.agent_id] = new_my_debt
+                filtered_data["debt_data"] = new_debt_data
+
+        return filtered_data
+
     def _get_common_state(self, agent_data: Dict[str, Any], market_data: Dict[str, Any]) -> Tuple:
         """
         Common state: Assets, General Needs, Debt Ratio, Interest Burden
@@ -94,8 +149,11 @@ class HouseholdAI(BaseAIEngine):
     ) -> HouseholdActionVector:
         """
         Decide aggressiveness for consumption (per item) and work.
+        Includes Phase 4.1 Perceptual Filters and Panic Reaction.
         """
-        state = self._get_common_state(agent_data, market_data)
+        # Phase 4.1: Perceptual Filters
+        filtered_market_data = self._apply_perceptual_filters(agent_data, market_data)
+        state = self._get_common_state(agent_data, filtered_market_data)
         
         # 1. Consumption Aggressiveness
         consumption_aggressiveness = {}
@@ -191,6 +249,26 @@ class HouseholdAI(BaseAIEngine):
             self.last_investment_action_idx = None
             investment_agg = 0.0
 
+        # Phase 4.1: Panic Reaction
+        # Low Insight agents react to market_panic_index
+        insight = agent_data.get("market_insight", 0.5)
+        if insight is None: insight = 0.5
+
+        # Access panic index from decision engine context if possible
+        panic_index = 0.0
+        if self.ai_decision_engine and hasattr(self.ai_decision_engine, "context") and self.ai_decision_engine.context:
+            ctx = self.ai_decision_engine.context
+            if hasattr(ctx, "government_policy") and ctx.government_policy:
+                panic_index = ctx.government_policy.market_panic_index
+
+        if panic_index > 0.3 and insight < 0.3:
+            # Panic: Reduce Investment and Consumption
+            investment_agg = 0.0 # Freeze investment
+
+            # Reduce consumption aggressiveness by one level or set to min
+            for k in consumption_aggressiveness:
+                consumption_aggressiveness[k] = max(0.0, consumption_aggressiveness[k] - 0.25)
+
         return HouseholdActionVector(
             consumption_aggressiveness=consumption_aggressiveness,
             work_aggressiveness=work_agg,
@@ -280,12 +358,14 @@ class HouseholdAI(BaseAIEngine):
         reward: float,
         next_agent_data: Dict[str, Any],
         next_market_data: Dict[str, Any],
-    ) -> None:
+    ) -> float:
         """
         Update Household Q-Tables.
+        Returns the total accumulated TD-Error (as a proxy for insight gain).
         """
         next_state = self._get_common_state(next_agent_data, next_market_data)
         actions = list(range(len(self.AGGRESSIVENESS_LEVELS)))
+        total_td_error = 0.0
 
         # Update Consumption Q-Tables
         for item_id, q_manager in self.q_consumption.items():
@@ -293,7 +373,7 @@ class HouseholdAI(BaseAIEngine):
             last_action = self.last_consumption_action_idxs.get(item_id)
             
             if last_state is not None and last_action is not None:
-                q_manager.update_q_table(
+                delta = q_manager.update_q_table(
                     last_state,
                     last_action,
                     reward,
@@ -302,10 +382,11 @@ class HouseholdAI(BaseAIEngine):
                     self.base_alpha,
                     self.gamma
                 )
+                total_td_error += abs(delta)
 
         # Update Work Q-Table
         if self.last_work_state is not None and self.last_work_action_idx is not None:
-            self.q_work.update_q_table(
+            delta = self.q_work.update_q_table(
                 self.last_work_state,
                 self.last_work_action_idx,
                 reward,
@@ -314,10 +395,11 @@ class HouseholdAI(BaseAIEngine):
                 self.base_alpha,
                 self.gamma
             )
+            total_td_error += abs(delta)
 
         # Update Investment Q-Table
         if self.last_investment_state is not None and self.last_investment_action_idx is not None:
-            self.q_investment.update_q_table(
+            delta = self.q_investment.update_q_table(
                 self.last_investment_state,
                 self.last_investment_action_idx,
                 reward,
@@ -326,6 +408,9 @@ class HouseholdAI(BaseAIEngine):
                 self.base_alpha,
                 self.gamma
             )
+            total_td_error += abs(delta)
+
+        return total_td_error
 
     # Legacy Methods
     def _get_strategic_state(self, a, m): pass
