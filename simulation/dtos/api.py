@@ -53,6 +53,7 @@ class AgentStateData:
     # Experiment: Time Allocation Tracking
     time_worked: Optional[float] = None
     time_leisure: Optional[float] = None
+    market_insight: Optional[float] = 0.5 # Phase 4.1: Perception & Adaptive Logic
 
 @dataclass
 class EconomicIndicatorData:
@@ -146,6 +147,12 @@ class GovernmentPolicyDTO:
     sales_tax_rate: float
     corporate_tax_rate: float
     base_interest_rate: float
+    
+    # Phase 4.1: Macro & Sentiment Metrics
+    system_debt_to_gdp_ratio: float = 0.0
+    system_liquidity_index: float = 1.0
+    market_panic_index: float = 0.0
+    fiscal_stance_indicator: str = "NEUTRAL" # "EXPANSION", "NEUTRAL", "AUSTERITY"
 
 @dataclass
 class DecisionInputDTO:
@@ -515,3 +522,19 @@ class ConsumptionResult:
     """Represents the result of a household's consumption activities for a tick."""
     items_consumed: Dict[str, float]
     satisfaction: float
+@dataclass
+class JobOfferDTO:
+    """Firm's labor demand signaling."""
+    firm_id: AgentID
+    offer_wage: float
+    required_education: int = 0
+    quantity: float = 1.0
+
+@dataclass
+class JobSeekerDTO:
+    """Household's labor supply signaling (Signaling Game)."""
+    household_id: AgentID
+    reservation_wage: float
+    education_level: int
+    # Note: labor_skill is hidden from the market per Architect's directive.
+    quantity: float = 1.0

@@ -20,5 +20,30 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "title": "Phase 23 Regression Cleanup",
         "instruction": "Fix logical failures in the test suite following the P1-P3 merges. Restore 100% pass rate.",
         "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_phase23-regression-cleanup_SPEC.md"
+    },
+    "phase4-ai-dto-standardization": {
+        "title": "4.1-A-2: DTO & Registry Standardization [CODE ATTACHED]",
+        "instruction": "Gemini가 생성한 REPORT_phase4-ai-dto-final-code.md의 최종 코드 블럭을 모든 해당 파일에 정확히 적용하라. Registry 이관, DTO 단일화, Protocol 구현을 포함한다.",
+        "file": "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_phase4-ai-dto-standardization_SPEC.md"
+    },
+    "phase4-ai-lifecycle-scrubbing": {
+        "title": "4.1-A-3: Lifecycle Scrubbing & Atomic Cleanup",
+        "instruction": "AgentLifecycleManager에 ScrubbingPhase를 구현하여 사망한 에이전트의 stale transaction ID를 inter_tick_queue에서 제거하라.",
+        "file": "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_phase4-ai-lifecycle-scrubbing_SPEC.md"
+    },
+    "phase4-ai-insight-engine": {
+        "title": "4.1-A-4: Dynamic Insight Engine (3-Pillar Learning)",
+        "instruction": "AITrainingManager(Active Learning), CommerceSystem(Service Boost), Engine(Natural Decay)에 Market Insight 3대 메커니즘을 구현하라.",
+        "file": "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_phase4-ai-insight-engine_SPEC.md"
+    },
+    "phase4-ai-labor-matching": {
+        "title": "4.1-A-5: Labor Market Utility-Priority Matching",
+        "instruction": "MatchingEngine을 개편하여 가성비(Utility-Priority) 매칭과 Signaling Game(Lemon Market) 로직을 구현하라.",
+        "file": "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_phase4-ai-labor-matching_SPEC.md"
+    },
+    "phase4-ai-perception-filters": {
+        "title": "4.1-A-6: Perceptual Filters & Reward Tuning",
+        "instruction": "DecisionEngine에 인지 시차/노이즈 필터를 적용하고, RewardCalculator에 부채 상한 위반 페널티 로직을 추가하라.",
+        "file": "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_phase4-ai-perception-filters_SPEC.md"
     }
 }

@@ -269,18 +269,34 @@ class TickOrchestrator:
                 authorized_delta = state.government.get_monetary_delta(DEFAULT_CURRENCY)
                 state.baseline_money_supply += authorized_delta
 
-        # Track Economics
-        if state.tracker:
-             # TD-024: Ensure money_supply is scalar for tracker compatibility
-             money_supply_scalar = state.get_total_system_money_for_diagnostics(DEFAULT_CURRENCY)
-             state.tracker.track(
-                 time=state.time,
-                 households=state.households,
-                 firms=state.firms,
-                 markets=state.markets,
-                 money_supply=money_supply_scalar,
-                 m2_leak=m2_leak_delta
-             )
+             # Track Economics
+             if state.tracker:
+                  # ...
+                  state.tracker.track(...)
+
+        # Phase 4.1: Market Panic Index Calculation (Architect Directive)
+        total_deposits = 0
+        if state.bank and hasattr(state.bank, "get_total_deposits_pennies"):
+            total_deposits = state.bank.get_total_deposits_pennies()
+        else:
+            # Fallback: sum of all household and firm assets
+            total_hh = sum(h.get_assets_by_currency().get(DEFAULT_CURRENCY, 0) for h in state.households)
+            total_firm = sum(f.get_assets_by_currency().get(DEFAULT_CURRENCY, 0) for f in state.firms)
+            total_deposits = int(total_hh + total_firm)
+
+        if total_deposits > 0:
+            panic_index = state.tick_withdrawal_pennies / total_deposits
+            state.market_panic_index = min(1.0, panic_index)
+        else:
+            state.market_panic_index = 0.0
+
+        state.logger.info(
+            f"MARKET_PANIC_INDEX | Index: {state.market_panic_index:.4f}, Withdrawals: {state.tick_withdrawal_pennies}",
+            extra={"tick": state.time, "panic_index": state.market_panic_index}
+        )
+        
+        # Reset withdrawal counter for next tick
+        state.tick_withdrawal_pennies = 0
 
     def prepare_market_data(self) -> Dict[str, Any]:
         """

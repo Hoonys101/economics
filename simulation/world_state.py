@@ -153,6 +153,14 @@ class WorldState:
         self.last_gdp_for_sma = 0.0
 
         self.baseline_money_supply: float = 0.0
+        
+        # Phase 4.1: Macro & Sentiment Metrics
+        self.tick_withdrawal_pennies: int = 0
+        self.market_panic_index: float = 0.0
+
+    def record_withdrawal(self, amount_pennies: int) -> None:
+        """Records a withdrawal event for panic index calculation."""
+        self.tick_withdrawal_pennies += amount_pennies
 
     def calculate_base_money(self) -> Dict[CurrencyCode, int]:
         """

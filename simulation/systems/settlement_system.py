@@ -382,6 +382,12 @@ class SettlementSystem(IMonetaryAuthority):
              return None
 
         if result.status == 'COMPLETED':
+             # Phase 4.1: Record withdrawal volume for Panic Index
+             if memo == "withdrawal" and self.agent_registry and hasattr(self.agent_registry, "world_state"):
+                 ws = getattr(self.agent_registry, "world_state")
+                 if ws and hasattr(ws, "record_withdrawal"):
+                     ws.record_withdrawal(amount)
+             
              return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
         else:
              self.logger.error(f"SETTLEMENT_FAIL | Engine Error: {result.message}")

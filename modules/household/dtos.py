@@ -59,6 +59,7 @@ class EconStateDTO:
     labor_skill: float
     education_xp: float
     education_level: int
+    market_insight: float # Phase 4.1: Dynamic Cognitive Filter
     expected_wage_pennies: int
     talent: Talent # Assuming immutable or shared reference ok
     skills: Dict[str, Skill]
@@ -192,6 +193,7 @@ class HouseholdSnapshotDTO:
     bio_state: BioStateDTO
     econ_state: EconStateDTO
     social_state: SocialStateDTO
+    market_insight: float = 0.5 # Phase 4.1: Mirrored from EconState for Decision Logic
     monthly_income_pennies: int = 0 # Added for precision in financial decisions (TD-206)
     monthly_debt_payments_pennies: int = 0 # Added for precision in financial decisions (TD-206)
 
@@ -214,6 +216,7 @@ class HouseholdStateDTO:
     durable_assets: List[Dict[str, Any]]
     expected_inflation: Dict[str, float]
     is_employed: bool
+    market_insight: float = 0.5 # Phase 4.1: Dynamic Cognitive Filter
     current_wage_pennies: int
     wage_modifier: float
     is_homeless: bool

@@ -84,6 +84,7 @@ class FirmStateDTO:
     agent_data: Dict[str, Any]
     system2_guidance: Dict[str, Any]
     sentiment_index: float
+    market_insight: float = 0.5 # Phase 4.1: Dynamic Cognitive Filter
 
     @classmethod
     def from_provider(cls, provider: IFirmStateProvider) -> "FirmStateDTO":
