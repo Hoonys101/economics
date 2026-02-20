@@ -44,7 +44,14 @@ from modules.firm.api import (
     PricingInputDTO, PricingResultDTO,
     LiquidationExecutionDTO, LiquidationResultDTO,
     IProductionEngine, IAssetManagementEngine, IRDEngine, IPricingEngine,
-    IInventoryComponent, IFinancialComponent
+    IInventoryComponent, IFinancialComponent,
+    ISalesEngine, IBrandEngine, IFinanceEngine, IHREngine
+)
+from modules.firm.constants import (
+    DEFAULT_MARKET_INSIGHT, DEFAULT_MARKETING_BUDGET_RATE, DEFAULT_LIQUIDATION_PRICE,
+    INSIGHT_DECAY_RATE, INSIGHT_BOOST_FACTOR, INSIGHT_ERROR_THRESHOLD,
+    DEFAULT_LABOR_WAGE, DEFAULT_SURVIVAL_COST, DEFAULT_CORPORATE_TAX_RATE,
+    PRODUCTIVITY_DIVIDER, DEFAULT_PRICE
 )
 
 from modules.agent_framework.components.inventory_component import InventoryComponent
@@ -124,13 +131,13 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         self.sales_state = SalesState()
 
         # Engine Initialization (Stateless)
-        self.hr_engine = HREngine()
-        self.finance_engine = FinanceEngine()
+        self.hr_engine: IHREngine = HREngine()
+        self.finance_engine: IFinanceEngine = FinanceEngine()
         self.production_engine: IProductionEngine = ProductionEngine()
-        self.sales_engine = SalesEngine()
+        self.sales_engine: ISalesEngine = SalesEngine()
         self.asset_management_engine: IAssetManagementEngine = AssetManagementEngine()
         self.rd_engine: IRDEngine = RDEngine()
-        self.brand_engine = BrandEngine()
+        self.brand_engine: IBrandEngine = BrandEngine()
         self.pricing_engine: IPricingEngine = PricingEngine()
         self.action_executor = FirmActionExecutor()
 
@@ -145,7 +152,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         self.finance_state.dividend_rate = self.config.dividend_rate
         self.finance_state.profit_history = deque(maxlen=self.config.profit_history_ticks)
 
-        self.sales_state.marketing_budget_rate = 0.05
+        self.sales_state.marketing_budget_rate = DEFAULT_MARKETING_BUDGET_RATE
 
         # Phase 16-B: Personality
         self.personality = personality or Personality.BALANCED
@@ -163,7 +170,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         
         # Tracking variables
         self.age = 0
-        self.market_insight = 0.5 # Phase 4.1: Dynamic Cognitive Filter
+        self.market_insight = DEFAULT_MARKET_INSIGHT # Phase 4.1: Dynamic Cognitive Filter
 
     # --- IConfigurable Implementation ---
 
@@ -181,7 +188,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         return LiquidationConfigDTO(
             haircut=self.config.fire_sale_discount,
             initial_prices=initial_prices,
-            default_price=1000,
+            default_price=DEFAULT_LIQUIDATION_PRICE,
             market_prices=self.last_prices.copy()
         )
 
@@ -964,12 +971,12 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         budget_plan = self.finance_engine.plan_budget(fin_input)
 
         # 3. HR Engine: Manage Workforce
-        labor_wage = 1000 # Default
+        labor_wage = DEFAULT_LABOR_WAGE # Default
         if market_snapshot and market_snapshot.labor:
             # Assuming labor market snapshot has avg_wage as int pennies or float
             # MarketSnapshotDTO definition says LaborMarketSnapshotDTO.avg_wage is float.
             # We need to cast to int pennies if it is float.
-            labor_wage = int(market_snapshot.labor.avg_wage * 100) if market_snapshot.labor.avg_wage > 0 else 1000
+            labor_wage = int(market_snapshot.labor.avg_wage * 100) if market_snapshot.labor.avg_wage > 0 else DEFAULT_LABOR_WAGE
         elif market_data and "labor" in market_data:
              # Fallback to dictionary
              labor_wage = int(market_data.get("labor", {}).get("avg_wage", 10.0) * 100)
@@ -1061,7 +1068,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         # 1. Construct Input DTO
         item_id = self.specialization
-        current_price = self.last_prices.get(item_id, 1000) # int pennies
+        current_price = self.last_prices.get(item_id, DEFAULT_PRICE) # int pennies
 
         input_dto = PricingInputDTO(
             item_id=item_id,
@@ -1095,7 +1102,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         # Extract from market_context if available (FiscalContext)
         fiscal_policy = market_context.get("fiscal_policy")
         income_tax_rate = fiscal_policy.income_tax_rate if fiscal_policy else 0.0 # Default
-        survival_cost = 10.0 # Default
+        survival_cost = DEFAULT_SURVIVAL_COST # Default
 
         gov_id = government.id if government else -1 # Fallback ID
 
@@ -1148,7 +1155,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         # Extract dynamic tax rates from MarketContext
         fiscal_policy = market_context.get("fiscal_policy")
-        corporate_tax_rate = fiscal_policy.corporate_tax_rate if fiscal_policy else 0.2
+        corporate_tax_rate = fiscal_policy.corporate_tax_rate if fiscal_policy else DEFAULT_CORPORATE_TAX_RATE
 
         tax_rates = {"income_tax": corporate_tax_rate}
 
@@ -1178,7 +1185,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         # Calculate inventory value for holding cost
         inventory_value = 0
         for item, qty in self.get_all_items().items():
-            price = self.last_prices.get(item, 1000) # Default 10.00 pennies
+            price = self.last_prices.get(item, DEFAULT_PRICE) # Default 10.00 pennies
             inventory_value += int(qty * price)
 
         fin_ctx = FinancialTransactionContext(
@@ -1226,7 +1233,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             self.sales_state,
             self.config,
             float(self.sales_state.marketing_budget_pennies),
-            self.productivity_factor / 10.0,
+            self.productivity_factor / PRODUCTIVITY_DIVIDER,
             self.id
         )
 
@@ -1265,7 +1272,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
     @property
     def inventory_value_pennies(self) -> int:
         # last_prices are now int pennies
-        val = sum(self.get_quantity(i) * self.last_prices.get(i, 1000) for i in self.get_all_items())
+        val = sum(self.get_quantity(i) * self.last_prices.get(i, DEFAULT_PRICE) for i in self.get_all_items())
         return int(val)
 
     @property
@@ -1337,7 +1344,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         return (self.total_shares - self.treasury_shares) * stock_price
 
     def calculate_valuation(self, market_context: MarketContextDTO = None) -> int:
-        inventory_value = int(sum(self.get_quantity(i) * self.last_prices.get(i, 1000) for i in self.get_all_items()))
+        inventory_value = int(sum(self.get_quantity(i) * self.last_prices.get(i, DEFAULT_PRICE) for i in self.get_all_items()))
         # Wrap market_context in FinancialTransactionContext if needed, or update Engine to accept optional context
         # Engine expects FinancialTransactionContext.
         fin_ctx = None
@@ -1354,7 +1361,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         ))
 
     def get_financial_snapshot(self) -> Dict[str, Any]:
-        inventory_value = int(sum(self.get_quantity(i) * self.last_prices.get(i, 1000) for i in self.get_all_items()))
+        inventory_value = int(sum(self.get_quantity(i) * self.last_prices.get(i, DEFAULT_PRICE) for i in self.get_all_items()))
         cash = self.financial_component.get_balance(DEFAULT_CURRENCY)
         total_assets = cash + inventory_value + self.capital_stock
         working_capital = cash + inventory_value # Simplified: Current Assets
@@ -1383,13 +1390,13 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
             # Phase 4.1: Active Learning (Insight Dynamics)
             # Decay
-            self.market_insight = max(0.0, self.market_insight - 0.001)
+            self.market_insight = max(0.0, self.market_insight - INSIGHT_DECAY_RATE)
 
             # Boost from Learning Surprise (TD-Error)
             if isinstance(td_error, (int, float)):
                 # Normalized boost using exponential saturation
                 # Assuming significant error starts around 1000 pennies (10.00)
-                boost = 0.05 * (1.0 - math.exp(-abs(td_error) / 1000.0))
+                boost = INSIGHT_BOOST_FACTOR * (1.0 - math.exp(-abs(td_error) / INSIGHT_ERROR_THRESHOLD))
                 self.market_insight = min(1.0, self.market_insight + boost)
 
         # Update State Tracking for Rewards (Moved from Engine for Purity)
