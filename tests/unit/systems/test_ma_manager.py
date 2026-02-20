@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock, MagicMock, patch
 from simulation.systems.ma_manager import MAManager
-from simulation.finance.api import ISettlementSystem
+from simulation.finance.api import ISettlementSystem, IMonetaryAuthority
 from simulation.firms import Firm
 
 class TestMAManager(unittest.TestCase):
@@ -42,7 +42,8 @@ class TestMAManager(unittest.TestCase):
         mock_firm.get_all_items.return_value = {}
 
         # 2. Setup SettlementSystem
-        mock_settlement_system = MagicMock(spec=ISettlementSystem)
+        # Use IMonetaryAuthority to support record_liquidation
+        mock_settlement_system = MagicMock(spec=IMonetaryAuthority)
         self.mock_simulation.settlement_system = mock_settlement_system
         # Ensure ma_manager uses this settlement_system
         self.ma_manager.settlement_system = mock_settlement_system

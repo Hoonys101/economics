@@ -55,12 +55,12 @@ class SystemEffectsManager:
 
     def _apply_gov_infra_upgrade(self, state: SimulationState) -> None:
         """Increments the government infrastructure level."""
-        if state.government:
-            state.government.infrastructure_level += 1
+        if state.primary_government:
+            state.primary_government.infrastructure_level += 1
             # Link to productivity increase
             self._apply_global_tfp_boost(state)
             logger.info(
-                f"GOVERNMENT_INFRA_UPGRADE | Level increased to {state.government.infrastructure_level}.",
+                f"GOVERNMENT_INFRA_UPGRADE | Level increased to {state.primary_government.infrastructure_level}.",
                 extra={"tick": state.time, "tags": ["system_effect", "infrastructure"]}
             )
 

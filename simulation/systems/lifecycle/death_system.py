@@ -69,7 +69,7 @@ class DeathSystem(IDeathSystem):
                 state.unregister_currency_holder(firm)
 
             # 3. Settlement Index
-            if self.settlement_system and hasattr(self.settlement_system, 'remove_agent_from_all_accounts'):
+            if self.settlement_system:
                 self.settlement_system.remove_agent_from_all_accounts(firm.id)
 
         # --- Household Liquidation ---
@@ -85,8 +85,8 @@ class DeathSystem(IDeathSystem):
                  state.inactive_agents[household.id] = household
 
              # Inheritance Manager (Executes transactions via side-effects)
-             if hasattr(state, 'government') and state.government:
-                  inheritance_txs = self.inheritance_manager.process_death(household, state.government, state)
+             if state.primary_government:
+                  inheritance_txs = self.inheritance_manager.process_death(household, state.primary_government, state)
                   transactions.extend(inheritance_txs)
 
              # Inventory Liquidation (Bankruptcy Event) via Public Manager
@@ -115,7 +115,7 @@ class DeathSystem(IDeathSystem):
              if isinstance(household, ICurrencyHolder):
                 state.unregister_currency_holder(household)
 
-             if self.settlement_system and hasattr(self.settlement_system, 'remove_agent_from_all_accounts'):
+             if self.settlement_system:
                 self.settlement_system.remove_agent_from_all_accounts(household.id)
 
         # --- Global List Cleanup ---
@@ -128,7 +128,7 @@ class DeathSystem(IDeathSystem):
         state.agents.update({agent.id: agent for agent in state.households + state.firms})
         # Add system agents back
         if state.bank: state.agents[state.bank.id] = state.bank
-        if hasattr(state, 'government') and state.government: state.agents[state.government.id] = state.government
+        if state.primary_government: state.agents[state.primary_government.id] = state.primary_government
         if hasattr(state, 'central_bank') and state.central_bank: state.agents[state.central_bank.id] = state.central_bank
         if hasattr(state, 'escrow_agent') and state.escrow_agent: state.agents[state.escrow_agent.id] = state.escrow_agent
 

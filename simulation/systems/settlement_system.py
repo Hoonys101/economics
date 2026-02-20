@@ -69,8 +69,8 @@ class SettlementSystem(IMonetaryAuthority):
         if context_agents:
             agents_map = {}
             for agent in context_agents:
-                # Use Protocol check if possible, or strict attribute access
-                if isinstance(agent, IAgent) or hasattr(agent, 'id'):
+                # Use Protocol check if possible
+                if isinstance(agent, IAgent) or isinstance(agent, IFinancialAgent):
                     agents_map[agent.id] = agent
                     agents_map[str(agent.id)] = agent
 
@@ -315,8 +315,10 @@ class SettlementSystem(IMonetaryAuthority):
         REMOVED: Automatic Bank Withdrawal (No Budget, No Execution).
         """
         # Central Bank check
-        if isinstance(agent, ICentralBank) or (agent.id == ID_CENTRAL_BANK):
+        if isinstance(agent, ICentralBank):
             return True
+        if isinstance(agent, IFinancialAgent) and agent.id == ID_CENTRAL_BANK:
+             return True
 
         current_cash = 0
         if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
@@ -508,7 +510,11 @@ class SettlementSystem(IMonetaryAuthority):
         total_deposits = 0
 
         for agent in agents:
-            agent_id = getattr(agent, 'id', None)
+            if isinstance(agent, IFinancialAgent):
+                agent_id = agent.id
+            else:
+                continue
+
             if agent_id == ID_CENTRAL_BANK or str(agent_id) == str(ID_CENTRAL_BANK):
                 continue
 

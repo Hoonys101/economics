@@ -585,6 +585,28 @@ class IMonetaryAuthority(ISettlementSystem, Protocol):
         """
         ...
 
+    def remove_agent_from_all_accounts(self, agent_id: int) -> None:
+        """
+        Removes an agent from all bank account indices.
+        Called upon agent liquidation/deletion.
+        """
+        ...
+
+    def record_liquidation(
+        self,
+        agent: IFinancialAgent,
+        inventory_value: int,
+        capital_value: int,
+        recovered_cash: int,
+        reason: str,
+        tick: int,
+        government_agent: Optional[IFinancialAgent] = None
+    ) -> None:
+        """
+        Records the outcome of an asset liquidation.
+        """
+        ...
+
 @runtime_checkable
 class IFinanceSystem(Protocol):
     """Interface for the sovereign debt and corporate bailout system."""

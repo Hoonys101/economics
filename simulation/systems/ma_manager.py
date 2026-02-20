@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, TYPE_CHECKING
 import logging
 import random
-from simulation.finance.api import ISettlementSystem
+from modules.finance.api import IMonetaryAuthority
 from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
@@ -16,7 +16,7 @@ class MAManager:
     Runs periodically within the simulation engine.
     Phase 21: Added Hostile Takeover Logic.
     """
-    def __init__(self, simulation: "Simulation", config_module: Any, settlement_system: ISettlementSystem = None):
+    def __init__(self, simulation: "Simulation", config_module: Any, settlement_system: IMonetaryAuthority = None):
         self.simulation = simulation
         self.config = config_module
         self.logger = logging.getLogger("MAManager")
@@ -26,10 +26,10 @@ class MAManager:
         # Inject or fallback
         if settlement_system:
              self.settlement_system = settlement_system
-        elif hasattr(simulation, "settlement_system"):
+        elif isinstance(simulation.settlement_system, IMonetaryAuthority):
              self.settlement_system = simulation.settlement_system
         else:
-             self.logger.warning("MAManager: SettlementSystem not provided!")
+             self.logger.warning("MAManager: SettlementSystem not provided or does not satisfy IMonetaryAuthority!")
              self.settlement_system = None
 
     def _get_balance(self, firm: "Firm") -> float:
@@ -77,15 +77,13 @@ class MAManager:
                 preys.append(firm)
             
             # Phase 21: Hostile Takeover Criteria
-            if hasattr(firm.finance_state, 'valuation'):
-                intrinsic_value = firm.finance_state.valuation
-            else:
-                intrinsic_value = getattr(firm.finance_state, 'valuation_pennies', 0) / 100.0
+            # FIXED: Intrinsic value should be in pennies for consistent comparison with market_cap (pennies)
+            intrinsic_value_pennies = firm.finance_state.valuation_pennies
 
-            market_cap = firm.get_market_cap()
+            market_cap_pennies = firm.get_market_cap()
             threshold = getattr(self.config, "HOSTILE_TAKEOVER_DISCOUNT_THRESHOLD", 0.7)
 
-            if market_cap < intrinsic_value * threshold:
+            if market_cap_pennies < intrinsic_value_pennies * threshold:
                 hostile_targets.append(firm)
 
             # Predator Criteria
@@ -112,11 +110,11 @@ class MAManager:
                 if target in bankrupts: continue
 
                 # Check Capacity
-                target_mcap = target.get_market_cap()
-                if self._get_balance(predator) > target_mcap * 1.5:
+                target_mcap_pennies = target.get_market_cap()
+                if self._get_balance(predator) > target_mcap_pennies * 1.5:
                     # Attempt Hostile Takeover
-                    # MIGRATION: Pass market_cap as float, but conversion happens inside _attempt_hostile_takeover
-                    success = self._attempt_hostile_takeover(predator, target, target_mcap, current_tick)
+                    # MIGRATION: Pass market_cap (pennies)
+                    success = self._attempt_hostile_takeover(predator, target, target_mcap_pennies, current_tick)
                     if success:
                         target_found = True
                         if target in preys: preys.remove(target)
@@ -161,9 +159,9 @@ class MAManager:
         # Offer Premium
         premium = getattr(self.config, "HOSTILE_TAKEOVER_PREMIUM", 1.2)
 
-        # market_cap is in dollars (float), convert to pennies for settlement
+        # market_cap is in pennies (float), convert to int pennies for settlement
         offer_price_float = market_cap * premium
-        offer_price_pennies = int(offer_price_float * 100)
+        offer_price_pennies = int(offer_price_float)
 
         # Success Probability
         success_prob = getattr(self.config, "HOSTILE_TAKEOVER_SUCCESS_PROB", 0.6)
