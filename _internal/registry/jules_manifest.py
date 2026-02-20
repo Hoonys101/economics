@@ -16,14 +16,46 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "fix-ma-manager-unit-test": {
-        "instruction": "Fix AttributeError in TestMAManager by updating mock return value to penny-standard dict.",
-        "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\deea4f29-ec94-41e4-965f-ed0add30f6c7\\PHASE_22_CI_REGRESSION_FIX.md",
-        "wait": True
+    "phase23-dto-core": {
+        "worker": "coder",
+        "instruction": "Execute Core DTO & Orchestration naming alignment as per PHASE23_DTO_ALIGNMENT_CORE.md. Update checklist after each file.",
+        "integrated_mission_guide": "c:/coding/economics/design/3_work_artifacts/specs/PHASE23_DTO_ALIGNMENT_CORE.md",
+        "context_files": [
+            "c:/coding/economics/simulation/dtos/api.py",
+            "c:/coding/economics/simulation/world_state.py",
+            "c:/coding/economics/simulation/orchestration/tick_orchestrator.py",
+            "c:/coding/economics/design/3_work_artifacts/specs/PHASE23_DTO_ALIGNMENT_CORE.md"
+        ]
     },
-    "fix-settlement-system-unit-test": {
-        "instruction": "Remove deprecated seamless payment test cases from test_settlement_system.py.",
-        "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\deea4f29-ec94-41e4-965f-ed0add30f6c7\\PHASE_22_CI_REGRESSION_FIX.md",
-        "wait": True
+    "phase23-dto-modules": {
+        "worker": "coder",
+        "instruction": "Update business logic modules for DTO alignment as per PHASE23_DTO_ALIGNMENT_MODULES.md. Update checklist after each file.",
+        "integrated_mission_guide": "c:/coding/economics/design/3_work_artifacts/specs/PHASE23_DTO_ALIGNMENT_MODULES.md",
+        "context_files": [
+            "c:/coding/economics/modules/finance/system.py",
+            "c:/coding/economics/modules/government/taxation/system.py",
+            "c:/coding/economics/design/3_work_artifacts/specs/PHASE23_DTO_ALIGNMENT_MODULES.md"
+        ]
+    },
+    "phase23-dto-tests": {
+        "worker": "coder",
+        "instruction": "Align test mocks with new SimulationState DTO fields as per PHASE23_DTO_ALIGNMENT_TESTS.md. Update checklist after each file.",
+        "integrated_mission_guide": "c:/coding/economics/design/3_work_artifacts/specs/PHASE23_DTO_ALIGNMENT_TESTS.md",
+        "context_files": [
+            "c:/coding/economics/tests/unit/systems/test_finance.py",
+            "c:/coding/economics/tests/unit/agents/test_government.py",
+            "c:/coding/economics/design/3_work_artifacts/specs/PHASE23_DTO_ALIGNMENT_TESTS.md"
+        ]
+    },
+    "phase23-legacy-cleanup": {
+        "worker": "coder",
+        "instruction": "Cleanup legacy factories, protocols, and stale test logic as per PHASE23_LEGACY_CLEANUP.md. Update checklist after each file.",
+        "integrated_mission_guide": "c:/coding/economics/design/3_work_artifacts/specs/PHASE23_LEGACY_CLEANUP.md",
+        "context_files": [
+            "c:/coding/economics/simulation/systems/demographic_manager.py",
+            "c:/coding/economics/simulation/initialization/initializer.py",
+            "c:/coding/economics/simulation/factories/agent_factory.py",
+            "c:/coding/economics/design/3_work_artifacts/specs/PHASE23_LEGACY_CLEANUP.md"
+        ]
     }
 }

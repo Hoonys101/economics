@@ -23,50 +23,5 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "audit-agent-lifecycle": {
-        "worker": "audit",
-        "instruction": "Audit Agent Lifecycle stability for registration-before-transfer violations.",
-        "context_files": [
-            "c:/coding/economics/design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md",
-            "c:/coding/economics/simulation/systems/lifecycle_manager.py",
-            "c:/coding/economics/simulation/systems/firm_management.py"
-        ]
-    },
-    "audit-government-solvency": {
-        "worker": "audit",
-        "instruction": "Audit Government Solvency guardrails and partial execution state.",
-        "context_files": [
-            "c:/coding/economics/design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md",
-            "c:/coding/economics/simulation/systems/settlement_system.py",
-            "c:/coding/economics/modules/government/engines/fiscal_engine.py"
-        ]
-    },
-    "audit-handler-alignment": {
-        "worker": "audit",
-        "instruction": "Audit Transaction Handler alignment and SSoT registration.",
-        "context_files": [
-            "c:/coding/economics/design/_archive/insights/2026-02-19_Handler_Alignment_Map.md",
-            "c:/coding/economics/simulation/systems/simulation_initializer.py",
-            "c:/coding/economics/modules/finance/transaction/engine.py"
-        ]
-    },
-    "audit-ma-penny-migration": {
-        "worker": "audit",
-        "instruction": "Audit M&A module for float-to-penny violations and type integrity.",
-        "context_files": [
-            "c:/coding/economics/design/_archive/insights/2026-02-19_MA_Penny_Migration.md",
-            "c:/coding/economics/simulation/systems/ma_manager.py",
-            "c:/coding/economics/modules/market/stock_market.py"
-        ]
-    },
-    "audit-structural-integrity-crystallization": {
-        "worker": "crystallizer",
-        "instruction": "Summarize insights from Phase 22 merges and update ARCHITECTURAL_INSIGHTS.md accordingly.",
-        "context_files": [
-            "c:/coding/economics/design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md",
-            "c:/coding/economics/design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md",
-            "c:/coding/economics/design/_archive/insights/2026-02-19_Handler_Alignment_Map.md",
-            "c:/coding/economics/design/_archive/insights/2026-02-19_MA_Penny_Migration.md"
-        ]
-    }
+    # Add missions here
 }
