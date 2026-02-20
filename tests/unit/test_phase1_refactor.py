@@ -36,7 +36,8 @@ class TestPhase1DecisionRefactor:
         state.firms = []
         state.households = []
         state.agents = {}
-        state.government = MagicMock()
+        state.primary_government = MagicMock()
+        state.government = state.primary_government
         state.bank = MagicMock()
         state.central_bank = MagicMock()
         state.config_module = MagicMock()
@@ -108,7 +109,8 @@ class TestPhase1DecisionRefactor:
         state.markets = {}
         state.real_estate_units = [] # Mock empty list
         state.agents = {}
-        state.government = MagicMock()
+        state.primary_government = MagicMock()
+        state.government = state.primary_government
         state.central_bank = MagicMock()
         state.config_module = MagicMock()
         state.config_module.MAX_WORK_HOURS = 10.0

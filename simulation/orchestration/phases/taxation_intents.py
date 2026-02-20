@@ -20,11 +20,11 @@ class Phase_TaxationIntents(IPhaseStrategy):
 
     def execute(self, state: SimulationState) -> SimulationState:
         # WO-116: Corporate Tax Intent Generation
-        if state.taxation_system and state.government:
+        if state.taxation_system and state.primary_government:
             tax_intents = state.taxation_system.generate_corporate_tax_intents(state.firms, current_tick=state.time)
             for tx in tax_intents:
                 if tx.seller_id == "GOVERNMENT":
-                     tx.seller_id = state.government.id
+                     tx.seller_id = state.primary_government.id
             if tax_intents:
                 state.transactions.extend(tax_intents)
         return state

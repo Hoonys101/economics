@@ -96,8 +96,8 @@ class Phase5_PostSequence(IPhaseStrategy):
         if len(state.firms) < active_firms_before:
              state.logger.info(f"CLEANUP | Removed {active_firms_before - len(state.firms)} inactive firms.")
 
-        if state.government:
-             state.government.finalize_tick(state.time)
+        if state.primary_government:
+             state.primary_government.finalize_tick(state.time)
 
         if self.world_state.persistence_manager and self.world_state.analytics_system:
              # TD-272: Aggregation via AnalyticsSystem

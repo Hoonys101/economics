@@ -162,7 +162,7 @@ class DecisionInputFactory:
         if state.tracker and hasattr(state.tracker, "capture_market_context"):
             market_context = state.tracker.capture_market_context()
 
-        gov = state.government
+        gov = state.primary_government
         bank = state.bank
         gov_policy = GovernmentPolicyDTO(
              income_tax_rate=getattr(gov, "income_tax_rate", 0.1),
@@ -193,8 +193,8 @@ class DecisionInputFactory:
 
         # Prepare Agent Registry (WO-138)
         agent_registry = {}
-        if state.government:
-            agent_registry["GOVERNMENT"] = state.government.id
+        if state.primary_government:
+            agent_registry["GOVERNMENT"] = state.primary_government.id
         if state.central_bank:
             agent_registry["CENTRAL_BANK"] = state.central_bank.id
         if state.bank:

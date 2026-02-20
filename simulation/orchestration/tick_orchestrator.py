@@ -144,7 +144,8 @@ class TickOrchestrator:
             firms=state.firms,
             agents=state.agents,
             markets=state.markets,
-            government=state.government,
+            primary_government=state.government, # Renamed to primary_government
+            governments=state.governments, # TD-ARCH-GOV-MISMATCH: Populate list
             bank=state.bank,
             central_bank=state.central_bank,
             escrow_agent=getattr(state, "escrow_agent", None),
@@ -170,7 +171,7 @@ class TickOrchestrator:
             monetary_ledger=state.monetary_ledger,     # TD-253
             shareholder_registry=state.shareholder_registry, # TD-275
             system_commands=commands_for_tick, # TD-255
-            god_commands=god_commands_for_tick, # FOUND-03
+            god_command_snapshot=god_commands_for_tick, # Renamed to god_command_snapshot
             effects_queue=[], # TD-192: Init empty
             inter_tick_queue=[], # TD-192: Init empty
             transactions=[], # TD-192: Init empty

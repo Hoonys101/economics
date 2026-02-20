@@ -101,7 +101,8 @@ def omo_setup():
         gov_agent.id: gov_agent,
         household.id: household
     }
-    state.government = gov_agent
+    state.primary_government = gov_agent
+    state.government = gov_agent # Compatibility
     state.transactions = []
     state.time = 1
     state.settlement_system = settlement

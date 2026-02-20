@@ -22,9 +22,9 @@ class Phase_MonetaryProcessing(IPhaseStrategy):
         # WO-4.2B: Delegate to MonetaryLedger
         # We must process all transactions accumulated in WorldState so far,
         # as sim_state.transactions is cleared after each phase drain.
-        if state.government and hasattr(state.government, "monetary_ledger"):
+        if state.primary_government and hasattr(state.primary_government, "monetary_ledger"):
              # Combine drained transactions with any current pending ones (though likely empty here)
              all_transactions = list(self.world_state.transactions) + list(state.transactions)
-             state.government.monetary_ledger.process_transactions(all_transactions)
+             state.primary_government.monetary_ledger.process_transactions(all_transactions)
 
         return state

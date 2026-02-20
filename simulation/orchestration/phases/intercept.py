@@ -59,8 +59,8 @@ class Phase0_Intercept(IPhaseStrategy):
         self._ensure_service_initialized()
 
         # 1. Fetch pending God-Mode commands
-        # Assumes TickOrchestrator drained WorldState.god_command_queue into state.god_commands
-        pending_commands: List[GodCommandDTO] = state.god_commands
+        # Assumes TickOrchestrator drained WorldState.god_command_queue into state.god_command_snapshot
+        pending_commands: List[GodCommandDTO] = state.god_command_snapshot
 
         if not pending_commands:
             return state
@@ -110,6 +110,6 @@ class Phase0_Intercept(IPhaseStrategy):
             pass
 
         # Clear commands to prevent re-execution
-        state.god_commands.clear()
+        state.god_command_snapshot.clear()
 
         return state

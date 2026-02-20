@@ -51,6 +51,7 @@ def test_cockpit_command_flow_tax_rate(mock_deps):
     sim.world_state.government = MagicMock(spec=Government)
     sim.world_state.government.corporate_tax_rate = 0.2
     sim.world_state.government.income_tax_rate = 0.1
+    sim.world_state.governments = [sim.world_state.government] # Align DTO
 
     # Use spec=FiscalPolicyDTO for nested object
     sim.world_state.government.fiscal_policy = MagicMock(spec=FiscalPolicyDTO)

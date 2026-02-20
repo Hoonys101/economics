@@ -49,7 +49,8 @@ class ActionProcessor:
                 firms=self.world_state.firms,
                 agents=self.world_state.agents,
                 markets=self.world_state.markets,
-                government=self.world_state.government,
+                primary_government=self.world_state.government,
+                governments=self.world_state.governments, # Added for TD-ARCH-GOV-MISMATCH
                 bank=self.world_state.bank,
                 central_bank=self.world_state.central_bank,
                 escrow_agent=getattr(self.world_state, "escrow_agent", None),

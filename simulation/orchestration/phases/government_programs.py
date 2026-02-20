@@ -20,19 +20,19 @@ class Phase_GovernmentPrograms(IPhaseStrategy):
     def execute(self, state: SimulationState) -> SimulationState:
         market_data_prev = state.market_data
 
-        if state.government:
+        if state.primary_government:
             # Welfare
-            welfare_txs = state.government.run_welfare_check(list(state.agents.values()), market_data_prev, state.time)
+            welfare_txs = state.primary_government.run_welfare_check(list(state.agents.values()), market_data_prev, state.time)
             if welfare_txs:
                 state.transactions.extend(welfare_txs)
 
             # Infrastructure
-            infra_txs = state.government.invest_infrastructure(state.time, state.households)
+            infra_txs = state.primary_government.invest_infrastructure(state.time, state.households)
             if infra_txs:
                 state.transactions.extend(infra_txs)
 
             # Education
-            edu_txs = state.government.run_public_education(state.households, state.config_module, state.time)
+            edu_txs = state.primary_government.run_public_education(state.households, state.config_module, state.time)
             if edu_txs:
                 state.transactions.extend(edu_txs)
 

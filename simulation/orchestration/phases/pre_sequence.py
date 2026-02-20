@@ -24,7 +24,7 @@ class Phase0_PreSequence(IPhaseStrategy):
     def execute(self, state: SimulationState) -> SimulationState:
         # WO-109: Pre-Sequence Stabilization
         if state.bank and hasattr(state.bank, "generate_solvency_transactions"):
-            stabilization_txs = state.bank.generate_solvency_transactions(state.government)
+            stabilization_txs = state.bank.generate_solvency_transactions(state.primary_government)
             if stabilization_txs:
                 state.transactions.extend(stabilization_txs)
                 state.logger.warning("STABILIZATION | Queued pre-sequence stabilization transactions.")
@@ -54,13 +54,13 @@ class Phase0_PreSequence(IPhaseStrategy):
             market_data["reference_standard"] = ref_std
 
         # Government Public Opinion
-        if state.government:
-            state.government.update_public_opinion(state.households)
+        if state.primary_government:
+            state.primary_government.update_public_opinion(state.households)
 
         # Sensory System
         sensory_context: SensoryContext = {
             "tracker": state.tracker,
-            "government": state.government,
+            "government": state.primary_government,
             "time": state.time,
             "inequality_tracker": self.world_state.inequality_tracker,
             "households": state.households
@@ -72,22 +72,22 @@ class Phase0_PreSequence(IPhaseStrategy):
         else:
              state.logger.error("SensorySystem not initialized!")
 
-        if state.government:
+        if state.primary_government:
             if state.injectable_sensory_dto and state.injectable_sensory_dto.tick == state.time:
-                state.government.update_sensory_data(state.injectable_sensory_dto)
+                state.primary_government.update_sensory_data(state.injectable_sensory_dto)
                 state.logger.warning(
                     f"INJECTED_SENSORY_DATA | Overrode sensory data for tick {state.time} with custom DTO.",
                     extra={"tick": state.time, "tags": ["test_injection"]}
                 )
             else:
-                state.government.update_sensory_data(sensory_dto)
+                state.primary_government.update_sensory_data(sensory_dto)
 
             # Government Policy Decision
             latest_gdp = state.tracker.get_latest_indicators().get("total_production", 0.0)
             market_data["total_production"] = latest_gdp
-            state.government.make_policy_decision(market_data, state.time, state.central_bank)
+            state.primary_government.make_policy_decision(market_data, state.time, state.central_bank)
 
-            state.government.check_election(state.time)
+            state.primary_government.check_election(state.time)
 
         # WO-146: Monetary Policy Manager Integration
         # Ensure Central Bank updates its internal state (Potential GDP)
@@ -126,7 +126,7 @@ class Phase0_PreSequence(IPhaseStrategy):
                  "households": state.households,
                  "firms": state.firms,
                  "markets": state.markets,
-                 "government": state.government,
+                 "government": state.primary_government,
                  "central_bank": state.central_bank,
                  "bank": state.bank
              }

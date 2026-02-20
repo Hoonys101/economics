@@ -136,7 +136,7 @@ class Phase1_Decision(IPhaseStrategy):
         consumption_market_data = market_data.copy()
         consumption_market_data['job_vacancies'] = current_vacancies
         sales_tax_rate = getattr(state.config_module, 'SALES_TAX_RATE', 0.05)
-        commerce_context: CommerceContext = {'households': state.households, 'agents': state.agents, 'breeding_planner': self.world_state.breeding_planner, 'household_time_allocation': state.household_time_allocation, 'market_data': consumption_market_data, 'config': state.config_module, 'time': state.time, 'government': state.government, 'sales_tax_rate': sales_tax_rate}
+        commerce_context: CommerceContext = {'households': state.households, 'agents': state.agents, 'breeding_planner': self.world_state.breeding_planner, 'household_time_allocation': state.household_time_allocation, 'market_data': consumption_market_data, 'config': state.config_module, 'time': state.time, 'government': state.primary_government, 'sales_tax_rate': sales_tax_rate}
         if self.world_state.commerce_system:
             planned_cons, commerce_txs = self.world_state.commerce_system.plan_consumption_and_leisure(commerce_context, self.world_state.stress_scenario_config)
             state.planned_consumption = planned_cons

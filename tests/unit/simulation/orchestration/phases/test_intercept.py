@@ -22,7 +22,7 @@ def phase(mock_world_state):
 
 def test_execute_no_commands(phase, mock_world_state):
     state = MagicMock(spec=SimulationState)
-    state.god_commands = []
+    state.god_command_snapshot = []
 
     new_state = phase.execute(state)
 
@@ -31,7 +31,7 @@ def test_execute_no_commands(phase, mock_world_state):
 
 def test_execute_commands_audit_pass(phase, mock_world_state):
     state = MagicMock(spec=SimulationState)
-    state.god_commands = [
+    state.god_command_snapshot = [
         GodCommandDTO(command_type="INJECT_MONEY", target_agent_id=1, amount=100, target_domain="settlement", parameter_key="legacy", new_value=None)
     ]
     state.time = 10
@@ -48,6 +48,6 @@ def test_execute_commands_audit_pass(phase, mock_world_state):
     assert args[2] == 10000
 
     # Verify commands cleared
-    assert len(state.god_commands) == 0
+    assert len(state.god_command_snapshot) == 0
 
 # Removed test_execute_commands_audit_fail_rollback as Phase0 no longer handles rollback logic directly (delegated to CommandService)

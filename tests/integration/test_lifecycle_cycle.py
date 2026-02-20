@@ -28,6 +28,9 @@ class TestLifecycleCycle:
         state.bank = MagicMock()
         state.bank.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 0.0}
 
+        state.primary_government = MagicMock()
+        state.government = state.primary_government # Backwards compatibility
+        state.governments = [state.primary_government] # Align DTO
         state.lifecycle_manager = MagicMock()
         state.transaction_processor = MagicMock()
 
@@ -123,9 +126,10 @@ class TestLifecycleCycle:
         # Mock dependencies
         mock_world_state.social_system = MagicMock()
         mock_world_state.sensory_system = MagicMock()
-        mock_world_state.government = MagicMock()
-        mock_world_state.government.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 0.0}
-        mock_world_state.government.get_monetary_delta.return_value = 0
+        mock_world_state.primary_government = MagicMock()
+        mock_world_state.government = mock_world_state.primary_government
+        mock_world_state.primary_government.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 0.0}
+        mock_world_state.primary_government.get_monetary_delta.return_value = 0
         mock_world_state.central_bank = MagicMock()
         mock_world_state.central_bank.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 0.0}
         mock_world_state.event_system = None

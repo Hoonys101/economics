@@ -126,7 +126,7 @@ class TransactionProcessor(SystemInterface):
         context = TransactionContext(
             agents=state.agents,
             inactive_agents=getattr(state, "inactive_agents", {}),
-            government=state.government,
+            government=state.primary_government,
             settlement_system=state.settlement_system,
             taxation_system=taxation_system,
             stock_market=state.stock_market,

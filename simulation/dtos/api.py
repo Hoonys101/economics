@@ -216,7 +216,8 @@ class SimulationState:
     firms: List[Firm]
     agents: Dict[AgentID, Any]
     markets: Dict[str, Any]
-    government: Any  # Government
+    primary_government: Any  # Renamed from government for clarity
+    governments: List[Any] # TD-ARCH-GOV-MISMATCH: Added for alignment
     bank: Any        # Bank
     central_bank: Any # CentralBank
     escrow_agent: Optional[Any] # EscrowAgent
@@ -249,7 +250,7 @@ class SimulationState:
 
     # TD-255: System Command Pipeline
     system_commands: List[SystemCommand] = field(default_factory=list)
-    god_commands: List[GodCommandDTO] = field(default_factory=list) # FOUND-03: Phase 0 Intercept
+    god_command_snapshot: List[GodCommandDTO] = field(default_factory=list) # Renamed from god_commands
 
     # --- NEW TRANSIENT FIELDS ---
     # From Phase 1 (Decisions)
@@ -285,8 +286,8 @@ class SimulationState:
             self.transactions = []
         if self.system_commands is None:
             self.system_commands = []
-        if self.god_commands is None:
-            self.god_commands = []
+        if self.god_command_snapshot is None:
+            self.god_command_snapshot = []
         if self.inter_tick_queue is None:
             self.inter_tick_queue = []
         if self.effects_queue is None:

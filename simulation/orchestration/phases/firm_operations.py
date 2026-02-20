@@ -38,7 +38,7 @@ class Phase_FirmProductionAndSalaries(IPhaseStrategy):
         for firm in state.firms:
              if firm.is_active:
                  firm_txs = firm.generate_transactions(
-                     government=state.government,
+                     government=state.primary_government,
                      market_data=market_data_prev,
                      shareholder_registry=state.shareholder_registry,
                      current_time=state.time,

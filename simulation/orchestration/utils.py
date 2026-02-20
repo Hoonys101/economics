@@ -128,8 +128,8 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
 
     # 3. Government Data (WO-4.3)
     gov_data = {"party": None}
-    if state.government and hasattr(state.government, "ruling_party"):
-        gov_data["party"] = state.government.ruling_party
+    if state.primary_government and hasattr(state.primary_government, "ruling_party"):
+        gov_data["party"] = state.primary_government.ruling_party
 
     return {
         "time": state.time,

@@ -78,7 +78,8 @@ class TestDecisionInputFactory:
     def test_create_decision_input(self):
         factory = DecisionInputFactory()
         state = MagicMock(spec=SimulationState)
-        state.government = MagicMock()
+        state.primary_government = MagicMock()
+        state.government = state.primary_government
         state.bank = MagicMock()
         state.central_bank = MagicMock()
         state.config_module = MagicMock()

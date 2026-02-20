@@ -30,7 +30,7 @@ class Phase_Consumption(IPhaseStrategy):
             "market_data": consumption_market_data,
             "config": state.config_module,
             "time": state.time,
-            "government": state.government
+            "government": state.primary_government
         }
 
         if self.world_state.commerce_system:

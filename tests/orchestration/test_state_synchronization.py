@@ -28,7 +28,7 @@ class TestStateSynchronization:
         ws.inter_tick_queue = []
         ws.transactions = []
         ws.god_command_queue = deque()
-        ws.system_command_queue = []
+        ws.system_commands = []
         ws.command_queue = None
         ws.inactive_agents = {}
         ws.real_estate_units = []

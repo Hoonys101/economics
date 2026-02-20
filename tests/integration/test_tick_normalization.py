@@ -30,13 +30,14 @@ class TestTickNormalization:
         state.finance_system = MagicMock()
         state.finance_system.service_debt.return_value = []
 
-        state.government = MagicMock()
-        state.government.run_welfare_check.return_value = []
+        state.primary_government = MagicMock()
+        state.government = state.primary_government # For legacy compatibility during refactor
+        state.primary_government.run_welfare_check.return_value = []
         # Return (success, txs)
-        state.government.invest_infrastructure.return_value = []
+        state.primary_government.invest_infrastructure.return_value = []
         # Fix: Mock get_monetary_delta to return float
-        state.government.get_monetary_delta.return_value = 0.0
-        state.government.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 0.0}
+        state.primary_government.get_monetary_delta.return_value = 0.0
+        state.primary_government.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 0.0}
 
         state.tracker = MagicMock()
         state.tracker.get_latest_indicators.return_value = {}
@@ -62,8 +63,9 @@ class TestTickNormalization:
 
         # Command Queues - Explicitly initialize to prevent MagicMock infinite loops
         state.god_command_queue = deque()
-        state.system_command_queue = deque()
+        state.system_commands = []
         state.command_queue = MagicMock()
+        state.governments = [state.government] # Align DTO
         state.command_queue.empty.return_value = True
 
         # Systems

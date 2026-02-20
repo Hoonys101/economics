@@ -18,7 +18,8 @@ class MockState:
     transactions: List[Transaction]
     agents: dict
     inactive_agents: dict
-    government: MagicMock
+    primary_government: MagicMock
+    government: MagicMock # Backwards compatibility
     settlement_system: MagicMock
     taxation_system: MagicMock
     stock_market: MagicMock
@@ -44,11 +45,13 @@ def processor():
 
 @pytest.fixture
 def state():
+    gov = MagicMock()
     return MockState(
         transactions=[],
         agents={},
         inactive_agents={},
-        government=MagicMock(),
+        primary_government=gov,
+        government=gov,
         settlement_system=MagicMock(),
         taxation_system=MagicMock(),
         stock_market=MagicMock(),
