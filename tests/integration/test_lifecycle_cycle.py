@@ -30,7 +30,6 @@ class TestLifecycleCycle:
 
         state.primary_government = MagicMock()
         state.government = state.primary_government # Backwards compatibility
-        state.governments = [state.primary_government] # Align DTO
         state.lifecycle_manager = MagicMock()
         state.transaction_processor = MagicMock()
 

@@ -6,8 +6,8 @@ from simulation.engine import Simulation
 from modules.common.config_manager.api import ConfigManager
 
 class TestGovernmentStructure:
-    def test_government_property_proxy(self):
-        """Verify that WorldState.government property proxies to governments[0]."""
+    def test_government_singleton(self):
+        """Verify that WorldState.government is a direct attribute."""
         # Setup WorldState
         mock_config_manager = MagicMock(spec=ConfigManager)
         mock_logger = MagicMock()
@@ -15,49 +15,20 @@ class TestGovernmentStructure:
 
         ws = WorldState(mock_config_manager, None, mock_logger, mock_repo)
 
-        # Initially empty
+        # Initially None
         assert ws.government is None
-        assert ws.governments == []
+        # assert hasattr(ws, 'governments') is False # Verify removal
 
         # Create a mock Government
         mock_gov = MagicMock(spec=Government)
         mock_gov.id = 1
 
-        # Append directly
-        ws.governments.append(mock_gov)
+        # Set directly
+        ws.government = mock_gov
 
-        # Verify property access
+        # Verify access
         assert ws.government is mock_gov
         assert ws.government.id == 1
-
-    def test_government_setter_sync(self):
-        """Verify that setting WorldState.government updates governments list."""
-        # Setup WorldState
-        mock_config_manager = MagicMock(spec=ConfigManager)
-        mock_logger = MagicMock()
-        mock_repo = MagicMock()
-
-        ws = WorldState(mock_config_manager, None, mock_logger, mock_repo)
-
-        mock_gov1 = MagicMock(spec=Government)
-        mock_gov1.id = 101
-
-        # Set via property
-        ws.government = mock_gov1
-
-        assert len(ws.governments) == 1
-        assert ws.governments[0] is mock_gov1
-        assert ws.government is mock_gov1
-
-        # Replace via property
-        mock_gov2 = MagicMock(spec=Government)
-        mock_gov2.id = 102
-
-        ws.government = mock_gov2
-
-        assert len(ws.governments) == 1
-        assert ws.governments[0] is mock_gov2
-        assert ws.government is mock_gov2
 
     def test_simulation_delegation(self):
         """Verify that Simulation delegates government access to WorldState."""
@@ -87,11 +58,8 @@ class TestGovernmentStructure:
         # Setup Mock Government
         mock_gov = MagicMock(spec=Government)
 
-        # Set via Simulation (delegates to WorldState setter)
+        # Set via Simulation (delegates to WorldState setter/attribute)
         sim.government = mock_gov
 
-        assert sim.world_state.governments[0] is mock_gov
+        assert sim.world_state.government is mock_gov
         assert sim.government is mock_gov
-
-        # Verify list integrity
-        assert len(sim.world_state.governments) == 1

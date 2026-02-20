@@ -7,6 +7,7 @@ from modules.finance.api import InsufficientFundsError, IShareholderRegistry
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
 from simulation.dtos.context_dtos import FinancialTransactionContext
+from modules.firm.api import FinanceDecisionInputDTO, BudgetPlanDTO
 
 if TYPE_CHECKING:
     from modules.simulation.dtos.api import FirmConfigDTO
@@ -19,6 +20,97 @@ class FinanceEngine:
     Manages asset tracking, transaction generation, and financial health metrics.
     MIGRATION: Uses integer pennies for transactions and state.
     """
+
+    def plan_budget(self, input_dto: FinanceDecisionInputDTO) -> BudgetPlanDTO:
+        """
+        Plans the budget for the upcoming tick based on current state and priorities.
+        """
+        firm_snapshot = input_dto.firm_snapshot
+        finance_state = firm_snapshot.finance
+        balance = finance_state.balance.get(DEFAULT_CURRENCY, 0)
+
+        # 1. Solvency Check (Operating Runway)
+        # Assuming simple rule: Keep 2 ticks of expenses as buffer if possible
+        # We don't have explicit "last tick total expenses" easily accessible in DTO
+        # except logic or history.
+        # But we can look at cost_this_turn if it was from previous tick?
+        # FinanceState has expenses_this_tick. If snapshot is taken before reset, it has last tick's expenses.
+        # But reset happens at end of tick. Decision happens in Phase 1.
+        # So expenses_this_tick is from *current* tick (0 so far).
+        # We can use profit_history or heuristics.
+
+        total_budget = balance
+
+        # Priorities:
+        # 1. Debt Repayment (if mandated or critical)
+        # 2. Labor (Wages)
+        # 3. Production (Inputs) - Not explicitly budgeted here but part of OPEX
+        # 4. Marketing
+        # 5. Capital/Automation (Investment)
+        # 6. Dividends
+
+        # Debt
+        debt_repayment = 0
+        total_debt = input_dto.firm_snapshot.finance.total_debt_pennies if hasattr(input_dto.firm_snapshot.finance, 'total_debt_pennies') else 0
+        if total_debt > 0:
+            # Simple heuristic: Pay 1% of debt per tick if cash allows
+            debt_repayment = min(int(total_debt * 0.01), total_budget)
+            total_budget -= debt_repayment
+
+        # Dividend
+        dividend_payout = 0
+        # Only pay dividends if we have excess cash?
+        # Usually dividends are from profits, handled in generate_financial_transactions.
+        # But here we set a "budget" cap.
+        # If generate_financial_transactions handles it based on profit, we can set this to 0 or MAX.
+        # Let's say we reserve amount equal to last profit * dividend_rate
+        last_profit = finance_state.profit_history[-1] if finance_state.profit_history else 0
+        if last_profit > 0:
+            dividend_payout = int(last_profit * finance_state.dividend_rate)
+            # But we don't subtract from budget yet, as this is "planned"
+            # And dividend is usually paid after OPEX.
+
+        # Labor Budget
+        # Estimate from current employees
+        # current_wage_bill = sum(w for w in firm_snapshot.hr.employees_data.values().wage)
+        # But we need to allow for hiring.
+        # Let's give 50% of remaining liquid assets to Labor + Production?
+        # Or use System2 guidance?
+
+        # For now, simple allocation:
+        # Reserve for Survival/Maintenance?
+
+        # We return the "Plan" which acts as constraints for other engines.
+
+        # Strategy Adjustment
+        strategy = firm_snapshot.strategy
+        marketing_priority = 0.1
+        capital_priority = 0.1
+
+        if str(strategy) == "FirmStrategy.MARKET_SHARE":
+            marketing_priority = 0.3
+        elif str(strategy) == "FirmStrategy.PROFIT_MAXIMIZATION":
+            capital_priority = 0.2
+
+        available_for_ops = total_budget
+
+        labor_budget = int(available_for_ops * 0.6)
+        marketing_budget = int(available_for_ops * marketing_priority)
+        capital_budget = int(available_for_ops * capital_priority)
+
+        # Ensure we have enough for current employees?
+        # That logic is in HREngine (fire if can't pay).
+        # Here we just say "You have X to spend".
+
+        return BudgetPlanDTO(
+            total_budget_pennies=balance,
+            labor_budget_pennies=labor_budget,
+            capital_budget_pennies=capital_budget,
+            marketing_budget_pennies=marketing_budget,
+            dividend_payout_pennies=dividend_payout,
+            debt_repayment_pennies=debt_repayment,
+            is_solvent=balance > 0 # Simple solvency check
+        )
 
     def generate_financial_transactions(
         self,

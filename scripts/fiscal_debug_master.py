@@ -19,7 +19,7 @@ def audit_money(sim, context_name):
     # Core Money Audit Logic
     h_sum = sum(h.total_wealth for h in sim.world_state.households)
     f_sum = sum(f.total_wealth for f in sim.world_state.firms)
-    gov_sum = sum(g.total_wealth for g in sim.world_state.governments)
+    gov_sum = sim.world_state.government.total_wealth if sim.world_state.government else 0
     bank_wealth = sim.world_state.bank.total_wealth if sim.world_state.bank else 0
     
     total = h_sum + f_sum + gov_sum + bank_wealth

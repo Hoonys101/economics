@@ -37,7 +37,7 @@ class DashboardService:
     def get_snapshot(self) -> WatchtowerSnapshotDTO:
         state = self.state
         tracker = state.tracker
-        gov = state.governments[0] if state.governments else None
+        gov = state.government
 
         # --- 1. System Integrity ---
         # Use smoothed M2 leak if available (Watchtower Hardening)
@@ -196,7 +196,7 @@ class DashboardService:
         delta_issued = 0.0
         delta_destroyed = 0.0
 
-        gov = state.governments[0] if state.governments else None
+        gov = state.government
 
         if gov and hasattr(gov, "monetary_ledger"):
             ledger = gov.monetary_ledger

@@ -802,7 +802,7 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
         agents=sim.agents,
         markets=sim.markets,
         primary_government=sim.government, # Renamed
-        governments=sim.governments, # Added for TD-ARCH-GOV-MISMATCH
+        governments=[sim.government] if sim.government else [], # Added for TD-ARCH-GOV-MISMATCH
         bank=sim.bank,
         central_bank=sim.central_bank, # Direct access
         escrow_agent=getattr(sim, 'escrow_agent', None), # Keep getattr for optional/dynamic

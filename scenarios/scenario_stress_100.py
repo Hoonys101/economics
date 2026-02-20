@@ -67,8 +67,8 @@ def run_stress_test():
         # Retrieve Authorized Delta
         # sim.government is usually the instance if using facade, or verify via state
         gov = getattr(sim, "government", None)
-        if not gov and state.governments:
-             gov = state.governments[0]
+        if not gov and state.government:
+             gov = state.government
 
         authorized_delta = 0.0
         if gov and hasattr(gov, "get_monetary_delta"):

@@ -79,7 +79,7 @@ class WorldState:
         self.next_agent_id: int = 0
         self.markets: Dict[str, Market] = {}
         self.bank: Optional[Bank] = None
-        self.governments: List[Government] = [] # Changed for Phase 33
+        self.government: Optional[Government] = None
         self.central_bank: Optional[CentralBank] = None
         self.stock_market: Optional[StockMarket] = None
         self.tracker: Optional[EconomicIndicatorTracker] = None
@@ -153,27 +153,6 @@ class WorldState:
         self.last_gdp_for_sma = 0.0
 
         self.baseline_money_supply: float = 0.0
-
-    @property
-    def government(self) -> Optional[Government]:
-        """
-        Proxy property to access the primary government agent.
-        Resolves the singleton mismatch by delegating to self.governments[0].
-        """
-        if self.governments:
-            return self.governments[0]
-        return None
-
-    @government.setter
-    def government(self, value: Government) -> None:
-        """
-        Setter for the government property.
-        Ensures synchronization with self.governments list (SSoT).
-        """
-        if not self.governments:
-            self.governments.append(value)
-        else:
-            self.governments[0] = value
 
     def calculate_base_money(self) -> Dict[CurrencyCode, int]:
         """
@@ -262,7 +241,7 @@ class WorldState:
         """
         if role == "GOVERNMENT":
             self.logger.warning("Call to deprecated method WorldState.resolve_agent_id('GOVERNMENT')")
-            return AgentID(self.governments[0].id) if self.governments else None
+            return AgentID(self.government.id) if self.government else None
         elif role == "CENTRAL_BANK":
             return AgentID(self.central_bank.id) if self.central_bank else None
         return None

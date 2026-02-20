@@ -36,6 +36,8 @@ from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingCon
 # New API Imports
 from modules.firm.api import (
     FirmSnapshotDTO,
+    FinanceDecisionInputDTO, BudgetPlanDTO,
+    HRDecisionInputDTO, HRDecisionOutputDTO,
     ProductionInputDTO, ProductionResultDTO,
     AssetManagementInputDTO, AssetManagementResultDTO,
     RDInputDTO, RDResultDTO,
@@ -907,8 +909,37 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             },
         )
 
-        state_dto = self.get_state_dto()
+        # 1. State Snapshot
+        snapshot = self.get_snapshot_dto()
 
+        # 2. Finance Engine: Plan Budget
+        # TODO: credit_rating placeholder
+        fin_input = FinanceDecisionInputDTO(
+            firm_snapshot=snapshot,
+            market_snapshot=market_snapshot,
+            config=self.config,
+            current_tick=current_time,
+            credit_rating=0.0
+        )
+        budget_plan = self.finance_engine.plan_budget(fin_input)
+
+        # 3. HR Engine: Manage Workforce
+        hr_input = HRDecisionInputDTO(
+            firm_snapshot=snapshot,
+            budget_plan=budget_plan,
+            market_snapshot=market_snapshot,
+            config=self.config,
+            current_tick=current_time,
+            labor_market_avg_wage=1000 # Placeholder
+        )
+        hr_result = self.hr_engine.manage_workforce(hr_input)
+
+        # 4. Collect Engine Orders
+        engine_orders = []
+        engine_orders.extend(hr_result.hiring_orders)
+
+        # 5. Legacy Decision Engine (for Sales/Production)
+        state_dto = self.get_state_dto()
         context = DecisionContext(
             state=state_dto,
             config=self.config,
@@ -924,16 +955,27 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         decision_output = self.decision_engine.make_decisions(context)
         
         if hasattr(decision_output, "orders"):
-            decisions = decision_output.orders
+            legacy_orders = decision_output.orders
             tactic = decision_output.metadata
         else:
-            decisions, tactic = decision_output
+            legacy_orders, tactic = decision_output
 
-        # Command Bus execution
-        self.execute_internal_orders(decisions, fiscal_context, current_time, market_context)
+        # Filter legacy orders: Remove HR related (BUY labor, FIRE) to defer to Engines
+        filtered_legacy = [
+            o for o in legacy_orders
+            if o.market_id != 'labor' and o.order_type != 'FIRE'
+        ]
+
+        # Merge orders: Engine First (Priority) or Legacy First?
+        # Engine is "Planned", Legacy is "RuleBased".
+        # Let's say Engine orders are authoritative for HR.
+        all_orders = engine_orders + filtered_legacy
+
+        # Command Bus execution (Internal Orders like FIRE, SET_TARGET)
+        self.execute_internal_orders(all_orders, fiscal_context, current_time, market_context)
 
         # Filter external orders for further processing
-        external_orders = [o for o in decisions if o.market_id != "internal"]
+        external_orders = [o for o in all_orders if o.market_id != "internal"]
 
         self.sales_engine.check_and_apply_dynamic_pricing(
             self.sales_state, external_orders, current_time,

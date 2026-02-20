@@ -1,11 +1,13 @@
 from __future__ import annotations
 from typing import Protocol, Any, Optional, Dict, List, Literal, runtime_checkable
 from dataclasses import dataclass, field
+from enum import Enum
 
 from modules.simulation.dtos.api import FirmConfigDTO, FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from modules.system.api import MarketSnapshotDTO
 from modules.simulation.api import IInventoryHandler
 from modules.finance.api import IFinancialAgent
+from simulation.models import Order
 
 # ==============================================================================
 # 1. ARCHITECTURAL RESOLUTION: ASSET PROTOCOLS
@@ -42,6 +44,11 @@ class ICollateralizableAsset(Protocol):
 # 2. DTO DEFINITIONS
 # ==============================================================================
 
+class FirmStrategy(Enum):
+    PROFIT_MAXIMIZATION = "PROFIT_MAXIMIZATION"
+    MARKET_SHARE = "MARKET_SHARE"
+    SURVIVAL = "SURVIVAL"
+
 @dataclass(frozen=True)
 class FirmSnapshotDTO:
     """
@@ -54,6 +61,49 @@ class FirmSnapshotDTO:
     production: ProductionStateDTO
     sales: SalesStateDTO
     hr: HRStateDTO
+    strategy: FirmStrategy = FirmStrategy.PROFIT_MAXIMIZATION
+
+# --- Finance Engine DTOs ---
+
+@dataclass(frozen=True)
+class FinanceDecisionInputDTO:
+    """Input for FinanceEngine."""
+    firm_snapshot: FirmSnapshotDTO
+    market_snapshot: MarketSnapshotDTO
+    config: FirmConfigDTO
+    current_tick: int
+    credit_rating: float = 0.0
+
+@dataclass(frozen=True)
+class BudgetPlanDTO:
+    """Output from FinanceEngine. Determines constraints for other engines."""
+    total_budget_pennies: int
+    labor_budget_pennies: int
+    capital_budget_pennies: int
+    marketing_budget_pennies: int
+    dividend_payout_pennies: int
+    debt_repayment_pennies: int
+    is_solvent: bool
+
+# --- HR Engine DTOs ---
+
+@dataclass(frozen=True)
+class HRDecisionInputDTO:
+    """Input for HREngine."""
+    firm_snapshot: FirmSnapshotDTO
+    budget_plan: BudgetPlanDTO
+    market_snapshot: MarketSnapshotDTO
+    config: FirmConfigDTO
+    current_tick: int
+    labor_market_avg_wage: int = 1000 # Pennies
+
+@dataclass(frozen=True)
+class HRDecisionOutputDTO:
+    """Output from HREngine."""
+    hiring_orders: List[Order]
+    firing_ids: List[int]
+    wage_updates: Dict[int, int]
+    target_headcount: int
 
 # --- Production Engine DTOs ---
 
@@ -160,6 +210,18 @@ class PricingResultDTO:
 # ==============================================================================
 
 @runtime_checkable
+class IFinanceEngine(Protocol):
+    """Stateless engine for financial planning."""
+    def plan_budget(self, input_dto: FinanceDecisionInputDTO) -> BudgetPlanDTO:
+        ...
+
+@runtime_checkable
+class IHREngine(Protocol):
+    """Stateless engine for human resources management."""
+    def manage_workforce(self, input_dto: HRDecisionInputDTO) -> HRDecisionOutputDTO:
+        ...
+
+@runtime_checkable
 class IProductionEngine(Protocol):
     """
     Stateless engine for handling the firm's production process.
@@ -263,6 +325,11 @@ class IFinancialComponent(IFinancialAgent, IFirmComponent, Protocol):
 __all__ = [
     'ICollateralizableAsset',
     'FirmSnapshotDTO',
+    'FirmStrategy',
+    'FinanceDecisionInputDTO',
+    'BudgetPlanDTO',
+    'HRDecisionInputDTO',
+    'HRDecisionOutputDTO',
     'ProductionInputDTO',
     'ProductionResultDTO',
     'AssetManagementInputDTO',
@@ -273,6 +340,8 @@ __all__ = [
     'RDResultDTO',
     'PricingInputDTO',
     'PricingResultDTO',
+    'IFinanceEngine',
+    'IHREngine',
     'IProductionEngine',
     'IAssetManagementEngine',
     'IPricingEngine',

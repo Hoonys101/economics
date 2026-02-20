@@ -31,8 +31,8 @@ def forensic_tick1():
         h_sum = sum(h.total_wealth for h in sim.world_state.households if h.is_active)
         f_sum = sum(f.total_wealth for f in sim.world_state.firms if f.is_active)
         
-        # Government is a list in WorldState
-        gov_sum = sum(g.total_wealth for g in sim.world_state.governments)
+        # Government is a singleton in WorldState
+        gov_sum = sim.world_state.government.total_wealth if sim.world_state.government else 0
         
         bank_wealth = sim.world_state.bank.total_wealth if sim.world_state.bank else 0
         

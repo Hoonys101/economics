@@ -65,7 +65,6 @@ class TestTickNormalization:
         state.god_command_queue = deque()
         state.system_commands = []
         state.command_queue = MagicMock()
-        state.governments = [state.government] # Align DTO
         state.command_queue.empty.return_value = True
 
         # Systems

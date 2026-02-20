@@ -28,8 +28,8 @@ def hunt_leak():
             snapshot["BANK"] = get_val(state.bank.assets)
         if state.central_bank:
             snapshot["CB"] = get_val(state.central_bank.assets)
-        if state.governments:
-            snapshot["GOVT"] = get_val(state.governments[0].assets)
+        if state.government:
+            snapshot["GOVT"] = get_val(state.government.assets)
         return snapshot
 
     print("--- LEAK HUNT START ---")

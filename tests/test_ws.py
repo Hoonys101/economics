@@ -33,7 +33,7 @@ def test_websocket_endpoint():
 
         # Government
         gov = MagicMock()
-        world_state.governments = [gov]
+        world_state.government = gov
         gov.gdp_history = [100.0, 105.0]
         gov.sensory_data.inflation_sma = 0.02
         gov.sensory_data.gdp_growth_sma = 0.05
