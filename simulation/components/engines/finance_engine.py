@@ -51,10 +51,27 @@ class FinanceEngine:
 
         # Debt
         debt_repayment = 0
-        total_debt = input_dto.firm_snapshot.finance.total_debt_pennies if hasattr(input_dto.firm_snapshot.finance, 'total_debt_pennies') else 0
+        # AI Debt Awareness: Use explicit DTO fields
+        total_debt = getattr(finance_state, 'total_debt_pennies', 0)
+        avg_interest_rate = getattr(finance_state, 'average_interest_rate', 0.0)
+
+        # 1. Budget for Interest (Committed)
+        estimated_interest = 0
         if total_debt > 0:
-            # Simple heuristic: Pay 1% of debt per tick if cash allows
-            debt_repayment = min(int(total_debt * 0.01), total_budget)
+            # Daily interest approximation (assuming 365 ticks/year default)
+            estimated_interest = int(total_debt * avg_interest_rate / 365)
+            # Ensure we don't budget more than we have
+            allocated_interest = min(estimated_interest, total_budget)
+            total_budget -= allocated_interest
+
+        # 2. Budget for Principal Repayment
+        if total_debt > 0:
+            # Strategy: If distressed (low Z-score or losses), prioritize deleveraging
+            is_distressed = (finance_state.altman_z_score < 1.8) or (finance_state.consecutive_loss_turns > 4)
+            repayment_rate = 0.05 if is_distressed else 0.005 # 5% vs 0.5% per tick
+
+            target_repayment = int(total_debt * repayment_rate)
+            debt_repayment = min(target_repayment, total_budget)
             total_budget -= debt_repayment
 
         # Dividend

@@ -42,6 +42,7 @@ class FinanceState:
 
     # Moved from Firm
     total_debt_pennies: int = 0
+    average_interest_rate: float = 0.0
     total_shares: float = 0.0
     treasury_shares: float = 0.0
     dividend_rate: float = 0.0

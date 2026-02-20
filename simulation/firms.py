@@ -51,7 +51,7 @@ from modules.agent_framework.components.inventory_component import InventoryComp
 from modules.agent_framework.components.financial_component import FinancialComponent
 
 from modules.common.utils.shadow_logger import log_shadow
-from modules.finance.api import InsufficientFundsError, IFinancialFirm, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake
+from modules.finance.api import InsufficientFundsError, IFinancialFirm, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake, IBank
 from modules.common.interfaces import IPropertyOwner
 from modules.common.dtos import Claim
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
@@ -685,7 +685,9 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             total_shares=self.finance_state.total_shares,
             treasury_shares=self.finance_state.treasury_shares,
             dividend_rate=self.finance_state.dividend_rate,
-            is_publicly_traded=True
+            is_publicly_traded=True,
+            total_debt_pennies=self.finance_state.total_debt_pennies,
+            average_interest_rate=self.finance_state.average_interest_rate
         )
 
         # 3. Production State
@@ -834,7 +836,9 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             total_shares=self.finance_state.total_shares,
             treasury_shares=self.finance_state.treasury_shares,
             dividend_rate=self.finance_state.dividend_rate,
-            is_publicly_traded=True
+            is_publicly_traded=True,
+            total_debt_pennies=self.finance_state.total_debt_pennies,
+            average_interest_rate=self.finance_state.average_interest_rate
         )
 
         # 3. Production State
@@ -885,10 +889,43 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             "current_rd_investment": self.production_state.research_history.get("total_spent", 0.0)
         }
 
+    def _update_debt_status(self) -> None:
+        """
+        Updates internal debt tracking by querying the bank.
+        Ensures AI Debt Awareness and Budgeting accuracy.
+        """
+        # Local import to avoid circular dependency
+        # We rely on the concrete LoanMarket class because Firm is coupled to it via constructor.
+        # Ideally, we would use an interface ILoanMarket that exposes the bank or debt status directly.
+        from simulation.loan_market import LoanMarket
+
+        market = self.decision_engine.loan_market
+        if market and isinstance(market, LoanMarket):
+            bank = market.bank
+            if isinstance(bank, IBank):
+                try:
+                    debt_status = bank.get_debt_status(self.id)
+                    # Convert float dollars to int pennies
+                    self.finance_state.total_debt_pennies = int(debt_status.total_outstanding_debt * 100)
+
+                    # Calculate weighted average interest rate
+                    total_principal = sum(l.outstanding_balance for l in debt_status.loans)
+                    if total_principal > 0:
+                        weighted_sum = sum(l.outstanding_balance * l.interest_rate for l in debt_status.loans)
+                        self.finance_state.average_interest_rate = weighted_sum / total_principal
+                    else:
+                        self.finance_state.average_interest_rate = 0.0
+
+                except Exception as e:
+                    self.logger.warning(f"Failed to update debt status from bank: {e}")
+
     @override
     def make_decision(
         self, input_dto: DecisionInputDTO
     ) -> tuple[list[Order], Any]:
+        # Update debt status before decision making
+        self._update_debt_status()
+
         # ... Decision Logic ...
         goods_data = input_dto.goods_data
         market_data = input_dto.market_data
