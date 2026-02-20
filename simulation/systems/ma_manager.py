@@ -115,6 +115,7 @@ class MAManager:
                 target_mcap = target.get_market_cap()
                 if self._get_balance(predator) > target_mcap * 1.5:
                     # Attempt Hostile Takeover
+                    # MIGRATION: Pass market_cap as float, but conversion happens inside _attempt_hostile_takeover
                     success = self._attempt_hostile_takeover(predator, target, target_mcap, current_tick)
                     if success:
                         target_found = True
@@ -135,14 +136,15 @@ class MAManager:
                     continue
                 
                 # Check if Predator can afford
-                target_valuation = prey.valuation
-                offer_price = target_valuation * friendly_premium
+                target_valuation = prey.valuation # int pennies
+                offer_price_float = target_valuation * friendly_premium
+                offer_price_pennies = int(offer_price_float)
                 
                 # Check Cash Requirement
                 min_cash_ratio = getattr(self.config, "MIN_ACQUISITION_CASH_RATIO", 1.5)
-                if self._get_balance(predator) >= offer_price * min_cash_ratio:
+                if self._get_balance(predator) >= offer_price_pennies * min_cash_ratio:
                     # Attempt Deal
-                    self._execute_merger(predator, prey, offer_price, current_tick, is_hostile=False)
+                    self._execute_merger(predator, prey, offer_price_pennies, current_tick, is_hostile=False)
                     acquired = True
                     predators.remove(predator)
                     break
@@ -158,24 +160,27 @@ class MAManager:
         """
         # Offer Premium
         premium = getattr(self.config, "HOSTILE_TAKEOVER_PREMIUM", 1.2)
-        offer_price = market_cap * premium
+
+        # market_cap is in dollars (float), convert to pennies for settlement
+        offer_price_float = market_cap * premium
+        offer_price_pennies = int(offer_price_float * 100)
 
         # Success Probability
         success_prob = getattr(self.config, "HOSTILE_TAKEOVER_SUCCESS_PROB", 0.6)
 
         # Roll
         if random.random() < success_prob:
-            self.logger.info(f"HOSTILE_TAKEOVER_SUCCESS | Predator {predator.id} seizes Target {target.id}. Offer: {offer_price:,.2f}")
-            self._execute_merger(predator, target, offer_price, tick, is_hostile=True)
+            self.logger.info(f"HOSTILE_TAKEOVER_SUCCESS | Predator {predator.id} seizes Target {target.id}. Offer: {offer_price_float:,.2f}")
+            self._execute_merger(predator, target, offer_price_pennies, tick, is_hostile=True)
             return True
         else:
             self.logger.info(f"HOSTILE_TAKEOVER_FAIL | Target {target.id} fended off Predator {predator.id}.")
             return False
 
-    def _execute_merger(self, predator: "Firm", prey: "Firm", price: float, tick: int, is_hostile: bool = False):
+    def _execute_merger(self, predator: "Firm", prey: "Firm", price: int, tick: int, is_hostile: bool = False):
         tag = "HOSTILE_MERGER" if is_hostile else "FRIENDLY_MERGER"
 
-        self.logger.info(f"{tag}_EXECUTE | Predator {predator.id} acquires Prey {prey.id}. Price: {price:,.2f}.")
+        self.logger.info(f"{tag}_EXECUTE | Predator {predator.id} acquires Prey {prey.id}. Price: {price} pennies.")
         
         # 1. Payment
         # Replaced direct withdrawal with settlement transfer
@@ -228,7 +233,7 @@ class MAManager:
 
     def _execute_bankruptcy(self, firm: "Firm", tick: int):
         # 1. Calculate values of real assets before they are wiped
-        inv_value = 0.0
+        inv_value_pennies = 0
         # Simple estimation: default price if no market data, or look up market
         default_price = 10.0
         if self.simulation.markets:
@@ -237,14 +242,20 @@ class MAManager:
                  if item in self.simulation.markets:
                      m = self.simulation.markets[item]
                      if hasattr(m, "avg_price"): price = m.avg_price
-                 inv_value += qty * price
+                 # Convert to pennies
+                 inv_value_pennies += int(qty * price * 100) # Assuming price is dollars
 
-        capital_value = firm.capital_stock
+        capital_value_pennies = int(firm.capital_stock * 100) # Assuming 1 unit of capital = $1 ? Or verify?
+        # Typically capital_stock is value in dollars or units.
+        # If it's value, we treat as dollars. If units, we need a price.
+        # Assuming value in dollars for now as per previous logic.
 
         # 2. Liquidate (Wipe assets, return cash)
-        recovered_cash = firm.liquidate_assets(current_tick=tick)
+        # recovered_assets is Dict[CurrencyCode, int]
+        recovered_assets = firm.liquidate_assets(current_tick=tick)
+        recovered_cash_pennies = sum(recovered_assets.values())
 
-        self.logger.info(f"BANKRUPTCY | Firm {firm.id} liquidated. Cash Remaining: {recovered_cash:,.2f}.")
+        self.logger.info(f"BANKRUPTCY | Firm {firm.id} liquidated. Cash Remaining: {recovered_cash_pennies} pennies.")
 
         # 3. Record Liquidation of Real Assets
         if self.settlement_system:
@@ -253,9 +264,9 @@ class MAManager:
 
             self.settlement_system.record_liquidation(
                 agent=firm,
-                inventory_value=inv_value,
-                capital_value=capital_value,
-                recovered_cash=0.0, # WO-018: Real assets written off, not sold
+                inventory_value=inv_value_pennies,
+                capital_value=capital_value_pennies,
+                recovered_cash=0, # WO-018: Real assets written off, not sold
                 reason="bankruptcy_real_assets",
                 tick=tick,
                 government_agent=government
