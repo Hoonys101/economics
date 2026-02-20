@@ -117,6 +117,9 @@ class TestMAManagerPennies:
         predator.id = 101
         predator.is_active = True
         predator.wallet.get_balance.return_value = 10_000_000 # Wealthy ($100k)
+        predator.finance_state = MagicMock()
+        predator.finance_state.consecutive_loss_turns = 0
+        predator.finance_state.current_profit = {DEFAULT_CURRENCY: 1000}
         predator.finance_state.valuation_pennies = 10_000_000
         predator.valuation = 10_000_000
         predator.get_market_cap.return_value = 100_000.0
@@ -133,13 +136,14 @@ class TestMAManagerPennies:
         target.wallet.get_balance.return_value = 0 # Poor target, lowers avg_assets
         target.finance_state = MagicMock()
         target.finance_state.consecutive_loss_turns = 0
+        target.finance_state.current_profit = {DEFAULT_CURRENCY: 0}
 
         # Intrinsic Value: 1,000,000 pennies ($10,000)
         target.finance_state.valuation_pennies = 1_000_000
         target.valuation = 1_000_000
 
         # Market Cap: $5,000 (Undervalued, 0.5 ratio < 0.7 threshold)
-        target.get_market_cap.return_value = 5_000.0
+        target.get_market_cap.return_value = 500_000.0
 
         target.founder_id = 888
         target.get_all_items.return_value = {}

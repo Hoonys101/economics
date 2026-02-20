@@ -10,11 +10,10 @@ def test_audit_total_m2_logic():
     ss.agent_registry = MagicMock()
     ss.settlement_accounts = {}
 
-    # 1. Standard Agent (Household) -> IFinancialEntity
-    hh = MagicMock(spec=IFinancialEntity)
+    # 1. Standard Agent (Household) -> IFinancialAgent (to pass isinstance check)
+    hh = MagicMock(spec=IFinancialAgent)
     hh.id = 1
-    # IFinancialEntity uses balance_pennies property
-    type(hh).balance_pennies = PropertyMock(return_value=100)
+    hh.get_balance.return_value = 100
 
     # 2. Central Bank (Should be Excluded) -> IFinancialEntity
     cb = MagicMock(spec=IFinancialEntity)

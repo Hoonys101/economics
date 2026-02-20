@@ -261,6 +261,7 @@ class TestPhase29Depression(unittest.TestCase):
             f.finance.calculate_altman_z_score.return_value = 3.0
             f.finance.calculate_valuation.return_value = 5000.0
             f.finance_state.valuation = 5000.0
+            f.finance_state.valuation_pennies = 500000 # Added for M&A type check
             f.finance.get_inventory_value.return_value = 0.0
             f.finance.check_cash_crunch.return_value = False
             f.get_sensory_snapshot.return_value = {"total_wealth": 5000.0, "approval_rating": 0.0, "is_active": True}
@@ -329,7 +330,10 @@ class TestPhase29Depression(unittest.TestCase):
             mock_planner = MagicMock()
             # decide_breeding_batch returns list of booleans
             mock_planner.decide_breeding_batch.side_effect = lambda agents: [False] * len(agents)
+            # Patch both locations to be safe
             self.sim.lifecycle_manager.breeding_planner = mock_planner
+            if hasattr(self.sim.lifecycle_manager, 'birth_system'):
+                self.sim.lifecycle_manager.birth_system.breeding_planner = mock_planner
 
         # Ensure Phase 29 Scenario is Active and Configured
         if not self.sim.stress_scenario_config.is_active:

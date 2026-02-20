@@ -16,6 +16,7 @@ def mock_simulation_state():
     state.central_bank = MagicMock(spec=CentralBankSystem)
 
     # Setup government attributes
+    state.primary_government = state.government
     state.government.corporate_tax_rate = 0.2
     state.government.income_tax_rate = 0.1
     state.government.fiscal_policy = MagicMock(spec=FiscalPolicyDTO)
@@ -63,6 +64,7 @@ def test_set_base_interest_rate(mock_simulation_state):
 
 def test_missing_government(mock_simulation_state):
     mock_simulation_state.government = None
+    mock_simulation_state.primary_government = None
     processor = SystemCommandProcessor()
     command = SetTaxRateCommand(
         tax_type='corporate',
@@ -79,6 +81,7 @@ def test_protocol_guardrails(mock_simulation_state):
         pass
 
     mock_simulation_state.government = NotGovernment()
+    mock_simulation_state.primary_government = mock_simulation_state.government
 
     processor = SystemCommandProcessor()
     command = SetTaxRateCommand(

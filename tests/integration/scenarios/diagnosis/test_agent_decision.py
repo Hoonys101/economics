@@ -4,6 +4,7 @@ from simulation.models import Order
 from simulation.core_agents import Household
 from simulation.firms import Firm
 from simulation.dtos.api import DecisionInputDTO, MarketSnapshotDTO, HousingMarketSnapshotDTO, LaborMarketSnapshotDTO
+from modules.firm.api import HRDecisionOutputDTO
 
 def test_household_makes_decision(simple_household):
     """Spec 0: 에이전트가 주문을 생성하는지 검증 (Household)"""
@@ -20,6 +21,15 @@ def test_firm_makes_decision(simple_firm):
     """Spec 0: 에이전트가 주문을 생성하는지 검증 (Firm)"""
     expected_order = Order(agent_id=simple_firm.id, side='SELL', item_id='basic_food', quantity=5.0, price_pennies=int(12.0 * 100), price_limit=12.0, market_id='basic_food')
     simple_firm.decision_engine.make_decisions = MagicMock(return_value=([expected_order], None))
+
+    # Mock HR Engine to prevent automatic labor orders
+    simple_firm.hr_engine.manage_workforce = MagicMock(return_value=HRDecisionOutputDTO(
+        hiring_orders=[],
+        firing_ids=[],
+        wage_updates={},
+        target_headcount=0
+    ))
+
     input_dto = DecisionInputDTO(goods_data=[], market_data={}, current_time=1, market_snapshot=MarketSnapshotDTO(tick=1, market_signals={}, housing=None, loan=None, labor=None, market_data={}))
     orders, tactic = simple_firm.make_decision(input_dto)
     assert len(orders) == 1
