@@ -107,24 +107,6 @@ def convert_legacy_order_to_canonical(order: Any) -> CanonicalOrderDTO:
             currency=order.get("currency", DEFAULT_CURRENCY)
         )
 
-    # Handle Legacy StockOrder (duck typing to avoid circular import)
-    if hasattr(order, "firm_id") and hasattr(order, "order_type") and hasattr(order, "price"):
-        # Determine price_pennies based on type of order.price
-        if isinstance(order.price, float):
-            price_pennies = int(order.price * 100)
-        else:
-            price_pennies = int(order.price)
-
-        return CanonicalOrderDTO(
-            agent_id=order.agent_id,
-            side=order.order_type,
-            item_id=f"stock_{order.firm_id}",
-            quantity=order.quantity,
-            price_pennies=price_pennies,
-            price_limit=float(order.price),
-            market_id=getattr(order, "market_id", "stock_market"),
-        )
-
     raise ValueError(f"Cannot convert object of type {type(order)} to CanonicalOrderDTO")
 
 # --- Data Transfer Objects (DTOs) ---

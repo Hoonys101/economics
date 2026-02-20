@@ -48,7 +48,7 @@ class MonetaryLedger:
             # TD-030 Revert: Since M2 definition now excludes Bank Reserves, transfers from Bank to Public (Interest/Profit)
             # must be tracked as M2 Expansion.
             # UPDATE: Re-aligning with Memory and Tests -> Neutral transfers.
-            if tx.transaction_type in ["credit_creation", "money_creation", "bank_dividend"]:
+            if tx.transaction_type in ["credit_creation", "money_creation", "bank_dividend", "lender_of_last_resort", "asset_liquidation"]:
                 is_expansion = True
 
             # 2. CB Buying (OMO Purchase / Bond Purchase) -> Expansion

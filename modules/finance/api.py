@@ -903,3 +903,15 @@ class SolvencyEngine(Protocol):
             A DTO reporting solvency status, net worth, and key ratios.
         """
         ...
+
+@runtime_checkable
+class IIncomeTracker(Protocol):
+    """Protocol for entities that track their income sources."""
+    def add_labor_income(self, amount: int) -> None:
+        ...
+
+@runtime_checkable
+class IConsumptionTracker(Protocol):
+    """Protocol for entities that track their consumption expenditure."""
+    def add_consumption_expenditure(self, amount: int, item_id: Optional[str] = None) -> None:
+        ...

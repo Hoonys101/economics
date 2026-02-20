@@ -146,3 +146,7 @@ class GoodsTransactionHandler(ITransactionHandler):
                 is_food = (tx.item_id == "basic_food")
                 if hasattr(buyer, "record_consumption"):
                     buyer.record_consumption(tx.quantity, is_food=is_food)
+
+            # Track Consumption Expenditure (Financial)
+            if hasattr(buyer, "add_consumption_expenditure"):
+                buyer.add_consumption_expenditure(buyer_total_cost, item_id=tx.item_id)

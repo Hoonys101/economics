@@ -2,12 +2,12 @@ import pytest
 from unittest.mock import MagicMock, Mock
 from simulation.core_agents import Household
 from modules.household.dtos import EconStateDTO
-from modules.finance.transaction.handlers.goods import GoodsTransactionHandler
-from modules.finance.transaction.handlers.labor import LaborTransactionHandler
+from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
+from simulation.systems.handlers.labor_handler import LaborTransactionHandler
 from simulation.models import Transaction
 from simulation.metrics.economic_tracker import EconomicIndicatorTracker
 from modules.simulation.dtos.api import HouseholdConfigDTO
-from modules.finance.transaction.handlers.protocols import IIncomeTracker, IConsumptionTracker
+from modules.finance.api import IIncomeTracker, IConsumptionTracker
 
 @pytest.fixture
 def mock_config():
@@ -103,10 +103,11 @@ class TestReportingPennies:
     def test_goods_handler_calls_tracker(self, household):
         handler = GoodsTransactionHandler()
         state = MagicMock()
-        state.settlement_system.transfer.return_value = True
+        state.settlement_system.settle_atomic.return_value = True
         state.escrow_agent = MagicMock()
         state.government = MagicMock()
         state.config_module.SALES_TAX_RATE = 0.0
+        state.taxation_system.calculate_tax_intents.return_value = [] # No tax for simplicity
 
         tx = Transaction(
             buyer_id=household.id, seller_id=2, item_id="food",
@@ -129,11 +130,12 @@ class TestReportingPennies:
     def test_labor_handler_calls_tracker(self, household):
         handler = LaborTransactionHandler()
         state = MagicMock()
-        state.settlement_system.transfer.return_value = True
+        state.settlement_system.settle_atomic.return_value = True
         state.government = MagicMock()
         state.config_module.INCOME_TAX_PAYER = "FIRM" # Simple case
         state.config_module.HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK = 1.0
         state.config_module.GOODS_INITIAL_PRICE = {}
+        state.taxation_system.calculate_tax_intents.return_value = []
 
         tx = Transaction(
             buyer_id=2, seller_id=household.id, item_id="labor",
