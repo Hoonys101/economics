@@ -10,7 +10,6 @@ from modules.simulation.api import AgentCoreConfigDTO
 
 class TestHouseholdIntegrationNew(unittest.TestCase):
 
-    @unittest.skip('TODO: Fix integration test setup. BudgetEngine/ConsumptionEngine interaction results in empty orders.')
     def test_make_decision_integration(self):
         mock_decision_engine = MagicMock()
         mock_order = MagicMock()
@@ -23,9 +22,10 @@ class TestHouseholdIntegrationNew(unittest.TestCase):
         mock_order.price = 10.0
         mock_orders = [mock_order]
         mock_decision_engine.make_decisions.return_value = (mock_orders, ('TACTIC', 'AGGRESSIVE'))
-        config = create_household_config_dto()
+        config = create_household_config_dto(survival_budget_allocation=0.0)
         core_config = AgentCoreConfigDTO(id=1, value_orientation='wealth_and_needs', initial_needs={'survival': 80.0}, name='Household_1', logger=logging.getLogger('test_household'), memory_interface=None)
         household = Household(core_config=core_config, engine=mock_decision_engine, talent=Talent(base_learning_rate=0.5, max_potential=1.0), goods_data=[{'id': 'food', 'initial_price': 10.0, 'utility_effects': {'survival': 10}}], personality=Personality.CONSERVATIVE, config_dto=config, initial_assets_record=1000.0)
+        household.deposit(100000)
         household._bio_state.needs = {'survival': 80.0}
         household.update_needs(100)
         self.assertIsNotNone(household.consumption_engine)
@@ -34,6 +34,7 @@ class TestHouseholdIntegrationNew(unittest.TestCase):
         market_data = {'housing_market': {'avg_rent_price': 50.0}, 'loan_market': {'interest_rate': 0.05}, 'goods_market': {'food_current_sell_price': 10.0}}
         current_time = 100
         mock_snapshot = MagicMock()
+        mock_snapshot.goods = {}
         mock_snapshot.labor.avg_wage = 10.0
         mock_snapshot.housing = MagicMock()
         mock_signal = MagicMock()
