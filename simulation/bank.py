@@ -247,16 +247,27 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         logger.warning("Bank.stage_loan not fully supported in stateless mode yet.")
         return None
 
-    def repay_loan(self, loan_id: str, amount: int) -> bool:
-        # This should be handled by DebtServicingEngine (automatic) or explicit transfer.
-        # If this is explicit early repayment:
-        # Not yet implemented in DebtServicingEngine API explicitly for external calls
-        # but DebtServicingEngine.service_all_debt runs tick based.
-        # If we need manual repayment:
-        # We need a ManualRepaymentEngine or method in FinanceSystem.
-        # I'll log warning.
-        logger.warning("Bank.repay_loan called. Manual repayment not yet implemented in Engine API.")
-        return False
+    def close_account(self, agent_id: AgentID) -> int:
+        if self.finance_system:
+             # Requires FinanceSystem update (Phase 4.1)
+             if hasattr(self.finance_system, 'close_deposit_account'):
+                 balance = self.finance_system.close_deposit_account(self.id, agent_id)
+                 if self.settlement_system:
+                     self.settlement_system.deregister_account(self.id, agent_id)
+                 return balance
+        return 0
+
+    def repay_loan(self, loan_id: str, amount: int) -> int:
+        # Updates ledger only. Money transfer assumed handled by caller.
+        if self.finance_system and hasattr(self.finance_system, 'record_loan_repayment'):
+            return self.finance_system.record_loan_repayment(loan_id, amount)
+        return 0
+
+    def receive_repayment(self, borrower_id: AgentID, amount: int) -> int:
+        # Generic repayment application.
+        if self.finance_system and hasattr(self.finance_system, 'repay_any_debt'):
+            return self.finance_system.repay_any_debt(borrower_id, amount)
+        return 0
 
     def get_customer_balance(self, agent_id: AgentID) -> int:
         if self.finance_system and hasattr(self.finance_system, 'get_customer_balance'):

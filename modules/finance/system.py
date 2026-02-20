@@ -205,6 +205,50 @@ class FinanceSystem(IFinanceSystem):
                     ))
         return loans
 
+    def close_deposit_account(self, bank_id: AgentID, agent_id: AgentID) -> int:
+        if bank_id in self.ledger.banks:
+            deposit_id = f"DEP_{agent_id}_{bank_id}"
+            bank_state = self.ledger.banks[bank_id]
+            if deposit_id in bank_state.deposits:
+                balance = bank_state.deposits[deposit_id].balance_pennies
+                del bank_state.deposits[deposit_id]
+                return balance
+        return 0
+
+    def record_loan_repayment(self, loan_id: str, amount: int) -> int:
+        # Find loan in all banks
+        for bank_state in self.ledger.banks.values():
+            if loan_id in bank_state.loans:
+                loan = bank_state.loans[loan_id]
+                applied = min(amount, loan.remaining_principal_pennies)
+                loan.remaining_principal_pennies -= applied
+                if loan.remaining_principal_pennies <= 0:
+                     loan.remaining_principal_pennies = 0
+                return applied
+        return 0
+
+    def repay_any_debt(self, borrower_id: AgentID, amount: int) -> int:
+        remaining = amount
+        total_applied = 0
+
+        loans_to_pay = []
+        for bank_state in self.ledger.banks.values():
+            for loan in bank_state.loans.values():
+                # Ensure flexible ID matching (int vs str)
+                if int(loan.borrower_id) == int(borrower_id) and loan.remaining_principal_pennies > 0:
+                    loans_to_pay.append(loan)
+
+        loans_to_pay.sort(key=lambda l: l.due_tick)
+
+        for loan in loans_to_pay:
+            if remaining <= 0: break
+            applied = min(remaining, loan.remaining_principal_pennies)
+            loan.remaining_principal_pennies -= applied
+            remaining -= applied
+            total_applied += applied
+
+        return total_applied
+
     # --- IFinanceSystem Implementation ---
 
     def evaluate_solvency(self, firm: IFinancialFirm, current_tick: int) -> bool:

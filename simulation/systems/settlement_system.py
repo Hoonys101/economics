@@ -113,6 +113,14 @@ class SettlementSystem(IMonetaryAuthority):
             return list(self._bank_depositors[bank_id])
         return []
 
+    def get_agent_banks(self, agent_id: int) -> List[int]:
+        """
+        Returns a list of banks where the agent holds an account.
+        """
+        if agent_id in self._agent_banks:
+            return list(self._agent_banks[agent_id])
+        return []
+
     def remove_agent_from_all_accounts(self, agent_id: int) -> None:
         """
         Removes an agent from all bank account indices.

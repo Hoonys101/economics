@@ -176,6 +176,12 @@ class LiquidationManager:
             # MIGRATION: Ensure amount is int pennies
             amount_pennies = int(amount)
             success = self.settlement_system.transfer(agent, creditor, amount_pennies, memo, currency=DEFAULT_CURRENCY)
+
+            if success:
+                # Phase 4.1: If creditor is a Bank, apply generic repayment to update ledger
+                if hasattr(creditor, 'receive_repayment'):
+                    creditor.receive_repayment(agent.id, amount_pennies)
+
             if not success:
                  logger.error(f"LIQUIDATION_PAYMENT_FAIL | Failed to transfer {amount:.2f} to {creditor.id}")
         else:

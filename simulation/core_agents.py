@@ -487,6 +487,22 @@ class Household(
         self._econ_state.capital_income_this_tick_pennies = value
 
     @property
+    def employment_start_tick(self) -> int:
+        return self._econ_state.employment_start_tick
+
+    @employment_start_tick.setter
+    def employment_start_tick(self, value: int) -> None:
+        self._econ_state.employment_start_tick = value
+
+    def quit(self) -> None:
+        """
+        Executes the resignation process for the employee.
+        Sets is_employed to False and clears employer_id.
+        """
+        self.is_employed = False
+        self.employer_id = None
+
+    @property
     def tick_analytics(self) -> AgentTickAnalyticsDTO:
         return AgentTickAnalyticsDTO(
             run_id=0,

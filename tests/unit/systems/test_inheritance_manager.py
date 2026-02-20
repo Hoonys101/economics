@@ -29,6 +29,11 @@ class TestInheritanceManager:
         success_result.success = True
         simulation.transaction_processor.execute.return_value = [success_result]
 
+        # Phase 4.1: Mock Bank for Debt Repayment
+        simulation.bank = MagicMock()
+        # Default: No debt
+        simulation.bank.get_debt_status.return_value = MagicMock(total_outstanding_debt=0, loans=[])
+
         return simulation
 
     def create_household(self, id, assets=0.0):

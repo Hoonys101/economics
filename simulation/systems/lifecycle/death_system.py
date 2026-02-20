@@ -48,6 +48,9 @@ class DeathSystem(IDeathSystem):
             # 0. Cancel Orders (Atomicity Fix)
             self._cancel_agent_orders(firm.id, state)
 
+            # 0.5 Recover External Assets (Bank Deposits)
+            self._recover_external_assets(firm.id, state)
+
             # Delegate strictly to LiquidationManager
             if isinstance(firm, ILiquidatable):
                  self.liquidation_manager.initiate_liquidation(firm, state)
@@ -79,6 +82,9 @@ class DeathSystem(IDeathSystem):
         for household in inactive_households:
              # 0. Cancel Orders (Atomicity Fix)
              self._cancel_agent_orders(household.id, state)
+
+             # 0.5 Recover External Assets (Bank Deposits)
+             self._recover_external_assets(household.id, state)
 
              # Preserve for history/logging if needed
              if state.inactive_agents is not None:
@@ -133,6 +139,47 @@ class DeathSystem(IDeathSystem):
         if hasattr(state, 'escrow_agent') and state.escrow_agent: state.agents[state.escrow_agent.id] = state.escrow_agent
 
         return transactions
+
+    def _recover_external_assets(self, agent_id: int, state: SimulationState) -> None:
+        """
+        Recovers assets from external accounts (Banks) before liquidation.
+        """
+        if not self.settlement_system: return
+
+        # 1. Find Banks using new API
+        if hasattr(self.settlement_system, 'get_agent_banks'):
+            bank_ids = self.settlement_system.get_agent_banks(agent_id)
+        else:
+            return
+
+        agent = state.agents.get(agent_id)
+        if not agent: return
+
+        for bank_id in bank_ids:
+            # 2. Close Account safely via Settlement Transfer
+            bank = state.agents.get(bank_id)
+            if not bank: continue
+
+            # Check for protocol compliance
+            if hasattr(bank, 'get_customer_balance') and hasattr(bank, 'close_account'):
+                amount = bank.get_customer_balance(agent_id)
+                if amount > 0:
+                    # 3. Transfer Real Assets (Cash) from Bank to Agent
+                    # Use SettlementSystem to ensure Zero-Sum Integrity (Bank loses Cash, Agent gains Cash)
+                    success = self.settlement_system.transfer(
+                        debit_agent=bank,
+                        credit_agent=agent,
+                        amount=amount,
+                        memo="Deposit Recovery (Death/Liquidation)",
+                        currency=DEFAULT_CURRENCY
+                    )
+
+                    if success:
+                        # 4. Close the Ledger Account (Remove Liability)
+                        bank.close_account(agent_id)
+                        self.logger.info(f"RECOVER_ASSETS | Recovered {amount} from Bank {bank_id} for Agent {agent_id}")
+                    else:
+                        self.logger.error(f"RECOVER_FAIL | Bank {bank_id} insolvent? Could not return {amount} to {agent_id}")
 
     def _cancel_agent_orders(self, agent_id: str | int, state: SimulationState) -> None:
         """
