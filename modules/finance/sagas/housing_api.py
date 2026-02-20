@@ -3,12 +3,13 @@ from uuid import UUID
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from modules.market.housing_planner_api import MortgageApplicationDTO
+from modules.finance.api import MortgageApplicationDTO
 from modules.simulation.api import HouseholdSnapshotDTO
 
 # --- DTOs for Saga State & Payloads ---
 
-class MortgageApprovalDTO(TypedDict):
+@dataclass(frozen=True)
+class MortgageApprovalDTO:
     """
     Represents the confirmed details of an approved mortgage.
     """
@@ -17,12 +18,14 @@ class MortgageApprovalDTO(TypedDict):
     approved_principal: float
     monthly_payment: float
 
-class HousingSagaAgentContext(TypedDict):
+@dataclass(frozen=True)
+class HousingSagaAgentContext:
     id: int
     monthly_income: float
     existing_monthly_debt: float
 
-class HousingTransactionSagaStateDTO(TypedDict):
+@dataclass
+class HousingTransactionSagaStateDTO:
     """
     State object for the multi-tick housing purchase Saga.
     This object is persisted across ticks to manage the transaction lifecycle.
@@ -38,7 +41,8 @@ class HousingTransactionSagaStateDTO(TypedDict):
         "TRANSFER_TITLE",       # -> Completed or Failed
         # Terminal States
         "COMPLETED",
-        "FAILED_ROLLED_BACK"
+        "FAILED_ROLLED_BACK",
+        "CANCELLED"             # Added to support cancellation logic
     ]
     buyer_context: HouseholdSnapshotDTO
     seller_context: HousingSagaAgentContext
@@ -47,15 +51,16 @@ class HousingTransactionSagaStateDTO(TypedDict):
     down_payment_amount: float
 
     # State-specific payloads, populated as the saga progresses
-    loan_application: Optional[MortgageApplicationDTO]
-    mortgage_approval: Optional[MortgageApprovalDTO]
+    loan_application: Optional[MortgageApplicationDTO] = None
+    mortgage_approval: Optional[MortgageApprovalDTO] = None
 
     # Tracking IDs for compensation
-    staged_loan_id: Optional[str]
+    staged_loan_id: Optional[str] = None
 
     # Error logging
-    error_message: Optional[str]
-    last_processed_tick: int
+    error_message: Optional[str] = None
+    last_processed_tick: int = 0
+    logs: List[str] = None
 
 # --- System Interfaces ---
 

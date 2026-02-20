@@ -3,7 +3,8 @@ from typing import Optional, TYPE_CHECKING, List, Any
 from uuid import UUID
 
 from modules.finance.api import LienDTO
-from modules.housing.dtos import HousingDecisionRequestDTO, HousingDecisionDTO, HousingTransactionSagaStateDTO
+from modules.market.housing_planner_api import HousingDecisionRequestDTO, HousingDecisionDTO
+from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState

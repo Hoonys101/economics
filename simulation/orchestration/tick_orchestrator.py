@@ -269,10 +269,11 @@ class TickOrchestrator:
                 authorized_delta = state.government.get_monetary_delta(DEFAULT_CURRENCY)
                 state.baseline_money_supply += authorized_delta
 
-             # Track Economics
-             if state.tracker:
-                  # ...
-                  state.tracker.track(...)
+            # Track Economics
+            if state.tracker:
+                # ...
+                # state.tracker.track(...)
+                pass
 
         # Phase 4.1: Market Panic Index Calculation (Architect Directive)
         total_deposits = 0
