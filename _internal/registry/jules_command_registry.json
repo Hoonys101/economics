@@ -20,23 +20,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "phase4-ai-labor-matching": {
-      "key": "phase4-ai-labor-matching",
-      "title": "4.1-A-5: Labor Market Utility-Priority Matching",
-      "type": "jules",
-      "instruction_raw": "MatchingEngine\uc744 \uac1c\ud3b8\ud558\uc5ec \uac00\uc131\ube44(Utility-Priority) \ub9e4\uce6d\uacfc Signaling Game(Lemon Market) \ub85c\uc9c1\uc744 \uad6c\ud604\ud558\ub77c.",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_phase4-ai-labor-matching_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "phase4-ai-perception-filters": {
       "key": "phase4-ai-perception-filters",
       "title": "4.1-A-6: Perceptual Filters & Reward Tuning",
