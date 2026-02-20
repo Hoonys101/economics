@@ -1,0 +1,815 @@
+diff --git a/communications/insights/phase23-dto-tests.md b/communications/insights/phase23-dto-tests.md
+new file mode 100644
+index 00000000..4db62ef4
+--- /dev/null
++++ b/communications/insights/phase23-dto-tests.md
+@@ -0,0 +1,45 @@
++# PHASE 23 DTO TEST ALIGNMENT INSIGHTS
++
++## 1. [Architectural Insights]
++
++### Issue Identification
++The current test suite exhibits significant DTO mismatches in the Government and Finance engines. Specifically:
++- `FiscalEngine` and `MonetaryEngine` expect frozen `@dataclass` instances (`FiscalStateDTO`, `MonetaryStateDTO`, `MarketSnapshotDTO`) as inputs, consistent with the "DTO Purity" guardrail.
++- However, several test files (`test_fiscal_engine.py`, `test_monetary_engine.py`, `test_fiscal_guardrails.py`) are initializing these inputs as raw dictionaries.
++- This causes `AttributeError: 'dict' object has no attribute 'X'` when the engines attempt to access properties via dot notation (e.g., `state.potential_gdp`, `market.market_data`).
++- Additionally, `test_government_refactor_behavior.py` incorrectly asserts that the output `decision` is a dictionary, whereas the engine returns a typed `FiscalDecisionDTO`.
++
++### Remediation Strategy
++To align the tests with the architectural standard:
++1.  **DTO Instantiation:** All test inputs representing cross-boundary data must be instantiated using their respective Dataclass constructors, not dict literals.
++2.  **Type Safety:** Tests must verify the type of the returned objects using `isinstance(obj, DTOClass)` rather than checking for `dict`.
++3.  **Strict Typing:** Nested DTOs (e.g., `FiscalRequestDTO` containing `FirmBailoutRequestDTO`) must also be properly instantiated to ensure deep type safety.
++
++## 2. [Test Evidence]
++
++**Executed Verification:**
++`python3 -m pytest tests/modules/finance/engines/test_monetary_engine.py tests/modules/government/engines/test_fiscal_engine.py tests/modules/government/engines/test_fiscal_guardrails.py tests/integration/test_government_refactor_behavior.py`
++
++**Result:**
++```
++tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_calculate_rate_neutral PASSED [  5%]
++tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_calculate_rate_high_inflation PASSED [ 11%]
++tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_calculate_rate_recession PASSED [ 16%]
++tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_strategy_override PASSED [ 22%]
++tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_rate_multiplier PASSED [ 27%]
++tests/modules/government/engines/test_fiscal_engine.py::TestFiscalEngine::test_decide_expansionary PASSED [ 33%]
++tests/modules/government/engines/test_fiscal_engine.py::TestFiscalEngine::test_decide_contractionary PASSED [ 38%]
++tests/modules/government/engines/test_fiscal_engine.py::TestFiscalEngine::test_evaluate_bailout_solvent PASSED [ 44%]
++tests/modules/government/engines/test_fiscal_engine.py::TestFiscalEngine::test_evaluate_bailout_insolvent PASSED [ 50%]
++tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_debt_brake_welfare_reduction PASSED [ 55%]
++tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_debt_brake_extreme_welfare_cut PASSED [ 61%]
++tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_debt_brake_tax_hike_in_recession PASSED [ 66%]
++tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_bailout_rejection_due_to_debt PASSED [ 72%]
++tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_bailout_rejection_due_to_insufficient_funds PASSED [ 77%]
++tests/integration/test_government_refactor_behavior.py::TestGovernmentRefactor::test_fiscal_engine_taylor_rule PASSED [ 83%]
++tests/integration/test_government_refactor_behavior.py::TestGovernmentRefactor::test_execution_engine_state_update PASSED [ 88%]
++tests/integration/test_government_refactor_behavior.py::TestGovernmentRefactor::test_orchestrator_integration PASSED [ 94%]
++tests/integration/test_government_refactor_behavior.py::TestGovernmentRefactor::test_social_policy_execution PASSED [100%]
++
++============================== 18 passed in 0.38s ==============================
++```
+diff --git a/tests/integration/test_government_refactor_behavior.py b/tests/integration/test_government_refactor_behavior.py
+index 1bb3c458..8cc6e0a4 100644
+--- a/tests/integration/test_government_refactor_behavior.py
++++ b/tests/integration/test_government_refactor_behavior.py
+@@ -40,10 +40,11 @@ class TestGovernmentRefactor:
+         config.CORPORATE_TAX_RATE = 0.2
+         config.FISCAL_SENSITIVITY_ALPHA = 0.5
+         config.AUTO_COUNTER_CYCLICAL_ENABLED = True
++        config.BAILOUT_INTEREST_RATE = 0.05
++        config.BAILOUT_TERM_TICKS = 365
+ 
+         # Added for Social Policy (Wealth Tax)
+         config.ANNUAL_WEALTH_TAX_RATE = 0.02
+-        config.TICKS_PER_YEAR = 100
+         config.CB_INFLATION_TARGET = 0.02
+         return config
+ 
+@@ -73,7 +74,7 @@ class TestGovernmentRefactor:
+     def test_fiscal_engine_taylor_rule(self, mock_config):
+         """Verify FiscalEngine produces correct PolicyDecisionDTO."""
+         from modules.government.engines.fiscal_engine import FiscalEngine
+-        from modules.government.engines.api import FiscalStateDTO
++        from modules.government.engines.api import FiscalStateDTO, FiscalDecisionDTO
+         
+         engine = FiscalEngine(mock_config)
+ 
+@@ -105,9 +106,8 @@ class TestGovernmentRefactor:
+ 
+         decision = engine.decide(state, market_snapshot, [])
+ 
+-        # assert isinstance(decision, PolicyDecisionDTO) # FiscalEngine returns FiscalDecisionDTO (TypedDict)
+-        assert isinstance(decision, dict)
+-        assert "new_income_tax_rate" in decision
++        assert isinstance(decision, FiscalDecisionDTO)
++        assert decision.new_income_tax_rate is not None
+         # assert decision.action_tag == PolicyActionTag.KEYNESIAN_FISCAL # Stimulus
+         # assert decision.parameters["income_tax_rate"] < 0.1 # Tax Cut
+         # assert "potential_gdp" in decision.parameters
+diff --git a/tests/modules/finance/engines/test_monetary_engine.py b/tests/modules/finance/engines/test_monetary_engine.py
+index 371c6a42..50576754 100644
+--- a/tests/modules/finance/engines/test_monetary_engine.py
++++ b/tests/modules/finance/engines/test_monetary_engine.py
+@@ -1,7 +1,8 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from modules.finance.engines.monetary_engine import MonetaryEngine
+-from modules.finance.engines.api import MonetaryStateDTO, MarketSnapshotDTO
++from modules.finance.engines.api import MonetaryStateDTO, MonetaryDecisionDTO
++from modules.system.api import MarketSnapshotDTO
+ 
+ @pytest.fixture
+ def mock_config():
+@@ -19,22 +20,26 @@ class TestMonetaryEngine:
+         # Neutral: Inflation = Target, Gap = 0
+         # Rate should be r* + pi = 0.02 + 0.02 = 0.04
+ 
+-        state: MonetaryStateDTO = {
+-            "tick": 100,
+-            "current_base_rate": 0.04,
+-            "potential_gdp": 1000.0,
+-            "inflation_target": 0.02
+-        }
+-
+-        market: MarketSnapshotDTO = {
+-            "tick": 100,
+-            "inflation_rate_annual": 0.02,
+-            "current_gdp": 1000.0
+-        }
++        state = MonetaryStateDTO(
++            tick=100,
++            current_base_rate=0.04,
++            potential_gdp=1000.0,
++            inflation_target=0.02
++        )
++
++        market = MarketSnapshotDTO(
++            tick=100,
++            market_signals={},
++            market_data={
++                "inflation_rate_annual": 0.02,
++                "current_gdp": 1000.0
++            }
++        )
+ 
+         decision = monetary_engine.calculate_rate(state, market)
+ 
+-        assert decision["new_base_rate"] == pytest.approx(0.04)
++        assert isinstance(decision, MonetaryDecisionDTO)
++        assert decision.new_base_rate == pytest.approx(0.04)
+ 
+     def test_calculate_rate_high_inflation(self, monetary_engine):
+         # Inflation 4% (>2%), Gap 0
+@@ -42,25 +47,29 @@ class TestMonetaryEngine:
+         #        = 0.06 + 1.5*0.02
+         #        = 0.06 + 0.03 = 0.09
+ 
+-        state: MonetaryStateDTO = {
+-            "tick": 100,
+-            "current_base_rate": 0.04,
+-            "potential_gdp": 1000.0,
+-            "inflation_target": 0.02
+-        }
+-
+-        market: MarketSnapshotDTO = {
+-            "tick": 100,
+-            "inflation_rate_annual": 0.04,
+-            "current_gdp": 1000.0
+-        }
++        state = MonetaryStateDTO(
++            tick=100,
++            current_base_rate=0.04,
++            potential_gdp=1000.0,
++            inflation_target=0.02
++        )
++
++        market = MarketSnapshotDTO(
++            tick=100,
++            market_signals={},
++            market_data={
++                "inflation_rate_annual": 0.04,
++                "current_gdp": 1000.0
++            }
++        )
+ 
+         decision = monetary_engine.calculate_rate(state, market)
+ 
+         # Should be smoothed. Target 0.09. Current 0.04. Delta 0.05. Max change 0.0025.
+         # Result 0.04 + 0.0025 = 0.0425
+ 
+-        assert decision["new_base_rate"] == pytest.approx(0.0425)
++        assert isinstance(decision, MonetaryDecisionDTO)
++        assert decision.new_base_rate == pytest.approx(0.0425)
+ 
+     def test_calculate_rate_recession(self, monetary_engine):
+         # Inflation 2%, Gap -10% (-0.1)
+@@ -68,67 +77,79 @@ class TestMonetaryEngine:
+         #        = 0.04 - 0.05 = -0.01
+         # ZLB -> 0.0
+ 
+-        state: MonetaryStateDTO = {
+-            "tick": 100,
+-            "current_base_rate": 0.04,
+-            "potential_gdp": 1000.0,
+-            "inflation_target": 0.02
+-        }
+-
+-        market: MarketSnapshotDTO = {
+-            "tick": 100,
+-            "inflation_rate_annual": 0.02,
+-            "current_gdp": 900.0
+-        }
++        state = MonetaryStateDTO(
++            tick=100,
++            current_base_rate=0.04,
++            potential_gdp=1000.0,
++            inflation_target=0.02
++        )
++
++        market = MarketSnapshotDTO(
++            tick=100,
++            market_signals={},
++            market_data={
++                "inflation_rate_annual": 0.02,
++                "current_gdp": 900.0
++            }
++        )
+ 
+         decision = monetary_engine.calculate_rate(state, market)
+ 
+         # Target 0.0. Current 0.04. Delta -0.04.
+         # Result 0.04 - 0.0025 = 0.0375
+ 
+-        assert decision["new_base_rate"] == pytest.approx(0.0375)
++        assert isinstance(decision, MonetaryDecisionDTO)
++        assert decision.new_base_rate == pytest.approx(0.0375)
+ 
+     def test_strategy_override(self, monetary_engine):
+-        state: MonetaryStateDTO = {
+-            "tick": 100,
+-            "current_base_rate": 0.05,
+-            "potential_gdp": 1000.0,
+-            "inflation_target": 0.02,
+-            "override_target_rate": 0.10
+-        }
+-
+-        market: MarketSnapshotDTO = {
+-            "tick": 100,
+-            "inflation_rate_annual": 0.02,
+-            "current_gdp": 1000.0
+-        }
++        state = MonetaryStateDTO(
++            tick=100,
++            current_base_rate=0.05,
++            potential_gdp=1000.0,
++            inflation_target=0.02,
++            override_target_rate=0.10
++        )
++
++        market = MarketSnapshotDTO(
++            tick=100,
++            market_signals={},
++            market_data={
++                "inflation_rate_annual": 0.02,
++                "current_gdp": 1000.0
++            }
++        )
+ 
+         decision = monetary_engine.calculate_rate(state, market)
+ 
+         # Target overridden to 0.10. Current 0.05.
+         # Smoothing applies. 0.05 + 0.0025 = 0.0525
+ 
+-        assert decision["new_base_rate"] == pytest.approx(0.0525)
++        assert isinstance(decision, MonetaryDecisionDTO)
++        assert decision.new_base_rate == pytest.approx(0.0525)
+ 
+     def test_rate_multiplier(self, monetary_engine):
+         # Normal Taylor = 0.04 (Neutral). Multiplier 2.0 -> 0.08.
+-        state: MonetaryStateDTO = {
+-            "tick": 100,
+-            "current_base_rate": 0.04,
+-            "potential_gdp": 1000.0,
+-            "inflation_target": 0.02,
+-            "rate_multiplier": 2.0
+-        }
+-
+-        market: MarketSnapshotDTO = {
+-            "tick": 100,
+-            "inflation_rate_annual": 0.02,
+-            "current_gdp": 1000.0
+-        }
++        state = MonetaryStateDTO(
++            tick=100,
++            current_base_rate=0.04,
++            potential_gdp=1000.0,
++            inflation_target=0.02,
++            rate_multiplier=2.0
++        )
++
++        market = MarketSnapshotDTO(
++            tick=100,
++            market_signals={},
++            market_data={
++                "inflation_rate_annual": 0.02,
++                "current_gdp": 1000.0
++            }
++        )
+ 
+         decision = monetary_engine.calculate_rate(state, market)
+ 
+         # Target 0.08. Current 0.04.
+         # Smoothed -> 0.0425
+ 
+-        assert decision["new_base_rate"] == pytest.approx(0.0425)
++        assert isinstance(decision, MonetaryDecisionDTO)
++        assert decision.new_base_rate == pytest.approx(0.0425)
+diff --git a/tests/modules/government/engines/test_fiscal_engine.py b/tests/modules/government/engines/test_fiscal_engine.py
+index 97ccc9c0..9d02da75 100644
+--- a/tests/modules/government/engines/test_fiscal_engine.py
++++ b/tests/modules/government/engines/test_fiscal_engine.py
+@@ -1,7 +1,7 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from modules.government.engines.fiscal_engine import FiscalEngine
+-from modules.government.engines.api import FiscalStateDTO, FiscalRequestDTO, FirmBailoutRequestDTO, FirmFinancialsDTO
++from modules.government.engines.api import FiscalStateDTO, FiscalRequestDTO, FirmBailoutRequestDTO, FirmFinancialsDTO, FiscalDecisionDTO
+ from modules.system.api import MarketSnapshotDTO
+ from modules.system.api import DEFAULT_CURRENCY
+ 
+@@ -13,6 +13,8 @@ def mock_config():
+     config.INCOME_TAX_RATE = 0.1
+     config.CORPORATE_TAX_RATE = 0.2
+     config.TICKS_PER_YEAR = 100
++    config.BAILOUT_INTEREST_RATE = 0.05
++    config.BAILOUT_TERM_TICKS = 365
+     return config
+ 
+ @pytest.fixture
+@@ -22,25 +24,24 @@ def fiscal_engine(mock_config):
+ class TestFiscalEngine:
+     def test_decide_expansionary(self, fiscal_engine):
+         # Case: GDP < Potential (Recession) -> Should lower tax
+-        state: FiscalStateDTO = {
+-            "tick": 100,
+-            "assets": {DEFAULT_CURRENCY: 1000.0},
+-            "total_debt": 0.0,
+-            "income_tax_rate": 0.1,
+-            "corporate_tax_rate": 0.2,
+-            "approval_rating": 0.5,
+-            "welfare_budget_multiplier": 1.0,
+-            "potential_gdp": 1000.0
+-        }
+-
+-        market_data = {
+-            "inflation_rate_annual": 0.02,
+-            "current_gdp": 900.0 # Gap = (900-1000)/1000 = -0.1
+-        }
++        state = FiscalStateDTO(
++            tick=100,
++            assets={DEFAULT_CURRENCY: 1000.0},
++            total_debt=0.0,
++            income_tax_rate=0.1,
++            corporate_tax_rate=0.2,
++            approval_rating=0.5,
++            welfare_budget_multiplier=1.0,
++            potential_gdp=1000.0
++        )
++
+         market = MarketSnapshotDTO(
+             tick=100,
+             market_signals={},
+-            market_data=market_data
++            market_data={
++                "inflation_rate_annual": 0.02,
++                "current_gdp": 900.0 # Gap = (900-1000)/1000 = -0.1
++            }
+         )
+ 
+         requests = []
+@@ -50,31 +51,31 @@ class TestFiscalEngine:
+         # Stance = -0.5 * -0.1 = 0.05
+         # New Tax = 0.1 * (1 - 0.05) = 0.095
+ 
+-        assert decision["new_income_tax_rate"] < 0.1
+-        assert decision["new_corporate_tax_rate"] < 0.2
+-        assert decision["new_income_tax_rate"] == pytest.approx(0.095)
++        assert isinstance(decision, FiscalDecisionDTO)
++        assert decision.new_income_tax_rate < 0.1
++        assert decision.new_corporate_tax_rate < 0.2
++        assert decision.new_income_tax_rate == pytest.approx(0.095)
+ 
+     def test_decide_contractionary(self, fiscal_engine):
+         # Case: GDP > Potential (Boom) -> Should raise tax
+-        state: FiscalStateDTO = {
+-            "tick": 100,
+-            "assets": {DEFAULT_CURRENCY: 1000.0},
+-            "total_debt": 0.0,
+-            "income_tax_rate": 0.1,
+-            "corporate_tax_rate": 0.2,
+-            "approval_rating": 0.5,
+-            "welfare_budget_multiplier": 1.0,
+-            "potential_gdp": 1000.0
+-        }
+-
+-        market_data = {
+-            "inflation_rate_annual": 0.02,
+-            "current_gdp": 1100.0 # Gap = 0.1
+-        }
++        state = FiscalStateDTO(
++            tick=100,
++            assets={DEFAULT_CURRENCY: 1000.0},
++            total_debt=0.0,
++            income_tax_rate=0.1,
++            corporate_tax_rate=0.2,
++            approval_rating=0.5,
++            welfare_budget_multiplier=1.0,
++            potential_gdp=1000.0
++        )
++
+         market = MarketSnapshotDTO(
+             tick=100,
+             market_signals={},
+-            market_data=market_data
++            market_data={
++                "inflation_rate_annual": 0.02,
++                "current_gdp": 1100.0 # Gap = 0.1
++            }
+         )
+ 
+         decision = fiscal_engine.decide(state, market, [])
+@@ -82,76 +83,77 @@ class TestFiscalEngine:
+         # Stance = -0.5 * 0.1 = -0.05
+         # New Tax = 0.1 * (1 - (-0.05)) = 0.105
+ 
+-        assert decision["new_income_tax_rate"] > 0.1
+-        assert decision["new_income_tax_rate"] == pytest.approx(0.105)
++        assert isinstance(decision, FiscalDecisionDTO)
++        assert decision.new_income_tax_rate > 0.1
++        assert decision.new_income_tax_rate == pytest.approx(0.105)
+ 
+     def test_evaluate_bailout_solvent(self, fiscal_engine):
+-        state: FiscalStateDTO = {
+-            "tick": 100,
+-            "assets": {},
+-            "total_debt": 0.0,
+-            "income_tax_rate": 0.1,
+-            "corporate_tax_rate": 0.2,
+-            "approval_rating": 0.5,
+-            "welfare_budget_multiplier": 1.0,
+-            "potential_gdp": 1000.0
+-        }
+-        market_data = {"current_gdp": 1000.0, "inflation_rate_annual": 0.0}
++        state = FiscalStateDTO(
++            tick=100,
++            assets={},
++            total_debt=0.0,
++            income_tax_rate=0.1,
++            corporate_tax_rate=0.2,
++            approval_rating=0.5,
++            welfare_budget_multiplier=1.0,
++            potential_gdp=1000.0
++        )
+         market = MarketSnapshotDTO(
+             tick=100,
+             market_signals={},
+-            market_data=market_data
++            market_data={"current_gdp": 1000.0, "inflation_rate_annual": 0.0}
+         )
+ 
+-        req: FiscalRequestDTO = {
+-            "bailout_request": {
+-                "firm_id": 101,
+-                "requested_amount": 500.0,
+-                "firm_financials": {
+-                    "assets": 1000.0,
+-                    "profit": -100.0,
+-                    "is_solvent": True
+-                }
+-            }
+-        }
++        req = FiscalRequestDTO(
++            bailout_request=FirmBailoutRequestDTO(
++                firm_id=101,
++                requested_amount=500,
++                firm_financials=FirmFinancialsDTO(
++                    assets=1000,
++                    profit=-100.0,
++                    is_solvent=True
++                )
++            )
++        )
+ 
+         decision = fiscal_engine.decide(state, market, [req])
+ 
+-        assert len(decision["bailouts_to_grant"]) == 1
+-        grant = decision["bailouts_to_grant"][0]
+-        assert grant["firm_id"] == 101
+-        assert grant["amount"] == 500.0
++        assert isinstance(decision, FiscalDecisionDTO)
++        assert len(decision.bailouts_to_grant) == 1
++        grant = decision.bailouts_to_grant[0]
++        assert grant.firm_id == 101
++        assert grant.amount == 500.0
+ 
+     def test_evaluate_bailout_insolvent(self, fiscal_engine):
+-        state: FiscalStateDTO = {
+-            "tick": 100,
+-            "assets": {},
+-            "total_debt": 0.0,
+-            "income_tax_rate": 0.1,
+-            "corporate_tax_rate": 0.2,
+-            "approval_rating": 0.5,
+-            "welfare_budget_multiplier": 1.0,
+-            "potential_gdp": 1000.0
+-        }
+-        market_data = {"current_gdp": 1000.0, "inflation_rate_annual": 0.0}
++        state = FiscalStateDTO(
++            tick=100,
++            assets={},
++            total_debt=0.0,
++            income_tax_rate=0.1,
++            corporate_tax_rate=0.2,
++            approval_rating=0.5,
++            welfare_budget_multiplier=1.0,
++            potential_gdp=1000.0
++        )
+         market = MarketSnapshotDTO(
+             tick=100,
+             market_signals={},
+-            market_data=market_data
++            market_data={"current_gdp": 1000.0, "inflation_rate_annual": 0.0}
+         )
+ 
+-        req: FiscalRequestDTO = {
+-            "bailout_request": {
+-                "firm_id": 102,
+-                "requested_amount": 500.0,
+-                "firm_financials": {
+-                    "assets": 0.0,
+-                    "profit": -100.0,
+-                    "is_solvent": False
+-                }
+-            }
+-        }
++        req = FiscalRequestDTO(
++            bailout_request=FirmBailoutRequestDTO(
++                firm_id=102,
++                requested_amount=500,
++                firm_financials=FirmFinancialsDTO(
++                    assets=0,
++                    profit=-100.0,
++                    is_solvent=False
++                )
++            )
++        )
+ 
+         decision = fiscal_engine.decide(state, market, [req])
+ 
+-        assert len(decision["bailouts_to_grant"]) == 0
++        assert isinstance(decision, FiscalDecisionDTO)
++        assert len(decision.bailouts_to_grant) == 0
+diff --git a/tests/modules/government/engines/test_fiscal_guardrails.py b/tests/modules/government/engines/test_fiscal_guardrails.py
+index c76a697b..bbeba7ee 100644
+--- a/tests/modules/government/engines/test_fiscal_guardrails.py
++++ b/tests/modules/government/engines/test_fiscal_guardrails.py
+@@ -1,7 +1,7 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from modules.government.engines.fiscal_engine import FiscalEngine
+-from modules.government.engines.api import FiscalStateDTO, FiscalRequestDTO
++from modules.government.engines.api import FiscalStateDTO, FiscalRequestDTO, FirmBailoutRequestDTO, FirmFinancialsDTO
+ from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY
+ 
+ @pytest.fixture
+@@ -22,51 +22,53 @@ class TestFiscalGuardrails:
+     def test_debt_brake_welfare_reduction(self, fiscal_engine):
+         """Test that high debt reduces welfare multiplier."""
+         # 1500 debt / 1000 GDP = 1.5 ratio -> Should trigger reduction
+-        state: FiscalStateDTO = {
+-            "tick": 100,
+-            "assets": {DEFAULT_CURRENCY: 1000.0},
+-            "total_debt": 1500.0,
+-            "income_tax_rate": 0.1,
+-            "corporate_tax_rate": 0.2,
+-            "approval_rating": 0.5,
+-            "welfare_budget_multiplier": 1.0,
+-            "potential_gdp": 1000.0
+-        }
+-
+-        market_data = {
+-            "current_gdp": 1000.0
+-        }
++        state = FiscalStateDTO(
++            tick=100,
++            assets={DEFAULT_CURRENCY: 1000.0},
++            total_debt=1500.0,
++            income_tax_rate=0.1,
++            corporate_tax_rate=0.2,
++            approval_rating=0.5,
++            welfare_budget_multiplier=1.0,
++            potential_gdp=1000.0
++        )
++
+         market = MarketSnapshotDTO(
+             tick=100,
+             market_signals={},
+-            market_data=market_data
++            market_data={
++                "current_gdp": 1000.0
++            }
+         )
+ 
+         decision = fiscal_engine.decide(state, market, [])
+ 
+         # Expect multiplier to be reduced below 1.0
+-        assert decision["new_welfare_budget_multiplier"] < 1.0
++        assert decision.new_welfare_budget_multiplier < 1.0
+ 
+     def test_debt_brake_extreme_welfare_cut(self, fiscal_engine):
+         """Test that extreme debt triggers severe welfare cuts."""
+         # 2000 debt / 1000 GDP = 2.0 ratio -> Severe cut
+-        state: FiscalStateDTO = {
+-            "tick": 100,
+-            "assets": {DEFAULT_CURRENCY: 1000.0},
+-            "total_debt": 2000.0,
+-            "income_tax_rate": 0.1,
+-            "corporate_tax_rate": 0.2,
+-            "approval_rating": 0.5,
+-            "welfare_budget_multiplier": 1.0,
+-            "potential_gdp": 1000.0
+-        }
+-
+-        market_data = {"current_gdp": 1000.0}
+-        market = MarketSnapshotDTO(tick=100, market_signals={}, market_data=market_data)
++        state = FiscalStateDTO(
++            tick=100,
++            assets={DEFAULT_CURRENCY: 1000.0},
++            total_debt=2000.0,
++            income_tax_rate=0.1,
++            corporate_tax_rate=0.2,
++            approval_rating=0.5,
++            welfare_budget_multiplier=1.0,
++            potential_gdp=1000.0
++        )
++
++        market = MarketSnapshotDTO(
++            tick=100,
++            market_signals={},
++            market_data={"current_gdp": 1000.0}
++        )
+ 
+         decision = fiscal_engine.decide(state, market, [])
+ 
+-        assert decision["new_welfare_budget_multiplier"] <= 0.5
++        assert decision.new_welfare_budget_multiplier <= 0.5
+ 
+     def test_debt_brake_tax_hike_in_recession(self, fiscal_engine):
+         """
+@@ -76,58 +78,64 @@ class TestFiscalGuardrails:
+         """
+         # Recession: 900 vs 1000 potential (-10% gap) -> Normally cuts tax
+         # But Debt: 1600 / 1000 = 1.6 ratio -> Debt Brake active
+-        state: FiscalStateDTO = {
+-            "tick": 100,
+-            "assets": {DEFAULT_CURRENCY: 1000.0},
+-            "total_debt": 1600.0,
+-            "income_tax_rate": 0.1,
+-            "corporate_tax_rate": 0.2,
+-            "approval_rating": 0.5,
+-            "welfare_budget_multiplier": 1.0,
+-            "potential_gdp": 1000.0
+-        }
+-
+-        market_data = {"current_gdp": 900.0}
+-        market = MarketSnapshotDTO(tick=100, market_signals={}, market_data=market_data)
++        state = FiscalStateDTO(
++            tick=100,
++            assets={DEFAULT_CURRENCY: 1000.0},
++            total_debt=1600.0,
++            income_tax_rate=0.1,
++            corporate_tax_rate=0.2,
++            approval_rating=0.5,
++            welfare_budget_multiplier=1.0,
++            potential_gdp=1000.0
++        )
++
++        market = MarketSnapshotDTO(
++            tick=100,
++            market_signals={},
++            market_data={"current_gdp": 900.0}
++        )
+ 
+         decision = fiscal_engine.decide(state, market, [])
+ 
+         # Should NOT lower taxes below baseline (0.1)
+         # Ideally should raise them
+-        assert decision["new_income_tax_rate"] >= 0.1
+-        assert decision["new_corporate_tax_rate"] >= 0.2
++        assert decision.new_income_tax_rate >= 0.1
++        assert decision.new_corporate_tax_rate >= 0.2
+ 
+     def test_bailout_rejection_due_to_debt(self, fiscal_engine):
+         """Test that bailouts are rejected if debt is too high."""
+-        state: FiscalStateDTO = {
+-            "tick": 100,
+-            "assets": {DEFAULT_CURRENCY: 10000.0}, # Has cash
+-            "total_debt": 2000.0, # High Debt (Ratio 2.0)
+-            "income_tax_rate": 0.1,
+-            "corporate_tax_rate": 0.2,
+-            "approval_rating": 0.5,
+-            "welfare_budget_multiplier": 1.0,
+-            "potential_gdp": 1000.0
+-        }
+-
+-        req: FiscalRequestDTO = {
+-            "bailout_request": {
+-                "firm_id": 101,
+-                "requested_amount": 500.0,
+-                "firm_financials": {
+-                    "assets": 1000.0,
+-                    "profit": -100.0,
+-                    "is_solvent": True # Solvent firm asking for bailout?
+-                }
+-            }
+-        }
++        state = FiscalStateDTO(
++            tick=100,
++            assets={DEFAULT_CURRENCY: 10000.0},
++            total_debt=2000.0, # High Debt (Ratio 2.0)
++            income_tax_rate=0.1,
++            corporate_tax_rate=0.2,
++            approval_rating=0.5,
++            welfare_budget_multiplier=1.0,
++            potential_gdp=1000.0
++        )
++
++        req = FiscalRequestDTO(
++            bailout_request=FirmBailoutRequestDTO(
++                firm_id=101,
++                requested_amount=500.0,
++                firm_financials=FirmFinancialsDTO(
++                    assets=1000.0,
++                    profit=-100.0,
++                    is_solvent=True
++                )
++            )
++        )
+ 
+-        market_data = {"current_gdp": 1000.0}
+-        market = MarketSnapshotDTO(tick=100, market_signals={}, market_data=market_data)
++        market = MarketSnapshotDTO(
++            tick=100,
++            market_signals={},
++            market_data={"current_gdp": 1000.0}
++        )
+ 
+         decision = fiscal_engine.decide(state, market, [req])
+ 
+-        assert len(decision["bailouts_to_grant"]) == 0
++        assert len(decision.bailouts_to_grant) == 0
+ 
+     def test_bailout_rejection_due_to_insufficient_funds(self, fiscal_engine):
+         """
+@@ -135,32 +143,35 @@ class TestFiscalGuardrails:
+         If Debt/GDP > 1.0 (Austerity), we shouldn't borrow for bailouts.
+         We must have cash on hand.
+         """
+-        state: FiscalStateDTO = {
+-            "tick": 100,
+-            "assets": {DEFAULT_CURRENCY: 100.0}, # Only 100 cash
+-            "total_debt": 1100.0, # Moderate Debt (Ratio 1.1) -> austerity trigger
+-            "income_tax_rate": 0.1,
+-            "corporate_tax_rate": 0.2,
+-            "approval_rating": 0.5,
+-            "welfare_budget_multiplier": 1.0,
+-            "potential_gdp": 1000.0
+-        }
+-
+-        req: FiscalRequestDTO = {
+-            "bailout_request": {
+-                "firm_id": 101,
+-                "requested_amount": 500.0, # Wants 500
+-                "firm_financials": {
+-                    "assets": 1000.0,
+-                    "profit": -100.0,
+-                    "is_solvent": True
+-                }
+-            }
+-        }
++        state = FiscalStateDTO(
++            tick=100,
++            assets={DEFAULT_CURRENCY: 100.0}, # Only 100 cash
++            total_debt=1100.0, # Moderate Debt (Ratio 1.1) -> austerity trigger
++            income_tax_rate=0.1,
++            corporate_tax_rate=0.2,
++            approval_rating=0.5,
++            welfare_budget_multiplier=1.0,
++            potential_gdp=1000.0
++        )
++
++        req = FiscalRequestDTO(
++            bailout_request=FirmBailoutRequestDTO(
++                firm_id=101,
++                requested_amount=500.0,
++                firm_financials=FirmFinancialsDTO(
++                    assets=1000.0,
++                    profit=-100.0,
++                    is_solvent=True
++                )
++            )
++        )
+ 
+-        market_data = {"current_gdp": 1000.0}
+-        market = MarketSnapshotDTO(tick=100, market_signals={}, market_data=market_data)
++        market = MarketSnapshotDTO(
++            tick=100,
++            market_signals={},
++            market_data={"current_gdp": 1000.0}
++        )
+ 
+         decision = fiscal_engine.decide(state, market, [req])
+ 
+-        assert len(decision["bailouts_to_grant"]) == 0
++        assert len(decision.bailouts_to_grant) == 0
