@@ -1,13 +1,16 @@
 from typing import TypedDict, List, Optional, Literal
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 # Import external DTOs
 # Note: Adjust imports based on actual file structure
 from modules.household.dtos import HouseholdSnapshotDTO
 from modules.system.api import HousingMarketSnapshotDTO, LoanMarketSnapshotDTO
 from modules.finance.api import MortgageApplicationDTO
+from modules.finance.sagas.housing_api import MortgageApprovalDTO
 
-class HousingOfferRequestDTO(TypedDict):
+@dataclass(frozen=True)
+class HousingDecisionRequestDTO:
     """
     Input for the HousingPlanner, containing all necessary state for a decision.
     """
@@ -17,7 +20,8 @@ class HousingOfferRequestDTO(TypedDict):
     applicant_current_debt: float # Total outstanding debt
     applicant_annual_income: float # Estimated annual income
 
-class HousingDecisionDTO(TypedDict):
+@dataclass(frozen=True)
+class HousingDecisionDTO:
     """
     Output of the HousingPlanner, detailing the agent's next action.
     This DTO is a command, not a state update.
@@ -27,16 +31,8 @@ class HousingDecisionDTO(TypedDict):
     offer_price: Optional[float]
     mortgage_application: Optional[MortgageApplicationDTO]
 
-class MortgageApprovalDTO(TypedDict):
-    """
-    Represents the confirmed details of an approved mortgage.
-    """
-    loan_id: str  # Bank-issued unique loan identifier (string)
-    lien_id: str  # Registry-issued unique lien identifier
-    approved_principal: float
-    monthly_payment: float
-
-class HousingBubbleMetricsDTO(TypedDict):
+@dataclass(frozen=True)
+class HousingBubbleMetricsDTO:
     """
     Data structure for monitoring housing market stability.
     """
@@ -56,7 +52,7 @@ class IHousingPlanner(ABC):
     from the old DecisionUnit.
     """
     @abstractmethod
-    def evaluate_housing_options(self, request: HousingOfferRequestDTO) -> HousingDecisionDTO:
+    def evaluate_housing_options(self, request: HousingDecisionRequestDTO) -> HousingDecisionDTO:
         """
         Analyzes the market and agent's finances to recommend a housing action.
         This method MUST NOT mutate state.
