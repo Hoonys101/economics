@@ -56,6 +56,7 @@ class RealEstateUnit:
         Backward compatibility for existing logic. Returns the loan_id of the
         first mortgage found in the liens list. Returns None if no mortgage exists.
         New logic should iterate over the `liens` list directly.
+        TODO: DEPRECATE_LEGACY_DICT - Remove dictionary support in Wave 2.
         """
         for lien in self.liens:
             if lien['lien_type'] == 'MORTGAGE':
