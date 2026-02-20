@@ -45,5 +45,10 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "title": "4.1-A-6: Perceptual Filters & Reward Tuning",
         "instruction": "DecisionEngine에 인지 시차/노이즈 필터를 적용하고, RewardCalculator에 부채 상한 위반 페널티 로직을 추가하라.",
         "file": "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_phase4-ai-perception-filters_SPEC.md"
+    },
+    "final-stabilization-test-fixes": {
+        "title": "Final Stabilization & Regression Fixes",
+        "instruction": "Fix the remaining 7 test failures related to TickOrchestrator and SagaOrchestrator protocol mismatches.",
+        "file": "c:/coding/economics/design/3_work_artifacts/specs/spec_final_test_fixes.md"
     }
 }

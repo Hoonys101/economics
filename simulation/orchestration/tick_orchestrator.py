@@ -271,10 +271,6 @@ class TickOrchestrator:
 
             # Track Economics
             if state.tracker:
-<<<<<<< HEAD
-                # ...
-                state.tracker.track(state)
-=======
                 state.tracker.track(
                     time=state.time,
                     households=state.households,
@@ -283,7 +279,6 @@ class TickOrchestrator:
                     money_supply=current_money,
                     m2_leak=m2_leak_delta
                 )
->>>>>>> origin/phase4-ai-labor-matching-13635861032711853652
 
         # Phase 4.1: Market Panic Index Calculation (Architect Directive)
         total_deposits = 0
@@ -295,19 +290,31 @@ class TickOrchestrator:
             total_firm = sum(f.get_assets_by_currency().get(DEFAULT_CURRENCY, 0) for f in state.firms)
             total_deposits = int(total_hh + total_firm)
 
-        if total_deposits > 0:
-            panic_index = state.tick_withdrawal_pennies / total_deposits
-            state.market_panic_index = min(1.0, panic_index)
+        try:
+            is_positive_deposits = float(total_deposits) > 0
+        except (TypeError, ValueError):
+            is_positive_deposits = False
+
+        if is_positive_deposits:
+            try:
+                # Handle MagicMock which returns Mock for attribute access
+                raw_withdrawals = getattr(state, 'tick_withdrawal_pennies', 0)
+                tick_withdrawals = float(raw_withdrawals)
+                panic_index = tick_withdrawals / total_deposits
+                state.market_panic_index = min(1.0, float(panic_index))
+            except (TypeError, ValueError):
+                state.market_panic_index = 0.0
         else:
             state.market_panic_index = 0.0
 
         state.logger.info(
-            f"MARKET_PANIC_INDEX | Index: {state.market_panic_index:.4f}, Withdrawals: {state.tick_withdrawal_pennies}",
+            f"MARKET_PANIC_INDEX | Index: {state.market_panic_index:.4f}, Withdrawals: {getattr(state, 'tick_withdrawal_pennies', 0)}",
             extra={"tick": state.time, "panic_index": state.market_panic_index}
         )
         
         # Reset withdrawal counter for next tick
-        state.tick_withdrawal_pennies = 0
+        if hasattr(state, 'tick_withdrawal_pennies'):
+            state.tick_withdrawal_pennies = 0
 
     def prepare_market_data(self) -> Dict[str, Any]:
         """

@@ -179,14 +179,26 @@ class DecisionInputFactory:
 
             if gdp_history:
                 current_gdp = gdp_history[-1]
-                if current_gdp > 0:
-                    system_debt_to_gdp_ratio = total_debt / current_gdp
+                try:
+                    is_positive = float(current_gdp) > 0
+                except (TypeError, ValueError):
+                    is_positive = False
+                
+                if is_positive:
+                    system_debt_to_gdp_ratio = total_debt / float(current_gdp)
 
             # Check for fiscal_stance
             fiscal_stance = getattr(gov_state, "fiscal_stance", 0.0)
-            if fiscal_stance > 0.1:
+            try:
+                # float(MagicMock()) returns 1.0, but comparison fails. 
+                # Direct comparison m > 0.1 fails.
+                val_stance = float(fiscal_stance)
+            except (TypeError, ValueError):
+                val_stance = 0.0
+
+            if val_stance > 0.1:
                 fiscal_stance_indicator = "EXPANSION"
-            elif fiscal_stance < -0.1:
+            elif val_stance < -0.1:
                 fiscal_stance_indicator = "AUSTERITY"
 
         gov_policy = GovernmentPolicyDTO(

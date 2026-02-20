@@ -1,0 +1,632 @@
+diff --git a/communications/insights/phase4-ai-perception-filters.md b/communications/insights/phase4-ai-perception-filters.md
+new file mode 100644
+index 00000000..3d3201aa
+--- /dev/null
++++ b/communications/insights/phase4-ai-perception-filters.md
+@@ -0,0 +1,51 @@
++# Phase 4 AI Perception Filters - Insight Report
++
++## 1. Architectural Insights
++
++### Perceptual Filtering System
++The introduction of `PerceptionSystem` marks a significant shift from "Perfect Information" to "Bounded Rationality" for agents. Agents no longer perceive the `MarketSnapshot` directly; instead, they view a distorted version based on their `market_insight` score.
++
++-   **High Insight (> 0.8)**: Access to real-time, accurate market data (Smart Money).
++-   **Medium Insight (> 0.3)**: Moving average smoothing (Laggards).
++-   **Low Insight (<= 0.3)**: Lagged data with Gaussian noise + amplified panic sensitivity (Lemons).
++
++This architecture required intercepting the `DecisionInputDTO` construction in `Phase1_Decision` and injecting the `PerceptionSystem`.
++
++### Active Learning Dynamics
++We implemented an "Active Learning" feedback loop where `td_error` (prediction surprise) directly boosts `market_insight`. This creates a dynamic where agents who are consistently "surprised" by the market pay more attention (gain insight), while complacent agents (low error) naturally suffer from insight decay (-0.001 per tick). This simulates the "Alertness" concept in Austrian economics.
++
++### Technical Debt & Refactoring
++-   `QTableManager.update_q_table` was refactored to return `td_error` instead of the raw Q-value delta. This improves the semantic value of the return type for AI analysis.
++-   `Firm` and `Household` classes were updated to maintain `market_insight` state, ensuring persistence and continuity of cognitive capabilities.
++
++## 2. Regression Analysis
++
++### Fixed Regressions
++-   **`tests/unit/test_phase1_refactor.py`**: Failed initially because the mock `Firm` and `Household` objects lacked the new `market_insight` attribute required by `PerceptionSystem`.
++    -   *Fix*: Updated the test setup to inject `market_insight = 0.5` into the mock agents.
++
++### Risk Assessment
++-   **Performance**: The `PerceptionSystem` introduces calculation overhead (Moving Averages, History Tracking) in the hot path of `Phase1_Decision`. With 100+ agents, this is negligible, but with 10,000+ agents, vectorization of the filter might be necessary.
++-   **Determinism**: The use of `random.gauss` in `PerceptionSystem` requires careful seed management for reproducible runs. Currently relies on the global random state.
++
++## 3. Test Evidence
++
++```
++tests/unit/systems/test_perception_system.py::test_perception_system_update PASSED [  5%]
++tests/unit/systems/test_perception_system.py::test_smart_money_filter PASSED [ 11%]
++tests/unit/systems/test_perception_system.py::test_laggard_filter PASSED [ 17%]
++tests/unit/systems/test_perception_system.py::test_lemon_filter PASSED   [ 23%]
++tests/unit/systems/test_perception_system.py::test_policy_filter PASSED  [ 29%]
++tests/unit/test_firms.py::TestFirmBookValue::test_book_value_no_liabilities PASSED [ 35%]
++tests/unit/test_firms.py::TestFirmBookValue::test_book_value_with_liabilities PASSED [ 41%]
++tests/unit/test_firms.py::TestFirmBookValue::test_book_value_with_treasury_shares PASSED [ 47%]
++tests/unit/test_firms.py::TestFirmBookValue::test_book_value_negative_net_assets PASSED [ 52%]
++tests/unit/test_firms.py::TestFirmBookValue::test_book_value_zero_shares PASSED [ 58%]
++tests/unit/test_firms.py::TestFirmProduction::test_produce PASSED        [ 64%]
++tests/unit/test_firms.py::TestFirmSales::test_post_ask PASSED            [ 70%]
++tests/unit/test_firms.py::TestFirmSales::test_adjust_marketing_budget_increase PASSED [ 76%]
++tests/unit/test_household_ai.py::test_ai_creates_purchase_order PASSED   [ 82%]
++tests/unit/test_household_ai.py::test_ai_evaluates_consumption_options PASSED [ 88%]
++tests/unit/test_phase1_refactor.py::TestPhase1DecisionRefactor::test_execute_flow PASSED [ 94%]
++tests/unit/test_phase1_refactor.py::TestPhase1DecisionRefactor::test_dispatch_logic PASSED [100%]
++```
+diff --git a/modules/household/engines/consumption_engine.py b/modules/household/engines/consumption_engine.py
+index 1bd0f5d7..c6a9e388 100644
+--- a/modules/household/engines/consumption_engine.py
++++ b/modules/household/engines/consumption_engine.py
+@@ -87,5 +87,10 @@ class ConsumptionEngine(IConsumptionEngine):
+         new_econ_state = copy.deepcopy(econ_state)
+         if leisure_type == 'SELF_DEV' and prod_gained > 0:
+             new_econ_state.labor_skill += prod_gained
++
++        # Phase 4.1: Insight Boost from Education
++        if 'education_service' in consumed_items and consumed_items['education_service'] > 0:
++            new_econ_state.market_insight = min(1.0, new_econ_state.market_insight + 0.05)
++
+         effect_dto = LeisureEffectDTO(leisure_type=leisure_type, leisure_hours=leisure_hours, utility_gained=utility_gained, xp_gained=xp_gained)
+         return (new_social_state, new_econ_state, effect_dto)
+\ No newline at end of file
+diff --git a/simulation/ai/firm_ai.py b/simulation/ai/firm_ai.py
+index ff5cec7b..d3a87801 100644
+--- a/simulation/ai/firm_ai.py
++++ b/simulation/ai/firm_ai.py
+@@ -147,12 +147,13 @@ class FirmAI(BaseAIEngine):
+         reward: float,
+         next_agent_data: Dict[str, Any],
+         next_market_data: Dict[str, Any],
+-    ) -> None:
++    ) -> float:
+         """
+         Update Q-tables for V2 architecture using the same global reward for all channels.
++        Returns the maximum absolute TD-Error encountered (proxy for surprise/learning).
+         """
+         if self.last_state is None:
+-            return
++            return 0.0
+ 
+         next_state = self._get_common_state(next_agent_data, next_market_data)
+         all_actions = list(range(len(self.AGGRESSIVENESS_LEVELS)))
+@@ -167,10 +168,12 @@ class FirmAI(BaseAIEngine):
+             (self.q_debt, 'debt'),
+         ]
+ 
++        max_td_error = 0.0
++
+         for q_mgr, key in managers:
+             if key in self.last_actions_idx:
+                 action_idx = self.last_actions_idx[key]
+-                q_mgr.update_q_table(
++                td_error = q_mgr.update_q_table(
+                     self.last_state,
+                     action_idx,
+                     reward,
+@@ -179,6 +182,10 @@ class FirmAI(BaseAIEngine):
+                     self.base_alpha,
+                     self.gamma
+                 )
++                if abs(td_error) > max_td_error:
++                    max_td_error = abs(td_error)
++
++        return max_td_error
+ 
+     def calculate_reward(self, firm_agent: "Firm", prev_state: Dict, current_state: Dict) -> float:
+         """
+diff --git a/simulation/ai/household_ai.py b/simulation/ai/household_ai.py
+index 2efaa7cf..22008800 100644
+--- a/simulation/ai/household_ai.py
++++ b/simulation/ai/household_ai.py
+@@ -280,20 +280,23 @@ class HouseholdAI(BaseAIEngine):
+         reward: float,
+         next_agent_data: Dict[str, Any],
+         next_market_data: Dict[str, Any],
+-    ) -> None:
++    ) -> float:
+         """
+         Update Household Q-Tables.
++        Returns the maximum absolute TD-Error encountered.
+         """
+         next_state = self._get_common_state(next_agent_data, next_market_data)
+         actions = list(range(len(self.AGGRESSIVENESS_LEVELS)))
+ 
++        max_td_error = 0.0
++
+         # Update Consumption Q-Tables
+         for item_id, q_manager in self.q_consumption.items():
+             last_state = self.last_consumption_states.get(item_id)
+             last_action = self.last_consumption_action_idxs.get(item_id)
+             
+             if last_state is not None and last_action is not None:
+-                q_manager.update_q_table(
++                td_error = q_manager.update_q_table(
+                     last_state,
+                     last_action,
+                     reward,
+@@ -302,10 +305,12 @@ class HouseholdAI(BaseAIEngine):
+                     self.base_alpha,
+                     self.gamma
+                 )
++                if abs(td_error) > max_td_error:
++                    max_td_error = abs(td_error)
+ 
+         # Update Work Q-Table
+         if self.last_work_state is not None and self.last_work_action_idx is not None:
+-            self.q_work.update_q_table(
++            td_error = self.q_work.update_q_table(
+                 self.last_work_state,
+                 self.last_work_action_idx,
+                 reward,
+@@ -314,10 +319,12 @@ class HouseholdAI(BaseAIEngine):
+                 self.base_alpha,
+                 self.gamma
+             )
++            if abs(td_error) > max_td_error:
++                max_td_error = abs(td_error)
+ 
+         # Update Investment Q-Table
+         if self.last_investment_state is not None and self.last_investment_action_idx is not None:
+-            self.q_investment.update_q_table(
++            td_error = self.q_investment.update_q_table(
+                 self.last_investment_state,
+                 self.last_investment_action_idx,
+                 reward,
+@@ -326,6 +333,10 @@ class HouseholdAI(BaseAIEngine):
+                 self.base_alpha,
+                 self.gamma
+             )
++            if abs(td_error) > max_td_error:
++                max_td_error = abs(td_error)
++
++        return max_td_error
+ 
+     # Legacy Methods
+     def _get_strategic_state(self, a, m): pass
+diff --git a/simulation/ai/q_table_manager.py b/simulation/ai/q_table_manager.py
+index d91b99c2..91241295 100644
+--- a/simulation/ai/q_table_manager.py
++++ b/simulation/ai/q_table_manager.py
+@@ -133,6 +133,7 @@ class QTableManager:
+                 (next_q_values.get(a, 0.0) for a in next_actions), default=0.0
+             )
+ 
+-        new_value = old_value + alpha * (reward + gamma * next_max - old_value)
++        td_error = reward + gamma * next_max - old_value
++        new_value = old_value + alpha * td_error
+         self.set_q_value(state, action, new_value)
+-        return new_value - old_value
++        return td_error
+diff --git a/simulation/core_agents.py b/simulation/core_agents.py
+index 06b9e7cf..0b818e65 100644
+--- a/simulation/core_agents.py
++++ b/simulation/core_agents.py
+@@ -168,6 +168,7 @@ class Household(
+             labor_skill=1.0,
+             education_xp=0.0,
+             education_level=0,
++            market_insight=0.5, # Phase 4.1: Dynamic Cognitive Filter
+             expected_wage_pennies=1000, # Default 10.00
+             talent=talent,
+             skills={},
+@@ -863,12 +864,22 @@ class Household(
+         next_agent_data = context["next_agent_data"]
+         next_market_data = context["next_market_data"]
+         if hasattr(self.decision_engine, 'ai_engine'):
+-             self.decision_engine.ai_engine.update_learning_v2(
++             td_error = self.decision_engine.ai_engine.update_learning_v2(
+                 reward=reward,
+                 next_agent_data=next_agent_data,
+                 next_market_data=next_market_data,
+             )
+ 
++             # Phase 4.1: Active Learning (Insight Dynamics)
++             # Decay
++             self._econ_state.market_insight = max(0.0, self._econ_state.market_insight - 0.001)
++
++             # Boost from Learning Surprise (TD-Error)
++             if isinstance(td_error, (int, float)):
++                 # Normalized boost using exponential saturation
++                 boost = 0.05 * (1.0 - math.exp(-abs(td_error) / 1000.0))
++                 self._econ_state.market_insight = min(1.0, self._econ_state.market_insight + boost)
++
+     # --- Helpers ---
+ 
+     def create_snapshot_dto(self) -> HouseholdSnapshotDTO:
+diff --git a/simulation/firms.py b/simulation/firms.py
+index d0d62a7f..c909b848 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -163,6 +163,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         
+         # Tracking variables
+         self.age = 0
++        self.market_insight = 0.5 # Phase 4.1: Dynamic Cognitive Filter
+ 
+     # --- IConfigurable Implementation ---
+ 
+@@ -793,6 +794,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+             "base_quality": self.base_quality,
+             "inventory_quality": self.inventory_component.inventory_quality.copy(),
+             "automation_level": self.automation_level,
++            "market_insight": self.market_insight,
+         }
+ 
+     def get_state_dto(self) -> FirmStateDTO:
+@@ -869,7 +871,8 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+             hr=hr_dto,
+             agent_data=self.get_agent_data(),
+             system2_guidance={},
+-            sentiment_index=sentiment
++            sentiment_index=sentiment,
++            market_insight=self.market_insight
+         )
+ 
+     def get_pre_state_data(self) -> Dict[str, Any]:
+@@ -1335,12 +1338,23 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         next_agent_data = context["next_agent_data"]
+         next_market_data = context["next_market_data"]
+         if hasattr(self.decision_engine, 'ai_engine'):
+-            self.decision_engine.ai_engine.update_learning_v2(
++            td_error = self.decision_engine.ai_engine.update_learning_v2(
+                 reward=reward,
+                 next_agent_data=next_agent_data,
+                 next_market_data=next_market_data,
+             )
+ 
++            # Phase 4.1: Active Learning (Insight Dynamics)
++            # Decay
++            self.market_insight = max(0.0, self.market_insight - 0.001)
++
++            # Boost from Learning Surprise (TD-Error)
++            if isinstance(td_error, (int, float)):
++                # Normalized boost using exponential saturation
++                # Assuming significant error starts around 1000 pennies (10.00)
++                boost = 0.05 * (1.0 - math.exp(-abs(td_error) / 1000.0))
++                self.market_insight = min(1.0, self.market_insight + boost)
++
+         # Update State Tracking for Rewards (Moved from Engine for Purity)
+         self.prev_awareness = self.sales_state.brand_awareness
+         self.prev_avg_quality = self.production_state.base_quality
+diff --git a/simulation/orchestration/phases/decision.py b/simulation/orchestration/phases/decision.py
+index 9c37fd82..a81f64f2 100644
+--- a/simulation/orchestration/phases/decision.py
++++ b/simulation/orchestration/phases/decision.py
+@@ -10,6 +10,8 @@ from simulation.orchestration.utils import prepare_market_data
+ from simulation.orchestration.factories import DecisionInputFactory, MarketSnapshotFactory
+ from simulation.markets.order_book_market import OrderBookMarket
+ from simulation.core_agents import Household
++from simulation.systems.perception_system import PerceptionSystem
++
+ if TYPE_CHECKING:
+     from simulation.world_state import WorldState
+ logger = logging.getLogger(__name__)
+@@ -20,12 +22,17 @@ class Phase1_Decision(IPhaseStrategy):
+         self.world_state = world_state
+         self.input_factory = DecisionInputFactory()
+         self.snapshot_factory = MarketSnapshotFactory()
++        self.perception_system = PerceptionSystem()
+ 
+     def execute(self, state: SimulationState) -> SimulationState:
+         self._snapshot_agent_pre_states(state)
+         market_data = prepare_market_data(state)
+         state.market_data = market_data
+         market_snapshot = self.snapshot_factory.create_snapshot(state)
++
++        # Update perception system with the raw truth
++        self.perception_system.update(market_snapshot)
++
+         base_input_dto = self.input_factory.create_decision_input(state, self.world_state, market_snapshot)
+         self._dispatch_firm_decisions(state, base_input_dto)
+         self._dispatch_household_decisions(state, base_input_dto)
+@@ -49,7 +56,17 @@ class Phase1_Decision(IPhaseStrategy):
+                 pre_strategic_state = firm.decision_engine.ai_engine._get_strategic_state(firm.get_agent_data(), state.market_data)
+                 pre_tactical_state = firm.decision_engine.ai_engine._get_tactical_state(firm.decision_engine.ai_engine.chosen_intention, firm.get_agent_data(), state.market_data)
+                 firm_pre_states[firm.id] = {'pre_strategic_state': pre_strategic_state, 'pre_tactical_state': pre_tactical_state, 'chosen_intention': firm.decision_engine.ai_engine.chosen_intention, 'chosen_tactic': firm.decision_engine.ai_engine.last_chosen_tactic}
+-            firm_input = replace(base_input_dto, stress_scenario_config=self.world_state.stress_scenario_config)
++            # Phase 4.1: Perceptual Filters
++            market_insight = firm.market_insight if hasattr(firm, 'market_insight') else 0.5
++            filtered_snapshot = self.perception_system.apply_filter(market_insight, base_input_dto.market_snapshot)
++            filtered_policy = self.perception_system.apply_policy_filter(market_insight, base_input_dto.government_policy)
++
++            firm_input = replace(
++                base_input_dto,
++                market_snapshot=filtered_snapshot,
++                government_policy=filtered_policy,
++                stress_scenario_config=self.world_state.stress_scenario_config
++            )
+             decision_output = firm.make_decision(firm_input)
+             if hasattr(decision_output, 'orders'):
+                 firm_orders = decision_output.orders
+@@ -72,7 +89,18 @@ class Phase1_Decision(IPhaseStrategy):
+             if hasattr(household.decision_engine, 'ai_engine') and household.decision_engine.ai_engine:
+                 pre_strategic_state = household.decision_engine.ai_engine._get_strategic_state(household.get_agent_data(), state.market_data)
+                 household_pre_states[household.id] = {'pre_strategic_state': pre_strategic_state}
+-            household_input = replace(base_input_dto, stress_scenario_config=self.world_state.stress_scenario_config, macro_context=base_input_dto.macro_context)
++            # Phase 4.1: Perceptual Filters
++            market_insight = household._econ_state.market_insight if hasattr(household, '_econ_state') else 0.5
++            filtered_snapshot = self.perception_system.apply_filter(market_insight, base_input_dto.market_snapshot)
++            filtered_policy = self.perception_system.apply_policy_filter(market_insight, base_input_dto.government_policy)
++
++            household_input = replace(
++                base_input_dto,
++                market_snapshot=filtered_snapshot,
++                government_policy=filtered_policy,
++                stress_scenario_config=self.world_state.stress_scenario_config,
++                macro_context=base_input_dto.macro_context
++            )
+             decision_output = household.make_decision(household_input)
+             if hasattr(decision_output, 'orders'):
+                 household_orders = decision_output.orders
+diff --git a/simulation/systems/perception_system.py b/simulation/systems/perception_system.py
+new file mode 100644
+index 00000000..4a214ed1
+--- /dev/null
++++ b/simulation/systems/perception_system.py
+@@ -0,0 +1,130 @@
++from collections import deque
++from typing import Dict, Any, List, Optional
++from dataclasses import replace
++import random
++import logging
++
++from modules.system.api import MarketSnapshotDTO, MarketSignalDTO, HousingMarketSnapshotDTO
++from simulation.dtos.api import GovernmentPolicyDTO
++
++logger = logging.getLogger(__name__)
++
++class PerceptionSystem:
++    def __init__(self):
++        self.snapshot_history: deque[MarketSnapshotDTO] = deque(maxlen=10)
++        self.current_snapshot: Optional[MarketSnapshotDTO] = None
++
++    def update(self, current_snapshot: MarketSnapshotDTO):
++        self.current_snapshot = current_snapshot
++        self.snapshot_history.append(current_snapshot)
++
++    def apply_filter(self, agent_insight: float, current_snapshot: MarketSnapshotDTO) -> MarketSnapshotDTO:
++        """
++        Applies perceptual distortion based on agent insight.
++        > 0.8: Smart Money (Real Time)
++        > 0.3: Laggards (3-Tick MA)
++        <= 0.3: Lemons (5-Tick Lag + Noise)
++        """
++        if agent_insight > 0.8:
++            return current_snapshot
++
++        if agent_insight > 0.3:
++            # 3-Tick Moving Average
++            return self._calculate_moving_average(3)
++
++        # 5-Tick Lag + Noise
++        return self._get_lagged_snapshot_with_noise(5, 0.05)
++
++    def apply_policy_filter(self, agent_insight: float, policy: Optional[GovernmentPolicyDTO]) -> Optional[GovernmentPolicyDTO]:
++        """
++        Distorts Government Policy perception (Panic Index).
++        Low insight -> Amplify panic.
++        """
++        if not policy:
++            return None
++
++        if agent_insight > 0.8:
++            return policy
++
++        # Amplify panic for low insight
++        # Insight 0.0 -> Multiplier 1.8
++        # Insight 0.8 -> Multiplier 1.0
++
++        amplification = 1.0
++        if agent_insight < 0.8:
++            amplification = 1.0 + (0.8 - agent_insight) # Max 1.8x panic
++
++        new_panic = min(1.0, policy.market_panic_index * amplification)
++
++        return replace(policy, market_panic_index=new_panic)
++
++    def _calculate_moving_average(self, window_size: int) -> MarketSnapshotDTO:
++        if not self.snapshot_history:
++            return self.current_snapshot # Fallback
++
++        history = list(self.snapshot_history)[-window_size:]
++        if not history:
++             return self.current_snapshot
++
++        # Use latest as template for non-numeric fields
++        base = history[-1]
++
++        # Creating a averaged signal dict
++        avg_signals = {}
++        for signal_key in base.market_signals:
++            # Average specific fields
++            total_price = 0.0
++            count = 0
++            for snap in history:
++                sig = snap.market_signals.get(signal_key)
++                if sig and sig.last_traded_price is not None:
++                    total_price += sig.last_traded_price
++                    count += 1
++
++            avg_price = int(total_price / count) if count > 0 else base.market_signals[signal_key].last_traded_price
++
++            # Replace in signal DTO
++            original_sig = base.market_signals[signal_key]
++            # MarketSignalDTO is frozen
++            avg_signals[signal_key] = replace(original_sig, last_traded_price=avg_price)
++
++        # Average Market Data (prices)
++        avg_data = base.market_data.copy()
++        # Identify price keys (heuristic: ends with _price, _cost)
++        for key, val in avg_data.items():
++            if isinstance(val, (int, float)) and ("price" in key or "cost" in key):
++                total = 0.0
++                count = 0
++                for snap in history:
++                    v = snap.market_data.get(key)
++                    if v is not None:
++                        total += v
++                        count += 1
++                avg_data[key] = total / count if count > 0 else val
++
++        return replace(base, market_signals=avg_signals, market_data=avg_data)
++
++    def _get_lagged_snapshot_with_noise(self, lag: int, noise_level: float) -> MarketSnapshotDTO:
++        if len(self.snapshot_history) <= lag:
++            target_snap = self.snapshot_history[0] # Oldest available
++        else:
++            target_snap = self.snapshot_history[-(lag + 1)]
++
++        # Apply Gaussian Noise to prices
++        noisy_signals = {}
++        for k, sig in target_snap.market_signals.items():
++            if sig.last_traded_price is not None:
++                noise = random.gauss(0, noise_level)
++                new_price = int(sig.last_traded_price * (1 + noise))
++                # MarketSignalDTO is frozen
++                noisy_signals[k] = replace(sig, last_traded_price=new_price)
++            else:
++                noisy_signals[k] = sig
++
++        noisy_data = target_snap.market_data.copy()
++        for key, val in noisy_data.items():
++            if isinstance(val, (int, float)) and ("price" in key or "cost" in key):
++                noise = random.gauss(0, noise_level)
++                noisy_data[key] = val * (1 + noise)
++
++        return replace(target_snap, market_signals=noisy_signals, market_data=noisy_data)
+diff --git a/tests/unit/systems/test_perception_system.py b/tests/unit/systems/test_perception_system.py
+new file mode 100644
+index 00000000..d8e0c8b6
+--- /dev/null
++++ b/tests/unit/systems/test_perception_system.py
+@@ -0,0 +1,110 @@
++import pytest
++from unittest.mock import MagicMock
++from collections import deque
++from dataclasses import replace
++
++from simulation.systems.perception_system import PerceptionSystem
++from modules.system.api import MarketSnapshotDTO, MarketSignalDTO
++from simulation.dtos.api import GovernmentPolicyDTO
++
++@pytest.fixture
++def mock_snapshot():
++    return MarketSnapshotDTO(
++        tick=10,
++        market_signals={
++            "food": MarketSignalDTO(
++                market_id="food",
++                item_id="food",
++                best_bid=100,
++                best_ask=110,
++                last_traded_price=105,
++                last_trade_tick=10,
++                price_history_7d=[],
++                volatility_7d=0.0,
++                order_book_depth_buy=10,
++                order_book_depth_sell=10,
++                total_bid_quantity=100,
++                total_ask_quantity=100,
++                is_frozen=False
++            )
++        },
++        market_data={
++            "food_avg_price": 105.0
++        },
++        housing=None,
++        loan=None,
++        labor=None
++    )
++
++def test_perception_system_update(mock_snapshot):
++    system = PerceptionSystem()
++    system.update(mock_snapshot)
++    assert system.current_snapshot == mock_snapshot
++    assert len(system.snapshot_history) == 1
++
++def test_smart_money_filter(mock_snapshot):
++    system = PerceptionSystem()
++    system.update(mock_snapshot)
++
++    # Insight > 0.8
++    filtered = system.apply_filter(0.9, mock_snapshot)
++    assert filtered == mock_snapshot
++
++def test_laggard_filter(mock_snapshot):
++    system = PerceptionSystem()
++
++    # Create history: Price 100, 110, 120
++    prices = [100, 110, 120]
++    for p in prices:
++        snap = replace(mock_snapshot,
++                       market_signals={"food": replace(mock_snapshot.market_signals["food"], last_traded_price=p)},
++                       market_data={"food_avg_price": float(p)})
++        system.update(snap)
++
++    # Insight > 0.3 (MA 3)
++    filtered = system.apply_filter(0.5, system.current_snapshot)
++
++    # Expect avg of 100, 110, 120 -> 110
++    expected_price = 110
++    assert filtered.market_signals["food"].last_traded_price == expected_price
++    assert filtered.market_data["food_avg_price"] == 110.0
++
++def test_lemon_filter(mock_snapshot):
++    system = PerceptionSystem()
++
++    # Create history
++    for i in range(10):
++        snap = replace(mock_snapshot, tick=i)
++        system.update(snap)
++
++    # Insight <= 0.3 (Lag 5 + Noise)
++    # Current tick is 9. Lag 5 means tick 4 (index -6)
++    # History: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
++    # -1 is 9, -6 is 4.
++
++    filtered = system.apply_filter(0.2, system.current_snapshot)
++
++    # Base snapshot should be from tick 4
++    assert filtered.tick == 4
++
++def test_policy_filter():
++    system = PerceptionSystem()
++    policy = GovernmentPolicyDTO(
++        income_tax_rate=0.1,
++        sales_tax_rate=0.1,
++        corporate_tax_rate=0.1,
++        base_interest_rate=0.05,
++        market_panic_index=0.5
++    )
++
++    # High Insight
++    p1 = system.apply_policy_filter(0.9, policy)
++    assert p1.market_panic_index == 0.5
++
++    # Low Insight (0.0) -> Amplification 1.8x -> 0.9
++    p2 = system.apply_policy_filter(0.0, policy)
++    assert p2.market_panic_index == 0.9
++
++    # Medium Insight (0.4) -> Amp 1.4x -> 0.7
++    p3 = system.apply_policy_filter(0.4, policy)
++    assert abs(p3.market_panic_index - 0.7) < 1e-9
+diff --git a/tests/unit/test_phase1_refactor.py b/tests/unit/test_phase1_refactor.py
+index 694e8de3..06c82343 100644
+--- a/tests/unit/test_phase1_refactor.py
++++ b/tests/unit/test_phase1_refactor.py
+@@ -119,11 +119,13 @@ class TestPhase1DecisionRefactor:
+ 
+         firm = MagicMock()
+         firm.is_active = True
++        firm.market_insight = 0.5
+         firm.make_decision.return_value = ([], None) # Legacy return
+         firm.get_agent_data.return_value = {}
+ 
+         household = MagicMock()
+         household._bio_state.is_active = True
++        household._econ_state.market_insight = 0.5
+         household.make_decision.return_value = ([], None) # Legacy return
+         household.get_agent_data.return_value = {}
+ 

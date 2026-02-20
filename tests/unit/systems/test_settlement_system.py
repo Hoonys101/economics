@@ -139,9 +139,12 @@ class MockBank(IBank):
     # Stub other IBank methods
     def grant_loan(self, *args, **kwargs): return None
     def stage_loan(self, *args, **kwargs): return None
-    def repay_loan(self, *args, **kwargs): return True
-    def get_debt_status(self, *args, **kwargs): return {}
+    def repay_loan(self, loan_id: str, amount: int) -> int: return amount
+    def get_debt_status(self, *args, **kwargs): return None
     def terminate_loan(self, *args, **kwargs): return None
+    def get_total_deposits_pennies(self) -> int: return self.get_total_deposits()
+    def close_account(self, agent_id) -> int: return self.accounts.pop(str(agent_id), 0)
+    def receive_repayment(self, borrower_id, amount: int) -> int: return amount
 
 @pytest.fixture
 def mock_bank():

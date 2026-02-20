@@ -37,6 +37,14 @@ class MockSettlementSystem:
 
     def get_account_holders(self, bank_id):
         return []
+    def get_agent_banks(self, agent_id):
+        return []
+    def register_account(self, bank_id, agent_id):
+        pass
+    def deregister_account(self, bank_id, agent_id):
+        pass
+    def remove_agent_from_all_accounts(self, agent_id):
+        pass
 
 def test_settlement_system_protocol_compliance():
     mock = MockSettlementSystem()

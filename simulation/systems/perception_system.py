@@ -25,10 +25,11 @@ class PerceptionSystem:
         > 0.3: Laggards (3-Tick MA)
         <= 0.3: Lemons (5-Tick Lag + Noise)
         """
-        if agent_insight > 0.8:
+        insight = float(agent_insight)
+        if insight > 0.8:
             return current_snapshot
 
-        if agent_insight > 0.3:
+        if insight > 0.3:
             # 3-Tick Moving Average
             return self._calculate_moving_average(3)
 
@@ -43,7 +44,8 @@ class PerceptionSystem:
         if not policy:
             return None
 
-        if agent_insight > 0.8:
+        insight = float(agent_insight)
+        if insight > 0.8:
             return policy
 
         # Amplify panic for low insight
@@ -51,8 +53,8 @@ class PerceptionSystem:
         # Insight 0.8 -> Multiplier 1.0
 
         amplification = 1.0
-        if agent_insight < 0.8:
-            amplification = 1.0 + (0.8 - agent_insight) # Max 1.8x panic
+        if insight < 0.8:
+            amplification = 1.0 + (0.8 - insight) # Max 1.8x panic
 
         new_panic = min(1.0, policy.market_panic_index * amplification)
 

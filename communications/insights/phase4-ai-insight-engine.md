@@ -47,6 +47,6 @@ We verified the implementation through the following checks:
 ## 4. Test Evidence
 
 All relevant unit tests passed after adjustments:
--   `tests/unit/test_household_ai.py`
+-   `tests/unit/test_household_ai_insight.py`
 -   `tests/unit/systems/test_commerce_system.py`
 -   `tests/unit/test_factories.py`

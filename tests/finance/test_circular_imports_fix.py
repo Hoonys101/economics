@@ -47,11 +47,14 @@ class MockBank(IBank):
 
     def grant_loan(self, *args, **kwargs) -> Optional[LoanInfoDTO]: return None
     def stage_loan(self, *args, **kwargs) -> Optional[LoanInfoDTO]: return None
-    def repay_loan(self, *args, **kwargs) -> bool: return True
+    def repay_loan(self, loan_id: str, amount: int) -> int: return amount
     def get_customer_balance(self, *args, **kwargs) -> int: return 0
     def get_debt_status(self, *args, **kwargs) -> Any: return None
     def terminate_loan(self, *args, **kwargs) -> Any: return None
     def withdraw_for_customer(self, *args, **kwargs) -> bool: return True
+    def get_total_deposits_pennies(self) -> int: return 0
+    def close_account(self, agent_id: AgentID) -> int: return 0
+    def receive_repayment(self, borrower_id: AgentID, amount: int) -> int: return amount
 
 class MockGovernment(IGovernmentFinance):
     id: AgentID = AgentID(1)

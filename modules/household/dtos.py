@@ -59,11 +59,6 @@ class EconStateDTO:
     labor_skill: float
     education_xp: float
     education_level: int
-    market_insight: float # Phase 4.1: Dynamic Cognitive Filter
-    expected_wage_pennies: int
-    talent: Talent # Assuming immutable or shared reference ok
-    skills: Dict[str, Skill]
-    aptitude: float
 
     # Housing
     owned_properties: List[int]
@@ -97,6 +92,13 @@ class EconStateDTO:
     # Expenditure Tracking (Transient per tick)
     consumption_expenditure_this_tick_pennies: int
     food_expenditure_this_tick_pennies: int
+
+    # Phase 4.1: Dynamic Cognitive Filter & Talent
+    market_insight: float = 0.5
+    expected_wage_pennies: int = 1000
+    talent: Talent = field(default_factory=lambda: Talent(1.0, 1.0, 1.0))
+    skills: Dict[str, Skill] = field(default_factory=dict)
+    aptitude: float = 1.0
 
     # Legacy / Compatibility
     credit_frozen_until_tick: int = 0

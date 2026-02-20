@@ -1,0 +1,201 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0
+rootdir: C:\coding\economics
+configfile: pytest.ini
+plugins: anyio-4.12.0, asyncio-1.3.0, cov-7.0.0, mock-3.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 7 items
+
+tests/unit/sagas/test_orchestrator.py::test_submit_saga 
+-------------------------------- live log call --------------------------------
+INFO     modules.finance.sagas.orchestrator:orchestrator.py:49 SAGA_SUBMITTED | Saga 2a157071-5859-4a7c-8a70-cd7166ca3e04 submitted.
+PASSED                                                                   [ 14%]
+tests/unit/sagas/test_orchestrator.py::test_process_sagas_liveness_check 
+-------------------------------- live log call --------------------------------
+INFO     modules.finance.sagas.orchestrator:orchestrator.py:49 SAGA_SUBMITTED | Saga 481d1cf6-e590-4e28-8c0c-6df66c68fe4f submitted.
+WARNING  modules.finance.sagas.orchestrator:orchestrator.py:154 SAGA_CANCELLED | Saga 481d1cf6-e590-4e28-8c0c-6df66c68fe4f cancelled due to inactive participant. Buyer Active: False, Seller Active: True
+PASSED                                                                   [ 28%]
+tests/unit/sagas/test_orchestrator.py::test_process_sagas_active_participants 
+-------------------------------- live log call --------------------------------
+INFO     modules.finance.sagas.orchestrator:orchestrator.py:49 SAGA_SUBMITTED | Saga 866d903e-1959-4b1e-a7ba-74470351bab7 submitted.
+PASSED                                                                   [ 42%]
+tests/unit/sagas/test_orchestrator.py::test_find_and_compensate_by_agent_success 
+-------------------------------- live log call --------------------------------
+INFO     modules.finance.sagas.orchestrator:orchestrator.py:49 SAGA_SUBMITTED | Saga 9e17ff68-41db-4561-a7c5-1fde8276b3c5 submitted.
+WARNING  modules.finance.sagas.orchestrator:orchestrator.py:214 SAGA_AGENT_DEATH | Triggering compensation for Saga 9e17ff68-41db-4561-a7c5-1fde8276b3c5 due to agent 999 death.
+PASSED                                                                   [ 57%]
+tests/unit/sagas/test_orchestrator.py::test_find_and_compensate_by_agent_no_handler 
+-------------------------------- live log call --------------------------------
+INFO     modules.finance.sagas.orchestrator:orchestrator.py:49 SAGA_SUBMITTED | Saga 3c8f8a19-2aa9-4125-8872-3341565c5bcc submitted.
+ERROR    modules.finance.sagas.orchestrator:orchestrator.py:206 SAGA_COMPENSATE_FAIL | No handler provided for find_and_compensate_by_agent
+PASSED                                                                   [ 71%]
+tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_initiated_to_credit_check 
+-------------------------------- live log call --------------------------------
+INFO     modules.finance.sagas.orchestrator:orchestrator.py:49 SAGA_SUBMITTED | Saga saga-integration-1 submitted.
+ERROR    modules.finance.sagas.orchestrator:orchestrator.py:189 SAGA_PROCESS_ERROR | Saga saga-integration-1 failed. 'dict' object has no attribute 'status'
+FAILED                                                                   [ 85%]
+tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_cancellation 
+-------------------------------- live log call --------------------------------
+INFO     modules.finance.sagas.orchestrator:orchestrator.py:49 SAGA_SUBMITTED | Saga saga-integration-cancel submitted.
+WARNING  modules.finance.sagas.orchestrator:orchestrator.py:154 SAGA_CANCELLED | Saga saga-integration-cancel cancelled due to inactive participant. Buyer Active: False, Seller Active: True
+ERROR    modules.finance.sagas.orchestrator:orchestrator.py:166 SAGA_COMPENSATE_FAIL | 'dict' object has no attribute 'status'
+FAILED                                                                   [100%]
+
+================================== FAILURES ===================================
+_ TestSettlementSagaIntegration.test_process_sagas_integration_initiated_to_credit_check _
+
+self = <tests.unit.systems.test_settlement_saga_integration.TestSettlementSagaIntegration object at 0x000001ECC2079450>
+mock_simulation_state = <MagicMock id='2116383448704'>
+
+    def test_process_sagas_integration_initiated_to_credit_check(self, mock_simulation_state):
+        """
+        Tests that SagaOrchestrator correctly orchestrates the Real HousingTransactionSagaHandler
+        to transition a saga from INITIATED to CREDIT_CHECK.
+        """
+        # 1. Setup Settlement System & Orchestrator
+        settlement = SettlementSystem()
+        orchestrator = SagaOrchestrator()
+    
+        # Wire up circular dependency (Handler needs access to SettlementSystem)
+        mock_simulation_state.settlement_system = settlement
+    
+        # 2. Setup a Saga
+        saga_id = "saga-integration-1"
+        saga = {
+            "saga_id": saga_id,
+            "saga_type": "HOUSING_TRANSACTION",
+            "status": "INITIATED",
+            "current_step": 0,
+            "buyer_id": 1,
+            "seller_id": 2,
+            "property_id": 101,
+            "offer_price": 100000.0,
+            "down_payment_amount": 20000.0,
+            "last_processed_tick": 99, # To ensure it processes
+            "loan_application": {"mock": "data"} # Required by handler
+        }
+        orchestrator.submit_saga(saga)
+    
+        # 3. Setup Dependencies for Handler
+        # Mock agents
+        buyer = MagicMock()
+        buyer.is_active = True
+        buyer.current_wage = 100.0
+        buyer.get_balance.return_value = 100000.0
+    
+        seller = MagicMock()
+        seller.is_active = True
+    
+        mock_simulation_state.agents = {1: buyer, 2: seller}
+    
+        # Mock Housing Service
+        mock_simulation_state.housing_service.lock_asset.return_value = True
+    
+        # Mock Loan Market
+        mock_simulation_state.markets["loan"].stage_mortgage_application.return_value = "loan_staged_1"
+    
+        # Mock Bank (for debt calculation)
+        mock_simulation_state.bank.get_debt_status.return_value = {'loans': []}
+    
+        # 4. Run
+        orchestrator.simulation_state = mock_simulation_state
+        orchestrator.process_sagas()
+    
+        # 5. Verify Saga Transition
+>       assert saga_id in orchestrator.active_sagas
+E       AssertionError: assert 'saga-integration-1' in {}
+E        +  where {} = <modules.finance.sagas.orchestrator.SagaOrchestrator object at 0x000001ECC209D250>.active_sagas
+
+tests\unit\systems\test_settlement_saga_integration.py:77: AssertionError
+------------------------------ Captured log call ------------------------------
+INFO     modules.finance.sagas.orchestrator:orchestrator.py:49 SAGA_SUBMITTED | Saga saga-integration-1 submitted.
+ERROR    modules.finance.sagas.orchestrator:orchestrator.py:189 SAGA_PROCESS_ERROR | Saga saga-integration-1 failed. 'dict' object has no attribute 'status'
+__ TestSettlementSagaIntegration.test_process_sagas_integration_cancellation __
+
+self = <MagicMock name='mock.void_staged_application' id='2116383453744'>
+args = ('loan_staged_x',), kwargs = {}
+expected = "void_staged_application('loan_staged_x')", actual = 'not called.'
+error_message = "expected call not found.\nExpected: void_staged_application('loan_staged_x')\n  Actual: not called."
+
+    def assert_called_with(self, /, *args, **kwargs):
+        """assert that the last call was made with the specified arguments.
+    
+        Raises an AssertionError if the args and keyword args passed in are
+        different to the last call to the mock."""
+        if self.call_args is None:
+            expected = self._format_mock_call_signature(args, kwargs)
+            actual = 'not called.'
+            error_message = ('expected call not found.\nExpected: %s\n  Actual: %s'
+                    % (expected, actual))
+>           raise AssertionError(error_message)
+E           AssertionError: expected call not found.
+E           Expected: void_staged_application('loan_staged_x')
+E             Actual: not called.
+
+C:\Users\Gram Pro\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:970: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+self = <tests.unit.systems.test_settlement_saga_integration.TestSettlementSagaIntegration object at 0x000001ECC20796D0>
+mock_simulation_state = <MagicMock id='2116383451056'>
+
+    def test_process_sagas_integration_cancellation(self, mock_simulation_state):
+        """
+        Tests that if a participant is inactive, SettlementSystem cancels the saga
+        and triggers compensation (using the real handler's compensate logic).
+        """
+        # 1. Setup Settlement System & Orchestrator
+        settlement = SettlementSystem()
+        orchestrator = SagaOrchestrator()
+    
+        mock_simulation_state.settlement_system = settlement
+    
+        # 2. Setup a Saga (in CREDIT_CHECK state)
+        saga_id = "saga-integration-cancel"
+        saga = {
+            "saga_id": saga_id,
+            "status": "CREDIT_CHECK",
+            "buyer_id": 1,
+            "seller_id": 2,
+            "property_id": 101,
+            "staged_loan_id": "loan_staged_x",
+            "last_processed_tick": 99
+        }
+        orchestrator.submit_saga(saga)
+    
+        # 3. Setup Dependencies
+        # Buyer is DEAD/Inactive
+        buyer = MagicMock()
+        buyer.is_active = False
+    
+        seller = MagicMock()
+        seller.is_active = True
+    
+        mock_simulation_state.agents = {1: buyer, 2: seller}
+    
+        # Mock Loan Market for voiding
+        mock_simulation_state.markets["loan"].void_staged_application.return_value = True
+    
+        # 4. Run
+        orchestrator.simulation_state = mock_simulation_state
+        orchestrator.process_sagas()
+    
+        # 5. Verify Cancellation
+        # Saga should be removed from active_sagas
+        assert saga_id not in orchestrator.active_sagas
+    
+        # Check logs/mock calls to verify compensation was attempted
+>       mock_simulation_state.markets["loan"].void_staged_application.assert_called_with("loan_staged_x")
+E       AssertionError: expected call not found.
+E       Expected: void_staged_application('loan_staged_x')
+E         Actual: not called.
+
+tests\unit\systems\test_settlement_saga_integration.py:135: AssertionError
+------------------------------ Captured log call ------------------------------
+INFO     modules.finance.sagas.orchestrator:orchestrator.py:49 SAGA_SUBMITTED | Saga saga-integration-cancel submitted.
+WARNING  modules.finance.sagas.orchestrator:orchestrator.py:154 SAGA_CANCELLED | Saga saga-integration-cancel cancelled due to inactive participant. Buyer Active: False, Seller Active: True
+ERROR    modules.finance.sagas.orchestrator:orchestrator.py:166 SAGA_COMPENSATE_FAIL | 'dict' object has no attribute 'status'
+=========================== short test summary info ===========================
+FAILED tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_initiated_to_credit_check
+FAILED tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_cancellation
+========================= 2 failed, 5 passed in 1.80s =========================

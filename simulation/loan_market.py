@@ -51,8 +51,8 @@ class LoanMarket(Market, ILoanMarket):
         # Canonical Keys from loan_api:
         # requested_principal, property_value, applicant_monthly_income, existing_monthly_debt_payments
 
-        principal = application.get('requested_principal', 0.0)
-        prop_value = application.get('property_value', 0.0)
+        principal = application.requested_principal
+        prop_value = application.property_value
 
         if prop_value <= 0:
              logger.warning(f"LOAN_DENIED | Invalid property value {prop_value}")
@@ -90,13 +90,13 @@ class LoanMarket(Market, ILoanMarket):
              return False
 
         # 2. DTI Check
-        applicant_id = application['applicant_id']
+        applicant_id = application.applicant_id
 
         # TD-206: Use precise monthly income and existing payments
-        monthly_income = application.get('applicant_monthly_income', 0.0)
-        existing_payment = application.get('existing_monthly_debt_payments', 0.0)
+        monthly_income = application.applicant_monthly_income
+        existing_payment = application.existing_monthly_debt_payments
 
-        loan_term = application.get('loan_term', 360)
+        loan_term = application.loan_term
 
         # Get Interest Rate
         if hasattr(self.bank, 'get_interest_rate'):
@@ -148,10 +148,10 @@ class LoanMarket(Market, ILoanMarket):
         else:
              interest_rate = getattr(self.config_module, 'DEFAULT_MORTGAGE_INTEREST_RATE', 0.05)
 
-        principal = application.get('requested_principal', 0.0)
+        principal = application.requested_principal
 
         loan_info = self.bank.stage_loan(
-            borrower_id=application['applicant_id'],
+            borrower_id=application.applicant_id,
             amount=principal,
             interest_rate=interest_rate,
             due_tick=None, # Bank defaults using term
@@ -218,9 +218,9 @@ class LoanMarket(Market, ILoanMarket):
             return None
 
         # Execute
-        principal = application['requested_principal']
-        applicant_id = application['applicant_id']
-        loan_term = application.get('loan_term', 360)
+        principal = application.requested_principal
+        applicant_id = application.applicant_id
+        loan_term = application.loan_term
 
         if hasattr(self.bank, 'get_interest_rate'):
              interest_rate = self.bank.get_interest_rate()

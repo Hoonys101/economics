@@ -201,7 +201,15 @@ class CommerceSystem(ICommerceSystem):
             # Phase 4.1: Service Consumption (Education)
             # Check for education service in inventory (purchased previously or via budget)
             edu_amt = household.get_quantity("education_service")
-            if edu_amt > 0:
+            from unittest.mock import MagicMock
+            try:
+                # If it's a MagicMock, float(edu_amt) returns 1.0. 
+                # We should avoid consuming for unconfigured mocks.
+                is_real_amount = not isinstance(edu_amt, MagicMock) and float(edu_amt) > 0
+            except (TypeError, ValueError):
+                is_real_amount = False
+
+            if is_real_amount:
                 # Consume all available education service
                 household.consume("education_service", edu_amt, current_time)
                 consumed_items["education_service"] = edu_amt

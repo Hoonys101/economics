@@ -72,12 +72,15 @@ class MockBank(MockAgent, IBank): # Inherits basic agent props
     # IBank required methods dummy impl
     def grant_loan(self, borrower_id, amount, interest_rate, due_tick=None, borrower_profile=None): return None
     def stage_loan(self, borrower_id, amount, interest_rate, due_tick=None, borrower_profile=None): return None
-    def repay_loan(self, loan_id, amount): return False
+    def repay_loan(self, loan_id, amount: int) -> int: return amount
     def get_debt_status(self, borrower_id): return None
     def terminate_loan(self, loan_id): return None
     def set_finance_system(self, fs): pass
     def update_base_rate(self, rate): pass
     def run_tick(self, agents_dict, tick): return []
+    def get_total_deposits_pennies(self) -> int: return self.get_total_deposits()
+    def close_account(self, agent_id: "AgentID") -> int: return self.customer_balances.pop(agent_id, 0)
+    def receive_repayment(self, borrower_id: "AgentID", amount: int) -> int: return amount
 
     def get_customer_balance(self, agent_id):
         return self.customer_balances.get(agent_id, 0)

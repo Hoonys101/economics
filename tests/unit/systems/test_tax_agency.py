@@ -66,8 +66,8 @@ class TestTaxAgency(unittest.TestCase):
         # Signature: collect_tax(payer, payee, amount, tax_type, settlement_system, current_tick)
         result = self.tax_agency.collect_tax(mock_payer, mock_gov, 100, "income", mock_settlement, 1)
 
-        self.assertTrue(result['success'])
-        self.assertEqual(result['amount_collected'], 100)
+        self.assertTrue(result.success)
+        self.assertEqual(result.amount_collected, 100)
 
         mock_settlement.transfer.assert_called_once_with(
             debit_agent=mock_payer,

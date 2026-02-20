@@ -27,7 +27,8 @@ class Phase_HousingSaga(IPhaseStrategy):
         """
         # TD-253: Logic moved to SagaOrchestrator
         if state.saga_orchestrator:
-            state.saga_orchestrator.process_sagas(state)
+            state.saga_orchestrator.simulation_state = state
+            state.saga_orchestrator.process_sagas()
         elif state.settlement_system and hasattr(state.settlement_system, 'process_sagas'):
             # Fallback for compatibility during refactor
             state.settlement_system.process_sagas(state)

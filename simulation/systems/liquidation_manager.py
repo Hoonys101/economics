@@ -144,8 +144,8 @@ class LiquidationManager:
                 total_distributed_foreign = {}
 
                 for stake in equity_stakes:
-                    shareholder = self.agent_registry.get_agent(stake['shareholder_id'])
-                    ratio = stake['ratio']
+                    shareholder = self.agent_registry.get_agent(stake.shareholder_id)
+                    ratio = stake.ratio
 
                     if shareholder and ratio > 0:
                         # 1. Distribute Primary Currency

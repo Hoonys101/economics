@@ -61,12 +61,8 @@ def test_process_sagas_liveness_check(saga_orchestrator):
     sim_state.government.id = 0
 
     with patch("modules.finance.sagas.orchestrator.HousingTransactionSagaHandler") as MockHandler:
-        handler_instance = MockHandler.return_value
-        # Mock compensate to return the saga with CANCELLED status or similar if needed,
-        # but the orchestrator logic sets status to CANCELLED before compensate?
-        # Actually logic is: set CANCELLED, then compensate.
-
-        saga_orchestrator.process_sagas(sim_state)
+        saga_orchestrator.simulation_state = sim_state
+        saga_orchestrator.process_sagas()
 
         # Should be removed from active sagas
         assert saga_id not in saga_orchestrator.active_sagas
@@ -118,7 +114,8 @@ def test_process_sagas_active_participants(saga_orchestrator):
         )
         handler_instance.execute_step.return_value = updated_saga
 
-        saga_orchestrator.process_sagas(sim_state)
+        saga_orchestrator.simulation_state = sim_state
+        saga_orchestrator.process_sagas()
 
         assert saga_id in saga_orchestrator.active_sagas
         assert saga_orchestrator.active_sagas[saga_id].status == "CREDIT_CHECK"

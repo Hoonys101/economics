@@ -70,7 +70,8 @@ class TestSettlementSagaIntegration:
         mock_simulation_state.bank.get_debt_status.return_value = {'loans': []}
 
         # 4. Run
-        orchestrator.process_sagas(mock_simulation_state)
+        orchestrator.simulation_state = mock_simulation_state
+        orchestrator.process_sagas()
 
         # 5. Verify Saga Transition
         assert saga_id in orchestrator.active_sagas
@@ -123,7 +124,8 @@ class TestSettlementSagaIntegration:
         mock_simulation_state.markets["loan"].void_staged_application.return_value = True
 
         # 4. Run
-        orchestrator.process_sagas(mock_simulation_state)
+        orchestrator.simulation_state = mock_simulation_state
+        orchestrator.process_sagas()
 
         # 5. Verify Cancellation
         # Saga should be removed from active_sagas

@@ -52,12 +52,15 @@ class StrictMockBank(IBank):
     # Other IBank methods stubbed
     def grant_loan(self, *args, **kwargs): return None
     def stage_loan(self, *args, **kwargs): return None
-    def repay_loan(self, *args, **kwargs): return False
+    def repay_loan(self, loan_id: str, amount: int) -> int: return amount
     def get_customer_balance(self, *args, **kwargs): return 0
     def get_debt_status(self, *args, **kwargs): return None
     def terminate_loan(self, *args, **kwargs): return None
     def withdraw_for_customer(self, *args, **kwargs): return False
     def get_assets_by_currency(self, *args, **kwargs): return {}
+    def get_total_deposits_pennies(self) -> int: return self._deposits
+    def close_account(self, agent_id) -> int: return 0
+    def receive_repayment(self, borrower_id, amount: int) -> int: return amount
 
 
 class StrictFinancialAgent(IFinancialAgent, IFinancialEntity):
