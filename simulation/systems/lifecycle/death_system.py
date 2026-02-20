@@ -156,17 +156,30 @@ class DeathSystem(IDeathSystem):
         if not agent: return
 
         for bank_id in bank_ids:
-            # 2. Close Account
+            # 2. Close Account safely via Settlement Transfer
             bank = state.agents.get(bank_id)
-            if bank and hasattr(bank, 'close_account'):
-                amount = bank.close_account(agent_id)
+            if not bank: continue
+
+            # Check for protocol compliance
+            if hasattr(bank, 'get_customer_balance') and hasattr(bank, 'close_account'):
+                amount = bank.get_customer_balance(agent_id)
                 if amount > 0:
-                    # 3. Deposit to Wallet (Consolidate Assets)
-                    if hasattr(agent, 'deposit'):
-                        agent.deposit(amount)
-                    elif hasattr(agent, '_deposit'):
-                        agent._deposit(amount)
-                    self.logger.info(f"RECOVER_ASSETS | Recovered {amount} from Bank {bank_id} for Agent {agent_id}")
+                    # 3. Transfer Real Assets (Cash) from Bank to Agent
+                    # Use SettlementSystem to ensure Zero-Sum Integrity (Bank loses Cash, Agent gains Cash)
+                    success = self.settlement_system.transfer(
+                        debit_agent=bank,
+                        credit_agent=agent,
+                        amount=amount,
+                        memo="Deposit Recovery (Death/Liquidation)",
+                        currency=DEFAULT_CURRENCY
+                    )
+
+                    if success:
+                        # 4. Close the Ledger Account (Remove Liability)
+                        bank.close_account(agent_id)
+                        self.logger.info(f"RECOVER_ASSETS | Recovered {amount} from Bank {bank_id} for Agent {agent_id}")
+                    else:
+                        self.logger.error(f"RECOVER_FAIL | Bank {bank_id} insolvent? Could not return {amount} to {agent_id}")
 
     def _cancel_agent_orders(self, agent_id: str | int, state: SimulationState) -> None:
         """
