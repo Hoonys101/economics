@@ -42,7 +42,8 @@ def test_generate_corporate_tax_intents():
     tx = intents[0]
     assert tx.buyer_id == 1
     assert tx.item_id == "corporate_tax"
-    assert tx.price == 125.0 # 500 * 0.25
+    assert tx.price == 1.25 # 500 * 0.25 = 125 pennies = $1.25
+    assert tx.total_pennies == 125
     assert tx.time == 100 # Verify tick is passed correctly
 
 def test_generate_corporate_tax_intents_missing_config():
