@@ -277,8 +277,12 @@ def test_transfer_rollback(settlement_system):
 
 # --- NEW TESTS BELOW ---
 
-def test_transfer_seamless_success(settlement_system, mock_bank):
-    # Agent has 10 cash, but 100 in bank. Needs to transfer 50.
+def test_transfer_insufficient_cash_despite_bank_balance(settlement_system, mock_bank):
+    """
+    Verifies that 'Seamless' automatic withdrawals are REMOVED.
+    Agent has 10 cash, 100 in bank, needs 50.
+    Should FAIL because SettlementSystem checks cash only.
+    """
     sender = MockAgent(1, 10)
     receiver = MockAgent(2, 0)
     settlement_system.agent_registry.register(sender)
@@ -286,14 +290,16 @@ def test_transfer_seamless_success(settlement_system, mock_bank):
 
     mock_bank.deposit_for_customer(1, 100)
 
-    tx = settlement_system.transfer(sender, receiver, 50, "Seamless", tick=10)
+    # Attempt transfer of 50. Has 10 cash, 100 bank.
+    # Expectation: FAIL (None) because auto-withdrawal is disabled.
+    tx = settlement_system.transfer(sender, receiver, 50, "Seamless Disabled", tick=10)
 
-    assert tx is not None
-    assert settlement_system.get_balance(sender.id) == 0 # Cash drained
-    assert mock_bank.get_customer_balance("1") == 60 # 100 - (50 - 10) = 60
-    assert settlement_system.get_balance(receiver.id) == 50
+    assert tx is None
+    assert settlement_system.get_balance(sender.id) == 10 # Untouched
+    assert mock_bank.get_customer_balance("1") == 100 # Bank untouched
+    assert settlement_system.get_balance(receiver.id) == 0
 
-def test_transfer_seamless_fail_bank(settlement_system, mock_bank):
+def test_transfer_insufficient_total_funds(settlement_system, mock_bank):
     # Agent has 10 cash, but only 10 in bank. Needs 50. Total 20. Fail.
     sender = MockAgent(1, 10)
     receiver = MockAgent(2, 0)
@@ -302,10 +308,10 @@ def test_transfer_seamless_fail_bank(settlement_system, mock_bank):
 
     mock_bank.deposit_for_customer(1, 10)
 
-    tx = settlement_system.transfer(sender, receiver, 50, "Seamless Fail", tick=10)
+    tx = settlement_system.transfer(sender, receiver, 50, "Total Fail", tick=10)
 
     assert tx is None
-    assert settlement_system.get_balance(sender.id) == 10 # Untouched (due to check)
+    assert settlement_system.get_balance(sender.id) == 10 # Untouched
     assert mock_bank.get_customer_balance("1") == 10
     assert settlement_system.get_balance(receiver.id) == 0
 
