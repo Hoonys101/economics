@@ -15,10 +15,17 @@
 
 ## 1. 현재 개발 단계
 
-    - **`Phase 23: Post-Phase 22 Debt Liquidation (Final Hygiene)`** ⚖️ ✅ (2026-02-20)
-        - **Goal**: Resolve harvested audit debts: Cockpit 2.0 mocks (TD-TEST-COCKPIT-MOCK), Government state mismatch (TD-ARCH-GOV-MISMATCH), and stale test logic (TD-TEST-LIFE-STALE).
+    - **`Phase 4.1: AI Logic & Simulation Re-architecture`** 🧠 **[ACTIVE]** (2026-02-20)
+        - **Goal**: Implement the next generation of Agent AI, focusing on dynamic insights, labor market realities, and strict protocol enforcement.
+        - **Status**:
+            - [x] **Track A (Planning)**: Drafted specs for Insight Engine (Active Learning), Labor Matching (Signaling Game), and Perceptual Filters. ✅
+            - [x] **Track B (Standardization)**: Designed DTO/Registry unification protocols for robust data flow. ✅
+            - [ ] **Track C (Execution)**: Delegated implementation to Jules via `jules_manifest.py`.
+
+    - **`Phase 23: Post-Phase 22 Regression Cleanup`** ⚖️ ✅ (2026-02-20)
+        - **Goal**: Resolve test suite regressions resulting from Phase 22 structural merges, focusing on TickOrchestrator and SagaOrchestrator protocol mismatches.
         - **Status**: COMPLETED
-        - **Achievement**: Successfully modularized and liquidated major technical debts. Refactored DTO naming alignment, modernized OMO tests, and removed legacy factories. 896 tests passed.
+        - **Achievement**: Realigned SagaOrchestrator API (no-arg `process_sagas`), hardened `TickOrchestrator` M2 calculations against mock environments, and prepared Jules mission for final verification.
 
     - **`Phase 22: Structural Fix Implementation`** 🛠️ ✅ (2026-02-20)
         - **Goal**: Implement registered missions: Lifecycle Atomicity, Solvency Guardrails, Handler Alignment, and M&A Penny Migration.
@@ -127,12 +134,11 @@ severe architectural violations threatening financial and data integrity.
 
 ### 6. 감사 결과 및 권장 조치 (Audit Results & Recommended Actions)
 
-**최신 감사 보고서**: [PROJECT_WATCHTOWER_AUDIT_REPORT_20260211.md](./reports/audits/PROJECT_WATCHTOWER_AUDIT_REPORT_20260211.md) (2026-02-11)
-- **결론**: **CRITICAL**. A new system-wide audit reveals persistent and severe violations...
-- **추가조치**: **Liquidation Sprint (2026-02-12) 완료**. Three core integrity protocols (Lifecycle, Inventory, Finance) are now programmatically enforced.
-- **Audit Harvest (2026-02-20)**: Harvested 3 reports (`origin/fix-economic-integrity-audit-*`, `origin/audit-parity-verification-*`, `origin/audit-structural-report-*`).
+**최신 감사 보고서**: [WATCHTOWER_SUMMARY.md](./reports/audits/WATCHTOWER_SUMMARY.md) (2026-02-20)
+- **결론**: **STABILIZED**. Phase 23 test regressions resolved (923 Passed). System confirms structural alignment with "Stateless Engine & Orchestrator" pattern.
+- **Audit Harvest (2026-02-20)**: Harvested 4 modular reports (`audit_agents.md`, `audit_finance.md`, `audit_markets.md`, `audit_systems.md`).
     - **Key Findings**: 
-        - [x] **Silent Coverage Loss**: Many tests use deprecated `system_command_queue`, causing cockpit interventions to be ignored during testing.
-        - [x] **Naming Drift**: Identified `government`/`governments` and `god_commands`/`god_command_queue` mismatches between `WorldState` and `SimulationState` DTOs.
-        - [x] **Stale Method Access**: Refactoring of `AgentLifecycleManager` broke `test_engine.py` due to private method removal.
-    - **Action**: Added corresponding IDs to `TECH_DEBT_LEDGER.md` (TD-TEST-COCKPIT-MOCK, TD-ARCH-GOV-Mismatch). Liquidation planned for Phase 23.
+        - [x] **Firm State Mutation**: `Firm` engines (`SalesEngine`, `BrandEngine`) are occasionally mutating state in-place rather than returning DTOs.
+        - [x] **Market Float Casts**: `matching_engine.py` uses unsafe `int()` casts instead of quantized `round_to_pennies`.
+        - [x] **System Analytics Bypass**: `analytics_system.py` bypasses DTOs to call `agent.get_quantity` directly.
+    - **Action**: Logged 6 new functional debts to `TECH_DEBT_LEDGER.md` (TD-ARCH-FIRM-MUTATION, TD-MARKET-FLOAT-CAST, etc.) for remediation in future phases.

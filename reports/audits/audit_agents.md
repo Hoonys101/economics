@@ -29,18 +29,11 @@ Run this audit on the provided context files and output the result.'...
 📖 Attached context: design\1_governance\architecture\ARCH_AGENTS.md
 🚀 [GeminiWorker] Running task with manual: report.md
 
-✅ Report Saved: C:\coding\economics\reports\temp\report_20260219_210212_Domain_Auditor.md
+✅ Report Saved: C:\coding\economics\reports\temp\report_20260220_192012_Domain_Auditor.md
 ============================================================
-# Agent Domain Audit Report
+# Technical Audit Report: Agent Orchestration & State Integrity
 
 ## Executive Summary
-The `Firm` and `Household` agents have been successfully refactored to the **Stateless Engine & Orchestrator Pattern** as mandated by `ARCH_AGENTS.md`. Both agents encapsulate state within internal DTOs or components and delegate complex logic to stateless engines, maintaining high protocol purity.
-
-## Detailed Analysis
-
-### 1. Protocol Purity (Inventory & Finance)
-- **Status**: ✅ Implemented
-- **Evidence**: 
-    - `firms.py:L351-380`: `Firm` ove
+The `Firm` and `Household` agents have been successfully refactored into the **Stateless Engine & Orchestrator Pattern** as mandated by `ARCH_AGENTS.md`. Both agents now serve as state-holding orchestrators that delegate business logic to external engines using DTO snapshots. While `Household` demonstrates near-perfect adherence to pure functional state updates, `Firm` exhibits minor structural drift in its int
 ...
 ============================================================

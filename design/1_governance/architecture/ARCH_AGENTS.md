@@ -18,9 +18,12 @@ I will update the `ARCH_AGENTS.md` file to accurately document the stateful comp
 에이전트의 의사결정은 추상적 방향 설정과 구체적 실행 수량 계산의 2단계로 나뉩니다.
 
 ### 3.1 방향성 설정 (AI Domain)
-- **메커니즘**: Q-Learning 기반 강화학습.
+- **메커니즘**: Q-Learning 기반 강화학습 및 **인지 필터(Perceptual Filter)**.
 - **역할**: 현재 시장 상황(`MarketSnapshotDTO`)을 보고 "공격적 투자", "보수적 소비" 등 **추상적 전략 방향(Aggressiveness Vector)**을 결정합니다.
-- **학습**: 각 틱의 결과에 따라 근원적 가치관(예: 가계의 행복지수, 기업의 이윤)을 보상값(Reward)으로 활용하여 전략을 고도화합니다.
+- **인지적 특성 (Cognitive Attributes)**:
+  - `market_insight`: 에이전트의 실시간 시장 정보 해석 능력. 높을수록 노이즈 없는 최신 데이터를 보며, 낮을수록 지연(Lag) 및 왜곡(Noise)된 정보를 바탕으로 판단합니다. (Continuous Decay 적용).
+  - `education_level`: 노동 시장(Labor Market)에서 자신의 생산성을 증명하는 '신호(Signal)'로 작용하며, 지능(Insight) 습득의 보정치로 사용됩니다.
+- **학습**: 각 틱의 결과에 따라 근원적 가치관을 보상값(Reward)으로 활용하여 전략을 고도화(TD-Error)합니다.
 
 ### 3.2 수량화 및 검증 (Rule-base Domain)
 - **메커니즘**: 경제 이론 및 제약 조건 기반의 휴리스틱 로직.

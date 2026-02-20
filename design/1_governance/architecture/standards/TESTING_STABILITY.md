@@ -29,8 +29,14 @@ Test failures in isolated/lean environments often stem from brittle mocks and li
 - **Unique Test Filenames**: Test files should be named uniquely across the entire project (e.g., `test_service_unit.py` vs `test_service_int.py`) to avoid conflicts when `pytest` collects tests from multiple directories.
 - **Absolute Path Resolution**: Code that loads configuration files or resources (e.g., `SchemaLoader`) MUST resolve paths relative to `__file__` using `pathlib.Path`, rather than relying on `os.getcwd()` or relative paths. This ensures tests run correctly regardless of the execution context.
 
+### 6. Data Structure Fidelity (DTOs vs Dicts)
+- **No Raw Dictionaries for DTOs**: When testing components that expect a DTO (Data Transfer Object), NEVER pass a raw dictionary.
+  - **Risk**: Production components often use dot-notation (`obj.field`) which fails on dictionaries (`obj['field']`), or vice-versa.
+  - **Requirement**: Instantiate the actual DTO class (e.g., `HousingTransactionSagaStateDTO`) with test data. This validates the DTO's `__init__` signature and ensures the test object matches the runtime object structure.
+
 ---
 
 ## 🚨 Violations
 - **Severity: High**: Tests failing with `MagicMock is not JSON serializable`.
 - **Severity: Medium**: Over-mocking that hides real logic drift between Agents and DTOs.
+

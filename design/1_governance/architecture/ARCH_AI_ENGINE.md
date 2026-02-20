@@ -36,6 +36,17 @@
 - **Panic Mechanism**:
   - Low-insight agents are susceptible to `market_panic_index`, freezing investment and reducing consumption during systemic crises.
 
+### 3.5. Labor Market: Signaling Game & Information Asymmetry (Phase 4.1)
+- **Concept**: The labor matching engine no longer uses perfect information (Price-Time priority). It is now modeled as an **Akerlof 'Market for Lemons'** signaling game.
+- **Job Seeker (Household)**: 
+  - Cannot directly expose their true `labor_skill` (productivity). They use `education_level` as an observable signal to set their reservation wage.
+- **Employer (Firm)**:
+  - Evaluates candidates based on `Expected Utility = Perception(Education) / Wage`.
+  - **The Perceptual Filter**: A Firm's `market_insight` determines the accuracy of its perception. 
+    - **High-Insight Firms (Smart Money)**: Accurately estimate true productivity from the education signal.
+    - **Low-Insight Firms (Laggards)**: Add high noise to their estimation, often mispricing candidates and accidentally hiring lower-skilled workers ("Lemons") because they appear numerically cheaper.
+- **Architectural Implementation**: The evaluation logic resides inside the `AIDrivenFirmEngine`, which generates the `JobOfferDTO` based on its noisy perception, ensuring the core matching interface remains structurally agnostic to the AI logic.
+
 ### 3.1. Real-Time Decision Making (Agent Execution)
 - 각 에이전트는 매 틱마다 `HouseholdAI`를 통해 자신의 현재 상태와 시장 정보를 `DecisionContext`로 조합합니다.
 - `HouseholdAI`는 이 컨텍스트를 사용하여 자신의 Q-Table에서 최적의 행동(소비, 노동, 투자 등)을 선택하고 실행합니다.

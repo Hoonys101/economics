@@ -3,11 +3,11 @@
     "version": "1.0"
   },
   "missions": {
-    "phase4-ai-logic-audit": {
-      "key": "phase4-ai-logic-audit",
-      "title": "Phase 4.1: AI & Logic Planning Audit",
+    "firm-ai-audit": {
+      "key": "firm-ai-audit",
+      "title": "Firm Refactor & AI Debt Awareness Audit",
       "type": "gemini",
-      "instruction_raw": "Mission 4.1 \uae30\ud68d \ubc0f \uc124\uacc4\ub97c \uc704\ud55c \ucf54\ub4dc \uac10\uc0ac. AI\uc758 \ubd80\ucc44 \ud55c\ub3c4 \uc778\uc2dd, \ub77c\uc774\ud504\uc0ac\uc774\ud074 \ud050 \uc815\ud569\uc131(Scrubbing), \uc7ac\uc815 \uc815\ucc45 \ud29c\ub2dd \ud3ec\uc778\ud2b8\ub97c \ubd84\uc11d\ud558\uc5ec \uc218\uc11d\uacfc\uc758 \ub17c\uc758\ub97c \uc704\ud55c \uae30\uc220 \uc81c\uc548 \ubcf4\uace0\uc11c\ub97c \uc791\uc131\ud558\ub77c. MISSION_spec \ubb38\uc11c\ub97c \uc5c4\uaca9\ud788 \uc900\uc218\ud560 \uac83.",
+      "instruction_raw": "\n        Check for two specific technical debts and report their current status... (Already Run)\n        ",
       "status": "pending",
       "created_at": "",
       "command": null,
@@ -16,46 +16,23 @@
       "session_id": null,
       "worker": "audit",
       "context_files": [
-        "simulation/decisions/ai_driven_household_engine.py",
-        "simulation/decisions/ai_driven_firm_engine.py",
-        "simulation/systems/lifecycle_manager.py",
-        "simulation/agents/government.py",
-        "modules/government/engines/fiscal_engine.py",
-        "simulation/dtos/api.py"
+        "simulation/firms.py",
+        "simulation/components/engines/hr_engine.py",
+        "simulation/components/engines/finance_engine.py",
+        "modules/firm/orchestrators/firm_action_executor.py",
+        "simulation/ai/firm_system2_planner.py",
+        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
+        "design/1_governance/architecture/ARCH_AGENTS.md"
       ],
-      "output_path": "design/3_work_artifacts/reports/active/REPORT_phase4-ai-logic-audit.md",
+      "output_path": "artifacts/reports/firm_ai_audit_report.md",
       "model": null,
       "audit_requirements": null
     },
-    "phase4-ai-impact-audit": {
-      "key": "phase4-ai-impact-audit",
-      "title": "Phase 4.1: AI & Labor Market Impact Audit",
+    "firm-ai-spec": {
+      "key": "firm-ai-spec",
+      "title": "Firm Refactor & AI Hardening Specification",
       "type": "gemini",
-      "instruction_raw": "\uc2e0\uaddc 'Market Insight' \uc5d4\uc9c4 \ubc0f '\ub178\ub3d9 \uc2dc\uc7a5 \uac00\uc131\ube44 \ub9e4\uce6d' \ub3c4\uc785\uc73c\ub85c \uc778\ud55c \uc2dc\uc2a4\ud15c \uc804\ubc18\uc758 \uc5ec\ud30c\ub97c \ubd84\uc11d\ud558\ub77c. \uae30\uc874 AI \uc5d4\uc9c4, DTO \ud750\ub984, \uc624\ucf00\uc2a4\ud2b8\ub808\uc774\uc158 \uc815\ud569\uc131\uc744 \uc911\uc810\uc801\uc73c\ub85c \uac10\uc0ac\ud558\uace0, '\ub2e4 \uae68\uc9c8 \uc218 \uc788\ub294' \uc9c0\uc810\ub4e4\uc744 \uc2dd\ubcc4\ud558\uc5ec \uc548\uc804\ud55c API/DTO \uc804\ud658 \uc124\uacc4\ub97c \uc81c\uc548\ud558\ub77c. MISSION_phase4-ai-impact-audit_SPEC.md\ub97c \ub530\ub97c \uac83.",
-      "status": "pending",
-      "created_at": "",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "audit",
-      "context_files": [
-        "simulation/dtos/api.py",
-        "simulation/decisions/ai_driven_household_engine.py",
-        "simulation/decisions/ai_driven_firm_engine.py",
-        "simulation/orchestration/tick_orchestrator.py",
-        "simulation/systems/settlement_system.py",
-        "design/3_work_artifacts/reports/active/REPORT_phase4-ai-asymmetry-planning.md"
-      ],
-      "output_path": "design/3_work_artifacts/reports/active/REPORT_phase4-ai-impact-audit.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "phase4-ai-dto-coding": {
-      "key": "phase4-ai-dto-coding",
-      "title": "Phase 4.1: AI & Labor DTO/API Precision Coding",
-      "type": "gemini",
-      "instruction_raw": "Impact Audit \ubc0f Architect \uc9c0\uce68\uc744 \ubc14\ud0d5\uc73c\ub85c, \uc2dc\uc2a4\ud15c \uc804\ubc18\uc758 DTO \ubc0f API \ucf54\ub4dc\ub97c \uc644\uc131\ud558\ub77c. market_insight \ud544\ub4dc \ub2e8\uc77c\ud654, Fiscal \uc0c1\uc218 \ub808\uc9c0\uc2a4\ud2b8\ub9ac \uc774\uad00, Monetary \ud504\ub85c\ud1a0\ucf5c \uc815\ud569\uc131 \ud655\ubcf4\ub97c \uc704\ud55c '\ucd5c\uc885 \ucf54\ub4dc \ube14\ub85d'\uc744 \uc791\uc131\ud558\ub77c. MISSION_phase4-ai-dto-standardization_SPEC.md\ub97c \uc5c4\uaca9\ud788 \uc900\uc218\ud558\uba70, Jules\uac00 \uc989\uc2dc \uc801\uc6a9\ud560 \uc218 \uc788\ub294 \ud615\ud0dc\uc758 Diff \ub610\ub294 \uc804\uccb4 \ucf54\ub4dc\ub97c \uc81c\uacf5\ud558\ub77c.",
+      "instruction_raw": "\n        Based on output in artifacts/reports/firm_ai_audit_report.md, create a MISSION_spec for Jules to implement:\n        1. Refactor InventoryComponent and FinancialComponent to remove .attach(self) and satisfy the SEO pattern.\n        2. Update FirmSystem2Planner._calculate_npv to factor in debt interest and repayment.\n        3. Pass leverage/debt data to AI to penalize over-spending intents.\n        \n        Ensure the spec follows the 7-Step Protocol and the Jules Delegation Protocol.\n        ",
       "status": "pending",
       "created_at": "",
       "command": null,
@@ -64,15 +41,14 @@
       "session_id": null,
       "worker": "spec",
       "context_files": [
-        "simulation/dtos/api.py",
-        "modules/household/dtos.py",
-        "modules/simulation/dtos/api.py",
-        "modules/government/engines/fiscal_engine.py",
-        "modules/finance/handlers/monetary_handler.py",
-        "design/3_work_artifacts/reports/active/REPORT_phase4-ai-impact-audit.md",
-        "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_phase4-ai-dto-standardization_SPEC.md"
+        "artifacts/reports/firm_ai_audit_report.md",
+        "simulation/firms.py",
+        "modules/agent_framework/components/inventory_component.py",
+        "modules/agent_framework/components/financial_component.py",
+        "simulation/ai/firm_system2_planner.py",
+        "modules/firm/api.py"
       ],
-      "output_path": "design/3_work_artifacts/reports/active/REPORT_phase4-ai-dto-final-code.md",
+      "output_path": "artifacts/specs/MISSION_firm_ai_hardening_spec.md",
       "model": null,
       "audit_requirements": null
     }

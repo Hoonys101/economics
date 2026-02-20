@@ -84,3 +84,9 @@
     - [Insight Report](../_archive/insights/2026-02-10_Ecosystem_Health_and_Agent_Decisions.md)
 - **[2026-01-15] Population Dynamics & Birth Rate (r/K Selection)**
     - Analysis of expectation mismatch and childcare time constraints on population.
+- **[2026-02-20] Dynamic Insight Engine (The 3-Pillar Learning Model)**
+    - **Insight**: Agents are no longer omniscient utility maximizers. Market Intelligence (`market_insight`) is now a volatile asset that must be continuously maintained. It grows through active market participation (TD-Error learning) and education (consuming services), but naturally decays over time.
+    - **Implication**: This creates a realistic "Information Asymmetry" where older or less active agents face cognitive lag (perceptual noise), leading to imperfect decision-making and allowing high-insight "Smart Money" agents to extract arbitrage profits.
+- **[2026-02-20] The Labor Market as a Signaling Game**
+    - **Insight**: The labor matching engine has transitioned from a naive Price-Time priority to a **Utility-Priority** model, turning the job market into a classic Signaling Game (Akerlof's Market for Lemons).
+    - **Mechanism**: Firms evaluate candidates based on `Expected Utility = Perception(Education) / Wage`. However, a Firm's perception is distorted by its own `market_insight`. Low-insight firms fail to accurately value education, leading them to hire cheaper, lower-skilled workers (Lemons), which eventually degrades their organizational productivity.

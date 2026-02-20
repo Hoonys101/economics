@@ -1,70 +1,66 @@
-# Architectural Handover Report: Phase 4.1 Stabilization & Hardening
+# Architectural Handover Report: Phase 23 Stabilization & AI Integration
 
-## 1. Accomplishments
-
-### 1.1. Integer Penny Hardening (The "Penny Standard")
-The simulation's financial core has been successfully migrated to an **Integer Penny Standard** to eliminate floating-point drift and ensure absolute zero-sum integrity.
-*   **SSoT Migration**: `Transaction.total_pennies` (int) is now the Single Source of Truth for all settlements. Legacy `price` (float) is relegated to a derived display value.
-*   **Engine Hardening**: `MatchingEngine` (Goods/Labor) and `StockMatchingEngine` now use integer math for price discovery (Mid-Price `// 2`) and trade value calculation (`floor` rounding).
-*   **Reporting Parity**: All Reporting DTOs (`TransactionData`, `AgentStateData`, `EconomicIndicatorData`) have been hardened. GDP and aggregate assets are now calculated as discrete integer sums.
-
-### 1.2. Cockpit 2.0 & Global Registry
-The governance and monitoring infrastructure has transitioned to a modern, type-safe architecture.
-*   **Pydantic DTOs**: Migrated from loose `dataclasses` and `TypedDicts` to `pydantic.BaseModel` for all telemetry and commands, enabling runtime validation and strict schema enforcement.
-*   **Dual-WebSocket Architecture**: Implemented `/ws/live` for high-frequency telemetry and `/ws/command` for authenticated, low-latency intervention.
-*   **Global Registry**: A centralized, layered configuration system (`SYSTEM`, `CONFIG`, `USER`, `GOD_MODE`) now manages simulation parameters with priority-based locking.
-
-### 1.3. Lifecycle & Genealogy System
-The agent lifecycle has been decomposed for modularity and historical analysis.
-*   **Service Decomposition**: `AgingSystem`, `BirthSystem`, and `DeathSystem` are now decoupled components managed by the `AgentLifecycleManager`.
-*   **Genealogy Service**: A new dedicated service tracks agent lineage (Ancestors/Descendants) and life history (`AgentSurvivalData`), accessible via a dedicated REST API.
-
-### 1.4. Transaction Routing & Removal of Legacy Manager
-*   The monolithic `TransactionManager` has been completely replaced by the `TransactionProcessor`.
-*   **Modular Handlers**: Transactions are now routed via specialized handlers (`Monetary`, `Financial`, `Labor`, `Housing`, etc.) that implement the `ITransactionHandler` protocol.
+## Executive Summary
+Phase 23 has successfully transitioned the simulation to a "Penny Perfect" financial core, enforcing integer arithmetic across all settlement and M&A systems. The architecture has been hardened through the enforcement of **DTO Purity** (frozen dataclasses) and the implementation of the **SEO (Stateless Engine & Orchestrator) Pattern** for Firm agents. Functional stability is confirmed with a 1000-tick survival benchmark, though systemic fiscal imbalances remain a primary economic risk.
 
 ---
 
-## 2. Economic Insights
+## 1. Key Accomplishments
 
-*   **Liquidity Sensitivity**: The removal of "Reflexive Liquidity" (automatic bank withdrawals) has exposed the true cash-flow constraints of agents. Agents now face `SETTLEMENT_FAIL` if they do not proactively manage their liquid cash, leading to more realistic "economic stalls" during credit crunches.
-*   **Binary Fiscal Gates**: Audit of government spending modules revealed that "all-or-nothing" distribution logic causes systemic failure. If the Treasury lacks 100% of the funds for a welfare/infrastructure batch, the entire operation is aborted, suggesting a need for partial execution strategies.
-*   **Penny-Perfect GDP**: Hardening revealed that previous GDP calculations (summing float quantities) were dimensionally incorrect. The new expenditure-based integer tracking provides a true monetary GDP metric.
+### 1.1. Core Financial Integrity (Penny Standard)
+- **Integer Enforcement**: `SettlementSystem`, `MAManager`, and `StockMatchingEngine` now operate exclusively on integer pennies, eliminating float corruption (`TD-CRIT-FLOAT-CORE`).
+- **M&A Resolution**: Fixed a critical 100x takeover cost inflation bug in `MAManager` and refactored valuation logic to use `int` types (`phase23-penny-perfect.md`).
+- **Handler Alignment**: Resolved double-counting of expenses in `FinanceEngine` and added dedicated handlers for `repayment`, `loan_repayment`, and `investment`.
+
+### 1.2. Architectural Refactoring & DTO Purity
+- **SimulationState Alignment**: Renamed `government` to `primary_government` and added a `governments` list to support future multi-government scenarios (`phase23-dto-core.md`).
+- **God-Command Pipeline**: Renamed `god_commands` to `god_command_snapshot` to clearly distinguish the frozen tick-state from the live ingestion queue.
+- **DTO Standardization**: Migrated from `TypedDict` to `frozen @dataclass` for core APIs in Finance, Housing, and Government modules.
+
+### 1.3. AI & Perception Systems (Phase 4.1)
+- **3-Pillar Learning**: Implemented dynamic agent insight based on **Experience** (TD-Error), **Education** (Service consumption), and **Time** (Natural decay).
+- **Perceptual Filters**: Introduced information asymmetry where agent `market_insight` determines the lag and noise level of market data (Smart Money vs. Lemons).
+- **Labor Market Evolution**: Shifted Labor Matching from Price-Time priority to **Utility-Priority** (`Utility = Perception / Wage`), accounting for skill and education.
+
+---
+
+## 2. Economic Insights & Forensic Audit
+
+### 2.1. Systemic Fiscal Imbalance
+- **Wage-Affordability Gap**: Forensic audits show Firms often cannot afford market-clearing wages, leading to a reliance on government welfare.
+- **Stimulus Dependency**: In 1000-tick tests, Total Welfare Paid (14,772) significantly exceeded Total Tax Collected (9,558), with stimulus triggers masking structural deficits (`MISSION_phase23-forensic-debt-audit_AUDIT.md`).
+
+### 2.2. Solvency Guardrails
+- **Debt Brake**: Implemented a "Debt Brake" in the `FiscalEngine` that forces tax hikes and welfare cuts when `Debt/GDP > 1.5`.
+- **Panic Propagation**: Identified that low-insight agents are highly sensitive to the `market_panic_index`, amplifying bank runs, while high-insight "Smart Money" acts as a stabilizer.
 
 ---
 
 ## 3. Pending Tasks & Technical Debt
 
-### 3.1. M&A Module Penny Migration (Critical)
-*   **Status**: ❌ Violation.
-*   **Issue**: `MAManager` and hostile takeover logic still calculate values as `float` and pass them to the `SettlementSystem`.
-*   **Risk**: Immediate `TypeError` crashes during corporate mergers because the `SettlementSystem` now strictly forbids non-integer transfers.
+### 3.1. Structural Debt
+- **TD-ARCH-FIRM-COUP**: Firm departments (`HRDepartment`, `FinanceDepartment`) still utilize "Parent Pointers" (`self.parent`), violating the stateless engine standard (`MISSION_phase23-forensic-debt-audit_AUDIT.md`).
+- **TD-PROTO-MONETARY**: `MonetaryTransactionHandler` continues to use `hasattr()` checks instead of `@runtime_checkable` Protocols.
 
-### 3.2. Firm Startup Sequence
-*   **Status**: ❌ Out of Sequence.
-*   **Issue**: `FirmSystem.spawn_firm` attempts to transfer startup capital *before* the firm is registered in the `AgentRegistry`.
-*   **Risk**: Transfers fail with `Destination account does not exist` errors, preventing new firm entry.
-
-### 3.3. Stale ID Scrubbing
-*   **Status**: ❌ Missing.
-*   **Issue**: Liquidated/Dead agents are not automatically cleared from `inter_tick_queue` or `effects_queue`.
-*   **Task**: Implement a `ScrubbingPhase` in the `AgentLifecycleManager` to filter stale IDs from system-level queues.
-
-### 3.4. Tracker Unit Unification
-*   **Status**: ⚠️ Partial.
-*   **Issue**: The legacy `Tracker` class still uses floats for some heuristics, while `AnalyticsSystem` uses pennies.
-*   **Task**: Unify `Tracker` to use integer pennies to prevent internal "unit-mismatch" logic errors.
-
-### 3.5 Automated Crystallization (DX)
-*   **Status**: ❌ Manual Overhead.
-*   **Issue**: Session closure currently requires manual Gemini Manifest registration for insight extraction.
-*   **Task**: Implement "one-click" crystallization in `session-go.bat` that bypasses or auto-registers manifest entries.
+### 3.2. Operational Debt
+- **Log Pollution**: AI engines frequently generate spending intents for agents with high debt ratios, causing extreme spam of `DEBT_CEILING_HIT` in logs. AI needs to internalize these constraints.
+- **Government Execution**: The Government agent frequently bypasses the `TransactionProcessor` for direct settlement transfers, leading to potential ledger inconsistencies.
 
 ---
 
 ## 4. Verification Status
 
-*   **Test Suite Summary**: **861 Tests Passed**.
-*   **Regression Fixes**: Resolved major regressions in `Government` and `FiscalEngine` where `MarketSnapshotDTO` naming collisions (TypedDict vs. Dataclass) were causing `AttributeError`.
-*   **Protocol Compliance**: Successfully transitioned from `hasattr` checks to ` @runtime_checkable` Protocol verification across the `PublicManager` and `SettlementSystem`.
-*   **Runtime Stability**: Playwright verification confirmed the Frontend HUD and Macro Canvas correctly consume the new Pydantic-based WebSocket stream.
+### 4.1. Test Suite Results
+- **Final Pass Rate**: **923 Passed** (in 19.39s) following stabilization of Saga and Housing DTOs.
+- **Regressions Fixed**: Resolved `AttributeError` issues related to `primary_government` renaming and mock attribute mismatches in M&A tests.
+
+### 4.2. Critical Path Verification
+| System | Status | Evidence |
+| :--- | :--- | :--- |
+| Atomic Housing Saga | ✅ Pass | `verify_atomic_housing_purchase.py` (5 Steps Pass) |
+| Penny M&A | ✅ Pass | `test_ma_pennies.py` (Friendly/Hostile/Bankruptcy) |
+| Fiscal Guardrails | ✅ Pass | `test_fiscal_guardrails.py` (Bailout Rejections) |
+| Labor Utility | ✅ Pass | `test_labor_matching.py` (Education Impact) |
+
+## Conclusion
+The simulation has reached a high degree of technical "Hygiene" and financial precision. The immediate priority for the next session should be the **Surgical Separation** of Firm departments to eliminate parent pointers and the hardening of AI engines to respect debt constraints autonomously.

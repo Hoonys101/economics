@@ -20,6 +20,12 @@
 | **TD-UI-DTO-PURITY** | Cockpit | **Manual Deserialization**: UI uses raw dicts/manual mapping for Telemetry. Needs `pydantic`. | **Medium**: Code Quality. | Open |
 | **TD-DEPR-STOCK-DTO** | Market | **Legacy DTO**: `StockOrder` is deprecated. Use `CanonicalOrderDTO`. | **Low**: Technical Debt. | Open |
 | **TD-DX-AUTO-CRYSTAL** | DX / Ops | **Crystallization Overhead**: Manual Gemini Manifest registration required for session distillation. | **Medium**: DX Friction. | Open |
+| **TD-ARCH-FIRM-MUTATION** | Agents | **In-place State Mutation**: `Firm` engines (`SalesEngine`, `BrandEngine`) mutate state objects, violating stateless mandate. | **Medium**: Structural Drift. | Open |
+| **TD-MARKET-FLOAT-CAST** | Market | **Unsafe Quantization**: Direct `int()` cast in `matching_engine.py` instead of explicit rounding. | **Medium**: Precision Loss. | Open |
+| **TD-MARKET-STRING-PARSE** | Market | **Brittle Key Parsing**: `StockMarket.get_price` splits strings to find `firm_id`. | **Low**: Logic Fragility. | Open |
+| **TD-ANALYTICS-DTO-BYPASS** | Systems | **Encapsulation Bypass**: `analytics_system.py` calls `agent.get_quantity` instead of reading snapshot. | **Low**: Purity Violation. | Open |
+| **TD-SYS-ACCOUNTING-GAP** | Systems | **Accounting Accuracy**: `accounting.py` misses tracking buyer expenses for raw materials. | **Medium**: Data Accuracy. | Open |
+| **TD-SYS-PERF-DEATH** | Systems | **O(N) Rebuild**: `death_system.py` uses O(N) rebuild for `state.agents` dict. | **Low**: Performance. | Open |
 
 ---
 > [!NOTE]
@@ -79,3 +85,32 @@
 - **Title**: Ghost Constant Binding (Import Time)
 - **Symptom**: `from config import MIN_WAGE` locks the value at import time.
 - **Solution**: Use a `ConfigProxy` or `DynamicConfig` object that resolves values at access time.
+
+### Recent Audit Findings (Watchtower)
+---
+#### ID: TD-ARCH-FIRM-MUTATION
+- **Title**: Firm In-place State Mutation
+- **Symptom**: `firm.py` passes `self.sales_state` to `BrandEngine` and `SalesEngine`, without capturing a return DTO.
+- **Risk**: Violates the "Stateless Engine & Orchestrator" pattern.
+- **Solution**: Refactor `BrandEngine` and `SalesEngine` to return `ResultDTOs`.
+
+---
+#### ID: TD-MARKET-FLOAT-CAST
+- **Title**: Unsafe Quantization in Market Matching
+- **Symptom**: `matching_engine.py` uses direct `int()` casting for `trade_total_pennies`.
+- **Risk**: Potential calculation loss if quantities involve extremely small precision floats.
+- **Solution**: Replace with explicit `round_to_pennies` logic.
+
+---
+#### ID: TD-MARKET-STRING-PARSE
+- **Title**: Brittle ID Parsing in StockMarket
+- **Symptom**: `StockMarket.get_price` splits `item_id` using strings to extract `firm_id`.
+- **Risk**: Highly coupled to naming conventions, preventing scalable keys.
+- **Solution**: Create dedicated DTO keys or pass tuples instead of raw strings.
+
+---
+#### ID: TD-SYS-ACCOUNTING-GAP
+- **Title**: Missing Buyer Expense Tracking
+- **Symptom**: `accounting.py` fails to track expenses for raw materials from the buyer's side.
+- **Risk**: Asymmetric financial logging that complicates GDP and profit analyses.
+- **Solution**: Update Handler and `accounting.py` to ensure reciprocal logging.
