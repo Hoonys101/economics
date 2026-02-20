@@ -33,6 +33,10 @@ We successfully resolved several critical technical debts related to system coup
 -   **Cause**: The test mocked `Household` but did not mock the return structure of `create_snapshot_dto()`. The refactored `AnalyticsSystem` now traverses this DTO (`snapshot.econ_state.inventory`), causing failures on the mock.
 -   **Fix**: Updated the test to mock the full DTO hierarchy (`mock_snapshot.econ_state.inventory`), aligning the test double with the new architectural contract.
 
+### 4. Double Initialization & State Wiping
+-   **Issue**: Code review identified that `_bank_depositors` and `_agent_banks` were initialized in `__init__` but then re-initialized (and wiped) in `set_panic_recorder`.
+-   **Fix**: Removed the re-initialization of these dictionaries from `set_panic_recorder`, ensuring state persists if the panic recorder is set late.
+
 ## 3. Test Evidence
 
 The following output demonstrates that all affected modules pass 100%.
