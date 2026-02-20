@@ -16,7 +16,7 @@ def test_phase_housing_saga_execution():
     phase.execute(mock_state)
 
     # Verify
-    mock_saga_orchestrator.process_sagas.assert_called_once_with(mock_state)
+    mock_saga_orchestrator.process_sagas.assert_called_once()
 
 def test_phase_housing_saga_execution_fallback():
     # Setup

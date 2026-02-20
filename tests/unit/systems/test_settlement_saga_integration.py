@@ -3,6 +3,10 @@ from unittest.mock import MagicMock
 from modules.finance.sagas.orchestrator import SagaOrchestrator
 from simulation.systems.settlement_system import SettlementSystem
 from modules.finance.saga_handler import HousingTransactionSagaHandler
+from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO, HousingSagaAgentContext
+from modules.simulation.api import HouseholdSnapshotDTO
+from modules.finance.api import MortgageApplicationDTO
+from uuid import uuid4
 
 class TestSettlementSagaIntegration:
     @pytest.fixture
@@ -32,20 +36,47 @@ class TestSettlementSagaIntegration:
         mock_simulation_state.settlement_system = settlement
 
         # 2. Setup a Saga
-        saga_id = "saga-integration-1"
-        saga = {
-            "saga_id": saga_id,
-            "saga_type": "HOUSING_TRANSACTION",
-            "status": "INITIATED",
-            "current_step": 0,
-            "buyer_id": 1,
-            "seller_id": 2,
-            "property_id": 101,
-            "offer_price": 100000.0,
-            "down_payment_amount": 20000.0,
-            "last_processed_tick": 99, # To ensure it processes
-            "loan_application": {"mock": "data"} # Required by handler
-        }
+        saga_id = uuid4()
+
+        # Create DTO contexts
+        buyer_ctx = HouseholdSnapshotDTO(
+             household_id=1,
+             cash=20000.0,
+             income=5000.0,
+             credit_score=700.0,
+             existing_debt=0.0,
+             assets_value=0.0
+        )
+
+        seller_ctx = HousingSagaAgentContext(
+             id=2,
+             monthly_income=0.0,
+             existing_monthly_debt=0.0
+        )
+
+        app_dto = MortgageApplicationDTO(
+            applicant_id=1,
+            requested_principal=80000.0,
+            purpose="purchase",
+            property_id=101,
+            property_value=100000.0,
+            applicant_monthly_income=5000.0,
+            existing_monthly_debt_payments=0.0,
+            loan_term=360
+        )
+
+        saga = HousingTransactionSagaStateDTO(
+            saga_id=saga_id,
+            status="INITIATED",
+            buyer_context=buyer_ctx,
+            seller_context=seller_ctx,
+            property_id=101,
+            offer_price=100000.0,
+            down_payment_amount=20000.0,
+            last_processed_tick=99,
+            loan_application=app_dto
+        )
+
         orchestrator.submit_saga(saga)
 
         # 3. Setup Dependencies for Handler
@@ -78,9 +109,9 @@ class TestSettlementSagaIntegration:
         updated_saga = orchestrator.active_sagas[saga_id]
 
         # Should transition to CREDIT_CHECK
-        assert updated_saga["status"] == "CREDIT_CHECK"
-        assert updated_saga["staged_loan_id"] == "loan_staged_1"
-        assert updated_saga["last_processed_tick"] == 100
+        assert updated_saga.status == "CREDIT_CHECK"
+        assert updated_saga.staged_loan_id == "loan_staged_1"
+        assert updated_saga.last_processed_tick == 100
 
         # Verify side effects
         mock_simulation_state.housing_service.lock_asset.assert_called_with(101, saga_id)
@@ -98,16 +129,35 @@ class TestSettlementSagaIntegration:
         mock_simulation_state.settlement_system = settlement
 
         # 2. Setup a Saga (in CREDIT_CHECK state)
-        saga_id = "saga-integration-cancel"
-        saga = {
-            "saga_id": saga_id,
-            "status": "CREDIT_CHECK",
-            "buyer_id": 1,
-            "seller_id": 2,
-            "property_id": 101,
-            "staged_loan_id": "loan_staged_x",
-            "last_processed_tick": 99
-        }
+        saga_id = uuid4()
+
+        buyer_ctx = HouseholdSnapshotDTO(
+             household_id=1,
+             cash=20000.0,
+             income=5000.0,
+             credit_score=700.0,
+             existing_debt=0.0,
+             assets_value=0.0
+        )
+
+        seller_ctx = HousingSagaAgentContext(
+             id=2,
+             monthly_income=0.0,
+             existing_monthly_debt=0.0
+        )
+
+        saga = HousingTransactionSagaStateDTO(
+            saga_id=saga_id,
+            status="CREDIT_CHECK",
+            buyer_context=buyer_ctx,
+            seller_context=seller_ctx,
+            property_id=101,
+            offer_price=100000.0,
+            down_payment_amount=20000.0,
+            staged_loan_id="loan_staged_x",
+            last_processed_tick=99
+        )
+
         orchestrator.submit_saga(saga)
 
         # 3. Setup Dependencies
