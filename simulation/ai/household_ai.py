@@ -21,6 +21,13 @@ class HouseholdAI(BaseAIEngine):
     # Discrete Aggressiveness Levels for Q-Learning
     AGGRESSIVENESS_LEVELS = [0.0, 0.25, 0.5, 0.75, 1.0]
 
+    # Insight Constants (Phase 4.1)
+    INSIGHT_THRESHOLD_REALTIME = 0.8
+    INSIGHT_THRESHOLD_SMA = 0.3
+    PANIC_TRIGGER_THRESHOLD = 0.3
+    DEBT_NOISE_FACTOR = 1.05
+    PANIC_CONSUMPTION_DAMPENER = 0.25
+
     def __init__(
         self,
         agent_id: str,
@@ -64,45 +71,54 @@ class HouseholdAI(BaseAIEngine):
             insight = 0.5
 
         # Optimization: If insight is high, return raw data (0-copy if possible)
-        if insight > 0.8:
+        if insight > self.INSIGHT_THRESHOLD_REALTIME:
             return market_data
 
         filtered_data = market_data.copy()
 
-        # We need access to history which is in market_snapshot.market_signals usually.
-        # But here we only have market_data dict.
-        # We rely on 'price_history_7d' being present in market_signals if injected via market_data,
-        # OR market_data itself containing history.
-        # However, _get_common_state uses 'debt_data' from market_data.
-        # It doesn't use price directly for state discretization in _get_common_state!
-        # _get_common_state uses: assets, needs, debt_ratio, interest_burden.
-        # Debt metrics might be distorted?
-        # The prompt implies market prices/signals are distorted.
+        # Access history from market_snapshot if available
+        snapshot = None
+        if self.ai_decision_engine and hasattr(self.ai_decision_engine, "context") and self.ai_decision_engine.context:
+            snapshot = self.ai_decision_engine.context.market_snapshot
 
-        # Since _get_common_state does NOT use prices, the perceptual filter here
-        # is largely symbolic unless we distort debt info or if we add price awareness later.
-        # BUT, the filtered_market_data is passed to _get_common_state.
-
-        # Let's distort 'debt_data' if possible, or leave as placeholder for when price is used.
-        # Currently _get_common_state uses:
-        # debt_info = market_data.get("debt_data", ...).get(self.agent_id, ...)
-
-        if insight < 0.3:
-            # Distort debt perception (Lemons)
+        # Debt Distortion (Existing Logic)
+        if insight < self.INSIGHT_THRESHOLD_SMA:
             debt_data = filtered_data.get("debt_data", {})
             my_debt = debt_data.get(self.agent_id, {})
             if my_debt:
-                # Underestimate burden? Or overestimate?
-                # "Lemons" might panic, so maybe overestimate burden?
-                new_burden = my_debt.get("daily_interest_burden", 0.0) * 1.05 # +5% noise/panic
-                # We can't easily modify nested dict without deep copy,
-                # but let's try to minimal copy
+                new_burden = my_debt.get("daily_interest_burden", 0.0) * self.DEBT_NOISE_FACTOR
                 new_my_debt = my_debt.copy()
                 new_my_debt["daily_interest_burden"] = new_burden
-
                 new_debt_data = debt_data.copy()
                 new_debt_data[self.agent_id] = new_my_debt
                 filtered_data["debt_data"] = new_debt_data
+
+        # Price Distortion (Signal Lag & SMA)
+        # We need to inject distorted prices into market_data so that downstream consumers (if any) see them.
+        # Note: _get_common_state currently doesn't use prices, but this is future-proofing and spec-compliant.
+        if snapshot and snapshot.market_signals:
+            distorted_prices = {}
+            for item_id, signal in snapshot.market_signals.items():
+                if not signal.price_history_7d:
+                    continue
+
+                history = signal.price_history_7d
+
+                if insight < self.INSIGHT_THRESHOLD_SMA:
+                    # Low Insight: 5-tick Lag
+                    idx = max(0, len(history) - 5)
+                    distorted_price = history[idx]
+                elif insight < self.INSIGHT_THRESHOLD_REALTIME:
+                    # Medium Insight: 3-tick SMA
+                    recent = history[-3:]
+                    distorted_price = sum(recent) / len(recent)
+                else:
+                    distorted_price = signal.last_traded_price or 0
+
+                distorted_prices[item_id] = distorted_price
+
+            # Inject into market_data under a 'perceived_prices' key or overwrite existing if present
+            filtered_data["perceived_prices"] = distorted_prices
 
         return filtered_data
 
@@ -261,13 +277,13 @@ class HouseholdAI(BaseAIEngine):
             if hasattr(ctx, "government_policy") and ctx.government_policy:
                 panic_index = ctx.government_policy.market_panic_index
 
-        if panic_index > 0.3 and insight < 0.3:
+        if panic_index > self.PANIC_TRIGGER_THRESHOLD and insight < self.INSIGHT_THRESHOLD_SMA:
             # Panic: Reduce Investment and Consumption
             investment_agg = 0.0 # Freeze investment
 
             # Reduce consumption aggressiveness by one level or set to min
             for k in consumption_aggressiveness:
-                consumption_aggressiveness[k] = max(0.0, consumption_aggressiveness[k] - 0.25)
+                consumption_aggressiveness[k] = max(0.0, consumption_aggressiveness[k] - self.PANIC_CONSUMPTION_DAMPENER)
 
         return HouseholdActionVector(
             consumption_aggressiveness=consumption_aggressiveness,

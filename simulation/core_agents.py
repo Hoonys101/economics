@@ -85,6 +85,11 @@ class Household(
     State is held in internal DTOs.
     """
 
+    # Insight Constants (Phase 4.1)
+    INSIGHT_DECAY_RATE = 0.001
+    INSIGHT_LEARNING_MULTIPLIER = 5.0
+    EDUCATION_BOOST_AMOUNT = 0.05
+
     def __init__(
         self,
         core_config: AgentCoreConfigDTO,
@@ -539,8 +544,7 @@ class Household(
 
         # Phase 4.1: Natural Decay of Insight
         current_insight = self._econ_state.market_insight
-        # Decay rate: -0.001 per tick
-        self._econ_state.market_insight = max(0.0, current_insight - 0.001)
+        self._econ_state.market_insight = max(0.0, current_insight - self.INSIGHT_DECAY_RATE)
 
         # 1. Lifecycle Engine (Aging & Reproduction Check)
         lifecycle_input = LifecycleInputDTO(
@@ -877,8 +881,7 @@ class Household(
             )
              # Phase 4.1: Active Learning (Insight Gain from Surprise)
              # Map TD-Error (insight_gain) to market_insight increase
-             # Scaling factor: 5.0 (arbitrary tuning parameter for responsiveness)
-             gain = insight_gain * 5.0
+             gain = insight_gain * self.INSIGHT_LEARNING_MULTIPLIER
              current_insight = self._econ_state.market_insight
              self._econ_state.market_insight = min(1.0, current_insight + gain)
 
@@ -1023,9 +1026,9 @@ class Household(
 
             # Phase 4.1: Service Boosting (Education)
             if item_id == "education_service":
-                # Boost insight by 0.05 per unit consumed
+                # Boost insight by constant per unit consumed
                 current_insight = self._econ_state.market_insight
-                self._econ_state.market_insight = min(1.0, current_insight + 0.05 * to_remove)
+                self._econ_state.market_insight = min(1.0, current_insight + self.EDUCATION_BOOST_AMOUNT * to_remove)
 
     def record_consumption(self, amount: float, is_food: bool = False) -> None:
         """Records consumption statistics (called by Registry/Handlers)."""
