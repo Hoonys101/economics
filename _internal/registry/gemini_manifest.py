@@ -24,41 +24,49 @@ from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
     "firm-ai-audit": {
-        "title": "Firm Refactor & AI Debt Awareness Audit",
+        "title": "Firm Architecture & AI Debt Audit",
         "worker": "audit",
-        "instruction": """
-        Check for two specific technical debts and report their current status... (Already Run)
-        """,
+        "instruction": "Audit the Firm agent and its components for remaining parent pointer coupling (TD-ARCH-FIRM-COUP) and check if FirmSystem2Planner is aware of debt/interest constraints (TD-AI-DEBT-AWARE).",
         "context_files": [
-            "simulation/firms.py",
-            "simulation/components/engines/hr_engine.py",
-            "simulation/components/engines/finance_engine.py",
-            "modules/firm/orchestrators/firm_action_executor.py",
-            "simulation/ai/firm_system2_planner.py",
-            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
-            "design/1_governance/architecture/ARCH_AGENTS.md"
+            "simulation/firms/firm.py",
+            "simulation/firms/components/inventory_component.py",
+            "simulation/firms/components/financial_component.py",
+            "simulation/ai/planners/firm_system2_planner.py",
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
         ],
         "output_path": "artifacts/reports/firm_ai_audit_report.md"
     },
     "firm-ai-spec": {
-        "title": "Firm Refactor & AI Hardening Specification",
+        "title": "Firm Decoupling & AI Hardening Spec",
         "worker": "spec",
-        "instruction": """
-        Based on output in artifacts/reports/firm_ai_audit_report.md, create a MISSION_spec for Jules to implement:
-        1. Refactor InventoryComponent and FinancialComponent to remove .attach(self) and satisfy the SEO pattern.
-        2. Update FirmSystem2Planner._calculate_npv to factor in debt interest and repayment.
-        3. Pass leverage/debt data to AI to penalize over-spending intents.
-        
-        Ensure the spec follows the 7-Step Protocol and the Jules Delegation Protocol.
-        """,
+        "instruction": "Based on the audit report, create a MISSION_spec for Jules to: 1. Remove parent pointers from Inventory/Financial components. 2. Harden FirmSystem2Planner with debt constraint awareness.",
         "context_files": [
             "artifacts/reports/firm_ai_audit_report.md",
-            "simulation/firms.py",
-            "modules/agent_framework/components/inventory_component.py",
-            "modules/agent_framework/components/financial_component.py",
-            "simulation/ai/firm_system2_planner.py",
+            "simulation/firms/firm.py",
             "modules/firm/api.py"
         ],
         "output_path": "artifacts/specs/MISSION_firm_ai_hardening_spec.md"
+    },
+    "market-systems-spec": {
+        "title": "Market Precision & Robustness Spec",
+        "worker": "spec",
+        "instruction": "Create a MISSION_spec for Jules to resolve TD-MARKET-FLOAT-CAST (unsafe cast) and TD-MARKET-STRING-PARSE (brittle parsing).",
+        "context_files": [
+            "simulation/markets/matching_engine.py",
+            "simulation/markets/order_book_market.py",
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+        ],
+        "output_path": "artifacts/specs/MISSION_market_systems_hardening_spec.md"
+    },
+    "finance-purity-spec": {
+        "title": "Finance Protocol Purity Spec",
+        "worker": "spec",
+        "instruction": "Create a MISSION_spec for Jules to resolve TD-PROTO-MONETARY by refactoring MonetaryTransactionHandler to use strict Protocols.",
+        "context_files": [
+            "simulation/systems/handlers/monetary_handler.py",
+            "modules/common/interfaces.py",
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+        ],
+        "output_path": "artifacts/specs/MISSION_finance_purity_refactor_spec.md"
     }
 }

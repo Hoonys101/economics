@@ -21,5 +21,17 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "command": "create",
         "instruction": "Implement the changes specified in the MISSION_spec to decouple Firm components and harden AI debt awareness.",
         "file": "artifacts/specs/MISSION_firm_ai_hardening_spec.md"
+    },
+    "market-systems-hardening": {
+        "title": "Market Precision & Robustness Hardening",
+        "command": "create",
+        "instruction": "Implement the MISSION_spec to fix unsafe quantization and robustify firm_id parsing.",
+        "file": "artifacts/specs/MISSION_market_systems_hardening_spec.md"
+    },
+    "finance-purity-refactor": {
+        "title": "Finance Protocol Purity Refactor",
+        "command": "create",
+        "instruction": "Implement the MISSION_spec to refactor MonetaryTransactionHandler to use strict Protocols.",
+        "file": "artifacts/specs/MISSION_finance_purity_refactor_spec.md"
     }
 }
