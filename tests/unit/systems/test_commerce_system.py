@@ -23,6 +23,9 @@ def test_execute_consumption_and_leisure(commerce_system):
     effect_dto.leisure_type = "IDLE"
     h1.apply_leisure_effect.return_value = effect_dto
 
+    # Mock get_quantity for education_service check
+    h1.get_quantity.return_value = 0.0
+
     households = [h1]
 
     # Mock Context
@@ -72,6 +75,9 @@ def test_fast_track_consumption_if_needed(commerce_system):
     effect_dto = MagicMock()
     effect_dto.utility_gained = 0.0
     h1.apply_leisure_effect.return_value = effect_dto
+
+    # Mock get_quantity for education_service check
+    h1.get_quantity.return_value = 0.0
 
     # Mock Reflux System (Fix injection)
     mock_reflux = MagicMock()

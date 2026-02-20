@@ -108,6 +108,14 @@ def create_household_config_dto(**kwargs) -> HouseholdConfigDTO:
         "default_food_price_estimate": 1000,
         "survival_budget_allocation": 5000.0,
         "food_consumption_utility": 20.0,
+        "insight_decay_rate": 0.001,
+        "insight_learning_multiplier": 5.0,
+        "education_boost_amount": 0.05,
+        "insight_threshold_realtime": 0.8,
+        "insight_threshold_sma": 0.3,
+        "panic_trigger_threshold": 0.3,
+        "debt_noise_factor": 1.05,
+        "panic_consumption_dampener": 0.25,
     }
     defaults.update(kwargs)
     return HouseholdConfigDTO(**defaults)

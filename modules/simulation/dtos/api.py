@@ -228,6 +228,16 @@ class HouseholdConfigDTO:
     survival_critical_turns: float
     household_low_asset_threshold: int
 
+    # Insight Engine (Phase 4.1)
+    insight_decay_rate: float
+    insight_learning_multiplier: float
+    education_boost_amount: float
+    insight_threshold_realtime: float
+    insight_threshold_sma: float
+    panic_trigger_threshold: float
+    debt_noise_factor: float
+    panic_consumption_dampener: float
+
 @dataclass
 class FirmConfigDTO:
     """

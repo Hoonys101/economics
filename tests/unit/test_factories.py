@@ -92,6 +92,12 @@ class TestDecisionInputFactory:
         world_state = MagicMock()
         world_state.stock_tracker = MagicMock()
         world_state.stress_scenario_config = MagicMock()
+
+        # Mock Government State for Insight Engine Metrics
+        state.primary_government.state.gdp_history = [1000.0]
+        state.primary_government.state.total_debt = 500
+        state.primary_government.state.fiscal_stance = 0.05
+
         market_snapshot = MagicMock(spec=MarketSnapshotDTO)
         dto = factory.create_decision_input(state, world_state, market_snapshot)
         assert isinstance(dto, DecisionInputDTO)

@@ -164,11 +164,40 @@ class DecisionInputFactory:
 
         gov = state.primary_government
         bank = state.bank
+        # Phase 4.1: Insight Engine Metrics
+        market_panic_index = getattr(world_state, "market_panic_index", 0.0)
+
+        # Calculate system debt to GDP
+        system_debt_to_gdp_ratio = 0.0
+        fiscal_stance_indicator = "NEUTRAL"
+
+        if gov and hasattr(gov, "state"):
+            gov_state = gov.state
+            # Check for total_debt and gdp_history
+            total_debt = getattr(gov_state, "total_debt", 0)
+            gdp_history = getattr(gov_state, "gdp_history", [])
+
+            if gdp_history:
+                current_gdp = gdp_history[-1]
+                if current_gdp > 0:
+                    system_debt_to_gdp_ratio = total_debt / current_gdp
+
+            # Check for fiscal_stance
+            fiscal_stance = getattr(gov_state, "fiscal_stance", 0.0)
+            if fiscal_stance > 0.1:
+                fiscal_stance_indicator = "EXPANSION"
+            elif fiscal_stance < -0.1:
+                fiscal_stance_indicator = "AUSTERITY"
+
         gov_policy = GovernmentPolicyDTO(
              income_tax_rate=getattr(gov, "income_tax_rate", 0.1),
              sales_tax_rate=getattr(state.config_module, "SALES_TAX_RATE", 0.05),
              corporate_tax_rate=getattr(gov, "corporate_tax_rate", 0.2),
-             base_interest_rate=getattr(bank, "base_rate", 0.05) if bank else 0.05
+             base_interest_rate=getattr(bank, "base_rate", 0.05) if bank else 0.05,
+             system_debt_to_gdp_ratio=system_debt_to_gdp_ratio,
+             system_liquidity_index=1.0, # Placeholder for Phase 4.2
+             market_panic_index=market_panic_index,
+             fiscal_stance_indicator=fiscal_stance_indicator
         )
 
         # Create Fiscal Context

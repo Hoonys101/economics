@@ -168,11 +168,7 @@ class Household(
             labor_skill=1.0,
             education_xp=0.0,
             education_level=0,
-<<<<<<< HEAD
             market_insight=0.5, # Phase 4.1: Dynamic Cognitive Filter
-=======
-            market_insight=0.5, # Phase 4.1: Default Insight
->>>>>>> origin/phase4-ai-labor-matching-13635861032711853652
             expected_wage_pennies=1000, # Default 10.00
             talent=talent,
             skills={},
@@ -557,6 +553,11 @@ class Household(
         if not self.is_active:
             return
 
+        # Phase 4.1: Natural Decay of Insight
+        current_insight = self._econ_state.market_insight
+        decay_rate = getattr(self.config, "insight_decay_rate", 0.001)
+        self._econ_state.market_insight = max(0.0, current_insight - decay_rate)
+
         # 1. Lifecycle Engine (Aging & Reproduction Check)
         lifecycle_input = LifecycleInputDTO(
             bio_state=self._bio_state,
@@ -888,21 +889,17 @@ class Household(
         next_agent_data = context["next_agent_data"]
         next_market_data = context["next_market_data"]
         if hasattr(self.decision_engine, 'ai_engine'):
-             td_error = self.decision_engine.ai_engine.update_learning_v2(
+             insight_gain = self.decision_engine.ai_engine.update_learning_v2(
                 reward=reward,
                 next_agent_data=next_agent_data,
                 next_market_data=next_market_data,
             )
-
-             # Phase 4.1: Active Learning (Insight Dynamics)
-             # Decay
-             self._econ_state.market_insight = max(0.0, self._econ_state.market_insight - 0.001)
-
-             # Boost from Learning Surprise (TD-Error)
-             if isinstance(td_error, (int, float)):
-                 # Normalized boost using exponential saturation
-                 boost = 0.05 * (1.0 - math.exp(-abs(td_error) / 1000.0))
-                 self._econ_state.market_insight = min(1.0, self._econ_state.market_insight + boost)
+             # Phase 4.1: Active Learning (Insight Gain from Surprise)
+             # Map TD-Error (insight_gain) to market_insight increase
+             multiplier = getattr(self.config, "insight_learning_multiplier", 5.0)
+             gain = insight_gain * multiplier
+             current_insight = self._econ_state.market_insight
+             self._econ_state.market_insight = min(1.0, current_insight + gain)
 
     # --- Helpers ---
 
@@ -1042,6 +1039,13 @@ class Household(
             self._econ_state.current_consumption += to_remove
             if item_id == "basic_food" or item_id == "luxury_food":
                  self._econ_state.current_food_consumption += to_remove
+
+            # Phase 4.1: Service Boosting (Education)
+            if item_id == "education_service":
+                # Boost insight by constant per unit consumed
+                boost = getattr(self.config, "education_boost_amount", 0.05)
+                current_insight = self._econ_state.market_insight
+                self._econ_state.market_insight = min(1.0, current_insight + boost * to_remove)
 
     def record_consumption(self, amount: float, is_food: bool = False) -> None:
         """Records consumption statistics (called by Registry/Handlers)."""

@@ -51,6 +51,76 @@ class HouseholdAI(BaseAIEngine):
     def set_ai_decision_engine(self, engine: "AIDecisionEngine"):
         self.ai_decision_engine = engine
 
+    def _apply_perceptual_filters(self, agent_data: Dict[str, Any], market_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Applies perceptual distortion based on market_insight.
+        > 0.8: Real-time (0-lag)
+        > 0.3: 3-tick Moving Average
+        < 0.3: 5-tick Lag + Noise
+        """
+        insight = agent_data.get("market_insight", 0.5)
+        # Handle case where insight is None
+        if insight is None:
+            insight = 0.5
+
+        # Access config
+        config = getattr(self.ai_decision_engine, "config_module", None)
+        threshold_realtime = getattr(config, "insight_threshold_realtime", 0.8)
+        threshold_sma = getattr(config, "insight_threshold_sma", 0.3)
+        debt_noise = getattr(config, "debt_noise_factor", 1.05)
+
+        # Optimization: If insight is high, return raw data (0-copy if possible)
+        if insight > threshold_realtime:
+            return market_data
+
+        filtered_data = market_data.copy()
+
+        # Access history from market_snapshot if available
+        snapshot = None
+        if self.ai_decision_engine and hasattr(self.ai_decision_engine, "context") and self.ai_decision_engine.context:
+            snapshot = self.ai_decision_engine.context.market_snapshot
+
+        # Debt Distortion (Existing Logic)
+        if insight < threshold_sma:
+            debt_data = filtered_data.get("debt_data", {})
+            my_debt = debt_data.get(self.agent_id, {})
+            if my_debt:
+                new_burden = my_debt.get("daily_interest_burden", 0.0) * debt_noise
+                new_my_debt = my_debt.copy()
+                new_my_debt["daily_interest_burden"] = new_burden
+                new_debt_data = debt_data.copy()
+                new_debt_data[self.agent_id] = new_my_debt
+                filtered_data["debt_data"] = new_debt_data
+
+        # Price Distortion (Signal Lag & SMA)
+        # We need to inject distorted prices into market_data so that downstream consumers (if any) see them.
+        # Note: _get_common_state currently doesn't use prices, but this is future-proofing and spec-compliant.
+        if snapshot and snapshot.market_signals:
+            distorted_prices = {}
+            for item_id, signal in snapshot.market_signals.items():
+                if not signal.price_history_7d:
+                    continue
+
+                history = signal.price_history_7d
+
+                if insight < threshold_sma:
+                    # Low Insight: 5-tick Lag
+                    idx = max(0, len(history) - 5)
+                    distorted_price = history[idx]
+                elif insight < threshold_realtime:
+                    # Medium Insight: 3-tick SMA
+                    recent = history[-3:]
+                    distorted_price = sum(recent) / len(recent)
+                else:
+                    distorted_price = signal.last_traded_price or 0
+
+                distorted_prices[item_id] = distorted_price
+
+            # Inject into market_data under a 'perceived_prices' key or overwrite existing if present
+            filtered_data["perceived_prices"] = distorted_prices
+
+        return filtered_data
+
     def _get_common_state(self, agent_data: Dict[str, Any], market_data: Dict[str, Any]) -> Tuple:
         """
         Common state: Assets, General Needs, Debt Ratio, Interest Burden
@@ -94,8 +164,11 @@ class HouseholdAI(BaseAIEngine):
     ) -> HouseholdActionVector:
         """
         Decide aggressiveness for consumption (per item) and work.
+        Includes Phase 4.1 Perceptual Filters and Panic Reaction.
         """
-        state = self._get_common_state(agent_data, market_data)
+        # Phase 4.1: Perceptual Filters
+        filtered_market_data = self._apply_perceptual_filters(agent_data, market_data)
+        state = self._get_common_state(agent_data, filtered_market_data)
         
         # 1. Consumption Aggressiveness
         consumption_aggressiveness = {}
@@ -191,6 +264,31 @@ class HouseholdAI(BaseAIEngine):
             self.last_investment_action_idx = None
             investment_agg = 0.0
 
+        # Phase 4.1: Panic Reaction
+        # Low Insight agents react to market_panic_index
+        insight = agent_data.get("market_insight", 0.5)
+        if insight is None: insight = 0.5
+
+        # Access panic index from decision engine context if possible
+        panic_index = 0.0
+        if self.ai_decision_engine and hasattr(self.ai_decision_engine, "context") and self.ai_decision_engine.context:
+            ctx = self.ai_decision_engine.context
+            if hasattr(ctx, "government_policy") and ctx.government_policy:
+                panic_index = ctx.government_policy.market_panic_index
+
+        config = getattr(self.ai_decision_engine, "config_module", None)
+        panic_trigger = getattr(config, "panic_trigger_threshold", 0.3)
+        insight_threshold_sma = getattr(config, "insight_threshold_sma", 0.3)
+        panic_dampener = getattr(config, "panic_consumption_dampener", 0.25)
+
+        if panic_index > panic_trigger and insight < insight_threshold_sma:
+            # Panic: Reduce Investment and Consumption
+            investment_agg = 0.0 # Freeze investment
+
+            # Reduce consumption aggressiveness by one level or set to min
+            for k in consumption_aggressiveness:
+                consumption_aggressiveness[k] = max(0.0, consumption_aggressiveness[k] - panic_dampener)
+
         return HouseholdActionVector(
             consumption_aggressiveness=consumption_aggressiveness,
             work_aggressiveness=work_agg,
@@ -283,12 +381,11 @@ class HouseholdAI(BaseAIEngine):
     ) -> float:
         """
         Update Household Q-Tables.
-        Returns the maximum absolute TD-Error encountered.
+        Returns the total accumulated TD-Error (as a proxy for insight gain).
         """
         next_state = self._get_common_state(next_agent_data, next_market_data)
         actions = list(range(len(self.AGGRESSIVENESS_LEVELS)))
-
-        max_td_error = 0.0
+        total_td_error = 0.0
 
         # Update Consumption Q-Tables
         for item_id, q_manager in self.q_consumption.items():
@@ -296,7 +393,7 @@ class HouseholdAI(BaseAIEngine):
             last_action = self.last_consumption_action_idxs.get(item_id)
             
             if last_state is not None and last_action is not None:
-                td_error = q_manager.update_q_table(
+                delta = q_manager.update_q_table(
                     last_state,
                     last_action,
                     reward,
@@ -305,12 +402,11 @@ class HouseholdAI(BaseAIEngine):
                     self.base_alpha,
                     self.gamma
                 )
-                if abs(td_error) > max_td_error:
-                    max_td_error = abs(td_error)
+                total_td_error += abs(delta)
 
         # Update Work Q-Table
         if self.last_work_state is not None and self.last_work_action_idx is not None:
-            td_error = self.q_work.update_q_table(
+            delta = self.q_work.update_q_table(
                 self.last_work_state,
                 self.last_work_action_idx,
                 reward,
@@ -319,12 +415,11 @@ class HouseholdAI(BaseAIEngine):
                 self.base_alpha,
                 self.gamma
             )
-            if abs(td_error) > max_td_error:
-                max_td_error = abs(td_error)
+            total_td_error += abs(delta)
 
         # Update Investment Q-Table
         if self.last_investment_state is not None and self.last_investment_action_idx is not None:
-            td_error = self.q_investment.update_q_table(
+            delta = self.q_investment.update_q_table(
                 self.last_investment_state,
                 self.last_investment_action_idx,
                 reward,
@@ -333,10 +428,9 @@ class HouseholdAI(BaseAIEngine):
                 self.base_alpha,
                 self.gamma
             )
-            if abs(td_error) > max_td_error:
-                max_td_error = abs(td_error)
+            total_td_error += abs(delta)
 
-        return max_td_error
+        return total_td_error
 
     # Legacy Methods
     def _get_strategic_state(self, a, m): pass

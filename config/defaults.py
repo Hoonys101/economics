@@ -1023,3 +1023,15 @@ AGE_DEATH_PROBABILITIES = {
 FALLBACK_SURVIVAL_COST = 1000
 PRICE_VOLATILITY_WINDOW_TICKS = 20
 HOUSING_ANNUAL_MAINTENANCE_RATE = 0.01
+
+# ==============================================================================
+# Phase 4.1: Insight Engine (3-Pillar Learning)
+# ==============================================================================
+INSIGHT_DECAY_RATE = 0.001          # Decay per tick (Obsolescence)
+INSIGHT_LEARNING_MULTIPLIER = 5.0   # Active Learning Gain Multiplier (from TD-Error)
+EDUCATION_BOOST_AMOUNT = 0.05       # Insight boost per education service consumed
+INSIGHT_THRESHOLD_REALTIME = 0.8    # Above this, agents see real-time market data
+INSIGHT_THRESHOLD_SMA = 0.3         # Above this, agents see 3-tick SMA. Below, Lag+Noise.
+PANIC_TRIGGER_THRESHOLD = 0.3       # Panic Index above this triggers defensive behavior (if insight low)
+DEBT_NOISE_FACTOR = 1.05            # Low insight agents overestimate debt burden by 5%
+PANIC_CONSUMPTION_DAMPENER = 0.25   # Low insight agents reduce consumption aggressiveness by this amount in panic

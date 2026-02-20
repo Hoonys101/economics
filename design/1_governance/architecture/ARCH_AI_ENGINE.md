@@ -23,6 +23,19 @@
 
 ## 3. Key Mechanisms of Intelligence
 
+### 3.4. Dynamic Insight Engine (Phase 4.1)
+- **Concept**: Agent intelligence (`market_insight`) is dynamic, not static. It evolves based on the **3-Pillar Learning** model:
+  1.  **Experience (Active)**: Learning from prediction errors (`TD-Error`). High surprise = High learning.
+  2.  **Education (Service)**: Consuming `education_service` directly boosts insight.
+  3.  **Time (Decay)**: Intelligence decays naturally per tick (`-0.001`), forcing continuous engagement.
+- **Perceptual Filters**:
+  - `HouseholdAI` filters incoming market data based on current insight.
+  - **High Insight (>0.8)**: Sees Real-time data.
+  - **Medium Insight (0.3-0.8)**: Sees 3-tick SMA (Simple Moving Average) data.
+  - **Low Insight (<0.3)**: Sees 5-tick Lagged data + Distorted Debt Perception (Noise).
+- **Panic Mechanism**:
+  - Low-insight agents are susceptible to `market_panic_index`, freezing investment and reducing consumption during systemic crises.
+
 ### 3.1. Real-Time Decision Making (Agent Execution)
 - 각 에이전트는 매 틱마다 `HouseholdAI`를 통해 자신의 현재 상태와 시장 정보를 `DecisionContext`로 조합합니다.
 - `HouseholdAI`는 이 컨텍스트를 사용하여 자신의 Q-Table에서 최적의 행동(소비, 노동, 투자 등)을 선택하고 실행합니다.
