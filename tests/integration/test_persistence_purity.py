@@ -33,6 +33,15 @@ def test_analytics_system_purity():
     hh.employer_id = 2
     hh.needs = {"survival": 0.5}
     hh.get_quantity.return_value = 5.0 # Food
+
+    # Mock Snapshot for Purity
+    mock_snapshot = MagicMock()
+    mock_snapshot.econ_state.inventory = {"food": 5.0}
+    mock_snapshot.econ_state.is_employed = True
+    mock_snapshot.econ_state.employer_id = 2
+    mock_snapshot.bio_state.needs = {"survival": 0.5, "labor_need": 0.2}
+    hh.create_snapshot_dto.return_value = mock_snapshot
+
     hh.config = MagicMock()
     hh.config.HOURS_PER_TICK = 24.0
     hh.config.SHOPPING_HOURS = 2.0
@@ -47,6 +56,8 @@ def test_analytics_system_purity():
     # Firm uses get_state_dto
     mock_firm_state = MagicMock()
     mock_firm_state.hr.employees = [1, 3] # 2 employees
+    mock_firm_state.production.inventory = {"food": 20.0}
+    mock_firm_state.production.current_production = 100.0
     firm.get_state_dto.return_value = mock_firm_state
 
     world_state.agents = {1: hh, 2: firm}

@@ -115,8 +115,8 @@ class SimulationInitializer(SimulationInitializerInterface):
         else:
             self.logger.warning('File locking (fcntl) is not supported on this platform. Concurrency safety is not guaranteed.')
         global_registry = GlobalRegistry()
-        settlement_system = SettlementSystem(logger=self.logger)
         agent_registry = AgentRegistry()
+        settlement_system = SettlementSystem(logger=self.logger, agent_registry=agent_registry)
         from modules.system.services.command_service import CommandService
         command_service = CommandService(registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry)
         sim = Simulation(config_manager=self.config_manager, config_module=self.config, logger=self.logger, repository=self.repository, registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry, command_service=command_service)
@@ -358,10 +358,6 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.scenario_verifier = ScenarioVerifier(judges=[FemaleLaborParticipationJudge()])
         sim.scenario_verifier.initialize(sim.telemetry_collector)
         sim.world_state.scenario_verifier = sim.scenario_verifier
-        if hasattr(sim.settlement_system, 'agent_registry'):
-            sim.settlement_system.agent_registry = sim.agent_registry
-        else:
-            setattr(sim.settlement_system, 'agent_registry', sim.agent_registry)
 
         # Inject Metrics Service and Panic Recorder (WorldState implements IEconomicMetricsService and IPanicRecorder)
         if hasattr(sim.settlement_system, 'set_metrics_service'):

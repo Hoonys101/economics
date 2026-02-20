@@ -102,6 +102,7 @@ class TestWO157DynamicPricing:
         buyer.inventory_quality = {}
         seller = Mock(spec=Firm)
         seller.record_sale = Mock()
+        seller.sales_volume_this_tick = 0.0 # Required for ISalesTracker
         state.agents = {1: buyer, 2: seller}
         tx = Transaction(buyer_id=1, seller_id=2, item_id='widget', quantity=5.0, price=10.0, market_id='market', transaction_type='goods', time=200, total_pennies=5000)
         state.transactions = [tx]

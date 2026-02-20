@@ -66,6 +66,7 @@
 - **Symptom**: Circular dependency risks due to post-init service injection.
 - **Risk**: Initialization fragility.
 - **Solution**: Move to Factory-based initialization or early registry lookup.
+- **Status**: **RESOLVED** (Wave 1.2: Refactored `SimulationInitializer` and `SettlementSystem` constructor)
 
 ### ID: TD-ARCH-GOV-MISMATCH
 - **Title**: Singleton vs List Mismatch
@@ -100,6 +101,7 @@
 - **Symptom**: `MonetaryTransactionHandler` uses `isinstance` checks on concrete classes.
 - **Risk**: Logic Fragility.
 - **Solution**: Refactor to use `IInvestor` and `IPropertyOwner` protocols throughout.
+- **Status**: **RESOLVED** (Wave 1.2: Introduced `IIssuer` protocol)
 
 ---
 
@@ -151,6 +153,7 @@
 - **Symptom**: `analytics_system.py` calls `agent.get_quantity` instead of reading snapshot.
 - **Risk**: Purity Violation.
 - **Solution**: Analytics should operate on immutable snapshots or DTOs.
+- **Status**: **RESOLVED** (Wave 1.2: Refactored to use `SnapshotDTO`)
 
 ### ID: TD-SYS-PERF-DEATH
 - **Title**: O(N) Rebuild in Death System

@@ -29,3 +29,10 @@ class IMortgageBorrower(Protocol):
 class IInvestor(Protocol):
     """Protocol for agents that hold a portfolio of assets."""
     portfolio: Any # Should ideally be Portfolio, but Any avoids circular imports
+
+@runtime_checkable
+class IIssuer(Protocol):
+    """Protocol for entities that can issue shares."""
+    id: int
+    treasury_shares: float
+    total_shares: float
