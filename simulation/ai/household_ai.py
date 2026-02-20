@@ -21,13 +21,6 @@ class HouseholdAI(BaseAIEngine):
     # Discrete Aggressiveness Levels for Q-Learning
     AGGRESSIVENESS_LEVELS = [0.0, 0.25, 0.5, 0.75, 1.0]
 
-    # Insight Constants (Phase 4.1)
-    INSIGHT_THRESHOLD_REALTIME = 0.8
-    INSIGHT_THRESHOLD_SMA = 0.3
-    PANIC_TRIGGER_THRESHOLD = 0.3
-    DEBT_NOISE_FACTOR = 1.05
-    PANIC_CONSUMPTION_DAMPENER = 0.25
-
     def __init__(
         self,
         agent_id: str,
@@ -70,8 +63,14 @@ class HouseholdAI(BaseAIEngine):
         if insight is None:
             insight = 0.5
 
+        # Access config
+        config = getattr(self.ai_decision_engine, "config_module", None)
+        threshold_realtime = getattr(config, "insight_threshold_realtime", 0.8)
+        threshold_sma = getattr(config, "insight_threshold_sma", 0.3)
+        debt_noise = getattr(config, "debt_noise_factor", 1.05)
+
         # Optimization: If insight is high, return raw data (0-copy if possible)
-        if insight > self.INSIGHT_THRESHOLD_REALTIME:
+        if insight > threshold_realtime:
             return market_data
 
         filtered_data = market_data.copy()
@@ -82,11 +81,11 @@ class HouseholdAI(BaseAIEngine):
             snapshot = self.ai_decision_engine.context.market_snapshot
 
         # Debt Distortion (Existing Logic)
-        if insight < self.INSIGHT_THRESHOLD_SMA:
+        if insight < threshold_sma:
             debt_data = filtered_data.get("debt_data", {})
             my_debt = debt_data.get(self.agent_id, {})
             if my_debt:
-                new_burden = my_debt.get("daily_interest_burden", 0.0) * self.DEBT_NOISE_FACTOR
+                new_burden = my_debt.get("daily_interest_burden", 0.0) * debt_noise
                 new_my_debt = my_debt.copy()
                 new_my_debt["daily_interest_burden"] = new_burden
                 new_debt_data = debt_data.copy()
@@ -104,11 +103,11 @@ class HouseholdAI(BaseAIEngine):
 
                 history = signal.price_history_7d
 
-                if insight < self.INSIGHT_THRESHOLD_SMA:
+                if insight < threshold_sma:
                     # Low Insight: 5-tick Lag
                     idx = max(0, len(history) - 5)
                     distorted_price = history[idx]
-                elif insight < self.INSIGHT_THRESHOLD_REALTIME:
+                elif insight < threshold_realtime:
                     # Medium Insight: 3-tick SMA
                     recent = history[-3:]
                     distorted_price = sum(recent) / len(recent)
@@ -277,13 +276,18 @@ class HouseholdAI(BaseAIEngine):
             if hasattr(ctx, "government_policy") and ctx.government_policy:
                 panic_index = ctx.government_policy.market_panic_index
 
-        if panic_index > self.PANIC_TRIGGER_THRESHOLD and insight < self.INSIGHT_THRESHOLD_SMA:
+        config = getattr(self.ai_decision_engine, "config_module", None)
+        panic_trigger = getattr(config, "panic_trigger_threshold", 0.3)
+        insight_threshold_sma = getattr(config, "insight_threshold_sma", 0.3)
+        panic_dampener = getattr(config, "panic_consumption_dampener", 0.25)
+
+        if panic_index > panic_trigger and insight < insight_threshold_sma:
             # Panic: Reduce Investment and Consumption
             investment_agg = 0.0 # Freeze investment
 
             # Reduce consumption aggressiveness by one level or set to min
             for k in consumption_aggressiveness:
-                consumption_aggressiveness[k] = max(0.0, consumption_aggressiveness[k] - self.PANIC_CONSUMPTION_DAMPENER)
+                consumption_aggressiveness[k] = max(0.0, consumption_aggressiveness[k] - panic_dampener)
 
         return HouseholdActionVector(
             consumption_aggressiveness=consumption_aggressiveness,
