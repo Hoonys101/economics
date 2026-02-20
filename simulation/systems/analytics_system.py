@@ -63,7 +63,7 @@ class AnalyticsSystem:
                 agent_dto.needs_labor = snapshot.bio_state.needs.get("labor_need", 0)
 
                 # Inventory (Using public protocol)
-                agent_dto.inventory_food = agent.get_quantity("food")
+                agent_dto.inventory_food = snapshot.econ_state.inventory.get("food", 0.0)
 
                 # Time Allocation - world_state.household_time_allocation should also come from DTO if possible
                 # For now keeping it as it's a world state property, but checking if it's in snapshot
@@ -81,7 +81,7 @@ class AnalyticsSystem:
                 # Phase 9.1 Refactor: Use state DTO for safe observation
                 state_dto = agent.get_state_dto()
                 
-                agent_dto.inventory_food = agent.get_quantity("food")
+                agent_dto.inventory_food = state_dto.production.inventory.get("food", 0.0)
                 agent_dto.current_production = state_dto.production.current_production
                 agent_dto.num_employees = len(state_dto.hr.employees)
                 

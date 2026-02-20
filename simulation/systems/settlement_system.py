@@ -35,21 +35,31 @@ class SettlementSystem(IMonetaryAuthority):
     INTEGRATION: Uses TransactionEngine for atomic transfers.
     """
 
-    def __init__(self, logger: Optional[logging.Logger] = None, bank: Optional[IBank] = None, metrics_service: Optional[IEconomicMetricsService] = None):
+    def __init__(
+        self,
+        logger: Optional[logging.Logger] = None,
+        bank: Optional[IBank] = None,
+        metrics_service: Optional[IEconomicMetricsService] = None,
+        agent_registry: Optional[IAgentRegistry] = None
+    ):
         self.logger = logger if logger else logging.getLogger(__name__)
         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
         self.metrics_service = metrics_service
         self.total_liquidation_losses: int = 0
-        self.agent_registry: Optional[IAgentRegistry] = None # Injected by SimulationInitializer
+        self.agent_registry = agent_registry # Injected by SimulationInitializer
         self.panic_recorder: Optional[IPanicRecorder] = None # Injected by SimulationInitializer
-
-    def set_panic_recorder(self, recorder: IPanicRecorder) -> None:
-        self.panic_recorder = recorder
 
         # Transaction Engine (Initialized lazily)
         self._transaction_engine: Optional[TransactionEngine] = None
 
         # TD-INT-STRESS-SCALE: Reverse Index for Bank Accounts
+        # BankID -> Set[AgentID]
+        self._bank_depositors: Dict[int, Set[int]] = defaultdict(set)
+        # AgentID -> Set[BankID] (for fast removal)
+        self._agent_banks: Dict[int, Set[int]] = defaultdict(set)
+
+    def set_panic_recorder(self, recorder: IPanicRecorder) -> None:
+        self.panic_recorder = recorder
         # BankID -> Set[AgentID]
         self._bank_depositors: Dict[int, Set[int]] = defaultdict(set)
         # AgentID -> Set[BankID] (for fast removal)

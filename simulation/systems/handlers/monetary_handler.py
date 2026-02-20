@@ -2,9 +2,7 @@ from typing import Any, List, Tuple, Optional
 import logging
 from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction, RealEstateUnit
-from simulation.firms import Firm
-from simulation.core_agents import Household
-from modules.common.interfaces import IInvestor, IPropertyOwner
+from modules.common.interfaces import IInvestor, IPropertyOwner, IIssuer
 
 logger = logging.getLogger(__name__)
 
@@ -96,14 +94,14 @@ class MonetaryTransactionHandler(ITransactionHandler):
         # 1. Seller Holdings
         if isinstance(seller, IInvestor):
             seller.portfolio.remove(firm_id, tx.quantity)
-        elif isinstance(seller, Firm) and seller.id == firm_id:
+        elif isinstance(seller, IIssuer) and seller.id == firm_id:
             seller.treasury_shares = max(0, seller.treasury_shares - tx.quantity)
 
         # 2. Buyer Holdings
         if isinstance(buyer, IInvestor):
             price_pennies = int(tx.total_pennies / tx.quantity) if tx.quantity > 0 else 0
             buyer.portfolio.add(firm_id, tx.quantity, price_pennies)
-        elif isinstance(buyer, Firm) and buyer.id == firm_id:
+        elif isinstance(buyer, IIssuer) and buyer.id == firm_id:
             buyer.treasury_shares += tx.quantity
             buyer.total_shares -= tx.quantity
 
