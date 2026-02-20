@@ -164,6 +164,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         # Tracking variables
         self.age = 0
         self.market_insight = 0.5 # Phase 4.1: Dynamic Cognitive Filter
+        self.sales_volume_this_tick: float = 0.0
 
     # --- IConfigurable Implementation ---
 
@@ -465,6 +466,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
     def record_sale(self, item_id: str, quantity: float, current_tick: int) -> None:
         self.sales_state.inventory_last_sale_tick[item_id] = current_tick
+        self.sales_volume_this_tick += quantity
 
     def record_revenue(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """
@@ -1403,6 +1405,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         Delegates to FinanceState.
         """
         self.finance_state.reset_tick_counters(DEFAULT_CURRENCY)
+        self.sales_volume_this_tick = 0.0
 
     def reset(self) -> None:
         """

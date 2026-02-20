@@ -6,6 +6,7 @@ from simulation.core_agents import Household, Skill
 from simulation.firms import Firm
 from modules.system.api import DEFAULT_CURRENCY
 from modules.finance.utils.currency_math import round_to_pennies
+from modules.finance.api import IIncomeTracker
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,7 @@ class LaborTransactionHandler(ITransactionHandler):
             seller.needs["labor_need"] = 0.0
 
             # Net Income Tracking
-            if hasattr(seller, "add_labor_income"):
+            if isinstance(seller, IIncomeTracker):
                 seller.add_labor_income(int(seller_net_income))
 
         # 2. Firm Logic (Buyer)

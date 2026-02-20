@@ -6,7 +6,7 @@ from simulation.core_agents import Household
 from simulation.firms import Firm
 from modules.system.api import DEFAULT_CURRENCY
 from modules.simulation.api import IInventoryHandler, InventorySlot
-from modules.finance.api import IFinancialAgent
+from modules.finance.api import IFinancialAgent, ISolvencyChecker, ISalesTracker, IRevenueTracker, IExpenseTracker, IConsumer, IConsumptionTracker
 from modules.finance.utils.currency_math import round_to_pennies
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ class GoodsTransactionHandler(ITransactionHandler):
 
 
         # Solvency Check (Legacy compatibility)
-        if hasattr(buyer, 'check_solvency'):
+        if isinstance(buyer, ISolvencyChecker):
             tx_currency = getattr(tx, 'currency', DEFAULT_CURRENCY)
 
             if isinstance(buyer, IFinancialAgent):
@@ -101,7 +101,8 @@ class GoodsTransactionHandler(ITransactionHandler):
 
         # 1. Buyer Logic
         if is_service:
-            if isinstance(buyer, Household):
+            # Service consumption usually immediate
+            if isinstance(buyer, IConsumer):
                 buyer.consume(tx.item_id, tx.quantity, context.time)
         else:
             # Physical Goods: Update Inventory
@@ -122,31 +123,26 @@ class GoodsTransactionHandler(ITransactionHandler):
                 logger.warning(f"GOODS_HANDLER_WARN | Buyer {buyer.id} does not implement IInventoryHandler")
 
         # 2. Seller Financial Records (Revenue)
-        if isinstance(seller, Firm):
-            if hasattr(seller, 'record_revenue'):
-                seller.record_revenue(trade_value)
+        if isinstance(seller, IRevenueTracker):
+            seller.record_revenue(trade_value)
 
-            # Service Firms track volume
-            if hasattr(seller, 'sales_volume_this_tick'):
-                seller.sales_volume_this_tick += tx.quantity
-
+        # Service Firms and Firms track volume
+        if isinstance(seller, ISalesTracker):
+            seller.sales_volume_this_tick += tx.quantity
             # WO-157: Record Sale for Velocity Tracking
-            if hasattr(seller, 'record_sale'):
-                seller.record_sale(tx.item_id, tx.quantity, context.time)
+            seller.record_sale(tx.item_id, tx.quantity, context.time)
 
         # 3. Buyer Financial Records (Expense) - WO-124 Fix
-        if isinstance(buyer, Firm):
-            if hasattr(buyer, 'record_expense'):
-                buyer.record_expense(buyer_total_cost)
+        if isinstance(buyer, IExpenseTracker):
+            buyer.record_expense(buyer_total_cost)
 
         # 4. Household Consumption Tracking
         if isinstance(buyer, Household):
             if not is_service:
-                # Use encapsulated method to avoid AttributeError on read-only properties
                 is_food = (tx.item_id == "basic_food")
-                if hasattr(buyer, "record_consumption"):
+                if isinstance(buyer, IConsumer):
                     buyer.record_consumption(tx.quantity, is_food=is_food)
 
             # Track Consumption Expenditure (Financial)
-            if hasattr(buyer, "add_consumption_expenditure"):
+            if isinstance(buyer, IConsumptionTracker):
                 buyer.add_consumption_expenditure(buyer_total_cost, item_id=tx.item_id)

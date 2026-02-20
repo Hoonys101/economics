@@ -440,11 +440,16 @@ class FinanceSystem(IFinanceSystem):
         # But we need to return the loan result.
 
         # 1. Create Loan Application
-        borrower_profile = {
-            "credit_score": BAILOUT_CREDIT_SCORE, # Set max score to bypass standard risk checks for bailout
-            "is_bailout": True,
-            "preferred_lender_id": self.bank.id # Assuming single bank
-        }
+        # Deprecated flow: We construct a best-effort profile
+        borrower_profile = BorrowerProfileDTO(
+            borrower_id=firm.id,
+            gross_income=0.0, # Unknown via IFinancialFirm
+            existing_debt_payments=0.0,
+            collateral_value=float(firm.capital_stock_pennies),
+            credit_score=float(BAILOUT_CREDIT_SCORE),
+            employment_status="FIRM",
+            preferred_lender_id=self.bank.id
+        )
 
         # 2. Process Application
         loan_dto, txs = self.process_loan_application(
