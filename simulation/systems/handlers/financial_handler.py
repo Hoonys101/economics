@@ -63,6 +63,15 @@ class FinancialTransactionHandler(ITransactionHandler):
              # Transfer Only. No Expense Recording (Principal Repayment).
              success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
 
+             # Atomic Ledger Update (Phase 4.1)
+             if success and tx_type == "loan_repayment":
+                 # Update Ledger via Bank Interface
+                 if hasattr(seller, 'repay_loan'):
+                      seller.repay_loan(tx.item_id, int(trade_value))
+                 elif hasattr(context, 'bank') and context.bank and hasattr(context.bank, 'repay_loan'):
+                      # Fallback if seller isn't the bank object (e.g. ID mismatch or proxy)
+                      context.bank.repay_loan(tx.item_id, int(trade_value))
+
         elif tx_type in ["investment"]:
              # Transfer + Expense Recording (CAPEX treated as expense for consistency)
              success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)

@@ -485,6 +485,29 @@ class IBank(IBankService, IFinancialAgent, Protocol):
         """
         ...
 
+    @abc.abstractmethod
+    def close_account(self, agent_id: AgentID) -> int:
+        """
+        Closes the deposit account for the agent and returns the final balance.
+        """
+        ...
+
+    @abc.abstractmethod
+    def repay_loan(self, loan_id: str, amount: int) -> int:
+        """
+        Records a repayment for a specific loan. Returns the amount applied.
+        This method updates the ledger but does NOT transfer funds.
+        """
+        ...
+
+    @abc.abstractmethod
+    def receive_repayment(self, borrower_id: AgentID, amount: int) -> int:
+        """
+        Receives a generic repayment from a borrower and applies it to outstanding debt.
+        Returns the total amount applied.
+        """
+        ...
+
 # IBankService = IBank # Removed alias
 
 @runtime_checkable
@@ -530,6 +553,30 @@ class ISettlementSystem(Protocol):
         """Returns a list of all agents holding accounts at the specified bank."""
         ...
 
+    def get_agent_banks(self, agent_id: AgentID) -> List[int]:
+        """Returns a list of banks where the agent holds an account."""
+        ...
+
+    def register_account(self, bank_id: int, agent_id: int) -> None:
+        """
+        Registers an account link between a bank and an agent.
+        Used to maintain the reverse index for bank runs.
+        """
+        ...
+
+    def deregister_account(self, bank_id: int, agent_id: int) -> None:
+        """
+        Removes an account link between a bank and an agent.
+        """
+        ...
+
+    def remove_agent_from_all_accounts(self, agent_id: int) -> None:
+        """
+        Removes an agent from all bank account indices.
+        Called upon agent liquidation/deletion.
+        """
+        ...
+
 @runtime_checkable
 class IMonetaryAuthority(ISettlementSystem, Protocol):
     """
@@ -569,26 +616,6 @@ class IMonetaryAuthority(ISettlementSystem, Protocol):
         """
         Audits the total M2 money supply in the system.
         Returns True if the audit passes (or no expectation set), False otherwise.
-        """
-        ...
-
-    def register_account(self, bank_id: int, agent_id: int) -> None:
-        """
-        Registers an account link between a bank and an agent.
-        Used to maintain the reverse index for bank runs.
-        """
-        ...
-
-    def deregister_account(self, bank_id: int, agent_id: int) -> None:
-        """
-        Removes an account link between a bank and an agent.
-        """
-        ...
-
-    def remove_agent_from_all_accounts(self, agent_id: int) -> None:
-        """
-        Removes an agent from all bank account indices.
-        Called upon agent liquidation/deletion.
         """
         ...
 
@@ -664,6 +691,27 @@ class IFinanceSystem(Protocol):
 
     def get_customer_debt_status(self, bank_id: AgentID, customer_id: AgentID) -> List[LoanInfoDTO]:
         """Query the ledger for loans."""
+        ...
+
+    def close_deposit_account(self, bank_id: AgentID, agent_id: AgentID) -> int:
+        """
+        Closes a deposit account and returns the balance in pennies.
+        Removes the deposit record from the ledger.
+        """
+        ...
+
+    def record_loan_repayment(self, loan_id: str, amount: int) -> int:
+        """
+        Records a repayment against a specific loan.
+        Reduces the principal balance. Returns the amount actually applied.
+        """
+        ...
+
+    def repay_any_debt(self, borrower_id: AgentID, amount: int) -> int:
+        """
+        Applies a repayment amount to any outstanding debts of the borrower,
+        prioritizing oldest loans. Returns total amount applied.
+        """
         ...
 
 

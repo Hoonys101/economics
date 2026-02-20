@@ -70,6 +70,36 @@ class InheritanceManager:
         stock_value = round(stock_value, 2)
         total_wealth = round(cash + real_estate_value + stock_value, 2)
 
+        # 1.5 Debt Repayment (Phase 4.1)
+        # ------------------------------------------------------------------
+        bank = getattr(simulation, 'bank', None)
+        if bank and hasattr(bank, 'get_debt_status'):
+            debt_status = bank.get_debt_status(deceased.id)
+            if debt_status.total_outstanding_debt > 0:
+                for loan in debt_status.loans:
+                    if loan.outstanding_balance > 0 and cash > 0:
+                        repay_amount = min(cash, loan.outstanding_balance)
+                        repay_pennies = int(repay_amount) # Convert back to pennies
+
+                        if repay_pennies > 0:
+                            # Create Repayment Transaction
+                            tx = Transaction(
+                                buyer_id=deceased.id,
+                                seller_id=bank.id,
+                                item_id=loan.loan_id,
+                                quantity=1,
+                                price=repay_amount,
+                                total_pennies=repay_pennies,
+                                market_id="financial",
+                                transaction_type="loan_repayment",
+                                time=current_tick
+                            )
+                            results = simulation.transaction_processor.execute(simulation, [tx])
+                            if results and results[0].success:
+                                transactions.append(tx)
+                                cash -= repay_amount
+                                self.logger.info(f"DEBT_REPAID | Repaid {repay_amount} on loan {loan.loan_id}")
+
         # 2. Liquidation for Tax (if needed)
         # ------------------------------------------------------------------
         tax_rate = getattr(self.config_module, "INHERITANCE_TAX_RATE", 0.4)

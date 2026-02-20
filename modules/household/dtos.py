@@ -216,7 +216,6 @@ class HouseholdStateDTO:
     durable_assets: List[Dict[str, Any]]
     expected_inflation: Dict[str, float]
     is_employed: bool
-    market_insight: float = 0.5 # Phase 4.1: Dynamic Cognitive Filter
     current_wage_pennies: int
     wage_modifier: float
     is_homeless: bool
@@ -225,6 +224,7 @@ class HouseholdStateDTO:
     portfolio_holdings: Dict[int, Share]
     risk_aversion: float
     agent_data: Dict[str, Any]
+    market_insight: float = 0.5 # Phase 4.1: Dynamic Cognitive Filter
     perceived_prices: Dict[str, float] = field(default_factory=dict)
 
     # Additional fields needed by DecisionEngine
