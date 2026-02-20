@@ -40,10 +40,11 @@ class TestGovernmentRefactor:
         config.CORPORATE_TAX_RATE = 0.2
         config.FISCAL_SENSITIVITY_ALPHA = 0.5
         config.AUTO_COUNTER_CYCLICAL_ENABLED = True
+        config.BAILOUT_INTEREST_RATE = 0.05
+        config.BAILOUT_TERM_TICKS = 365
 
         # Added for Social Policy (Wealth Tax)
         config.ANNUAL_WEALTH_TAX_RATE = 0.02
-        config.TICKS_PER_YEAR = 100
         config.CB_INFLATION_TARGET = 0.02
         return config
 
@@ -73,7 +74,7 @@ class TestGovernmentRefactor:
     def test_fiscal_engine_taylor_rule(self, mock_config):
         """Verify FiscalEngine produces correct PolicyDecisionDTO."""
         from modules.government.engines.fiscal_engine import FiscalEngine
-        from modules.government.engines.api import FiscalStateDTO
+        from modules.government.engines.api import FiscalStateDTO, FiscalDecisionDTO
         
         engine = FiscalEngine(mock_config)
 
@@ -105,9 +106,8 @@ class TestGovernmentRefactor:
 
         decision = engine.decide(state, market_snapshot, [])
 
-        # assert isinstance(decision, PolicyDecisionDTO) # FiscalEngine returns FiscalDecisionDTO (TypedDict)
-        assert isinstance(decision, dict)
-        assert "new_income_tax_rate" in decision
+        assert isinstance(decision, FiscalDecisionDTO)
+        assert decision.new_income_tax_rate is not None
         # assert decision.action_tag == PolicyActionTag.KEYNESIAN_FISCAL # Stimulus
         # assert decision.parameters["income_tax_rate"] < 0.1 # Tax Cut
         # assert "potential_gdp" in decision.parameters
