@@ -43,9 +43,24 @@ This report summarizes the architectural transition from legacy "God Object" pat
 
 ---
 
-## Conclusion/Action Items
-1. **Immediate Repair**: Re-align the 7 failing tests to the new `SagaOrchestrator.process_sagas()` signature (Mission: Operation Zero Failure).
-2. **Hardening**: Apply `getattr(state, 'field', 0)` in `TickOrchestrator` to handle sparse mocks in legacy tests.
-3. **Liquidation**: Execute Phase 2 (Operation Penny Perfect) to finalize the `BankTransactionHandler` implementation and remove the last traces of `hasattr` from the financial core.
+## 4. Technical Debt Liquidation Roadmap (Wave 1-3) 📉
 
-**Status**: ⚠️ **Partially Implemented** (Architectural foundation is solid; final regression cleanup is required for 100% Green status).
+A comprehensive 3-wave schedule has been established to eliminate all remaining high and medium-priority technical debts. Missions have been armored in the `gemini_manifest.py` (Spec Generation) and `jules_manifest.py` (Implementation).
+
+| Wave | Mission | Focus | Status |
+| :--- | :--- | :--- | :--- |
+| **Wave 1** | **1.1: Financial Protocol** | `TD-PROTO-MONETARY`, `TD-INT-BANK-ROLLBACK`, `TD-SYS-ACCOUNTING-GAP` | **Armed** |
+| | **1.2: Lifecycle Hygiene** | `TD-ARCH-DI-SETTLE`, `TD-SYS-PERF-DEATH`, `TD-LIFECYCLE-STALE` | **Armed** |
+| **Wave 2** | **2.1: Firm Architecture** | `TD-ARCH-FIRM-COUP`, `TD-ARCH-FIRM-MUTATION` | **Armed** |
+| | **2.2: Market & Policy** | `TD-DEPR-STOCK-DTO`, `TD-MARKET-STRING-PARSE`, `TD-ECON-WAR-STIMULUS` | **Armed** |
+| **Wave 3** | **3.1: Analytics Purity** | `TD-ANALYTICS-DTO-BYPASS`, `TD-UI-DTO-PURITY` | **Armed** |
+| | **3.2: DX & Config** | `TD-DX-AUTO-CRYSTAL`, `TD-CONF-GHOST-BIND` | **Armed** |
+
+---
+
+## 5. Next Session Action Items
+1. **Launch Wave 1**: Execute `.\jules-go.bat wave1-finance-protocol` and `.\jules-go.bat wave1-lifecycle-hygiene`.
+2. **Regression Monitor**: Monitor `pytest tests/test_system` during Wave 1 integration.
+3. **Firm SEO Implementation**: Once Wave 1 is stable, proceed to the heavy structural decoupling of the `Firm` class in Wave 2.
+
+**Status**: 🚀 **Ready for Multi-Wave Execution** (Roadmap armored and verified).

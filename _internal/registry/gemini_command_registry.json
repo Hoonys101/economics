@@ -109,6 +109,51 @@
       "output_path": "artifacts/specs/MISSION_wave2_market_policy_spec.md",
       "model": null,
       "audit_requirements": null
+    },
+    "wave1-finance-protocol-spec": {
+      "key": "wave1-finance-protocol-spec",
+      "title": "Wave 1: Financial Protocol Enforcement Spec",
+      "type": "gemini",
+      "instruction_raw": "Create a MISSION_spec for Jules to execute Mission 1.1. Resolve TD-PROTO-MONETARY, TD-INT-BANK-ROLLBACK, and TD-SYS-ACCOUNTING-GAP by enforcing IInvestor and IPropertyOwner protocols, implementing strict rollback interfaces, and fixing buyer expense tracking in accounting.",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "simulation/systems/handlers/monetary_handler.py",
+        "modules/finance/api.py",
+        "modules/finance/bank.py",
+        "simulation/accounting.py",
+        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+      ],
+      "output_path": "artifacts/specs/MISSION_wave1_finance_protocol_spec.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "wave1-lifecycle-hygiene-spec": {
+      "key": "wave1-lifecycle-hygiene-spec",
+      "title": "Wave 1: System Lifecycle & Dependency Hygiene Spec",
+      "type": "gemini",
+      "instruction_raw": "Create a MISSION_spec for Jules to execute Mission 1.2. Resolve TD-ARCH-DI-SETTLE, TD-SYS-PERF-DEATH, and TD-LIFECYCLE-STALE by using Factory-based DI for Settlement AgentRegistry injection, optimizing DeathSystem O(N) rebuilds, and scrubbing the inter_tick_queue upon agent death.",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "simulation/systems/settlement_system.py",
+        "simulation/systems/lifecycle/death_system.py",
+        "simulation/systems/lifecycle/agent_lifecycle_manager.py",
+        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+      ],
+      "output_path": "artifacts/specs/MISSION_wave1_lifecycle_hygiene_spec.md",
+      "model": null,
+      "audit_requirements": null
     }
   }
 }
