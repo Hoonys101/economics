@@ -3,23 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "fix-ma-manager-unit-test": {
-      "key": "fix-ma-manager-unit-test",
-      "title": "fix-ma-manager-unit-test",
-      "type": "jules",
-      "instruction_raw": "Fix AttributeError in TestMAManager by updating mock return value to penny-standard dict.",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\deea4f29-ec94-41e4-965f-ed0add30f6c7\\PHASE_22_CI_REGRESSION_FIX.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "fix-settlement-system-unit-test": {
       "key": "fix-settlement-system-unit-test",
       "title": "fix-settlement-system-unit-test",
