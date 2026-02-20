@@ -168,6 +168,7 @@ class Household(
             labor_skill=1.0,
             education_xp=0.0,
             education_level=0,
+            market_insight=0.5, # Phase 4.1: Default Insight
             expected_wage_pennies=1000, # Default 10.00
             talent=talent,
             skills={},
@@ -849,7 +850,11 @@ class Household(
             "gender": self.gender,
             "age": self.age,
             "home_quality_score": self._econ_state.home_quality_score,
-            "children_count": len(self.children_ids)
+            "children_count": len(self.children_ids),
+            "education_level": self._econ_state.education_level,
+            "education_xp": self._econ_state.education_xp,
+            "market_insight": self._econ_state.market_insight,
+            "aptitude": self._econ_state.aptitude
         }
 
     def get_pre_state_data(self) -> Dict[str, Any]:
