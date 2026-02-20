@@ -60,10 +60,6 @@ class SettlementSystem(IMonetaryAuthority):
 
     def set_panic_recorder(self, recorder: IPanicRecorder) -> None:
         self.panic_recorder = recorder
-        # BankID -> Set[AgentID]
-        self._bank_depositors: Dict[int, Set[int]] = defaultdict(set)
-        # AgentID -> Set[BankID] (for fast removal)
-        self._agent_banks: Dict[int, Set[int]] = defaultdict(set)
 
     def set_metrics_service(self, service: IEconomicMetricsService) -> None:
         """Sets the economic metrics service for recording system-wide financial events."""
