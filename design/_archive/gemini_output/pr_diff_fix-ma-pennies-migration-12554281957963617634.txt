@@ -1,0 +1,504 @@
+diff --git a/communications/insights/fix-ma-pennies-migration.md b/communications/insights/fix-ma-pennies-migration.md
+new file mode 100644
+index 00000000..7133d30a
+--- /dev/null
++++ b/communications/insights/fix-ma-pennies-migration.md
+@@ -0,0 +1,45 @@
++# Insight Report: Fix M&A and StockMarket Pennies Migration
++
++## [Architectural Insights]
++
++### M&A Manager (`simulation/systems/ma_manager.py`)
++- **Issue**: The `MAManager` was performing financial calculations using floating-point arithmetic (dollars) and passing these values directly to the `SettlementSystem`.
++- **Constraint**: `SettlementSystem.transfer` and `record_liquidation` strictly enforce integer arguments (pennies) for Zero-Sum Integrity.
++- **Resolution**: Refactored `_execute_merger` to accept `price: int`. Updated `process_market_exits_and_entries` and `_attempt_hostile_takeover` to calculate `offer_price` in pennies (casting from float where necessary) before invoking settlement.
++- **Bankruptcy**: Updated `_execute_bankruptcy` to calculate `inventory_value` and `capital_value` in pennies. Fixed a crash where `recovered_cash` (a Dict) was being logged as a float.
++
++### StockMarket (`simulation/markets/stock_market.py`)
++- **Status**: Mostly compliant. It uses `CanonicalOrderDTO` which carries `price_pennies`.
++- **Matching**: `StockMatchingEngine` performs integer math for trade execution, ensuring `Transaction.total_pennies` is an integer.
++- **Observation**: `StockMarket` maintains `last_prices` as floats for display and limit checking. This is acceptable as long as the underlying settlement is integer-based.
++
++## [Test Evidence]
++
++### Unit Tests: `tests/unit/test_ma_pennies.py`
++Verifies that `MAManager` correctly handles integer conversion for Friendly Mergers, Hostile Takeovers, and Bankruptcy liquidation.
++
++```
++tests/unit/test_ma_pennies.py::TestMAManagerPennies::test_friendly_merger_price_is_int
++-------------------------------- live log call ---------------------------------
++INFO     MAManager:ma_manager.py:183 FRIENDLY_MERGER_EXECUTE | Predator 101 acquires Prey 202. Price: 550000 pennies.
++INFO     MAManager:ma_manager.py:229 FRIENDLY_MERGER_RESULT | Retained 0, Fired 0.
++PASSED                                                                   [ 33%]
++tests/unit/test_ma_pennies.py::TestMAManagerPennies::test_hostile_takeover_price_is_int
++-------------------------------- live log call ---------------------------------
++INFO     MAManager:ma_manager.py:173 HOSTILE_TAKEOVER_SUCCESS | Predator 101 seizes Target 303. Offer: 6,000.00
++INFO     MAManager:ma_manager.py:183 HOSTILE_MERGER_EXECUTE | Predator 101 acquires Prey 303. Price: 600000 pennies.
++INFO     MAManager:ma_manager.py:229 HOSTILE_MERGER_RESULT | Retained 0, Fired 0.
++PASSED                                                                   [ 66%]
++tests/unit/test_ma_pennies.py::TestMAManagerPennies::test_bankruptcy_liquidation_values_are_int
++-------------------------------- live log call ---------------------------------
++INFO     MAManager:ma_manager.py:258 BANKRUPTCY | Firm 303 liquidated. Cash Remaining: 12345 pennies.
++PASSED                                                                   [100%]
++```
++
++### Market Tests: `tests/market/test_stock_market_pennies.py`
++Verifies that `StockMatchingEngine` produces transactions with correct integer `total_pennies`.
++
++```
++tests/market/test_stock_market_pennies.py::TestStockMarketPennies::test_stock_matching_fractional_shares PASSED [ 50%]
++tests/market/test_stock_market_pennies.py::TestStockMarketPennies::test_stock_matching_integer_math PASSED [100%]
++```
+diff --git a/simulation/systems/ma_manager.py b/simulation/systems/ma_manager.py
+index d14d3901..87ff2ff5 100644
+--- a/simulation/systems/ma_manager.py
++++ b/simulation/systems/ma_manager.py
+@@ -115,6 +115,7 @@ class MAManager:
+                 target_mcap = target.get_market_cap()
+                 if self._get_balance(predator) > target_mcap * 1.5:
+                     # Attempt Hostile Takeover
++                    # MIGRATION: Pass market_cap as float, but conversion happens inside _attempt_hostile_takeover
+                     success = self._attempt_hostile_takeover(predator, target, target_mcap, current_tick)
+                     if success:
+                         target_found = True
+@@ -135,14 +136,15 @@ class MAManager:
+                     continue
+                 
+                 # Check if Predator can afford
+-                target_valuation = prey.valuation
+-                offer_price = target_valuation * friendly_premium
++                target_valuation = prey.valuation # int pennies
++                offer_price_float = target_valuation * friendly_premium
++                offer_price_pennies = int(offer_price_float)
+                 
+                 # Check Cash Requirement
+                 min_cash_ratio = getattr(self.config, "MIN_ACQUISITION_CASH_RATIO", 1.5)
+-                if self._get_balance(predator) >= offer_price * min_cash_ratio:
++                if self._get_balance(predator) >= offer_price_pennies * min_cash_ratio:
+                     # Attempt Deal
+-                    self._execute_merger(predator, prey, offer_price, current_tick, is_hostile=False)
++                    self._execute_merger(predator, prey, offer_price_pennies, current_tick, is_hostile=False)
+                     acquired = True
+                     predators.remove(predator)
+                     break
+@@ -158,24 +160,27 @@ class MAManager:
+         """
+         # Offer Premium
+         premium = getattr(self.config, "HOSTILE_TAKEOVER_PREMIUM", 1.2)
+-        offer_price = market_cap * premium
++
++        # market_cap is in dollars (float), convert to pennies for settlement
++        offer_price_float = market_cap * premium
++        offer_price_pennies = int(offer_price_float * 100)
+ 
+         # Success Probability
+         success_prob = getattr(self.config, "HOSTILE_TAKEOVER_SUCCESS_PROB", 0.6)
+ 
+         # Roll
+         if random.random() < success_prob:
+-            self.logger.info(f"HOSTILE_TAKEOVER_SUCCESS | Predator {predator.id} seizes Target {target.id}. Offer: {offer_price:,.2f}")
+-            self._execute_merger(predator, target, offer_price, tick, is_hostile=True)
++            self.logger.info(f"HOSTILE_TAKEOVER_SUCCESS | Predator {predator.id} seizes Target {target.id}. Offer: {offer_price_float:,.2f}")
++            self._execute_merger(predator, target, offer_price_pennies, tick, is_hostile=True)
+             return True
+         else:
+             self.logger.info(f"HOSTILE_TAKEOVER_FAIL | Target {target.id} fended off Predator {predator.id}.")
+             return False
+ 
+-    def _execute_merger(self, predator: "Firm", prey: "Firm", price: float, tick: int, is_hostile: bool = False):
++    def _execute_merger(self, predator: "Firm", prey: "Firm", price: int, tick: int, is_hostile: bool = False):
+         tag = "HOSTILE_MERGER" if is_hostile else "FRIENDLY_MERGER"
+ 
+-        self.logger.info(f"{tag}_EXECUTE | Predator {predator.id} acquires Prey {prey.id}. Price: {price:,.2f}.")
++        self.logger.info(f"{tag}_EXECUTE | Predator {predator.id} acquires Prey {prey.id}. Price: {price} pennies.")
+         
+         # 1. Payment
+         # Replaced direct withdrawal with settlement transfer
+@@ -228,7 +233,7 @@ class MAManager:
+ 
+     def _execute_bankruptcy(self, firm: "Firm", tick: int):
+         # 1. Calculate values of real assets before they are wiped
+-        inv_value = 0.0
++        inv_value_pennies = 0
+         # Simple estimation: default price if no market data, or look up market
+         default_price = 10.0
+         if self.simulation.markets:
+@@ -237,14 +242,20 @@ class MAManager:
+                  if item in self.simulation.markets:
+                      m = self.simulation.markets[item]
+                      if hasattr(m, "avg_price"): price = m.avg_price
+-                 inv_value += qty * price
++                 # Convert to pennies
++                 inv_value_pennies += int(qty * price * 100) # Assuming price is dollars
+ 
+-        capital_value = firm.capital_stock
++        capital_value_pennies = int(firm.capital_stock * 100) # Assuming 1 unit of capital = $1 ? Or verify?
++        # Typically capital_stock is value in dollars or units.
++        # If it's value, we treat as dollars. If units, we need a price.
++        # Assuming value in dollars for now as per previous logic.
+ 
+         # 2. Liquidate (Wipe assets, return cash)
+-        recovered_cash = firm.liquidate_assets(current_tick=tick)
++        # recovered_assets is Dict[CurrencyCode, int]
++        recovered_assets = firm.liquidate_assets(current_tick=tick)
++        recovered_cash_pennies = sum(recovered_assets.values())
+ 
+-        self.logger.info(f"BANKRUPTCY | Firm {firm.id} liquidated. Cash Remaining: {recovered_cash:,.2f}.")
++        self.logger.info(f"BANKRUPTCY | Firm {firm.id} liquidated. Cash Remaining: {recovered_cash_pennies} pennies.")
+ 
+         # 3. Record Liquidation of Real Assets
+         if self.settlement_system:
+@@ -253,9 +264,9 @@ class MAManager:
+ 
+             self.settlement_system.record_liquidation(
+                 agent=firm,
+-                inventory_value=inv_value,
+-                capital_value=capital_value,
+-                recovered_cash=0.0, # WO-018: Real assets written off, not sold
++                inventory_value=inv_value_pennies,
++                capital_value=capital_value_pennies,
++                recovered_cash=0, # WO-018: Real assets written off, not sold
+                 reason="bankruptcy_real_assets",
+                 tick=tick,
+                 government_agent=government
+diff --git a/tests/market/test_stock_market_pennies.py b/tests/market/test_stock_market_pennies.py
+new file mode 100644
+index 00000000..8ebaf361
+--- /dev/null
++++ b/tests/market/test_stock_market_pennies.py
+@@ -0,0 +1,95 @@
++import unittest
++from simulation.markets.matching_engine import StockMatchingEngine
++from modules.market.api import StockMarketStateDTO, CanonicalOrderDTO
++from simulation.models import Transaction
++
++class TestStockMarketPennies(unittest.TestCase):
++    def test_stock_matching_integer_math(self):
++        engine = StockMatchingEngine()
++
++        # Buy 1 share @ 1000 pennies ($10.00)
++        buy_order = CanonicalOrderDTO(
++            agent_id="buyer_firm",
++            side="BUY",
++            item_id="stock_101",
++            quantity=1.0,
++            price_pennies=1000,
++            price_limit=10.00,
++            market_id="stock_market"
++        )
++
++        # Sell 1 share @ 900 pennies ($9.00)
++        sell_order = CanonicalOrderDTO(
++            agent_id="seller_firm",
++            side="SELL",
++            item_id="stock_101",
++            quantity=1.0,
++            price_pennies=900,
++            price_limit=9.00,
++            market_id="stock_market"
++        )
++
++        # State setup
++        state = StockMarketStateDTO(
++            buy_orders={101: [buy_order]},
++            sell_orders={101: [sell_order]},
++            market_id="stock_market"
++        )
++
++        result = engine.match(state, current_tick=100)
++
++        # Assertions
++        self.assertEqual(len(result.transactions), 1)
++        tx = result.transactions[0]
++
++        # Mid Price: (1000 + 900) // 2 = 1900 // 2 = 950 pennies
++        expected_price_pennies = 950
++
++        self.assertEqual(tx.total_pennies, expected_price_pennies)
++        self.assertEqual(tx.transaction_type, "stock")
++        # Ensure float price is consistent for display
++        self.assertEqual(tx.price, 9.50)
++
++    def test_stock_matching_fractional_shares(self):
++        engine = StockMatchingEngine()
++
++        # Buy 0.5 shares @ 2000 pennies ($20.00)
++        buy_order = CanonicalOrderDTO(
++            agent_id="buyer_firm",
++            side="BUY",
++            item_id="stock_102",
++            quantity=0.5,
++            price_pennies=2000,
++            price_limit=20.00,
++            market_id="stock_market"
++        )
++
++        # Sell 0.5 shares @ 2000 pennies ($20.00)
++        sell_order = CanonicalOrderDTO(
++            agent_id="seller_firm",
++            side="SELL",
++            item_id="stock_102",
++            quantity=0.5,
++            price_pennies=2000,
++            price_limit=20.00,
++            market_id="stock_market"
++        )
++
++        state = StockMarketStateDTO(
++            buy_orders={102: [buy_order]},
++            sell_orders={102: [sell_order]},
++            market_id="stock_market"
++        )
++
++        result = engine.match(state, current_tick=100)
++
++        tx = result.transactions[0]
++
++        # Price: 2000 pennies
++        # Total Pennies: int(2000 * 0.5) = 1000
++        self.assertEqual(tx.total_pennies, 1000)
++        self.assertEqual(tx.quantity, 0.5)
++        self.assertEqual(tx.price, 20.00) # effective price per share
++
++if __name__ == '__main__':
++    unittest.main()
+diff --git a/tests/unit/test_ma_pennies.py b/tests/unit/test_ma_pennies.py
+new file mode 100644
+index 00000000..19b49dcd
+--- /dev/null
++++ b/tests/unit/test_ma_pennies.py
+@@ -0,0 +1,234 @@
++import pytest
++from unittest.mock import MagicMock, PropertyMock
++from simulation.systems.ma_manager import MAManager
++from simulation.firms import Firm
++from simulation.finance.api import ISettlementSystem
++from modules.system.api import DEFAULT_CURRENCY
++
++class TestMAManagerPennies:
++
++    @pytest.fixture
++    def mock_simulation(self):
++        sim = MagicMock()
++        sim.firms = []
++        sim.agents = {}
++        # Make sure simulation has settlement_system attribute if checked
++        sim.settlement_system = MagicMock(spec=ISettlementSystem)
++        return sim
++
++    @pytest.fixture
++    def mock_config(self):
++        config = MagicMock()
++        config.MA_ENABLED = True
++        config.BANKRUPTCY_CONSECUTIVE_LOSS_TICKS = 20
++        config.HOSTILE_TAKEOVER_DISCOUNT_THRESHOLD = 0.7
++        config.HOSTILE_TAKEOVER_PREMIUM = 1.2
++        config.FRIENDLY_MERGER_PREMIUM = 1.1
++        config.MIN_ACQUISITION_CASH_RATIO = 1.5
++        config.HOSTILE_TAKEOVER_SUCCESS_PROB = 1.0 # Force success for testing
++        config.MERGER_EMPLOYEE_RETENTION_RATES = [0.5, 0.5]
++        return config
++
++    @pytest.fixture
++    def mock_settlement(self):
++        # We use strict spec to ensure we are mocking the real interface
++        return MagicMock(spec=ISettlementSystem)
++
++    def test_friendly_merger_price_is_int(self, mock_simulation, mock_config, mock_settlement):
++        """
++        Verify that Friendly Merger calls settlement_system.transfer with an integer amount (pennies).
++        """
++        manager = MAManager(mock_simulation, mock_config, settlement_system=mock_settlement)
++
++        # Setup Predator
++        predator = MagicMock(spec=Firm)
++        predator.id = 101
++        predator.is_active = True
++        predator.wallet.get_balance.return_value = 10_000_000 # Wealthy ($100k)
++        predator.finance_state = MagicMock()
++        predator.finance_state.current_profit = {DEFAULT_CURRENCY: 1000}
++        predator.finance_state.consecutive_loss_turns = 0
++        predator.finance_state.valuation = 10_000_000
++        predator.valuation = 10_000_000
++        predator.get_market_cap.return_value = 100_000.0
++        predator.system2_planner = None
++        predator.hr_engine = MagicMock()
++        predator.hr_state = MagicMock()
++        predator.automation_level = 1.0
++
++        # Setup Prey (Friendly Merger Target, NOT Hostile)
++        # To avoid hostile: Market Cap > Valuation * Threshold
++        # Valuation = 500,000 ($5k). Threshold 0.7. Limit = 350,000.
++        # Set Market Cap = 400,000 ($4k).
++        prey = MagicMock(spec=Firm)
++        prey.id = 202
++        prey.is_active = True
++        prey.wallet.get_balance.return_value = 100 # Poor
++        prey.finance_state = MagicMock()
++        prey.finance_state.consecutive_loss_turns = 25 # Trigger distress
++        prey.finance_state.valuation = 500_000
++        prey.valuation = 500_000
++        prey.get_market_cap.return_value = 400_000.0
++        prey.founder_id = 999
++        prey.get_all_items.return_value = {}
++        prey.hr_state = MagicMock()
++        prey.hr_state.employees = []
++        prey.hr_engine = MagicMock()
++        prey.automation_level = 0.5
++
++        mock_simulation.agents[999] = MagicMock()
++        mock_simulation.firms = [predator, prey]
++
++        # Execute
++        manager.process_market_exits_and_entries(current_tick=100)
++
++        # Assertions
++        transfer_calls = mock_settlement.transfer.call_args_list
++
++        found_friendly = False
++        for args, kwargs in transfer_calls:
++            memo = args[3] if len(args) > 3 else kwargs.get('memo', '')
++            if "M&A Acquisition" in memo:
++                found_friendly = True
++                amount = args[2] if len(args) > 2 else kwargs.get('amount')
++                print(f"Transfer amount type: {type(amount)}, value: {amount}")
++                assert isinstance(amount, int), f"Merger price must be int, got {type(amount)}"
++                # Friendly Price: Valuation * Premium = 500,000 * 1.1 = 550,000
++                assert amount == 550_000
++
++        assert found_friendly, "Friendly Merger transfer not found"
++
++    def test_hostile_takeover_price_is_int(self, mock_simulation, mock_config, mock_settlement):
++        """
++        Verify that Hostile Takeover calls settlement_system.transfer with an integer amount (pennies).
++        """
++        manager = MAManager(mock_simulation, mock_config, settlement_system=mock_settlement)
++
++        # Ensure config values are not Mocks if something went wrong with fixture
++        mock_config.HOSTILE_TAKEOVER_DISCOUNT_THRESHOLD = 0.7
++        mock_config.HOSTILE_TAKEOVER_PREMIUM = 1.2
++        mock_config.HOSTILE_TAKEOVER_SUCCESS_PROB = 1.0
++
++        # Setup Predator
++        predator = MagicMock(spec=Firm)
++        predator.id = 101
++        predator.is_active = True
++        predator.wallet.get_balance.return_value = 10_000_000 # Wealthy ($100k)
++        predator.finance_state = MagicMock()
++        predator.finance_state.current_profit = {DEFAULT_CURRENCY: 1000}
++        predator.finance_state.consecutive_loss_turns = 0
++        predator.finance_state.valuation = 10_000_000
++        predator.valuation = 10_000_000
++        predator.get_market_cap.return_value = 100_000.0
++        predator.system2_planner = None
++        predator.hr_engine = MagicMock()
++        predator.hr_state = MagicMock()
++        predator.automation_level = 1.0
++
++        # Setup Hostile Target
++        # Market Cap < Intrinsic Value * Threshold
++        target = MagicMock(spec=Firm)
++        target.id = 303
++        target.is_active = True
++        target.wallet.get_balance.return_value = 0 # Poor target, lowers avg_assets
++        target.finance_state = MagicMock()
++        target.finance_state.consecutive_loss_turns = 0
++
++        # Intrinsic Value: 1,000,000 pennies ($10,000)
++        target.finance_state.valuation = 1_000_000
++        target.valuation = 1_000_000
++
++        # Market Cap: $5,000 (Undervalued, 0.5 ratio < 0.7 threshold)
++        target.get_market_cap.return_value = 5_000.0
++
++        target.founder_id = 888
++        target.get_all_items.return_value = {}
++        target.hr_state = MagicMock()
++        target.hr_state.employees = []
++        target.hr_engine = MagicMock()
++        target.automation_level = 0.5
++
++        mock_simulation.agents[888] = MagicMock()
++        mock_simulation.firms = [predator, target]
++
++        # Execute
++        manager.process_market_exits_and_entries(current_tick=100)
++
++        # Assertions
++        transfer_calls = mock_settlement.transfer.call_args_list
++        found_hostile = False
++        for args, kwargs in transfer_calls:
++            memo = args[3] if len(args) > 3 else kwargs.get('memo', '')
++            if "M&A Acquisition" in memo:
++                found_hostile = True
++                amount = args[2] if len(args) > 2 else kwargs.get('amount')
++                print(f"Hostile Transfer amount type: {type(amount)}, value: {amount}")
++                assert isinstance(amount, int), f"Merger price must be int, got {type(amount)}"
++
++                # Logic: market_cap (dollars) * premium (1.2) * 100 (pennies)
++                # 5,000.0 * 1.2 * 100 = 6,000.0 * 100 = 600,000 pennies
++                assert amount == 600_000
++
++        assert found_hostile, "Hostile Takeover transfer not found"
++
++    def test_bankruptcy_liquidation_values_are_int(self, mock_simulation, mock_config, mock_settlement):
++        """
++        Verify that MAManager calls settlement_system.record_liquidation with integer values.
++        """
++        manager = MAManager(mock_simulation, mock_config, settlement_system=mock_settlement)
++
++        # Setup Bankrupt Firm
++        bankrupt = MagicMock(spec=Firm)
++        bankrupt.id = 303
++        bankrupt.is_active = True
++        bankrupt.wallet.get_balance.return_value = -100 # Bankrupt condition
++        bankrupt.calculate_valuation.return_value = 0
++        bankrupt.hr_state = MagicMock()
++        bankrupt.hr_state.employees = []
++
++        # Setup Assets
++        bankrupt.capital_stock = 5000.50 # Float capital (dollars)
++        bankrupt.get_all_items.return_value = {'apple': 10.5} # Float quantity
++
++        # Mock Market for price
++        market_mock = MagicMock()
++        market_mock.avg_price = 20.5 # Float price (dollars)
++        mock_simulation.markets = {'apple': market_mock}
++
++        # Mock liquidate_assets return
++        # Returns Dict[CurrencyCode, int]
++        bankrupt.liquidate_assets.return_value = {DEFAULT_CURRENCY: 12345} # 12345 pennies recovered
++
++        # Update firms list
++        mock_simulation.firms = [bankrupt]
++
++        # Execute
++        manager.process_market_exits_and_entries(current_tick=100)
++
++        # Assertions
++        # verify record_liquidation call
++        calls = mock_settlement.record_liquidation.call_args_list
++        assert len(calls) > 0, "record_liquidation not called"
++
++        args, kwargs = calls[0]
++
++        inv_val = kwargs.get('inventory_value')
++        cap_val = kwargs.get('capital_value')
++        rec_cash = kwargs.get('recovered_cash')
++
++        print(f"Inventory Value: {type(inv_val)} {inv_val}")
++        print(f"Capital Value: {type(cap_val)} {cap_val}")
++        print(f"Recovered Cash: {type(rec_cash)} {rec_cash}")
++
++        assert isinstance(inv_val, int), f"Inventory value must be int, got {type(inv_val)}"
++        assert isinstance(cap_val, int), f"Capital value must be int, got {type(cap_val)}"
++
++        # Expected calculation:
++        # Inv: 10.5 * 20.5 * 100 = 215.25 * 100 = 21525 pennies
++        assert inv_val == 21525
++
++        # Cap: 5000.50 * 100 = 500050 pennies
++        assert cap_val == 500050
++
++        assert isinstance(rec_cash, int), f"Recovered cash MUST be int, got {type(rec_cash)}"
++        assert rec_cash == 0 # Logic passes 0 to record_liquidation

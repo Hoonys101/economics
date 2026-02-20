@@ -23,65 +23,50 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "analyze-runtime-structural-failures": {
-        "title": "Structural Runtime Failure & Cleanup Analysis",
+    "audit-agent-lifecycle": {
         "worker": "audit",
-        "instruction": "초기 분석 완료. design/_archive/insights/2026-02-19_Structural_Analysis_Report.md 참고.",
-        "context_files": ["design/_archive/insights/2026-02-19_Structural_Analysis_Report.md"],
-        "output_path": "reports/diagnostics/structural_analysis_summary.md"
+        "instruction": "Audit Agent Lifecycle stability for registration-before-transfer violations.",
+        "context_files": [
+            "c:/coding/economics/design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md",
+            "c:/coding/economics/simulation/systems/lifecycle_manager.py",
+            "c:/coding/economics/simulation/systems/firm_management.py"
+        ]
+    },
+    "audit-government-solvency": {
+        "worker": "audit",
+        "instruction": "Audit Government Solvency guardrails and partial execution state.",
+        "context_files": [
+            "c:/coding/economics/design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md",
+            "c:/coding/economics/simulation/systems/settlement_system.py",
+            "c:/coding/economics/modules/government/engines/fiscal_engine.py"
+        ]
+    },
+    "audit-handler-alignment": {
+        "worker": "audit",
+        "instruction": "Audit Transaction Handler alignment and SSoT registration.",
+        "context_files": [
+            "c:/coding/economics/design/_archive/insights/2026-02-19_Handler_Alignment_Map.md",
+            "c:/coding/economics/simulation/systems/simulation_initializer.py",
+            "c:/coding/economics/modules/finance/transaction/engine.py"
+        ]
+    },
+    "audit-ma-penny-migration": {
+        "worker": "audit",
+        "instruction": "Audit M&A module for float-to-penny violations and type integrity.",
+        "context_files": [
+            "c:/coding/economics/design/_archive/insights/2026-02-19_MA_Penny_Migration.md",
+            "c:/coding/economics/simulation/systems/ma_manager.py",
+            "c:/coding/economics/modules/market/stock_market.py"
+        ]
     },
     "audit-structural-integrity-crystallization": {
-        "title": "Structural Integrity Wisdom Crystallization",
         "worker": "crystallizer",
-        "instruction": """
-목표: 이번 '구조적 안정성 진단' 세션에서 얻은 건축학적 통찰을 영구 지식 자산으로 전환.
-
-추출 대상:
-1. 'Registration-before-Transfer' (원자적 생애주기 시퀀스)의 중요성과 구현 지침.
-2. 'Solvency Guardrails' (예산 기반 지출 제어)의 설계 패턴.
-3. 'Penny Standard Expansion' (M&A 및 시장 지표의 정수화)의 기술적 교훈.
-4. 'Queue Scrubbing' (시스템 큐 클리닝)을 통한 참조 무결성 확보 방안.
-
-결과물:
-- ARCHITECTURAL_INSIGHTS.md에 추가할 마크다운 스니펫.
-- 각 통찰별 '가동 가능한(Actionable)' 설계 원칙 요약.
-""",
+        "instruction": "Summarize insights from Phase 22 merges and update ARCHITECTURAL_INSIGHTS.md accordingly.",
         "context_files": [
-            "design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md",
-            "design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md",
-            "design/_archive/insights/2026-02-19_Handler_Alignment_Map.md",
-            "design/_archive/insights/2026-02-19_MA_Penny_Migration.md",
-            "design/_archive/insights/2026-02-19_Structural_Analysis_Report.md"
-        ],
-        "output_path": "design/3_work_artifacts/drafts/STRUCTURAL_INTEGRITY_CRYSTALLIZATION.md"
-    },
-    # Previous granular audit missions (Restored for persistence)
-    "audit-agent-lifecycle-atomicity": {
-        "title": "Agent Lifecycle & Transaction Routing Atomicity Audit",
-        "worker": "audit",
-        "instruction": "AGENT_LIFECYCLE_STABILITY.md 생성을 위해 기수행됨.",
-        "context_files": ["design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md"],
-        "output_path": "design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md"
-    },
-    "audit-fiscal-monetary-handlers": {
-        "title": "Fiscal & Monetary Transaction Handler Alignment Audit",
-        "worker": "audit",
-        "instruction": "HANDLER_ALIGNMENT_MAP.md 생성을 위해 기수행됨.",
-        "context_files": ["design/_archive/insights/2026-02-19_Handler_Alignment_Map.md"],
-        "output_path": "design/_archive/insights/2026-02-19_Handler_Alignment_Map.md"
-    },
-    "audit-government-solvency-checks": {
-        "title": "Government Budget Guardrails & Solvency Check Audit",
-        "worker": "audit",
-        "instruction": "GOVT_SOLVENCY_GUARDRAILS.md 생성을 위해 기수행됨.",
-        "context_files": ["design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md"],
-        "output_path": "design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md"
-    },
-    "audit-ma-pennies-migration": {
-        "title": "M&A Module Penny Standard Migration Audit",
-        "worker": "audit",
-        "instruction": "MA_PENNIES_MIGRATION_PLAN.md 생성을 위해 기수행됨.",
-        "context_files": ["design/_archive/insights/2026-02-19_MA_Penny_Migration.md"],
-        "output_path": "design/_archive/insights/2026-02-19_MA_Penny_Migration.md"
+            "c:/coding/economics/design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md",
+            "c:/coding/economics/design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md",
+            "c:/coding/economics/design/_archive/insights/2026-02-19_Handler_Alignment_Map.md",
+            "c:/coding/economics/design/_archive/insights/2026-02-19_MA_Penny_Migration.md"
+        ]
     }
 }

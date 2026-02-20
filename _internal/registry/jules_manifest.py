@@ -16,28 +16,14 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "fix-agent-lifecycle-atomicity": {
-        "title": "Fix Agent Lifecycle Atomicity & Queue Scrubbing",
-        "instruction": "2026-02-19_Agent_Lifecycle_Atomicity.md 명세에 따라 Firm Startup 순서를 교정(등록 후 이체)하고, AgentLifecycleManager에 inter_tick_queue 클리닝 로직을 추가하세요.",
-        "file": "design/_archive/insights/2026-02-19_Agent_Lifecycle_Atomicity.md",
+    "fix-ma-manager-unit-test": {
+        "instruction": "Fix AttributeError in TestMAManager by updating mock return value to penny-standard dict.",
+        "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\deea4f29-ec94-41e4-965f-ed0add30f6c7\\PHASE_22_CI_REGRESSION_FIX.md",
         "wait": True
     },
-    "fix-government-solvency-guardrails": {
-        "title": "Implement Government Solvency Guardrails",
-        "instruction": "2026-02-19_Govt_Solvency_Guardrails.md 명세에 따라 SettlementSystem에 SolvencyException을 도입하고, 지출 모듈에 부분 집행(Partial Execution) 및 사전 예산 체크를 구현하세요.",
-        "file": "design/_archive/insights/2026-02-19_Govt_Solvency_Guardrails.md",
-        "wait": True
-    },
-    "fix-handler-alignment": {
-        "title": "Register Missing Fiscal & Monetary Handlers",
-        "instruction": "2026-02-19_Handler_Alignment_Map.md 명세에 따라 bailout, bond_issuance 등 누락된 트랜잭션 타입의 핸들러를 SimulationInitializer에 등록하세요.",
-        "file": "design/_archive/insights/2026-02-19_Handler_Alignment_Map.md",
-        "wait": True
-    },
-    "fix-ma-pennies-migration": {
-        "title": "Migrate M&A & StockMarket to Penny Standard",
-        "instruction": "2026-02-19_MA_Penny_Migration.md 명세에 따라 MAManager의 모든 가격 계산에 round_to_pennies()를 적용하고 StockMarket의 가격 지표를 정수(int)로 전환하세요.",
-        "file": "design/_archive/insights/2026-02-19_MA_Penny_Migration.md",
+    "fix-settlement-system-unit-test": {
+        "instruction": "Remove deprecated seamless payment test cases from test_settlement_system.py.",
+        "file": "C:\\Users\\Gram Pro\\.gemini\\antigravity\\brain\\deea4f29-ec94-41e4-965f-ed0add30f6c7\\PHASE_22_CI_REGRESSION_FIX.md",
         "wait": True
     }
 }
