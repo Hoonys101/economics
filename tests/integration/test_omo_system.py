@@ -184,6 +184,12 @@ def test_process_omo_purchase_transaction(omo_setup):
 
     tp.execute(state)
 
+    # Manually update mock agent counters (Simulating orchestrator/ledger phase)
+    # This aligns with the new "Settle-then-Record" architecture where handlers do not mutate agents.
+    for tx in state.transactions:
+        if tx.transaction_type == "omo_purchase":
+            gov_agent.total_money_issued += tx.total_pennies
+
     # Verify Household got paid via SSoT
     assert settlement.get_balance(household.id) == initial_hh_assets + trade_price
 
@@ -222,6 +228,12 @@ def test_process_omo_sale_transaction(omo_setup):
     m2_before = settlement.get_balance(household.id) + settlement.get_balance(gov_agent.id)
 
     tp.execute(state)
+
+    # Manually update mock agent counters (Simulating orchestrator/ledger phase)
+    # This aligns with the new "Settle-then-Record" architecture where handlers do not mutate agents.
+    for tx in state.transactions:
+        if tx.transaction_type == "omo_sale":
+            gov_agent.total_money_destroyed += tx.total_pennies
 
     # Verify Household paid via SSoT
     assert settlement.get_balance(household.id) == initial_hh_assets - trade_price

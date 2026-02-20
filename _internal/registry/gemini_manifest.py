@@ -49,5 +49,28 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
             "c:/coding/economics/simulation/systems/api.py",
             "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_PHASE23_HYGIENE_SPEC.md"
         ]
+    },
+    "phase23-fix-household-integration-test": {
+        "title": "Analyze & Fix Household Integration Test",
+        "worker": "spec",
+        "instruction": "Analyze the failing integration test in test_household_integration_new.py. The test is currently skipped because BudgetEngine/ConsumptionEngine interaction results in empty orders. Determine if this is a test setup issue (missing initial assets/config) or a logic flaw in engine synchronization, and write a MISSION_spec for the fix.",
+        "context_files": [
+            "c:/coding/economics/tests/unit/decisions/test_household_integration_new.py",
+            "c:/coding/economics/simulation/core_agents.py",
+            "c:/coding/economics/modules/household/engines/budget.py",
+            "c:/coding/economics/modules/household/engines/consumption_engine.py",
+            "c:/coding/economics/modules/household/api.py"
+        ]
+    },
+    "phase23-forensic-debt-audit": {
+        "title": "Phase 23 Forensic Debt Audit",
+        "worker": "audit",
+        "instruction": "Analyze the provided diagnostic logs and AUTOPSY_REPORT for any recurring errors, architectural drifts (e.g., God-class behavior, DTO violations), or patterns of failure. identify technical debt candidates and output an Insight Report.",
+        "context_files": [
+            "reports/AUTOPSY_REPORT.md",
+            "logs/full_log.txt",
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
+            "design/1_governance/architecture/ARCH_AGENTS.md"
+        ]
     }
 }

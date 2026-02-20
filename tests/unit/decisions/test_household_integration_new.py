@@ -13,7 +13,6 @@ class TestHouseholdIntegrationNew(unittest.TestCase):
     @unittest.skip('TODO: Fix integration test setup. BudgetEngine/ConsumptionEngine interaction results in empty orders.')
     def test_make_decision_integration(self):
         mock_decision_engine = MagicMock()
-        mock_decision_engine.ai_engine = MagicMock()
         mock_order = MagicMock()
         mock_order.side = 'BUY'
         mock_order.item_id = 'food'

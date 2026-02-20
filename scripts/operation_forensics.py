@@ -64,10 +64,10 @@ def run_forensic_investigation():
     sim = create_simulation()
 
     try:
-        for i in range(500):
+        for i in range(50):
             sim.run_tick()
-            if (i+1) % 50 == 0:
-                print(f"Tick {i+1}/500 complete...")
+            if (i+1) % 10 == 0:
+                print(f"Tick {i+1}/50 complete...")
     except Exception as e:
         print(f"Simulation crashed at tick {sim.time}: {e}")
         import traceback

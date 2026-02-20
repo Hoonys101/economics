@@ -35,5 +35,10 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "title": "Phase 23 Legacy API Cleanup",
         "instruction": "Remove deprecated factories and stale lifecycle calls as per the spec file.",
         "file": "c:/coding/economics/design/3_work_artifacts/specs/PHASE23_LEGACY_CLEANUP.md"
+    },
+    "phase23-fix-household-integration-test": {
+        "title": "Fix Household Integration Test",
+        "instruction": "Hydrate Household wallet with initial liquidity and remove skip decorator as per the spec.",
+        "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_phase23-fix-household-integration-test_SPEC.md"
     }
 }

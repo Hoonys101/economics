@@ -51,6 +51,29 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "phase23-fix-household-integration-test": {
+      "key": "phase23-fix-household-integration-test",
+      "title": "Analyze & Fix Household Integration Test",
+      "type": "gemini",
+      "instruction_raw": "Analyze the failing integration test in test_household_integration_new.py. The test is currently skipped because BudgetEngine/ConsumptionEngine interaction results in empty orders. Determine if this is a test setup issue (missing initial assets/config) or a logic flaw in engine synchronization, and write a MISSION_spec for the fix.",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "c:/coding/economics/tests/unit/decisions/test_household_integration_new.py",
+        "c:/coding/economics/simulation/core_agents.py",
+        "c:/coding/economics/modules/household/engines/budget.py",
+        "c:/coding/economics/modules/household/engines/consumption_engine.py",
+        "c:/coding/economics/modules/household/api.py"
+      ],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }
