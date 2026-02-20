@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock, PropertyMock
 from simulation.systems.ma_manager import MAManager
 from simulation.firms import Firm
-from simulation.finance.api import ISettlementSystem
+from simulation.finance.api import ISettlementSystem, IMonetaryAuthority
 from modules.system.api import DEFAULT_CURRENCY
 
 class TestMAManagerPennies:
@@ -12,8 +12,11 @@ class TestMAManagerPennies:
         sim = MagicMock()
         sim.firms = []
         sim.agents = {}
+        # WO-178: Escheatment Logic
+        # Direct government singleton for testing purposes
+        sim.government = MagicMock()
         # Make sure simulation has settlement_system attribute if checked
-        sim.settlement_system = MagicMock(spec=ISettlementSystem)
+        sim.settlement_system = MagicMock(spec=IMonetaryAuthority)
         return sim
 
     @pytest.fixture
@@ -32,7 +35,7 @@ class TestMAManagerPennies:
     @pytest.fixture
     def mock_settlement(self):
         # We use strict spec to ensure we are mocking the real interface
-        return MagicMock(spec=ISettlementSystem)
+        return MagicMock(spec=IMonetaryAuthority)
 
     def test_friendly_merger_price_is_int(self, mock_simulation, mock_config, mock_settlement):
         """
@@ -48,7 +51,7 @@ class TestMAManagerPennies:
         predator.finance_state = MagicMock()
         predator.finance_state.current_profit = {DEFAULT_CURRENCY: 1000}
         predator.finance_state.consecutive_loss_turns = 0
-        predator.finance_state.valuation = 10_000_000
+        predator.finance_state.valuation_pennies = 10_000_000
         predator.valuation = 10_000_000
         predator.get_market_cap.return_value = 100_000.0
         predator.system2_planner = None
@@ -66,7 +69,7 @@ class TestMAManagerPennies:
         prey.wallet.get_balance.return_value = 100 # Poor
         prey.finance_state = MagicMock()
         prey.finance_state.consecutive_loss_turns = 25 # Trigger distress
-        prey.finance_state.valuation = 500_000
+        prey.finance_state.valuation_pennies = 500_000
         prey.valuation = 500_000
         prey.get_market_cap.return_value = 400_000.0
         prey.founder_id = 999
@@ -114,10 +117,7 @@ class TestMAManagerPennies:
         predator.id = 101
         predator.is_active = True
         predator.wallet.get_balance.return_value = 10_000_000 # Wealthy ($100k)
-        predator.finance_state = MagicMock()
-        predator.finance_state.current_profit = {DEFAULT_CURRENCY: 1000}
-        predator.finance_state.consecutive_loss_turns = 0
-        predator.finance_state.valuation = 10_000_000
+        predator.finance_state.valuation_pennies = 10_000_000
         predator.valuation = 10_000_000
         predator.get_market_cap.return_value = 100_000.0
         predator.system2_planner = None
@@ -135,7 +135,7 @@ class TestMAManagerPennies:
         target.finance_state.consecutive_loss_turns = 0
 
         # Intrinsic Value: 1,000,000 pennies ($10,000)
-        target.finance_state.valuation = 1_000_000
+        target.finance_state.valuation_pennies = 1_000_000
         target.valuation = 1_000_000
 
         # Market Cap: $5,000 (Undervalued, 0.5 ratio < 0.7 threshold)

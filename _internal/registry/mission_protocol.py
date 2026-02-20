@@ -27,14 +27,16 @@ DO NOT append to `manual.md` or any other shared file. This is CRITICAL to preve
 
 The report MUST include:
 1. [Architectural Insights]: Technical debt identified or architectural decisions made.
-2. [Test Evidence]: Copy-paste the literal output of `pytest` demonstrating that your changes pass.
-(No verified test logs = Submission Rejected)
+2. [Regression Analysis]: If existing tests were broken, explain why and how you fixed them to align with the new architecture.
+3. [Test Evidence]: Copy-paste the FULL literal output of `pytest` demonstrating that ALL affected tests (new and legacy) pass. 
+(No verified test logs or failure analysis = Submission Rejected)
 
 🧪 [TESTING DISCIPLINE]
 1. Protocol Fidelity: When mocking Protocols, explicitly implement required methods or use specs. Enforce `isinstance(mock, Protocol)`.
 2. No Mock Drift: Do not invent attributes on mocks. Use `MagicMock(spec=RealClass)`.
-3. Hygiene: NEVER patch `sys.modules` globally in a test file. Use `conftest.py` or `patch.dict`.
-4. Async: Use `pytest-asyncio` with proper loop scope. Avoid mixing thread/process loops.
+3. Legacy Compatibility: Ensure that refactors do not break existing unit, system, or integration tests. If a signature changes, you MUST update all call sites.
+4. Total Test Pass Mandate: Your submission MUST NOT introduce ANY new failures. The ENTIRE existing test suite (pytest tests/) must pass 100% before submission. 
+(Any regression in existing functionality = Submission Rejected)
 """
 
 OUTPUT_DISCIPLINE = """

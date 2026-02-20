@@ -37,7 +37,7 @@ def mock_sim_instance():
     }
     sim.world_state.time = 42
     sim.world_state.run_id = "test_run"
-    sim.world_state.governments = []
+    sim.world_state.government = None
     sim.world_state.markets = {}
     sim.world_state.central_bank = None
     sim.world_state.bank = None

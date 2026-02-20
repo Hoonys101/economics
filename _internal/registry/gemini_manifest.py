@@ -23,55 +23,5 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "phase23-spec-safety-net": {
-        "title": "P1 Mission Spec: Operation Safety Net",
-        "worker": "spec",
-        "instruction": """Create a MISSION_spec.md for Jules to restore test suite integrity. 
-Focus on:
-1. Aligning Transaction Mocks (tests/mocks/) with ITransactionParticipant.
-2. Updating Lifecycle tests (test_engine.py) for Phase_Bankruptcy sequencing.
-3. Patching Cockpit mocks to use CockpitOrchestrator.
-
-Refer to 'Mission 1.1' and '1.2' in the Roadmap.""",
-        "context_files": [
-            "design/3_work_artifacts/specs/PHASE23_LIQUIDATION_ROADMAP.md",
-            "tests/mocks/agent_mocks.py",
-            "tests/system/test_engine.py",
-            "simulation/orchestration/tick_orchestrator.py"
-        ]
-    },
-    "phase23-spec-penny-perfect": {
-        "title": "P2 Mission Spec: Operation Penny Perfect",
-        "worker": "spec",
-        "instruction": """Create a MISSION_spec.md for Jules to enforce the Penny Standard.
-Focus on:
-1. Converting SettlementSystem state and matching logic to absolute 'int' pennies.
-2. Registering 'bailout' and 'bond_issuance' handlers in TransactionProcessor.
-3. Eliminating 'hasattr' logic leaks in BankTransactionHandler.
-
-Refer to 'Mission 2.1' and '2.2' in the Roadmap.""",
-        "context_files": [
-            "design/3_work_artifacts/specs/PHASE23_LIQUIDATION_ROADMAP.md",
-            "simulation/systems/settlement_system.py",
-            "simulation/systems/transaction_processor.py",
-            "simulation/systems/handlers/monetary_handler.py"
-        ]
-    },
-    "phase23-spec-surgical-separation": {
-        "title": "P3 Mission Spec: Operation Surgical Separation",
-        "worker": "spec",
-        "instruction": """Create a MISSION_spec.md for Jules to decouple Firm departments.
-Focus on:
-1. Extracting HR/Finance logic into stateless engines.
-2. Removing 'self.parent' references in departments.
-3. Standardizing WorldState.government as a singleton.
-
-Refer to 'Mission 3.1' and '3.2' in the Roadmap.""",
-        "context_files": [
-            "design/3_work_artifacts/specs/PHASE23_LIQUIDATION_ROADMAP.md",
-            "simulation/core_agents.py",
-            "simulation/decisions/firm/hr_department.py",
-            "simulation/world_state.py"
-        ]
-    }
+    # Add missions here
 }
