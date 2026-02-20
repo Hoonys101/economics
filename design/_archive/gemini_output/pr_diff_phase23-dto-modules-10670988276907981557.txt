@@ -1,0 +1,531 @@
+diff --git a/communications/insights/phase23-dto-modules.md b/communications/insights/phase23-dto-modules.md
+new file mode 100644
+index 00000000..5186476a
+--- /dev/null
++++ b/communications/insights/phase23-dto-modules.md
+@@ -0,0 +1,40 @@
++# Phase 23 DTO Module Alignment Report
++
++## Architectural Insights
++1. **DTO Standardization**: Successfully replaced `TypedDict` definitions with `@dataclass(frozen=True)` in `modules/government/engines/api.py` and `modules/finance/engines/api.py`. This aligns with the "DTO Purity" mandate, enforcing immutability and type safety.
++2. **Logic Separation**: The refactoring reinforced the separation between data (DTOs) and logic (Engines). Engines now strictly operate on Dataclasses and return Dataclasses, eliminating ambiguity about data structures.
++3. **System API Alignment**: Removed local re-definitions of `MarketSnapshotDTO` in finance modules. Both `FiscalEngine` and `MonetaryEngine` now consume the single source of truth `MarketSnapshotDTO` from `modules.system.api`.
++4. **Agent-Engine Contract**: The contract between Agents (`Government`, `CentralBank`) and their Engines is now strictly typed. Agents are responsible for constructing the correct DTOs from their internal state and unpacking the result DTOs using dot notation.
++5. **Penny Standard Enforcement**: Ensured that financial values (assets, bailout amounts) in Government DTOs (`FiscalStateDTO`, `FirmFinancialsDTO`, `GrantedBailoutDTO`) are explicitly typed as `int` (pennies), adhering to the system-wide financial integrity rules.
++
++## Test Evidence
++### New Unit Tests
++```
++tests/unit/modules/government/test_fiscal_engine.py::test_fiscal_engine_decide_structure PASSED [ 50%]
++tests/unit/modules/finance/test_monetary_engine.py::test_monetary_engine_calculate_rate_structure PASSED [100%]
++```
++
++### Settlement System Integrity Tests
++```
++tests/unit/systems/test_settlement_system.py::test_transfer_success PASSED [  4%]
++tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_funds PASSED [  9%]
++tests/unit/systems/test_settlement_system.py::test_create_and_transfer_minting PASSED [ 14%]
++tests/unit/systems/test_settlement_system.py::test_create_and_transfer_government_grant PASSED [ 19%]
++tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_burning PASSED [ 23%]
++tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_tax PASSED [ 28%]
++tests/unit/systems/test_settlement_system.py::test_record_liquidation PASSED [ 33%]
++tests/unit/systems/test_settlement_system.py::test_record_liquidation_escheatment PASSED [ 38%]
++tests/unit/systems/test_settlement_system.py::test_transfer_rollback PASSED [ 42%]
++tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_cash_despite_bank_balance PASSED [ 47%]
++tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_total_funds PASSED [ 52%]
++tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_success PASSED [ 57%]
++tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_rollback PASSED [ 61%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_success PASSED [ 66%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_rollback PASSED [ 71%]
++tests/unit/systems/test_settlement_system.py::test_settle_atomic_credit_fail_rollback PASSED [ 76%]
++tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_transfer_float_raises_error PASSED [ 80%]
++tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_create_and_transfer_float_raises_error PASSED [ 85%]
++tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_issue_treasury_bonds_float_leak PASSED [ 90%]
++tests/unit/modules/finance/test_settlement_purity.py::TestSettlementPurity::test_settlement_system_implements_monetary_authority PASSED [ 95%]
++tests/unit/modules/finance/test_settlement_purity.py::TestSettlementPurity::test_finance_system_uses_monetary_authority PASSED [100%]
++```
+diff --git a/modules/finance/engines/api.py b/modules/finance/engines/api.py
+index 1f036de7..b7b88d2e 100644
+--- a/modules/finance/engines/api.py
++++ b/modules/finance/engines/api.py
+@@ -1,22 +1,20 @@
+-from typing import TypedDict, Protocol, runtime_checkable, Optional
++from typing import List, Optional, Protocol, runtime_checkable
++from dataclasses import dataclass
++from modules.system.api import MarketSnapshotDTO
+ 
+-class MonetaryStateDTO(TypedDict):
++@dataclass(frozen=True)
++class MonetaryStateDTO:
+     """Input state from CentralBank agent."""
+     tick: int
+     current_base_rate: float
+     potential_gdp: float # Calculated and owned by the agent
+     inflation_target: float
+     # Optional Strategy Overrides (WO-136)
+-    override_target_rate: Optional[float]
+-    rate_multiplier: Optional[float]
++    override_target_rate: Optional[float] = None
++    rate_multiplier: Optional[float] = None
+ 
+-class MarketSnapshotDTO(TypedDict):
+-    """Shared market data for both engines."""
+-    tick: int
+-    inflation_rate_annual: float
+-    current_gdp: float
+-
+-class MonetaryDecisionDTO(TypedDict):
++@dataclass(frozen=True)
++class MonetaryDecisionDTO:
+     """Output decision from the MonetaryEngine."""
+     new_base_rate: float
+ 
+diff --git a/modules/finance/engines/monetary_engine.py b/modules/finance/engines/monetary_engine.py
+index b04fa894..f816ad84 100644
+--- a/modules/finance/engines/monetary_engine.py
++++ b/modules/finance/engines/monetary_engine.py
+@@ -26,11 +26,12 @@ class MonetaryEngine(IMonetaryEngine):
+         market: MarketSnapshotDTO
+     ) -> MonetaryDecisionDTO:
+ 
+-        current_gdp = market["current_gdp"]
+-        potential_gdp = state["potential_gdp"]
+-        inflation_rate = market["inflation_rate_annual"]
+-        inflation_target = state["inflation_target"]
+-        current_base_rate = state["current_base_rate"]
++        current_gdp = market.market_data.get("current_gdp", 0.0)
++        inflation_rate = market.market_data.get("inflation_rate_annual", 0.0)
++
++        potential_gdp = state.potential_gdp
++        inflation_target = state.inflation_target
++        current_base_rate = state.current_base_rate
+ 
+         # 1. Calculate Output Gap
+         output_gap = 0.0
+@@ -47,11 +48,11 @@ class MonetaryEngine(IMonetaryEngine):
+                       self.beta * output_gap
+ 
+         # 3. Apply Strategy Overrides (WO-136)
+-        if state.get("override_target_rate") is not None:
+-             taylor_rate = state["override_target_rate"]
++        if state.override_target_rate is not None:
++             taylor_rate = state.override_target_rate
+ 
+-        if state.get("rate_multiplier") is not None:
+-             taylor_rate *= state["rate_multiplier"]
++        if state.rate_multiplier is not None:
++             taylor_rate *= state.rate_multiplier
+ 
+         # 4. ZLB (Zero Lower Bound)
+         target_rate = max(0.0, taylor_rate)
+diff --git a/modules/government/engines/api.py b/modules/government/engines/api.py
+index aebcba25..70949b01 100644
+--- a/modules/government/engines/api.py
++++ b/modules/government/engines/api.py
+@@ -1,39 +1,51 @@
+-from typing import TypedDict, List, Dict, Optional, Protocol, runtime_checkable
++from typing import List, Dict, Optional, Protocol, runtime_checkable
++from dataclasses import dataclass, field
+ from modules.system.api import CurrencyCode, MarketSnapshotDTO
+ 
+-class FiscalStateDTO(TypedDict):
++@dataclass(frozen=True)
++class FiscalStateDTO:
+     """Input state from Government agent."""
+     tick: int
+-    assets: Dict[CurrencyCode, float]
+-    total_debt: float
++    assets: Dict[CurrencyCode, int] # Penny Standard
++    total_debt: float # Keeping as float for ratio calcs, or should be int? Debt is usually tracked in pennies but ratios use float.
++                      # Ideally debt is int (pennies) for ledger accuracy, but ratio calculation converts it.
++                      # Let's keep total_debt as float for now as it often comes from a sum of bond face values (int) but might be used as float.
++                      # Wait, debt is a liability. It should be int if it represents actual money owed.
++                      # However, the original code had it as float. Let's stick to float for debt to minimize friction,
++                      # but ASSETS must be int.
+     income_tax_rate: float
+     corporate_tax_rate: float
+     approval_rating: float
+     welfare_budget_multiplier: float
+     potential_gdp: float
+ 
+-class FirmFinancialsDTO(TypedDict):
++@dataclass(frozen=True)
++class FirmFinancialsDTO:
+     """A snapshot of a firm's health, NOT the live object."""
+-    assets: float
+-    profit: float
++    assets: int # Penny Standard
++    profit: float # Profit can be float? Usually accounting is int. But let's stick to assets/amounts being int.
+     is_solvent: bool
+ 
+-class FirmBailoutRequestDTO(TypedDict):
++@dataclass(frozen=True)
++class FirmBailoutRequestDTO:
+     firm_id: int
+-    requested_amount: float
++    requested_amount: int # Penny Standard
+     firm_financials: FirmFinancialsDTO
+ 
+-class FiscalRequestDTO(TypedDict): # Union of all possible requests
++@dataclass(frozen=True)
++class FiscalRequestDTO: # Union of all possible requests
+     bailout_request: Optional[FirmBailoutRequestDTO]
+     # ... other request types in the future
+ 
+-class GrantedBailoutDTO(TypedDict):
++@dataclass(frozen=True)
++class GrantedBailoutDTO:
+     firm_id: int
+-    amount: float
++    amount: int # Penny Standard
+     interest_rate: float
+     term: int
+ 
+-class FiscalDecisionDTO(TypedDict):
++@dataclass(frozen=True)
++class FiscalDecisionDTO:
+     """Output decisions from the FiscalEngine."""
+     new_income_tax_rate: Optional[float]
+     new_corporate_tax_rate: Optional[float]
+diff --git a/modules/government/engines/fiscal_engine.py b/modules/government/engines/fiscal_engine.py
+index b9ca1faa..7c13c36b 100644
+--- a/modules/government/engines/fiscal_engine.py
++++ b/modules/government/engines/fiscal_engine.py
+@@ -53,10 +53,10 @@ class FiscalEngine(IFiscalEngine):
+     def _calculate_tax_rates(self, state: FiscalStateDTO, market: MarketSnapshotDTO):
+         # Access current_gdp from market_data (safe access with default)
+         current_gdp = market.market_data.get("current_gdp", 0.0)
+-        potential_gdp = state["potential_gdp"]
++        potential_gdp = state.potential_gdp
+ 
+         # Debt check
+-        total_debt = state["total_debt"]
++        total_debt = state.total_debt
+         debt_to_gdp = 0.0
+         if potential_gdp > 0:
+             debt_to_gdp = total_debt / potential_gdp
+@@ -64,8 +64,8 @@ class FiscalEngine(IFiscalEngine):
+              debt_to_gdp = total_debt / current_gdp
+ 
+         # Default fallback
+-        new_income_tax_rate = state["income_tax_rate"]
+-        new_corporate_tax_rate = state["corporate_tax_rate"]
++        new_income_tax_rate = state.income_tax_rate
++        new_corporate_tax_rate = state.corporate_tax_rate
+         fiscal_stance = 0.0
+ 
+         if potential_gdp > 0:
+@@ -110,8 +110,8 @@ class FiscalEngine(IFiscalEngine):
+         return new_income_tax_rate, new_corporate_tax_rate, fiscal_stance
+ 
+     def _calculate_welfare_multiplier(self, state: FiscalStateDTO) -> float:
+-        total_debt = state["total_debt"]
+-        potential_gdp = state["potential_gdp"]
++        total_debt = state.total_debt
++        potential_gdp = state.potential_gdp
+ 
+         if potential_gdp <= 0:
+             return 1.0
+@@ -131,9 +131,9 @@ class FiscalEngine(IFiscalEngine):
+         return 1.0
+ 
+     def _evaluate_bailouts(self, requests: List[FiscalRequestDTO], state: FiscalStateDTO) -> List[GrantedBailoutDTO]:
+-        total_debt = state["total_debt"]
+-        potential_gdp = state["potential_gdp"]
+-        current_assets = state["assets"].get(DEFAULT_CURRENCY, 0.0)
++        total_debt = state.total_debt
++        potential_gdp = state.potential_gdp
++        current_assets = state.assets.get(DEFAULT_CURRENCY, 0)
+ 
+         debt_to_gdp = 0.0
+         if potential_gdp > 0:
+@@ -145,9 +145,9 @@ class FiscalEngine(IFiscalEngine):
+ 
+         granted = []
+         for req in requests:
+-            if req.get("bailout_request"):
+-                bailout_req = req["bailout_request"]
+-                amount = bailout_req["requested_amount"]
++            if req.bailout_request:
++                bailout_req = req.bailout_request
++                amount = bailout_req.requested_amount
+ 
+                 # Check 1: Can we afford it liquidly?
+                 # Ideally we check bond capacity too, but "Solvency Guardrails" implies prudence.
+@@ -164,14 +164,14 @@ class FiscalEngine(IFiscalEngine):
+                 if not can_afford:
+                     continue
+ 
+-                financials = bailout_req["firm_financials"]
+-                is_solvent = financials["is_solvent"]
++                financials = bailout_req.firm_financials
++                is_solvent = financials.is_solvent
+ 
+                 if is_solvent:
+                     # Grant bailout
+                     granted.append(GrantedBailoutDTO(
+-                        firm_id=bailout_req["firm_id"],
+-                        amount=amount,
++                        firm_id=bailout_req.firm_id,
++                        amount=amount, # Integer
+                         interest_rate=0.05, # Default term
+                         term=50 # Default term ticks
+                     ))
+diff --git a/simulation/agents/central_bank.py b/simulation/agents/central_bank.py
+index c095f87a..f15982a2 100644
+--- a/simulation/agents/central_bank.py
++++ b/simulation/agents/central_bank.py
+@@ -4,10 +4,10 @@ import numpy as np
+ from modules.finance.api import InsufficientFundsError, IFinancialAgent, IFinancialEntity, IBank
+ from modules.finance.wallet.wallet import Wallet
+ from modules.finance.wallet.api import IWallet
+-from modules.system.api import ICurrencyHolder, CurrencyCode, DEFAULT_CURRENCY
++from modules.system.api import ICurrencyHolder, CurrencyCode, DEFAULT_CURRENCY, MarketSnapshotDTO
+ from modules.system.constants import ID_CENTRAL_BANK
+ from modules.finance.engines.monetary_engine import MonetaryEngine
+-from modules.finance.engines.api import MonetaryStateDTO, MarketSnapshotDTO
++from modules.finance.engines.api import MonetaryStateDTO
+ 
+ if TYPE_CHECKING:
+     from modules.memory.api import MemoryV2Interface
+@@ -149,27 +149,30 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity):
+              rate_multiplier = self.strategy.base_interest_rate_multiplier
+ 
+         # C. Construct DTOs
+-        state: MonetaryStateDTO = {
+-            "tick": current_tick,
+-            "current_base_rate": self.base_rate,
+-            "potential_gdp": self.potential_gdp,
+-            "inflation_target": self.inflation_target,
+-            "override_target_rate": override_target_rate,
+-            "rate_multiplier": rate_multiplier
+-        }
+-
+-        snapshot: MarketSnapshotDTO = {
+-            "tick": current_tick,
+-            "inflation_rate_annual": inflation_rate,
+-            "current_gdp": current_gdp
+-        }
++        state = MonetaryStateDTO(
++            tick=current_tick,
++            current_base_rate=self.base_rate,
++            potential_gdp=self.potential_gdp,
++            inflation_target=self.inflation_target,
++            override_target_rate=override_target_rate,
++            rate_multiplier=rate_multiplier
++        )
++
++        snapshot = MarketSnapshotDTO(
++            tick=current_tick,
++            market_signals={},
++            market_data={
++                "inflation_rate_annual": inflation_rate,
++                "current_gdp": current_gdp
++            }
++        )
+ 
+         # D. Call Engine
+         decision = self.monetary_engine.calculate_rate(state, snapshot)
+ 
+         # E. Apply Decision
+         old_rate = self.base_rate
+-        self.base_rate = decision["new_base_rate"]
++        self.base_rate = decision.new_base_rate
+ 
+         # Logging (retained for consistency)
+         # Re-calc output gap for logging only
+diff --git a/simulation/agents/government.py b/simulation/agents/government.py
+index 0b0ad6e9..74ee5d2a 100644
+--- a/simulation/agents/government.py
++++ b/simulation/agents/government.py
+@@ -286,16 +286,16 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
+             self.potential_gdp = (alpha * current_gdp) + ((1-alpha) * self.potential_gdp)
+ 
+         # 1. Gather State into DTO
+-        fiscal_state: FiscalStateDTO = {
+-            "tick": current_tick,
+-            "assets": self.wallet.get_all_balances(),
+-            "total_debt": self.total_debt,
+-            "income_tax_rate": self.income_tax_rate,
+-            "corporate_tax_rate": self.corporate_tax_rate,
+-            "approval_rating": self.approval_rating,
+-            "welfare_budget_multiplier": self.welfare_budget_multiplier,
+-            "potential_gdp": self.potential_gdp
+-        }
++        fiscal_state = FiscalStateDTO(
++            tick=current_tick,
++            assets=self.wallet.get_all_balances(),
++            total_debt=self.total_debt,
++            income_tax_rate=self.income_tax_rate,
++            corporate_tax_rate=self.corporate_tax_rate,
++            approval_rating=self.approval_rating,
++            welfare_budget_multiplier=self.welfare_budget_multiplier,
++            potential_gdp=self.potential_gdp
++        )
+ 
+         # Prepare Market Snapshot DTO (Dataclass for Engines)
+         engine_market_snapshot = MarketSnapshotDTO(
+@@ -308,12 +308,12 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
+         decision = self.fiscal_engine.decide(fiscal_state, engine_market_snapshot, [])
+ 
+         # 3. Apply Changes
+-        if decision["new_income_tax_rate"] is not None:
+-            self.income_tax_rate = decision["new_income_tax_rate"]
+-        if decision["new_corporate_tax_rate"] is not None:
+-            self.corporate_tax_rate = decision["new_corporate_tax_rate"]
+-        if decision["new_welfare_budget_multiplier"] is not None:
+-            self.welfare_budget_multiplier = decision["new_welfare_budget_multiplier"]
++        if decision.new_income_tax_rate is not None:
++            self.income_tax_rate = decision.new_income_tax_rate
++        if decision.new_corporate_tax_rate is not None:
++            self.corporate_tax_rate = decision.new_corporate_tax_rate
++        if decision.new_welfare_budget_multiplier is not None:
++            self.welfare_budget_multiplier = decision.new_welfare_budget_multiplier
+ 
+         logger.debug(
+             f"FISCAL_POLICY_EXECUTED | Tick: {current_tick} | IncomeTax: {self.income_tax_rate:.2f} | CorpTax: {self.corporate_tax_rate:.2f}",
+@@ -488,31 +488,31 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
+         if self.finance_system:
+              is_solvent = self.finance_system.evaluate_solvency(firm, current_tick)
+ 
+-        financials: FirmFinancialsDTO = {
+-            "assets": int(firm.total_wealth) if hasattr(firm, 'total_wealth') else (int(firm.assets) if hasattr(firm, 'assets') else 0),
+-            "profit": 0,
+-            "is_solvent": is_solvent
+-        }
++        financials = FirmFinancialsDTO(
++            assets=int(firm.total_wealth) if hasattr(firm, 'total_wealth') else (int(firm.assets) if hasattr(firm, 'assets') else 0),
++            profit=0.0,
++            is_solvent=is_solvent
++        )
+ 
+-        bailout_req: FirmBailoutRequestDTO = {
+-            "firm_id": firm.id,
+-            "requested_amount": amount,
+-            "firm_financials": financials
+-        }
++        bailout_req = FirmBailoutRequestDTO(
++            firm_id=firm.id,
++            requested_amount=int(amount),
++            firm_financials=financials
++        )
+ 
+-        request: FiscalRequestDTO = {"bailout_request": bailout_req}
++        request = FiscalRequestDTO(bailout_request=bailout_req)
+ 
+         # 2. Call Engine
+-        fiscal_state: FiscalStateDTO = {
+-            "tick": current_tick,
+-            "assets": self.wallet.get_all_balances(),
+-            "total_debt": self.total_debt,
+-            "income_tax_rate": self.income_tax_rate,
+-            "corporate_tax_rate": self.corporate_tax_rate,
+-            "approval_rating": self.approval_rating,
+-            "welfare_budget_multiplier": self.welfare_budget_multiplier,
+-            "potential_gdp": self.potential_gdp
+-        }
++        fiscal_state = FiscalStateDTO(
++            tick=current_tick,
++            assets=self.wallet.get_all_balances(),
++            total_debt=self.total_debt,
++            income_tax_rate=self.income_tax_rate,
++            corporate_tax_rate=self.corporate_tax_rate,
++            approval_rating=self.approval_rating,
++            welfare_budget_multiplier=self.welfare_budget_multiplier,
++            potential_gdp=self.potential_gdp
++        )
+         market_snapshot = MarketSnapshotDTO(
+             tick=current_tick,
+             market_signals={},
+@@ -525,15 +525,15 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
+         decision = self.fiscal_engine.decide(fiscal_state, market_snapshot, [request])
+ 
+         # 3. Execute Decision
+-        if decision["bailouts_to_grant"]:
+-            grant = decision["bailouts_to_grant"][0]
++        if decision.bailouts_to_grant:
++            grant = decision.bailouts_to_grant[0]
+ 
+             if self.finance_system:
+-                loan, txs = self.finance_system.grant_bailout_loan(firm, grant["amount"], current_tick)
++                loan, txs = self.finance_system.grant_bailout_loan(firm, grant.amount, current_tick)
+ 
+                 cur = DEFAULT_CURRENCY
+                 if cur not in self.expenditure_this_tick: self.expenditure_this_tick[cur] = 0
+-                self.expenditure_this_tick[cur] += grant["amount"]
++                self.expenditure_this_tick[cur] += grant.amount
+ 
+                 return loan, txs
+ 
+diff --git a/tests/unit/modules/finance/test_monetary_engine.py b/tests/unit/modules/finance/test_monetary_engine.py
+new file mode 100644
+index 00000000..52ef6a65
+--- /dev/null
++++ b/tests/unit/modules/finance/test_monetary_engine.py
+@@ -0,0 +1,29 @@
++import pytest
++from unittest.mock import MagicMock
++from modules.finance.engines.monetary_engine import MonetaryEngine
++from modules.finance.engines.api import MonetaryStateDTO, MonetaryDecisionDTO
++from modules.system.api import MarketSnapshotDTO
++
++def test_monetary_engine_calculate_rate_structure():
++    mock_config = MagicMock()
++    mock_config.CB_TAYLOR_ALPHA = 1.5
++    mock_config.CB_TAYLOR_BETA = 0.5
++    engine = MonetaryEngine(config_module=mock_config)
++
++    state = MonetaryStateDTO(
++        tick=100,
++        current_base_rate=0.05,
++        potential_gdp=10000.0,
++        inflation_target=0.02
++    )
++
++    market = MarketSnapshotDTO(
++        tick=100,
++        market_signals={},
++        market_data={"current_gdp": 10000.0, "inflation_rate_annual": 0.03}
++    )
++
++    decision = engine.calculate_rate(state, market)
++
++    assert isinstance(decision, MonetaryDecisionDTO)
++    assert isinstance(decision.new_base_rate, float)
+diff --git a/tests/unit/modules/government/test_fiscal_engine.py b/tests/unit/modules/government/test_fiscal_engine.py
+new file mode 100644
+index 00000000..09ca9bf8
+--- /dev/null
++++ b/tests/unit/modules/government/test_fiscal_engine.py
+@@ -0,0 +1,31 @@
++import pytest
++from unittest.mock import MagicMock
++from modules.government.engines.fiscal_engine import FiscalEngine
++from modules.government.engines.api import FiscalStateDTO, FiscalRequestDTO, FiscalDecisionDTO
++from modules.system.api import MarketSnapshotDTO
++
++def test_fiscal_engine_decide_structure():
++    engine = FiscalEngine()
++
++    state = FiscalStateDTO(
++        tick=100,
++        assets={"USD": 1000}, # Corrected to int
++        total_debt=500.0,
++        income_tax_rate=0.1,
++        corporate_tax_rate=0.2,
++        approval_rating=0.5,
++        welfare_budget_multiplier=1.0,
++        potential_gdp=10000.0
++    )
++
++    market = MarketSnapshotDTO(
++        tick=100,
++        market_signals={},
++        market_data={"current_gdp": 10000.0}
++    )
++
++    decision = engine.decide(state, market, [])
++
++    assert isinstance(decision, FiscalDecisionDTO)
++    assert decision.new_income_tax_rate is not None
++    assert decision.new_corporate_tax_rate is not None
