@@ -489,14 +489,14 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
              is_solvent = self.finance_system.evaluate_solvency(firm, current_tick)
 
         financials = FirmFinancialsDTO(
-            assets=float(int(firm.total_wealth) if hasattr(firm, 'total_wealth') else (int(firm.assets) if hasattr(firm, 'assets') else 0)),
+            assets=int(firm.total_wealth) if hasattr(firm, 'total_wealth') else (int(firm.assets) if hasattr(firm, 'assets') else 0),
             profit=0.0,
             is_solvent=is_solvent
         )
 
         bailout_req = FirmBailoutRequestDTO(
             firm_id=firm.id,
-            requested_amount=float(amount),
+            requested_amount=int(amount),
             firm_financials=financials
         )
 

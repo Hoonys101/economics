@@ -133,7 +133,7 @@ class FiscalEngine(IFiscalEngine):
     def _evaluate_bailouts(self, requests: List[FiscalRequestDTO], state: FiscalStateDTO) -> List[GrantedBailoutDTO]:
         total_debt = state.total_debt
         potential_gdp = state.potential_gdp
-        current_assets = state.assets.get(DEFAULT_CURRENCY, 0.0)
+        current_assets = state.assets.get(DEFAULT_CURRENCY, 0)
 
         debt_to_gdp = 0.0
         if potential_gdp > 0:
@@ -171,7 +171,7 @@ class FiscalEngine(IFiscalEngine):
                     # Grant bailout
                     granted.append(GrantedBailoutDTO(
                         firm_id=bailout_req.firm_id,
-                        amount=amount,
+                        amount=amount, # Integer
                         interest_rate=0.05, # Default term
                         term=50 # Default term ticks
                     ))

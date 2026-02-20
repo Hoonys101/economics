@@ -5,6 +5,7 @@
 2. **Logic Separation**: The refactoring reinforced the separation between data (DTOs) and logic (Engines). Engines now strictly operate on Dataclasses and return Dataclasses, eliminating ambiguity about data structures.
 3. **System API Alignment**: Removed local re-definitions of `MarketSnapshotDTO` in finance modules. Both `FiscalEngine` and `MonetaryEngine` now consume the single source of truth `MarketSnapshotDTO` from `modules.system.api`.
 4. **Agent-Engine Contract**: The contract between Agents (`Government`, `CentralBank`) and their Engines is now strictly typed. Agents are responsible for constructing the correct DTOs from their internal state and unpacking the result DTOs using dot notation.
+5. **Penny Standard Enforcement**: Ensured that financial values (assets, bailout amounts) in Government DTOs (`FiscalStateDTO`, `FirmFinancialsDTO`, `GrantedBailoutDTO`) are explicitly typed as `int` (pennies), adhering to the system-wide financial integrity rules.
 
 ## Test Evidence
 ### New Unit Tests

@@ -9,7 +9,7 @@ def test_fiscal_engine_decide_structure():
 
     state = FiscalStateDTO(
         tick=100,
-        assets={"USD": 1000.0},
+        assets={"USD": 1000}, # Corrected to int
         total_debt=500.0,
         income_tax_rate=0.1,
         corporate_tax_rate=0.2,
