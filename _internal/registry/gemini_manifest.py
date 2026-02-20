@@ -23,5 +23,31 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "fix-dto-naming-alignment": {
+        "title": "Align SimulationState DTO Naming",
+        "worker": "spec",
+        "instruction": "Align SimulationState DTO naming with WorldState as per MISSION_PHASE23_HYGIENE_SPEC.md. Specifically rename government and god_commands to avoid singleton/deque mismatches.",
+        "context_files": [
+            "c:/coding/economics/simulation/dtos/api.py",
+            "c:/coding/economics/simulation/world_state.py",
+            "c:/coding/economics/simulation/orchestration/tick_orchestrator.py",
+            "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_PHASE23_HYGIENE_SPEC.md"
+        ]
+    },
+    "modernize-test-and-legacy-api": {
+        "title": "Modernize Test & Legacy API",
+        "worker": "spec",
+        "instruction": "Modernize tests and resolve legacy module/API imports as per MISSION_PHASE23_HYGIENE_SPEC.md. Replace HouseholdFactory, collect_tax, and _handle_agent_liquidation with modern counterparts.",
+        "context_files": [
+            "c:/coding/economics/tests/system/test_engine.py",
+            "c:/coding/economics/tests/integration/test_tick_normalization.py",
+            "c:/coding/economics/tests/orchestration/test_state_synchronization.py",
+            "c:/coding/economics/scripts/audit_zero_sum.py",
+            "c:/coding/economics/simulation/systems/demographic_manager.py",
+            "c:/coding/economics/simulation/initialization/initializer.py",
+            "c:/coding/economics/simulation/systems/tax_agency.py",
+            "c:/coding/economics/simulation/systems/api.py",
+            "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_PHASE23_HYGIENE_SPEC.md"
+        ]
+    }
 }
