@@ -272,8 +272,7 @@ class TickOrchestrator:
             # Track Economics
             if state.tracker:
                 # ...
-                pass
-                # state.tracker.track(...)
+                state.tracker.track(state)
 
         # Phase 4.1: Market Panic Index Calculation (Architect Directive)
         total_deposits = 0
