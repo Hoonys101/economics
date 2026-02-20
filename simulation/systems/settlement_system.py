@@ -7,7 +7,7 @@ from simulation.finance.api import ITransaction
 from modules.finance.api import (
     IFinancialAgent, IFinancialEntity, IBank, InsufficientFundsError,
     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID,
-    IMonetaryAuthority
+    IMonetaryAuthority, IEconomicMetricsService
 )
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry
 from modules.system.constants import ID_CENTRAL_BANK
@@ -34,9 +34,10 @@ class SettlementSystem(IMonetaryAuthority):
     INTEGRATION: Uses TransactionEngine for atomic transfers.
     """
 
-    def __init__(self, logger: Optional[logging.Logger] = None, bank: Optional[IBank] = None):
+    def __init__(self, logger: Optional[logging.Logger] = None, bank: Optional[IBank] = None, metrics_service: Optional[IEconomicMetricsService] = None):
         self.logger = logger if logger else logging.getLogger(__name__)
         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
+        self.metrics_service = metrics_service
         self.total_liquidation_losses: int = 0
         self.agent_registry: Optional[IAgentRegistry] = None # Injected by SimulationInitializer
 
@@ -48,6 +49,10 @@ class SettlementSystem(IMonetaryAuthority):
         self._bank_depositors: Dict[int, Set[int]] = defaultdict(set)
         # AgentID -> Set[BankID] (for fast removal)
         self._agent_banks: Dict[int, Set[int]] = defaultdict(set)
+
+    def set_metrics_service(self, service: IEconomicMetricsService) -> None:
+        """Sets the economic metrics service for recording system-wide financial events."""
+        self.metrics_service = service
 
     def _get_engine(self, context_agents: Optional[List[Any]] = None) -> TransactionEngine:
         """
@@ -391,10 +396,8 @@ class SettlementSystem(IMonetaryAuthority):
 
         if result.status == 'COMPLETED':
              # Phase 4.1: Record withdrawal volume for Panic Index
-             if memo == "withdrawal" and self.agent_registry and hasattr(self.agent_registry, "world_state"):
-                 ws = getattr(self.agent_registry, "world_state")
-                 if ws and hasattr(ws, "record_withdrawal"):
-                     ws.record_withdrawal(amount)
+             if memo == "withdrawal" and self.metrics_service:
+                 self.metrics_service.record_withdrawal(amount)
              
              return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
         else:

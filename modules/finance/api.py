@@ -995,3 +995,12 @@ class IConsumptionTracker(Protocol):
     """Protocol for entities that track their consumption expenditure."""
     def add_consumption_expenditure(self, amount: int, item_id: Optional[str] = None) -> None:
         ...
+
+@runtime_checkable
+class IEconomicMetricsService(Protocol):
+    """
+    Protocol for recording economic metrics such as withdrawals for panic indexing.
+    """
+    def record_withdrawal(self, amount_pennies: int) -> None:
+        """Records a withdrawal event."""
+        ...
