@@ -3,23 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "wave1-finance-protocol": {
-      "key": "wave1-finance-protocol",
-      "title": "Wave 1.1: Financial Protocol Enforcement",
-      "type": "jules",
-      "instruction_raw": "Implement MISSION_wave1_finance_protocol_spec.md. Ensure IInvestor and IPropertyOwner protocols are used in MonetaryTransactionHandler, fix accounting for buyer expenses, and enforce strict rollback in the Bank interface.",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "artifacts/specs/MISSION_wave1_finance_protocol_spec.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "wave1-lifecycle-hygiene": {
       "key": "wave1-lifecycle-hygiene",
       "title": "Wave 1.2: System Lifecycle & Dependency Hygiene",
