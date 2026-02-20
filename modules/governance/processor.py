@@ -44,16 +44,16 @@ class SystemCommandProcessor(ISystemCommandHandler):
         tax_type = command.tax_type
         new_rate = command.new_rate
 
-        if state.government is None:
+        if state.primary_government is None:
             logger.error("SYSTEM_COMMAND | Government agent is None.")
             return
 
         # Guardrail: Strict Protocol Compliance Check
-        if not isinstance(state.government, IGovernment):
-            logger.error(f"SYSTEM_COMMAND | Government agent {type(state.government)} does not satisfy IGovernment protocol.")
+        if not isinstance(state.primary_government, IGovernment):
+            logger.error(f"SYSTEM_COMMAND | Government agent {type(state.primary_government)} does not satisfy IGovernment protocol.")
             return
 
-        government = state.government
+        government = state.primary_government
 
         if tax_type == 'corporate':
             old_rate = government.corporate_tax_rate

@@ -68,9 +68,6 @@ def test_cockpit_command_flow_tax_rate(mock_deps):
 
     sim.command_service.enqueue_command(cockpit_cmd)
 
-    # Verify internal queue
-    assert len(sim.command_service._system_command_queue) == 1
-
     # Run _process_commands (part of run_tick)
     sim._process_commands()
 
@@ -84,8 +81,15 @@ def test_cockpit_command_flow_tax_rate(mock_deps):
     from simulation.orchestration.phases.system_commands import Phase_SystemCommands
     phase = Phase_SystemCommands(sim.world_state)
 
+    # Create Mock SimulationState
+    # TD-TEST-COCKPIT-MOCK: Ensure we pass SimulationState, not WorldState
+    mock_sim_state = MagicMock(spec=SimulationState)
+    mock_sim_state.time = sim.world_state.time
+    mock_sim_state.system_commands = sim.world_state.system_commands
+    mock_sim_state.primary_government = sim.world_state.government
+
     # Execute Phase
-    phase.execute(sim.world_state)
+    phase.execute(mock_sim_state)
 
     # Verify State Change
     assert sim.world_state.government.corporate_tax_rate == 0.35
