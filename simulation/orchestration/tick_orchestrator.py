@@ -271,8 +271,19 @@ class TickOrchestrator:
 
             # Track Economics
             if state.tracker:
+<<<<<<< HEAD
                 # ...
                 state.tracker.track(state)
+=======
+                state.tracker.track(
+                    time=state.time,
+                    households=state.households,
+                    firms=state.firms,
+                    markets=state.markets,
+                    money_supply=current_money,
+                    m2_leak=m2_leak_delta
+                )
+>>>>>>> origin/phase4-ai-labor-matching-13635861032711853652
 
         # Phase 4.1: Market Panic Index Calculation (Architect Directive)
         total_deposits = 0

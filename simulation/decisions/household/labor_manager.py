@@ -64,5 +64,29 @@ class LaborManager:
                 if logger:
                     logger.info(f'RESERVATION_WAGE | Household {household.id} refused labor. Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f}', extra={'tick': current_time, 'agent_id': household.id, 'tags': ['labor_refusal']})
             else:
-                orders.append(Order(agent_id=household.id, side='SELL', item_id='labor', quantity=1.0, price_pennies=int(reservation_wage * 100), price_limit=reservation_wage, market_id='labor'))
+                # Prepare Brand Info for Utility-Based Matching
+                if hasattr(household, 'agent_data'):
+                    agent_data = household.agent_data
+                elif hasattr(household, 'get_agent_data'):
+                    agent_data = household.get_agent_data()
+                else:
+                    agent_data = {}
+
+                brand_info = {
+                    'labor_skill': agent_data.get('labor_skill', 1.0),
+                    'education_level': agent_data.get('education_level', 0),
+                    'aptitude': agent_data.get('aptitude', 0.5),
+                    'market_insight': agent_data.get('market_insight', 0.5)
+                }
+
+                orders.append(Order(
+                    agent_id=household.id,
+                    side='SELL',
+                    item_id='labor',
+                    quantity=1.0,
+                    price_pennies=int(reservation_wage * 100),
+                    price_limit=reservation_wage,
+                    market_id='labor',
+                    brand_info=brand_info
+                ))
         return orders

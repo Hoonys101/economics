@@ -39,7 +39,169 @@ class OrderBookMatchingEngine(IMatchingEngine):
                     market_stats['last_trade_ticks'][item_id] = current_tick
         return MatchingResultDTO(transactions=all_transactions, unfilled_buy_orders=unfilled_buy_orders, unfilled_sell_orders=unfilled_sell_orders, market_stats=market_stats)
 
+    def _calculate_labor_utility(self, order: CanonicalOrderDTO) -> float:
+        """
+        Calculates utility for a Labor Sell Order.
+        Utility = (labor_skill * (1.0 + 0.1 * education_level)) / price_pennies
+        """
+        price = order.price_pennies
+        if price <= 0:
+            return float('inf')
+
+        brand = order.brand_info or {}
+        skill = brand.get('labor_skill', 1.0)
+        education = brand.get('education_level', 0)
+
+        perception = skill * (1.0 + 0.1 * education)
+        return perception / price
+
+    def _match_labor_utility(self, item_id: str, buy_orders: List[CanonicalOrderDTO], sell_orders: List[CanonicalOrderDTO], market_id: str, current_tick: int) -> Tuple[List[Transaction], List[CanonicalOrderDTO], List[CanonicalOrderDTO], Dict[str, Any]]:
+        transactions: List[Transaction] = []
+        stats: Dict[str, Any] = {'volume': 0.0}
+
+        # 1. Separate Targeted vs General
+        targeted_buys = [o for o in buy_orders if o.target_agent_id is not None]
+        general_buys = [o for o in buy_orders if o.target_agent_id is None]
+
+        # 2. Sort General Buys by Price Desc (Highest Bidders First)
+        general_buys.sort(key=lambda o: o.price_pennies, reverse=True)
+
+        # 3. Sort Sells by Utility Desc (Best Value Workers First)
+        sell_map: Dict[int, List[CanonicalOrderDTO]] = {}
+        for s_order in sell_orders:
+            agent_id = int(s_order.agent_id) if isinstance(s_order.agent_id, (int, float)) else s_order.agent_id
+            if agent_id not in sell_map:
+                sell_map[agent_id] = []
+            sell_map[agent_id].append(s_order)
+
+        class MutableOrder:
+            def __init__(self, dto: CanonicalOrderDTO):
+                self.dto = dto
+                self.remaining_qty = dto.quantity
+            def to_dto(self) -> CanonicalOrderDTO:
+                return replace(self.dto, quantity=self.remaining_qty)
+
+        mutable_targeted_buys = [MutableOrder(o) for o in targeted_buys]
+        mutable_general_buys = [MutableOrder(o) for o in general_buys]
+
+        all_mutable_sells: List[MutableOrder] = []
+        for s_list in sell_map.values():
+            m_list = [MutableOrder(o) for o in s_list]
+            all_mutable_sells.extend(m_list)
+
+        # 4. Process Targeted Buys (Priority)
+        # Need mutable_sell_map for O(1) lookup
+        mutable_sell_map: Dict[Any, List[MutableOrder]] = {}
+        for s in all_mutable_sells:
+            aid = s.dto.agent_id
+            if aid not in mutable_sell_map:
+                mutable_sell_map[aid] = []
+            mutable_sell_map[aid].append(s)
+
+        remaining_targeted_buys: List[MutableOrder] = []
+        for b_wrapper in mutable_targeted_buys:
+            target_id = b_wrapper.dto.target_agent_id
+            target_asks = mutable_sell_map.get(target_id)
+            if target_asks:
+                for s_wrapper in target_asks:
+                    if b_wrapper.remaining_qty <= 1e-9: break
+                    if s_wrapper.remaining_qty <= 1e-9: continue
+
+                    if b_wrapper.dto.price_pennies >= s_wrapper.dto.price_pennies:
+                        trade_price_pennies = s_wrapper.dto.price_pennies
+                        trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
+                        trade_total_pennies = int(trade_price_pennies * trade_qty)
+                        effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
+
+                        quality_val = 1.0
+                        if s_wrapper.dto.brand_info:
+                             quality_val = s_wrapper.dto.brand_info.get('labor_skill', s_wrapper.dto.brand_info.get('quality', 1.0))
+
+                        tx = Transaction(
+                            item_id=item_id,
+                            quantity=trade_qty,
+                            price=effective_price_dollars,
+                            total_pennies=trade_total_pennies,
+                            buyer_id=b_wrapper.dto.agent_id,
+                            seller_id=s_wrapper.dto.agent_id,
+                            market_id=market_id,
+                            transaction_type='labor',
+                            time=current_tick,
+                            quality=quality_val
+                        )
+                        transactions.append(tx)
+                        stats['last_price'] = effective_price_dollars
+                        stats['volume'] += trade_qty
+                        b_wrapper.remaining_qty -= trade_qty
+                        s_wrapper.remaining_qty -= trade_qty
+
+            if b_wrapper.remaining_qty > 1e-9:
+                remaining_targeted_buys.append(b_wrapper)
+
+        if remaining_targeted_buys:
+             mutable_general_buys.extend(remaining_targeted_buys)
+             mutable_general_buys.sort(key=lambda o: o.dto.price_pennies, reverse=True)
+
+        # 5. Process General Buys with Utility Priority
+
+        # Sort Active Sells by Utility
+        active_sells = [s for s in all_mutable_sells if s.remaining_qty > 1e-9]
+        active_sells.sort(key=lambda o: self._calculate_labor_utility(o.dto), reverse=True)
+
+        # Matching Loop
+        for b_wrapper in mutable_general_buys:
+            if b_wrapper.remaining_qty <= 1e-9: continue
+
+            # Find best utility seller that is affordable
+            for s_wrapper in active_sells:
+                if s_wrapper.remaining_qty <= 1e-9: continue
+
+                if b_wrapper.dto.price_pennies >= s_wrapper.dto.price_pennies:
+                    # Match!
+                    trade_price_pennies = b_wrapper.dto.price_pennies # Labor uses Bid Price usually (Firm Offer)
+
+                    trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
+                    trade_total_pennies = int(trade_price_pennies * trade_qty)
+                    effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
+
+                    quality_val = 1.0
+                    if s_wrapper.dto.brand_info:
+                            quality_val = s_wrapper.dto.brand_info.get('labor_skill', s_wrapper.dto.brand_info.get('quality', 1.0))
+
+                    tx = Transaction(
+                        item_id=item_id,
+                        quantity=trade_qty,
+                        price=effective_price_dollars,
+                        total_pennies=trade_total_pennies,
+                        buyer_id=b_wrapper.dto.agent_id,
+                        seller_id=s_wrapper.dto.agent_id,
+                        market_id=market_id,
+                        transaction_type='labor',
+                        time=current_tick,
+                        quality=quality_val
+                    )
+                    transactions.append(tx)
+                    stats['last_price'] = effective_price_dollars
+                    stats['volume'] += trade_qty
+                    b_wrapper.remaining_qty -= trade_qty
+                    s_wrapper.remaining_qty -= trade_qty
+
+                    if b_wrapper.remaining_qty <= 1e-9:
+                        break # Buy order filled
+
+        final_buys = [b.to_dto() for b in mutable_general_buys if b.remaining_qty > 1e-9]
+        final_buys.sort(key=lambda o: o.price_pennies, reverse=True)
+
+        final_sells = [s.to_dto() for s in active_sells if s.remaining_qty > 1e-9]
+        final_sells.sort(key=lambda o: o.price_pennies)
+
+        return (transactions, final_buys, final_sells, stats)
+
     def _match_item(self, item_id: str, buy_orders: List[CanonicalOrderDTO], sell_orders: List[CanonicalOrderDTO], market_id: str, current_tick: int) -> Tuple[List[Transaction], List[CanonicalOrderDTO], List[CanonicalOrderDTO], Dict[str, Any]]:
+        # Phase 4.1: Utility-Priority Matching for Labor
+        if market_id in ['labor', 'research_labor']:
+            return self._match_labor_utility(item_id, buy_orders, sell_orders, market_id, current_tick)
+
         transactions: List[Transaction] = []
         stats: Dict[str, Any] = {'volume': 0.0}
         targeted_buys = [o for o in buy_orders if o.target_agent_id is not None]
