@@ -155,3 +155,32 @@ class TestHREngine:
         assert len(result.hiring_orders) == 3 # Firing orders are returned in hiring_orders list (as orders)
         assert result.hiring_orders[0].side == "FIRE"
         assert len(result.firing_ids) == 3
+
+    def test_manage_workforce_wage_scaling(self, engine, mock_input):
+        """
+        Verify that the offered wage scales with the market average wage.
+        This confirms the fix for 'Logic & Spec Gaps: Disconnected Wage Logic'.
+        """
+        # Set market wage to 2000 (Non-default)
+        # Mock input is a frozen dataclass, so we must replace it (or create new)
+        # Actually HREngine uses input_dto.labor_market_avg_wage
+
+        from dataclasses import replace
+        new_input = replace(mock_input, labor_market_avg_wage=2000)
+
+        # Ensure we need to hire
+        new_input.firm_snapshot.production.production_target = 100 # Need 10, have 5
+
+        result = engine.manage_workforce(new_input)
+
+        assert len(result.hiring_orders) == 1
+        order = result.hiring_orders[0]
+
+        # Base wage 2000.
+        # Profit premium calculation: avg_profit=10000.
+        # profit_based_premium = 10000 / (2000 * 10) = 0.5
+        # wage_premium = min(0.5 * 0.1, 2.0) = 0.05
+        # offered = 2000 * 1.05 = 2100
+
+        assert order.price_pennies == 2100
+        assert order.price_limit == 21.0

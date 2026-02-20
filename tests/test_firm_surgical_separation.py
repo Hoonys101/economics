@@ -62,6 +62,11 @@ class TestFirmSurgicalSeparation:
         # Ensure market_signals is empty or safe
         input_dto.market_snapshot.market_signals = {}
 
+        # Mock labor market stats to allow comparison
+        # MagicMock > 0 fails, so we need to set avg_wage to a real number
+        input_dto.market_snapshot.labor = MagicMock()
+        input_dto.market_snapshot.labor.avg_wage = 10.0
+
         input_dto.goods_data = []
         input_dto.market_data = {}
 

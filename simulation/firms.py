@@ -924,13 +924,23 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         budget_plan = self.finance_engine.plan_budget(fin_input)
 
         # 3. HR Engine: Manage Workforce
+        labor_wage = 1000 # Default
+        if market_snapshot and market_snapshot.labor:
+            # Assuming labor market snapshot has avg_wage as int pennies or float
+            # MarketSnapshotDTO definition says LaborMarketSnapshotDTO.avg_wage is float.
+            # We need to cast to int pennies if it is float.
+            labor_wage = int(market_snapshot.labor.avg_wage * 100) if market_snapshot.labor.avg_wage > 0 else 1000
+        elif market_data and "labor" in market_data:
+             # Fallback to dictionary
+             labor_wage = int(market_data.get("labor", {}).get("avg_wage", 10.0) * 100)
+
         hr_input = HRDecisionInputDTO(
             firm_snapshot=snapshot,
             budget_plan=budget_plan,
             market_snapshot=market_snapshot,
             config=self.config,
             current_tick=current_time,
-            labor_market_avg_wage=1000 # Placeholder
+            labor_market_avg_wage=labor_wage
         )
         hr_result = self.hr_engine.manage_workforce(hr_input)
 

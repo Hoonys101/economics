@@ -115,7 +115,7 @@ class HREngine:
             # Check Budget
             # Estimated wage offer
             # Logic from RuleBasedFirmDecisionEngine._calculate_dynamic_wage_offer
-            base_wage = 1000 # Pennies
+            base_wage = input_dto.labor_market_avg_wage # Pennies
             sensitivity = 0.1
             max_premium = 2.0
 
