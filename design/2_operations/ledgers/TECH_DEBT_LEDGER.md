@@ -23,7 +23,9 @@
 | **TD-INT-BANK-ROLLBACK** | Finance | **Rollback Coupling**: Bank rollback logic dependent on `hasattr` implementation. | **Low**: Leak. | Open |
 | **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Handler**: `bailout`, `bond_issuance` tx types not registered. | **High**: Failure. | Audit Done |
 | **TD-PROTO-MONETARY** | Transaction | **Monetary Protocol Violation**: `MonetaryHandler` uses `hasattr` instead of Protocols. | **Low**: Fragility. | Open |
-| **TD-AI-DEBT-AWARE** | AI | **Constraint Blindness**: AI spams spend intents at debt ceiling. | **Medium**: AI Performance. | Open |
+| **TD-AI-DEBT-AWARE** | AI | **Constraint Blindness**: AI spams spend intents at debt ceiling. | **Medium**: AI Performance. | **RESOLVED** |
+| **TD-CONF-MAGIC-NUMBERS** | Config | **Magic Numbers**: Hardcoded constants in `FinanceEngine` (Z-Score, Divisors). | **Low**: Configurability. | Open |
+| **TD-ARCH-LOAN-CIRCULAR** | Architecture | **Circular Dependency**: Firm depends on concrete `LoanMarket` for debt status. | **Medium**: Coupling. | Open |
 | **TD-ECON-WAR-STIMULUS** | Economic | **Fiscal Masking**: Stimulus prevents GDP 0 but masks wage-affordability imbalances. | **Medium**: Policy. | Open |
 | **TD-MARKET-FLOAT-CAST** | Market | **Unsafe Quantization**: Direct `int()` cast in `matching_engine.py` instead of rounding. | **Medium**: Precision. | Open |
 | **TD-MARKET-STRING-PARSE** | Market | **Brittle Key Parsing**: `StockMarket` splits strings to find `firm_id`. | **Low**: Fragility. | Open |

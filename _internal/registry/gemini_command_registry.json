@@ -88,6 +88,28 @@
       "output_path": "artifacts/specs/MISSION_finance_purity_refactor_spec.md",
       "model": null,
       "audit_requirements": null
+    },
+    "firm-decoupling-spec": {
+      "key": "firm-decoupling-spec",
+      "title": "Firm Architecture Decoupling Spec (Constants & Protocols)",
+      "type": "gemini",
+      "instruction_raw": "\n        Create a MISSION_spec for Jules to:\n        1. Resolve TD-CONF-MAGIC-NUMBERS: Move hardcoded constants in FinanceEngine (365, 1.8, repayment rates) to Config DTOs or EconomyConstants.\n        2. Resolve TD-ARCH-LOAN-CIRCULAR: Introduce ILoanMarket Protocol to break circular dependency between Firm and LoanMarket.\n        ",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "simulation/firms/firm.py",
+        "simulation/firms/engines/finance_engine.py",
+        "simulation/loan_market.py",
+        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+      ],
+      "output_path": "artifacts/specs/MISSION_firm_decoupling_spec.md",
+      "model": null,
+      "audit_requirements": null
     }
   }
 }

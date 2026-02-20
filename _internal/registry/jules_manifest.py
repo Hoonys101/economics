@@ -33,5 +33,11 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "command": "create",
         "instruction": "Implement the MISSION_spec to refactor MonetaryTransactionHandler to use strict Protocols.",
         "file": "artifacts/specs/MISSION_finance_purity_refactor_spec.md"
+    },
+    "firm-decoupling": {
+        "title": "Firm Architecture Decoupling (Constants & Protocols)",
+        "command": "create",
+        "instruction": "Implement the MISSION_spec to decouple Firm from concrete LoanMarket using ILoanMarket Protocol and move FinanceEngine constants to FinanceConfigDTO.",
+        "file": "artifacts/specs/MISSION_firm_decoupling_spec.md"
     }
 }
