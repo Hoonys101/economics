@@ -1,0 +1,371 @@
+diff --git a/communications/insights/fix-government-solvency-guardrails.md b/communications/insights/fix-government-solvency-guardrails.md
+new file mode 100644
+index 00000000..1bb78535
+--- /dev/null
++++ b/communications/insights/fix-government-solvency-guardrails.md
+@@ -0,0 +1,44 @@
++# Fix Government Solvency Guardrails
++
++## Current Architectural State
++The Government agent currently relies on `_issue_deficit_bonds` to cover shortfalls in welfare and other spending. While `FiscalBondService` attempts to find buyers, the agent's logic often defaults to "try to issue bonds, if it fails, stop spending". This provides a basic zero-sum check (no magic money unless a buyer exists), but lacks proactive solvency management.
++Crucially, the `FiscalEngine` (the brain) does not account for the government's financial health when making decisions on tax rates, welfare budgets, or bailouts. It approves bailouts based solely on firm solvency/requests, potentially approving massive spending even when the government is deep in debt.
++
++## Proposed Guardrails
++To enforce "Zero-Sum Integrity" and "Solvency":
++1.  **Debt Brake Logic in Fiscal Engine**:
++    -   If `Debt/GDP > 1.5` (Debt Ceiling), the engine will force tax hikes and cut welfare spending to reduce the deficit.
++    -   If `Debt/GDP > 1.0` (Warning Zone), welfare spending will be linearly reduced.
++2.  **Bailout Restrictions**:
++    -   Bailouts will be rejected if `Debt/GDP > 1.5`.
++    -   Bailouts will be rejected if the government lacks sufficient liquid assets (unless it can confidently issue bonds, but for strict safety, we'll check assets first).
++3.  **Strict Budget Constraints**:
++    -   The `FiscalEngine` will receive the full `FiscalStateDTO` including assets and debt, allowing it to make informed trade-offs.
++
++## Implementation Plan
++-   Modify `modules/government/engines/fiscal_engine.py` to implement the Debt Brake logic.
++-   Update `FiscalDecisionDTO` generation to reflect these constraints.
++-   Add unit tests in `tests/modules/government/engines/test_fiscal_guardrails.py` to verify behavior under high debt scenarios.
++
++## Test Evidence
++(To be added after implementation)
++\n## Test Evidence\n```\n
++tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_debt_brake_welfare_reduction PASSED [ 20%]
++tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_debt_brake_extreme_welfare_cut PASSED [ 40%]
++tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_debt_brake_tax_hike_in_recession PASSED [ 60%]
++tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_bailout_rejection_due_to_debt PASSED [ 80%]
++tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_bailout_rejection_due_to_insufficient_funds PASSED [100%]
++
++=============================== warnings summary ===============================
++../home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
++  /home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_default_fixture_loop_scope
++
++    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
++
++../home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
++  /home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_mode
++
++    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
++
++-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
++======================== 5 passed, 2 warnings in 0.24s =========================\n```
+diff --git a/modules/government/engines/fiscal_engine.py b/modules/government/engines/fiscal_engine.py
+index 9dc8a91a..b9ca1faa 100644
+--- a/modules/government/engines/fiscal_engine.py
++++ b/modules/government/engines/fiscal_engine.py
+@@ -7,14 +7,18 @@ from modules.government.engines.api import (
+     FiscalDecisionDTO,
+     GrantedBailoutDTO
+ )
+-from modules.system.api import MarketSnapshotDTO, CurrencyCode
++from modules.system.api import MarketSnapshotDTO, CurrencyCode, DEFAULT_CURRENCY
+ 
+ logger = logging.getLogger(__name__)
+ 
++DEBT_CEILING_RATIO = 1.5
++AUSTERITY_TRIGGER_RATIO = 1.0
++
+ class FiscalEngine(IFiscalEngine):
+     """
+     Stateless engine that decides on government fiscal policy actions.
+     Implements Taylor Rule for tax adjustments and evaluates bailout requests.
++    Enforces Solvency Guardrails (Debt Brake, Bailout Limits).
+     """
+ 
+     def __init__(self, config_module: Any = None):
+@@ -30,14 +34,17 @@ class FiscalEngine(IFiscalEngine):
+         # 1. Calculate Fiscal Stance (Tax Rates)
+         new_income_tax_rate, new_corporate_tax_rate, fiscal_stance = self._calculate_tax_rates(state, market)
+ 
+-        # 2. Evaluate Bailout Requests
+-        bailouts_to_grant = self._evaluate_bailouts(requests)
++        # 2. Calculate Welfare Multiplier (Debt Brake)
++        new_welfare_budget_multiplier = self._calculate_welfare_multiplier(state)
++
++        # 3. Evaluate Bailout Requests
++        bailouts_to_grant = self._evaluate_bailouts(requests, state)
+ 
+-        # 3. Construct Decision
++        # 4. Construct Decision
+         decision = FiscalDecisionDTO(
+             new_income_tax_rate=new_income_tax_rate,
+             new_corporate_tax_rate=new_corporate_tax_rate,
+-            new_welfare_budget_multiplier=state["welfare_budget_multiplier"],
++            new_welfare_budget_multiplier=new_welfare_budget_multiplier,
+             bailouts_to_grant=bailouts_to_grant
+         )
+ 
+@@ -48,6 +55,14 @@ class FiscalEngine(IFiscalEngine):
+         current_gdp = market.market_data.get("current_gdp", 0.0)
+         potential_gdp = state["potential_gdp"]
+ 
++        # Debt check
++        total_debt = state["total_debt"]
++        debt_to_gdp = 0.0
++        if potential_gdp > 0:
++            debt_to_gdp = total_debt / potential_gdp
++        elif current_gdp > 0:
++             debt_to_gdp = total_debt / current_gdp
++
+         # Default fallback
+         new_income_tax_rate = state["income_tax_rate"]
+         new_corporate_tax_rate = state["corporate_tax_rate"]
+@@ -77,13 +92,77 @@ class FiscalEngine(IFiscalEngine):
+                 new_income_tax_rate = max(0.05, min(0.6, new_income_tax_rate))
+                 new_corporate_tax_rate = max(0.05, min(0.6, new_corporate_tax_rate))
+ 
++        # --- DEBT BRAKE OVERRIDE ---
++        # If debt is too high, force tax hikes (or prevent cuts) regardless of recession
++        if debt_to_gdp > DEBT_CEILING_RATIO:
++            # Force rate towards higher end or at least base rate + penalty
++            base_income_tax = getattr(self.config, "INCOME_TAX_RATE", 0.1)
++            base_corp_tax = getattr(self.config, "CORPORATE_TAX_RATE", 0.2)
++
++            # Simple logic: Ensure rates are at least base, and add surcharge
++            new_income_tax_rate = max(new_income_tax_rate, base_income_tax * 1.1)
++            new_corporate_tax_rate = max(new_corporate_tax_rate, base_corp_tax * 1.1)
++
++            # Ensure we don't go crazy
++            new_income_tax_rate = min(0.6, new_income_tax_rate)
++            new_corporate_tax_rate = min(0.6, new_corporate_tax_rate)
++
+         return new_income_tax_rate, new_corporate_tax_rate, fiscal_stance
+ 
+-    def _evaluate_bailouts(self, requests: List[FiscalRequestDTO]) -> List[GrantedBailoutDTO]:
++    def _calculate_welfare_multiplier(self, state: FiscalStateDTO) -> float:
++        total_debt = state["total_debt"]
++        potential_gdp = state["potential_gdp"]
++
++        if potential_gdp <= 0:
++            return 1.0
++
++        debt_to_gdp = total_debt / potential_gdp
++
++        if debt_to_gdp > DEBT_CEILING_RATIO:
++            # Drastic Cut
++            return 0.5
++        elif debt_to_gdp > AUSTERITY_TRIGGER_RATIO:
++            # Linear reduction from 1.0 to 0.5 as debt goes from 1.0 to 1.5
++            # Formula: 1.0 - (ratio - 1.0)
++            # if ratio = 1.0 -> 1.0
++            # if ratio = 1.5 -> 0.5
++            return max(0.5, 1.0 - (debt_to_gdp - AUSTERITY_TRIGGER_RATIO))
++
++        return 1.0
++
++    def _evaluate_bailouts(self, requests: List[FiscalRequestDTO], state: FiscalStateDTO) -> List[GrantedBailoutDTO]:
++        total_debt = state["total_debt"]
++        potential_gdp = state["potential_gdp"]
++        current_assets = state["assets"].get(DEFAULT_CURRENCY, 0.0)
++
++        debt_to_gdp = 0.0
++        if potential_gdp > 0:
++            debt_to_gdp = total_debt / potential_gdp
++
++        # Reject all if Debt Ceiling breached
++        if debt_to_gdp > DEBT_CEILING_RATIO:
++            return []
++
+         granted = []
+         for req in requests:
+             if req.get("bailout_request"):
+                 bailout_req = req["bailout_request"]
++                amount = bailout_req["requested_amount"]
++
++                # Check 1: Can we afford it liquidly?
++                # Ideally we check bond capacity too, but "Solvency Guardrails" implies prudence.
++                # If we have cash, use it. If not, can we issue bond?
++                # If debt is low (< 1.0), we assume we can issue bond.
++                # If debt is moderate (1.0 - 1.5), we require cash on hand.
++
++                can_afford = False
++                if current_assets >= amount:
++                    can_afford = True
++                elif debt_to_gdp < AUSTERITY_TRIGGER_RATIO:
++                    can_afford = True # Assume bond market access
++
++                if not can_afford:
++                    continue
+ 
+                 financials = bailout_req["firm_financials"]
+                 is_solvent = financials["is_solvent"]
+@@ -92,7 +171,7 @@ class FiscalEngine(IFiscalEngine):
+                     # Grant bailout
+                     granted.append(GrantedBailoutDTO(
+                         firm_id=bailout_req["firm_id"],
+-                        amount=bailout_req["requested_amount"],
++                        amount=amount,
+                         interest_rate=0.05, # Default term
+                         term=50 # Default term ticks
+                     ))
+diff --git a/tests/modules/government/engines/test_fiscal_guardrails.py b/tests/modules/government/engines/test_fiscal_guardrails.py
+new file mode 100644
+index 00000000..c76a697b
+--- /dev/null
++++ b/tests/modules/government/engines/test_fiscal_guardrails.py
+@@ -0,0 +1,166 @@
++import pytest
++from unittest.mock import MagicMock
++from modules.government.engines.fiscal_engine import FiscalEngine
++from modules.government.engines.api import FiscalStateDTO, FiscalRequestDTO
++from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY
++
++@pytest.fixture
++def mock_config():
++    config = MagicMock()
++    config.AUTO_COUNTER_CYCLICAL_ENABLED = True
++    config.FISCAL_SENSITIVITY_ALPHA = 0.5
++    config.INCOME_TAX_RATE = 0.1
++    config.CORPORATE_TAX_RATE = 0.2
++    return config
++
++@pytest.fixture
++def fiscal_engine(mock_config):
++    return FiscalEngine(mock_config)
++
++class TestFiscalGuardrails:
++
++    def test_debt_brake_welfare_reduction(self, fiscal_engine):
++        """Test that high debt reduces welfare multiplier."""
++        # 1500 debt / 1000 GDP = 1.5 ratio -> Should trigger reduction
++        state: FiscalStateDTO = {
++            "tick": 100,
++            "assets": {DEFAULT_CURRENCY: 1000.0},
++            "total_debt": 1500.0,
++            "income_tax_rate": 0.1,
++            "corporate_tax_rate": 0.2,
++            "approval_rating": 0.5,
++            "welfare_budget_multiplier": 1.0,
++            "potential_gdp": 1000.0
++        }
++
++        market_data = {
++            "current_gdp": 1000.0
++        }
++        market = MarketSnapshotDTO(
++            tick=100,
++            market_signals={},
++            market_data=market_data
++        )
++
++        decision = fiscal_engine.decide(state, market, [])
++
++        # Expect multiplier to be reduced below 1.0
++        assert decision["new_welfare_budget_multiplier"] < 1.0
++
++    def test_debt_brake_extreme_welfare_cut(self, fiscal_engine):
++        """Test that extreme debt triggers severe welfare cuts."""
++        # 2000 debt / 1000 GDP = 2.0 ratio -> Severe cut
++        state: FiscalStateDTO = {
++            "tick": 100,
++            "assets": {DEFAULT_CURRENCY: 1000.0},
++            "total_debt": 2000.0,
++            "income_tax_rate": 0.1,
++            "corporate_tax_rate": 0.2,
++            "approval_rating": 0.5,
++            "welfare_budget_multiplier": 1.0,
++            "potential_gdp": 1000.0
++        }
++
++        market_data = {"current_gdp": 1000.0}
++        market = MarketSnapshotDTO(tick=100, market_signals={}, market_data=market_data)
++
++        decision = fiscal_engine.decide(state, market, [])
++
++        assert decision["new_welfare_budget_multiplier"] <= 0.5
++
++    def test_debt_brake_tax_hike_in_recession(self, fiscal_engine):
++        """
++        Test that Debt Brake overrides Counter-Cyclical policy.
++        Normally, a recession (GDP < Potential) lowers taxes.
++        But with High Debt, taxes should NOT decrease (or should increase).
++        """
++        # Recession: 900 vs 1000 potential (-10% gap) -> Normally cuts tax
++        # But Debt: 1600 / 1000 = 1.6 ratio -> Debt Brake active
++        state: FiscalStateDTO = {
++            "tick": 100,
++            "assets": {DEFAULT_CURRENCY: 1000.0},
++            "total_debt": 1600.0,
++            "income_tax_rate": 0.1,
++            "corporate_tax_rate": 0.2,
++            "approval_rating": 0.5,
++            "welfare_budget_multiplier": 1.0,
++            "potential_gdp": 1000.0
++        }
++
++        market_data = {"current_gdp": 900.0}
++        market = MarketSnapshotDTO(tick=100, market_signals={}, market_data=market_data)
++
++        decision = fiscal_engine.decide(state, market, [])
++
++        # Should NOT lower taxes below baseline (0.1)
++        # Ideally should raise them
++        assert decision["new_income_tax_rate"] >= 0.1
++        assert decision["new_corporate_tax_rate"] >= 0.2
++
++    def test_bailout_rejection_due_to_debt(self, fiscal_engine):
++        """Test that bailouts are rejected if debt is too high."""
++        state: FiscalStateDTO = {
++            "tick": 100,
++            "assets": {DEFAULT_CURRENCY: 10000.0}, # Has cash
++            "total_debt": 2000.0, # High Debt (Ratio 2.0)
++            "income_tax_rate": 0.1,
++            "corporate_tax_rate": 0.2,
++            "approval_rating": 0.5,
++            "welfare_budget_multiplier": 1.0,
++            "potential_gdp": 1000.0
++        }
++
++        req: FiscalRequestDTO = {
++            "bailout_request": {
++                "firm_id": 101,
++                "requested_amount": 500.0,
++                "firm_financials": {
++                    "assets": 1000.0,
++                    "profit": -100.0,
++                    "is_solvent": True # Solvent firm asking for bailout?
++                }
++            }
++        }
++
++        market_data = {"current_gdp": 1000.0}
++        market = MarketSnapshotDTO(tick=100, market_signals={}, market_data=market_data)
++
++        decision = fiscal_engine.decide(state, market, [req])
++
++        assert len(decision["bailouts_to_grant"]) == 0
++
++    def test_bailout_rejection_due_to_insufficient_funds(self, fiscal_engine):
++        """
++        Test that bailouts are rejected if government is broke AND cannot borrow safely.
++        If Debt/GDP > 1.0 (Austerity), we shouldn't borrow for bailouts.
++        We must have cash on hand.
++        """
++        state: FiscalStateDTO = {
++            "tick": 100,
++            "assets": {DEFAULT_CURRENCY: 100.0}, # Only 100 cash
++            "total_debt": 1100.0, # Moderate Debt (Ratio 1.1) -> austerity trigger
++            "income_tax_rate": 0.1,
++            "corporate_tax_rate": 0.2,
++            "approval_rating": 0.5,
++            "welfare_budget_multiplier": 1.0,
++            "potential_gdp": 1000.0
++        }
++
++        req: FiscalRequestDTO = {
++            "bailout_request": {
++                "firm_id": 101,
++                "requested_amount": 500.0, # Wants 500
++                "firm_financials": {
++                    "assets": 1000.0,
++                    "profit": -100.0,
++                    "is_solvent": True
++                }
++            }
++        }
++
++        market_data = {"current_gdp": 1000.0}
++        market = MarketSnapshotDTO(tick=100, market_signals={}, market_data=market_data)
++
++        decision = fiscal_engine.decide(state, market, [req])
++
++        assert len(decision["bailouts_to_grant"]) == 0
