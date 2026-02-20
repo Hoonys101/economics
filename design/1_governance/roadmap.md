@@ -279,13 +279,16 @@ Phase C (Target): 규칙 완전 제거 (Pure AI Ecosystem)
  ```
 - **Benefit**: 100x speedup for decision phase (Parallelizable).
 
-#### Stage 3: Batch Transaction Matching (The "Act" Layer)
+#### Stage 3: Batch Transaction Matching & Domain Tensors (The "Act" Layer)
 - **Problem**: Sequential transactions handling resource contention.
 - **Solution**: **Batch Matching** via Matrix Operations.
- - Construct `Demand Matrix` and `Supply Matrix`.
- - Use Linear Algebra (MatMul) to calculate utility scores.
- - Resolve contention via Pro-rata or Random Vectorized choices.
+- **Domain-Specific Tensors**: Do not hunt for a "God Matrix". Split markets into **Independent Dense Tensors** (Goods Market, Stock Market, Bond Market).
+  - *Goods Portfolio Matrix*: `[Agents x ItemTypes]`
+  - *Equity/Bond Matrix*: `[Agents x SecurityIDs]`
+- **Benefit**: Eliminate **Sparse Matrix Penalty**. Dense matrices are 10x-50x faster on SIMD hardware.
+- **Refinement**: Use **Settlement Escrow** for multi-party tax/fee distribution within the batch.
 
-#### Stage 4: Entity Component System (ECS) (Final Form)
+#### Stage 4: Post-Processing & Entity Component System (ECS) (Final Form)
+- **Post-Processing Phase**: Keep low-frequency administrative tasks (Bankruptcy, Judicial Seizure, Liquidation) outside the primary tensor loop. Run them as linear **Post-processing Loops** after the "Act" phase.
 - **Action**: Replace Agent Classes with a monolithic **DataFrame/Database** (State Table).
 - **Reference**: Standard pattern in Game Development (Data-Driven Design).

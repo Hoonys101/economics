@@ -9,7 +9,7 @@
 - 모든 에이전트 간 자산 이동은 반드시 중앙 `SettlementSystem`을 거쳐야 합니다.
 - 직접적으로 에이전트의 balance를 수정하는 행위는 엄격히 금지됩니다.
 - **원자적 강제(Atomic Force)**: 모든 자금 인출(Withdraw)과 입금(Deposit)은 원자적으로 처리되어야 하며, 입금 실패 시 반드시 인출된 자금을 롤백(Rollback)하여 화폐가 증발하지 않도록 보장합니다.
-- **Atomic Escrow Pattern**: 복합적인 다자간 정산(예: 상품 거래 + 판매세) 시, 모든 참여자의 조건이 충족될 때까지 자금을 에스크로에 예치한 후 일괄 분배합니다. 이는 개별 에이전트의 잔액 부족으로 인한 "부분적 성공(Partial Success)" 누출을 방지합니다.
+- **Batch Settlement & Escrow Pattern**: 복합적인 다자간 정산(예: 상품 거래 + 판매세) 또는 대규모 배치 정산 시, 모든 참여자의 조건이 충족될 때까지 자금을 가상의 결제 레이어(Escrow Matrix)에 예치한 후 일괄 분배합니다. 이는 개별 에이전트의 잔액 부족으로 인한 "부분적 성공(Partial Success)" 누출을 방지하며, 텐서 연산으로 넘어갈 때 정산 레이어의 병목을 제거합니다.
 - **효과**: 원자성(Atomicity) 보장 및 전 시스템적 감사 추적(Audit Trail) 가능.
 
 ### 2.4 Settle-then-Record (결제 후 기록 원칙)
@@ -45,10 +45,18 @@
 - **LaborTransactionHandler**: 소득세 귀착(Incidence) 로직을 관리하며, 고용주와 피고용인 간의 정산 및 세무 프로토콜을 집행합니다.
 - **Saga Pattern**: 주거(Housing)와 같은 다단계 거래는 전용 Saga Handler를 통해 상태 전이의 무결성을 유지합니다.
 
-## 4. 2단계 상태 전이 (Two-Phase State Transition)
-복잡한 상태 변경 시 **Plan(Phase 1)**과 **Finalize(Phase 3)**를 철저히 분리합니다.
-1. **Plan**: 현재 상태를 읽어 `Intent` 혹은 `Transaction` 객체를 생성 (상태 변경 없음).
-2. **Finalize**: 생성된 객체들을 일괄 처리하여 최종 상태 확정.
+## 4. 3단계 텐서 파이프라인 (Three-Phase Tensor Pipeline)
+복잡한 상태 변경 및 대규모 병렬 처리를 위해 **의도(Think) -> 매칭(Match) -> 행동(Act)**의 3단계 파이프라인을 구축합니다.
+
+1. **Phase 1: Intent Generation (의도의 벡터화)**:
+   - 각 에이전트가 현재의 `WorldState` DTO를 읽어 `Intent` 벡터(예: 수요/공급량, 목표가)를 생성합니다.
+   - 이 단계는 어떠한 상태 변화도 일으키지 않는 **순수 함수(Pure Function)** 연산이므로 100% 병렬 처리가 가능합니다.
+2. **Phase 2: Market Clearing (시장 매개 정산)**:
+   - 시장(Market)은 생성된 의도 벡터들을 거대한 매트릭스로 모아 교차(Clearing) 연산을 수행합니다.
+   - 여기서 누가 누구에게 얼마를 주고 몇 개를 받을지를 나타내는 **"정산 매트릭스(Settlement Matrix)"**가 산출됩니다. 아직 에이전트 지갑은 변하지 않습니다.
+3. **Phase 3: Deterministic State Update (행동의 확정)**:
+   - 산출된 정산 매트릭스를 바탕으로 에이전트들의 지갑과 재고를 **일괄(Batch) 업데이트**합니다.
+   - 시장이 이미 정산표를 확정했으므로 충돌(Contention)이나 롤백 리스크가 없는 결정론적(Deterministic) 업데이트가 가능합니다.
 
 ## 5. 아키텍처적 의의
 이 구조는 시뮬레이션 내의 경제가 "가짜 돈"으로 돌아가는 것을 원천 봉쇄합니다. 모든 틱의 정산 결과는 수학적으로 완벽하게 추적 가능해야 하며, 이는 거시경제 시뮬레이션의 신뢰도를 결정하는 가장 중요한 기반입니다.

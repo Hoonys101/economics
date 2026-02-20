@@ -69,6 +69,7 @@
             - [x] **Verification**: 100% test pass### 2.7 [아키텍처 복원 (Architecture Restoration)](../../PROJECT_STATUS.md)
 - **개념**: 구현 과정에서 발생하는 '설계 드리프트(Design Drift)'를 탐지하고, 원래의 '신성한 시퀀스'와 'Penny Standard'로 시스템을 강제 정렬하는 작업.
 - **핵심**: 런타임 진단을 통한 구조적 결함 식별, 원자적 생애주기 보장(Registration-before-Transfer), 그리고 모든 도메인(M&A 포함)의 정수화 강제.
+- **v3.0 로드맵 수립**: "Architect Prime"의 지침에 따라 **도메인별 텐서(Domain-Specific Tensors)** 및 **3단계 파이프라인(Intent-Match-Act)** 아키텍처를 `roadmap.md` 및 `ARCH_TRANSACTIONS.md`에 공식화함 (2026-02-20).
 severe architectural violations threatening financial and data integrity.
         - **Status**:
             - [x] **Lifecycle Pulse**: Implemented `HouseholdFactory` and `reset_tick_state` to enforce "Late-Reset" and Zero-Sum birth. ✅
