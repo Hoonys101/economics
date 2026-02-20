@@ -16,28 +16,40 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "firm-ai-hardening": {
-        "title": "Firm Refactor & AI Debt Awareness Hardening",
+    "wave1-finance-protocol": {
+        "title": "Wave 1.1: Financial Protocol Enforcement",
         "command": "create",
-        "instruction": "Implement the changes specified in the MISSION_spec to decouple Firm components and harden AI debt awareness.",
-        "file": "artifacts/specs/MISSION_firm_ai_hardening_spec.md"
+        "instruction": "Implement MISSION_wave1_finance_protocol_spec.md. Ensure IInvestor and IPropertyOwner protocols are used in MonetaryTransactionHandler, fix accounting for buyer expenses, and enforce strict rollback in the Bank interface.",
+        "file": "artifacts/specs/MISSION_wave1_finance_protocol_spec.md"
     },
-    "market-systems-hardening": {
-        "title": "Market Precision & Robustness Hardening",
+    "wave1-lifecycle-hygiene": {
+        "title": "Wave 1.2: System Lifecycle & Dependency Hygiene",
         "command": "create",
-        "instruction": "Implement the MISSION_spec to fix unsafe quantization and robustify firm_id parsing.",
-        "file": "artifacts/specs/MISSION_market_systems_hardening_spec.md"
+        "instruction": "Implement MISSION_wave1_lifecycle_hygiene_spec.md. Create SystemFactory for SettlementSystem DI, optimize DeathSystem agent removal, and scrub inter_tick_queue upon agent death.",
+        "file": "artifacts/specs/MISSION_wave1_lifecycle_hygiene_spec.md"
     },
-    "finance-purity-refactor": {
-        "title": "Finance Protocol Purity Refactor",
+    "wave2-firm-architecture": {
+        "title": "Wave 2.1: Firm Architecture Overhaul",
         "command": "create",
-        "instruction": "Implement the MISSION_spec to refactor MonetaryTransactionHandler to use strict Protocols.",
-        "file": "artifacts/specs/MISSION_finance_purity_refactor_spec.md"
+        "instruction": "Implement MISSION_wave2_firm_architecture_spec.md. Remove self.parent from Firm departments, enforce DTO passing, and ensure Brand/Sales/HR Engines return ResultDTOs without mutating state.",
+        "file": "artifacts/specs/MISSION_wave2_firm_architecture_spec.md"
     },
-    "firm-decoupling": {
-        "title": "Firm Architecture Decoupling (Constants & Protocols)",
+    "wave2-market-policy": {
+        "title": "Wave 2.2: Market & Policy Refinement",
         "command": "create",
-        "instruction": "Implement the MISSION_spec to decouple Firm from concrete LoanMarket using ILoanMarket Protocol and move FinanceEngine constants to FinanceConfigDTO.",
-        "file": "artifacts/specs/MISSION_firm_decoupling_spec.md"
+        "instruction": "Implement MISSION_wave2_market_policy_spec.md. Introduce CanonicalOrderDTO, implement StockIDHelper for robust ID parsing, and add TaxBracketDTO for progressive taxation in the Government.",
+        "file": "artifacts/specs/MISSION_wave2_market_policy_spec.md"
+    },
+    "wave3-analytics-purity": {
+        "title": "Wave 3.1: Operational & Analytics Purity",
+        "command": "create",
+        "instruction": "Implement MISSION_wave3_analytics_purity_spec.md. Refactor AnalyticsSystem to use SnapshotDTOs instead of direct agent references, and enforce Pydantic models for UI telemetry.",
+        "file": "artifacts/specs/MISSION_wave3_analytics_purity_spec.md"
+    },
+    "wave3-dx-config": {
+        "title": "Wave 3.2: Developer Experience & Config Hardening",
+        "command": "create",
+        "instruction": "Implement MISSION_wave3_dx_config_spec.md. Create a ConfigProxy for dynamic configuration resolution and set up an auto-discovery mechanism for Gemini manifest registration.",
+        "file": "artifacts/specs/MISSION_wave3_dx_config_spec.md"
     }
 }

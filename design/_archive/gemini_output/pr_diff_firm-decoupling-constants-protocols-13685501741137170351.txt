@@ -1,0 +1,642 @@
+diff --git a/communications/insights/firm-decoupling.md b/communications/insights/firm-decoupling.md
+new file mode 100644
+index 00000000..da834fdb
+--- /dev/null
++++ b/communications/insights/firm-decoupling.md
+@@ -0,0 +1,328 @@
++# Firm Architecture Decoupling Report
++
++## 1. Architectural Insights
++
++### Constants Extraction
++To improve maintainability and decouple the Firm architecture from hardcoded values, we extracted key constants from `simulation/firms.py` into a new dedicated module `modules/firm/constants.py`. This centralization allows for easier configuration and tuning of firm behavior without modifying the core orchestrator logic.
++
++**Extracted Constants:**
++- `DEFAULT_MARKET_INSIGHT`: 0.5
++- `DEFAULT_MARKETING_BUDGET_RATE`: 0.05
++- `DEFAULT_LIQUIDATION_PRICE`: 1000
++- `INSIGHT_DECAY_RATE`: 0.001
++- `INSIGHT_BOOST_FACTOR`: 0.05
++- `INSIGHT_ERROR_THRESHOLD`: 1000.0
++- `DEFAULT_LABOR_WAGE`: 1000
++- `DEFAULT_SURVIVAL_COST`: 10.0
++- `DEFAULT_CORPORATE_TAX_RATE`: 0.2
++- `PRODUCTIVITY_DIVIDER`: 10.0
++- `DEFAULT_PRICE`: 1000
++
++### Protocol Purity
++We enforced Protocol Purity by introducing explicit protocols for `SalesEngine` and `BrandEngine` in `modules/firm/api.py`. The `Firm` orchestrator now relies on these protocols (`ISalesEngine`, `IBrandEngine`, `IFinanceEngine`, `IHREngine`) for type hinting, rather than concrete implementations. This decouples the orchestrator from specific engine implementations and facilitates future dependency injection or mocking.
++
++**New Protocols:**
++- `ISalesEngine`
++- `IBrandEngine`
++
++**Updated Protocols (Usage):**
++- `IFinanceEngine`
++- `IHREngine`
++
++### DTO Purity
++The new protocols utilize strict Data Transfer Objects (DTOs) for inputs and outputs, ensuring clear boundaries between the stateful orchestrator and stateless engines. We imported necessary DTOs like `SalesPostAskContextDTO` and `SalesMarketingContextDTO` into the API definition to support these protocols.
++
++## 2. Regression Analysis
++
++During the verification phase, we encountered significant failures in the `tests/integration/test_server_integration.py` and `tests/security/` suites. These failures were unrelated to the Firm logic refactoring but stemmed from missing dependencies in the test environment.
++
++**Issues Identified:**
++- `ModuleNotFoundError: No module named 'fastapi'`
++- `TypeError: object AsyncMock can't be used in 'await' expression` in `test_server_integration.py` and `test_websocket_auth.py`.
++
++**Root Cause:**
++The test environment lacked `fastapi`, `httpx`, and `websockets` libraries. Consequently, `tests/conftest.py` was falling back to mocking `websockets` with `MagicMock`, which caused `await ws.recv()` to fail because `MagicMock` is not awaitable.
++
++**Resolution:**
++We installed the required dependencies (`fastapi`, `httpx`, `pytest`, `pytest-asyncio`, `websockets`) using `pip`. This restored the correct behavior of the server integration tests, allowing them to run against the actual `websockets` library implementation rather than a broken mock.
++
++**Verification:**
++After installing the dependencies, all 925 tests passed, confirming that the architectural changes to `Firm` did not introduce any regressions and that the system integrity is maintained.
++
++## 3. Test Evidence
++
++```
++============================= test session starts ==============================
++platform linux -- Python 3.12.12, pytest-8.3.4, pluggy-1.5.0
++rootdir: /app
++configfile: pyproject.toml
++plugins: anyio-4.8.0, asyncio-0.25.1
++asyncio: mode=Mode.STRICT, default_loop_scope=None
++collected 925 items
++
++tests/benchmarks/test_demographic_perf.py .                              [  0%]
++tests/common/test_protocol.py ...                                        [  0%]
++tests/finance/test_circular_imports_fix.py ...                           [  0%]
++tests/finance/test_settlement_integrity.py ...                           [  1%]
++tests/finance/test_solvency_logic.py ....                                [  1%]
++tests/integration/mission_int_02_stress_test.py ....                     [  1%]
++tests/integration/scenarios/diagnosis/test_agent_decision.py ..          [  2%]
++tests/integration/scenarios/diagnosis/test_api_contract.py .             [  2%]
++tests/integration/scenarios/diagnosis/test_dashboard_contract.py .       [  2%]
++tests/integration/scenarios/diagnosis/test_indicator_pipeline.py .       [  2%]
++tests/integration/scenarios/diagnosis/test_market_mechanics.py .         [  2%]
++tests/integration/scenarios/phase21/test_automation.py ...               [  2%]
++tests/integration/scenarios/phase21/test_firm_system2.py ...             [  3%]
++tests/integration/scenarios/test_stress_scenarios.py .......             [  4%]
++tests/integration/test_app.py .                                          [  4%]
++tests/integration/test_atomic_settlement.py ..                           [  4%]
++tests/integration/test_cockpit_integration.py ...                        [  4%]
++tests/integration/test_config_hot_swap.py ..                             [  4%]
++tests/integration/test_decision_engine_integration.py ......             [  5%]
++tests/integration/test_finance_bailout.py ..                             [  5%]
++tests/integration/test_firm_decision_scenarios.py .                      [  5%]
++tests/integration/test_fiscal_integrity.py ..                            [  6%]
++tests/integration/test_fiscal_policy.py .....                            [  6%]
++tests/integration/test_generational_wealth_audit.py ..                   [  6%]
++tests/integration/test_government_ai_logic.py .....                      [  7%]
++tests/integration/test_government_finance.py .                           [  7%]
++tests/integration/test_government_fiscal_integration.py ..               [  7%]
++tests/integration/test_government_fiscal_policy.py ..                    [  7%]
++tests/integration/test_government_integration.py .                       [  8%]
++tests/integration/test_government_refactor_behavior.py ....              [  8%]
++tests/integration/test_government_tax.py ..                              [  8%]
++tests/integration/test_interest_sensitivity.py ......                    [  9%]
++tests/integration/test_lifecycle_cycle.py .                              [  9%]
++tests/integration/test_liquidation_services.py ...                       [  9%]
++tests/integration/test_liquidation_waterfall.py ...                      [ 10%]
++tests/integration/test_m2_integrity.py ...                               [ 10%]
++tests/integration/test_multicurrency_liquidation.py .                    [ 10%]
++tests/integration/test_omo_system.py ....                                [ 11%]
++tests/integration/test_persistence_purity.py .                           [ 11%]
++tests/integration/test_phase20_integration.py ....                       [ 11%]
++tests/integration/test_phase20_scaffolding.py ....                       [ 12%]
++tests/integration/test_phase23_production.py .                           [ 12%]
++tests/integration/test_portfolio_integration.py ...                      [ 12%]
++tests/integration/test_public_manager_integration.py .                   [ 12%]
++tests/integration/test_purity_gate.py ...                                [ 12%]
++tests/integration/test_registry_metadata.py .....                        [ 13%]
++tests/integration/test_reporting_pennies.py .....                        [ 13%]
++tests/integration/test_server_integration.py ..                          [ 14%]
++tests/integration/test_shareholder_registry.py ..                        [ 14%]
++tests/integration/test_td194_integration.py ..                           [ 14%]
++tests/integration/test_telemetry_pipeline.py ...                         [ 14%]
++tests/integration/test_thoughtstream_logger.py .                         [ 15%]
++tests/integration/test_tick_normalization.py .                           [ 15%]
++tests/integration/test_wo048_breeding.py ....                            [ 15%]
++tests/integration/test_wo058_production.py ..                            [ 15%]
++tests/integration/test_wo167_grace_protocol.py ..                        [ 16%]
++tests/market/test_labor_matching.py ......                               [ 16%]
++tests/market/test_matching_engine_hardening.py ...                       [ 16%]
++tests/market/test_precision_matching.py ...                              [ 17%]
++tests/market/test_stock_market_pennies.py ..                             [ 17%]
++tests/modules/agent_framework/test_components.py ............            [ 18%]
++tests/modules/finance/engines/test_monetary_engine.py .....              [ 19%]
++tests/modules/finance/test_exchange_engine.py ...                        [ 19%]
++tests/modules/finance/transaction/test_engine.py ...........             [ 20%]
++tests/modules/finance/transaction/test_processor.py .......              [ 21%]
++tests/modules/governance/test_cockpit_flow.py ..                         [ 21%]
++tests/modules/governance/test_system_command_processor.py .....          [ 22%]
++tests/modules/government/engines/test_fiscal_engine.py ....              [ 22%]
++tests/modules/government/engines/test_fiscal_guardrails.py .....         [ 23%]
++tests/modules/government/test_government_integration.py ...              [ 23%]
++tests/modules/government/test_tax_service.py ..                          [ 24%]
++tests/modules/government/test_welfare_manager.py ....                    [ 24%]
++tests/modules/household/engines/test_budget.py .                         [ 24%]
++tests/modules/household/engines/test_consumption.py .                    [ 24%]
++tests/modules/household/test_political_component.py .....                [ 25%]
++tests/modules/household/test_political_integration.py .                  [ 25%]
++tests/modules/system/test_global_registry.py ........                    [ 26%]
++tests/modules/testing/test_mock_governance.py .....                      [ 26%]
++tests/orchestration/test_state_synchronization.py ..                     [ 26%]
++tests/scenarios/test_leviathan_emergence.py ...                          [ 27%]
++tests/security/test_god_mode_auth.py ...                                 [ 27%]
++tests/security/test_server_auth.py ...                                   [ 27%]
++tests/security/test_websocket_auth.py ...                                [ 28%]
++tests/simulation/components/engines/test_asset_management_engine.py ..... [ 28%]
++tests/simulation/components/engines/test_production_engine.py ...        [ 29%]
++tests/simulation/components/engines/test_rd_engine.py ...                [ 29%]
++tests/simulation/factories/test_agent_factory.py ..                      [ 29%]
++tests/simulation/test_firm_refactor.py ...                               [ 29%]
++tests/system/test_audit_integrity.py ...                                 [ 30%]
++tests/system/test_command_service_rollback.py ...                        [ 30%]
++tests/system/test_engine.py ........                                     [ 31%]
++tests/system/test_phase29_depression.py ..                               [ 31%]
++tests/system/test_serialization.py ..                                    [ 32%]
++tests/system/test_server_auth.py ...                                     [ 32%]
++tests/system/test_server_security.py ....                                [ 32%]
++tests/test_firm_inventory_slots.py ........                              [ 33%]
++tests/test_firm_surgical_separation.py ..                                [ 33%]
++tests/test_ledger_manager.py .......                                     [ 34%]
++tests/test_policy_lockout.py ..                                          [ 34%]
++tests/test_server_auth.py ...                                            [ 35%]
++tests/test_wo_4_1_protocols.py ..                                        [ 35%]
++tests/test_ws.py .                                                       [ 35%]
++tests/unit/agents/test_government.py ......                              [ 36%]
++tests/unit/analysis/test_scenario_verifier.py .....                      [ 36%]
++tests/unit/components/test_agent_lifecycle.py ..                         [ 36%]
++tests/unit/components/test_demographics_component.py ........            [ 37%]
++tests/unit/components/test_engines.py ......                             [ 38%]
++tests/unit/components/test_market_component.py ..                        [ 38%]
++tests/unit/corporate/test_corporate_orchestrator.py .                    [ 38%]
++tests/unit/corporate/test_financial_strategy.py ..                       [ 38%]
++tests/unit/corporate/test_hr_strategy.py .                               [ 39%]
++tests/unit/corporate/test_production_strategy.py ..                      [ 39%]
++tests/unit/corporate/test_sales_manager.py .                             [ 39%]
++tests/unit/dashboard/components/test_controls.py ...                     [ 39%]
++tests/unit/dashboard/test_registry_service.py ...                        [ 40%]
++tests/unit/dashboard/test_socket_manager.py ....                         [ 40%]
++tests/unit/decisions/test_animal_spirits_phase2.py ....                  [ 40%]
++tests/unit/decisions/test_finance_rules.py ...                           [ 41%]
++tests/unit/decisions/test_household_engine_refactor.py .                 [ 41%]
++tests/unit/decisions/test_household_integration_new.py .                 [ 41%]
++tests/unit/decisions/test_hr_rules.py ...                                [ 41%]
++tests/unit/decisions/test_production_rules.py .....                      [ 42%]
++tests/unit/decisions/test_sales_rules.py .                               [ 42%]
++tests/unit/finance/call_market/test_service.py .....                     [ 42%]
++tests/unit/finance/engines/test_finance_engines.py ......                [ 43%]
++tests/unit/finance/test_bank_service_interface.py ......                 [ 44%]
++tests/unit/finance/test_credit_scoring.py .....                          [ 44%]
++tests/unit/finance/test_finance_system_refactor.py ...                   [ 45%]
++tests/unit/finance/test_utils.py .....                                   [ 45%]
++tests/unit/firm/test_firm_actions.py ...                                 [ 45%]
++tests/unit/firm/test_production_int_math.py ...                          [ 46%]
++tests/unit/governance/test_judicial_ssot.py ..                           [ 46%]
++tests/unit/governance/test_judicial_system.py ..                         [ 46%]
++tests/unit/household/test_housing_connector.py ..                        [ 46%]
++tests/unit/household/test_snapshot_assembler.py ..                       [ 47%]
++tests/unit/markets/test_circuit_breaker_relaxation.py ....               [ 47%]
++tests/unit/markets/test_housing_transaction_handler.py ....              [ 48%]
++tests/unit/markets/test_loan_market.py ......                            [ 48%]
++tests/unit/markets/test_loan_market_mortgage.py .......                  [ 49%]
++tests/unit/markets/test_order_book_market.py ............                [ 51%]
++tests/unit/markets/test_order_book_market_cancellation.py ..             [ 51%]
++tests/unit/markets/test_stock_market_cancellation.py ..                  [ 51%]
++tests/unit/modules/analysis/test_bubble_observatory.py ....              [ 52%]
++tests/unit/modules/common/config/test_impl.py ...                        [ 52%]
++tests/unit/modules/common/config_manager/test_config_manager.py ....     [ 53%]
++tests/unit/modules/demographics/test_event_consistency.py ..             [ 53%]
++tests/unit/modules/finance/central_bank/test_cb_service.py .....         [ 53%]
++tests/unit/modules/finance/test_corporate_finance.py ....                [ 54%]
++tests/unit/modules/finance/test_double_entry.py ...                      [ 54%]
++tests/unit/modules/finance/test_monetary_engine.py .                     [ 54%]
++tests/unit/modules/finance/test_qe.py ..                                 [ 54%]
++tests/unit/modules/finance/test_settlement_purity.py ..                  [ 55%]
++tests/unit/modules/finance/test_sovereign_debt.py ....                   [ 55%]
++tests/unit/modules/finance/test_system.py ..........                     [ 56%]
++tests/unit/modules/firm/test_engines.py .......                          [ 57%]
++tests/unit/modules/government/components/test_fiscal_policy_manager.py .... [ 57%]
++tests/unit/modules/government/components/test_monetary_ledger_expansion.py ... [ 58%]
++tests/unit/modules/government/components/test_monetary_policy_manager.py ...... [ 58%]
++tests/unit/modules/government/test_adaptive_gov_brain.py ...             [ 59%]
++tests/unit/modules/government/test_fiscal_bond_service.py .....          [ 59%]
++tests/unit/modules/government/test_fiscal_engine.py .                    [ 59%]
++tests/unit/modules/government/test_politics_system.py .                  [ 59%]
++tests/unit/modules/household/test_consumption_manager.py ...             [ 60%]
++tests/unit/modules/household/test_decision_unit.py ..                    [ 60%]
++tests/unit/modules/household/test_econ_component.py ..                   [ 60%]
++tests/unit/modules/household/test_new_engines.py ..                      [ 60%]
++tests/unit/modules/memory/test_memory_v2.py ...                          [ 61%]
++tests/unit/modules/system/execution/test_public_manager.py ......        [ 61%]
++tests/unit/modules/system/execution/test_public_manager_compliance.py .... [ 62%]
++tests/unit/modules/system/services/test_schema_loader.py ....            [ 62%]
++tests/unit/modules/system/test_command_service_unit.py .......           [ 63%]
++tests/unit/modules/system/test_config_bridge.py .....                    [ 64%]
++tests/unit/modules/system/test_registry.py .....                         [ 64%]
++tests/unit/modules/system/test_server_bridge.py ...                      [ 64%]
++tests/unit/modules/system/test_telemetry.py .......                      [ 65%]
++tests/unit/modules/system/test_telemetry_robustness.py ..                [ 65%]
++tests/unit/modules/watchtower/test_agent_service.py ........             [ 66%]
++tests/unit/orchestration/test_phase_housing_saga.py ....                 [ 67%]
++tests/unit/registry/test_service.py .......                              [ 68%]
++tests/unit/sagas/test_orchestrator.py .....                              [ 68%]
++tests/unit/simulation/orchestration/phases/test_intercept.py ..          [ 68%]
++tests/unit/simulation/systems/test_audit_total_m2.py .                   [ 68%]
++tests/unit/systems/handlers/test_housing_handler.py ....                 [ 69%]
++tests/unit/systems/handlers/test_liquidation_handlers.py .....           [ 69%]
++tests/unit/systems/lifecycle/test_aging_system.py ...                    [ 70%]
++tests/unit/systems/lifecycle/test_birth_system.py .                      [ 70%]
++tests/unit/systems/lifecycle/test_death_system.py ..                     [ 70%]
++tests/unit/systems/test_commerce_system.py ..                            [ 70%]
++tests/unit/systems/test_commerce_system_logging.py ..                    [ 70%]
++tests/unit/systems/test_demographic_manager_newborn.py .                 [ 71%]
++tests/unit/systems/test_event_system.py ...                              [ 71%]
++tests/unit/systems/test_firm_management_leak.py .                        [ 71%]
++tests/unit/systems/test_firm_management_refactor.py ..                   [ 71%]
++tests/unit/systems/test_housing_service.py ..                            [ 71%]
++tests/unit/systems/test_housing_system.py ..                             [ 72%]
++tests/unit/systems/test_inheritance_manager.py .....                     [ 72%]
++tests/unit/systems/test_labor_market_analyzer.py ....                    [ 73%]
++tests/unit/systems/test_lifecycle_manager_integration.py .               [ 73%]
++tests/unit/systems/test_liquidation_manager.py ...                       [ 73%]
++tests/unit/systems/test_ma_manager.py .                                  [ 73%]
++tests/unit/systems/test_ministry_of_education.py ....                    [ 74%]
++tests/unit/systems/test_perception_system.py ....                        [ 74%]
++tests/unit/systems/test_sensory_system.py ..                             [ 74%]
++tests/unit/systems/test_settlement_saga_integration.py ..                [ 75%]
++tests/unit/systems/test_settlement_security.py .....                     [ 75%]
++tests/unit/systems/test_settlement_system.py ............                [ 77%]
++tests/unit/systems/test_social_system.py ..                              [ 77%]
++tests/unit/systems/test_tax_agency.py .....                              [ 78%]
++tests/unit/systems/test_technology_manager.py ....                       [ 78%]
++tests/unit/test_ai_driven_firm_engine.py .                               [ 78%]
++tests/unit/test_ai_training_manager.py .....                             [ 79%]
++tests/unit/test_api_extensions.py ....                                   [ 79%]
++tests/unit/test_api_history.py .                                         [ 79%]
++tests/unit/test_bank.py ........                                         [ 80%]
++tests/unit/test_bank_decomposition.py ...                                [ 80%]
++tests/unit/test_config_parity.py ..                                      [ 81%]
++tests/unit/test_consumption_manager_survival.py ....                     [ 81%]
++tests/unit/test_diagnostics.py .                                         [ 81%]
++tests/unit/test_factories.py ....                                        [ 82%]
++tests/unit/test_firm_profit.py ..                                        [ 82%]
++tests/unit/test_firms.py .......                                         [ 83%]
++tests/unit/test_god_command_protocol.py .....                            [ 83%]
++tests/unit/test_goods_handler_precision.py .                             [ 83%]
++tests/unit/test_government_structure.py ..                               [ 84%]
++tests/unit/test_handlers_fix.py ..                                       [ 84%]
++tests/unit/test_household_ai.py ......                                   [ 84%]
++tests/unit/test_household_ai_insight.py ....                             [ 85%]
++tests/unit/test_household_decision_engine_new.py .......                 [ 86%]
++tests/unit/test_household_refactor.py .                                  [ 86%]
++tests/unit/test_household_system2.py ...                                 [ 86%]
++tests/unit/test_hr_engine_refactor.py ....                               [ 86%]
++tests/unit/test_learning_tracker.py ...                                  [ 87%]
++tests/unit/test_ledger_manager.py ....                                   [ 87%]
++tests/unit/test_lifecycle_reset.py ..                                    [ 87%]
++tests/unit/test_logger.py ...                                            [ 88%]
++tests/unit/test_ma_pennies.py ...                                        [ 88%]
++tests/unit/test_market_adapter.py ....                                   [ 88%]
++tests/unit/test_marketing_roi.py ....                                    [ 89%]
++tests/unit/test_markets_v2.py .............                              [ 91%]
++tests/unit/test_monetary_ledger_repayment.py ...                         [ 91%]
++tests/unit/test_phase1_refactor.py ..                                    [ 91%]
++tests/unit/test_portfolio_macro.py .                                     [ 91%]
++tests/unit/test_protocol_lockdown.py ....                                [ 92%]
++tests/unit/test_real_estate_lien.py ...                                  [ 92%]
++tests/unit/test_repository.py .....                                      [ 93%]
++tests/unit/test_sales_engine_refactor.py ..                              [ 93%]
++tests/unit/test_sensory_purity.py ..                                     [ 93%]
++tests/unit/test_socio_tech.py ...                                        [ 93%]
++tests/unit/test_ssot_compliance.py ..                                    [ 94%]
++tests/unit/test_stock_market.py ........                                 [ 95%]
++tests/unit/test_strict_mocking.py ...                                    [ 95%]
++tests/unit/test_tax_collection.py ..                                     [ 95%]
++tests/unit/test_tax_incidence.py ..                                      [ 95%]
++tests/unit/test_taxation_system.py ....                                  [ 96%]
++tests/unit/test_telemetry_purity.py ..                                   [ 96%]
++tests/unit/test_transaction_engine.py ...........                        [ 97%]
++tests/unit/test_transaction_handlers.py ...                              [ 98%]
++tests/unit/test_transaction_integrity.py ..                              [ 98%]
++tests/unit/test_transaction_processor.py ......                          [ 98%]
++tests/unit/test_transaction_rollback.py .                                [ 99%]
++tests/unit/test_watchtower_hardening.py ..                               [ 99%]
++tests/unit/test_wo157_dynamic_pricing.py .....                           [ 99%]
++tests/unit/utils/test_config_factory.py ..                               [100%]
++
++============================ 925 passed in 16.63s ==============================
++```
+diff --git a/modules/firm/api.py b/modules/firm/api.py
+index 324eb2c6..6f8a7bdf 100644
+--- a/modules/firm/api.py
++++ b/modules/firm/api.py
+@@ -4,10 +4,13 @@ from dataclasses import dataclass, field
+ from enum import Enum
+ 
+ from modules.simulation.dtos.api import FirmConfigDTO, FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
+-from modules.system.api import MarketSnapshotDTO
++from modules.system.api import MarketSnapshotDTO, MarketContextDTO
+ from modules.simulation.api import IInventoryHandler
+ from modules.finance.api import IFinancialAgent
+-from simulation.models import Order
++from simulation.models import Order, Transaction
++
++# DTO Imports for Protocols
++from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingContextDTO, MarketingAdjustmentResultDTO
+ 
+ # ==============================================================================
+ # 1. ARCHITECTURAL RESOLUTION: ASSET PROTOCOLS
+@@ -215,12 +218,31 @@ class IFinanceEngine(Protocol):
+     def plan_budget(self, input_dto: FinanceDecisionInputDTO) -> BudgetPlanDTO:
+         ...
+ 
++    def get_estimated_unit_cost(self, finance_state: Any, item_id: str, config: FirmConfigDTO) -> int:
++         """Calculates estimated unit cost for an item."""
++         ...
++
++    def record_expense(self, finance_state: Any, amount: int, currency: Any) -> None:
++         ...
++
++    def calculate_valuation(self, finance_state: Any, balances: Any, config: Any, inventory_value: int, capital_stock: int, context: Any) -> int:
++        ...
++
++    def generate_financial_transactions(self, finance_state: Any, firm_id: int, balances: Any, config: Any, current_time: int, context: Any, inventory_value: int) -> List[Transaction]:
++        ...
++
+ @runtime_checkable
+ class IHREngine(Protocol):
+     """Stateless engine for human resources management."""
+     def manage_workforce(self, input_dto: HRDecisionInputDTO) -> HRDecisionOutputDTO:
+         ...
+ 
++    def process_payroll(self, hr_state: Any, context: Any, config: Any) -> Any:
++        ...
++
++    def finalize_firing(self, hr_state: Any, employee_id: int) -> None:
++        ...
++
+ @runtime_checkable
+ class IProductionEngine(Protocol):
+     """
+@@ -277,6 +299,44 @@ class IRDEngine(Protocol):
+         """
+         ...
+ 
++@runtime_checkable
++class ISalesEngine(Protocol):
++    """
++    Stateless Engine for Sales operations.
++    Handles pricing, marketing, and order generation.
++    """
++    def post_ask(self, state: Any, context: SalesPostAskContextDTO) -> Order:
++        """Posts an ask order to the market."""
++        ...
++
++    def adjust_marketing_budget(self, state: Any, market_context: MarketContextDTO, revenue_this_turn: int, last_revenue: int=0, last_marketing_spend: int=0) -> MarketingAdjustmentResultDTO:
++        """Adjusts marketing budget based on ROI or simple heuristic."""
++        ...
++
++    def generate_marketing_transaction(self, state: Any, context: SalesMarketingContextDTO) -> Optional[Transaction]:
++        """Generates marketing spend transaction."""
++        ...
++
++    def check_and_apply_dynamic_pricing(self, state: Any, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> None:
++        """Overrides prices in orders if dynamic pricing logic dictates."""
++        ...
++
++@runtime_checkable
++class IBrandEngine(Protocol):
++    """
++    Stateless engine for managing firm brand equity.
++    """
++    def update(
++        self,
++        state: Any,
++        config: FirmConfigDTO,
++        marketing_spend: float,
++        actual_quality: float,
++        firm_id: int
++    ) -> None:
++        """Updates brand assets in the SalesState based on marketing spend and quality."""
++        ...
++
+ # ==============================================================================
+ # 4. COMPONENT PROTOCOLS (NEW)
+ # ==============================================================================
+@@ -346,6 +406,8 @@ __all__ = [
+     'IAssetManagementEngine',
+     'IPricingEngine',
+     'IRDEngine',
++    'ISalesEngine',
++    'IBrandEngine',
+     'IFirmComponent',
+     'IInventoryComponent',
+     'InventoryComponentConfigDTO',
+diff --git a/modules/firm/constants.py b/modules/firm/constants.py
+new file mode 100644
+index 00000000..3e72a8bd
+--- /dev/null
++++ b/modules/firm/constants.py
+@@ -0,0 +1,28 @@
++# Firm Architecture Constants
++# Extracted for Decoupling Mission (firm-decoupling)
++
++# Market Insight
++DEFAULT_MARKET_INSIGHT = 0.5
++INSIGHT_DECAY_RATE = 0.001
++INSIGHT_BOOST_FACTOR = 0.05
++INSIGHT_ERROR_THRESHOLD = 1000.0  # Threshold for TD-Error boost (pennies)
++
++# Marketing
++DEFAULT_MARKETING_BUDGET_RATE = 0.05
++
++# Liquidation & Valuation
++DEFAULT_LIQUIDATION_PRICE = 1000
++DEFAULT_PRICE = 1000  # Default price in pennies if not found
++DEFAULT_INVENTORY_VALUATION_PRICE = 1000
++
++# Labor & HR
++DEFAULT_LABOR_WAGE = 1000  # Default wage in pennies
++DEFAULT_SURVIVAL_COST = 10.0
++DEFAULT_SEVERANCE_WEEKS = 2.0
++TICKS_PER_YEAR = 365
++
++# Taxes
++DEFAULT_CORPORATE_TAX_RATE = 0.2
++
++# Production
++PRODUCTIVITY_DIVIDER = 10.0  # Used in Brand Update for productivity factor normalization
+diff --git a/simulation/firms.py b/simulation/firms.py
+index 4c2cad37..a07e1be0 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -44,7 +44,14 @@ from modules.firm.api import (
+     PricingInputDTO, PricingResultDTO,
+     LiquidationExecutionDTO, LiquidationResultDTO,
+     IProductionEngine, IAssetManagementEngine, IRDEngine, IPricingEngine,
+-    IInventoryComponent, IFinancialComponent
++    IInventoryComponent, IFinancialComponent,
++    ISalesEngine, IBrandEngine, IFinanceEngine, IHREngine
++)
++from modules.firm.constants import (
++    DEFAULT_MARKET_INSIGHT, DEFAULT_MARKETING_BUDGET_RATE, DEFAULT_LIQUIDATION_PRICE,
++    INSIGHT_DECAY_RATE, INSIGHT_BOOST_FACTOR, INSIGHT_ERROR_THRESHOLD,
++    DEFAULT_LABOR_WAGE, DEFAULT_SURVIVAL_COST, DEFAULT_CORPORATE_TAX_RATE,
++    PRODUCTIVITY_DIVIDER, DEFAULT_PRICE
+ )
+ 
+ from modules.agent_framework.components.inventory_component import InventoryComponent
+@@ -124,13 +131,13 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         self.sales_state = SalesState()
+ 
+         # Engine Initialization (Stateless)
+-        self.hr_engine = HREngine()
+-        self.finance_engine = FinanceEngine()
++        self.hr_engine: IHREngine = HREngine()
++        self.finance_engine: IFinanceEngine = FinanceEngine()
+         self.production_engine: IProductionEngine = ProductionEngine()
+-        self.sales_engine = SalesEngine()
++        self.sales_engine: ISalesEngine = SalesEngine()
+         self.asset_management_engine: IAssetManagementEngine = AssetManagementEngine()
+         self.rd_engine: IRDEngine = RDEngine()
+-        self.brand_engine = BrandEngine()
++        self.brand_engine: IBrandEngine = BrandEngine()
+         self.pricing_engine: IPricingEngine = PricingEngine()
+         self.action_executor = FirmActionExecutor()
+ 
+@@ -145,7 +152,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         self.finance_state.dividend_rate = self.config.dividend_rate
+         self.finance_state.profit_history = deque(maxlen=self.config.profit_history_ticks)
+ 
+-        self.sales_state.marketing_budget_rate = 0.05
++        self.sales_state.marketing_budget_rate = DEFAULT_MARKETING_BUDGET_RATE
+ 
+         # Phase 16-B: Personality
+         self.personality = personality or Personality.BALANCED
+@@ -163,7 +170,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         
+         # Tracking variables
+         self.age = 0
+-        self.market_insight = 0.5 # Phase 4.1: Dynamic Cognitive Filter
++        self.market_insight = DEFAULT_MARKET_INSIGHT # Phase 4.1: Dynamic Cognitive Filter
+ 
+     # --- IConfigurable Implementation ---
+ 
+@@ -181,7 +188,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         return LiquidationConfigDTO(
+             haircut=self.config.fire_sale_discount,
+             initial_prices=initial_prices,
+-            default_price=1000,
++            default_price=DEFAULT_LIQUIDATION_PRICE,
+             market_prices=self.last_prices.copy()
+         )
+ 
+@@ -964,12 +971,12 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         budget_plan = self.finance_engine.plan_budget(fin_input)
+ 
+         # 3. HR Engine: Manage Workforce
+-        labor_wage = 1000 # Default
++        labor_wage = DEFAULT_LABOR_WAGE # Default
+         if market_snapshot and market_snapshot.labor:
+             # Assuming labor market snapshot has avg_wage as int pennies or float
+             # MarketSnapshotDTO definition says LaborMarketSnapshotDTO.avg_wage is float.
+             # We need to cast to int pennies if it is float.
+-            labor_wage = int(market_snapshot.labor.avg_wage * 100) if market_snapshot.labor.avg_wage > 0 else 1000
++            labor_wage = int(market_snapshot.labor.avg_wage * 100) if market_snapshot.labor.avg_wage > 0 else DEFAULT_LABOR_WAGE
+         elif market_data and "labor" in market_data:
+              # Fallback to dictionary
+              labor_wage = int(market_data.get("labor", {}).get("avg_wage", 10.0) * 100)
+@@ -1061,7 +1068,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+ 
+         # 1. Construct Input DTO
+         item_id = self.specialization
+-        current_price = self.last_prices.get(item_id, 1000) # int pennies
++        current_price = self.last_prices.get(item_id, DEFAULT_PRICE) # int pennies
+ 
+         input_dto = PricingInputDTO(
+             item_id=item_id,
+@@ -1095,7 +1102,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         # Extract from market_context if available (FiscalContext)
+         fiscal_policy = market_context.get("fiscal_policy")
+         income_tax_rate = fiscal_policy.income_tax_rate if fiscal_policy else 0.0 # Default
+-        survival_cost = 10.0 # Default
++        survival_cost = DEFAULT_SURVIVAL_COST # Default
+ 
+         gov_id = government.id if government else -1 # Fallback ID
+ 
+@@ -1148,7 +1155,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+ 
+         # Extract dynamic tax rates from MarketContext
+         fiscal_policy = market_context.get("fiscal_policy")
+-        corporate_tax_rate = fiscal_policy.corporate_tax_rate if fiscal_policy else 0.2
++        corporate_tax_rate = fiscal_policy.corporate_tax_rate if fiscal_policy else DEFAULT_CORPORATE_TAX_RATE
+ 
+         tax_rates = {"income_tax": corporate_tax_rate}
+ 
+@@ -1178,7 +1185,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         # Calculate inventory value for holding cost
+         inventory_value = 0
+         for item, qty in self.get_all_items().items():
+-            price = self.last_prices.get(item, 1000) # Default 10.00 pennies
++            price = self.last_prices.get(item, DEFAULT_PRICE) # Default 10.00 pennies
+             inventory_value += int(qty * price)
+ 
+         fin_ctx = FinancialTransactionContext(
+@@ -1226,7 +1233,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+             self.sales_state,
+             self.config,
+             float(self.sales_state.marketing_budget_pennies),
+-            self.productivity_factor / 10.0,
++            self.productivity_factor / PRODUCTIVITY_DIVIDER,
+             self.id
+         )
+ 
+@@ -1265,7 +1272,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+     @property
+     def inventory_value_pennies(self) -> int:
+         # last_prices are now int pennies
+-        val = sum(self.get_quantity(i) * self.last_prices.get(i, 1000) for i in self.get_all_items())
++        val = sum(self.get_quantity(i) * self.last_prices.get(i, DEFAULT_PRICE) for i in self.get_all_items())
+         return int(val)
+ 
+     @property
+@@ -1337,7 +1344,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         return (self.total_shares - self.treasury_shares) * stock_price
+ 
+     def calculate_valuation(self, market_context: MarketContextDTO = None) -> int:
+-        inventory_value = int(sum(self.get_quantity(i) * self.last_prices.get(i, 1000) for i in self.get_all_items()))
++        inventory_value = int(sum(self.get_quantity(i) * self.last_prices.get(i, DEFAULT_PRICE) for i in self.get_all_items()))
+         # Wrap market_context in FinancialTransactionContext if needed, or update Engine to accept optional context
+         # Engine expects FinancialTransactionContext.
+         fin_ctx = None
+@@ -1354,7 +1361,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         ))
+ 
+     def get_financial_snapshot(self) -> Dict[str, Any]:
+-        inventory_value = int(sum(self.get_quantity(i) * self.last_prices.get(i, 1000) for i in self.get_all_items()))
++        inventory_value = int(sum(self.get_quantity(i) * self.last_prices.get(i, DEFAULT_PRICE) for i in self.get_all_items()))
+         cash = self.financial_component.get_balance(DEFAULT_CURRENCY)
+         total_assets = cash + inventory_value + self.capital_stock
+         working_capital = cash + inventory_value # Simplified: Current Assets
+@@ -1383,13 +1390,13 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+ 
+             # Phase 4.1: Active Learning (Insight Dynamics)
+             # Decay
+-            self.market_insight = max(0.0, self.market_insight - 0.001)
++            self.market_insight = max(0.0, self.market_insight - INSIGHT_DECAY_RATE)
+ 
+             # Boost from Learning Surprise (TD-Error)
+             if isinstance(td_error, (int, float)):
+                 # Normalized boost using exponential saturation
+                 # Assuming significant error starts around 1000 pennies (10.00)
+-                boost = 0.05 * (1.0 - math.exp(-abs(td_error) / 1000.0))
++                boost = INSIGHT_BOOST_FACTOR * (1.0 - math.exp(-abs(td_error) / INSIGHT_ERROR_THRESHOLD))
+                 self.market_insight = min(1.0, self.market_insight + boost)
+ 
+         # Update State Tracking for Rewards (Moved from Engine for Purity)

@@ -3,34 +3,11 @@
     "version": "1.0"
   },
   "missions": {
-    "firm-ai-audit": {
-      "key": "firm-ai-audit",
-      "title": "Firm Architecture & AI Debt Audit",
+    "debt-liquidation-plan": {
+      "key": "debt-liquidation-plan",
+      "title": "Technical Debt Liquidation Strategy",
       "type": "gemini",
-      "instruction_raw": "Audit the Firm agent and its components for remaining parent pointer coupling (TD-ARCH-FIRM-COUP) and check if FirmSystem2Planner is aware of debt/interest constraints (TD-AI-DEBT-AWARE).",
-      "status": "pending",
-      "created_at": "",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "audit",
-      "context_files": [
-        "simulation/firms/firm.py",
-        "simulation/firms/components/inventory_component.py",
-        "simulation/firms/components/financial_component.py",
-        "simulation/ai/planners/firm_system2_planner.py",
-        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
-      ],
-      "output_path": "artifacts/reports/firm_ai_audit_report.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "firm-ai-spec": {
-      "key": "firm-ai-spec",
-      "title": "Firm Decoupling & AI Hardening Spec",
-      "type": "gemini",
-      "instruction_raw": "Based on the audit report, create a MISSION_spec for Jules to: 1. Remove parent pointers from Inventory/Financial components. 2. Harden FirmSystem2Planner with debt constraint awareness.",
+      "instruction_raw": "Analyze the TECH_DEBT_LEDGER.md and formulate a comprehensive technical debt liquidation plan. Design the plan such that we execute 2-3 independent missions in parallel per 'wave', and clear all remaining technical debts within 2 to 3 waves total. Ensure missions within the same wave do not have overlapping file dependencies to prevent merge conflicts. Output this execution schedule as a formatted Markdown report.",
       "status": "pending",
       "created_at": "",
       "command": null,
@@ -39,19 +16,17 @@
       "session_id": null,
       "worker": "spec",
       "context_files": [
-        "artifacts/reports/firm_ai_audit_report.md",
-        "simulation/firms/firm.py",
-        "modules/firm/api.py"
+        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
       ],
-      "output_path": "artifacts/specs/MISSION_firm_ai_hardening_spec.md",
+      "output_path": "artifacts/reports/tech_debt_liquidation_plan.md",
       "model": null,
       "audit_requirements": null
     },
-    "market-systems-spec": {
-      "key": "market-systems-spec",
-      "title": "Market Precision & Robustness Spec",
+    "wave3-analytics-purity-spec": {
+      "key": "wave3-analytics-purity-spec",
+      "title": "Wave 3: Operational & Analytics Purity Spec",
       "type": "gemini",
-      "instruction_raw": "Create a MISSION_spec for Jules to resolve TD-MARKET-FLOAT-CAST (unsafe cast) and TD-MARKET-STRING-PARSE (brittle parsing).",
+      "instruction_raw": "Create a MISSION_spec for Jules to execute Mission 3.1. Resolve TD-ANALYTICS-DTO-BYPASS and TD-UI-DTO-PURITY. Ensure AnalyticsSystem operates strictly on SnapshotDTOs rather than reading raw mutable agents, and enforce Pydantic Models for UI telemetry parsing.",
       "status": "pending",
       "created_at": "",
       "command": null,
@@ -60,19 +35,19 @@
       "session_id": null,
       "worker": "spec",
       "context_files": [
-        "simulation/markets/matching_engine.py",
-        "simulation/markets/order_book_market.py",
+        "simulation/systems/analytics_system.py",
+        "modules/simulation/dtos/api.py",
         "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
       ],
-      "output_path": "artifacts/specs/MISSION_market_systems_hardening_spec.md",
+      "output_path": "artifacts/specs/MISSION_wave3_analytics_purity_spec.md",
       "model": null,
       "audit_requirements": null
     },
-    "finance-purity-spec": {
-      "key": "finance-purity-spec",
-      "title": "Finance Protocol Purity Spec",
+    "wave3-dx-config-spec": {
+      "key": "wave3-dx-config-spec",
+      "title": "Wave 3: Developer Experience & Config Hardening Spec",
       "type": "gemini",
-      "instruction_raw": "Create a MISSION_spec for Jules to resolve TD-PROTO-MONETARY by refactoring MonetaryTransactionHandler to use strict Protocols.",
+      "instruction_raw": "Create a MISSION_spec for Jules to execute Mission 3.2. Resolve TD-DX-AUTO-CRYSTAL and TD-CONF-GHOST-BIND. Implement an auto-discovery registry decorator for Gemini missions to reduce boilerplate, and create a ConfigProxy to lazily resolve dynamic constants avoiding import-time lock-ins.",
       "status": "pending",
       "created_at": "",
       "command": null,
@@ -81,19 +56,19 @@
       "session_id": null,
       "worker": "spec",
       "context_files": [
-        "simulation/systems/handlers/monetary_handler.py",
-        "modules/common/interfaces.py",
+        "_internal/registry/gemini_manifest.py",
+        "config/default_config.py",
         "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
       ],
-      "output_path": "artifacts/specs/MISSION_finance_purity_refactor_spec.md",
+      "output_path": "artifacts/specs/MISSION_wave3_dx_config_spec.md",
       "model": null,
       "audit_requirements": null
     },
-    "firm-decoupling-spec": {
-      "key": "firm-decoupling-spec",
-      "title": "Firm Architecture Decoupling Spec (Constants & Protocols)",
+    "wave2-firm-architecture-spec": {
+      "key": "wave2-firm-architecture-spec",
+      "title": "Wave 2: Firm Architecture Overhaul Spec",
       "type": "gemini",
-      "instruction_raw": "\n        Create a MISSION_spec for Jules to:\n        1. Resolve TD-CONF-MAGIC-NUMBERS: Move hardcoded constants in FinanceEngine (365, 1.8, repayment rates) to Config DTOs or EconomyConstants.\n        2. Resolve TD-ARCH-LOAN-CIRCULAR: Introduce ILoanMarket Protocol to break circular dependency between Firm and LoanMarket.\n        ",
+      "instruction_raw": "Create a MISSION_spec for Jules to execute Mission 2.1. Resolve TD-ARCH-FIRM-COUP and TD-ARCH-FIRM-MUTATION by removing self.parent pointers from all Firm Departments (HR, Finance, Production, Sales), replacing them with DTO injections. Ensure BrandEngine and SalesEngine return ResultDTOs instead of mutating states in-place.",
       "status": "pending",
       "created_at": "",
       "command": null,
@@ -103,11 +78,35 @@
       "worker": "spec",
       "context_files": [
         "simulation/firms/firm.py",
-        "simulation/firms/engines/finance_engine.py",
-        "simulation/loan_market.py",
+        "modules/firm/engines/brand_engine.py",
+        "simulation/components/engines/sales_engine.py",
+        "simulation/components/engines/hr_engine.py",
+        "simulation/components/engines/production_engine.py",
         "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
       ],
-      "output_path": "artifacts/specs/MISSION_firm_decoupling_spec.md",
+      "output_path": "artifacts/specs/MISSION_wave2_firm_architecture_spec.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "wave2-market-policy-spec": {
+      "key": "wave2-market-policy-spec",
+      "title": "Wave 2: Market & Policy Refinement Spec",
+      "type": "gemini",
+      "instruction_raw": "Create a MISSION_spec for Jules to execute Mission 2.2. Resolve TD-DEPR-STOCK-DTO, TD-MARKET-STRING-PARSE, and TD-ECON-WAR-STIMULUS. Replace StockOrder with CanonicalOrderDTO, refactor StockMarket matching extraction to use Tuple IDs, and implement progressive taxation logically in Government handling.",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "simulation/markets/stock_market.py",
+        "simulation/agents/government.py",
+        "modules/market/api.py",
+        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+      ],
+      "output_path": "artifacts/specs/MISSION_wave2_market_policy_spec.md",
       "model": null,
       "audit_requirements": null
     }

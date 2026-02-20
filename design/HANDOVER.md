@@ -1,66 +1,51 @@
-# Architectural Handover Report: Phase 23 Stabilization & AI Integration
+# Architectural Handover Report: Phase 23 Integration & Hygiene
 
 ## Executive Summary
-Phase 23 has successfully transitioned the simulation to a "Penny Perfect" financial core, enforcing integer arithmetic across all settlement and M&A systems. The architecture has been hardened through the enforcement of **DTO Purity** (frozen dataclasses) and the implementation of the **SEO (Stateless Engine & Orchestrator) Pattern** for Firm agents. Functional stability is confirmed with a 1000-tick survival benchmark, though systemic fiscal imbalances remain a primary economic risk.
+This report summarizes the architectural transition from legacy "God Object" patterns to a **Stateless Engine & Orchestrator (SEO)** model, primarily focusing on Firm and Finance modules. Key achievements include the enforcement of the **"Penny Standard"** (strict integer arithmetic), **Protocol Purity** (removal of `hasattr` checks), and the alignment of the `SimulationState` DTO with `WorldState` to support multi-government scaling.
 
 ---
 
-## 1. Key Accomplishments
+## Detailed Analysis
 
-### 1.1. Core Financial Integrity (Penny Standard)
-- **Integer Enforcement**: `SettlementSystem`, `MAManager`, and `StockMatchingEngine` now operate exclusively on integer pennies, eliminating float corruption (`TD-CRIT-FLOAT-CORE`).
-- **M&A Resolution**: Fixed a critical 100x takeover cost inflation bug in `MAManager` and refactored valuation logic to use `int` types (`phase23-penny-perfect.md`).
-- **Handler Alignment**: Resolved double-counting of expenses in `FinanceEngine` and added dedicated handlers for `repayment`, `loan_repayment`, and `investment`.
+### 1. Accomplishments & Architectural Evolutions
+- **SEO Pattern Implementation (Firm)**: Logic from `HRDepartment` and `FinanceDepartment` has been extracted into stateless engines (`HREngine`, `FinanceEngine`). The `Firm` agent now acts as a pure orchestrator using `FirmStateDTO`.
+- **Protocol Purity (Finance/Market)**: 
+    - Replaced fragile `hasattr` checks with explicit protocols: `IRevenueTracker`, `ISalesTracker`, `IPanicRecorder`, and `IEconomicMetricsService` (`finance-purity-refactor.md`, `market-systems-hardening.md`).
+    - Standardized `sales_volume_this_tick` across all firm types to ensure consistent market telemetry.
+- **Financial Core Hardening (Penny Standard)**:
+    - Enforced `int` types for all financial boundaries in `SettlementSystem` and `TransactionEngine` (`phase23-spec-penny-perfect.md`).
+    - Refactored `FinanceStateDTO` to include `total_debt_pennies` and `average_interest_rate`, eliminating "debt blindness" in AI decision-making (`firm-ai-hardening.md`).
+- **Phase 23 Hygiene (DTO Alignment)**:
+    - Renamed `SimulationState.government` -> `primary_government` and added `governments: List[Any]` to support multi-government entities.
+    - Renamed `god_commands` -> `god_command_snapshot` to reflect its immutable state within a tick (`MISSION_fix-dto-naming-alignment_SPEC.md`).
+- **Legacy Decoupling**:
+    - Removed `ITransactionManager` (superseded by `TransactionProcessor`).
+    - Deprecated `TaxAgency.collect_tax` in favor of `SettlementSystem.transfer` (`PHASE23_LEGACY_CLEANUP.md`).
 
-### 1.2. Architectural Refactoring & DTO Purity
-- **SimulationState Alignment**: Renamed `government` to `primary_government` and added a `governments` list to support future multi-government scenarios (`phase23-dto-core.md`).
-- **God-Command Pipeline**: Renamed `god_commands` to `god_command_snapshot` to clearly distinguish the frozen tick-state from the live ingestion queue.
-- **DTO Standardization**: Migrated from `TypedDict` to `frozen @dataclass` for core APIs in Finance, Housing, and Government modules.
+### 2. Economic Insights & AI Behavior
+- **Debt-Aware NPV**: Firms now incorporate interest expenses into NPV calculations. This has shifted the `FinanceEngine` from a hardcoded 1% repayment to a strategic model (0.5% for healthy firms, 5% for distressed), improving long-term solvency under leverage.
+- **Panic Propagation**: The introduction of a `market_panic_index` (Withdrawal Volume / Deposits) allows for more realistic bank-run simulations. Agents with low `market_insight` now exhibit higher sensitivity to panic metrics.
+- **Zero-Sum Integrity**: Continuous `Zero-Sum` audits confirm that the `TransactionEngine` rollback logic maintains system-wide M2 integrity, even during batch failures.
 
-### 1.3. AI & Perception Systems (Phase 4.1)
-- **3-Pillar Learning**: Implemented dynamic agent insight based on **Experience** (TD-Error), **Education** (Service consumption), and **Time** (Natural decay).
-- **Perceptual Filters**: Introduced information asymmetry where agent `market_insight` determines the lag and noise level of market data (Smart Money vs. Lemons).
-- **Labor Market Evolution**: Shifted Labor Matching from Price-Time priority to **Utility-Priority** (`Utility = Perception / Wage`), accounting for skill and education.
-
----
-
-## 2. Economic Insights & Forensic Audit
-
-### 2.1. Systemic Fiscal Imbalance
-- **Wage-Affordability Gap**: Forensic audits show Firms often cannot afford market-clearing wages, leading to a reliance on government welfare.
-- **Stimulus Dependency**: In 1000-tick tests, Total Welfare Paid (14,772) significantly exceeded Total Tax Collected (9,558), with stimulus triggers masking structural deficits (`MISSION_phase23-forensic-debt-audit_AUDIT.md`).
-
-### 2.2. Solvency Guardrails
-- **Debt Brake**: Implemented a "Debt Brake" in the `FiscalEngine` that forces tax hikes and welfare cuts when `Debt/GDP > 1.5`.
-- **Panic Propagation**: Identified that low-insight agents are highly sensitive to the `market_panic_index`, amplifying bank runs, while high-insight "Smart Money" acts as a stabilizer.
-
----
-
-## 3. Pending Tasks & Technical Debt
-
-### 3.1. Structural Debt
-- **TD-ARCH-FIRM-COUP**: Firm departments (`HRDepartment`, `FinanceDepartment`) still utilize "Parent Pointers" (`self.parent`), violating the stateless engine standard (`MISSION_phase23-forensic-debt-audit_AUDIT.md`).
-- **TD-PROTO-MONETARY**: `MonetaryTransactionHandler` continues to use `hasattr()` checks instead of `@runtime_checkable` Protocols.
-
-### 3.2. Operational Debt
-- **Log Pollution**: AI engines frequently generate spending intents for agents with high debt ratios, causing extreme spam of `DEBT_CEILING_HIT` in logs. AI needs to internalize these constraints.
-- **Government Execution**: The Government agent frequently bypasses the `TransactionProcessor` for direct settlement transfers, leading to potential ledger inconsistencies.
+### 3. Verification Status
+- **Test Suite**: A baseline of **925 tests passed** was achieved following the Firm refactor (`firm-decoupling.md`).
+- **Current Regressions**: Approximately **7-8 failures** persist due to the Phase 23 hygiene shift:
+    1. **Saga Protocol Change**: `SagaOrchestrator.process_sagas()` now takes 0 arguments (uses property injection), requiring updates in `test_phase29_depression.py` and `test_orchestrator.py`.
+    2. **Mock Drift**: `TickOrchestrator` fails when accessing `tick_withdrawal_pennies` on basic `MagicMock` objects that lack the attribute (`spec_final_test_fixes.md`).
+- **Audit Scripts**: `scripts/audit_zero_sum.py` is functional and verifying liquidation logic via the new `execute()` pattern.
 
 ---
 
-## 4. Verification Status
+## Risk Assessment & Technical Debt
+- **Float Contamination**: While core boundaries are `int`, internal engine math (like NPV) still uses `float`. A "Pre-Flight Cast" to `int` is required before returning data to the Orchestrator to prevent penny-rounding leaks.
+- **Circular Dependencies**: A known circular dependency exists between `Firm` and `LoanMarket`. Temporary resolution uses local imports, but a formal protocol-based decoupling is pending.
+- **Mock Lag**: High risk of "False Greens" in tests where `MagicMock` is used without `spec=IAgent`. Strict `isinstance` checks in `SettlementSystem` will now trigger `TypeError` on non-compliant mocks.
 
-### 4.1. Test Suite Results
-- **Final Pass Rate**: **923 Passed** (in 19.39s) following stabilization of Saga and Housing DTOs.
-- **Regressions Fixed**: Resolved `AttributeError` issues related to `primary_government` renaming and mock attribute mismatches in M&A tests.
+---
 
-### 4.2. Critical Path Verification
-| System | Status | Evidence |
-| :--- | :--- | :--- |
-| Atomic Housing Saga | ✅ Pass | `verify_atomic_housing_purchase.py` (5 Steps Pass) |
-| Penny M&A | ✅ Pass | `test_ma_pennies.py` (Friendly/Hostile/Bankruptcy) |
-| Fiscal Guardrails | ✅ Pass | `test_fiscal_guardrails.py` (Bailout Rejections) |
-| Labor Utility | ✅ Pass | `test_labor_matching.py` (Education Impact) |
+## Conclusion/Action Items
+1. **Immediate Repair**: Re-align the 7 failing tests to the new `SagaOrchestrator.process_sagas()` signature (Mission: Operation Zero Failure).
+2. **Hardening**: Apply `getattr(state, 'field', 0)` in `TickOrchestrator` to handle sparse mocks in legacy tests.
+3. **Liquidation**: Execute Phase 2 (Operation Penny Perfect) to finalize the `BankTransactionHandler` implementation and remove the last traces of `hasattr` from the financial core.
 
-## Conclusion
-The simulation has reached a high degree of technical "Hygiene" and financial precision. The immediate priority for the next session should be the **Surgical Separation** of Firm departments to eliminate parent pointers and the hardening of AI engines to respect debt constraints autonomously.
+**Status**: ⚠️ **Partially Implemented** (Architectural foundation is solid; final regression cleanup is required for 100% Green status).

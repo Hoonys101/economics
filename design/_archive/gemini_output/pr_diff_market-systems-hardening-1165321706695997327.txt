@@ -1,0 +1,236 @@
+diff --git a/communications/insights/market-systems-hardening.md b/communications/insights/market-systems-hardening.md
+new file mode 100644
+index 00000000..3e5c9fa3
+--- /dev/null
++++ b/communications/insights/market-systems-hardening.md
+@@ -0,0 +1,83 @@
++# Market Systems Hardening Report
++
++## Architectural Insights
++
++### 1. Protocol Purity & Logic Separation
++- **Problem:** `SettlementSystem` previously relied on `hasattr` checks to access `world_state.record_withdrawal`, creating a fragile, implicit dependency on `IAgentRegistry` implementation details.
++- **Solution:** Introduced `IEconomicMetricsService` protocol in `modules/finance/api.py`. `SettlementSystem` now explicitly declares this dependency via `metrics_service` injection, adhering to the Dependency Inversion Principle.
++- **Outcome:** Removed `hasattr` checks, enforcing type safety and protocol adherence.
++
++### 2. Transaction Integrity & Rollback Robustness
++- **Problem:** `TransactionEngine` rollback logic lacked explicit verification and logging for individual rollback steps, potentially masking partial failures during batch processing.
++- **Solution:** Enhanced `_rollback_batch` to log successes and failures explicitly.
++- **Outcome:** Improved observability and confidence in zero-sum integrity during complex batch transactions.
++
++### 3. Registry Access Robustness
++- **Problem:** `RegistryAccountAccessor._get_agent` used nested try-except blocks that were hard to read and potentially error-prone for mixed ID types (int vs string).
++- **Solution:** Refactored `_get_agent` to clearly separate integer-based lookup (primary) from string-based fallback.
++- **Outcome:** Cleaner code and more predictable agent retrieval behavior.
++
++## Regression Analysis
++
++### Fixed Regressions
++- No regressions were found in existing tests. The entire suite of 923 tests passed successfully.
++
++### New Test Coverage
++- `tests/test_settlement_hardening.py`: Verified `SettlementSystem` correctly uses the injected `metrics_service` to record withdrawals and ignores non-withdrawal transactions.
++- `tests/unit/test_transaction_rollback.py`: Confirmed that batch rollback logic correctly reverses transactions and maintains zero-sum integrity.
++
++## Test Evidence
++
++### Full Test Suite Execution
++```
++$ python -m pytest tests/
++============================= test session starts ==============================
++platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0
++rootdir: /app
++configfile: pytest.ini
++plugins: anyio-4.12.1, asyncio-0.24.0, mock-3.15.1
++collected 923 items
++
++... [truncated for brevity] ...
++
++tests/unit/test_transaction_engine.py::test_executor_failure_rollback PASSED [ 97%]
++tests/unit/test_transaction_engine.py::test_engine_process_transaction_success PASSED [ 97%]
++tests/unit/test_transaction_engine.py::test_engine_process_transaction_validation_fail PASSED [ 97%]
++tests/unit/test_transaction_engine.py::test_engine_process_transaction_execution_fail PASSED [ 97%]
++tests/unit/test_transaction_engine.py::test_engine_process_batch_success PASSED [ 97%]
++tests/unit/test_transaction_engine.py::test_engine_process_batch_rollback PASSED [ 97%]
++...
++============================= 923 passed in 17.09s =============================
++```
++
++### Settlement Hardening Verification
++```
++$ python -m pytest tests/test_settlement_hardening.py
++============================= test session starts ==============================
++platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0
++rootdir: /app
++configfile: pytest.ini
++plugins: anyio-4.12.1, asyncio-0.24.0, mock-3.15.1
++collected 3 items
++
++tests/test_settlement_hardening.py::test_settlement_system_record_withdrawal PASSED [ 33%]
++tests/test_settlement_hardening.py::test_settlement_system_ignore_other_memos PASSED [ 66%]
++tests/test_settlement_hardening.py::test_settlement_system_no_metrics_service PASSED [100%]
++
++============================== 3 passed in 0.29s ===============================
++```
++
++### Transaction Rollback Verification
++```
++$ python -m pytest tests/unit/test_transaction_rollback.py
++============================= test session starts ==============================
++platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0
++rootdir: /app
++configfile: pytest.ini
++plugins: anyio-4.12.1, asyncio-0.24.0, mock-3.15.1
++collected 1 item
++
++tests/unit/test_transaction_rollback.py::test_process_batch_rollback_integrity PASSED [100%]
++
++============================== 1 passed in 0.30s ===============================
++```
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 364f1d06..96937aa3 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -995,3 +995,12 @@ class IConsumptionTracker(Protocol):
+     """Protocol for entities that track their consumption expenditure."""
+     def add_consumption_expenditure(self, amount: int, item_id: Optional[str] = None) -> None:
+         ...
++
++@runtime_checkable
++class IEconomicMetricsService(Protocol):
++    """
++    Protocol for recording economic metrics such as withdrawals for panic indexing.
++    """
++    def record_withdrawal(self, amount_pennies: int) -> None:
++        """Records a withdrawal event."""
++        ...
+diff --git a/modules/finance/transaction/adapter.py b/modules/finance/transaction/adapter.py
+index ffd95d86..6affb887 100644
+--- a/modules/finance/transaction/adapter.py
++++ b/modules/finance/transaction/adapter.py
+@@ -52,27 +52,22 @@ class RegistryAccountAccessor(IAccountAccessor):
+         self.registry = registry
+ 
+     def _get_agent(self, account_id: str) -> Any:
+-        # account_id in transaction is str, but agent id can be int.
+-        # We need to handle this conversion if registry expects int.
+-
+-        agent_id: Any = account_id
+-        # Try converting to int if string is numeric
++        # 1. Try as Int (Common Case)
+         if isinstance(account_id, str) and account_id.isdigit():
+-             agent_id = int(account_id)
++            try:
++                agent = self.registry.get_agent(int(account_id))
++                if agent: return agent
++            except (KeyError, ValueError):
++                pass
+ 
++        # 2. Try as String (Fallback or Non-Numeric ID)
+         try:
+-            agent = self.registry.get_agent(agent_id)
++            agent = self.registry.get_agent(account_id)
++            if agent: return agent
+         except (KeyError, ValueError):
+-            agent = None
+-
+-        if agent is None and agent_id != account_id:
+-             # Try original string key if int conversion failed/not found
+-             try:
+-                 agent = self.registry.get_agent(account_id)
+-             except (KeyError, ValueError):
+-                 agent = None
++            pass
+ 
+-        return agent
++        return None
+ 
+     def get_participant(self, account_id: str) -> ITransactionParticipant:
+         agent = self._get_agent(account_id)
+diff --git a/modules/finance/transaction/engine.py b/modules/finance/transaction/engine.py
+index 416dce3c..8101e7e8 100644
+--- a/modules/finance/transaction/engine.py
++++ b/modules/finance/transaction/engine.py
+@@ -142,6 +142,7 @@ class TransactionEngine(ITransactionEngine):
+         self.executor = executor
+         self.ledger = ledger
+         self.clock_callback = clock_callback
++        self.logger = logging.getLogger(__name__)
+ 
+     def _get_timestamp(self) -> float:
+         if self.clock_callback:
+@@ -318,7 +319,8 @@ class TransactionEngine(ITransactionEngine):
+                     description=f"ROLLBACK of {tx.transaction_id}"
+                 )
+                 self.executor.execute(reverse_tx)
++                self.logger.info(f"Rollback successful for {tx.transaction_id}")
+             except Exception as e:
+                  # CRITICAL: Rollback failed. Money is effectively created/destroyed or trapped.
+-                 logging.critical(f"BATCH ROLLBACK FAILED for {tx.transaction_id}. System State Inconsistent! Error: {e}")
++                 self.logger.critical(f"BATCH ROLLBACK FAILED for {tx.transaction_id}. System State Inconsistent! Error: {e}")
+                  # Continue to try rolling back others
+diff --git a/simulation/initialization/initializer.py b/simulation/initialization/initializer.py
+index 67b93675..46f7e95b 100644
+--- a/simulation/initialization/initializer.py
++++ b/simulation/initialization/initializer.py
+@@ -362,5 +362,10 @@ class SimulationInitializer(SimulationInitializerInterface):
+             sim.settlement_system.agent_registry = sim.agent_registry
+         else:
+             setattr(sim.settlement_system, 'agent_registry', sim.agent_registry)
++
++        # Inject Metrics Service (WorldState implements IEconomicMetricsService)
++        if isinstance(sim.settlement_system, SettlementSystem):
++             sim.settlement_system.set_metrics_service(sim.world_state)
++
+         self.logger.info(f'Simulation fully initialized with run_id: {sim.run_id}')
+         return sim
+\ No newline at end of file
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index 901384c8..f7a9a8ce 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -7,7 +7,7 @@ from simulation.finance.api import ITransaction
+ from modules.finance.api import (
+     IFinancialAgent, IFinancialEntity, IBank, InsufficientFundsError,
+     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID,
+-    IMonetaryAuthority
++    IMonetaryAuthority, IEconomicMetricsService
+ )
+ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry
+ from modules.system.constants import ID_CENTRAL_BANK
+@@ -34,9 +34,10 @@ class SettlementSystem(IMonetaryAuthority):
+     INTEGRATION: Uses TransactionEngine for atomic transfers.
+     """
+ 
+-    def __init__(self, logger: Optional[logging.Logger] = None, bank: Optional[IBank] = None):
++    def __init__(self, logger: Optional[logging.Logger] = None, bank: Optional[IBank] = None, metrics_service: Optional[IEconomicMetricsService] = None):
+         self.logger = logger if logger else logging.getLogger(__name__)
+         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
++        self.metrics_service = metrics_service
+         self.total_liquidation_losses: int = 0
+         self.agent_registry: Optional[IAgentRegistry] = None # Injected by SimulationInitializer
+ 
+@@ -49,6 +50,10 @@ class SettlementSystem(IMonetaryAuthority):
+         # AgentID -> Set[BankID] (for fast removal)
+         self._agent_banks: Dict[int, Set[int]] = defaultdict(set)
+ 
++    def set_metrics_service(self, service: IEconomicMetricsService) -> None:
++        """Sets the economic metrics service for recording system-wide financial events."""
++        self.metrics_service = service
++
+     def _get_engine(self, context_agents: Optional[List[Any]] = None) -> TransactionEngine:
+         """
+         Retrieves the TransactionEngine.
+@@ -391,10 +396,8 @@ class SettlementSystem(IMonetaryAuthority):
+ 
+         if result.status == 'COMPLETED':
+              # Phase 4.1: Record withdrawal volume for Panic Index
+-             if memo == "withdrawal" and self.agent_registry and hasattr(self.agent_registry, "world_state"):
+-                 ws = getattr(self.agent_registry, "world_state")
+-                 if ws and hasattr(ws, "record_withdrawal"):
+-                     ws.record_withdrawal(amount)
++             if memo == "withdrawal" and self.metrics_service:
++                 self.metrics_service.record_withdrawal(amount)
+              
+              return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
+         else:

@@ -24,11 +24,11 @@
 | **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Handler**: `bailout`, `bond_issuance` tx types not registered. | **High**: Failure. | Audit Done |
 | **TD-PROTO-MONETARY** | Transaction | **Monetary Protocol Violation**: `MonetaryHandler` uses `hasattr` instead of Protocols. | **Low**: Fragility. | Open |
 | **TD-AI-DEBT-AWARE** | AI | **Constraint Blindness**: AI spams spend intents at debt ceiling. | **Medium**: AI Performance. | **RESOLVED** |
-| **TD-CONF-MAGIC-NUMBERS** | Config | **Magic Numbers**: Hardcoded constants in `FinanceEngine` (Z-Score, Divisors). | **Low**: Configurability. | Open |
-| **TD-ARCH-LOAN-CIRCULAR** | Architecture | **Circular Dependency**: Firm depends on concrete `LoanMarket` for debt status. | **Medium**: Coupling. | Open |
+| **TD-CONF-MAGIC-NUMBERS** | Config | **Magic Numbers**: Hardcoded constants in `FinanceEngine` (Z-Score, Divisors). | **Low**: Configurability. | **RESOLVED** |
+| **TD-ARCH-LOAN-CIRCULAR** | Architecture | **Circular Dependency**: Firm depends on concrete `LoanMarket` for debt status. | **Medium**: Coupling. | **RESOLVED** |
 | **TD-ECON-WAR-STIMULUS** | Economic | **Fiscal Masking**: Stimulus prevents GDP 0 but masks wage-affordability imbalances. | **Medium**: Policy. | Open |
-| **TD-MARKET-FLOAT-CAST** | Market | **Unsafe Quantization**: Direct `int()` cast in `matching_engine.py` instead of rounding. | **Medium**: Precision. | Open |
-| **TD-MARKET-STRING-PARSE** | Market | **Brittle Key Parsing**: `StockMarket` splits strings to find `firm_id`. | **Low**: Fragility. | Open |
+| **TD-MARKET-FLOAT-CAST** | Market | **Unsafe Quantization**: Direct `int()` cast in `matching_engine.py` instead of rounding. | **Medium**: Precision. | **RESOLVED** |
+| **TD-MARKET-STRING-PARSE** | Market | **Brittle Key Parsing**: `StockMarket` splits strings to find `firm_id`. | **Low**: Fragility. | **RESOLVED** |
 | **TD-DEPR-STOCK-DTO** | Market | **Legacy DTO**: `StockOrder` is deprecated. Use `CanonicalOrderDTO`. | **Low**: Tech Debt. | Open |
 | **TD-LIFECYCLE-STALE** | Lifecycle | **Queue Pollution**: Missing scrubbing of `inter_tick_queue` after liquidation. | **Medium**: Determinism. | Audit Done |
 | **TD-CONF-GHOST-BIND** | Config | **Ghost Constants**: Modules bind config values at import time. | **Medium**: Dynamic. | Identified |
