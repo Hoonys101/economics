@@ -119,11 +119,13 @@ class TestPhase1DecisionRefactor:
 
         firm = MagicMock()
         firm.is_active = True
+        firm.market_insight = 0.5
         firm.make_decision.return_value = ([], None) # Legacy return
         firm.get_agent_data.return_value = {}
 
         household = MagicMock()
         household._bio_state.is_active = True
+        household._econ_state.market_insight = 0.5
         household.make_decision.return_value = ([], None) # Legacy return
         household.get_agent_data.return_value = {}
 

@@ -133,6 +133,7 @@ class QTableManager:
                 (next_q_values.get(a, 0.0) for a in next_actions), default=0.0
             )
 
-        new_value = old_value + alpha * (reward + gamma * next_max - old_value)
+        td_error = reward + gamma * next_max - old_value
+        new_value = old_value + alpha * td_error
         self.set_q_value(state, action, new_value)
-        return new_value - old_value
+        return td_error

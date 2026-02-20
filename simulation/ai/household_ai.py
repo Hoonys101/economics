@@ -280,12 +280,15 @@ class HouseholdAI(BaseAIEngine):
         reward: float,
         next_agent_data: Dict[str, Any],
         next_market_data: Dict[str, Any],
-    ) -> None:
+    ) -> float:
         """
         Update Household Q-Tables.
+        Returns the maximum absolute TD-Error encountered.
         """
         next_state = self._get_common_state(next_agent_data, next_market_data)
         actions = list(range(len(self.AGGRESSIVENESS_LEVELS)))
+
+        max_td_error = 0.0
 
         # Update Consumption Q-Tables
         for item_id, q_manager in self.q_consumption.items():
@@ -293,7 +296,7 @@ class HouseholdAI(BaseAIEngine):
             last_action = self.last_consumption_action_idxs.get(item_id)
             
             if last_state is not None and last_action is not None:
-                q_manager.update_q_table(
+                td_error = q_manager.update_q_table(
                     last_state,
                     last_action,
                     reward,
@@ -302,10 +305,12 @@ class HouseholdAI(BaseAIEngine):
                     self.base_alpha,
                     self.gamma
                 )
+                if abs(td_error) > max_td_error:
+                    max_td_error = abs(td_error)
 
         # Update Work Q-Table
         if self.last_work_state is not None and self.last_work_action_idx is not None:
-            self.q_work.update_q_table(
+            td_error = self.q_work.update_q_table(
                 self.last_work_state,
                 self.last_work_action_idx,
                 reward,
@@ -314,10 +319,12 @@ class HouseholdAI(BaseAIEngine):
                 self.base_alpha,
                 self.gamma
             )
+            if abs(td_error) > max_td_error:
+                max_td_error = abs(td_error)
 
         # Update Investment Q-Table
         if self.last_investment_state is not None and self.last_investment_action_idx is not None:
-            self.q_investment.update_q_table(
+            td_error = self.q_investment.update_q_table(
                 self.last_investment_state,
                 self.last_investment_action_idx,
                 reward,
@@ -326,6 +333,10 @@ class HouseholdAI(BaseAIEngine):
                 self.base_alpha,
                 self.gamma
             )
+            if abs(td_error) > max_td_error:
+                max_td_error = abs(td_error)
+
+        return max_td_error
 
     # Legacy Methods
     def _get_strategic_state(self, a, m): pass

@@ -168,6 +168,7 @@ class Household(
             labor_skill=1.0,
             education_xp=0.0,
             education_level=0,
+            market_insight=0.5, # Phase 4.1: Dynamic Cognitive Filter
             expected_wage_pennies=1000, # Default 10.00
             talent=talent,
             skills={},
@@ -863,11 +864,21 @@ class Household(
         next_agent_data = context["next_agent_data"]
         next_market_data = context["next_market_data"]
         if hasattr(self.decision_engine, 'ai_engine'):
-             self.decision_engine.ai_engine.update_learning_v2(
+             td_error = self.decision_engine.ai_engine.update_learning_v2(
                 reward=reward,
                 next_agent_data=next_agent_data,
                 next_market_data=next_market_data,
             )
+
+             # Phase 4.1: Active Learning (Insight Dynamics)
+             # Decay
+             self._econ_state.market_insight = max(0.0, self._econ_state.market_insight - 0.001)
+
+             # Boost from Learning Surprise (TD-Error)
+             if isinstance(td_error, (int, float)):
+                 # Normalized boost using exponential saturation
+                 boost = 0.05 * (1.0 - math.exp(-abs(td_error) / 1000.0))
+                 self._econ_state.market_insight = min(1.0, self._econ_state.market_insight + boost)
 
     # --- Helpers ---
 

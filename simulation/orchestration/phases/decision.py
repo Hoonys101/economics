@@ -10,6 +10,8 @@ from simulation.orchestration.utils import prepare_market_data
 from simulation.orchestration.factories import DecisionInputFactory, MarketSnapshotFactory
 from simulation.markets.order_book_market import OrderBookMarket
 from simulation.core_agents import Household
+from simulation.systems.perception_system import PerceptionSystem
+
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
 logger = logging.getLogger(__name__)
@@ -20,12 +22,17 @@ class Phase1_Decision(IPhaseStrategy):
         self.world_state = world_state
         self.input_factory = DecisionInputFactory()
         self.snapshot_factory = MarketSnapshotFactory()
+        self.perception_system = PerceptionSystem()
 
     def execute(self, state: SimulationState) -> SimulationState:
         self._snapshot_agent_pre_states(state)
         market_data = prepare_market_data(state)
         state.market_data = market_data
         market_snapshot = self.snapshot_factory.create_snapshot(state)
+
+        # Update perception system with the raw truth
+        self.perception_system.update(market_snapshot)
+
         base_input_dto = self.input_factory.create_decision_input(state, self.world_state, market_snapshot)
         self._dispatch_firm_decisions(state, base_input_dto)
         self._dispatch_household_decisions(state, base_input_dto)
@@ -49,7 +56,17 @@ class Phase1_Decision(IPhaseStrategy):
                 pre_strategic_state = firm.decision_engine.ai_engine._get_strategic_state(firm.get_agent_data(), state.market_data)
                 pre_tactical_state = firm.decision_engine.ai_engine._get_tactical_state(firm.decision_engine.ai_engine.chosen_intention, firm.get_agent_data(), state.market_data)
                 firm_pre_states[firm.id] = {'pre_strategic_state': pre_strategic_state, 'pre_tactical_state': pre_tactical_state, 'chosen_intention': firm.decision_engine.ai_engine.chosen_intention, 'chosen_tactic': firm.decision_engine.ai_engine.last_chosen_tactic}
-            firm_input = replace(base_input_dto, stress_scenario_config=self.world_state.stress_scenario_config)
+            # Phase 4.1: Perceptual Filters
+            market_insight = firm.market_insight if hasattr(firm, 'market_insight') else 0.5
+            filtered_snapshot = self.perception_system.apply_filter(market_insight, base_input_dto.market_snapshot)
+            filtered_policy = self.perception_system.apply_policy_filter(market_insight, base_input_dto.government_policy)
+
+            firm_input = replace(
+                base_input_dto,
+                market_snapshot=filtered_snapshot,
+                government_policy=filtered_policy,
+                stress_scenario_config=self.world_state.stress_scenario_config
+            )
             decision_output = firm.make_decision(firm_input)
             if hasattr(decision_output, 'orders'):
                 firm_orders = decision_output.orders
@@ -72,7 +89,18 @@ class Phase1_Decision(IPhaseStrategy):
             if hasattr(household.decision_engine, 'ai_engine') and household.decision_engine.ai_engine:
                 pre_strategic_state = household.decision_engine.ai_engine._get_strategic_state(household.get_agent_data(), state.market_data)
                 household_pre_states[household.id] = {'pre_strategic_state': pre_strategic_state}
-            household_input = replace(base_input_dto, stress_scenario_config=self.world_state.stress_scenario_config, macro_context=base_input_dto.macro_context)
+            # Phase 4.1: Perceptual Filters
+            market_insight = household._econ_state.market_insight if hasattr(household, '_econ_state') else 0.5
+            filtered_snapshot = self.perception_system.apply_filter(market_insight, base_input_dto.market_snapshot)
+            filtered_policy = self.perception_system.apply_policy_filter(market_insight, base_input_dto.government_policy)
+
+            household_input = replace(
+                base_input_dto,
+                market_snapshot=filtered_snapshot,
+                government_policy=filtered_policy,
+                stress_scenario_config=self.world_state.stress_scenario_config,
+                macro_context=base_input_dto.macro_context
+            )
             decision_output = household.make_decision(household_input)
             if hasattr(decision_output, 'orders'):
                 household_orders = decision_output.orders

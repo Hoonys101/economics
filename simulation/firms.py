@@ -163,6 +163,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         
         # Tracking variables
         self.age = 0
+        self.market_insight = 0.5 # Phase 4.1: Dynamic Cognitive Filter
 
     # --- IConfigurable Implementation ---
 
@@ -793,6 +794,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             "base_quality": self.base_quality,
             "inventory_quality": self.inventory_component.inventory_quality.copy(),
             "automation_level": self.automation_level,
+            "market_insight": self.market_insight,
         }
 
     def get_state_dto(self) -> FirmStateDTO:
@@ -869,7 +871,8 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             hr=hr_dto,
             agent_data=self.get_agent_data(),
             system2_guidance={},
-            sentiment_index=sentiment
+            sentiment_index=sentiment,
+            market_insight=self.market_insight
         )
 
     def get_pre_state_data(self) -> Dict[str, Any]:
@@ -1335,11 +1338,22 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         next_agent_data = context["next_agent_data"]
         next_market_data = context["next_market_data"]
         if hasattr(self.decision_engine, 'ai_engine'):
-            self.decision_engine.ai_engine.update_learning_v2(
+            td_error = self.decision_engine.ai_engine.update_learning_v2(
                 reward=reward,
                 next_agent_data=next_agent_data,
                 next_market_data=next_market_data,
             )
+
+            # Phase 4.1: Active Learning (Insight Dynamics)
+            # Decay
+            self.market_insight = max(0.0, self.market_insight - 0.001)
+
+            # Boost from Learning Surprise (TD-Error)
+            if isinstance(td_error, (int, float)):
+                # Normalized boost using exponential saturation
+                # Assuming significant error starts around 1000 pennies (10.00)
+                boost = 0.05 * (1.0 - math.exp(-abs(td_error) / 1000.0))
+                self.market_insight = min(1.0, self.market_insight + boost)
 
         # Update State Tracking for Rewards (Moved from Engine for Purity)
         self.prev_awareness = self.sales_state.brand_awareness

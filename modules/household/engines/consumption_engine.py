@@ -87,5 +87,10 @@ class ConsumptionEngine(IConsumptionEngine):
         new_econ_state = copy.deepcopy(econ_state)
         if leisure_type == 'SELF_DEV' and prod_gained > 0:
             new_econ_state.labor_skill += prod_gained
+
+        # Phase 4.1: Insight Boost from Education
+        if 'education_service' in consumed_items and consumed_items['education_service'] > 0:
+            new_econ_state.market_insight = min(1.0, new_econ_state.market_insight + 0.05)
+
         effect_dto = LeisureEffectDTO(leisure_type=leisure_type, leisure_hours=leisure_hours, utility_gained=utility_gained, xp_gained=xp_gained)
         return (new_social_state, new_econ_state, effect_dto)

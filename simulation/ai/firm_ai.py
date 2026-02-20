@@ -147,12 +147,13 @@ class FirmAI(BaseAIEngine):
         reward: float,
         next_agent_data: Dict[str, Any],
         next_market_data: Dict[str, Any],
-    ) -> None:
+    ) -> float:
         """
         Update Q-tables for V2 architecture using the same global reward for all channels.
+        Returns the maximum absolute TD-Error encountered (proxy for surprise/learning).
         """
         if self.last_state is None:
-            return
+            return 0.0
 
         next_state = self._get_common_state(next_agent_data, next_market_data)
         all_actions = list(range(len(self.AGGRESSIVENESS_LEVELS)))
@@ -167,10 +168,12 @@ class FirmAI(BaseAIEngine):
             (self.q_debt, 'debt'),
         ]
 
+        max_td_error = 0.0
+
         for q_mgr, key in managers:
             if key in self.last_actions_idx:
                 action_idx = self.last_actions_idx[key]
-                q_mgr.update_q_table(
+                td_error = q_mgr.update_q_table(
                     self.last_state,
                     action_idx,
                     reward,
@@ -179,6 +182,10 @@ class FirmAI(BaseAIEngine):
                     self.base_alpha,
                     self.gamma
                 )
+                if abs(td_error) > max_td_error:
+                    max_td_error = abs(td_error)
+
+        return max_td_error
 
     def calculate_reward(self, firm_agent: "Firm", prev_state: Dict, current_state: Dict) -> float:
         """
