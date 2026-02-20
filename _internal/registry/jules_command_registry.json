@@ -20,23 +20,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "phase4-ai-insight-engine": {
-      "key": "phase4-ai-insight-engine",
-      "title": "4.1-A-4: Dynamic Insight Engine (3-Pillar Learning)",
-      "type": "jules",
-      "instruction_raw": "AITrainingManager(Active Learning), CommerceSystem(Service Boost), Engine(Natural Decay)\uc5d0 Market Insight 3\ub300 \uba54\ucee4\ub2c8\uc998\uc744 \uad6c\ud604\ud558\ub77c.",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_phase4-ai-insight-engine_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "phase4-ai-labor-matching": {
       "key": "phase4-ai-labor-matching",
       "title": "4.1-A-5: Labor Market Utility-Priority Matching",
