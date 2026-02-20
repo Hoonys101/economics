@@ -142,6 +142,7 @@ class TransactionEngine(ITransactionEngine):
         self.executor = executor
         self.ledger = ledger
         self.clock_callback = clock_callback
+        self.logger = logging.getLogger(__name__)
 
     def _get_timestamp(self) -> float:
         if self.clock_callback:
@@ -318,7 +319,8 @@ class TransactionEngine(ITransactionEngine):
                     description=f"ROLLBACK of {tx.transaction_id}"
                 )
                 self.executor.execute(reverse_tx)
+                self.logger.info(f"Rollback successful for {tx.transaction_id}")
             except Exception as e:
                  # CRITICAL: Rollback failed. Money is effectively created/destroyed or trapped.
-                 logging.critical(f"BATCH ROLLBACK FAILED for {tx.transaction_id}. System State Inconsistent! Error: {e}")
+                 self.logger.critical(f"BATCH ROLLBACK FAILED for {tx.transaction_id}. System State Inconsistent! Error: {e}")
                  # Continue to try rolling back others

@@ -362,5 +362,10 @@ class SimulationInitializer(SimulationInitializerInterface):
             sim.settlement_system.agent_registry = sim.agent_registry
         else:
             setattr(sim.settlement_system, 'agent_registry', sim.agent_registry)
+
+        # Inject Metrics Service (WorldState implements IEconomicMetricsService)
+        if isinstance(sim.settlement_system, SettlementSystem):
+             sim.settlement_system.set_metrics_service(sim.world_state)
+
         self.logger.info(f'Simulation fully initialized with run_id: {sim.run_id}')
         return sim

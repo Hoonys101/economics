@@ -52,27 +52,22 @@ class RegistryAccountAccessor(IAccountAccessor):
         self.registry = registry
 
     def _get_agent(self, account_id: str) -> Any:
-        # account_id in transaction is str, but agent id can be int.
-        # We need to handle this conversion if registry expects int.
-
-        agent_id: Any = account_id
-        # Try converting to int if string is numeric
+        # 1. Try as Int (Common Case)
         if isinstance(account_id, str) and account_id.isdigit():
-             agent_id = int(account_id)
+            try:
+                agent = self.registry.get_agent(int(account_id))
+                if agent: return agent
+            except (KeyError, ValueError):
+                pass
 
+        # 2. Try as String (Fallback or Non-Numeric ID)
         try:
-            agent = self.registry.get_agent(agent_id)
+            agent = self.registry.get_agent(account_id)
+            if agent: return agent
         except (KeyError, ValueError):
-            agent = None
+            pass
 
-        if agent is None and agent_id != account_id:
-             # Try original string key if int conversion failed/not found
-             try:
-                 agent = self.registry.get_agent(account_id)
-             except (KeyError, ValueError):
-                 agent = None
-
-        return agent
+        return None
 
     def get_participant(self, account_id: str) -> ITransactionParticipant:
         agent = self._get_agent(account_id)
