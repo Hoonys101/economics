@@ -4,6 +4,7 @@ from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction
 from simulation.core_agents import Household
 from simulation.firms import Firm
+from modules.finance.api import ILoanRepayer, IExpenseTracker
 
 logger = logging.getLogger(__name__)
 
@@ -24,15 +25,19 @@ class FinancialTransactionHandler(ITransactionHandler):
         if tx_type in ["interest_payment", "loan_interest", "deposit_interest", "deposit", "withdrawal", "bank_profit_remittance", "holding_cost"]:
              success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
 
-             if success and isinstance(buyer, Firm):
+             if success and isinstance(buyer, IExpenseTracker):
                  buyer.record_expense(int(trade_value), tx.currency)
 
         elif tx_type == "dividend":
              success = context.settlement_system.transfer(seller, buyer, trade_value, "dividend_payment")
 
-             if success and isinstance(buyer, Household) and hasattr(buyer, "capital_income_this_tick"):
-                 # capital_income_this_tick is int in EconStateDTO
-                 buyer.capital_income_this_tick += int(trade_value)
+             if success and isinstance(buyer, Household):
+                 # Household capital income tracking
+                 # We assume Household implements this attribute. Ideally Protocol but attribute access is messy.
+                 # Keeping hasattr check for now or just direct access if we trust type.
+                 # Using direct access since Household is concrete here.
+                 if hasattr(buyer, "capital_income_this_tick"):
+                     buyer.capital_income_this_tick += int(trade_value)
 
         elif tx_type == "tax":
             # Atomic Settlement to Government
@@ -46,6 +51,8 @@ class FinancialTransactionHandler(ITransactionHandler):
             success = context.settlement_system.settle_atomic(buyer, credits, context.time)
 
             if success:
+                 # Gov record_revenue is complex (takes dict), not IRevenueTracker (takes int)
+                 # Keeping as is for Gov
                  gov.record_revenue({
                          "success": True,
                          "amount_collected": int(trade_value),
@@ -56,7 +63,7 @@ class FinancialTransactionHandler(ITransactionHandler):
                      })
 
                  # WO-116 Fix: Ensure Firms record tax as expense for accounting integrity
-                 if isinstance(buyer, Firm):
+                 if isinstance(buyer, IExpenseTracker):
                      buyer.record_expense(int(trade_value), tx.currency)
 
         elif tx_type in ["repayment", "loan_repayment"]:
@@ -66,16 +73,16 @@ class FinancialTransactionHandler(ITransactionHandler):
              # Atomic Ledger Update (Phase 4.1)
              if success and tx_type == "loan_repayment":
                  # Update Ledger via Bank Interface
-                 if hasattr(seller, 'repay_loan'):
+                 if isinstance(seller, ILoanRepayer):
                       seller.repay_loan(tx.item_id, int(trade_value))
-                 elif hasattr(context, 'bank') and context.bank and hasattr(context.bank, 'repay_loan'):
+                 elif hasattr(context, 'bank') and context.bank and isinstance(context.bank, ILoanRepayer):
                       # Fallback if seller isn't the bank object (e.g. ID mismatch or proxy)
                       context.bank.repay_loan(tx.item_id, int(trade_value))
 
         elif tx_type in ["investment"]:
              # Transfer + Expense Recording (CAPEX treated as expense for consistency)
              success = context.settlement_system.transfer(buyer, seller, trade_value, tx_type)
-             if success and isinstance(buyer, Firm):
+             if success and isinstance(buyer, IExpenseTracker):
                  buyer.record_expense(int(trade_value), tx.currency)
 
         return success is not None

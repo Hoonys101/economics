@@ -362,5 +362,7 @@ class SimulationInitializer(SimulationInitializerInterface):
             sim.settlement_system.agent_registry = sim.agent_registry
         else:
             setattr(sim.settlement_system, 'agent_registry', sim.agent_registry)
+
+        sim.settlement_system.set_panic_recorder(sim.world_state)
         self.logger.info(f'Simulation fully initialized with run_id: {sim.run_id}')
         return sim

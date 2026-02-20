@@ -7,7 +7,7 @@ from simulation.finance.api import ITransaction
 from modules.finance.api import (
     IFinancialAgent, IFinancialEntity, IBank, InsufficientFundsError,
     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID,
-    IMonetaryAuthority
+    IMonetaryAuthority, IPanicRecorder, ICentralBank
 )
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry
 from modules.system.constants import ID_CENTRAL_BANK
@@ -39,6 +39,10 @@ class SettlementSystem(IMonetaryAuthority):
         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
         self.total_liquidation_losses: int = 0
         self.agent_registry: Optional[IAgentRegistry] = None # Injected by SimulationInitializer
+        self.panic_recorder: Optional[IPanicRecorder] = None # Injected by SimulationInitializer
+
+    def set_panic_recorder(self, recorder: IPanicRecorder) -> None:
+        self.panic_recorder = recorder
 
         # Transaction Engine (Initialized lazily)
         self._transaction_engine: Optional[TransactionEngine] = None
@@ -391,10 +395,8 @@ class SettlementSystem(IMonetaryAuthority):
 
         if result.status == 'COMPLETED':
              # Phase 4.1: Record withdrawal volume for Panic Index
-             if memo == "withdrawal" and self.agent_registry and hasattr(self.agent_registry, "world_state"):
-                 ws = getattr(self.agent_registry, "world_state")
-                 if ws and hasattr(ws, "record_withdrawal"):
-                     ws.record_withdrawal(amount)
+             if memo == "withdrawal" and self.panic_recorder:
+                 self.panic_recorder.record_withdrawal(amount)
              
              return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
         else:

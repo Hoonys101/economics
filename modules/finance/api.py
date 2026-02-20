@@ -995,3 +995,40 @@ class IConsumptionTracker(Protocol):
     """Protocol for entities that track their consumption expenditure."""
     def add_consumption_expenditure(self, amount: int, item_id: Optional[str] = None) -> None:
         ...
+
+@runtime_checkable
+class IPanicRecorder(Protocol):
+    """Protocol for recording panic metrics (e.g., bank run withdrawals)."""
+    def record_withdrawal(self, amount_pennies: int) -> None: ...
+
+@runtime_checkable
+class ISalesTracker(Protocol):
+    """Protocol for tracking sales metrics."""
+    sales_volume_this_tick: float
+    def record_sale(self, item_id: str, quantity: float, current_tick: int) -> None: ...
+
+@runtime_checkable
+class IRevenueTracker(Protocol):
+    """Protocol for tracking revenue."""
+    def record_revenue(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None: ...
+
+@runtime_checkable
+class IExpenseTracker(Protocol):
+    """Protocol for tracking expenses."""
+    def record_expense(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None: ...
+
+@runtime_checkable
+class IConsumer(Protocol):
+    """Protocol for agents that consume goods."""
+    def consume(self, item_id: str, quantity: float, current_tick: int) -> None: ...
+    def record_consumption(self, quantity: float, is_food: bool = False) -> None: ...
+
+@runtime_checkable
+class ISolvencyChecker(Protocol):
+    """Protocol for agents that can check their own solvency."""
+    def check_solvency(self, government: Any) -> None: ...
+
+@runtime_checkable
+class ILoanRepayer(Protocol):
+    """Protocol for entities that can repay loans."""
+    def repay_loan(self, loan_id: str, amount: int) -> int: ...
