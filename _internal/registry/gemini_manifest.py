@@ -23,54 +23,55 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "fix-dto-naming-alignment": {
-        "title": "Align SimulationState DTO Naming",
+    "phase23-spec-safety-net": {
+        "title": "P1 Mission Spec: Operation Safety Net",
         "worker": "spec",
-        "instruction": "Align SimulationState DTO naming with WorldState as per MISSION_PHASE23_HYGIENE_SPEC.md. Specifically rename government and god_commands to avoid singleton/deque mismatches.",
+        "instruction": """Create a MISSION_spec.md for Jules to restore test suite integrity. 
+Focus on:
+1. Aligning Transaction Mocks (tests/mocks/) with ITransactionParticipant.
+2. Updating Lifecycle tests (test_engine.py) for Phase_Bankruptcy sequencing.
+3. Patching Cockpit mocks to use CockpitOrchestrator.
+
+Refer to 'Mission 1.1' and '1.2' in the Roadmap.""",
         "context_files": [
-            "c:/coding/economics/simulation/dtos/api.py",
-            "c:/coding/economics/simulation/world_state.py",
-            "c:/coding/economics/simulation/orchestration/tick_orchestrator.py",
-            "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_PHASE23_HYGIENE_SPEC.md"
+            "design/3_work_artifacts/specs/PHASE23_LIQUIDATION_ROADMAP.md",
+            "tests/mocks/agent_mocks.py",
+            "tests/system/test_engine.py",
+            "simulation/orchestration/tick_orchestrator.py"
         ]
     },
-    "modernize-test-and-legacy-api": {
-        "title": "Modernize Test & Legacy API",
+    "phase23-spec-penny-perfect": {
+        "title": "P2 Mission Spec: Operation Penny Perfect",
         "worker": "spec",
-        "instruction": "Modernize tests and resolve legacy module/API imports as per MISSION_PHASE23_HYGIENE_SPEC.md. Replace HouseholdFactory, collect_tax, and _handle_agent_liquidation with modern counterparts.",
+        "instruction": """Create a MISSION_spec.md for Jules to enforce the Penny Standard.
+Focus on:
+1. Converting SettlementSystem state and matching logic to absolute 'int' pennies.
+2. Registering 'bailout' and 'bond_issuance' handlers in TransactionProcessor.
+3. Eliminating 'hasattr' logic leaks in BankTransactionHandler.
+
+Refer to 'Mission 2.1' and '2.2' in the Roadmap.""",
         "context_files": [
-            "c:/coding/economics/tests/system/test_engine.py",
-            "c:/coding/economics/tests/integration/test_tick_normalization.py",
-            "c:/coding/economics/tests/orchestration/test_state_synchronization.py",
-            "c:/coding/economics/scripts/audit_zero_sum.py",
-            "c:/coding/economics/simulation/systems/demographic_manager.py",
-            "c:/coding/economics/simulation/initialization/initializer.py",
-            "c:/coding/economics/simulation/systems/tax_agency.py",
-            "c:/coding/economics/simulation/systems/api.py",
-            "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_PHASE23_HYGIENE_SPEC.md"
+            "design/3_work_artifacts/specs/PHASE23_LIQUIDATION_ROADMAP.md",
+            "simulation/systems/settlement_system.py",
+            "simulation/systems/transaction_processor.py",
+            "simulation/systems/handlers/monetary_handler.py"
         ]
     },
-    "phase23-fix-household-integration-test": {
-        "title": "Analyze & Fix Household Integration Test",
+    "phase23-spec-surgical-separation": {
+        "title": "P3 Mission Spec: Operation Surgical Separation",
         "worker": "spec",
-        "instruction": "Analyze the failing integration test in test_household_integration_new.py. The test is currently skipped because BudgetEngine/ConsumptionEngine interaction results in empty orders. Determine if this is a test setup issue (missing initial assets/config) or a logic flaw in engine synchronization, and write a MISSION_spec for the fix.",
+        "instruction": """Create a MISSION_spec.md for Jules to decouple Firm departments.
+Focus on:
+1. Extracting HR/Finance logic into stateless engines.
+2. Removing 'self.parent' references in departments.
+3. Standardizing WorldState.government as a singleton.
+
+Refer to 'Mission 3.1' and '3.2' in the Roadmap.""",
         "context_files": [
-            "c:/coding/economics/tests/unit/decisions/test_household_integration_new.py",
-            "c:/coding/economics/simulation/core_agents.py",
-            "c:/coding/economics/modules/household/engines/budget.py",
-            "c:/coding/economics/modules/household/engines/consumption_engine.py",
-            "c:/coding/economics/modules/household/api.py"
-        ]
-    },
-    "phase23-forensic-debt-audit": {
-        "title": "Phase 23 Forensic Debt Audit",
-        "worker": "audit",
-        "instruction": "Analyze the provided diagnostic logs and AUTOPSY_REPORT for any recurring errors, architectural drifts (e.g., God-class behavior, DTO violations), or patterns of failure. identify technical debt candidates and output an Insight Report.",
-        "context_files": [
-            "reports/AUTOPSY_REPORT.md",
-            "logs/full_log.txt",
-            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
-            "design/1_governance/architecture/ARCH_AGENTS.md"
+            "design/3_work_artifacts/specs/PHASE23_LIQUIDATION_ROADMAP.md",
+            "simulation/core_agents.py",
+            "simulation/decisions/firm/hr_department.py",
+            "simulation/world_state.py"
         ]
     }
 }

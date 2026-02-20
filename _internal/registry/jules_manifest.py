@@ -16,29 +16,24 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "phase23-dto-core": {
-        "title": "Phase 23 DTO Core Alignment",
-        "instruction": "Execute naming alignment for DTOs and Orchestrator as per the spec file.",
-        "file": "c:/coding/economics/design/3_work_artifacts/specs/PHASE23_DTO_ALIGNMENT_CORE.md"
-    },
-    "phase23-dto-modules": {
-        "title": "Phase 23 DTO Module Alignment",
-        "instruction": "Update module-level government references as per the spec file.",
-        "file": "c:/coding/economics/design/3_work_artifacts/specs/PHASE23_DTO_ALIGNMENT_MODULES.md"
-    },
-    "phase23-dto-tests": {
-        "title": "Phase 23 DTO Test Alignment",
-        "instruction": "Modernize test mocks for SimulationState parity as per the spec file.",
-        "file": "c:/coding/economics/design/3_work_artifacts/specs/PHASE23_DTO_ALIGNMENT_TESTS.md"
-    },
-    "phase23-legacy-cleanup": {
-        "title": "Phase 23 Legacy API Cleanup",
-        "instruction": "Remove deprecated factories and stale lifecycle calls as per the spec file.",
-        "file": "c:/coding/economics/design/3_work_artifacts/specs/PHASE23_LEGACY_CLEANUP.md"
-    },
     "phase23-fix-household-integration-test": {
         "title": "Fix Household Integration Test",
         "instruction": "Hydrate Household wallet with initial liquidity and remove skip decorator as per the spec.",
         "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_phase23-fix-household-integration-test_SPEC.md"
+    },
+    "phase23-safety-net": {
+        "title": "P1 Mission: Operation Safety Net",
+        "instruction": "Restore test suite integrity by aligning mocks and lifecycle assumptions.",
+        "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_phase23-spec-safety-net_SPEC.md"
+    },
+    "phase23-penny-perfect": {
+        "title": "P2 Mission: Operation Penny Perfect",
+        "instruction": "Enforce the Penny Standard (int) and add missing financial handlers.",
+        "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_phase23-spec-penny-perfect_SPEC.md"
+    },
+    "phase23-surgical-separation": {
+        "title": "P3 Mission: Operation Surgical Separation",
+        "instruction": "Decouple Firm departments into stateless engines and fix WorldState singletons.",
+        "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_phase23-spec-surgical-separation_SPEC.md"
     }
 }

@@ -3,11 +3,11 @@
     "version": "1.0"
   },
   "missions": {
-    "fix-dto-naming-alignment": {
-      "key": "fix-dto-naming-alignment",
-      "title": "Align SimulationState DTO Naming",
+    "phase23-debt-liquidation-planning": {
+      "key": "phase23-debt-liquidation-planning",
+      "title": "Phase 23 Technical Debt Liquidation Planning",
       "type": "gemini",
-      "instruction_raw": "Align SimulationState DTO naming with WorldState as per MISSION_PHASE23_HYGIENE_SPEC.md. Specifically rename government and god_commands to avoid singleton/deque mismatches.",
+      "instruction_raw": "Analyze the open items in TECH_DEBT_LEDGER.md. Create a comprehensive liquidation plan that groups these debts logically into parallelizable units of work.\n\n[CRITICAL GUIDELINES]:\n1. **Parallel Execution**: Design the plan so that multiple workers can implement fixes simultaneously without overlap.\n2. **File Consolidation**: If multiple debt items affect the same file, group them into a single 'Hygiene' mission for that file to minimize I/O and context switching.\n3. **Prioritization**: Address 'Critical' and 'High' priority items first.\n\nOutput a structured liquidation roadmap in `design/3_work_artifacts/specs/PHASE23_LIQUIDATION_ROADMAP.md`.",
       "status": "pending",
       "created_at": "",
       "command": null,
@@ -16,20 +16,19 @@
       "session_id": null,
       "worker": "spec",
       "context_files": [
-        "c:/coding/economics/simulation/dtos/api.py",
-        "c:/coding/economics/simulation/world_state.py",
-        "c:/coding/economics/simulation/orchestration/tick_orchestrator.py",
-        "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_PHASE23_HYGIENE_SPEC.md"
+        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
+        "design/1_governance/architecture/ARCH_AGENTS.md",
+        "design/1_governance/architecture/ARCH_SEQUENCING.md"
       ],
       "output_path": null,
       "model": null,
       "audit_requirements": null
     },
-    "modernize-test-and-legacy-api": {
-      "key": "modernize-test-and-legacy-api",
-      "title": "Modernize Test & Legacy API",
+    "phase23-spec-safety-net": {
+      "key": "phase23-spec-safety-net",
+      "title": "P1 Mission Spec: Operation Safety Net",
       "type": "gemini",
-      "instruction_raw": "Modernize tests and resolve legacy module/API imports as per MISSION_PHASE23_HYGIENE_SPEC.md. Replace HouseholdFactory, collect_tax, and _handle_agent_liquidation with modern counterparts.",
+      "instruction_raw": "Create a MISSION_spec.md for Jules to restore test suite integrity. \nFocus on:\n1. Aligning Transaction Mocks (tests/mocks/) with ITransactionParticipant.\n2. Updating Lifecycle tests (test_engine.py) for Phase_Bankruptcy sequencing.\n3. Patching Cockpit mocks to use CockpitOrchestrator.\n\nRefer to 'Mission 1.1' and '1.2' in the Roadmap.",
       "status": "pending",
       "created_at": "",
       "command": null,
@@ -38,25 +37,20 @@
       "session_id": null,
       "worker": "spec",
       "context_files": [
-        "c:/coding/economics/tests/system/test_engine.py",
-        "c:/coding/economics/tests/integration/test_tick_normalization.py",
-        "c:/coding/economics/tests/orchestration/test_state_synchronization.py",
-        "c:/coding/economics/scripts/audit_zero_sum.py",
-        "c:/coding/economics/simulation/systems/demographic_manager.py",
-        "c:/coding/economics/simulation/initialization/initializer.py",
-        "c:/coding/economics/simulation/systems/tax_agency.py",
-        "c:/coding/economics/simulation/systems/api.py",
-        "C:/Users/Gram Pro/.gemini/antigravity/brain/deea4f29-ec94-41e4-965f-ed0add30f6c7/MISSION_PHASE23_HYGIENE_SPEC.md"
+        "design/3_work_artifacts/specs/PHASE23_LIQUIDATION_ROADMAP.md",
+        "tests/mocks/agent_mocks.py",
+        "tests/system/test_engine.py",
+        "simulation/orchestration/tick_orchestrator.py"
       ],
       "output_path": null,
       "model": null,
       "audit_requirements": null
     },
-    "phase23-fix-household-integration-test": {
-      "key": "phase23-fix-household-integration-test",
-      "title": "Analyze & Fix Household Integration Test",
+    "phase23-spec-penny-perfect": {
+      "key": "phase23-spec-penny-perfect",
+      "title": "P2 Mission Spec: Operation Penny Perfect",
       "type": "gemini",
-      "instruction_raw": "Analyze the failing integration test in test_household_integration_new.py. The test is currently skipped because BudgetEngine/ConsumptionEngine interaction results in empty orders. Determine if this is a test setup issue (missing initial assets/config) or a logic flaw in engine synchronization, and write a MISSION_spec for the fix.",
+      "instruction_raw": "Create a MISSION_spec.md for Jules to enforce the Penny Standard.\nFocus on:\n1. Converting SettlementSystem state and matching logic to absolute 'int' pennies.\n2. Registering 'bailout' and 'bond_issuance' handlers in TransactionProcessor.\n3. Eliminating 'hasattr' logic leaks in BankTransactionHandler.\n\nRefer to 'Mission 2.1' and '2.2' in the Roadmap.",
       "status": "pending",
       "created_at": "",
       "command": null,
@@ -65,11 +59,32 @@
       "session_id": null,
       "worker": "spec",
       "context_files": [
-        "c:/coding/economics/tests/unit/decisions/test_household_integration_new.py",
-        "c:/coding/economics/simulation/core_agents.py",
-        "c:/coding/economics/modules/household/engines/budget.py",
-        "c:/coding/economics/modules/household/engines/consumption_engine.py",
-        "c:/coding/economics/modules/household/api.py"
+        "design/3_work_artifacts/specs/PHASE23_LIQUIDATION_ROADMAP.md",
+        "simulation/systems/settlement_system.py",
+        "simulation/systems/transaction_processor.py",
+        "simulation/systems/handlers/monetary_handler.py"
+      ],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "phase23-spec-surgical-separation": {
+      "key": "phase23-spec-surgical-separation",
+      "title": "P3 Mission Spec: Operation Surgical Separation",
+      "type": "gemini",
+      "instruction_raw": "Create a MISSION_spec.md for Jules to decouple Firm departments.\nFocus on:\n1. Extracting HR/Finance logic into stateless engines.\n2. Removing 'self.parent' references in departments.\n3. Standardizing WorldState.government as a singleton.\n\nRefer to 'Mission 3.1' and '3.2' in the Roadmap.",
+      "status": "pending",
+      "created_at": "",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "design/3_work_artifacts/specs/PHASE23_LIQUIDATION_ROADMAP.md",
+        "simulation/core_agents.py",
+        "simulation/decisions/firm/hr_department.py",
+        "simulation/world_state.py"
       ],
       "output_path": null,
       "model": null,

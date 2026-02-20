@@ -82,6 +82,18 @@ This document archives resolved technical debt items to keep the primary ledger 
 | **TD-TEST-SSOT-SYNC** | Testing | **SSoT**: Balance Mismatch Test Sync | Phase 19 | [Review](../../_archive/gemini_output/pr_review_mission-test-modernization-ssot-557820577312838977.md) |
 | **TD-TRANS-LEGACY-PRICING** | Transaction | **Fix**: Float Cast Bridge Elimination | Phase 19 | [Review](../../_archive/gemini_output/pr_review_exec-match-engine-int-math-17795771630785453590.md) |
 | **TD-DTO-RED-ZONE** | DTO/API | **Fix**: Reporting Leakage Hardening | Phase 19 | [Review](../../_archive/gemini_output/pr_review_penny-hardening-reporting-dtos-744587785833593148.md) |
+| **TD-PROC-TRANS-DUP** | Logic | **Handler Redundancy**: Logic overlap between legacy `TransactionManager` and new `TransactionProcessor`. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-TRANS-INT-SCHEMA** | Transaction | **Schema Lag**: `Transaction` model (simulation/models.py) still uses `float` price. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-DEPR-GOV-TAX** | Government | **Legacy API**: `Government.collect_tax` is deprecated. Use `settle_atomic`. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-DEPR-FACTORY** | Factory | **Stale Path**: `agent_factory.HouseholdFactory` is stale. Use `household_factory`. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-RUNTIME-DEST-MISS** | Lifecycle | **Ghost Destination**: Transactions failing for non-existent agents (Sequence error in `spawn_firm`). | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-TEST-MOCK-STALE** | Testing | **Stale Mocks**: `WorldState` mocks used deprecated `system_command_queue`. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-GOV-SOLVENCY** | Government | **Binary Gates**: Spending modules use all-or-nothing logic; lack partial execution/solvency pre-checks. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-CRIT-LIFECYCLE-ATOM** | Lifecycle | **Agent Startup Atomicity**: Firm registration (Registry) must occur *before* financial initialization (Transfer). | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-SYS-QUEUE-SCRUB** | Lifecycle | **Lifecycle Queue Scrubbing**: AgentLifecycleManager fails to remove stale IDs from queues. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-GOV-SPEND-GATE** | Government | **Binary Spending Gates**: Infrastructure/Welfare modules need "Partial Execution" support. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-CRIT-FLOAT-MA** | Finance | **M&A Float Violation**: `MAManager` and `StockMarket` calculate and transfer `float` values. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Fiscal Handlers**: `bailout`, `bond_issuance` types not registered in `TransactionProcessor`. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
 
 ## 📓 Implementation Lessons (Resolved Path)
 
@@ -226,7 +238,18 @@ This document archives resolved technical debt items to keep the primary ledger 
 
 ---
 
-### ID: TD-DTO-RED-ZONE
-- **Title**: Reporting Leakage Hardening
-- **Status**: **Resolved** (Phase 19)
 - **Solution**: Refactored `MarketReportDTO` and `AgentStateDTO` to use integer pennies.
+
+---
+
+### ID: TD-PROC-TRANS-DUP
+- **Title**: Transaction Logic Duplication
+- **Status**: **Resolved** (Phase 23)
+- **Solution**: Deprecate `TransactionManager` and route all traffic through `TransactionProcessor`.
+
+---
+
+### ID: TD-GOV-SOLVENCY
+- **Title**: Government Budget Guardrails (Binary Gates)
+- **Status**: **Resolved** (Phase 23)
+- **Solution**: Implement `PartialExecutionResultDTO` and `SolvencyException` with proactive balance checks via `SettlementSystem`.
