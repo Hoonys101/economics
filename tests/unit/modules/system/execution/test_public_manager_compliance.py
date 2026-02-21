@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from modules.system.execution.public_manager import PublicManager
 from modules.finance.api import IFinancialAgent, InsufficientFundsError
-from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, IAssetRecoverySystem, ISystemFinancialAgent
+from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, IAssetRecoverySystem, ISystemFinancialAgent, AssetBuyoutRequestDTO, AssetBuyoutResultDTO
 from modules.system.constants import ID_PUBLIC_MANAGER
 
 class TestPublicManagerCompliance:
@@ -54,3 +54,19 @@ class TestPublicManagerCompliance:
         assert order.agent_id == public_manager.id
         assert isinstance(order.agent_id, int)
         assert order.agent_id == ID_PUBLIC_MANAGER
+
+    def test_asset_buyout_compliance(self, public_manager):
+        """Verify execute_asset_buyout strictly follows the protocol."""
+        request = AssetBuyoutRequestDTO(
+            seller_id=1,
+            inventory={'gold': 10},
+            market_prices={'gold': 100},
+            distress_discount=0.5
+        )
+        result = public_manager.execute_asset_buyout(request)
+
+        assert isinstance(result, AssetBuyoutResultDTO)
+        assert isinstance(result.total_paid_pennies, int)
+        assert isinstance(result.success, bool)
+        assert isinstance(result.items_acquired, dict)
+        assert result.buyer_id == public_manager.id

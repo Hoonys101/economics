@@ -8,7 +8,7 @@ from simulation.systems.inheritance_manager import InheritanceManager
 from simulation.systems.liquidation_manager import LiquidationManager
 from simulation.finance.api import ISettlementSystem
 from modules.finance.api import ILiquidatable, IShareholderRegistry, IFinancialEntity
-from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, DEFAULT_CURRENCY
+from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, DEFAULT_CURRENCY, AssetBuyoutRequestDTO
 from simulation.interfaces.market_interface import IMarket
 
 class DeathSystem(IDeathSystem):
@@ -90,32 +90,14 @@ class DeathSystem(IDeathSystem):
              if state.inactive_agents is not None:
                  state.inactive_agents[household.id] = household
 
+             # Inventory Liquidation (Asset Buyout) via Public Manager
+             # Must occur BEFORE inheritance so cash is available for heirs/tax.
+             self._liquidate_agent_inventory(household, state)
+
              # Inheritance Manager (Executes transactions via side-effects)
              if state.primary_government:
                   inheritance_txs = self.inheritance_manager.process_death(household, state.primary_government, state)
                   transactions.extend(inheritance_txs)
-
-             # Inventory Liquidation (Bankruptcy Event) via Public Manager
-             # Access inventory via property or attribute
-             inventory = None
-             if hasattr(household, 'inventory'):
-                 inventory = household.inventory
-             elif hasattr(household, '_econ_state'):
-                 inventory = household._econ_state.inventory
-
-             if self.public_manager and inventory:
-                 bankruptcy_event = {
-                     "agent_id": household.id,
-                     "tick": state.time,
-                     "inventory": inventory.copy()
-                 }
-                 self.public_manager.process_bankruptcy_event(bankruptcy_event)
-
-                 # Clear inventory
-                 if hasattr(household, 'clear_inventory'):
-                     household.clear_inventory()
-                 elif hasattr(inventory, 'clear'):
-                     inventory.clear()
 
              # Cleanup
              if isinstance(household, ICurrencyHolder):
@@ -198,6 +180,80 @@ class DeathSystem(IDeathSystem):
                     self.logger.error(
                         f"ORDER_SCRUB_FAIL | Failed to cancel orders for agent {agent_id} in market {getattr(market, 'id', 'unknown')}: {e}"
                     )
+
+    def _liquidate_agent_inventory(self, agent: Any, state: SimulationState) -> None:
+        """
+        Liquidates agent inventory by selling to Public Manager (Asset Buyout).
+        Transfers cash to the agent and clears inventory.
+        """
+        if not self.public_manager or not self.settlement_system:
+            return
+
+        inventory = None
+        if hasattr(agent, 'inventory'):
+             inventory = agent.inventory
+        elif hasattr(agent, '_econ_state'):
+             inventory = agent._econ_state.inventory
+
+        if not inventory or not isinstance(inventory, dict) or len(inventory) == 0:
+            return
+
+        # Prepare Market Prices
+        market_prices = {}
+        # Simple Logic: Get price from market or default
+        default_price_float = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
+        default_price_pennies = int(default_price_float * 100)
+
+        for item_id in inventory.keys():
+             price_pennies = default_price_pennies
+             # Try to get market price
+             if state.markets:
+                 if item_id in state.markets:
+                     m = state.markets[item_id]
+                     if isinstance(m, IMarket):
+                         try:
+                            p = m.get_price(item_id)
+                            if p > 0: price_pennies = int(p * 100)
+                         except: pass
+                 elif "goods_market" in state.markets: # Fallback to aggregate market
+                     m = state.markets["goods_market"]
+                     if isinstance(m, IMarket):
+                         try:
+                            p = m.get_price(item_id)
+                            if p > 0: price_pennies = int(p * 100)
+                         except: pass
+
+             market_prices[item_id] = price_pennies
+
+        # Execute Buyout
+        request = AssetBuyoutRequestDTO(
+            seller_id=agent.id,
+            inventory=inventory.copy(),
+            market_prices=market_prices,
+            distress_discount=0.5 # Default distress discount for death/forced sale
+        )
+
+        result = self.public_manager.execute_asset_buyout(request)
+
+        if result.success and result.total_paid_pennies > 0:
+            # Transfer Cash: PM -> Agent
+            success = self.settlement_system.transfer(
+                self.public_manager,
+                agent,
+                result.total_paid_pennies,
+                f"Asset Buyout (Death) - Agent {agent.id}",
+                currency=DEFAULT_CURRENCY
+            )
+
+            if success:
+                self.logger.info(f"ASSET_BUYOUT_SUCCESS | Agent {agent.id} sold inventory for {result.total_paid_pennies} pennies.")
+                # Clear Inventory
+                if hasattr(agent, 'clear_inventory'):
+                     agent.clear_inventory()
+                elif hasattr(inventory, 'clear'):
+                     inventory.clear()
+            else:
+                 self.logger.error(f"ASSET_BUYOUT_FAIL | Payment failed for Agent {agent.id}")
 
     def _calculate_inventory_value(self, inventory: dict, markets: dict) -> int:
         """
