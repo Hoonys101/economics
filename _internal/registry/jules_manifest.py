@@ -17,25 +17,32 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "lane1-finance-recovery": {
-        "title": "Lane 1 Implementation: Finance & M2 Hardening",
+    "mod-finance-recovery": {
+        "title": "Module A Fix: Finance & Accounting Integrity",
         "command": "create",
-        "file": "design/3_work_artifacts/specs/MISSION_lane1-finance_JULES_SPEC.md",
-        "instruction": "Refactor ICurrencyHolder protocol, update WorldState M2 calculation logic, and ensure integer precision across the finance module as per spec.",
+        "file": "design/3_work_artifacts/specs/MOD_FINANCE_SPEC.md",
+        "instruction": "Implement comprehensive finance fixes based on the Modular Spec (Refined Root Cause -> Proposal).",
         "wait": True
     },
-    "lane2-structural-recovery": {
-        "title": "Lane 2 Implementation: Lifecycle & Saga Fix",
+    "mod-arch-recovery": {
+        "title": "Module B Fix: Architecture & Orchestration",
         "command": "create",
-        "file": "design/3_work_artifacts/specs/MISSION_lane2-structural_JULES_SPEC.md",
-        "instruction": "Enforce registration-before-funding lifecycle in firm_management.py and unify Saga DTOs using SagaParticipantDTO in housing_api.py.",
+        "file": "design/3_work_artifacts/specs/MOD_ARCH_SPEC.md",
+        "instruction": "Refactor core architecture based on the Modular Spec (Refined Root Cause -> Proposal).",
         "wait": True
     },
-    "lane3-dx-hardening": {
-        "title": "Lane 3 Implementation: Orchestrator & Test Stabilization",
+    "mod-lifecycle-recovery": {
+        "title": "Module C Fix: Lifecycle & Saga Reliability",
         "command": "create",
-        "file": "design/3_work_artifacts/specs/MISSION_lane3-dx_JULES_SPEC.md",
-        "instruction": "Harden TickOrchestrator attribute access and refactor failing Saga unit tests to use strict dataclass DTOs as per spec.",
+        "file": "design/3_work_artifacts/specs/MOD_LIFECYCLE_SPEC.md",
+        "instruction": "Standardize lifecycle based on the Modular Spec (Refined Root Cause -> Proposal).",
+        "wait": True
+    },
+    "mod-test-recovery": {
+        "title": "Module D Fix: Test Suite Modernization",
+        "command": "create",
+        "file": "design/3_work_artifacts/specs/MOD_TEST_SPEC.md",
+        "instruction": "Modernize test suite based on the Modular Spec (Refined Root Cause -> Proposal).",
         "wait": True
     }
 }

@@ -3,13 +3,13 @@
     "version": "1.0"
   },
   "missions": {
-    "lane1-finance-recovery": {
-      "key": "lane1-finance-recovery",
-      "title": "Lane 1 Implementation: Finance & M2 Hardening",
+    "mod-finance-recovery": {
+      "key": "mod-finance-recovery",
+      "title": "Module A Fix: Finance & Accounting Integrity",
       "type": "jules",
-      "instruction_raw": "Refactor ICurrencyHolder protocol, update WorldState M2 calculation logic, and ensure integer precision across the finance module as per spec.",
+      "instruction_raw": "Implement comprehensive finance fixes based on the Modular Spec (Refined Root Cause -> Proposal).",
       "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_lane1-finance_JULES_SPEC.md",
+      "file_path": "design/3_work_artifacts/specs/MOD_FINANCE_SPEC.md",
       "wait": true,
       "session_id": null,
       "worker": null,
@@ -18,13 +18,13 @@
       "model": null,
       "audit_requirements": null
     },
-    "lane2-structural-recovery": {
-      "key": "lane2-structural-recovery",
-      "title": "Lane 2 Implementation: Lifecycle & Saga Fix",
+    "mod-arch-recovery": {
+      "key": "mod-arch-recovery",
+      "title": "Module B Fix: Architecture & Orchestration",
       "type": "jules",
-      "instruction_raw": "Enforce registration-before-funding lifecycle in firm_management.py and unify Saga DTOs using SagaParticipantDTO in housing_api.py.",
+      "instruction_raw": "Refactor core architecture based on the Modular Spec (Refined Root Cause -> Proposal).",
       "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_lane2-structural_JULES_SPEC.md",
+      "file_path": "design/3_work_artifacts/specs/MOD_ARCH_SPEC.md",
       "wait": true,
       "session_id": null,
       "worker": null,
@@ -33,13 +33,28 @@
       "model": null,
       "audit_requirements": null
     },
-    "lane3-dx-hardening": {
-      "key": "lane3-dx-hardening",
-      "title": "Lane 3 Implementation: Orchestrator & Test Stabilization",
+    "mod-lifecycle-recovery": {
+      "key": "mod-lifecycle-recovery",
+      "title": "Module C Fix: Lifecycle & Saga Reliability",
       "type": "jules",
-      "instruction_raw": "Harden TickOrchestrator attribute access and refactor failing Saga unit tests to use strict dataclass DTOs as per spec.",
+      "instruction_raw": "Standardize lifecycle based on the Modular Spec (Refined Root Cause -> Proposal).",
       "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MISSION_lane3-dx_JULES_SPEC.md",
+      "file_path": "design/3_work_artifacts/specs/MOD_LIFECYCLE_SPEC.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "mod-test-recovery": {
+      "key": "mod-test-recovery",
+      "title": "Module D Fix: Test Suite Modernization",
+      "type": "jules",
+      "instruction_raw": "Modernize test suite based on the Modular Spec (Refined Root Cause -> Proposal).",
+      "command": "create",
+      "file_path": "design/3_work_artifacts/specs/MOD_TEST_SPEC.md",
       "wait": true,
       "session_id": null,
       "worker": null,
