@@ -126,6 +126,12 @@ class ConsumptionManager:
             budget_limit = household_assets * config.budget_limit_normal_ratio
             if max_need_value > config.budget_limit_urgent_need:
                 budget_limit = household_assets * config.budget_limit_urgent_ratio
+
+            # Apply Debt Constraint (Wave 6)
+            # If debt_penalty < 1.0 (indicating stress), reduce the budget limit proportionally.
+            if debt_penalty < 1.0:
+                budget_limit *= debt_penalty
+
             bid_price = avg_price * 1.05
             if bid_price > max_affordable_price:
                 bid_price = max_affordable_price

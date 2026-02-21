@@ -472,6 +472,37 @@ class HouseholdAI(BaseAIEngine):
             (leisure_utility * leisure_weight)
         )
         
+        # --- Phase 22: Debt Stress Penalty (Wave 6) ---
+        # Penalize high DSR to reinforce debt avoidance.
+        if market_data:
+             debt_info = market_data.get("debt_data", {}).get(self.agent_id, {})
+             daily_interest_burden = debt_info.get("daily_interest_burden", 0.0)
+
+             assets_data = agent_data.get("assets", 0)
+             if isinstance(assets_data, dict):
+                 from modules.system.api import DEFAULT_CURRENCY
+                 assets = assets_data.get(DEFAULT_CURRENCY, 0.0)
+             else:
+                 assets = float(assets_data)
+
+             wage = agent_data.get("current_wage", 0.0)
+             # Heuristic: Income Proxy = Wage + 1% of Assets (Daily Return)
+             income_proxy = max(wage, assets * 0.01)
+
+             dsr = daily_interest_burden / (income_proxy + 1e-09)
+
+             config = None
+             if self.ai_decision_engine:
+                 config = getattr(self.ai_decision_engine, "config_module", None)
+
+             # Use config threshold or default 0.4
+             dsr_threshold = getattr(config, "dsr_critical_threshold", 0.4) if config else 0.4
+
+             if dsr > dsr_threshold:
+                 # Penalty scales with excess DSR
+                 debt_penalty = (dsr - dsr_threshold) * 500.0 # Heavy penalty to ensure it outweighs small gains
+                 total_reward -= debt_penalty
+
         # --- Phase 17-4: Vanity Reward (Relative Deprivation) ---
         if self.ai_decision_engine and getattr(self.ai_decision_engine, "config_module", None):
             config = self.ai_decision_engine.config_module
