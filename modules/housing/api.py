@@ -73,8 +73,8 @@ class IHousingService(ABC):
         ...
 
     @abstractmethod
-    def add_lien(self, property_id: int, loan_id: str, lienholder_id: int, principal: float) -> Optional[str]:
-        """Adds a lien (e.g., a mortgage) to a property."""
+    def add_lien(self, property_id: int, loan_id: str, lienholder_id: int, principal: int) -> Optional[str]:
+        """Adds a lien (e.g., a mortgage) to a property. Principal in pennies."""
         ...
 
     @abstractmethod

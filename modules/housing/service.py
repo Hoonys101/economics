@@ -47,7 +47,7 @@ class HousingService(IHousingService):
     def transfer_asset(self, asset_id: Any, new_owner_id: Any) -> bool:
         return self.transfer_ownership(int(asset_id), int(new_owner_id))
 
-    def add_lien(self, property_id: int, loan_id: Any, lienholder_id: Optional[int] = None, principal: Optional[float] = None) -> Optional[str]:
+    def add_lien(self, property_id: int, loan_id: Any, lienholder_id: Optional[int] = None, principal: Optional[int] = None) -> Optional[str]:
         # Support for IInventoryHandler signature: add_lien(asset_id, lien_details)
         if isinstance(loan_id, dict) and lienholder_id is None:
              details = loan_id
@@ -75,7 +75,7 @@ class HousingService(IHousingService):
         new_lien: LienDTO = {
             "loan_id": loan_id_str,
             "lienholder_id": int(lienholder_id_val) if lienholder_id_val is not None else -1,
-            "principal_remaining": float(principal_val) if principal_val is not None else 0.0,
+            "principal_remaining": int(principal_val) if principal_val is not None else 0,
             "lien_type": "MORTGAGE"
         }
         unit.liens.append(new_lien)

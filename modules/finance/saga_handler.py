@@ -181,9 +181,12 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         # 2. Add Lien via Registry
         # Need lienholder_id (Bank ID).
         # LoanInfo might not have it, but we know it's the Bank.
-        bank_id = self.simulation.bank.id if self.simulation.bank else -1
+        bank_id = int(self.simulation.bank.id) if self.simulation.bank else -1
 
-        lien_id = self.housing_service.add_lien(saga.property_id, str(loan_id), bank_id, float(principal))
+        # MIGRATION: Convert principal (dollars) to pennies (int) for Registry/Lien
+        principal_pennies = int(principal * 100)
+
+        lien_id = self.housing_service.add_lien(saga.property_id, str(loan_id), bank_id, principal_pennies)
         if not lien_id:
              saga.error_message = "Failed to create lien"
              return self.compensate_step(saga)
