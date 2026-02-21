@@ -180,16 +180,16 @@ class TestOrderBookMarket:
         assert order_book_market_instance.get_best_ask('food') is None
 
     def test_get_best_ask_non_empty(self, order_book_market_instance):
-        order_book_market_instance.place_order(Order(1, 'SELL', 'food', 10, int(100 * 100), 100, 'test_market'), 1)
-        order_book_market_instance.place_order(Order(2, 'SELL', 'food', 5, int(90 * 100), 90, 'test_market'), 1)
+        order_book_market_instance.place_order(Order(1, 'SELL', 'food', 10, int(100 * 100), market_id='test_market', price_limit=100), 1)
+        order_book_market_instance.place_order(Order(2, 'SELL', 'food', 5, int(90 * 100), market_id='test_market', price_limit=90), 1)
         assert order_book_market_instance.get_best_ask('food') == 90
 
     def test_get_best_bid_empty(self, order_book_market_instance):
         assert order_book_market_instance.get_best_bid('food') is None
 
     def test_get_best_bid_non_empty(self, order_book_market_instance):
-        order_book_market_instance.place_order(Order(1, 'BUY', 'food', 10, int(100 * 100), 100, 'test_market'), 1)
-        order_book_market_instance.place_order(Order(2, 'BUY', 'food', 5, int(110 * 100), 110, 'test_market'), 1)
+        order_book_market_instance.place_order(Order(1, 'BUY', 'food', 10, int(100 * 100), market_id='test_market', price_limit=100), 1)
+        order_book_market_instance.place_order(Order(2, 'BUY', 'food', 5, int(110 * 100), market_id='test_market', price_limit=110), 1)
         assert order_book_market_instance.get_best_bid('food') == 110
 
     def test_get_order_book_status_empty(self, order_book_market_instance):
@@ -198,8 +198,8 @@ class TestOrderBookMarket:
         assert status['sell_orders'] == []
 
     def test_get_order_book_status_non_empty(self, order_book_market_instance):
-        order_book_market_instance.place_order(Order(1, 'BUY', 'food', 10, int(90 * 100), 90, 'test_market'), 1)
-        order_book_market_instance.place_order(Order(2, 'SELL', 'food', 5, int(100 * 100), 100, 'test_market'), 1)
+        order_book_market_instance.place_order(Order(1, 'BUY', 'food', 10, int(90 * 100), market_id='test_market', price_limit=90), 1)
+        order_book_market_instance.place_order(Order(2, 'SELL', 'food', 5, int(100 * 100), market_id='test_market', price_limit=100), 1)
         status = order_book_market_instance.get_order_book_status('food')
         assert len(status['buy_orders']) == 1
         assert status['buy_orders'][0]['price'] == 90

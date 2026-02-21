@@ -89,7 +89,7 @@ class TestFirmPricingLogic:
         firm_state.production = MagicMock()
         firm_state.production.inventory = {'widget': 10}
         firm_state.agent_data = {'productivity_factor': 1.0}
-        primary_order = Order(1, 'SELL', 'widget', 10, int(50.0 * 100), 50.0, 'widget')
+        primary_order = Order(1, 'SELL', 'widget', 10, int(50.0 * 100), market_id='widget', price_limit=50.0)
         mock_firm_engine.corporate_manager.realize_ceo_actions.return_value = [primary_order]
         mock_firm_engine.ai_engine.decide_action_vector.return_value = MagicMock()
         market_signals = {'widget': {'last_trade_tick': 50}}

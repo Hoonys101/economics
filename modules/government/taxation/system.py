@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Any, Dict, Optional, TYPE_CHECKING, Protocol, Tuple
+from typing import List, Any, Dict, Optional, TYPE_CHECKING, Protocol, Tuple, Union
 import logging
 from modules.finance.api import IFinancialAgent
 from modules.simulation.api import IGovernment
@@ -7,6 +7,7 @@ from simulation.models import Transaction
 from modules.system.api import DEFAULT_CURRENCY
 from modules.finance.utils.currency_math import round_to_pennies
 from modules.government.constants import DEFAULT_BASIC_FOOD_PRICE, DEFAULT_HOUSEHOLD_FOOD_CONSUMPTION_PER_TICK
+from modules.government.dtos import TaxBracketDTO
 
 if TYPE_CHECKING:
     from simulation.dtos.transactions import TransactionDTO
@@ -44,7 +45,14 @@ class TaxationSystem:
         """Rounds amount to integer pennies to prevent floating point pollution."""
         return round_to_pennies(amount)
 
-    def calculate_income_tax(self, income: int, survival_cost: int, current_income_tax_rate: float, tax_mode: str = 'PROGRESSIVE') -> int:
+    def calculate_income_tax(
+        self,
+        income: int,
+        survival_cost: int,
+        current_income_tax_rate: float,
+        tax_mode: str = 'PROGRESSIVE',
+        tax_brackets: Optional[List[TaxBracketDTO]] = None
+    ) -> int:
         """
         Calculates income tax based on the provided parameters.
         Logic moved from TaxAgency.
@@ -56,16 +64,31 @@ class TaxationSystem:
 
         raw_tax = 0.0
 
-        if tax_mode == "FLAT":
+        # NEW LOGIC: Use TaxBracketDTO if provided
+        if tax_brackets and len(tax_brackets) > 0:
+            # Sort brackets by threshold descending
+            # Using absolute thresholds (pennies)
+            sorted_brackets = sorted(tax_brackets, key=lambda b: b.threshold, reverse=True)
+
+            current_level_income = income_val
+
+            for bracket in sorted_brackets:
+                if current_level_income > bracket.threshold:
+                    taxable_amount = current_level_income - bracket.threshold
+                    raw_tax += taxable_amount * bracket.rate
+                    current_level_income = bracket.threshold
+
+        # LEGACY LOGIC fallback
+        elif tax_mode == "FLAT":
             raw_tax = income_val * current_income_tax_rate
         else:
-            tax_brackets = getattr(self.config_module, "TAX_BRACKETS", [])
-            if not tax_brackets:
+            tax_brackets_legacy = getattr(self.config_module, "TAX_BRACKETS", [])
+            if not tax_brackets_legacy:
                 taxable = max(0.0, income_val - survival_cost)
                 raw_tax = taxable * current_income_tax_rate
             else:
                 previous_limit_abs = 0.0
-                for multiple, rate in tax_brackets:
+                for multiple, rate in tax_brackets_legacy:
                     # Brackets are defined as multiples of survival_cost
                     limit_abs = multiple * survival_cost
                     upper_bound = min(income_val, limit_abs)
@@ -165,8 +188,21 @@ class TaxationSystem:
             current_rate = getattr(government, "income_tax_rate", 0.1)
             tax_mode = getattr(self.config_module, "TAX_MODE", "PROGRESSIVE")
 
+            # Fetch tax brackets from Government Fiscal Policy
+            # IGovernment doesn't strictly enforce fiscal_policy, but GovernmentAgent has it.
+            fiscal_policy = getattr(government, 'fiscal_policy', None)
+            tax_brackets = None
+            if fiscal_policy and hasattr(fiscal_policy, 'tax_brackets'):
+                 tax_brackets = fiscal_policy.tax_brackets
+
             # calculate_income_tax already rounds
-            tax_amount = self.calculate_income_tax(trade_value, survival_cost, current_rate, tax_mode)
+            tax_amount = self.calculate_income_tax(
+                income=trade_value,
+                survival_cost=survival_cost,
+                current_income_tax_rate=current_rate,
+                tax_mode=tax_mode,
+                tax_brackets=tax_brackets
+            )
 
             if tax_amount > 0:
                 tax_payer_type = getattr(self.config_module, "INCOME_TAX_PAYER", "HOUSEHOLD")

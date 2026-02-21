@@ -52,7 +52,7 @@ class TestWO157DynamicPricing:
         current_tick = 100
         last_sale = 80
         state.inventory_last_sale_tick['widget'] = last_sale
-        orders = [Order(1, 'SELL', 'widget', 10.0, int(100.0 * 100), 100.0, 'market')]
+        orders = [Order(1, 'SELL', 'widget', 10.0, int(100.0 * 100), market_id='market', price_limit=100.0)]
 
         def estimator(item_id):
             return 50.0
@@ -66,7 +66,7 @@ class TestWO157DynamicPricing:
         current_tick = 100
         last_sale = 80
         state.inventory_last_sale_tick['widget'] = last_sale
-        orders = [Order(1, 'SELL', 'widget', 10.0, int(52.0 * 100), 52.0, 'market')]
+        orders = [Order(1, 'SELL', 'widget', 10.0, int(52.0 * 100), market_id='market', price_limit=52.0)]
 
         def estimator(item_id):
             return 50.0
@@ -80,7 +80,7 @@ class TestWO157DynamicPricing:
         current_tick = 100
         last_sale = 95
         state.inventory_last_sale_tick['widget'] = last_sale
-        orders = [Order(1, 'SELL', 'widget', 10.0, int(100.0 * 100), 100.0, 'market')]
+        orders = [Order(1, 'SELL', 'widget', 10.0, int(100.0 * 100), market_id='market', price_limit=100.0)]
 
         def estimator(item_id):
             return 50.0
