@@ -98,7 +98,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
                 household.reset_tick_state()
 
         for firm in state.firms:
-            if firm.is_active and hasattr(firm, 'reset'):
+            if firm.is_active:
                 firm.reset()
 
     def execute(self, state: SimulationState) -> List[Transaction]:

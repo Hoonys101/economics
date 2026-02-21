@@ -10,8 +10,8 @@ from modules.finance.sagas.housing_api import (
     ILoanMarket,
     HousingSagaAgentContext
 )
-from modules.inventory.api import IInventoryHandler
-from modules.finance.api import MortgageApplicationDTO, IFinancialAgent
+from modules.housing.api import IHousingService
+from modules.finance.api import MortgageApplicationDTO, IFinancialAgent, IBank
 from modules.simulation.api import ISimulationState, HouseholdSnapshotDTO
 from simulation.finance.api import ISettlementSystem
 from modules.finance.kernel.api import IMonetaryLedger
@@ -22,23 +22,17 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
     def __init__(self, simulation: ISimulationState):
         self.simulation = simulation
         self.settlement_system: ISettlementSystem = simulation.settlement_system
-        # Note: Registry in simulation must implement IInventoryHandler methods
-        # Assuming ISimulationState has housing_service (IHousingService) which implements IInventoryHandler or relevant methods
-        # Using attribute access directly as per Protocol
-        self.housing_service: IInventoryHandler = getattr(simulation, 'housing_service') # We expect this to exist on implementation
+        # Note: housing_service must implement IHousingService
+        self.housing_service: IHousingService = simulation.housing_service
 
         # Access Loan Market via markets dict
         market = simulation.markets.get("loan")
         # We need to ensure it supports ILoanMarket protocol methods used below.
         # Assuming the loan market implementation aligns with ILoanMarket protocol or similar.
-        # In strict mode, we should assert isinstance(market, ILoanMarket) but ILoanMarket is imported from sagas/housing_api
-        # which defines the interface needed here.
         self.loan_market = market
 
         # TD-253: Monetary Ledger Injection
-        # ISimulationState does not guarantee monetary_ledger, so it is injected via property or attributes if available.
-        # The Orchestrator handles injection usually.
-        self.monetary_ledger: Optional[IMonetaryLedger] = getattr(simulation, 'monetary_ledger', None)
+        self.monetary_ledger: Optional[IMonetaryLedger] = simulation.monetary_ledger
 
     def execute_step(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
         status = saga.status
@@ -87,14 +81,13 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
             if saga.mortgage_approval:
                  # Remove Lien
                  lien_id = saga.mortgage_approval.lien_id
-                 if hasattr(self.housing_service, 'remove_lien'):
-                    self.housing_service.remove_lien(saga.property_id, lien_id)
+                 self.housing_service.remove_lien(saga.property_id, lien_id)
 
                  # Void Loan
                  loan_id = saga.mortgage_approval.loan_id
                  # Use correct method to void/terminate existing loan
-                 if hasattr(self.settlement_system.bank, 'terminate_loan'):
-                    self.settlement_system.bank.terminate_loan(loan_id)
+                 if isinstance(self.simulation.bank, IBank):
+                    self.simulation.bank.terminate_loan(loan_id)
                  elif hasattr(self.loan_market, 'void_staged_application'):
                     # Fallback if approval but no bank method (unlikely)
                     self.loan_market.void_staged_application(loan_id)
@@ -105,10 +98,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
                     self.loan_market.void_staged_application(saga.staged_loan_id)
 
             # 4. Release Property Lock
-            if hasattr(self.housing_service, 'release_asset'):
-                self.housing_service.release_asset(saga.property_id, saga.saga_id)
-            elif hasattr(self.housing_service, 'release_contract'): # Fallback
-                self.housing_service.release_contract(saga.property_id, saga.saga_id)
+            self.housing_service.release_contract(saga.property_id, saga.saga_id)
 
             saga.status = "FAILED_ROLLED_BACK"
 
@@ -128,11 +118,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
 
     def _handle_initiated(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
         # 1. Lock Property
-        success = False
-        if hasattr(self.housing_service, 'lock_asset'):
-             success = self.housing_service.lock_asset(saga.property_id, saga.saga_id)
-        elif hasattr(self.housing_service, 'set_under_contract'): # Fallback
-             success = self.housing_service.set_under_contract(saga.property_id, saga.saga_id)
+        success = self.housing_service.set_under_contract(saga.property_id, saga.saga_id)
 
         if not success:
              saga.error_message = "Property already under contract"
@@ -195,14 +181,12 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         # 2. Add Lien via Registry
         # Need lienholder_id (Bank ID).
         # LoanInfo might not have it, but we know it's the Bank.
-        bank_id = self.simulation.bank.id if self.simulation.bank else -1
+        bank_id = int(self.simulation.bank.id) if self.simulation.bank else -1
 
-        lien_details = {
-            "loan_id": loan_id,
-            "lienholder_id": bank_id,
-            "principal_remaining": principal
-        }
-        lien_id = self.housing_service.add_lien(saga.property_id, lien_details)
+        # MIGRATION: Convert principal (dollars) to pennies (int) for Registry/Lien
+        principal_pennies = int(principal * 100)
+
+        lien_id = self.housing_service.add_lien(saga.property_id, str(loan_id), bank_id, principal_pennies)
         if not lien_id:
              saga.error_message = "Failed to create lien"
              return self.compensate_step(saga)
@@ -283,18 +267,11 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         # Finalize Ownership
         buyer_id = self._get_buyer_id(saga)
 
-        if hasattr(self.housing_service, 'transfer_asset'):
-            success = self.housing_service.transfer_asset(saga.property_id, buyer_id)
-        else:
-            success = self.housing_service.transfer_ownership(saga.property_id, buyer_id)
+        success = self.housing_service.transfer_ownership(saga.property_id, buyer_id)
 
         if success:
              self._log_transaction(saga)
-
-             if hasattr(self.housing_service, 'release_asset'):
-                 self.housing_service.release_asset(saga.property_id, saga.saga_id)
-             else:
-                 self.housing_service.release_contract(saga.property_id, saga.saga_id)
+             self.housing_service.release_contract(saga.property_id, saga.saga_id)
 
              saga.status = "COMPLETED"
         else:

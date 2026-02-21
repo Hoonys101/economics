@@ -17,32 +17,5 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "mod-finance-recovery": {
-        "title": "Module A Fix: Finance & Accounting Integrity",
-        "command": "create",
-        "file": "design/3_work_artifacts/specs/MOD_FINANCE_SPEC.md",
-        "instruction": "Implement finance fixes. CRITICAL: Do NOT modify shared API/DTO files (e.g., simulation/dtos/api.py). If a contract change is needed, mark it as # TODO: TD-CONTRACT-SYNC and implement internally.",
-        "wait": True
-    },
-    "mod-arch-recovery": {
-        "title": "Module B Fix: Architecture & Orchestration",
-        "command": "create",
-        "file": "design/3_work_artifacts/specs/MOD_ARCH_SPEC.md",
-        "instruction": "Refactor architecture. CRITICAL: Do NOT modify shared API/DTO files. If a contract change is needed, mark it as # TODO: TD-CONTRACT-SYNC and implement internally.",
-        "wait": True
-    },
-    "mod-lifecycle-recovery": {
-        "title": "Module C Fix: Lifecycle & Saga Reliability",
-        "command": "create",
-        "file": "design/3_work_artifacts/specs/MOD_LIFECYCLE_SPEC.md",
-        "instruction": "Standardize lifecycle. CRITICAL: Do NOT modify shared API/DTO files. If a contract change is needed, mark it as # TODO: TD-CONTRACT-SYNC and implement internally.",
-        "wait": True
-    },
-    "mod-test-recovery": {
-        "title": "Module D Fix: Test Suite Modernization",
-        "command": "create",
-        "file": "design/3_work_artifacts/specs/MOD_TEST_SPEC.md",
-        "instruction": "Modernize test suite. CRITICAL: Do NOT modify shared API/DTO files. If a contract change is needed, mark it as # TODO: TD-CONTRACT-SYNC and implement internally.",
-        "wait": True
-    }
+    # Add missions here
 }

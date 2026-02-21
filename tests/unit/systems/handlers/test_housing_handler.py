@@ -98,7 +98,9 @@ class TestHousingTransactionHandler(unittest.TestCase):
         self.state.bank.withdraw_for_customer.return_value = True
         self.state.bank.terminate_loan.return_value = MagicMock(transaction_type="credit_destruction")
         self.state.bank.void_loan.return_value = MagicMock(transaction_type="credit_destruction")
-        self.state.bank.get_debt_status.return_value = {"total_outstanding_debt": 0.0}
+        mock_debt_status = MagicMock()
+        mock_debt_status.total_outstanding_pennies = 0
+        self.state.bank.get_debt_status.return_value = mock_debt_status
 
     def test_handle_purchase_success(self):
         tx = Transaction(

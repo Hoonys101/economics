@@ -1,0 +1,439 @@
+diff --git a/communications/insights/mod-lifecycle-recovery.md b/communications/insights/mod-lifecycle-recovery.md
+new file mode 100644
+index 00000000..02a35d6d
+--- /dev/null
++++ b/communications/insights/mod-lifecycle-recovery.md
+@@ -0,0 +1,54 @@
++# Module C Fix: Lifecycle & Saga Reliability - Insight Report
++
++## Architectural Insights
++
++### 1. Protocol Purity & Dependency Injection
++We successfully eliminated "magic" checks (`hasattr`, `getattr`) in critical lifecycle and saga components:
++- **Housing Saga**: `HousingTransactionSagaHandler` now strictly uses the `IHousingService` protocol. Usage of raw dictionaries for `add_lien` was replaced with explicit argument passing (`loan_id`, `lienholder_id`, `principal`), ensuring the interface contract is respected.
++- **Monetary Ledger**: The `monetary_ledger` dependency was formally added to `ISimulationState` (as `Optional["IMonetaryLedger"]`). This removes the need for `getattr(simulation, 'monetary_ledger')` and allows for proper type checking in saga handlers.
++- **Lifecycle Management**: `AgentLifecycleManager` no longer probes agents for `reset` or `reset_tick_state` methods using `hasattr`. Instead, `IFirm` and `IHousehold` protocols were updated to explicitly include these lifecycle methods, enforcing contract compliance at the type level.
++
++### 2. DTO Integrity & Currency Hardening
++A significant regression was identified and fixed regarding `DebtStatusDTO`:
++- The field `total_outstanding_debt` (float) had been deprecated in favor of `total_outstanding_pennies` (int) in the DTO definition, but consumers were still using the old field.
++- We migrated `Bank`, `InheritanceManager`, `HousingTransactionHandler`, `Firm`, and `BankService` tests to use `total_outstanding_pennies`, ensuring consistency with the "Integer Pennies" mandate.
++
++## Regression Analysis
++
++### 1. Saga Handler Integration Tests
++*   **Failure**: `tests/unit/systems/test_settlement_saga_integration.py` failed because it was mocking `lock_asset` on `housing_service`, but the refactored handler correctly calls `set_under_contract` (from `IHousingService`).
++*   **Fix**: Updated the test to mock and verify `set_under_contract` and `release_contract`.
++
++### 2. Agent Lifecycle & Inheritance
++*   **Failure**: `tests/system/test_engine.py::test_handle_agent_lifecycle_removes_inactive_agents` failed with `AttributeError: 'DebtStatusDTO' object has no attribute 'total_outstanding_debt'`. This occurred when `InheritanceManager` tried to query debt status for a deceased agent.
++*   **Fix**: Updated `InheritanceManager`, `Bank.get_debt_status`, and related handlers to read/write `total_outstanding_pennies`.
++
++## Test Evidence
++
++### Unit Tests
++```
++tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_initiated_to_credit_check
++PASSED                                                                   [ 50%]
++tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_cancellation
++PASSED                                                                   [100%]
++```
++
++```
++tests/unit/components/test_agent_lifecycle.py::test_run_tick_execution_order PASSED [ 50%]
++tests/unit/components/test_agent_lifecycle.py::test_run_tick_unemployed PASSED [100%]
++```
++
++### Bank Interface & Regressions
++```
++tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_bank_methods_presence PASSED [ 28%]
++tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_grant_loan PASSED [ 42%]
++tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_repay_loan PASSED [ 57%]
++tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_get_balance PASSED [ 71%]
++tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_get_debt_status PASSED [ 85%]
++tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_interface_compliance_mypy PASSED [100%]
++```
++
++### System Tests (Lifecycle)
++```
++tests/system/test_engine.py::test_handle_agent_lifecycle_removes_inactive_agents PASSED [100%]
++```
+diff --git a/modules/finance/saga_handler.py b/modules/finance/saga_handler.py
+index 0f1579fe..7f6bddb0 100644
+--- a/modules/finance/saga_handler.py
++++ b/modules/finance/saga_handler.py
+@@ -10,8 +10,8 @@ from modules.finance.sagas.housing_api import (
+     ILoanMarket,
+     HousingSagaAgentContext
+ )
+-from modules.inventory.api import IInventoryHandler
+-from modules.finance.api import MortgageApplicationDTO, IFinancialAgent
++from modules.housing.api import IHousingService
++from modules.finance.api import MortgageApplicationDTO, IFinancialAgent, IBank
+ from modules.simulation.api import ISimulationState, HouseholdSnapshotDTO
+ from simulation.finance.api import ISettlementSystem
+ from modules.finance.kernel.api import IMonetaryLedger
+@@ -22,23 +22,17 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+     def __init__(self, simulation: ISimulationState):
+         self.simulation = simulation
+         self.settlement_system: ISettlementSystem = simulation.settlement_system
+-        # Note: Registry in simulation must implement IInventoryHandler methods
+-        # Assuming ISimulationState has housing_service (IHousingService) which implements IInventoryHandler or relevant methods
+-        # Using attribute access directly as per Protocol
+-        self.housing_service: IInventoryHandler = getattr(simulation, 'housing_service') # We expect this to exist on implementation
++        # Note: housing_service must implement IHousingService
++        self.housing_service: IHousingService = simulation.housing_service
+ 
+         # Access Loan Market via markets dict
+         market = simulation.markets.get("loan")
+         # We need to ensure it supports ILoanMarket protocol methods used below.
+         # Assuming the loan market implementation aligns with ILoanMarket protocol or similar.
+-        # In strict mode, we should assert isinstance(market, ILoanMarket) but ILoanMarket is imported from sagas/housing_api
+-        # which defines the interface needed here.
+         self.loan_market = market
+ 
+         # TD-253: Monetary Ledger Injection
+-        # ISimulationState does not guarantee monetary_ledger, so it is injected via property or attributes if available.
+-        # The Orchestrator handles injection usually.
+-        self.monetary_ledger: Optional[IMonetaryLedger] = getattr(simulation, 'monetary_ledger', None)
++        self.monetary_ledger: Optional[IMonetaryLedger] = simulation.monetary_ledger
+ 
+     def execute_step(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
+         status = saga.status
+@@ -87,14 +81,13 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+             if saga.mortgage_approval:
+                  # Remove Lien
+                  lien_id = saga.mortgage_approval.lien_id
+-                 if hasattr(self.housing_service, 'remove_lien'):
+-                    self.housing_service.remove_lien(saga.property_id, lien_id)
++                 self.housing_service.remove_lien(saga.property_id, lien_id)
+ 
+                  # Void Loan
+                  loan_id = saga.mortgage_approval.loan_id
+                  # Use correct method to void/terminate existing loan
+-                 if hasattr(self.settlement_system.bank, 'terminate_loan'):
+-                    self.settlement_system.bank.terminate_loan(loan_id)
++                 if isinstance(self.simulation.bank, IBank):
++                    self.simulation.bank.terminate_loan(loan_id)
+                  elif hasattr(self.loan_market, 'void_staged_application'):
+                     # Fallback if approval but no bank method (unlikely)
+                     self.loan_market.void_staged_application(loan_id)
+@@ -105,10 +98,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+                     self.loan_market.void_staged_application(saga.staged_loan_id)
+ 
+             # 4. Release Property Lock
+-            if hasattr(self.housing_service, 'release_asset'):
+-                self.housing_service.release_asset(saga.property_id, saga.saga_id)
+-            elif hasattr(self.housing_service, 'release_contract'): # Fallback
+-                self.housing_service.release_contract(saga.property_id, saga.saga_id)
++            self.housing_service.release_contract(saga.property_id, saga.saga_id)
+ 
+             saga.status = "FAILED_ROLLED_BACK"
+ 
+@@ -128,11 +118,7 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+ 
+     def _handle_initiated(self, saga: HousingTransactionSagaStateDTO) -> HousingTransactionSagaStateDTO:
+         # 1. Lock Property
+-        success = False
+-        if hasattr(self.housing_service, 'lock_asset'):
+-             success = self.housing_service.lock_asset(saga.property_id, saga.saga_id)
+-        elif hasattr(self.housing_service, 'set_under_contract'): # Fallback
+-             success = self.housing_service.set_under_contract(saga.property_id, saga.saga_id)
++        success = self.housing_service.set_under_contract(saga.property_id, saga.saga_id)
+ 
+         if not success:
+              saga.error_message = "Property already under contract"
+@@ -195,14 +181,12 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+         # 2. Add Lien via Registry
+         # Need lienholder_id (Bank ID).
+         # LoanInfo might not have it, but we know it's the Bank.
+-        bank_id = self.simulation.bank.id if self.simulation.bank else -1
+-
+-        lien_details = {
+-            "loan_id": loan_id,
+-            "lienholder_id": bank_id,
+-            "principal_remaining": principal
+-        }
+-        lien_id = self.housing_service.add_lien(saga.property_id, lien_details)
++        bank_id = int(self.simulation.bank.id) if self.simulation.bank else -1
++
++        # MIGRATION: Convert principal (dollars) to pennies (int) for Registry/Lien
++        principal_pennies = int(principal * 100)
++
++        lien_id = self.housing_service.add_lien(saga.property_id, str(loan_id), bank_id, principal_pennies)
+         if not lien_id:
+              saga.error_message = "Failed to create lien"
+              return self.compensate_step(saga)
+@@ -283,18 +267,11 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+         # Finalize Ownership
+         buyer_id = self._get_buyer_id(saga)
+ 
+-        if hasattr(self.housing_service, 'transfer_asset'):
+-            success = self.housing_service.transfer_asset(saga.property_id, buyer_id)
+-        else:
+-            success = self.housing_service.transfer_ownership(saga.property_id, buyer_id)
++        success = self.housing_service.transfer_ownership(saga.property_id, buyer_id)
+ 
+         if success:
+              self._log_transaction(saga)
+-
+-             if hasattr(self.housing_service, 'release_asset'):
+-                 self.housing_service.release_asset(saga.property_id, saga.saga_id)
+-             else:
+-                 self.housing_service.release_contract(saga.property_id, saga.saga_id)
++             self.housing_service.release_contract(saga.property_id, saga.saga_id)
+ 
+              saga.status = "COMPLETED"
+         else:
+diff --git a/modules/housing/api.py b/modules/housing/api.py
+index f0f11104..55388ac9 100644
+--- a/modules/housing/api.py
++++ b/modules/housing/api.py
+@@ -73,8 +73,8 @@ class IHousingService(ABC):
+         ...
+ 
+     @abstractmethod
+-    def add_lien(self, property_id: int, loan_id: str, lienholder_id: int, principal: float) -> Optional[str]:
+-        """Adds a lien (e.g., a mortgage) to a property."""
++    def add_lien(self, property_id: int, loan_id: str, lienholder_id: int, principal: int) -> Optional[str]:
++        """Adds a lien (e.g., a mortgage) to a property. Principal in pennies."""
+         ...
+ 
+     @abstractmethod
+diff --git a/modules/housing/service.py b/modules/housing/service.py
+index 5cb3627f..b6fefcf5 100644
+--- a/modules/housing/service.py
++++ b/modules/housing/service.py
+@@ -47,7 +47,7 @@ class HousingService(IHousingService):
+     def transfer_asset(self, asset_id: Any, new_owner_id: Any) -> bool:
+         return self.transfer_ownership(int(asset_id), int(new_owner_id))
+ 
+-    def add_lien(self, property_id: int, loan_id: Any, lienholder_id: Optional[int] = None, principal: Optional[float] = None) -> Optional[str]:
++    def add_lien(self, property_id: int, loan_id: Any, lienholder_id: Optional[int] = None, principal: Optional[int] = None) -> Optional[str]:
+         # Support for IInventoryHandler signature: add_lien(asset_id, lien_details)
+         if isinstance(loan_id, dict) and lienholder_id is None:
+              details = loan_id
+@@ -75,7 +75,7 @@ class HousingService(IHousingService):
+         new_lien: LienDTO = {
+             "loan_id": loan_id_str,
+             "lienholder_id": int(lienholder_id_val) if lienholder_id_val is not None else -1,
+-            "principal_remaining": float(principal_val) if principal_val is not None else 0.0,
++            "principal_remaining": int(principal_val) if principal_val is not None else 0,
+             "lien_type": "MORTGAGE"
+         }
+         unit.liens.append(new_lien)
+diff --git a/modules/market/handlers/housing_transaction_handler.py b/modules/market/handlers/housing_transaction_handler.py
+index a1b2d6c1..7ced3559 100644
+--- a/modules/market/handlers/housing_transaction_handler.py
++++ b/modules/market/handlers/housing_transaction_handler.py
+@@ -214,7 +214,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
+         if context.bank:
+              try:
+                  status = context.bank.get_debt_status(buyer.id)
+-                 existing_debt = status.total_outstanding_debt
++                 existing_debt = status.total_outstanding_pennies / 100.0
+              except: pass
+ 
+         assets_val = 0.0
+diff --git a/modules/simulation/api.py b/modules/simulation/api.py
+index 8336bc00..5f3837a7 100644
+--- a/modules/simulation/api.py
++++ b/modules/simulation/api.py
+@@ -37,6 +37,7 @@ if TYPE_CHECKING:
+     from modules.housing.api import IHousingService
+     from modules.memory.api import MemoryV2Interface
+     from modules.system.api import CurrencyCode
++    from modules.finance.kernel.api import IMonetaryLedger
+ 
+ # --- DTOs ---
+ 
+@@ -183,9 +184,11 @@ class IOrchestratorAgent(IAgent, Protocol):
+ 
+ class IFirm(IAgent, Protocol):
+     productivity_factor: float
++    def reset(self) -> None: ...
+ 
+ class IHousehold(IAgent, Protocol):
+     inventory: Dict[str, float]
++    def reset_tick_state(self) -> None: ...
+ 
+ @runtime_checkable
+ class IEducated(Protocol):
+@@ -277,6 +280,7 @@ class ISimulationState(Protocol):
+     agents: Dict[AgentID, IAgent]
+     bank: "IBankService"
+     markets: Dict[str, "IMarket"]
++    monetary_ledger: Optional["IMonetaryLedger"]
+ 
+     def get_economic_indicators(self) -> EconomicIndicatorsDTO:
+         """
+diff --git a/simulation/bank.py b/simulation/bank.py
+index 78978c19..87897269 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -281,13 +281,13 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+              total_debt = sum(l.outstanding_balance for l in loans)
+              return DebtStatusDTO(
+                  borrower_id=int(borrower_id),
+-                 total_outstanding_debt=total_debt,
++                 total_outstanding_pennies=int(total_debt * 100),
+                  loans=loans,
+                  is_insolvent=False,
+-                 next_payment_due=None,
+-                 next_payment_due_tick=None
++                 next_payment_pennies=0,
++                 next_payment_tick=0
+              )
+-        return DebtStatusDTO(borrower_id=int(borrower_id), total_outstanding_debt=0.0, loans=[], is_insolvent=False, next_payment_due=None, next_payment_due_tick=None)
++        return DebtStatusDTO(borrower_id=int(borrower_id), total_outstanding_pennies=0, loans=[], is_insolvent=False, next_payment_pennies=0, next_payment_tick=0)
+ 
+     def terminate_loan(self, loan_id: str) -> Optional["Transaction"]:
+         return None
+diff --git a/simulation/dtos/api.py b/simulation/dtos/api.py
+index ab327d69..27fa2614 100644
+--- a/simulation/dtos/api.py
++++ b/simulation/dtos/api.py
+@@ -43,6 +43,7 @@ if TYPE_CHECKING:
+     from simulation.firms import Firm
+     from simulation.dtos.scenario import StressScenarioConfig
+     from modules.household.dtos import HouseholdStateDTO
++    from modules.finance.kernel.api import IMonetaryLedger
+ 
+ @dataclass
+ class TransactionData:
+@@ -280,7 +281,7 @@ class SimulationState:
+ 
+     # Phase 4.1: Saga Orchestration & Monetary Ledger (TD-253)
+     saga_orchestrator: Optional[Any] = None
+-    monetary_ledger: Optional[Any] = None
++    monetary_ledger: Optional["IMonetaryLedger"] = None
+ 
+     # TD-255: System Command Pipeline
+     system_commands: List[SystemCommand] = field(default_factory=list)
+diff --git a/simulation/firms.py b/simulation/firms.py
+index a51a2d78..77226a5c 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -936,7 +936,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+                 try:
+                     debt_status = bank.get_debt_status(self.id)
+                     # Convert float dollars to int pennies
+-                    self.finance_state.total_debt_pennies = int(debt_status.total_outstanding_debt * 100)
++                    self.finance_state.total_debt_pennies = debt_status.total_outstanding_pennies
+ 
+                     # Calculate weighted average interest rate
+                     total_principal = sum(l.outstanding_balance for l in debt_status.loans)
+diff --git a/simulation/orchestration/utils.py b/simulation/orchestration/utils.py
+index b06426cf..d06cd48d 100644
+--- a/simulation/orchestration/utils.py
++++ b/simulation/orchestration/utils.py
+@@ -49,9 +49,13 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
+                 debt_data_entry["daily_interest_burden"] = total_burden
+ 
+                 if is_dataclass(debt_status):
+-                    debt_data_entry["total_principal"] = debt_status.total_outstanding_debt
++                    debt_data_entry["total_principal"] = debt_status.total_outstanding_pennies / 100.0
+                 else:
+-                    debt_data_entry["total_principal"] = debt_status["total_outstanding_debt"]
++                    pennies = debt_status.get("total_outstanding_pennies")
++                    if pennies is not None:
++                        debt_data_entry["total_principal"] = pennies / 100.0
++                    else:
++                        debt_data_entry["total_principal"] = debt_status.get("total_outstanding_debt", 0.0)
+ 
+                 debt_data_map[agent_id] = debt_data_entry
+                 deposit_data_map[agent_id] = state.bank.get_balance(str(agent_id))
+diff --git a/simulation/systems/inheritance_manager.py b/simulation/systems/inheritance_manager.py
+index 3129c82a..3f3f9ef2 100644
+--- a/simulation/systems/inheritance_manager.py
++++ b/simulation/systems/inheritance_manager.py
+@@ -75,7 +75,7 @@ class InheritanceManager:
+         bank = getattr(simulation, 'bank', None)
+         if bank and hasattr(bank, 'get_debt_status'):
+             debt_status = bank.get_debt_status(deceased.id)
+-            if debt_status.total_outstanding_debt > 0:
++            if debt_status.total_outstanding_pennies > 0:
+                 for loan in debt_status.loans:
+                     if loan.outstanding_balance > 0 and cash > 0:
+                         repay_amount = min(cash, loan.outstanding_balance)
+diff --git a/simulation/systems/lifecycle_manager.py b/simulation/systems/lifecycle_manager.py
+index ae3fc2f9..48a2a3e7 100644
+--- a/simulation/systems/lifecycle_manager.py
++++ b/simulation/systems/lifecycle_manager.py
+@@ -98,7 +98,7 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
+                 household.reset_tick_state()
+ 
+         for firm in state.firms:
+-            if firm.is_active and hasattr(firm, 'reset'):
++            if firm.is_active:
+                 firm.reset()
+ 
+     def execute(self, state: SimulationState) -> List[Transaction]:
+diff --git a/tests/unit/finance/test_bank_service_interface.py b/tests/unit/finance/test_bank_service_interface.py
+index 8939eaaa..e24f93d5 100644
+--- a/tests/unit/finance/test_bank_service_interface.py
++++ b/tests/unit/finance/test_bank_service_interface.py
+@@ -117,7 +117,7 @@ class TestBankServiceInterface:
+         status = bank.get_debt_status(borrower_id)
+ 
+         assert status.borrower_id == int(borrower_id)
+-        assert status.total_outstanding_debt == 150000.0
++        assert status.total_outstanding_pennies == 15000000
+         assert len(status.loans) == 2
+         assert status.is_insolvent is False
+ 
+diff --git a/tests/unit/systems/handlers/test_housing_handler.py b/tests/unit/systems/handlers/test_housing_handler.py
+index f82c446f..3cfbb984 100644
+--- a/tests/unit/systems/handlers/test_housing_handler.py
++++ b/tests/unit/systems/handlers/test_housing_handler.py
+@@ -98,7 +98,9 @@ class TestHousingTransactionHandler(unittest.TestCase):
+         self.state.bank.withdraw_for_customer.return_value = True
+         self.state.bank.terminate_loan.return_value = MagicMock(transaction_type="credit_destruction")
+         self.state.bank.void_loan.return_value = MagicMock(transaction_type="credit_destruction")
+-        self.state.bank.get_debt_status.return_value = {"total_outstanding_debt": 0.0}
++        mock_debt_status = MagicMock()
++        mock_debt_status.total_outstanding_pennies = 0
++        self.state.bank.get_debt_status.return_value = mock_debt_status
+ 
+     def test_handle_purchase_success(self):
+         tx = Transaction(
+diff --git a/tests/unit/systems/test_inheritance_manager.py b/tests/unit/systems/test_inheritance_manager.py
+index 6101586f..1168a40e 100644
+--- a/tests/unit/systems/test_inheritance_manager.py
++++ b/tests/unit/systems/test_inheritance_manager.py
+@@ -32,7 +32,7 @@ class TestInheritanceManager:
+         # Phase 4.1: Mock Bank for Debt Repayment
+         simulation.bank = MagicMock()
+         # Default: No debt
+-        simulation.bank.get_debt_status.return_value = MagicMock(total_outstanding_debt=0, loans=[])
++        simulation.bank.get_debt_status.return_value = MagicMock(total_outstanding_pennies=0, loans=[])
+ 
+         return simulation
+ 
+diff --git a/tests/unit/systems/test_settlement_saga_integration.py b/tests/unit/systems/test_settlement_saga_integration.py
+index 32a796ab..81e63539 100644
+--- a/tests/unit/systems/test_settlement_saga_integration.py
++++ b/tests/unit/systems/test_settlement_saga_integration.py
+@@ -92,7 +92,7 @@ class TestSettlementSagaIntegration:
+         mock_simulation_state.agents = {1: buyer, 2: seller}
+ 
+         # Mock Housing Service
+-        mock_simulation_state.housing_service.lock_asset.return_value = True
++        mock_simulation_state.housing_service.set_under_contract.return_value = True
+ 
+         # Mock Loan Market
+         mock_simulation_state.markets["loan"].stage_mortgage_application.return_value = "loan_staged_1"
+@@ -114,7 +114,7 @@ class TestSettlementSagaIntegration:
+         assert updated_saga.last_processed_tick == 100
+ 
+         # Verify side effects
+-        mock_simulation_state.housing_service.lock_asset.assert_called_with(101, saga_id)
++        mock_simulation_state.housing_service.set_under_contract.assert_called_with(101, saga_id)
+         mock_simulation_state.markets["loan"].stage_mortgage_application.assert_called_once()
+ 
+     def test_process_sagas_integration_cancellation(self, mock_simulation_state):
+@@ -183,3 +183,4 @@ class TestSettlementSagaIntegration:
+ 
+         # Check logs/mock calls to verify compensation was attempted
+         mock_simulation_state.markets["loan"].void_staged_application.assert_called_with("loan_staged_x")
++        mock_simulation_state.housing_service.release_contract.assert_called_with(101, saga_id)

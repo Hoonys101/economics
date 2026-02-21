@@ -281,7 +281,11 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
              total_debt = int(sum(l.outstanding_balance for l in loans))
              return DebtStatusDTO(
                  borrower_id=int(borrower_id),
+<<<<<<< HEAD
                  total_outstanding_pennies=total_debt,
+=======
+                 total_outstanding_pennies=int(total_debt * 100),
+>>>>>>> origin/mod-lifecycle-recovery-315937193237767827
                  loans=loans,
                  is_insolvent=False,
                  next_payment_pennies=0,

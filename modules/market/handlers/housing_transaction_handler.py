@@ -214,7 +214,7 @@ class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler)
         if context.bank:
              try:
                  status = context.bank.get_debt_status(buyer.id)
-                 existing_debt = status.total_outstanding_debt
+                 existing_debt = status.total_outstanding_pennies / 100.0
              except: pass
 
         assets_val = 0.0
