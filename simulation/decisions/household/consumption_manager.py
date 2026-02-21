@@ -129,8 +129,8 @@ class ConsumptionManager:
 
             # Apply Debt Constraint (Wave 6)
             # If debt_penalty < 1.0 (indicating stress), reduce the budget limit proportionally.
-            if debt_penalty < 1.0:
-                budget_limit *= debt_penalty
+            if context.debt_penalty < 1.0:
+                budget_limit *= context.debt_penalty
 
             bid_price = avg_price * 1.05
             if bid_price > max_affordable_price:

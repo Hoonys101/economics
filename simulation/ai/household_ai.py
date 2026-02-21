@@ -486,8 +486,8 @@ class HouseholdAI(BaseAIEngine):
                  assets = float(assets_data)
 
              wage = agent_data.get("current_wage", 0.0)
-             # Heuristic: Income Proxy = Wage + 1% of Assets (Daily Return)
-             income_proxy = max(wage, assets * 0.01)
+             # Heuristic: Income Proxy = Wage + 0.01% of Assets (Daily Return)
+             income_proxy = max(wage, assets * 0.0001)
 
              dsr = daily_interest_burden / (income_proxy + 1e-09)
 
@@ -497,10 +497,11 @@ class HouseholdAI(BaseAIEngine):
 
              # Use config threshold or default 0.4
              dsr_threshold = getattr(config, "dsr_critical_threshold", 0.4) if config else 0.4
+             penalty_multiplier = getattr(config, "debt_penalty_multiplier", 500.0) if config else 500.0
 
              if dsr > dsr_threshold:
                  # Penalty scales with excess DSR
-                 debt_penalty = (dsr - dsr_threshold) * 500.0 # Heavy penalty to ensure it outweighs small gains
+                 debt_penalty = (dsr - dsr_threshold) * penalty_multiplier # Heavy penalty to ensure it outweighs small gains
                  total_reward -= debt_penalty
 
         # --- Phase 17-4: Vanity Reward (Relative Deprivation) ---

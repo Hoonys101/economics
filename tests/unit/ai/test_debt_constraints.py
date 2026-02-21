@@ -119,7 +119,7 @@ def test_household_ai_debt_penalty_reward():
     reward_low = ai._calculate_reward(pre_state, post_state, agent_data, market_data_low)
 
     # Case 2: High Debt (Penalty)
-    # Wage 10. Assets 1000 (1% = 10). Income proxy = 10.
+    # Wage 10. Assets 1000 (0.01% = 0.1). Income proxy = max(10, 0.1) = 10.
     # Threshold 0.4 -> burden > 4.0 triggers penalty.
     # Let's set burden = 8.0 (DSR 0.8)
     market_data_high = {
@@ -127,6 +127,9 @@ def test_household_ai_debt_penalty_reward():
             100: {'daily_interest_burden': 8.0}
         }
     }
+
+    # Mock return value of penalty multiplier
+    mock_engine.config_module.debt_penalty_multiplier = 500.0
 
     reward_high = ai._calculate_reward(pre_state, post_state, agent_data, market_data_high)
 

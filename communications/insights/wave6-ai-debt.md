@@ -3,7 +3,8 @@
 ## 1. Architectural Insights
 *   **Debt-Aware Consumption**: The `ConsumptionManager` now explicitly incorporates `debt_penalty` (derived from Debt Service Ratio) into the `budget_limit` calculation. This ensures that households with high debt burdens automatically constrict their spending, preventing a feedback loop of insolvency.
 *   **Reinforcement Learning Alignment**: `HouseholdAI`'s reward function has been updated to penalize high Debt Service Ratios (DSR). This aligns the AI's long-term learning objectives with financial sustainability, encouraging agents to avoid states of excessive leverage.
-*   **DTO Usage**: The implementation relies on existing DTO structures (`ConsumptionContext`, `HouseholdStateDTO`) and market data injection, maintaining protocol and DTO purity. No new DTOs were required, but existing data flows were leveraged more effectively.
+*   **Heuristic Adjustments**: The asset income proxy in DSR calculation was refined to `0.0001` (0.01%) daily return to reflect more realistic yield expectations, avoiding artificially low DSR values.
+*   **Configurability**: The debt penalty multiplier is now configurable via `debt_penalty_multiplier` in `HouseholdConfigDTO`, defaulting to 500.0.
 
 ## 2. Regression Analysis
 *   **No Regressions Detected**: Existing tests for `HouseholdAI` and `ConsumptionManager` passed without modification. The changes are additive (penalty application) and fall back to neutral behavior when no debt is present.
