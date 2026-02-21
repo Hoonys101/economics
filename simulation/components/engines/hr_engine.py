@@ -56,12 +56,35 @@ class HREngine(IHREngine):
         # So I can get count.
         current_headcount = len(firm_state.hr.employees)
 
-        # 3. Hire or Fire
+        # 3. Calculate Wages & Scale (NEW)
+
+        # Calculate Target Wage (used for both Hiring and Scaling)
+        base_wage = input_dto.labor_market_avg_wage # Pennies
+        sensitivity = 0.1
+        max_premium = 2.0
+
+        profit_history = firm_state.finance.profit_history
+        avg_profit = sum(profit_history) / len(profit_history) if profit_history else 0.0
+
+        profit_based_premium = avg_profit / (base_wage * 10.0) if base_wage > 0 else 0.0
+        wage_premium = max(0, min(profit_based_premium * sensitivity, max_premium))
+
+        target_wage = int(base_wage * (1 + wage_premium))
+
+        # Wage Scaling: Update existing employees if underpaid
+        for emp_id, emp_data in firm_state.hr.employees_data.items():
+            current_wage = emp_data.get('wage', 0)
+            if current_wage < target_wage:
+                wage_updates[emp_id] = target_wage
 
         # Budget Constraint: Check if we can afford current + new employees
-        # Avg Wage?
-        # We can use actual wages for current employees.
-        current_wage_bill = sum(e['wage'] for e in firm_state.hr.employees_data.values())
+        # Use updated wages for current employees in calculation
+        current_wage_bill = 0
+        for emp_id, emp_data in firm_state.hr.employees_data.items():
+             w = wage_updates.get(emp_id, emp_data.get('wage', 0))
+             current_wage_bill += w
+
+        # 4. Hire or Fire
 
         # Check Firing
         # Logic from RuleBasedFirmDecisionEngine._fire_excess_labor
@@ -113,19 +136,7 @@ class HREngine(IHREngine):
 
         if to_hire > 0:
             # Check Budget
-            # Estimated wage offer
-            # Logic from RuleBasedFirmDecisionEngine._calculate_dynamic_wage_offer
-            base_wage = input_dto.labor_market_avg_wage # Pennies
-            sensitivity = 0.1
-            max_premium = 2.0
-
-            profit_history = firm_state.finance.profit_history
-            avg_profit = sum(profit_history) / len(profit_history) if profit_history else 0.0
-
-            profit_based_premium = avg_profit / (base_wage * 10.0) # Heuristic
-            wage_premium = max(0, min(profit_based_premium * sensitivity, max_premium))
-
-            offered_wage = int(base_wage * (1 + wage_premium))
+            offered_wage = target_wage
 
             # Can we afford N hires?
             # Projected Cost = Current Wages + (N * Offered Wage)
