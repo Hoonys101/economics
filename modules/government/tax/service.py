@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional, List
 from decimal import Decimal
-from modules.government.api import ITaxService
+from modules.government.api import ITaxService, ITaxableHousehold
 from modules.government.taxation.system import TaxationSystem
 from modules.government.components.fiscal_policy_manager import FiscalPolicyManager
 from modules.government.dtos import (
@@ -9,7 +9,7 @@ from modules.government.dtos import (
     PaymentRequestDTO,
     IAgent
 )
-from modules.finance.api import TaxCollectionResult
+from modules.finance.api import TaxCollectionResult, IFinancialEntity
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 from simulation.dtos.api import MarketSnapshotDTO
 from modules.government.constants import (
@@ -93,25 +93,17 @@ class TaxService(ITaxService):
         total_projected = 0
 
         for agent in agents:
-             if not getattr(agent, "is_active", False):
-                 continue
+             # Use Protocol to filter taxable households
+             if isinstance(agent, ITaxableHousehold):
+                 if not agent.is_active:
+                     continue
 
-             if hasattr(agent, "needs") and hasattr(agent, "is_employed"):
-                net_worth = 0
-                if hasattr(agent, "get_balance"):
-                    net_worth = agent.get_balance(DEFAULT_CURRENCY)
-                else:
-                    # Legacy fallback (Assuming assets dictionary stores pennies)
-                    assets = getattr(agent, "assets", 0)
-                    if isinstance(assets, dict):
-                         val = assets.get(DEFAULT_CURRENCY, 0)
-                         net_worth = int(val)
-                    else:
-                         net_worth = int(assets)
+                 # Access net worth via protocol (IFinancialEntity)
+                 net_worth = agent.balance_pennies
 
-                tax_amount = self.calculate_wealth_tax(net_worth)
+                 tax_amount = self.calculate_wealth_tax(net_worth)
 
-                if tax_amount > 0:
+                 if tax_amount > 0:
                     requests.append(PaymentRequestDTO(
                         payer=agent,
                         payee="GOVERNMENT",

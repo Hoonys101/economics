@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Protocol, List, Any, Optional, Dict, TypedDict
+from typing import Protocol, List, Any, Optional, Dict, TypedDict, runtime_checkable
 from dataclasses import dataclass
 from abc import abstractmethod
 from modules.government.dtos import (
@@ -19,8 +19,18 @@ from modules.government.dtos import (
 )
 from modules.government.welfare.api import IWelfareRecipient
 from simulation.dtos.api import MarketSnapshotDTO
-from modules.finance.api import TaxCollectionResult
+from modules.finance.api import TaxCollectionResult, IFinancialEntity
 from modules.system.api import CurrencyCode
+
+@runtime_checkable
+class ITaxableHousehold(IFinancialEntity, IAgent, Protocol):
+    """
+    Protocol for households subject to wealth tax.
+    Requires financial entity capabilities and specific household attributes.
+    """
+    is_active: bool
+    is_employed: bool
+    needs: Any
 
 class BondRepaymentDetailsDTO(TypedDict):
     """
