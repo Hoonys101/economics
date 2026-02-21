@@ -8,6 +8,16 @@ from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO, LoanApplicati
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY, CurrencyCode
 from modules.simulation.api import AgentID, AnyAgentID
 
+@runtime_checkable
+class ITransaction(Protocol):
+    """Module A: Protocol for a completed financial transaction."""
+    sender_id: AgentID
+    receiver_id: AgentID
+    amount_pennies: int
+    tick: int
+    transaction_type: str
+    memo: Optional[str] = None
+
 if TYPE_CHECKING:
     from modules.simulation.api import IGovernment, EconomicIndicatorsDTO
     from simulation.dtos.api import GovernmentSensoryDTO
@@ -247,12 +257,13 @@ class LoanInfoDTO:
 
 @dataclass(frozen=True)
 class DebtStatusDTO:
-    borrower_id: int
-    total_outstanding_debt: float
+    """Module A: Hardened financial debt representation (Pennies only)."""
+    borrower_id: AgentID
+    total_outstanding_pennies: int
     loans: List[LoanInfoDTO]
     is_insolvent: bool
-    next_payment_due: Optional[float]
-    next_payment_due_tick: Optional[int]
+    next_payment_pennies: int
+    next_payment_tick: int
 
 class InsufficientFundsError(Exception):
     """
@@ -439,11 +450,11 @@ class IBankService(Protocol):
     """
     def get_interest_rate(self) -> float: ...
 
-    def grant_loan(self, borrower_id: int, amount: float, interest_rate: float, due_tick: int) -> Optional[Tuple[LoanInfoDTO, Any]]: ...
+    def grant_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: int) -> Optional[Tuple[LoanInfoDTO, Any]]: ...
 
-    def stage_loan(self, borrower_id: int, amount: float, interest_rate: float, due_tick: Optional[int], borrower_profile: Optional[BorrowerProfileDTO]) -> Optional[LoanInfoDTO]: ...
+    def stage_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: Optional[int], borrower_profile: Optional[BorrowerProfileDTO]) -> Optional[LoanInfoDTO]: ...
 
-    def repay_loan(self, loan_id: str, amount: float) -> bool: ...
+    def repay_loan(self, loan_id: str, amount: int) -> int: ...
 
 @runtime_checkable
 class IBank(IBankService, IFinancialAgent, Protocol):

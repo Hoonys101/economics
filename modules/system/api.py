@@ -10,6 +10,32 @@ CurrencyCode = str
 DEFAULT_CURRENCY: CurrencyCode = "USD"
 AgentID = int
 
+@runtime_checkable
+class IWorldState(Protocol):
+    """Module B: Protocol for decoupled world state management."""
+    def get_agent(self, agent_id: AgentID) -> Optional[IAgent]:
+        """Retrieves an agent by ID or None if not found."""
+        ...
+
+    def register_government(self, gov: Any) -> None:
+        """Registers a government entity to the multi-gov pool."""
+        ...
+
+    def get_governments(self) -> List[Any]:
+        """Returns the list of all active government entities."""
+        ...
+
+@runtime_checkable
+class IGovernmentRegistry(Protocol):
+    """Module B: Protocol for specialized government lifecycle management."""
+    def get_primary_government(self) -> Any:
+        """SSoT for the main government entity."""
+        ...
+
+    def sync_multi_gov_state(self) -> None:
+        """Synchronizes policies across multiple government entities."""
+        ...
+
 @dataclass
 class MarketContextDTO:
     """

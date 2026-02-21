@@ -14,6 +14,29 @@ LegacySimulationOrder = Order
 # Deprecated alias kept for backward compatibility until all consumers are updated
 OrderDTO = Order
 
+@dataclass(frozen=True)
+class DepartmentContextDTO:
+    """Module B: Context for firm-department orchestration."""
+    parent_firm_id: AgentID
+    department_type: str
+    is_active: bool
+    budget_pennies: int
+
+@dataclass(frozen=True)
+class SagaParticipantDTO:
+    """Module C: Saga participant state for atomic rollbacks."""
+    saga_id: UUID
+    participant_id: AgentID
+    state: str
+    last_checkpoint_tick: int
+
+@dataclass(frozen=True)
+class MockFactoryDTO:
+    """Module D: Testing infrastructure for decoupled mocks."""
+    target_protocol: str
+    mock_id: str
+    behavior_config: Dict[str, Any]
+
 
 if TYPE_CHECKING:
     from simulation.core_agents import Household

@@ -3,6 +3,25 @@ from dataclasses import dataclass, field
 from typing import Protocol, TypedDict, Any, List, Dict, Optional, TYPE_CHECKING, runtime_checkable, NewType, Literal, Union
 from enum import Enum, auto
 
+class LifecycleState(Enum):
+    """Module C: Standardized agent lifecycle states."""
+    CREATED = auto()
+    REGISTERED = auto()
+    ACTIVE = auto()
+    LIQUIDATING = auto()
+    DELETED = auto()
+
+@runtime_checkable
+class ILifecycleRegistry(Protocol):
+    """Module C: Registry protocol for atomic state transitions."""
+    def transition_agent(self, agent_id: AgentID, next_state: LifecycleState) -> bool:
+        """Atomically transitions an agent to a new state."""
+        ...
+
+    def get_state(self, agent_id: AgentID) -> LifecycleState:
+        """Retrieves the current lifecycle state of an agent."""
+        ...
+
 import logging
 
 # --- Unified Agent Identifier ---
