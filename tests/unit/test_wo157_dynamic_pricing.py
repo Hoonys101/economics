@@ -55,10 +55,11 @@ class TestWO157DynamicPricing:
         orders = [Order(1, 'SELL', 'widget', 10.0, int(100.0 * 100), market_id='market', price_limit=100.0)]
 
         def estimator(item_id):
-            return 50.0
-        engine.check_and_apply_dynamic_pricing(state, orders, current_tick, mock_config, estimator)
-        assert orders[0].price_limit == 90.0
-        assert state.last_prices['widget'] == 90.0
+            return 5000 # Pennies (50.00)
+
+        result = engine.check_and_apply_dynamic_pricing(state, orders, current_tick, mock_config, estimator)
+        assert result.orders[0].price_limit == 90.0
+        assert result.price_updates['widget'] == 9000
 
     def test_dynamic_pricing_floor(self, mock_config):
         engine = SalesEngine()
@@ -69,10 +70,11 @@ class TestWO157DynamicPricing:
         orders = [Order(1, 'SELL', 'widget', 10.0, int(52.0 * 100), market_id='market', price_limit=52.0)]
 
         def estimator(item_id):
-            return 50.0
-        engine.check_and_apply_dynamic_pricing(state, orders, current_tick, mock_config, estimator)
-        assert orders[0].price_limit == 50.0
-        assert state.last_prices['widget'] == 50.0
+            return 5000 # Pennies (50.00)
+
+        result = engine.check_and_apply_dynamic_pricing(state, orders, current_tick, mock_config, estimator)
+        assert result.orders[0].price_limit == 50.0
+        assert result.price_updates['widget'] == 5000
 
     def test_dynamic_pricing_not_stale(self, mock_config):
         engine = SalesEngine()
@@ -83,9 +85,10 @@ class TestWO157DynamicPricing:
         orders = [Order(1, 'SELL', 'widget', 10.0, int(100.0 * 100), market_id='market', price_limit=100.0)]
 
         def estimator(item_id):
-            return 50.0
-        engine.check_and_apply_dynamic_pricing(state, orders, current_tick, mock_config, estimator)
-        assert orders[0].price_limit == 100.0
+            return 5000
+        result = engine.check_and_apply_dynamic_pricing(state, orders, current_tick, mock_config, estimator)
+        assert result.orders[0].price_limit == 100.0
+        assert 'widget' not in result.price_updates
 
     def test_transaction_processor_calls_record_sale(self, mock_config):
         processor = TransactionProcessor(mock_config)

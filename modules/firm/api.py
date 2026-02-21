@@ -208,6 +208,19 @@ class PricingResultDTO:
     supply: float
     excess_demand_ratio: float
 
+@dataclass(frozen=True)
+class BrandMetricsDTO:
+    """Result from BrandEngine update."""
+    adstock: float
+    brand_awareness: float
+    perceived_quality: float
+
+@dataclass(frozen=True)
+class DynamicPricingResultDTO:
+    """Result from SalesEngine dynamic pricing."""
+    orders: List[Order]
+    price_updates: Dict[str, int] # item_id -> new_price_pennies
+
 # ==============================================================================
 # 3. ENGINE PROTOCOLS
 # ==============================================================================
@@ -317,8 +330,8 @@ class ISalesEngine(Protocol):
         """Generates marketing spend transaction."""
         ...
 
-    def check_and_apply_dynamic_pricing(self, state: Any, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> None:
-        """Overrides prices in orders if dynamic pricing logic dictates."""
+    def check_and_apply_dynamic_pricing(self, state: Any, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> DynamicPricingResultDTO:
+        """Overrides prices in orders if dynamic pricing logic dictates. Returns new orders and price updates."""
         ...
 
 @runtime_checkable
@@ -333,8 +346,8 @@ class IBrandEngine(Protocol):
         marketing_spend: float,
         actual_quality: float,
         firm_id: int
-    ) -> None:
-        """Updates brand assets in the SalesState based on marketing spend and quality."""
+    ) -> BrandMetricsDTO:
+        """Calculates updated brand metrics based on marketing spend and quality."""
         ...
 
 # ==============================================================================
@@ -400,6 +413,8 @@ __all__ = [
     'RDResultDTO',
     'PricingInputDTO',
     'PricingResultDTO',
+    'BrandMetricsDTO',
+    'DynamicPricingResultDTO',
     'IFinanceEngine',
     'IHREngine',
     'IProductionEngine',

@@ -111,7 +111,7 @@ class TestSalesEngine:
         # price_pennies should be 1000 (no multiplier)
         assert order.price_pennies == 1000
         assert order.price_limit == 10.0
-        assert state.last_prices["apple"] == 1000
+        # assert state.last_prices["apple"] == 1000 # Removed: Engine is now stateless
 
     def test_generate_marketing_transaction(self):
         engine = SalesEngine()
