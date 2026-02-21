@@ -18,7 +18,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **TD-ARCH-FIRM-COUP** | Architecture | **Parent Pointer Pollution**: `Firm` departments use `self.parent`, bypassing Orchestrator. | **High**: Structural Integrity. | Open |
 | **TD-ARCH-GOV-MISMATCH** | Architecture | **Singleton vs List**: `WorldState` has `governments` (List) vs Singleton `government`. | **Medium**: Logic Drift. | Open |
-| **TD-CRIT-FLOAT-CORE** | Finance | **Float Core**: `SettlementSystem` and `MatchingEngine` use `float` instead of `int`. | **Critical**: Determinism. | **PARTIAL** |
+| **TD-CRIT-FLOAT-CORE** | Finance | **Float Core**: `SettlementSystem` and `MatchingEngine` use `float` instead of `int`. | **Critical**: Determinism. | **RESOLVED** |
 | **TD-INT-BANK-ROLLBACK** | Finance | **Rollback Coupling**: Bank rollback logic dependent on `hasattr` implementation. | **Low**: Leak. | Open |
 | **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Handler**: `bailout`, `bond_issuance` tx types not registered. | **High**: Failure. | Open |
 | **TD-SYS-ACCOUNTING-GAP** | Systems | **Accounting Accuracy**: `accounting.py` misses tracking buyer expenses. | **Medium**: Accuracy. | Open |
@@ -28,9 +28,9 @@
 | **TD-TEST-TAX-DEPR** | Testing | **Deprecated Tax API in Tests**: `test_transaction_handlers.py` still uses `collect_tax`. | **Medium**: Tech Debt. | Identified |
 | **TD-ECON-INSTABILITY-V2** | Economic | **Rapid Collapse**: Sudden Zombie/Fire Sale clusters despite high initial assets. | **High**: Logic Drift. | **IDENTIFIED** |
 | **TD-ARCH-ORCH-HARD** | Architecture | **Orchestrator Fragility**: `TickOrchestrator` lacks hardening against missing DTO attributes in mocks. | **Medium**: Resilience. | **NEW (PH21)** |
-| **TD-ECON-M2-INV** | Economic | **M2 Inversion**: Negative money supply due to overdrafts subtracted from aggregate cash. | **CRITICAL**: Integrity. | **NEW (PH21)** |
-| **TD-ARCH-STARTUP-RACE** | Architecture | **Ghost Firm Registry**: Transactions attempted before agent/bank registration. | **High**: Failure. | **IDENTIFIED** |
-| **TD-FIN-SAGA-ORPHAN** | Finance | **Saga Participant Drift**: Missing or stale participant IDs causing `SAGA_SKIP`. | **Medium**: Logic Gap. | **IDENTIFIED** |
+| **TD-ECON-M2-INV** | Economic | **M2 Inversion**: Negative money supply due to overdrafts subtracted from aggregate cash. | **CRITICAL**: Integrity. | **RESOLVED** |
+| **TD-ARCH-STARTUP-RACE** | Architecture | **Ghost Firm Registry**: Transactions attempted before agent/bank registration. | **High**: Failure. | **RESOLVED** |
+| **TD-FIN-SAGA-ORPHAN** | Finance | **Saga Participant Drift**: Missing or stale participant IDs causing `SAGA_SKIP`. | **Medium**: Logic Gap. | **RESOLVED** |
 
 ---
 
@@ -84,7 +84,8 @@
 - **Title**: Firm Startup Race Condition
 - **Symptom**: `SETTLEMENT_FAIL` during `spawn_firm` due to missing destination account.
 - **Risk**: New firms start as zombies or fail to launch entirely.
-- **Solution**: Implement blocking `open_account` before capital injection transaction.
+- **Solution**: Implement blocking `open_account` before capital injection transaction. Fixed via Module C (Saga/Lifecycle).
+- **Status**: **RESOLVED**
 
 ---
 > [!NOTE]
