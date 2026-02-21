@@ -17,5 +17,16 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "fix_penny_standard_tests": {
+        "title": "Fix Penny Standard Migration Test Failures",
+        "instruction": (
+            "Fix the 5 failing tests caused by Penny Standard migration. "
+            "1. C:/coding/economics/modules/government/components/infrastructure_manager.py:43 - Fix unpacking error (`issue_treasury_bonds_synchronous` returns bool, list). "
+            "2. test_double_entry.py - test_market_bond_issuance_generates_transaction (20.0 -> 2000). "
+            "3. test_double_entry.py - test_qe_bond_issuance_generates_transaction (10.0 -> 1000). "
+            "4. test_sovereign_debt.py - test_issue_treasury_bonds_calls_settlement_system (1.0 -> 100). "
+            "5. test_system.py - test_issue_treasury_bonds_market (1000.0 -> 100000). "
+            "Verify with `pytest -rfE --tb=line --no-header tests/`."
+        )
+    }
 }

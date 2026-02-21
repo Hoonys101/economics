@@ -24,5 +24,41 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "spec_firm_decoupling": {
+        "title": "TD-ARCH-FIRM-COUP: Firm Decoupling Spec",
+        "worker": "spec",
+        "instruction": "Analyze Firm-Department coupling (self.parent) and design Orchestrator-based messaging pattern. Write specification to output_path.",
+        "context_files": [
+            "c:/coding/economics/simulation/agents/firm.py",
+            "c:/coding/economics/simulation/orchestration/tick_orchestrator.py"
+        ],
+        "output_path": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_firm_coup_spec.md"
+    },
+    "spec_missing_tx_handlers": {
+        "title": "TD-RUNTIME-TX-HANDLER: Missing Tx Handlers Spec",
+        "worker": "spec",
+        "instruction": "Design missing transaction handlers (bailout, bond_issuance) and their registration in the TransactionEngine. Write specification to output_path.",
+        "context_files": [
+            "c:/coding/economics/modules/transaction/engine.py"
+        ],
+        "output_path": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_tx_handlers_spec.md"
+    },
+    "spec_cockpit_test_regression": {
+        "title": "TD-TEST-COCKPIT-MOCK: Cockpit Regression Fix Spec",
+        "worker": "spec",
+        "instruction": "Analyze test failures related to deprecated system_command_queue in Cockpit 2.0 tests. Write spec to modernize test mocks.",
+        "context_files": [
+            "c:/coding/economics/tests/unit/modules/command/test_service.py"
+        ],
+        "output_path": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_cockpit_mock_spec.md"
+    },
+    "spec_stale_lifecycle_tests": {
+        "title": "TD-TEST-LIFE-STALE: Stale Lifecycle Tests Spec",
+        "worker": "spec",
+        "instruction": "Analyze and specify fixes for stale lifecycle test logic calling refactored liquidation methods.",
+        "context_files": [
+            "c:/coding/economics/tests/unit/simulation/test_engine.py"
+        ],
+        "output_path": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_life_stale_spec.md"
+    }
 }
