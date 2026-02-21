@@ -3,23 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "wave2-firm-architecture": {
-      "key": "wave2-firm-architecture",
-      "title": "Wave 2.1: Firm Architecture Overhaul",
-      "type": "jules",
-      "instruction_raw": "Implement MISSION_wave2_firm_architecture_spec.md. Remove self.parent from Firm departments, enforce DTO passing, and ensure Brand/Sales/HR Engines return ResultDTOs without mutating state.",
-      "status": "pending",
-      "created_at": "",
-      "command": "create",
-      "file_path": "artifacts/specs/MISSION_wave2_firm_architecture_spec.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "wave2-market-policy": {
       "key": "wave2-market-policy",
       "title": "Wave 2.2: Market & Policy Refinement",
