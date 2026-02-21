@@ -9,7 +9,7 @@ class SalesPostAskContextDTO:
     """
     firm_id: int
     item_id: str
-    price: int # Changed to int (pennies)
+    price_pennies: int # Changed to int (pennies)
     quantity: float
     market_id: str
     current_tick: int

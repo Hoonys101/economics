@@ -623,8 +623,13 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         """Clears the inventory."""
         self.inventory_component.clear_inventory(slot)
 
-    def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
-        context = self._build_sales_post_ask_context(item_id, price, quantity, market.id, current_tick)
+    def post_ask(self, item_id: str, price: float | int, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
+        if isinstance(price, float):
+            price_pennies = int(price * 100)
+        else:
+            price_pennies = price
+
+        context = self._build_sales_post_ask_context(item_id, price_pennies, quantity, market.id, current_tick)
         return self.sales_engine.post_ask(
             self.sales_state, context
         )
@@ -1135,7 +1140,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             current_time=current_time
         )
 
-    def _build_sales_post_ask_context(self, item_id: str, price: float, quantity: float, market_id: str, current_tick: int) -> SalesPostAskContextDTO:
+    def _build_sales_post_ask_context(self, item_id: str, price_pennies: int, quantity: float, market_id: str, current_tick: int) -> SalesPostAskContextDTO:
         brand_snapshot = {
             "brand_awareness": self.sales_state.brand_awareness,
             "perceived_quality": self.sales_state.perceived_quality,
@@ -1144,7 +1149,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         return SalesPostAskContextDTO(
             firm_id=self.id,
             item_id=item_id,
-            price=price,
+            price_pennies=price_pennies,
             quantity=quantity,
             market_id=market_id,
             current_tick=current_tick,
