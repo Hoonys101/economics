@@ -1,0 +1,563 @@
+diff --git a/communications/insights/fix-pm-funding.md b/communications/insights/fix-pm-funding.md
+new file mode 100644
+index 00000000..01d07d52
+--- /dev/null
++++ b/communications/insights/fix-pm-funding.md
+@@ -0,0 +1,87 @@
++# Fix Public Manager Funding & Escheatment
++
++## Architectural Insights
++
++### 1. Soft Budget Constraint for System Agents
++To solve the "Liquidity Trap" where the Public Manager (PM) could not acquire assets from bankrupt firms due to lack of funds, we introduced the `ISystemFinancialAgent` protocol. Agents implementing this protocol (and returning `True` from `is_system_agent()`) are exempt from strict solvency checks in the `SettlementSystem` and `TransactionEngine`.
++
++- **Implementation**:
++    - `ISystemFinancialAgent` added to `modules/system/api.py`.
++    - `PublicManager` implements this protocol.
++    - `SettlementSystem._prepare_seamless_funds` and `FinancialAgentAdapter.allows_overdraft` updated to check for this marker.
++
++### 2. Asset Buyout Mechanism
++The escheatment process was split into two phases to allow liquidity injection before final cleanup:
++- **Phase A (Asset Buyout)**: PM purchases assets from the bankrupt agent using `execute_asset_buyout`. This injects cash into the bankrupt agent (potentially driving PM balance negative).
++- **Phase C (Residual Escheatment)**: Remaining cash and assets are transferred to the Government.
++
++- **DTOs**: `AssetBuyoutRequestDTO` and `AssetBuyoutResultDTO` standardized the data flow.
++
++### 3. Deficit Tracking
++The `PublicManager` now tracks `cumulative_deficit`, which represents the total amount of "new money" created via overdrafts to fund bailouts/buyouts. This metric is exposed via `get_deficit()` and included in the `PublicManagerReportDTO`.
++
++## Regression Analysis
++
++### 1. Public Manager Compliance
++`tests/unit/modules/system/execution/test_public_manager_compliance.py` was updated.
++- **Before**: Expected `InsufficientFundsError` on overdraft.
++- **After**: Verifies that overdraft is allowed and deficit is tracked.
++- **Reason**: The core requirement was to enable overdraft.
++
++### 2. Settlement System Integrity
++`tests/unit/finance/test_settlement_system_overdraft.py` was created to ensure:
++- Normal agents **cannot** overdraft (Zero-Sum Integrity preserved for them).
++- System agents **can** overdraft (Soft Budget Constraint).
++
++### 3. Escheatment Logic
++`simulation/systems/handlers/escheatment_handler.py` was refactored but maintains backward compatibility for legacy escheatment if no subtype is specified (defaults to residual cash logic).
++
++## Test Evidence
++
++```
++tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_implements_financial_agent PASSED [  6%]
++tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_implements_system_financial_agent PASSED [ 13%]
++tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_implements_asset_recovery_system PASSED [ 20%]
++tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_bankruptcy_processing_id_handling
++-------------------------------- live log call ---------------------------------
++WARNING  PublicManager:public_manager.py:93 Processing bankruptcy for Agent 99 at tick 1. Recovering inventory.
++INFO     PublicManager:public_manager.py:98 Recovered 10.0 of gold.
++PASSED                                                                   [ 26%]
++tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_liquidation_order_generation_id
++-------------------------------- live log call ---------------------------------
++INFO     PublicManager:public_manager.py:168 Generated liquidation order for 1.0 of gold at 95.0.
++PASSED                                                                   [ 33%]
++tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_process_bankruptcy_event
++-------------------------------- live log call ---------------------------------
++WARNING  PublicManager:public_manager.py:93 Processing bankruptcy for Agent 1 at tick 10. Recovering inventory.
++INFO     PublicManager:public_manager.py:98 Recovered 10.0 of apple.
++INFO     PublicManager:public_manager.py:98 Recovered 5.0 of banana.
++PASSED                                                                   [ 40%]
++tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_generate_liquidation_orders
++-------------------------------- live log call ---------------------------------
++INFO     PublicManager:public_manager.py:168 Generated liquidation order for 50.0 of apple at 9.0.
++PASSED                                                                   [ 46%]
++tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_confirm_sale PASSED [ 53%]
++tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_deposit_revenue PASSED [ 60%]
++tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_generate_liquidation_orders_no_signal PASSED [ 66%]
++tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_generate_liquidation_orders_resets_metrics PASSED [ 73%]
++tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_execute_asset_buyout
++-------------------------------- live log call ---------------------------------
++INFO     PublicManager:public_manager.py:120 Executed Asset Buyout from Agent 1. Paid: 500, Items: 1
++PASSED                                                                   [ 80%]
++tests/unit/finance/test_settlement_system_overdraft.py::TestSettlementSystemOverdraft::test_normal_agent_cannot_overdraft
++-------------------------------- live log call ---------------------------------
++ERROR    simulation.systems.settlement_system:settlement_system.py:358 SETTLEMENT_FAIL | Insufficient funds. Cash: 100, Req: 200.
++PASSED                                                                   [ 86%]
++tests/unit/finance/test_settlement_system_overdraft.py::TestSettlementSystemOverdraft::test_system_agent_can_overdraft
++-------------------------------- live log call ---------------------------------
++INFO     simulation.systems.settlement_system:engine.py:126 Transaction Record: ID=fa6431ba-e4f4-456e-8406-7fae3fd09206, Status=COMPLETED, Message=Transaction successful.
++PASSED                                                                   [ 93%]
++tests/integration/test_public_manager_integration.py::TestPublicManagerIntegration::test_full_liquidation_cycle
++-------------------------------- live log call ---------------------------------
++WARNING  PublicManager:public_manager.py:93 Processing bankruptcy for Agent 99 at tick 1. Recovering inventory.
++INFO     PublicManager:public_manager.py:98 Recovered 10.0 of gold.
++INFO     PublicManager:public_manager.py:168 Generated liquidation order for 10.0 of gold at 100.0.
++PASSED                                                                   [100%]
++======================== 15 passed, 2 warnings in 0.33s ========================
++```
+diff --git a/modules/finance/transaction/adapter.py b/modules/finance/transaction/adapter.py
+index 6affb887..f6e5e889 100644
+--- a/modules/finance/transaction/adapter.py
++++ b/modules/finance/transaction/adapter.py
+@@ -1,7 +1,7 @@
+ from typing import Any, cast, Dict, Optional
+ from modules.finance.transaction.api import IAccountAccessor, InvalidAccountError, ITransactionParticipant, ITransactionValidator
+ from modules.finance.api import IFinancialAgent, IFinancialEntity
+-from modules.system.api import IAgentRegistry, CurrencyCode, DEFAULT_CURRENCY
++from modules.system.api import IAgentRegistry, CurrencyCode, DEFAULT_CURRENCY, ISystemFinancialAgent
+ 
+ class FinancialEntityAdapter:
+     """
+@@ -21,6 +21,8 @@ class FinancialEntityAdapter:
+ 
+     @property
+     def allows_overdraft(self) -> bool:
++        if isinstance(self.entity, ISystemFinancialAgent) and self.entity.is_system_agent():
++            return True
+         # Hardcoded ID check for Central Bank. IDs are usually int.
+         from modules.system.constants import ID_CENTRAL_BANK
+         return self.entity.id == ID_CENTRAL_BANK or str(self.entity.id) == str(ID_CENTRAL_BANK)
+@@ -43,6 +45,8 @@ class FinancialAgentAdapter:
+ 
+     @property
+     def allows_overdraft(self) -> bool:
++        if isinstance(self.agent, ISystemFinancialAgent) and self.agent.is_system_agent():
++            return True
+         from modules.system.constants import ID_CENTRAL_BANK
+         return self.agent.id == ID_CENTRAL_BANK or str(self.agent.id) == str(ID_CENTRAL_BANK)
+ 
+diff --git a/modules/system/api.py b/modules/system/api.py
+index b2de6376..3eb89314 100644
+--- a/modules/system/api.py
++++ b/modules/system/api.py
+@@ -76,6 +76,29 @@ class AgentBankruptcyEventDTO(TypedDict):
+     agent_id: int
+     tick: int
+     inventory: Dict[str, float]
++    total_debt: int
++    creditor_ids: List[int]
++
++@dataclass(frozen=True)
++class AssetBuyoutRequestDTO:
++    """
++    Request payload for the PublicManager to purchase assets from a distressed entity.
++    """
++    seller_id: AgentID
++    inventory: Dict[str, float]
++    market_prices: Dict[str, int]  # Current market price (pennies) for valuation
++    distress_discount: float = 0.5 # e.g., 50% of market value
++
++@dataclass(frozen=True)
++class AssetBuyoutResultDTO:
++    """
++    Result of an asset buyout operation.
++    """
++    success: bool
++    total_paid_pennies: int
++    items_acquired: Dict[str, float]
++    buyer_id: AgentID  # PublicManager ID
++    transaction_id: Optional[str] = None
+ 
+ @dataclass(frozen=True)
+ class PublicManagerReportDTO:
+@@ -84,6 +107,7 @@ class PublicManagerReportDTO:
+     liquidation_revenue: Dict[str, int]
+     managed_inventory_count: float
+     system_treasury_balance: Dict[str, int]
++    cumulative_deficit: int = 0  # Added to track total "bailout" funding injected
+ 
+ class OriginType(IntEnum):
+     """
+@@ -240,10 +264,18 @@ class ICurrencyHolder(Protocol):
+ class IAssetRecoverySystem(Protocol):
+     """
+     Interface for the Public Manager acting as a receiver of assets.
++    Now supports active buyout logic to inject liquidity.
+     """
+     def process_bankruptcy_event(self, event: AgentBankruptcyEventDTO) -> None:
+         """
+-        Ingests assets from a bankrupt agent.
++        Legacy ingestion of assets (deprecated in favor of execute_asset_buyout).
++        """
++        ...
++
++    def execute_asset_buyout(self, request: AssetBuyoutRequestDTO) -> AssetBuyoutResultDTO:
++        """
++        Purchases assets from a distressed agent to provide liquidity for creditor repayment.
++        Allowed to go into overdraft (Soft Budget Constraint).
+         """
+         ...
+ 
+@@ -258,3 +290,18 @@ class IAssetRecoverySystem(Protocol):
+         Generates SELL orders to liquidate managed assets into the market.
+         """
+         ...
++
++    def get_deficit(self) -> int:
++        """
++        Returns the cumulative deficit (negative balance) incurred by operations.
++        """
++        ...
++
++@runtime_checkable
++class ISystemFinancialAgent(Protocol):
++    """
++    Marker interface for system agents (like PublicManager) that are exempt
++    from strict solvency checks during specific system operations.
++    """
++    def is_system_agent(self) -> bool:
++        ...
+diff --git a/modules/system/execution/public_manager.py b/modules/system/execution/public_manager.py
+index 1f0b23a2..ed2fb4c0 100644
+--- a/modules/system/execution/public_manager.py
++++ b/modules/system/execution/public_manager.py
+@@ -2,12 +2,16 @@ from __future__ import annotations
+ from typing import Dict, List, Any, Optional
+ import logging
+ from collections import defaultdict
+-from modules.system.api import IAssetRecoverySystem, AgentBankruptcyEventDTO, MarketSignalDTO, PublicManagerReportDTO, CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder
++from modules.system.api import (
++    IAssetRecoverySystem, AgentBankruptcyEventDTO, MarketSignalDTO,
++    PublicManagerReportDTO, CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder,
++    AssetBuyoutRequestDTO, AssetBuyoutResultDTO, ISystemFinancialAgent
++)
+ from modules.finance.api import IFinancialAgent, InsufficientFundsError
+ from modules.system.constants import ID_PUBLIC_MANAGER
+ from simulation.models import Order
+ 
+-class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
++class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent, ISystemFinancialAgent):
+     """
+     A system-level service responsible for asset recovery and liquidation.
+     It acts as a 'Receiver' in bankruptcy proceedings, taking custody of assets
+@@ -26,6 +30,7 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
+         self.last_tick_recovered_assets: Dict[str, float] = defaultdict(float)
+         self.last_tick_revenue: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
+         self.total_revenue_lifetime: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
++        self.cumulative_deficit: int = 0
+ 
+     @property
+     def id(self) -> int:
+@@ -39,14 +44,32 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
+             return
+         self.deposit_revenue(amount, currency=currency)
+ 
+-    def _withdraw(self, amount: int, currency: CurrencyCode=DEFAULT_CURRENCY) -> None:
+-        """Withdraws funds from treasury."""
++    def is_system_agent(self) -> bool:
++        """Marker for SettlementSystem to allow overdraft (Soft Budget Constraint)."""
++        return True
++
++    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        """
++        Withdraws funds from treasury.
++        MIGRATION: Soft Budget Constraint - Allows negative balance.
++        """
+         if amount < 0:
+             raise ValueError('Cannot withdraw negative amount.')
++
+         current_bal = self.system_treasury.get(currency, 0)
+-        if current_bal < amount:
+-            raise InsufficientFundsError(f'PublicManager insufficient funds. Required: {amount} {currency}, Available: {current_bal}')
+-        self.system_treasury[currency] -= amount
++
++        # Calculate deficit increase (money created via overdraft)
++        deficit_increase = 0
++        if current_bal < 0:
++            deficit_increase = amount
++        elif current_bal < amount:
++            deficit_increase = amount - current_bal
++
++        if deficit_increase > 0:
++            self.cumulative_deficit += deficit_increase
++
++        # Allow negative balance
++        self.system_treasury[currency] = current_bal - amount
+ 
+     def get_balance(self, currency: CurrencyCode=DEFAULT_CURRENCY) -> int:
+         """Returns the current balance for the specified currency."""
+@@ -74,6 +97,35 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
+                 self.last_tick_recovered_assets[item_id] += quantity
+                 self.logger.info(f'Recovered {quantity} of {item_id}.')
+ 
++    def execute_asset_buyout(self, request: AssetBuyoutRequestDTO) -> AssetBuyoutResultDTO:
++        """
++        Purchases assets from a distressed agent.
++        Updates internal inventory state but does NOT move funds (caller must execute transfer).
++        """
++        total_value = 0
++        acquired_items = {}
++
++        for item_id, quantity in request.inventory.items():
++            if quantity <= 0:
++                continue
++            price = request.market_prices.get(item_id, 0)
++            value = int(price * quantity * request.distress_discount)
++            total_value += value
++            acquired_items[item_id] = quantity
++
++            # Update inventory immediately
++            self.managed_inventory[item_id] += quantity
++            self.last_tick_recovered_assets[item_id] += quantity
++
++        self.logger.info(f"Executed Asset Buyout from Agent {request.seller_id}. Paid: {total_value}, Items: {len(acquired_items)}")
++
++        return AssetBuyoutResultDTO(
++            success=True,
++            total_paid_pennies=total_value,
++            items_acquired=acquired_items,
++            buyer_id=self.id
++        )
++
+     def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
+         """
+         Receives inventory from a liquidated firm via asset buyout.
+@@ -139,5 +191,15 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
+         self.last_tick_revenue[currency] += amount
+         self.total_revenue_lifetime[currency] += amount
+ 
++    def get_deficit(self) -> int:
++        return self.cumulative_deficit
++
+     def get_status_report(self) -> PublicManagerReportDTO:
+-        return PublicManagerReportDTO(tick=0, newly_recovered_assets=dict(self.last_tick_recovered_assets), liquidation_revenue=self.last_tick_revenue, managed_inventory_count=sum(self.managed_inventory.values()), system_treasury_balance=self.system_treasury)
+\ No newline at end of file
++        return PublicManagerReportDTO(
++            tick=0,
++            newly_recovered_assets=dict(self.last_tick_recovered_assets),
++            liquidation_revenue=self.last_tick_revenue,
++            managed_inventory_count=sum(self.managed_inventory.values()),
++            system_treasury_balance=self.system_treasury,
++            cumulative_deficit=self.cumulative_deficit
++        )
+\ No newline at end of file
+diff --git a/simulation/systems/handlers/escheatment_handler.py b/simulation/systems/handlers/escheatment_handler.py
+index 0e9475d5..4f1ccd37 100644
+--- a/simulation/systems/handlers/escheatment_handler.py
++++ b/simulation/systems/handlers/escheatment_handler.py
+@@ -14,33 +14,39 @@ class EscheatmentHandler(ITransactionHandler):
+     """
+ 
+     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+-        # Buyer: Agent (Deceased/Closed)
+-        # Seller: Government (usually)
++        subtype = tx.metadata.get('subtype')
++
++        if subtype == 'ASSET_BUYOUT':
++            # Phase A: PublicManager (Buyer) buys assets from Bankrupt Agent (Seller)
++            # PM injects liquidity. Soft Budget Constraint applies to PM.
++            amount = tx.total_pennies
++            if amount <= 0:
++                return True
+ 
+-        # TD-171: Use dynamic asset balance instead of static transaction price
+-        escheatment_amount_raw = buyer.assets
+-        escheatment_amount = 0.0
++            credits = [(seller, amount, "asset_buyout")]
++            # PM pays Seller
++            success = context.settlement_system.settle_atomic(buyer, credits, context.time)
++            return success
++
++        # Phase C: Residual Escheatment (Cleanup)
++        # Buyer: Agent (Deceased/Closed)
++        # Seller: Government
+ 
+-        if isinstance(escheatment_amount_raw, dict):
+-            escheatment_amount = escheatment_amount_raw.get(DEFAULT_CURRENCY, 0.0)
+-        else:
+-            try:
+-                escheatment_amount = float(escheatment_amount_raw)
+-            except (ValueError, TypeError):
+-                escheatment_amount = 0.0
++        # Get actual balance from SSoT
++        balance = context.settlement_system.get_balance(buyer.id, DEFAULT_CURRENCY)
+ 
+-        if escheatment_amount <= 0:
++        if balance <= 0:
+             return True # No assets to transfer, consider success
+ 
+         gov = context.government
+-        credits = [(gov, escheatment_amount, "escheatment")]
++        credits = [(gov, balance, "escheatment")]
+ 
+         success = context.settlement_system.settle_atomic(buyer, credits, context.time)
+ 
+         if success:
+               gov.record_revenue({
+                      "success": True,
+-                     "amount_collected": escheatment_amount,
++                     "amount_collected": balance,
+                      "tax_type": "escheatment",
+                      "payer_id": buyer.id,
+                      "payee_id": gov.id,
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index 3d3bd1fc..69cc3616 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -10,7 +10,7 @@ from modules.finance.api import (
+     IMonetaryAuthority, IEconomicMetricsService, IPanicRecorder, ICentralBank
+ 
+ )
+-from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry
++from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry, ISystemFinancialAgent
+ from modules.system.constants import ID_CENTRAL_BANK
+ from modules.market.housing_planner_api import MortgageApplicationDTO
+ from simulation.models import Transaction
+@@ -342,6 +342,10 @@ class SettlementSystem(IMonetaryAuthority):
+         if isinstance(agent, ICentralBank):
+             return True
+ 
++        # System Agent (Soft Budget Constraint) check
++        if isinstance(agent, ISystemFinancialAgent) and agent.is_system_agent():
++            return True
++
+         current_cash = 0
+         if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
+             current_cash = agent.balance_pennies
+diff --git a/tests/unit/finance/test_settlement_system_overdraft.py b/tests/unit/finance/test_settlement_system_overdraft.py
+new file mode 100644
+index 00000000..7992ddc6
+--- /dev/null
++++ b/tests/unit/finance/test_settlement_system_overdraft.py
+@@ -0,0 +1,78 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.systems.settlement_system import SettlementSystem
++from modules.finance.api import IFinancialAgent, IFinancialEntity
++from modules.system.api import DEFAULT_CURRENCY, ISystemFinancialAgent
++
++class MockNormalAgent(IFinancialEntity, IFinancialAgent):
++    def __init__(self, id, balance):
++        self.id = id
++        self._balance_pennies = balance
++
++    @property
++    def balance_pennies(self):
++        return self._balance_pennies
++
++    @balance_pennies.setter
++    def balance_pennies(self, value):
++        self._balance_pennies = value
++
++    def deposit(self, amount, currency=DEFAULT_CURRENCY):
++        self.balance_pennies += amount
++
++    def withdraw(self, amount, currency=DEFAULT_CURRENCY):
++        self.balance_pennies -= amount
++
++    def get_balance(self, currency=DEFAULT_CURRENCY):
++        return self.balance_pennies
++
++    def _deposit(self, amount, currency=DEFAULT_CURRENCY):
++        self.deposit(amount, currency)
++
++    def _withdraw(self, amount, currency=DEFAULT_CURRENCY):
++        self.withdraw(amount, currency)
++
++    def get_all_balances(self):
++        return {DEFAULT_CURRENCY: self.balance_pennies}
++
++    @property
++    def total_wealth(self):
++        return self.balance_pennies
++
++    def get_liquid_assets(self, currency="USD"):
++        return self.balance_pennies / 100.0
++
++    def get_total_debt(self):
++        return 0.0
++
++class MockSystemAgent(MockNormalAgent, ISystemFinancialAgent):
++    def is_system_agent(self) -> bool:
++        return True
++
++class TestSettlementSystemOverdraft:
++
++    @pytest.fixture
++    def settlement_system(self):
++        return SettlementSystem()
++
++    def test_normal_agent_cannot_overdraft(self, settlement_system):
++        agent_a = MockNormalAgent(1, 100)
++        agent_b = MockNormalAgent(2, 0)
++
++        # Try to transfer 200 from A to B
++        result = settlement_system.transfer(agent_a, agent_b, 200, "test")
++
++        assert result is None
++        assert agent_a.balance_pennies == 100
++        assert agent_b.balance_pennies == 0
++
++    def test_system_agent_can_overdraft(self, settlement_system):
++        pm = MockSystemAgent(4, 0)
++        agent_b = MockNormalAgent(2, 0)
++
++        # Try to transfer 200 from PM to B
++        result = settlement_system.transfer(pm, agent_b, 200, "bailout")
++
++        assert result is not None
++        assert pm.balance_pennies == -200
++        assert agent_b.balance_pennies == 200
+diff --git a/tests/unit/modules/system/execution/test_public_manager.py b/tests/unit/modules/system/execution/test_public_manager.py
+index 88736b6a..a2e5cd40 100644
+--- a/tests/unit/modules/system/execution/test_public_manager.py
++++ b/tests/unit/modules/system/execution/test_public_manager.py
+@@ -1,7 +1,7 @@
+ import pytest
+ from unittest.mock import MagicMock
+ from modules.system.execution.public_manager import PublicManager
+-from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, DEFAULT_CURRENCY
++from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, DEFAULT_CURRENCY, AssetBuyoutRequestDTO
+ from modules.system.constants import ID_PUBLIC_MANAGER
+ 
+ class TestPublicManager:
+@@ -57,4 +57,18 @@ class TestPublicManager:
+     def test_generate_liquidation_orders_resets_metrics(self, public_manager):
+         public_manager.last_tick_revenue = {DEFAULT_CURRENCY: 500.0}
+         public_manager.generate_liquidation_orders({})
+-        assert public_manager.last_tick_revenue == {DEFAULT_CURRENCY: 0.0}
+\ No newline at end of file
++        assert public_manager.last_tick_revenue == {DEFAULT_CURRENCY: 0.0}
++
++    def test_execute_asset_buyout(self, public_manager):
++        request = AssetBuyoutRequestDTO(
++            seller_id=1,
++            inventory={'gold': 10},
++            market_prices={'gold': 100},
++            distress_discount=0.5
++        )
++        result = public_manager.execute_asset_buyout(request)
++
++        assert result.success
++        assert result.total_paid_pennies == 500 # 10 * 100 * 0.5
++        assert public_manager.managed_inventory['gold'] == 10
++        assert public_manager.last_tick_recovered_assets['gold'] == 10
+\ No newline at end of file
+diff --git a/tests/unit/modules/system/execution/test_public_manager_compliance.py b/tests/unit/modules/system/execution/test_public_manager_compliance.py
+index b9c14659..f4c8afd4 100644
+--- a/tests/unit/modules/system/execution/test_public_manager_compliance.py
++++ b/tests/unit/modules/system/execution/test_public_manager_compliance.py
+@@ -2,7 +2,7 @@ import pytest
+ from unittest.mock import MagicMock
+ from modules.system.execution.public_manager import PublicManager
+ from modules.finance.api import IFinancialAgent, InsufficientFundsError
+-from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, IAssetRecoverySystem
++from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, IAssetRecoverySystem, ISystemFinancialAgent
+ from modules.system.constants import ID_PUBLIC_MANAGER
+ 
+ class TestPublicManagerCompliance:
+@@ -23,8 +23,16 @@ class TestPublicManagerCompliance:
+         assert public_manager.total_wealth == 100
+         public_manager._withdraw(50)
+         assert public_manager.total_wealth == 50
+-        with pytest.raises(InsufficientFundsError):
+-            public_manager._withdraw(100)
++
++        # Soft Budget Constraint: Should NOT raise InsufficientFundsError
++        public_manager._withdraw(100)
++        assert public_manager.get_balance() == -50
++        assert public_manager.get_deficit() > 0
++
++    def test_implements_system_financial_agent(self, public_manager):
++        """Verify PublicManager implements ISystemFinancialAgent."""
++        assert isinstance(public_manager, ISystemFinancialAgent)
++        assert public_manager.is_system_agent() is True
+ 
+     def test_implements_asset_recovery_system(self, public_manager):
+         """Verify PublicManager implements IAssetRecoverySystem."""
