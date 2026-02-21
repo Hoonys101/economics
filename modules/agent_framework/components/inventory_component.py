@@ -34,11 +34,6 @@ class InventoryComponent(IInventoryComponent):
             for item_id, qty in initial_inv.items():
                 self.add_item(item_id, float(qty))
 
-    def attach(self, owner: Any) -> None:
-        """Attaches the component to an owner."""
-        # No-op for now, or store owner reference if needed.
-        pass
-
     @property
     def main_inventory(self) -> Dict[str, float]:
         """Exposes the main inventory dict (as in Firm legacy)."""

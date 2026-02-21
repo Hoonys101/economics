@@ -5,7 +5,7 @@ from enum import Enum
 
 from modules.simulation.dtos.api import FirmConfigDTO, FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from modules.system.api import MarketSnapshotDTO, MarketContextDTO
-from modules.simulation.api import IInventoryHandler
+from modules.simulation.api import IInventoryHandler, AgentID
 from modules.finance.api import IFinancialAgent
 from simulation.models import Order, Transaction
 
@@ -66,6 +66,114 @@ class FirmSnapshotDTO:
     hr: HRStateDTO
     strategy: FirmStrategy = FirmStrategy.PROFIT_MAXIMIZATION
 
+# --- Department Decoupling Context/Intent DTOs ---
+
+@dataclass(frozen=True)
+class BaseDepartmentContextDTO:
+    """Base context shared by all departments."""
+    firm_id: AgentID
+    tick: int
+    budget_pennies: int
+    market_snapshot: MarketSnapshotDTO
+
+    # Financial Context
+    available_cash_pennies: int
+    is_solvent: bool
+
+@dataclass(frozen=True)
+class ProductionContextDTO(BaseDepartmentContextDTO):
+    """Context for Production Department."""
+    inventory_raw_materials: Dict[str, float]
+    inventory_finished_goods: Dict[str, float]
+    current_workforce_count: int
+    technology_level: float
+    production_efficiency: float
+    # Capital & Automation
+    capital_stock: float
+    automation_level: float
+    # Config parameters
+    input_goods: Dict[str, float]  # Recipe
+    output_good_id: str
+    labor_alpha: float
+    automation_labor_reduction: float
+    labor_elasticity_min: float
+    capital_depreciation_rate: float
+    specialization: str
+    base_quality: float
+    quality_sensitivity: float
+    employees_avg_skill: float
+
+@dataclass(frozen=True)
+class ProductionIntentDTO:
+    """Intent from Production Department."""
+    target_production_quantity: float
+    materials_to_use: Dict[str, float]
+    estimated_cost_pennies: int
+
+    # Flags/Results
+    insufficient_materials: bool = False
+
+    # Outputs (from engine calculation)
+    capital_depreciation: int = 0
+    automation_decay: float = 0.0
+    quality: float = 1.0
+
+@dataclass(frozen=True)
+class HRContextDTO(BaseDepartmentContextDTO):
+    """Context for HR Department."""
+    current_employees: List[AgentID]
+    current_headcount: int # Explicit count
+    employee_wages: Dict[AgentID, int] # Current wages
+    employee_skills: Dict[AgentID, float] # Current skills
+    target_workforce_count: int  # Strategic target set by logic or config
+    labor_market_avg_wage: int # Pennies
+    marginal_labor_productivity: float
+    happiness_avg: float
+
+    # Firm State
+    profit_history: List[int] # Pennies
+
+    # Config
+    min_employees: int
+    max_employees: int
+    severance_pay_weeks: int
+
+@dataclass(frozen=True)
+class HRIntentDTO:
+    """Intent from HR Department."""
+    hiring_target: int  # Positive to hire, Negative to fire
+    wage_updates: Dict[AgentID, int]  # AgentID -> New Wage (Pennies)
+    fire_employee_ids: List[AgentID] = field(default_factory=list)
+
+@dataclass(frozen=True)
+class SalesContextDTO(BaseDepartmentContextDTO):
+    """Context for Sales Department."""
+    inventory_to_sell: Dict[str, float]
+    current_prices: Dict[str, int] # Pennies
+    previous_sales_volume: float
+    competitor_prices: Dict[str, int] # Pennies (from market snapshot or other source)
+
+    # Marketing Context
+    marketing_budget_rate: float
+    brand_awareness: float
+    perceived_quality: float
+    inventory_quality: Dict[str, float]
+    last_revenue_pennies: int
+    last_marketing_spend_pennies: int
+    inventory_last_sale_tick: Dict[str, int]
+
+    # Config
+    sale_timeout_ticks: int
+    dynamic_price_reduction_factor: float
+
+@dataclass(frozen=True)
+class SalesIntentDTO:
+    """Intent from Sales Department."""
+    price_adjustments: Dict[str, int]  # ItemID -> New Price (Pennies)
+    sales_orders: List[Dict[str, Any]] # List of sell orders (or Orders directly if cleaner)
+    marketing_spend_pennies: int = 0
+    new_marketing_budget_rate: float = 0.0
+
 # --- Finance Engine DTOs ---
 
 @dataclass(frozen=True)
@@ -88,7 +196,7 @@ class BudgetPlanDTO:
     debt_repayment_pennies: int
     is_solvent: bool
 
-# --- HR Engine DTOs ---
+# --- HR Engine DTOs (Legacy support) ---
 
 @dataclass(frozen=True)
 class HRDecisionInputDTO:
@@ -108,16 +216,13 @@ class HRDecisionOutputDTO:
     wage_updates: Dict[int, int]
     target_headcount: int
 
-# --- Production Engine DTOs ---
+# --- Production Engine DTOs (Legacy support) ---
 
 @dataclass(frozen=True)
 class ProductionInputDTO:
     """Input for the ProductionEngine."""
     firm_snapshot: FirmSnapshotDTO
     productivity_multiplier: float # From external factors like technology
-    # Legacy fields support (optional, or mapped)
-    # The spec uses firm_snapshot, but ProductionEngine logic needs specific inputs.
-    # We will rely on firm_snapshot to provide state data.
 
 @dataclass(frozen=True)
 class ProductionResultDTO:
@@ -226,6 +331,30 @@ class DynamicPricingResultDTO:
 # ==============================================================================
 
 @runtime_checkable
+class IDepartmentEngine(Protocol):
+    """
+    Protocol for a stateless department engine.
+    Must not hold reference to the parent firm.
+    """
+    # This is a marker protocol or can have generic decide(context) -> intent
+    pass
+
+@runtime_checkable
+class IProductionDepartment(IDepartmentEngine, Protocol):
+    def decide_production(self, context: ProductionContextDTO) -> ProductionIntentDTO:
+        ...
+
+@runtime_checkable
+class IHRDepartment(IDepartmentEngine, Protocol):
+    def decide_workforce(self, context: HRContextDTO) -> HRIntentDTO:
+        ...
+
+@runtime_checkable
+class ISalesDepartment(IDepartmentEngine, Protocol):
+    def decide_pricing(self, context: SalesContextDTO) -> SalesIntentDTO:
+        ...
+
+@runtime_checkable
 class IFinanceEngine(Protocol):
     """Stateless engine for financial planning."""
     def plan_budget(self, input_dto: FinanceDecisionInputDTO) -> BudgetPlanDTO:
@@ -245,7 +374,7 @@ class IFinanceEngine(Protocol):
         ...
 
 @runtime_checkable
-class IHREngine(Protocol):
+class IHREngine(IHRDepartment, Protocol):
     """Stateless engine for human resources management."""
     def manage_workforce(self, input_dto: HRDecisionInputDTO) -> HRDecisionOutputDTO:
         ...
@@ -257,7 +386,7 @@ class IHREngine(Protocol):
         ...
 
 @runtime_checkable
-class IProductionEngine(Protocol):
+class IProductionEngine(IProductionDepartment, Protocol):
     """
     Stateless engine for handling the firm's production process.
     """
@@ -313,7 +442,7 @@ class IRDEngine(Protocol):
         ...
 
 @runtime_checkable
-class ISalesEngine(Protocol):
+class ISalesEngine(ISalesDepartment, Protocol):
     """
     Stateless Engine for Sales operations.
     Handles pricing, marketing, and order generation.
@@ -357,7 +486,8 @@ class IBrandEngine(Protocol):
 @runtime_checkable
 class IFirmComponent(Protocol):
     """Base protocol for Firm components."""
-    def attach(self, owner: Any) -> None: ...
+    # attach(self, owner: Any) removed to decouple components from Firm
+    pass
 
 @dataclass
 class InventoryComponentConfigDTO:
@@ -415,6 +545,13 @@ __all__ = [
     'PricingResultDTO',
     'BrandMetricsDTO',
     'DynamicPricingResultDTO',
+    'BaseDepartmentContextDTO',
+    'ProductionContextDTO',
+    'ProductionIntentDTO',
+    'HRContextDTO',
+    'HRIntentDTO',
+    'SalesContextDTO',
+    'SalesIntentDTO',
     'IFinanceEngine',
     'IHREngine',
     'IProductionEngine',
@@ -423,6 +560,10 @@ __all__ = [
     'IRDEngine',
     'ISalesEngine',
     'IBrandEngine',
+    'IDepartmentEngine',
+    'IProductionDepartment',
+    'IHRDepartment',
+    'ISalesDepartment',
     'IFirmComponent',
     'IInventoryComponent',
     'InventoryComponentConfigDTO',

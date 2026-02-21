@@ -32,10 +32,6 @@ class FinancialComponent(IFinancialComponent, ICreditFrozen):
         if initial_balance > 0:
             self._wallet.add(initial_balance, DEFAULT_CURRENCY, memo="Initial Balance")
 
-    def attach(self, owner: Any) -> None:
-        """Attaches the component to an owner."""
-        pass
-
     def force_reset_wallet(self) -> None:
         """Resets the wallet state."""
         self._wallet.load_balances({})

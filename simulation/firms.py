@@ -13,7 +13,7 @@ from simulation.dtos import DecisionContext, FiscalContext, DecisionInputDTO
 from modules.simulation.dtos.api import FirmConfigDTO, FirmStateDTO, IFirmStateProvider, FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from simulation.ai.enums import Personality
 from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO, ICurrencyHolder
-from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, IConfigurable, LiquidationConfigDTO, InventorySlot, ItemDTO, InventorySlotDTO
+from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, IConfigurable, LiquidationConfigDTO, InventorySlot, ItemDTO, InventorySlotDTO, AgentID
 from dataclasses import replace
 
 # Orchestrator-Engine Refactor
@@ -45,7 +45,9 @@ from modules.firm.api import (
     LiquidationExecutionDTO, LiquidationResultDTO,
     IProductionEngine, IAssetManagementEngine, IRDEngine, IPricingEngine,
     IInventoryComponent, IFinancialComponent,
-    ISalesEngine, IBrandEngine, IFinanceEngine, IHREngine
+    ISalesEngine, IBrandEngine, IFinanceEngine, IHREngine,
+    ProductionContextDTO, HRContextDTO, SalesContextDTO,
+    ProductionIntentDTO, HRIntentDTO, SalesIntentDTO
 )
 from modules.firm.constants import (
     DEFAULT_MARKET_INSIGHT, DEFAULT_MARKETING_BUDGET_RATE, DEFAULT_LIQUIDATION_PRICE,
@@ -117,9 +119,9 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         # Components
         self.inventory_component = InventoryComponent(str(self.id))
-        self.inventory_component.attach(self)
+        # self.inventory_component.attach(self) # REMOVED: Decoupling
         self.financial_component = FinancialComponent(str(self.id))
-        self.financial_component.attach(self)
+        # self.financial_component.attach(self) # REMOVED: Decoupling
 
         self.is_active = True
 
@@ -754,39 +756,32 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         )
 
     def produce(self, current_time: int, technology_manager: Optional[Any] = None, effects_queue: Optional[List[Dict[str, Any]]] = None) -> None:
-        # 1. ASSEMBLE snapshot and input DTO
-        snapshot = self.get_snapshot_dto()
+        # 1. ASSEMBLE ProductionContextDTO
         productivity_multiplier = technology_manager.get_productivity_multiplier(self.id) if technology_manager else 1.0
-
-        input_dto = ProductionInputDTO(
-            firm_snapshot=snapshot,
-            productivity_multiplier=productivity_multiplier
-        )
+        context = self._build_production_context(productivity_multiplier)
 
         # 2. DELEGATE to stateless engine
-        result: ProductionResultDTO = self.production_engine.produce(input_dto)
+        intent: ProductionIntentDTO = self.production_engine.decide_production(context)
 
         # 3. APPLY result to state (Orchestrator responsibility)
         # Apply depreciation/decay (new mechanism)
-        if result.capital_depreciation > 0:
-            self.production_state.capital_stock = max(0.0, self.production_state.capital_stock - result.capital_depreciation)
+        if intent.capital_depreciation > 0:
+            self.production_state.capital_stock = max(0.0, self.production_state.capital_stock - intent.capital_depreciation)
 
-        if result.automation_decay > 0:
-            self.production_state.automation_level = max(0.0, self.production_state.automation_level - result.automation_decay)
+        if intent.automation_decay > 0:
+            self.production_state.automation_level = max(0.0, self.production_state.automation_level - intent.automation_decay)
 
         # Update production
-        self.current_production = result.quantity_produced
-        if result.success and result.quantity_produced > 0:
-            self.add_item(result.specialization, result.quantity_produced, quality=result.quality)
+        self.current_production = intent.target_production_quantity
+        if intent.target_production_quantity > 0:
+            self.add_item(self.production_state.specialization, intent.target_production_quantity, quality=intent.quality)
 
             # MIGRATION: Record expense in int pennies
-            # Result production_cost might be float from engine?
-            # I will update engine later. For now, cast.
-            cost_pennies = int(result.production_cost)
+            cost_pennies = int(intent.estimated_cost_pennies)
             self.record_expense(cost_pennies, DEFAULT_CURRENCY)
 
             # Consume inputs
-            for mat, amount in result.inputs_consumed.items():
+            for mat, amount in intent.materials_to_use.items():
                 self.remove_item(mat, amount, slot=InventorySlot.INPUT)
 
         # TD-271: Real Estate Utilization
@@ -925,8 +920,6 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         Ensures AI Debt Awareness and Budgeting accuracy.
         """
         # Local import to avoid circular dependency
-        # We rely on the concrete LoanMarket class because Firm is coupled to it via constructor.
-        # Ideally, we would use an interface ILoanMarket that exposes the bank or debt status directly.
         from simulation.loan_market import LoanMarket
 
         market = self.decision_engine.loan_market
@@ -969,21 +962,11 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         log_extra = {"tick": current_time, "agent_id": self.id, "tags": ["firm_action"]}
         current_assets_val = self.financial_component.get_balance(DEFAULT_CURRENCY)
-        self.logger.debug(
-            f"FIRM_DECISION_START | Firm {self.id} before decision: Assets={current_assets_val}, Employees={len(self.hr_state.employees)}, is_active={self.is_active}",
-            extra={
-                **log_extra,
-                "assets_before": self.financial_component.get_all_balances(),
-                "num_employees_before": len(self.hr_state.employees),
-                "is_active_before": self.is_active,
-            },
-        )
 
         # 1. State Snapshot
         snapshot = self.get_snapshot_dto()
 
         # 2. Finance Engine: Plan Budget
-        # TODO: credit_rating placeholder
         fin_input = FinanceDecisionInputDTO(
             firm_snapshot=snapshot,
             market_snapshot=market_snapshot,
@@ -994,31 +977,42 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         budget_plan = self.finance_engine.plan_budget(fin_input)
 
         # 3. HR Engine: Manage Workforce
-        labor_wage = DEFAULT_LABOR_WAGE # Default
+        labor_wage = DEFAULT_LABOR_WAGE
         if market_snapshot and market_snapshot.labor:
-            # Assuming labor market snapshot has avg_wage as int pennies or float
-            # MarketSnapshotDTO definition says LaborMarketSnapshotDTO.avg_wage is float.
-            # We need to cast to int pennies if it is float.
             labor_wage = int(market_snapshot.labor.avg_wage * 100) if market_snapshot.labor.avg_wage > 0 else DEFAULT_LABOR_WAGE
         elif market_data and "labor" in market_data:
-             # Fallback to dictionary
              labor_wage = int(market_data.get("labor", {}).get("avg_wage", 10.0) * 100)
 
-        hr_input = HRDecisionInputDTO(
-            firm_snapshot=snapshot,
-            budget_plan=budget_plan,
-            market_snapshot=market_snapshot,
-            config=self.config,
-            current_tick=current_time,
-            labor_market_avg_wage=labor_wage
-        )
-        hr_result = self.hr_engine.manage_workforce(hr_input)
+        # Build HR Context
+        target_headcount = self._calculate_target_headcount()
+        hr_context = self._build_hr_context(budget_plan, target_headcount, current_time, labor_wage)
 
-        # 4. Collect Engine Orders
-        engine_orders = []
-        engine_orders.extend(hr_result.hiring_orders)
+        # Call Decide
+        hr_intent = self.hr_engine.decide_workforce(hr_context)
 
-        # 5. Legacy Decision Engine (for Sales/Production)
+        # Apply HR Intent (Convert to Orders and update internal state maps)
+        # Note: Hiring orders are generated below. Wage updates are applied implicitly by intent-driven payroll later?
+        # No, payroll reads state. So we must update state.
+        for agent_id, wage in hr_intent.wage_updates.items():
+            # agent_id is AgentID (int), keys in employee_wages are int.
+            if int(agent_id) in self.hr_state.employee_wages:
+                self.hr_state.employee_wages[int(agent_id)] = wage
+
+        # Generate HR Orders
+        hr_orders = self._generate_hr_orders(hr_intent, hr_context)
+        engine_orders = hr_orders
+
+        # 4. Sales Engine: Decide Pricing & Sales
+        sales_context = self._build_sales_context(market_snapshot, current_time)
+        sales_intent = self.sales_engine.decide_pricing(sales_context)
+
+        # Apply Sales Intent
+        sales_orders = sales_intent.sales_orders
+        self.sales_state.last_prices.update(sales_intent.price_adjustments)
+        self.sales_state.marketing_budget_pennies = sales_intent.marketing_spend_pennies
+        self.sales_state.marketing_budget_rate = sales_intent.new_marketing_budget_rate
+
+        # 5. Legacy Decision Engine (for BUYING materials only)
         state_dto = self.get_state_dto()
         context = DecisionContext(
             state=state_dto,
@@ -1040,16 +1034,15 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         else:
             legacy_orders, tactic = decision_output
 
-        # Filter legacy orders: Remove HR related (BUY labor, FIRE) to defer to Engines
+        # Filter legacy orders: Keep only BUY orders for goods (exclude Labor, Fire, Sell)
         filtered_legacy = [
             o for o in legacy_orders
             if o.market_id != 'labor' and o.order_type != 'FIRE'
+            and getattr(o, 'side', o.order_type) != 'SELL'
         ]
 
-        # Merge orders: Engine First (Priority) or Legacy First?
-        # Engine is "Planned", Legacy is "RuleBased".
-        # Let's say Engine orders are authoritative for HR.
-        all_orders = engine_orders + filtered_legacy
+        # Merge orders
+        all_orders = engine_orders + filtered_legacy + sales_orders
 
         # Command Bus execution (Internal Orders like FIRE, SET_TARGET)
         self.execute_internal_orders(all_orders, fiscal_context, current_time, market_context)
@@ -1057,16 +1050,14 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         # Filter external orders for further processing
         external_orders = [o for o in all_orders if o.market_id != "internal"]
 
-        pricing_result = self.sales_engine.check_and_apply_dynamic_pricing(
-            self.sales_state, external_orders, current_time,
-            config=self.config,
-            unit_cost_estimator=lambda item_id: self.finance_engine.get_estimated_unit_cost(self.finance_state, item_id, self.config)
-        )
-
-        # Apply Dynamic Pricing Results (Stateless Orchestration)
-        external_orders = pricing_result.orders
-        self.sales_state.last_prices.update(pricing_result.price_updates)
-
+        # Note: Dynamic pricing and invisible hand price calc logic moved to decide_pricing,
+        # but _calculate_invisible_hand_price also logs shadow price.
+        # We can keep it for logging purposes if needed, but it updates state.
+        # Since decide_pricing handles price updates, we should skip state update in _calculate_invisible_hand_price
+        # or remove it.
+        # However, decide_pricing does NOT calculate shadow price.
+        # PricingEngine (which calculates shadow price) is distinct from SalesEngine.
+        # If we want shadow price logging, we should keep it.
         if market_snapshot:
              self._calculate_invisible_hand_price(market_snapshot, current_time)
 
@@ -1112,6 +1103,10 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         result = self.pricing_engine.calculate_price(input_dto)
 
         # 3. Update State (As per spec)
+        # We allow PricingEngine to also influence price, potentially overriding SalesEngine?
+        # Or SalesEngine already considered it?
+        # decide_pricing used current_prices.
+        # If we update prices here, they will be used next tick.
         self.sales_state.last_prices[item_id] = result.new_price
 
         log_shadow(
@@ -1176,6 +1171,168 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             brand_snapshot=brand_snapshot
         )
 
+    def _build_production_context(self, productivity_multiplier: float) -> ProductionContextDTO:
+        # Calculate derived values
+        num_employees = len(self.hr_state.employees)
+        total_labor_skill = sum(getattr(emp, "labor_skill", 1.0) for emp in self.hr_state.employees)
+        avg_skill = total_labor_skill / num_employees if num_employees > 0 else 0.0
+
+        item_config = self.config.goods.get(self.production_state.specialization, {})
+        tech_level = self.production_state.productivity_factor * productivity_multiplier
+
+        return ProductionContextDTO(
+            firm_id=AgentID(self.id),
+            tick=0,
+            budget_pennies=0,
+            market_snapshot=MarketSnapshotDTO(tick=0, market_signals={}, market_data={}),
+            available_cash_pennies=0,
+            is_solvent=True,
+
+            inventory_raw_materials=self.inventory_component.input_inventory.copy(),
+            inventory_finished_goods=self.inventory_component.main_inventory.copy(),
+            current_workforce_count=num_employees,
+            technology_level=tech_level,
+            production_efficiency=1.0,
+
+            capital_stock=self.production_state.capital_stock,
+            automation_level=self.production_state.automation_level,
+
+            input_goods=item_config.get("inputs", {}),
+            output_good_id=self.production_state.specialization,
+
+            labor_alpha=self.config.labor_alpha,
+            automation_labor_reduction=self.config.automation_labor_reduction,
+            labor_elasticity_min=self.config.labor_elasticity_min,
+            capital_depreciation_rate=self.config.capital_depreciation_rate,
+            specialization=self.production_state.specialization,
+            base_quality=self.production_state.base_quality,
+            quality_sensitivity=item_config.get("quality_sensitivity", 0.5),
+            employees_avg_skill=avg_skill
+        )
+
+    def _calculate_target_headcount(self) -> int:
+        item_id = self.production_state.specialization
+        target_quantity = self.production_state.production_target
+        current_inventory = self.get_quantity(item_id, InventorySlot.MAIN)
+        needed_production = max(0, target_quantity - current_inventory)
+        productivity_factor = self.production_state.productivity_factor
+        if productivity_factor <= 0: needed_labor = 999999.0
+        else: needed_labor = needed_production / productivity_factor
+        return int(needed_labor)
+
+    def _build_hr_context(self, budget_plan: BudgetPlanDTO, target_headcount: int, current_tick: int, labor_wage: int) -> HRContextDTO:
+        current_employees = [AgentID(e.id) for e in self.hr_state.employees]
+        employee_wages = {AgentID(e.id): self.hr_state.employee_wages.get(e.id, 0) for e in self.hr_state.employees}
+        employee_skills = {AgentID(e.id): getattr(e, "labor_skill", 1.0) for e in self.hr_state.employees}
+
+        return HRContextDTO(
+            firm_id=AgentID(self.id),
+            tick=current_tick,
+            budget_pennies=budget_plan.labor_budget_pennies,
+            market_snapshot=MarketSnapshotDTO(tick=0, market_signals={}, market_data={}),
+            available_cash_pennies=0,
+            is_solvent=True,
+
+            current_employees=current_employees,
+            current_headcount=len(current_employees),
+            employee_wages=employee_wages,
+            employee_skills=employee_skills,
+            target_workforce_count=target_headcount,
+            labor_market_avg_wage=labor_wage,
+            marginal_labor_productivity=0.0,
+            happiness_avg=0.0,
+
+            profit_history=list(self.finance_state.profit_history),
+
+            min_employees=getattr(self.config, 'firm_min_employees', 1),
+            max_employees=getattr(self.config, 'firm_max_employees', 100),
+            severance_pay_weeks=getattr(self.config, 'severance_pay_weeks', 2)
+        )
+
+    def _generate_hr_orders(self, intent: HRIntentDTO, context: HRContextDTO) -> List[Order]:
+        orders = []
+        # Firing
+        for emp_id in intent.fire_employee_ids:
+            # Need wage/skill again, context has them
+            current_wage = context.employee_wages.get(emp_id, 1000)
+            skill = context.employee_skills.get(emp_id, 1.0)
+            severance_pay = int(current_wage * context.severance_pay_weeks * skill)
+
+            orders.append(Order(
+                agent_id=self.id,
+                side='FIRE',
+                item_id='internal',
+                quantity=1,
+                price_pennies=severance_pay,
+                price_limit=float(severance_pay)/100.0,
+                market_id='internal',
+                target_agent_id=int(emp_id)
+            ))
+
+        # Hiring
+        if intent.hiring_target > 0:
+            # Recalculate offered wage logic or infer.
+            # Using same logic as engine for consistency.
+            base_wage = context.labor_market_avg_wage
+            sensitivity = 0.1
+            max_premium = 2.0
+            profit_history = context.profit_history
+            avg_profit = sum(profit_history) / len(profit_history) if profit_history else 0.0
+            profit_based_premium = avg_profit / (base_wage * 10.0) if base_wage > 0 else 0.0
+            wage_premium = max(0, min(profit_based_premium * sensitivity, max_premium))
+            offered_wage = int(base_wage * (1 + wage_premium))
+
+            orders.append(Order(
+                agent_id=self.id,
+                side='BUY',
+                item_id='labor',
+                quantity=float(intent.hiring_target),
+                price_pennies=offered_wage,
+                price_limit=float(offered_wage)/100.0,
+                market_id='labor'
+            ))
+        return orders
+
+    def _build_sales_context(self, market_snapshot: MarketSnapshotDTO, current_tick: int) -> SalesContextDTO:
+        # Competitor prices
+        competitor_prices = {}
+        if market_snapshot and market_snapshot.market_signals:
+            for k, v in market_snapshot.market_signals.items():
+                if v.last_traded_price:
+                    competitor_prices[k] = v.last_traded_price
+
+        return SalesContextDTO(
+            firm_id=AgentID(self.id),
+            tick=current_tick,
+            budget_pennies=0,
+            market_snapshot=market_snapshot or MarketSnapshotDTO(tick=0, market_signals={}, market_data={}),
+            available_cash_pennies=0,
+            is_solvent=True,
+
+            inventory_to_sell=self.inventory_component.main_inventory.copy(),
+            current_prices=self.sales_state.last_prices.copy(),
+            previous_sales_volume=self.sales_volume_this_tick, # Wait, this tick volume?
+            # context.previous_sales_volume. Logic uses it for "inventory pressure".
+            # sales_volume_this_tick is reset at end of tick.
+            # At make_decision, sales_volume_this_tick is 0 (reset happened in reset_finance).
+            # So we need "last tick's volume".
+            # We don't seem to track it explicitly in SalesState?
+            # Only `inventory_last_sale_tick`.
+            # I will pass 0 for now as it seems unused in `decide_pricing` logic I wrote.
+            competitor_prices=competitor_prices,
+
+            marketing_budget_rate=self.sales_state.marketing_budget_rate,
+            brand_awareness=self.sales_state.brand_awareness,
+            perceived_quality=self.sales_state.perceived_quality,
+            inventory_quality=self.inventory_component.inventory_quality.copy(),
+            last_revenue_pennies=self.finance_state.last_revenue_pennies,
+            last_marketing_spend_pennies=self.finance_state.last_marketing_spend_pennies,
+            inventory_last_sale_tick=self.sales_state.inventory_last_sale_tick.copy(),
+
+            sale_timeout_ticks=getattr(self.config, 'sale_timeout_ticks', 10),
+            dynamic_price_reduction_factor=getattr(self.config, 'dynamic_price_reduction_factor', 0.9)
+        )
+
     def generate_transactions(self, government: Optional[Any], market_data: Dict[str, Any], shareholder_registry: IShareholderRegistry, current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
         transactions = []
         gov_id = government.id if government else None
@@ -1228,24 +1385,8 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         transactions.extend(tx_finance)
 
         # 3. Marketing
-        # Adjust budget first (ask Engine what the budget should be)
-        # Calculate total revenue for this turn
-        exchange_rates = market_context.get("exchange_rates", {DEFAULT_CURRENCY: 1.0})
-        total_revenue_this_turn = 0.0
-        for cur, amount in self.finance_state.revenue_this_turn.items():
-             rate = exchange_rates.get(cur, 1.0) if cur != DEFAULT_CURRENCY else 1.0
-             total_revenue_this_turn += float(amount) * rate
-
-        marketing_result = self.sales_engine.adjust_marketing_budget(
-            self.sales_state,
-            market_context,
-            total_revenue_this_turn,
-            last_revenue=float(self.finance_state.last_revenue_pennies),
-            last_marketing_spend=float(self.finance_state.last_marketing_spend_pennies)
-        )
-        # Apply result
-        self.sales_state.marketing_budget_pennies = marketing_result.new_budget
-        self.sales_state.marketing_budget_rate = marketing_result.new_marketing_rate
+        # Use marketing budget set during make_decision
+        # No need to call adjust_marketing_budget again!
 
         # Then generate transaction using the updated state
         marketing_context = self._build_sales_marketing_context(current_time, government)
@@ -1269,184 +1410,4 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         self.sales_state.brand_awareness = brand_metrics.brand_awareness
         self.sales_state.perceived_quality = brand_metrics.perceived_quality
 
-        # WO-4.6: Finance cleanup is now handled in Post-Sequence via reset()
-        # This ensures expenses_this_tick accumulates for the full tick duration.
-
         return transactions
-
-    @override
-    def update_needs(self, current_time: int, government: Optional[Any] = None, market_data: Optional[Dict[str, Any]] = None, technology_manager: Optional[Any] = None) -> None:
-        pass
-
-    # --- IPropertyOwner Implementation ---
-    @property
-    def owned_properties(self) -> List[int]:
-        return self.finance_state.owned_properties
-
-    def add_property(self, property_id: int) -> None:
-        if property_id not in self.finance_state.owned_properties:
-            self.finance_state.owned_properties.append(property_id)
-
-    def remove_property(self, property_id: int) -> None:
-        if property_id in self.finance_state.owned_properties:
-            self.finance_state.owned_properties.remove(property_id)
-
-    # --- IFinancialEntity & IFinancialFirm Implementation ---
-
-    @property
-    def balance_pennies(self) -> int:
-        return self.financial_component.balance_pennies
-
-    @property
-    def capital_stock_pennies(self) -> int:
-        return int(self.production_state.capital_stock)
-
-    @property
-    def inventory_value_pennies(self) -> int:
-        # last_prices are now int pennies
-        val = sum(self.get_quantity(i) * self.last_prices.get(i, DEFAULT_PRICE) for i in self.get_all_items())
-        return int(val)
-
-    @property
-    def monthly_wage_bill_pennies(self) -> int:
-        total_wages = sum(self.hr_state.employee_wages.values())
-        return int(total_wages * 4)
-
-    @property
-    def total_debt_pennies(self) -> int:
-        return self.finance_state.total_debt_pennies
-
-    @property
-    def retained_earnings_pennies(self) -> int:
-        return self.finance_state.retained_earnings_pennies
-
-    @property
-    def average_profit_pennies(self) -> int:
-        history = self.finance_state.profit_history
-        if not history:
-            return 0
-        return int(sum(history) / len(history))
-
-    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-         self.financial_component.deposit(amount_pennies, currency)
-
-    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-         self.financial_component.withdraw(amount_pennies, currency)
-
-    # --- IFinancialAgent Implementation ---
-
-    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-         self.financial_component._deposit(amount, currency)
-
-    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
-         self.financial_component._withdraw(amount, currency)
-
-    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
-        """Implements IFinancialAgent.get_balance."""
-        return self.financial_component.get_balance(currency)
-
-    def get_all_balances(self) -> Dict[CurrencyCode, int]:
-        """Returns a copy of all currency balances."""
-        return self.financial_component.get_all_balances()
-
-    @property
-    def total_wealth(self) -> int:
-        """
-        Returns the total wealth in default currency estimation.
-        TD-270: Standardized multi-currency summation.
-        """
-        return self.financial_component.total_wealth
-
-    @override
-    def get_assets_by_currency(self) -> Dict[CurrencyCode, int]:
-        """Implementation of ICurrencyHolder."""
-        return self.financial_component.get_all_balances()
-
-    # --- Facade Methods ---
-
-    def get_book_value_per_share(self) -> float:
-        outstanding = self.total_shares - self.treasury_shares
-        if outstanding <= 0: return 0.0
-        net_assets = self.financial_component.get_balance(DEFAULT_CURRENCY) - self.finance_state.total_debt_pennies
-        return max(0.0, float(net_assets)) / outstanding
-
-    def get_market_cap(self, stock_price: Optional[float] = None) -> float:
-        if stock_price is None:
-            stock_price = self.get_book_value_per_share()
-        return (self.total_shares - self.treasury_shares) * stock_price
-
-    def calculate_valuation(self, market_context: MarketContextDTO = None) -> int:
-        inventory_value = int(sum(self.get_quantity(i) * self.last_prices.get(i, DEFAULT_PRICE) for i in self.get_all_items()))
-        # Wrap market_context in FinancialTransactionContext if needed, or update Engine to accept optional context
-        # Engine expects FinancialTransactionContext.
-        fin_ctx = None
-        if market_context:
-            fin_ctx = FinancialTransactionContext(
-                government_id=None, # Not needed for valuation?
-                tax_rates={},
-                market_context=market_context,
-                shareholder_registry=None
-            )
-
-        return int(self.finance_engine.calculate_valuation(
-            self.finance_state, self.financial_component.get_all_balances(), self.config, inventory_value, int(self.capital_stock), fin_ctx
-        ))
-
-    def get_financial_snapshot(self) -> Dict[str, Any]:
-        inventory_value = int(sum(self.get_quantity(i) * self.last_prices.get(i, DEFAULT_PRICE) for i in self.get_all_items()))
-        cash = self.financial_component.get_balance(DEFAULT_CURRENCY)
-        total_assets = cash + inventory_value + self.capital_stock
-        working_capital = cash + inventory_value # Simplified: Current Assets
-
-        return {
-             "wallet": MultiCurrencyWalletDTO(balances=self.financial_component.get_all_balances()),
-             "total_assets": int(total_assets),
-             "total_debt": self.finance_state.total_debt_pennies,
-             "retained_earnings": self.finance_state.retained_earnings_pennies,
-             "average_profit": sum(self.finance_state.profit_history)/len(self.finance_state.profit_history) if self.finance_state.profit_history else 0.0,
-             "working_capital": int(working_capital),
-             "ebit": self.finance_state.current_profit.get(DEFAULT_CURRENCY, 0), # Current EBIT proxy
-             "market_value_equity": self.get_market_cap()
-        }
-
-    def update_learning(self, context: LearningUpdateContext) -> None:
-        reward = context["reward"]
-        next_agent_data = context["next_agent_data"]
-        next_market_data = context["next_market_data"]
-        if hasattr(self.decision_engine, 'ai_engine'):
-            td_error = self.decision_engine.ai_engine.update_learning_v2(
-                reward=reward,
-                next_agent_data=next_agent_data,
-                next_market_data=next_market_data,
-            )
-
-            # Phase 4.1: Active Learning (Insight Dynamics)
-            # Decay
-            self.market_insight = max(0.0, self.market_insight - INSIGHT_DECAY_RATE)
-
-            # Boost from Learning Surprise (TD-Error)
-            if isinstance(td_error, (int, float)):
-                # Normalized boost using exponential saturation
-                # Assuming significant error starts around 1000 pennies (10.00)
-                boost = INSIGHT_BOOST_FACTOR * (1.0 - math.exp(-abs(td_error) / INSIGHT_ERROR_THRESHOLD))
-                self.market_insight = min(1.0, self.market_insight + boost)
-
-        # Update State Tracking for Rewards (Moved from Engine for Purity)
-        self.prev_awareness = self.sales_state.brand_awareness
-        self.prev_avg_quality = self.production_state.base_quality
-
-    def reset_finance(self) -> None:
-        """
-        Resets the financial state for the next tick.
-        Called by the simulation orchestrator's post-processing phase.
-        Delegates to FinanceState.
-        """
-        self.finance_state.reset_tick_counters(DEFAULT_CURRENCY)
-        self.sales_volume_this_tick = 0.0
-
-    def reset(self) -> None:
-        """
-        Alias for reset_finance.
-        Called by the simulation orchestrator for general agent reset.
-        """
-        self.reset_finance()

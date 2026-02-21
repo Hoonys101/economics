@@ -7,7 +7,7 @@ from simulation.models import Order
 from modules.system.api import DEFAULT_CURRENCY, MarketContextDTO
 from modules.simulation.api import AgentCoreConfigDTO
 from modules.hr.api import IEmployeeDataProvider
-from modules.firm.api import AssetManagementResultDTO, RDResultDTO, ProductionResultDTO
+from modules.firm.api import AssetManagementResultDTO, RDResultDTO, ProductionResultDTO, ProductionIntentDTO
 
 @pytest.fixture
 def mock_decision_engine():
@@ -90,7 +90,7 @@ def test_command_bus_internal_orders_delegation(firm):
     assert firm.production_state.base_quality > 0.0
 
 def test_produce_orchestration(firm):
-    firm.production_engine.produce.return_value = ProductionResultDTO(success=True, quantity_produced=10.0, quality=1.5, specialization='FOOD', inputs_consumed={'RAW': 5.0}, production_cost=50.0, capital_depreciation=5.0, automation_decay=0.01)
+    firm.production_engine.decide_production.return_value = ProductionIntentDTO(target_production_quantity=10.0, quality=1.5, materials_to_use={'RAW': 5.0}, estimated_cost_pennies=5000, capital_depreciation=5, automation_decay=0.01)
     from modules.simulation.api import InventorySlot
     firm.production_state.capital_stock = 100.0
     firm.production_state.automation_level = 0.5
@@ -101,4 +101,4 @@ def test_produce_orchestration(firm):
     assert firm.get_quantity('RAW', slot=InventorySlot.INPUT) == 5.0
     assert firm.current_production == 10.0
     assert firm.get_quantity('FOOD') == 10.0
-    firm.production_engine.produce.assert_called_once()
+    firm.production_engine.decide_production.assert_called_once()

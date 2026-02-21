@@ -6,35 +6,109 @@ from modules.hr.api import IEmployeeDataProvider
 from simulation.models import Transaction, Order
 from simulation.components.state.firm_state_models import HRState
 from simulation.dtos.hr_dtos import HRPayrollContextDTO, HRPayrollResultDTO, EmployeeUpdateDTO
-from modules.firm.api import HRDecisionInputDTO, HRDecisionOutputDTO, IHREngine
+from modules.firm.api import (
+    HRDecisionInputDTO, HRDecisionOutputDTO, IHREngine,
+    HRContextDTO, HRIntentDTO, IHRDepartment, AgentID,
+    MarketSnapshotDTO
+)
 
 if TYPE_CHECKING:
     from modules.simulation.dtos.api import FirmConfigDTO, FirmStateDTO
 
 logger = logging.getLogger(__name__)
 
-class HREngine(IHREngine):
+class HREngine(IHREngine, IHRDepartment):
     """
     Stateless Engine for HR operations.
     Manages employees, calculates wages (skill + halo), and handles insolvency firing.
     """
 
+    def decide_workforce(self, context: HRContextDTO) -> HRIntentDTO:
+        """
+        Pure function: HRContextDTO -> HRIntentDTO.
+        Decides on hiring/firing targets and wage updates.
+        """
+        firing_ids: List[AgentID] = []
+        wage_updates: Dict[AgentID, int] = {}
+        hiring_target = 0
+
+        target_headcount = context.target_workforce_count
+        current_headcount = context.current_headcount
+
+        # 1. Calculate Wages & Scale
+
+        # Calculate Target Wage
+        base_wage = context.labor_market_avg_wage
+        sensitivity = 0.1
+        max_premium = 2.0
+
+        profit_history = context.profit_history
+        avg_profit = sum(profit_history) / len(profit_history) if profit_history else 0.0
+
+        profit_based_premium = avg_profit / (base_wage * 10.0) if base_wage > 0 else 0.0
+        wage_premium = max(0, min(profit_based_premium * sensitivity, max_premium))
+
+        target_wage = int(base_wage * (1 + wage_premium))
+
+        # Wage Scaling: Update existing employees if underpaid
+        current_wage_bill = 0
+        for emp_id, current_wage in context.employee_wages.items():
+            if current_wage < target_wage:
+                wage_updates[emp_id] = target_wage
+                current_wage_bill += target_wage
+            else:
+                current_wage_bill += current_wage
+
+        # 2. Check Firing
+        # "if current_employees > needed_labor + 1"
+        if current_headcount > target_headcount + 1:
+            excess = current_headcount - target_headcount
+            excess = min(excess, max(0, current_headcount - 1))
+
+            if excess > 0:
+                # Find candidates (first ones in list for now)
+                candidates = context.current_employees[:excess]
+                firing_ids.extend(candidates)
+                hiring_target = -excess # Negative indicates firing count if needed, but firing_ids is explicit
+
+        # 3. Check Hiring
+        min_employees = context.min_employees
+        max_employees = context.max_employees
+
+        to_hire = 0
+        if current_headcount < min_employees:
+            to_hire = min_employees - current_headcount
+        elif target_headcount > current_headcount and current_headcount < max_employees:
+            to_hire = min(target_headcount - current_headcount, max_employees - current_headcount)
+
+        if to_hire > 0:
+            # Check Budget
+            offered_wage = target_wage
+
+            # Can we afford N hires?
+            # Projected Cost = Current Wages + (N * Offered Wage)
+            if current_wage_bill + (to_hire * offered_wage) <= context.budget_pennies:
+                hiring_target = to_hire
+            else:
+                # Reduce hires or skip
+                # Simple logic: skip if over budget
+                hiring_target = 0
+
+        return HRIntentDTO(
+            hiring_target=hiring_target,
+            wage_updates=wage_updates,
+            fire_employee_ids=firing_ids
+        )
+
     def manage_workforce(self, input_dto: HRDecisionInputDTO) -> HRDecisionOutputDTO:
         """
         Decides on hiring and firing based on production needs and budget constraints.
-        Ported from RuleBasedFirmDecisionEngine.
+        Delegates to decide_workforce for core logic.
         """
-        orders: List[Order] = []
-        firing_ids: List[int] = []
-        wage_updates: Dict[int, int] = {}
-
         firm_state = input_dto.firm_snapshot
         config = input_dto.config
-        current_tick = input_dto.current_tick
-        budget_plan = input_dto.budget_plan
 
-        # 1. Calculate Needed Labor
-        # Logic from RuleBasedFirmDecisionEngine._calculate_needed_labor
+        # 1. Calculate Needed Labor (Logic remains here as Input Builder)
         item_id = firm_state.production.specialization
         target_quantity = firm_state.production.production_target
         current_inventory = firm_state.production.inventory.get(item_id, 0)
@@ -49,121 +123,108 @@ class HREngine(IHREngine):
 
         target_headcount = int(needed_labor)
 
-        # 2. Compare with current headcount
-        current_employees_list = firm_state.hr.employees # Note: FirmSnapshotDTO has list of IDs? No, HRStateDTO has IDs.
-        # Wait, FirmSnapshotDTO.hr is HRStateDTO.
-        # HRStateDTO has `employees: List[int]` (IDs) and `employees_data: Dict[int, Dict]`.
-        # So I can get count.
-        current_headcount = len(firm_state.hr.employees)
+        # 2. Build Context
+        context = self._build_context(input_dto, target_headcount)
 
-        # 3. Calculate Wages & Scale (NEW)
+        # 3. Execute Core Logic
+        intent = self.decide_workforce(context)
 
-        # Calculate Target Wage (used for both Hiring and Scaling)
-        base_wage = input_dto.labor_market_avg_wage # Pennies
-        sensitivity = 0.1
-        max_premium = 2.0
+        # 4. Map Intent to Legacy Output (Orders)
+        orders: List[Order] = []
 
-        profit_history = firm_state.finance.profit_history
-        avg_profit = sum(profit_history) / len(profit_history) if profit_history else 0.0
+        # Firing Orders
+        for emp_id in intent.fire_employee_ids:
+            # We need skill/wage for severance calculation
+            # It's in employees_data
+            emp_info = firm_state.hr.employees_data.get(emp_id, {})
+            current_wage = emp_info.get('wage', 1000)
+            skill = emp_info.get('skill', 1.0)
 
-        profit_based_premium = avg_profit / (base_wage * 10.0) if base_wage > 0 else 0.0
-        wage_premium = max(0, min(profit_based_premium * sensitivity, max_premium))
+            severance_weeks = context.severance_pay_weeks
+            severance_pay = int(current_wage * severance_weeks * skill)
 
-        target_wage = int(base_wage * (1 + wage_premium))
+            orders.append(Order(
+                agent_id=firm_state.id,
+                side='FIRE',
+                item_id='internal',
+                quantity=1,
+                price_pennies=severance_pay,
+                price_limit=float(severance_pay)/100.0,
+                market_id='internal',
+                target_agent_id=emp_id
+            ))
 
-        # Wage Scaling: Update existing employees if underpaid
-        for emp_id, emp_data in firm_state.hr.employees_data.items():
-            current_wage = emp_data.get('wage', 0)
-            if current_wage < target_wage:
-                wage_updates[emp_id] = target_wage
+        # Hiring Orders
+        if intent.hiring_target > 0:
+            # Determine offered wage (target wage)
+            # We can infer it from intent.wage_updates if any, or recalculate
+            # But context.labor_market_avg_wage is available.
+            # Wait, decide_workforce calculated target_wage internally but didn't return it explicitly except in wage_updates.
+            # If no wage updates, we don't know the target wage?
+            # We should probably return target_wage in Intent or infer it.
+            # Re-calculating target wage here is redundant but safe.
+            # OR assume wage_updates contains the target wage.
+            # Let's recalculate for safety/simplicity as it's cheap.
 
-        # Budget Constraint: Check if we can afford current + new employees
-        # Use updated wages for current employees in calculation
-        current_wage_bill = 0
-        for emp_id, emp_data in firm_state.hr.employees_data.items():
-             w = wage_updates.get(emp_id, emp_data.get('wage', 0))
-             current_wage_bill += w
+            base_wage = context.labor_market_avg_wage
+            sensitivity = 0.1
+            max_premium = 2.0
+            profit_history = context.profit_history
+            avg_profit = sum(profit_history) / len(profit_history) if profit_history else 0.0
+            profit_based_premium = avg_profit / (base_wage * 10.0) if base_wage > 0 else 0.0
+            wage_premium = max(0, min(profit_based_premium * sensitivity, max_premium))
+            offered_wage = int(base_wage * (1 + wage_premium))
 
-        # 4. Hire or Fire
-
-        # Check Firing
-        # Logic from RuleBasedFirmDecisionEngine._fire_excess_labor
-        # "if current_employees > needed_labor + 1"
-        if current_headcount > target_headcount + 1:
-            excess = current_headcount - target_headcount
-            excess = min(excess, max(0, current_headcount - 1)) # Don't fire everyone? (implied by max(0, current-1))
-
-            if excess > 0:
-                # Find candidates (lowest skill? random? last hired?)
-                # Current logic was just firm.hr.employees[:excess] (first ones)
-                # We only have IDs in DTO.
-                candidates = firm_state.hr.employees[:excess]
-
-                severance_weeks = getattr(config, 'severance_pay_weeks', 2) # DTO attributes might be snake_case
-                # config is FirmConfigDTO.
-
-                for emp_id in candidates:
-                    emp_info = firm_state.hr.employees_data.get(emp_id, {})
-                    current_wage = emp_info.get('wage', 1000) # Pennies
-                    skill = emp_info.get('skill', 1.0)
-
-                    # Severance calculation (pennies)
-                    severance_pay = int(current_wage * severance_weeks * skill)
-
-                    # Create FIRE order (Internal Market)
-                    orders.append(Order(
-                        agent_id=firm_state.id,
-                        side='FIRE',
-                        item_id='internal',
-                        quantity=1,
-                        price_pennies=severance_pay,
-                        price_limit=float(severance_pay)/100.0,
-                        market_id='internal',
-                        target_agent_id=emp_id
-                    ))
-                    firing_ids.append(emp_id)
-
-        # Check Hiring
-        # Logic from RuleBasedFirmDecisionEngine._adjust_wages
-        min_employees = getattr(config, 'firm_min_employees', 1)
-        max_employees = getattr(config, 'firm_max_employees', 100)
-
-        to_hire = 0
-        if current_headcount < min_employees:
-            to_hire = min_employees - current_headcount
-        elif target_headcount > current_headcount and current_headcount < max_employees:
-            to_hire = min(target_headcount - current_headcount, max_employees - current_headcount)
-
-        if to_hire > 0:
-            # Check Budget
-            offered_wage = target_wage
-
-            # Can we afford N hires?
-            # Projected Cost = Current Wages + (N * Offered Wage)
-            # Budget Plan labor_budget covers this?
-            # Let's say labor_budget is for the *tick* (monthly/daily?)
-            # Usually wages are paid periodically.
-            # If labor_budget_pennies is the limit for *total* wage bill:
-            if current_wage_bill + (to_hire * offered_wage) <= budget_plan.labor_budget_pennies:
-                # Issue Buy Order
-                orders.append(Order(
-                    agent_id=firm_state.id,
-                    side='BUY',
-                    item_id='labor',
-                    quantity=float(to_hire),
-                    price_pennies=offered_wage,
-                    price_limit=float(offered_wage)/100.0,
-                    market_id='labor'
-                ))
-            else:
-                # Reduce hires or skip
-                pass
+            orders.append(Order(
+                agent_id=firm_state.id,
+                side='BUY',
+                item_id='labor',
+                quantity=float(intent.hiring_target),
+                price_pennies=offered_wage,
+                price_limit=float(offered_wage)/100.0,
+                market_id='labor'
+            ))
 
         return HRDecisionOutputDTO(
             hiring_orders=orders,
-            firing_ids=firing_ids,
-            wage_updates=wage_updates,
+            firing_ids=intent.fire_employee_ids, # IDs, already list[int] compatible (AgentID is NewType(int))
+            wage_updates={int(k): v for k, v in intent.wage_updates.items()}, # Cast AgentID to int key
             target_headcount=target_headcount
+        )
+
+    def _build_context(self, input_dto: HRDecisionInputDTO, target_headcount: int) -> HRContextDTO:
+        firm_state = input_dto.firm_snapshot
+        config = input_dto.config
+        hr_state = firm_state.hr
+
+        current_employees = [AgentID(e_id) for e_id in hr_state.employees]
+        employees_data = hr_state.employees_data
+
+        employee_wages = {AgentID(k): v.get('wage', 0) for k, v in employees_data.items()}
+        employee_skills = {AgentID(k): v.get('skill', 1.0) for k, v in employees_data.items()}
+
+        return HRContextDTO(
+            firm_id=AgentID(firm_state.id),
+            tick=input_dto.current_tick,
+            budget_pennies=input_dto.budget_plan.labor_budget_pennies,
+            market_snapshot=MarketSnapshotDTO(tick=0, market_signals={}, market_data={}), # Dummy if not needed inside decide
+            available_cash_pennies=0, # Not used
+            is_solvent=True,
+
+            current_employees=current_employees,
+            current_headcount=len(current_employees),
+            employee_wages=employee_wages,
+            employee_skills=employee_skills,
+            target_workforce_count=target_headcount,
+            labor_market_avg_wage=input_dto.labor_market_avg_wage,
+            marginal_labor_productivity=0.0, # Not used in current logic
+            happiness_avg=0.0, # Not used
+
+            profit_history=firm_state.finance.profit_history,
+
+            min_employees=getattr(config, 'firm_min_employees', 1),
+            max_employees=getattr(config, 'firm_max_employees', 100),
+            severance_pay_weeks=getattr(config, 'severance_pay_weeks', 2)
         )
 
     def calculate_wage(self, employee: IEmployeeDataProvider, base_wage: int, config: FirmConfigDTO) -> int:

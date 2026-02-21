@@ -12,6 +12,7 @@ def production_engine():
 @pytest.fixture
 def firm_snapshot():
     snapshot = MagicMock(spec=FirmSnapshotDTO)
+    snapshot.id = 1 # ID needed for AgentID
 
     # Config
     config = MagicMock(spec=FirmConfigDTO)
@@ -35,6 +36,7 @@ def firm_snapshot():
     prod.base_quality = 1.0
     prod.specialization = "FOOD"
     prod.input_inventory = {"RAW_MAT": 1000.0}
+    prod.inventory = {} # Finished goods inventory
     snapshot.production = prod
 
     # HR State
