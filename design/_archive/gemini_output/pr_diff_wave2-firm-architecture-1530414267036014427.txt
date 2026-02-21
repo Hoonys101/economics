@@ -1,0 +1,457 @@
+diff --git a/communications/insights/wave2-firm-architecture.md b/communications/insights/wave2-firm-architecture.md
+new file mode 100644
+index 00000000..4a5aed04
+--- /dev/null
++++ b/communications/insights/wave2-firm-architecture.md
+@@ -0,0 +1,51 @@
++# Wave 2.1: Firm Architecture Overhaul - Insight Report
++
++## 1. Architectural Insights
++
++### Technical Debt Identified
++1.  **Penny/Dollar Ambiguity**: The `Firm` and its engines (`SalesEngine`, `HREngine`, `FinanceEngine`) suffered from inconsistent handling of monetary values. `Transaction.price` was treated as both pennies and dollars in different contexts, and `total_pennies` was sometimes calculated by multiplying pennies by 100, leading to massive inflation bugs (100x cost).
++2.  **Legacy Logic Leaks**: `Firm` still contained some legacy logic for order generation that bypassed the new Engine architecture.
++3.  **Protocol Violations**: Engines were not explicitly implementing their `@runtime_checkable` protocols, relying on duck typing which is fragile.
++
++### Architectural Decisions
++1.  **Strict Penny Arithmetic**: All internal calculations and DTO fields (e.g., `SalesPostAskContextDTO.price_pennies`) now strictly use integer pennies.
++2.  **Explicit Display Values**: `Transaction.price` (float) is now consistently set to `total_pennies / 100.0` for display/logging purposes, while `total_pennies` (int) remains the Source of Truth (SSoT) for settlement.
++3.  **DTO Purity**: Context DTOs are updated to reflect the penny-first architecture (e.g., renaming `price` to `price_pennies`).
++4.  **Protocol Implementation**: All engines now explicitly inherit from their respective Protocols (`ISalesEngine`, `IHREngine`, `IFinanceEngine`, `IProductionEngine`).
++
++## 2. Regression Analysis
++
++### Broken Tests
++- `tests/unit/components/test_engines.py`: `test_post_ask` failed because `SalesPostAskContextDTO` changed signature (renamed `price` to `price_pennies`).
++- `tests/unit/test_firms.py`: `test_post_ask` failed because `Firm.post_ask` logic changed to expect pennies or convert float-dollars to pennies correctly.
++
++### Fix Strategy
++- Updated tests to use `price_pennies` in DTO construction.
++- Updated `Firm.post_ask` to handle both `float` (dollars) and `int` (pennies) inputs to support legacy test calls while enforcing penny logic internally.
++- Restored `TestProductionEngine` which was accidentally deleted during verification updates.
++
++## 3. Test Evidence
++
++### Verification Script (`verify_firm_architecture.py`)
++```
++verify_firm_architecture.py::test_sales_engine_post_ask_fix PASSED       [ 50%]
++verify_firm_architecture.py::test_sales_engine_marketing_fix PASSED      [100%]
++```
++
++### Unit Tests
++```
++tests/unit/components/test_engines.py::TestHREngine::test_create_fire_transaction PASSED [  7%]
++tests/unit/components/test_engines.py::TestHREngine::test_process_payroll PASSED [ 14%]
++tests/unit/components/test_engines.py::TestSalesEngine::test_post_ask PASSED [ 21%]
++tests/unit/components/test_engines.py::TestSalesEngine::test_generate_marketing_transaction PASSED [ 28%]
++tests/unit/components/test_engines.py::TestFinanceEngine::test_generate_financial_transactions PASSED [ 35%]
++tests/unit/components/test_engines.py::TestProductionEngine::test_produce_depreciation PASSED [ 42%]
++tests/unit/test_firms.py::TestFirmBookValue::test_book_value_no_liabilities PASSED [ 50%]
++tests/unit/test_firms.py::TestFirmBookValue::test_book_value_with_liabilities PASSED [ 57%]
++tests/unit/test_firms.py::TestFirmBookValue::test_book_value_with_treasury_shares PASSED [ 64%]
++tests/unit/test_firms.py::TestFirmBookValue::test_book_value_negative_net_assets PASSED [ 71%]
++tests/unit/test_firms.py::TestFirmBookValue::test_book_value_zero_shares PASSED [ 78%]
++tests/unit/test_firms.py::TestFirmProduction::test_produce PASSED        [ 85%]
++tests/unit/test_firms.py::TestFirmSales::test_post_ask PASSED            [ 92%]
++tests/unit/test_firms.py::TestFirmSales::test_adjust_marketing_budget_increase PASSED [100%]
++```
+diff --git a/simulation/components/engines/finance_engine.py b/simulation/components/engines/finance_engine.py
+index 4e60c4b0..da5f22a0 100644
+--- a/simulation/components/engines/finance_engine.py
++++ b/simulation/components/engines/finance_engine.py
+@@ -7,14 +7,14 @@ from modules.finance.api import InsufficientFundsError, IShareholderRegistry
+ from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
+ from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
+ from simulation.dtos.context_dtos import FinancialTransactionContext
+-from modules.firm.api import FinanceDecisionInputDTO, BudgetPlanDTO
++from modules.firm.api import FinanceDecisionInputDTO, BudgetPlanDTO, IFinanceEngine
+ 
+ if TYPE_CHECKING:
+     from modules.simulation.dtos.api import FirmConfigDTO
+ 
+ logger = logging.getLogger(__name__)
+ 
+-class FinanceEngine:
++class FinanceEngine(IFinanceEngine):
+     """
+     Stateless Engine for Finance operations.
+     Manages asset tracking, transaction generation, and financial health metrics.
+@@ -157,7 +157,7 @@ class FinanceEngine:
+                     seller_id=gov_id,
+                     item_id="holding_cost",
+                     quantity=1.0,
+-                    price=holding_cost_pennies,
++                    price=holding_cost_pennies / 100.0,
+                     market_id="system",
+                     transaction_type="holding_cost",
+                     time=current_time,
+@@ -178,7 +178,7 @@ class FinanceEngine:
+                     seller_id=gov_id,
+                     item_id="firm_maintenance",
+                     quantity=1.0,
+-                    price=payment,
++                    price=payment / 100.0,
+                     market_id="system",
+                     transaction_type="tax",
+                     time=current_time,
+@@ -244,7 +244,7 @@ class FinanceEngine:
+                         seller_id=gov_id,
+                         item_id="bailout_repayment",
+                         quantity=1.0,
+-                        price=repayment,
++                        price=repayment / 100.0,
+                         market_id="system",
+                         transaction_type="repayment",
+                         time=current_time,
+@@ -281,7 +281,7 @@ class FinanceEngine:
+                                 seller_id=agent_id,
+                                 item_id="dividend",
+                                 quantity=1.0,
+-                                price=dividend_amount,
++                                price=dividend_amount / 100.0,
+                                 market_id="financial",
+                                 transaction_type="dividend",
+                                 time=current_time,
+@@ -373,7 +373,7 @@ class FinanceEngine:
+             seller_id=context.government_id,
+             item_id="Automation",
+             quantity=1.0,
+-            price=amount,
++            price=amount / 100.0,
+             market_id="system",
+             transaction_type="investment",
+             time=current_time,
+@@ -404,7 +404,7 @@ class FinanceEngine:
+             seller_id=context.government_id,
+             item_id="R&D",
+             quantity=1.0,
+-            price=amount,
++            price=amount / 100.0,
+             market_id="system",
+             transaction_type="investment",
+             time=current_time,
+@@ -435,7 +435,7 @@ class FinanceEngine:
+             seller_id=context.government_id,
+             item_id="CAPEX",
+             quantity=1.0,
+-            price=amount,
++            price=amount / 100.0,
+             market_id="system",
+             transaction_type="investment",
+             time=current_time,
+@@ -468,7 +468,7 @@ class FinanceEngine:
+             seller_id=context.government_id,
+             item_id=reason,
+             quantity=1.0,
+-            price=amount,
++            price=amount / 100.0,
+             market_id="system",
+             transaction_type="tax",
+             time=current_time,
+diff --git a/simulation/components/engines/hr_engine.py b/simulation/components/engines/hr_engine.py
+index b9016f0b..e189a454 100644
+--- a/simulation/components/engines/hr_engine.py
++++ b/simulation/components/engines/hr_engine.py
+@@ -6,14 +6,14 @@ from modules.hr.api import IEmployeeDataProvider
+ from simulation.models import Transaction, Order
+ from simulation.components.state.firm_state_models import HRState
+ from simulation.dtos.hr_dtos import HRPayrollContextDTO, HRPayrollResultDTO, EmployeeUpdateDTO
+-from modules.firm.api import HRDecisionInputDTO, HRDecisionOutputDTO
++from modules.firm.api import HRDecisionInputDTO, HRDecisionOutputDTO, IHREngine
+ 
+ if TYPE_CHECKING:
+     from modules.simulation.dtos.api import FirmConfigDTO, FirmStateDTO
+ 
+ logger = logging.getLogger(__name__)
+ 
+-class HREngine:
++class HREngine(IHREngine):
+     """
+     Stateless Engine for HR operations.
+     Manages employees, calculates wages (skill + halo), and handles insolvency firing.
+@@ -234,11 +234,11 @@ class HREngine:
+                     seller_id=employee.id, # Payee
+                     item_id="labor_wage",
+                     quantity=1.0,
+-                    price=net_wage,
++                    price=net_wage / 100.0,
+                     market_id="labor",
+                     transaction_type="wage",
+                     time=current_time
+-                , total_pennies=int(net_wage * 1.0 * 100))
++                , total_pennies=net_wage)
+                 transactions.append(tx_wage)
+ 
+                 # Transaction 2: Income Tax (Firm -> Government) [Withholding]
+@@ -248,11 +248,11 @@ class HREngine:
+                         seller_id=context.tax_policy.government_agent_id, # Payee
+                         item_id="income_tax",
+                         quantity=1.0,
+-                        price=income_tax,
++                        price=income_tax / 100.0,
+                         market_id="system",
+                         transaction_type="tax",
+                         time=current_time
+-                    , total_pennies=int(income_tax * 1.0 * 100))
++                    , total_pennies=income_tax)
+                     transactions.append(tx_tax)
+ 
+                 # Schedule Employee Update (Income)
+@@ -322,11 +322,11 @@ class HREngine:
+                 seller_id=employee.id,
+                 item_id="severance_pay",
+                 quantity=1.0,
+-                price=severance_pay,
++                price=severance_pay / 100.0,
+                 market_id="labor",
+                 transaction_type="severance",
+                 time=current_time
+-            , total_pennies=int(severance_pay * 1.0 * 100))
++            , total_pennies=severance_pay)
+             tx_list.append(tx)
+ 
+             logger.info(
+@@ -373,12 +373,12 @@ class HREngine:
+             seller_id=employee.id,
+             item_id="Severance",
+             quantity=1.0,
+-            price=severance_pay,
++            price=severance_pay / 100.0,
+             market_id="system", # or labor?
+             transaction_type="severance",
+             time=current_time,
+             currency=DEFAULT_CURRENCY
+-        , total_pennies=int(severance_pay * 1.0 * 100))
++        , total_pennies=severance_pay)
+ 
+     def finalize_firing(self, hr_state: HRState, employee_id: int):
+         """
+diff --git a/simulation/components/engines/sales_engine.py b/simulation/components/engines/sales_engine.py
+index 3cb72775..ce9debdf 100644
+--- a/simulation/components/engines/sales_engine.py
++++ b/simulation/components/engines/sales_engine.py
+@@ -6,11 +6,12 @@ from simulation.models import Order, Transaction
+ from simulation.components.state.firm_state_models import SalesState
+ from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingContextDTO, MarketingAdjustmentResultDTO
+ from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
++from modules.firm.api import ISalesEngine
+ if TYPE_CHECKING:
+     from modules.simulation.dtos.api import FirmConfigDTO
+ logger = logging.getLogger(__name__)
+ 
+-class SalesEngine:
++class SalesEngine(ISalesEngine):
+     """
+     Stateless Engine for Sales operations.
+     Handles pricing, marketing, and order generation.
+@@ -23,8 +24,8 @@ class SalesEngine:
+         Validates quantity against inventory.
+         """
+         actual_quantity = min(context.quantity, context.inventory_quantity)
+-        state.last_prices[context.item_id] = context.price
+-        return Order(agent_id=context.firm_id, side='SELL', item_id=context.item_id, quantity=actual_quantity, price_pennies=int(context.price * 100), price_limit=context.price, market_id=context.market_id, brand_info=context.brand_snapshot, currency=DEFAULT_CURRENCY)
++        state.last_prices[context.item_id] = context.price_pennies
++        return Order(agent_id=context.firm_id, side='SELL', item_id=context.item_id, quantity=actual_quantity, price_pennies=context.price_pennies, price_limit=context.price_pennies / 100.0, market_id=context.market_id, brand_info=context.brand_snapshot, currency=DEFAULT_CURRENCY)
+ 
+     def adjust_marketing_budget(self, state: SalesState, market_context: MarketContextDTO, revenue_this_turn: int, last_revenue: int=0, last_marketing_spend: int=0) -> MarketingAdjustmentResultDTO:
+         """
+@@ -50,7 +51,7 @@ class SalesEngine:
+         """
+         budget = state.marketing_budget_pennies
+         if budget > 0 and context.wallet_balance >= budget and context.government_id:
+-            return Transaction(buyer_id=context.firm_id, seller_id=context.government_id, item_id='marketing', quantity=1.0, price=budget, market_id='system', transaction_type='marketing', time=context.current_time, currency=DEFAULT_CURRENCY, total_pennies=int(budget * 1.0 * 100))
++            return Transaction(buyer_id=context.firm_id, seller_id=context.government_id, item_id='marketing', quantity=1.0, price=budget / 100.0, market_id='system', transaction_type='marketing', time=context.current_time, currency=DEFAULT_CURRENCY, total_pennies=budget)
+         return None
+ 
+     def check_and_apply_dynamic_pricing(self, state: SalesState, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> None:
+diff --git a/simulation/dtos/sales_dtos.py b/simulation/dtos/sales_dtos.py
+index 7092bd1f..9a8c5639 100644
+--- a/simulation/dtos/sales_dtos.py
++++ b/simulation/dtos/sales_dtos.py
+@@ -9,7 +9,7 @@ class SalesPostAskContextDTO:
+     """
+     firm_id: int
+     item_id: str
+-    price: int # Changed to int (pennies)
++    price_pennies: int # Changed to int (pennies)
+     quantity: float
+     market_id: str
+     current_tick: int
+diff --git a/simulation/firms.py b/simulation/firms.py
+index a4bba240..cfb5d2c5 100644
+--- a/simulation/firms.py
++++ b/simulation/firms.py
+@@ -623,8 +623,13 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         """Clears the inventory."""
+         self.inventory_component.clear_inventory(slot)
+ 
+-    def post_ask(self, item_id: str, price: float, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
+-        context = self._build_sales_post_ask_context(item_id, price, quantity, market.id, current_tick)
++    def post_ask(self, item_id: str, price: float | int, quantity: float, market: OrderBookMarket, current_tick: int) -> Order:
++        if isinstance(price, float):
++            price_pennies = int(price * 100)
++        else:
++            price_pennies = price
++
++        context = self._build_sales_post_ask_context(item_id, price_pennies, quantity, market.id, current_tick)
+         return self.sales_engine.post_ask(
+             self.sales_state, context
+         )
+@@ -1135,7 +1140,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+             current_time=current_time
+         )
+ 
+-    def _build_sales_post_ask_context(self, item_id: str, price: float, quantity: float, market_id: str, current_tick: int) -> SalesPostAskContextDTO:
++    def _build_sales_post_ask_context(self, item_id: str, price_pennies: int, quantity: float, market_id: str, current_tick: int) -> SalesPostAskContextDTO:
+         brand_snapshot = {
+             "brand_awareness": self.sales_state.brand_awareness,
+             "perceived_quality": self.sales_state.perceived_quality,
+@@ -1144,7 +1149,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
+         return SalesPostAskContextDTO(
+             firm_id=self.id,
+             item_id=item_id,
+-            price=price,
++            price_pennies=price_pennies,
+             quantity=quantity,
+             market_id=market_id,
+             current_tick=current_tick,
+diff --git a/tests/unit/components/test_engines.py b/tests/unit/components/test_engines.py
+index 7a2dc814..4263ad81 100644
+--- a/tests/unit/components/test_engines.py
++++ b/tests/unit/components/test_engines.py
+@@ -1,5 +1,5 @@
+ import pytest
+-from unittest.mock import MagicMock, Mock
++from unittest.mock import MagicMock
+ from simulation.components.engines.hr_engine import HREngine
+ from simulation.components.engines.sales_engine import SalesEngine
+ from simulation.components.engines.finance_engine import FinanceEngine
+@@ -22,14 +22,18 @@ class TestHREngine:
+         hr_state.employees.append(employee)
+ 
+         # Test sufficient funds
++        # severance_pay is 50000 pennies ($500.00)
+         tx = engine.create_fire_transaction(
+             hr_state, firm_id=1, wallet_balance=100000, employee_id=101, severance_pay=50000, current_time=10
+         )
+         assert tx is not None
+         assert tx.buyer_id == 1
+         assert tx.seller_id == 101
+-        assert tx.price == 50000
+         assert tx.transaction_type == "severance"
++        # Total pennies must match input
++        assert tx.total_pennies == 50000
++        # Price (float) must be pennies / 100.0
++        assert tx.price == 500.0
+ 
+         # Test insufficient funds
+         tx_fail = engine.create_fire_transaction(
+@@ -46,8 +50,7 @@ class TestHREngine:
+         employee.is_employed = True
+         employee.labor_skill = 1.0
+         employee.education_level = 0.0
+-        # Initialize mutable lists/dicts on MagicMock to avoid interaction issues if code iterates/updates them
+-        # Actually hr_state is real object, employee is mock.
++
+         hr_state.employees.append(employee)
+         hr_state.employee_wages[101] = 10000 # 100.00 pennies
+ 
+@@ -75,21 +78,24 @@ class TestHREngine:
+         wage_tx = next((t for t in transactions if t.transaction_type == "wage"), None)
+         assert wage_tx is not None
+         # Wage is 10000, Tax is 10000*0.1 = 1000. Net = 9000.
+-        assert wage_tx.price == 9000
++        assert wage_tx.total_pennies == 9000
++        assert wage_tx.price == 90.0
+ 
+         tax_tx = next((t for t in transactions if t.transaction_type == "tax"), None)
+         assert tax_tx is not None
+-        assert tax_tx.price == 1000
++        assert tax_tx.total_pennies == 1000
++        assert tax_tx.price == 10.0
+ 
+ class TestSalesEngine:
+     def test_post_ask(self):
+         engine = SalesEngine()
+         state = SalesState()
+ 
++        # Update to use price_pennies
+         context = SalesPostAskContextDTO(
+             firm_id=1,
+             item_id="apple",
+-            price=1000, # 10.00
++            price_pennies=1000, # 1000 pennies = $10.00
+             quantity=5.0,
+             market_id="goods_market",
+             current_tick=10,
+@@ -102,13 +108,15 @@ class TestSalesEngine:
+         assert order.agent_id == 1
+         assert order.item_id == "apple"
+         assert order.quantity == 3.0 # Limited by inventory
+-        assert order.price_limit == 1000
++        # price_pennies should be 1000 (no multiplier)
++        assert order.price_pennies == 1000
++        assert order.price_limit == 10.0
+         assert state.last_prices["apple"] == 1000
+ 
+     def test_generate_marketing_transaction(self):
+         engine = SalesEngine()
+         state = SalesState()
+-        state.marketing_budget_pennies = 5000
++        state.marketing_budget_pennies = 5000 # 5000 pennies = $50.00
+ 
+         # Sufficient funds
+         context = SalesMarketingContextDTO(
+@@ -122,7 +130,8 @@ class TestSalesEngine:
+         assert tx is not None
+         assert tx.buyer_id == 1
+         assert tx.seller_id == 999
+-        assert tx.price == 5000
++        assert tx.total_pennies == 5000
++        assert tx.price == 50.0
+ 
+         # Insufficient funds
+         context_fail = SalesMarketingContextDTO(
+@@ -165,10 +174,12 @@ class TestFinanceEngine:
+ 
+         assert len(transactions) >= 2
+         holding_tx = next((t for t in transactions if t.item_id == "holding_cost"), None)
+-        assert holding_tx.price == 500
++        assert holding_tx.total_pennies == 500
++        assert holding_tx.price == 5.0
+ 
+         maint_tx = next((t for t in transactions if t.item_id == "firm_maintenance"), None)
+-        assert maint_tx.price == 1000
++        assert maint_tx.total_pennies == 1000
++        assert maint_tx.price == 10.0
+ 
+ class TestProductionEngine:
+     def test_produce_depreciation(self):
+@@ -193,25 +204,14 @@ class TestProductionEngine:
+         emp.get.return_value = 1.0 # skill
+         hr_state.employees_data = {1: emp}
+ 
+-        # Need to construct full snapshot?
+-        # Ideally, we mock FirmSnapshotDTO but it's a dataclass.
+-        # We can construct it.
+-        # Need dummy Finance, Sales
+         finance_state = FinanceStateDTO(
+             balance={}, revenue_this_turn={}, expenses_this_tick={}, consecutive_loss_turns=0, profit_history=[],
+-            altman_z_score=0, valuation=0, total_shares=0, treasury_shares=0, dividend_rate=0, is_publicly_traded=False
++            altman_z_score=0, valuation=0, total_shares=0, treasury_shares=0, dividend_rate=0, is_publicly_traded=False, total_debt_pennies=0, average_interest_rate=0.0
+         )
+         sales_state = SalesStateDTO(
+             inventory_last_sale_tick={}, price_history={}, brand_awareness=0, perceived_quality=0, marketing_budget=0
+         )
+-        hr_dto = HRStateDTO(employees=[], employees_data={}) # Engine uses snapshot.hr which is HRState (Model) or DTO?
+-        # Engine code: `hr_state = firm_snapshot.hr`. `employees_data = hr_state.employees_data`.
+-        # FirmSnapshotDTO uses DTOs. `HRStateDTO` has `employees_data`.
+-
+-        # Actually ProductionEngine uses `firm_snapshot.production` which is `ProductionStateDTO`?
+-        # Let's check `modules/firm/api.py`.
+-        # `FirmSnapshotDTO` uses `ProductionStateDTO`, `HRStateDTO`.
+-        # So I need to pass DTOs, not Models.
++        hr_dto = HRStateDTO(employees=[], employees_data={})
+ 
+         production_dto = ProductionStateDTO(
+             current_production=0, productivity_factor=1.0, production_target=0,

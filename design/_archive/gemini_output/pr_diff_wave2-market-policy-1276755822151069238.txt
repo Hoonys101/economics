@@ -1,0 +1,566 @@
+diff --git a/communications/insights/wave2-market-policy.md b/communications/insights/wave2-market-policy.md
+new file mode 100644
+index 00000000..e8f6a7d3
+--- /dev/null
++++ b/communications/insights/wave2-market-policy.md
+@@ -0,0 +1,125 @@
++# Wave 2.2: Market & Policy Refinement Insight Report
++
++**Date**: 2026-02-21
++**Author**: Jules (AI Agent)
++**Status**: COMPLETED
++
++## 1. Architectural Insights
++
++### Stock Market Hardening
++- **Insight**: The `StockMarket` previously relied on brittle string parsing (`split('_')`) to extract firm IDs from stock IDs. This was a violation of robust input handling.
++- **Decision**: Implemented `StockIDHelper` in `modules/market/api.py` to centralize ID validation, parsing, and formatting. This ensures consistent `stock_<id>` format across the system and prevents `IndexError`/`ValueError` crashes in the market engine.
++- **Refactor**: `StockMarket.get_price` and `StockMarket.place_order` now use `StockIDHelper` for safe ID handling. Legacy fallback logic was retained in `get_price` to minimize disruption but strict parsing is enforced in `place_order`.
++
++### Progressive Taxation Foundation
++- **Insight**: `TaxBracketDTO` and `FiscalPolicyDTO` were inconsistent with the new progressive tax specification. `TaxBracketDTO` used `floor`/`ceiling` which complicated sorting and overlap logic.
++- **Decision**: Refactored `TaxBracketDTO` to use a simplified `threshold` (int pennies) and `rate` (float) model. This aligns with standard progressive tax algorithms where brackets are applied to income chunks above a threshold.
++- **Implementation**:
++    - `FiscalPolicyDTO` now uses a `tax_brackets` list instead of `progressive_tax_brackets`.
++    - `FiscalPolicyManager` was rewritten to generate brackets using the new model (Threshold 0 @ 0%, Threshold 1.0*Survival @ 10%, etc.).
++    - `FiscalPolicyManager.calculate_tax_liability` now sorts brackets by threshold (descending) and applies rates to marginal income segments, ensuring accurate progressive calculation.
++- **Compatibility**: Legacy property `progressive_tax_brackets` was added to `FiscalPolicyDTO` to maintain backward compatibility for read access, though write access via `__init__` was deprecated and usages updated.
++
++## 2. Regression Analysis
++
++- **Regression Risk**: High, due to changes in core DTOs (`FiscalPolicyDTO`, `TaxBracketDTO`) used by Government agents and tests.
++- **Mitigation**:
++    - Identified all call sites using `grep`.
++    - Updated `tests/integration/test_fiscal_policy.py`, `tests/integration/test_government_fiscal_integration.py`, and `scripts/verify_penny_migration_gov.py` to match the new DTO structure.
++    - Updated `tests/unit/modules/government/components/test_fiscal_policy_manager.py` to verify the new tax calculation logic with integer math.
++- **Outcome**: All 32 relevant tests passed. No regressions observed in Stock Market or Government Fiscal logic.
++
++## 3. Test Evidence
++
++```
++tests/market/test_stock_market_pennies.py::TestStockMarketPennies::test_stock_matching_fractional_shares PASSED [  3%]
++tests/market/test_stock_market_pennies.py::TestStockMarketPennies::test_stock_matching_integer_math PASSED [  6%]
++tests/unit/test_stock_market.py::TestStockMarketInitialization::test_initialization PASSED [  9%]
++tests/unit/test_stock_market.py::TestStockMarketInitialization::test_update_reference_prices PASSED [ 12%]
++tests/unit/test_stock_market.py::TestStockOrderPlacement::test_place_buy_order
++-------------------------------- live log call ---------------------------------
++INFO     simulation.markets.stock_market:stock_market.py:165 Stock BUY order placed: 10.0 shares of firm 100 at 50.00
++PASSED                                                                   [ 15%]
++tests/unit/test_stock_market.py::TestStockOrderPlacement::test_place_sell_order
++-------------------------------- live log call ---------------------------------
++INFO     simulation.markets.stock_market:stock_market.py:165 Stock SELL order placed: 10.0 shares of firm 100 at 45.00
++PASSED                                                                   [ 18%]
++tests/unit/test_stock_market.py::TestStockOrderPlacement::test_price_clamping
++-------------------------------- live log call ---------------------------------
++WARNING  simulation.markets.stock_market:stock_market.py:151 Stock order price 120.00 out of limit range [85.00, 115.00] for firm 100
++INFO     simulation.markets.stock_market:stock_market.py:165 Stock BUY order placed: 1.0 shares of firm 100 at 115.00
++WARNING  simulation.markets.stock_market:stock_market.py:151 Stock order price 80.00 out of limit range [85.00, 115.00] for firm 100
++INFO     simulation.markets.stock_market:stock_market.py:165 Stock SELL order placed: 1.0 shares of firm 100 at 85.00
++PASSED                                                                   [ 21%]
++tests/unit/test_stock_market.py::TestStockOrderPlacement::test_order_sorting
++-------------------------------- live log call ---------------------------------
++INFO     simulation.markets.stock_market:stock_market.py:165 Stock BUY order placed: 1.0 shares of firm 100 at 45.00
++INFO     simulation.markets.stock_market:stock_market.py:165 Stock BUY order placed: 1.0 shares of firm 100 at 55.00
++INFO     simulation.markets.stock_market:stock_market.py:165 Stock BUY order placed: 1.0 shares of firm 100 at 50.00
++PASSED                                                                   [ 25%]
++tests/unit/test_stock_market.py::TestStockOrderMatching::test_full_match
++-------------------------------- live log call ---------------------------------
++INFO     simulation.markets.stock_market:stock_market.py:165 Stock BUY order placed: 10.0 shares of firm 100 at 50.00
++INFO     simulation.markets.stock_market:stock_market.py:165 Stock SELL order placed: 10.0 shares of firm 100 at 45.00
++PASSED                                                                   [ 28%]
++tests/unit/test_stock_market.py::TestStockOrderMatching::test_partial_match
++-------------------------------- live log call ---------------------------------
++INFO     simulation.markets.stock_market:stock_market.py:165 Stock BUY order placed: 15.0 shares of firm 100 at 50.00
++INFO     simulation.markets.stock_market:stock_market.py:165 Stock SELL order placed: 10.0 shares of firm 100 at 45.00
++INFO     simulation.markets.stock_market:stock_market.py:165 Stock SELL order placed: 5.0 shares of firm 100 at 45.00
++PASSED                                                                   [ 31%]
++tests/unit/test_stock_market.py::TestOrderExpiry::test_clear_expired_orders
++-------------------------------- live log call ---------------------------------
++INFO     simulation.markets.stock_market:stock_market.py:165 Stock BUY order placed: 5.0 shares of firm 100 at 50.00
++PASSED                                                                   [ 34%]
++tests/market/test_stock_id_helper.py::TestStockIDHelper::test_stock_id_helper_valid PASSED [ 37%]
++tests/market/test_stock_id_helper.py::TestStockIDHelper::test_stock_id_helper_invalid PASSED [ 40%]
++tests/market/test_stock_id_helper.py::TestStockIDHelper::test_format_stock_id_handles_string PASSED [ 43%]
++tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_determine_fiscal_stance_calculates_survival_cost_correctly PASSED [ 46%]
++tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_determine_fiscal_stance_defaults_if_no_config PASSED [ 50%]
++tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_calculate_tax_liability_progressive PASSED [ 53%]
++tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_calculate_tax_liability_zero_or_negative PASSED [ 56%]
++scripts/verify_penny_migration_gov.py::TestPennyMigrationGov::test_fiscal_policy_manager_survival_cost PASSED [ 59%]
++scripts/verify_penny_migration_gov.py::TestPennyMigrationGov::test_tax_service_wealth_tax PASSED [ 62%]
++scripts/verify_penny_migration_gov.py::TestPennyMigrationGov::test_taxation_system_calculate_income_tax PASSED [ 65%]
++scripts/verify_penny_migration_gov.py::TestPennyMigrationGov::test_taxation_system_calculate_tax_intents_food_price PASSED [ 68%]
++scripts/verify_penny_migration_gov.py::TestPennyMigrationGov::test_welfare_manager_survival_cost PASSED [ 71%]
++tests/integration/test_fiscal_policy.py::test_potential_gdp_ema_convergence
++-------------------------------- live log setup --------------------------------
++INFO     simulation.agents.government:government.py:163 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
++-------------------------------- live log call ---------------------------------
++INFO     modules.common.utils.shadow_logger:shadow_logger.py:36 ShadowLogger initialized at logs/shadow_hand_stage1.csv
++PASSED                                                                   [ 75%]
++tests/integration/test_fiscal_policy.py::test_counter_cyclical_tax_adjustment_recession
++-------------------------------- live log setup --------------------------------
++INFO     simulation.agents.government:government.py:163 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
++PASSED                                                                   [ 78%]
++tests/integration/test_fiscal_policy.py::test_counter_cyclical_tax_adjustment_boom
++-------------------------------- live log setup --------------------------------
++INFO     simulation.agents.government:government.py:163 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
++PASSED                                                                   [ 81%]
++tests/integration/test_fiscal_policy.py::test_debt_ceiling_enforcement
++-------------------------------- live log setup --------------------------------
++INFO     simulation.agents.government:government.py:163 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.system:system.py:311 BOND_REGISTERED | BOND_1_1 registered to MOCK_BUYER
++INFO     modules.finance.system:system.py:311 BOND_REGISTERED | BOND_1_2 registered to MOCK_BUYER
++WARNING  simulation.agents.government:government.py:465 WELFARE_FAILED | Insufficient funds even after bond issuance attempt. Needed: 100, Has: 0
++PASSED                                                                   [ 84%]
++tests/integration/test_fiscal_policy.py::test_calculate_income_tax_uses_current_rate
++-------------------------------- live log setup --------------------------------
++INFO     simulation.agents.government:government.py:163 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
++PASSED                                                                   [ 87%]
++tests/integration/test_government_fiscal_integration.py::TestGovernmentFiscalIntegration::test_calculate_income_tax_uses_fiscal_policy_manager
++-------------------------------- live log call ---------------------------------
++INFO     simulation.agents.government:government.py:163 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
++PASSED                                                                   [ 90%]
++tests/integration/test_government_fiscal_integration.py::TestGovernmentFiscalIntegration::test_make_policy_decision_updates_fiscal_policy
++-------------------------------- live log call ---------------------------------
++INFO     simulation.agents.government:government.py:163 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
++PASSED                                                                   [ 93%]
++tests/modules/government/test_tax_service.py::test_collect_wealth_tax PASSED [ 96%]
++tests/modules/government/test_tax_service.py::test_collect_wealth_tax_below_threshold PASSED [100%]
++
++======================== 32 passed, 2 warnings in 0.51s ========================
++```
+diff --git a/modules/government/components/fiscal_policy_manager.py b/modules/government/components/fiscal_policy_manager.py
+index 989997a1..65d08ab4 100644
+--- a/modules/government/components/fiscal_policy_manager.py
++++ b/modules/government/components/fiscal_policy_manager.py
+@@ -86,29 +86,27 @@ class FiscalPolicyManager(IFiscalPolicyManager):
+             ]
+ 
+         # 3. Convert to Absolute TaxBracketDTOs (in pennies)
+-        progressive_tax_brackets: List[TaxBracketDTO] = []
++        tax_brackets: List[TaxBracketDTO] = []
+         previous_ceiling = 0
+ 
+         for multiple, rate in raw_brackets:
+-            if multiple == float('inf'):
+-                ceiling = None
+-            else:
+-                ceiling = int(multiple * survival_cost)
++            threshold = previous_ceiling
+ 
+             bracket = TaxBracketDTO(
+-                floor=previous_ceiling,
+-                rate=rate,
+-                ceiling=ceiling
++                threshold=threshold,
++                rate=rate
+             )
+-            progressive_tax_brackets.append(bracket)
++            tax_brackets.append(bracket)
+ 
+-            if ceiling is None:
++            if multiple == float('inf'):
+                 break # Reached infinity
+-
+-            previous_ceiling = ceiling
++            else:
++                previous_ceiling = int(multiple * survival_cost)
+ 
+         return FiscalPolicyDTO(
+-            progressive_tax_brackets=progressive_tax_brackets
++            tax_brackets=tax_brackets,
++            income_tax_rate=0.1, # Default placeholder
++            corporate_tax_rate=0.2 # Default placeholder
+         )
+ 
+     def calculate_tax_liability(self, policy: FiscalPolicyDTO, income: int) -> int:
+@@ -119,27 +117,20 @@ class FiscalPolicyManager(IFiscalPolicyManager):
+         if income <= 0:
+             return 0
+ 
+-        total_tax = 0.0
+-
+-        for bracket in policy.progressive_tax_brackets:
+-            # Determine the income chunk that falls into this bracket
+-            bracket_floor = bracket.floor
+-            bracket_ceiling = bracket.ceiling if bracket.ceiling is not None else float('inf')
+-
+-            if income <= bracket_floor:
+-                continue
++        # Fallback to scalar rate if no brackets
++        if not policy.tax_brackets:
++            return round_to_pennies(income * policy.income_tax_rate)
+ 
+-            # Calculate taxable amount in this bracket
+-            # Use float('inf') comparison logic
+-            if bracket.ceiling is None:
+-                 taxable_in_bracket = income - bracket_floor
+-            else:
+-                 taxable_in_bracket = min(income, bracket_ceiling) - bracket_floor
++        total_tax = 0.0
++        remaining_income = income
+ 
+-            if taxable_in_bracket > 0:
+-                total_tax += taxable_in_bracket * bracket.rate
++        # Sort brackets descending by threshold
++        sorted_brackets = sorted(policy.tax_brackets, key=lambda b: b.threshold, reverse=True)
+ 
+-            if bracket.ceiling is not None and income <= bracket_ceiling:
+-                break
++        for bracket in sorted_brackets:
++            if remaining_income > bracket.threshold:
++                taxable_amount = remaining_income - bracket.threshold
++                total_tax += taxable_amount * bracket.rate
++                remaining_income = bracket.threshold
+ 
+         return round_to_pennies(total_tax)
+diff --git a/modules/government/dtos.py b/modules/government/dtos.py
+index 70d08fec..3ba5b095 100644
+--- a/modules/government/dtos.py
++++ b/modules/government/dtos.py
+@@ -23,9 +23,11 @@ class TaxHistoryItemDTO:
+ @dataclass
+ class TaxBracketDTO:
+     """Defines a single progressive tax bracket."""
+-    floor: int # MIGRATION: pennies
++    threshold: int # Pennies (replaces floor)
+     rate: float
+-    ceiling: Optional[int] # MIGRATION: pennies (None for the highest bracket)
++    # Deprecated fields for compatibility
++    floor: int = 0
++    ceiling: Optional[int] = None
+ 
+ @dataclass
+ class TaxPolicyDTO:
+@@ -37,10 +39,18 @@ class TaxPolicyDTO:
+ @dataclass
+ class FiscalPolicyDTO:
+     """State of the current fiscal policy."""
+-    progressive_tax_brackets: List[TaxBracketDTO]
++    tax_brackets: List[TaxBracketDTO] = field(default_factory=list)
+     corporate_tax_rate: float = 0.2
+     income_tax_rate: float = 0.1
+-    # TBD: Other fiscal tools like subsidies, welfare
++
++    # Deprecated: alias for backward compatibility
++    @property
++    def progressive_tax_brackets(self) -> List[TaxBracketDTO]:
++        return self.tax_brackets
++
++    @progressive_tax_brackets.setter
++    def progressive_tax_brackets(self, value: List[TaxBracketDTO]):
++        self.tax_brackets = value
+ 
+ @dataclass
+ class MonetaryPolicyDTO:
+diff --git a/modules/market/api.py b/modules/market/api.py
+index 507756b8..4a49b3ff 100644
+--- a/modules/market/api.py
++++ b/modules/market/api.py
+@@ -109,6 +109,36 @@ def convert_legacy_order_to_canonical(order: Any) -> CanonicalOrderDTO:
+ 
+     raise ValueError(f"Cannot convert object of type {type(order)} to CanonicalOrderDTO")
+ 
++class StockIDHelper:
++    """Helper for Stock ID formatting and parsing."""
++    PREFIX = "stock"
++    SEPARATOR = "_"
++
++    @staticmethod
++    def is_valid_stock_id(item_id: str) -> bool:
++        """Checks if the item_id matches the 'stock_{int}' format."""
++        if not item_id or not isinstance(item_id, str):
++            return False
++        parts = item_id.split(StockIDHelper.SEPARATOR)
++        if len(parts) != 2 or parts[0] != StockIDHelper.PREFIX:
++            return False
++        return parts[1].isdigit()
++
++    @staticmethod
++    def parse_firm_id(item_id: str) -> int:
++        """
++        Parses the firm_id from a stock item_id.
++        Raises ValueError if format is invalid.
++        """
++        if not StockIDHelper.is_valid_stock_id(item_id):
++            raise ValueError(f"Invalid Stock ID format: {item_id}. Expected 'stock_<int>'.")
++        return int(item_id.split(StockIDHelper.SEPARATOR)[1])
++
++    @staticmethod
++    def format_stock_id(firm_id: int | str) -> str:
++        """Formats a firm_id into a stock item_id."""
++        return f"{StockIDHelper.PREFIX}{StockIDHelper.SEPARATOR}{firm_id}"
++
+ # --- Data Transfer Objects (DTOs) ---
+ 
+ class HousingConfigDTO(TypedDict):
+diff --git a/scripts/verify_penny_migration_gov.py b/scripts/verify_penny_migration_gov.py
+index a7e78e7d..402b9cef 100644
+--- a/scripts/verify_penny_migration_gov.py
++++ b/scripts/verify_penny_migration_gov.py
+@@ -66,11 +66,23 @@ class TestPennyMigrationGov(unittest.TestCase):
+         policy = fpm.determine_fiscal_stance(snapshot)
+ 
+         # Check brackets. Survival cost should be 500 (5.0 * 100 * 1.0)
+-        # Bracket 1: 1.0 * 500 = 500 ceiling
+-        bracket0 = policy.progressive_tax_brackets[0]
+-        self.assertEqual(bracket0.ceiling, 500)
+-        self.assertIsInstance(bracket0.ceiling, int)
+-        self.assertIsInstance(bracket0.floor, int)
++        # Bracket 1 (0.0%): Threshold 0
++        # Bracket 2 (10%): Threshold 500
++        # Bracket 3 (20%): Threshold 1500
++
++        # Note: FiscalPolicyManager logic:
++        # 1.0 * 500 = 500. Rate 0.0 applies to previous_ceiling (0).
++        # Next threshold = 500.
++
++        bracket0 = policy.tax_brackets[0]
++        self.assertEqual(bracket0.threshold, 0)
++        self.assertEqual(bracket0.rate, 0.0)
++
++        bracket1 = policy.tax_brackets[1]
++        self.assertEqual(bracket1.threshold, 500)
++        self.assertEqual(bracket1.rate, 0.10)
++
++        self.assertIsInstance(bracket1.threshold, int)
+ 
+     def test_taxation_system_calculate_income_tax(self):
+         """Verify income tax calculation uses ints."""
+diff --git a/simulation/markets/stock_market.py b/simulation/markets/stock_market.py
+index 2e3c3073..ceaebc10 100644
+--- a/simulation/markets/stock_market.py
++++ b/simulation/markets/stock_market.py
+@@ -10,7 +10,7 @@ from collections import defaultdict
+ from dataclasses import dataclass, replace
+ from simulation.models import Transaction, Order
+ from simulation.core_markets import Market
+-from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO
++from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO, StockIDHelper
+ from modules.finance.api import IShareholderRegistry, IShareholderView
+ from simulation.markets.matching_engine import StockMatchingEngine
+ logger = logging.getLogger(__name__)
+@@ -86,19 +86,18 @@ class StockMarket(Market):
+         IMarket Implementation.
+         """
+         try:
+-            # Parse 'stock_123' -> 123
+-            if '_' in item_id:
+-                parts = item_id.split('_')
+-                # Assuming format 'stock_ID'
+-                firm_id = int(parts[-1])
+-            else:
+-                firm_id = int(item_id)
+-
++            firm_id = StockIDHelper.parse_firm_id(item_id)
+             price = self.get_stock_price(firm_id)
+             return price if price is not None else 0.0
+-        except (ValueError, IndexError):
+-            self.logger.warning(f"Invalid item_id for get_price: {item_id}")
+-            return 0.0
++        except ValueError:
++            # Try parsing as raw int for legacy compatibility if strict parsing fails
++            try:
++                firm_id = int(item_id)
++                price = self.get_stock_price(firm_id)
++                return price if price is not None else 0.0
++            except ValueError:
++                self.logger.warning(f"Invalid item_id for get_price: {item_id}")
++                return 0.0
+ 
+     def get_daily_avg_price(self, firm_id: Optional[int]=None) -> float:
+         """
+@@ -139,8 +138,8 @@ class StockMarket(Market):
+             self.logger.error(f'Invalid order type passed to StockMarket: {type(order)}. Expected CanonicalOrderDTO.')
+             return
+         try:
+-            firm_id = int(order.item_id.split('_')[1])
+-        except (ValueError, IndexError):
++            firm_id = StockIDHelper.parse_firm_id(order.item_id)
++        except ValueError:
+             self.logger.error(f"Invalid item_id format for stock order: {order.item_id}. Expected 'stock_<firm_id>'")
+             return
+         limit_rate = getattr(self.config_module, 'STOCK_PRICE_LIMIT_RATE', 0.1)
+diff --git a/tests/integration/test_fiscal_policy.py b/tests/integration/test_fiscal_policy.py
+index 81ba4d7d..2a1c7a91 100644
+--- a/tests/integration/test_fiscal_policy.py
++++ b/tests/integration/test_fiscal_policy.py
+@@ -162,8 +162,8 @@ def test_calculate_income_tax_uses_current_rate(government, mock_config):
+     """Verify income tax calculation uses the current government rate."""
+     # Manually overwrite the policy to be a flat tax policy (5%)
+     from modules.government.dtos import FiscalPolicyDTO, TaxBracketDTO
+-    flat_bracket = TaxBracketDTO(floor=0.0, rate=0.05, ceiling=None)
+-    government.fiscal_policy = FiscalPolicyDTO(progressive_tax_brackets=[flat_bracket])
++    flat_bracket = TaxBracketDTO(threshold=0, rate=0.05)
++    government.fiscal_policy = FiscalPolicyDTO(tax_brackets=[flat_bracket])
+ 
+     income = 100.0
+     # survival_cost is irrelevant for flat tax bracket starting at 0
+diff --git a/tests/integration/test_government_fiscal_integration.py b/tests/integration/test_government_fiscal_integration.py
+index 7b525d4a..9489d049 100644
+--- a/tests/integration/test_government_fiscal_integration.py
++++ b/tests/integration/test_government_fiscal_integration.py
+@@ -45,7 +45,7 @@ class TestGovernmentFiscalIntegration:
+         # Government.make_policy_decision orchestrates fiscal_engine and tax_service
+ 
+         gov.tax_service.fiscal_policy_manager = MagicMock()
+-        expected_policy = FiscalPolicyDTO(progressive_tax_brackets=[])
++        expected_policy = FiscalPolicyDTO(tax_brackets=[])
+         gov.tax_service.fiscal_policy_manager.determine_fiscal_stance.return_value = expected_policy
+ 
+         # Setup market data
+diff --git a/tests/market/test_stock_id_helper.py b/tests/market/test_stock_id_helper.py
+new file mode 100644
+index 00000000..a1bbf5fe
+--- /dev/null
++++ b/tests/market/test_stock_id_helper.py
+@@ -0,0 +1,32 @@
++import pytest
++from modules.market.api import StockIDHelper
++
++class TestStockIDHelper:
++    def test_stock_id_helper_valid(self):
++        assert StockIDHelper.is_valid_stock_id("stock_101") is True
++        assert StockIDHelper.parse_firm_id("stock_101") == 101
++        assert StockIDHelper.format_stock_id(101) == "stock_101"
++
++    def test_stock_id_helper_invalid(self):
++        # Invalid prefix
++        assert StockIDHelper.is_valid_stock_id("bond_101") is False
++        with pytest.raises(ValueError):
++            StockIDHelper.parse_firm_id("bond_101")
++
++        # Invalid format (no separator)
++        assert StockIDHelper.is_valid_stock_id("stock101") is False
++        with pytest.raises(ValueError):
++            StockIDHelper.parse_firm_id("stock101")
++
++        # Invalid ID part (not digit)
++        assert StockIDHelper.is_valid_stock_id("stock_abc") is False
++        with pytest.raises(ValueError):
++            StockIDHelper.parse_firm_id("stock_abc")
++
++        # Legacy format (just ID) - strict mode fails
++        assert StockIDHelper.is_valid_stock_id("101") is False
++        with pytest.raises(ValueError):
++            StockIDHelper.parse_firm_id("101")
++
++    def test_format_stock_id_handles_string(self):
++        assert StockIDHelper.format_stock_id("101") == "stock_101"
+diff --git a/tests/unit/modules/government/components/test_fiscal_policy_manager.py b/tests/unit/modules/government/components/test_fiscal_policy_manager.py
+index 93d077d3..8e4f738f 100644
+--- a/tests/unit/modules/government/components/test_fiscal_policy_manager.py
++++ b/tests/unit/modules/government/components/test_fiscal_policy_manager.py
+@@ -31,24 +31,22 @@ class TestFiscalPolicyManager:
+ 
+         # Verify
+         # Survival cost = 1000.0 * 1.0 = 1000
+-        # Bracket 1: Ceiling = 1.0 * 1000 = 1000
+-        # Bracket 2: Ceiling = 3.0 * 1000 = 3000
++        # Bracket 1: Threshold = 0 (Start)
++        # Bracket 2: Threshold = 1.0 * 1000 = 1000
++        # Bracket 3: Threshold = 3.0 * 1000 = 3000
+ 
+-        assert len(policy.progressive_tax_brackets) == 3
++        assert len(policy.tax_brackets) == 3
+ 
+-        b1 = policy.progressive_tax_brackets[0]
+-        assert b1.floor == 0.0
+-        assert b1.ceiling == 1000.0
++        b1 = policy.tax_brackets[0]
++        assert b1.threshold == 0
+         assert b1.rate == 0.0
+ 
+-        b2 = policy.progressive_tax_brackets[1]
+-        assert b2.floor == 1000.0
+-        assert b2.ceiling == 3000.0
++        b2 = policy.tax_brackets[1]
++        assert b2.threshold == 1000
+         assert b2.rate == 0.10
+ 
+-        b3 = policy.progressive_tax_brackets[2]
+-        assert b3.floor == 3000.0
+-        assert b3.ceiling is None
++        b3 = policy.tax_brackets[2]
++        assert b3.threshold == 3000
+         assert b3.rate == 0.20
+ 
+     def test_determine_fiscal_stance_defaults_if_no_config(self):
+@@ -64,37 +62,50 @@ class TestFiscalPolicyManager:
+         policy = manager.determine_fiscal_stance(snapshot)
+ 
+         # Should use defaults (1.0/0.0, 3.0/0.10, inf/0.20)
+-        assert len(policy.progressive_tax_brackets) == 3
+-        assert policy.progressive_tax_brackets[1].rate == 0.10
++        assert len(policy.tax_brackets) == 3
++        assert policy.tax_brackets[1].rate == 0.10
+ 
+     def test_calculate_tax_liability_progressive(self, manager):
+         # Setup
++        # Brackets: 0-10 free, 10-30 @ 10%, 30+ @ 20%
+         brackets = [
+-            TaxBracketDTO(floor=0.0, rate=0.0, ceiling=10.0),
+-            TaxBracketDTO(floor=10.0, rate=0.10, ceiling=30.0),
+-            TaxBracketDTO(floor=30.0, rate=0.20, ceiling=None)
++            TaxBracketDTO(threshold=0, rate=0.0),
++            TaxBracketDTO(threshold=10, rate=0.10),
++            TaxBracketDTO(threshold=30, rate=0.20)
+         ]
+-        policy = FiscalPolicyDTO(progressive_tax_brackets=brackets)
+-
+-        # Test Case 1: Income below first ceiling (Tax Free)
+-        assert manager.calculate_tax_liability(policy, 5.0) == 0.0
+-
+-        # Test Case 2: Income exactly at first ceiling
+-        assert manager.calculate_tax_liability(policy, 10.0) == 0.0
+-
+-        # Test Case 3: Income in second bracket (10%)
+-        # Income 20. Taxable: 20 - 10 = 10. Tax: 10 * 0.10 = 1.0
+-        assert manager.calculate_tax_liability(policy, 20.0) == 1.0
+-
+-        # Test Case 4: Income exactly at second ceiling
+-        # Income 30. Bracket 1: 0. Bracket 2: (30-10)*0.1 = 2.0.
+-        assert manager.calculate_tax_liability(policy, 30.0) == 2.0
+-
+-        # Test Case 5: Income in third bracket (20%)
+-        # Income 40. Bracket 1: 0. Bracket 2: 2.0. Bracket 3: (40-30)*0.2 = 2.0. Total = 4.0
+-        assert manager.calculate_tax_liability(policy, 40.0) == 4.0
++        policy = FiscalPolicyDTO(tax_brackets=brackets)
++
++        # Test Case 1: Income below first threshold (5) -> Wait, threshold 0.
++        # 5 > 0. Taxable 5. Rate 0. Tax 0.
++        assert manager.calculate_tax_liability(policy, 5) == 0
++
++        # Test Case 2: Income exactly at second threshold (10)
++        # 10 > 0. Taxable 10. Rate 0. Tax 0.
++        assert manager.calculate_tax_liability(policy, 10) == 0
++
++        # Test Case 3: Income in second bracket (20)
++        # 20. Sort DESC: 30, 10, 0.
++        # Bracket 30: 20 < 30. Skip.
++        # Bracket 10: 20 > 10. Taxable 10. Tax 10*0.1=1. Remainder 10.
++        # Bracket 0: 10 > 0. Taxable 10. Tax 10*0.0=0. Remainder 0.
++        # Total 1.
++        assert manager.calculate_tax_liability(policy, 20) == 1
++
++        # Test Case 4: Income exactly at third threshold (30)
++        # Bracket 30: 30 <= 30. Skip.
++        # Bracket 10: 30 > 10. Taxable 20. Tax 2. Remainder 10.
++        # Bracket 0: 10 > 0. Taxable 10. Tax 0.
++        # Total 2.
++        assert manager.calculate_tax_liability(policy, 30) == 2
++
++        # Test Case 5: Income in third bracket (40)
++        # Bracket 30: 40 > 30. Taxable 10. Tax 2. Remainder 30.
++        # Bracket 10: 30 > 10. Taxable 20. Tax 2. Remainder 10.
++        # Bracket 0: 10 > 0. Taxable 10. Tax 0.
++        # Total 4.
++        assert manager.calculate_tax_liability(policy, 40) == 4
+ 
+     def test_calculate_tax_liability_zero_or_negative(self, manager):
+-        policy = FiscalPolicyDTO(progressive_tax_brackets=[])
+-        assert manager.calculate_tax_liability(policy, 0.0) == 0.0
+-        assert manager.calculate_tax_liability(policy, -100.0) == 0.0
++        policy = FiscalPolicyDTO(tax_brackets=[])
++        assert manager.calculate_tax_liability(policy, 0) == 0
++        assert manager.calculate_tax_liability(policy, -100) == 0
