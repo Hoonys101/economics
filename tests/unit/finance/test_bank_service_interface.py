@@ -117,11 +117,7 @@ class TestBankServiceInterface:
         status = bank.get_debt_status(borrower_id)
 
         assert status.borrower_id == int(borrower_id)
-<<<<<<< HEAD
         assert status.total_outstanding_pennies == 150000
-=======
-        assert status.total_outstanding_pennies == 15000000
->>>>>>> origin/mod-lifecycle-recovery-315937193237767827
         assert len(status.loans) == 2
         assert status.is_insolvent is False
 

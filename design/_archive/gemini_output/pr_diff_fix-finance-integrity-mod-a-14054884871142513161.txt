@@ -50,20 +50,36 @@ index d7e88ea0..c53cecd8 100644
          # Map to legacy BondDTO for return signature compatibility
          bond_dto = BondDTO(
 diff --git a/modules/government/components/infrastructure_manager.py b/modules/government/components/infrastructure_manager.py
-index becac49b..ffeadae5 100644
+index becac49b..d914b956 100644
 --- a/modules/government/components/infrastructure_manager.py
 +++ b/modules/government/components/infrastructure_manager.py
-@@ -36,16 +36,17 @@ class InfrastructureManager:
+@@ -26,28 +26,30 @@ class InfrastructureManager:
+         else:
+             cost = DEFAULT_INFRASTRUCTURE_INVESTMENT_COST
  
-         if current_assets < effective_cost:
-             needed = int(effective_cost - current_assets)
-+            needed_pennies = needed * 100 # Convert dollars to pennies for FinanceSystem
+-        effective_cost = int(cost)
++        # Convert Dollars (Config) to Pennies (System)
++        # Assuming cost is in Dollars (e.g. 5000.0)
++        cost_pennies = int(cost * 100)
+ 
+         if self.government.firm_subsidy_budget_multiplier < 0.8:
+             return []
+ 
+         # Synchronous Financing (WO-117)
+-        current_assets = self.government.total_wealth
++        current_assets_pennies = self.government.total_wealth
+ 
+-        if current_assets < effective_cost:
+-            needed = int(effective_cost - current_assets)
++        if current_assets_pennies < cost_pennies:
++            needed_pennies = cost_pennies - current_assets_pennies
              # Use new synchronous method
              if hasattr(self.government.finance_system, 'issue_treasury_bonds_synchronous'):
 -                success, bond_txs = self.government.finance_system.issue_treasury_bonds_synchronous(self.government, needed, current_tick)
 +                success, bond_txs = self.government.finance_system.issue_treasury_bonds_synchronous(self.government, needed_pennies, current_tick)
                  if not success:
-                      logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed} for infrastructure.")
+-                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed} for infrastructure.")
++                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed_pennies} pennies for infrastructure.")
                       return []
                  transactions.extend(bond_txs)
              else:
@@ -71,14 +87,31 @@ index becac49b..ffeadae5 100644
 -                bonds, txs = self.government.finance_system.issue_treasury_bonds(needed, current_tick)
 +                bonds, txs = self.government.finance_system.issue_treasury_bonds(needed_pennies, current_tick)
                  if not bonds:
-                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed} for infrastructure.")
+-                    logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed} for infrastructure.")
++                    logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed_pennies} pennies for infrastructure.")
                      return []
-@@ -73,15 +74,16 @@ class InfrastructureManager:
+                 transactions.extend(txs)
+ 
+@@ -61,10 +63,11 @@ class InfrastructureManager:
+         if not active_households:
+              return transactions
+ 
+-        amount_per_hh = int(effective_cost / len(active_households))
++        # Distribute Pennies directly
++        amount_per_hh_pennies = int(cost_pennies / len(active_households))
+ 
+         recipient_ids = sorted([h.id for h in active_households])
+-        logger.debug(f"INFRA_DEBUG | Active HH: {len(active_households)}, Cost: {effective_cost}, AmountPerHH: {amount_per_hh}")
++        logger.debug(f"INFRA_DEBUG | Active HH: {len(active_households)}, Cost(p): {cost_pennies}, AmountPerHH(p): {amount_per_hh_pennies}")
+         logger.debug(f"INFRA_RECIPIENTS | IDs: {recipient_ids}")
+ 
+         for h in active_households:
+@@ -73,19 +76,20 @@ class InfrastructureManager:
                  seller_id=h.id,
                  item_id="infrastructure_labor",
                  quantity=1.0,
 -                price=amount_per_hh,
-+                price=float(amount_per_hh),
++                price=amount_per_hh_pennies / 100.0, # Convert pennies to dollars for display
                  market_id="system",
                  transaction_type="infrastructure_spending",
                  time=current_tick,
@@ -88,11 +121,45 @@ index becac49b..ffeadae5 100644
 -                }
 -            , total_pennies=int(amount_per_hh * 1.0 * 100))
 +                },
-+                total_pennies=int(amount_per_hh * 100)
++                total_pennies=amount_per_hh_pennies
 +            )
              transactions.append(tx)
  
          logger.info(
+-            f"INFRASTRUCTURE_PENDING | Level {self.government.infrastructure_level + 1} initiated. Cost: {effective_cost}. Distributed to {len(active_households)} households.",
++            f"INFRASTRUCTURE_PENDING | Level {self.government.infrastructure_level + 1} initiated. Cost: {cost}. Distributed to {len(active_households)} households.",
+             extra={
+                 "tick": current_tick,
+                 "agent_id": self.government.id,
+diff --git a/simulation/bank.py b/simulation/bank.py
+index 78978c19..40ea01e1 100644
+--- a/simulation/bank.py
++++ b/simulation/bank.py
+@@ -281,13 +281,20 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+              total_debt = sum(l.outstanding_balance for l in loans)
+              return DebtStatusDTO(
+                  borrower_id=int(borrower_id),
+-                 total_outstanding_debt=total_debt,
++                 total_outstanding_pennies=int(total_debt),
+                  loans=loans,
+                  is_insolvent=False,
+-                 next_payment_due=None,
+-                 next_payment_due_tick=None
++                 next_payment_pennies=0,
++                 next_payment_tick=0
+              )
+-        return DebtStatusDTO(borrower_id=int(borrower_id), total_outstanding_debt=0.0, loans=[], is_insolvent=False, next_payment_due=None, next_payment_due_tick=None)
++        return DebtStatusDTO(
++            borrower_id=int(borrower_id),
++            total_outstanding_pennies=0,
++            loans=[],
++            is_insolvent=False,
++            next_payment_pennies=0,
++            next_payment_tick=0
++        )
+ 
+     def terminate_loan(self, loan_id: str) -> Optional["Transaction"]:
+         return None
 diff --git a/simulation/models.py b/simulation/models.py
 index 474367e2..a6b88d1e 100644
 --- a/simulation/models.py
@@ -133,7 +200,7 @@ index 474367e2..a6b88d1e 100644
  @dataclass
  class Share:
 diff --git a/tests/integration/test_fiscal_integrity.py b/tests/integration/test_fiscal_integrity.py
-index 969ec3de..9ee8f001 100644
+index 969ec3de..798a69e3 100644
 --- a/tests/integration/test_fiscal_integrity.py
 +++ b/tests/integration/test_fiscal_integrity.py
 @@ -39,7 +39,12 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
@@ -150,42 +217,52 @@ index 969ec3de..9ee8f001 100644
      bank.settlement_system = settlement_system
      bank.set_government(gov) # Bank needs gov reference
  
-@@ -89,8 +94,19 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
+@@ -89,8 +94,17 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
      # The SPENDING (5000) is returned as transactions, NOT executed immediately.
      # So Gov assets should be 1000 + 4000 = 5000.
  
 -    assert settlement_system.get_balance(gov.id) == 5000.0
 -    assert settlement_system.get_balance(bank.id) == 6000.0 # 10000 - 4000
-+    # 1000 initial + 4000 bonds = 5000 pennies (since setup uses low values as pennies)
-+    # wait, Government(initial_assets=1000.0) -> 1000 pennies.
-+    # Cost is 5000.0 (dollars? or pennies?).
-+    # MockConfig says INFRASTRUCTURE_INVESTMENT_COST = 5000.0
-+    # InfrastructureManager uses int(cost) -> 5000 pennies.
-+    # Needed: 5000 - 1000 = 4000 pennies.
-+    # Bond Issuance: 4000 pennies.
-+    # Gov Balance: 1000 + 4000 = 5000 pennies.
++    # 1000 initial + 499,000 bonds = 500,000 pennies.
++    # Cost is 5000.0 Dollars -> 500,000 Pennies.
++    # Assets 1000 Pennies.
++    # Needed 499,000 Pennies.
++    # Bond Issuance: 499,000 Pennies.
++    # Gov Balance: 1000 + 499,000 = 500,000 Pennies.
 +
-+    assert settlement_system.get_balance(gov.id) == 5000
++    assert settlement_system.get_balance(gov.id) == 500000
 +
-+    # Bank Balance: 1,000,000 - 4000 = 996,000
-+    assert settlement_system.get_balance(bank.id) == 996000
++    # Bank Balance: 1,000,000 - 499,000 = 501,000
++    assert settlement_system.get_balance(bank.id) == 501000
  
      # 2. Transactions
      # TD-177: Transactions now include bond purchase (4000) and infrastructure spending (5000)
-@@ -101,12 +117,14 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
+@@ -101,12 +115,14 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
  
      assert len(spending_txs) > 0
      total_payout = sum(tx.price * tx.quantity for tx in spending_txs)
--    assert total_payout == 5000.0
-+    # 5000 pennies = 50.00 dollars
-+    assert total_payout == 50.0
++    # 500,000 pennies = 5000.00 dollars
+     assert total_payout == 5000.0
  
      # Verify bond transactions were captured
      if bond_txs:
           total_raised = sum(tx.price * tx.quantity for tx in bond_txs)
 -         assert total_raised == 4000.0
-+         # 4000 pennies = 40.00 dollars
-+         assert total_raised == 40.0
++         # 499,000 pennies = 4990.00 dollars
++         assert total_raised == 4990.0
  
      # 3. Transaction Details
      tx = spending_txs[0]
+diff --git a/tests/unit/finance/test_bank_service_interface.py b/tests/unit/finance/test_bank_service_interface.py
+index 8939eaaa..e64cc647 100644
+--- a/tests/unit/finance/test_bank_service_interface.py
++++ b/tests/unit/finance/test_bank_service_interface.py
+@@ -117,7 +117,7 @@ class TestBankServiceInterface:
+         status = bank.get_debt_status(borrower_id)
+ 
+         assert status.borrower_id == int(borrower_id)
+-        assert status.total_outstanding_debt == 150000.0
++        assert status.total_outstanding_pennies == 150000
+         assert len(status.loans) == 2
+         assert status.is_insolvent is False
+ 

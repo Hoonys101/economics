@@ -49,19 +49,9 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
                 debt_data_entry["daily_interest_burden"] = total_burden
 
                 if is_dataclass(debt_status):
-<<<<<<< HEAD
                     debt_data_entry["total_principal"] = debt_status.total_outstanding_pennies
                 else:
                     debt_data_entry["total_principal"] = debt_status.get("total_outstanding_pennies", 0)
-=======
-                    debt_data_entry["total_principal"] = debt_status.total_outstanding_pennies / 100.0
-                else:
-                    pennies = debt_status.get("total_outstanding_pennies")
-                    if pennies is not None:
-                        debt_data_entry["total_principal"] = pennies / 100.0
-                    else:
-                        debt_data_entry["total_principal"] = debt_status.get("total_outstanding_debt", 0.0)
->>>>>>> origin/mod-lifecycle-recovery-315937193237767827
 
                 debt_data_map[agent_id] = debt_data_entry
                 deposit_data_map[agent_id] = state.bank.get_balance(str(agent_id))

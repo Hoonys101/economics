@@ -1,21 +1,3 @@
-🕵️  Reviewing Code with instruction: 'Analyze this PR.'...
-📖 Attached context: C:\coding\economics\design\_archive\gemini_output\pr_diff_fix-finance-integrity-mod-a-14054884871142513161.txt
-📖 Attached context: design\1_governance\architecture\ARCH_TRANSACTIONS.md
-📖 Attached context: design\1_governance\architecture\standards\FINANCIAL_INTEGRITY.md
-📖 Attached context: design\1_governance\architecture\ARCH_TESTS.md
-📖 Attached context: design\1_governance\architecture\standards\INDEX.md
-📖 Attached context: design\1_governance\architecture\standards\TESTING_STABILITY.md
-📖 Attached context: design\2_operations\ledgers\TECH_DEBT_LEDGER.md
-📖 Attached context: modules\government\api.py
-📖 Attached context: modules\finance\api.py
-📖 Attached context: modules\government\dtos.py
-📖 Attached context: modules\finance\dtos.py
-📖 Attached context: simulation\dtos\api.py
-📖 Attached context: modules\system\api.py
-🚀 [GeminiWorker] Running task with manual: git-review.md
-
-📝 [Review Report]
-============================================================
 # Code Review Report
 
 ## 🔍 Summary
@@ -55,5 +37,3 @@ This PR addresses critical financial integrity issues by enforcing the **Penny S
 
 ## ✅ Verdict
 **APPROVE**
-============================================================
-✅ Review Saved: C:\coding\economics\design\_archive\gemini_output\review_backup_20260221_190405_Analyze_this_PR.md
