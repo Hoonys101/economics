@@ -8,29 +8,19 @@ try:
 except ImportError:
     pass
 
-from modules.system.registry import GlobalRegistry, OriginType
+from modules.system.config_api import current_config, OriginType
 import config.defaults as defaults
 
-# FOUND-01: GlobalRegistry Integration
-_registry = GlobalRegistry()
+# Bootstrap defaults into the global registry
+current_config.bootstrap_from_module(defaults)
 
-def _init_registry():
+# Expose registry instance for advanced usage (legacy support)
+registry = current_config.get_registry()
+
+def _load_simulation_yaml():
     """
-    Populates GlobalRegistry from defaults module and simulation.yaml.
+    Loads simulation.yaml into the configuration.
     """
-    # 1. Load System Defaults from config/defaults.py
-    for key in dir(defaults):
-        # Heuristic: Uppercase for constants
-        if key.isupper():
-            val = getattr(defaults, key)
-            _registry.set(key, val, OriginType.SYSTEM)
-
-        # Explicitly handle EngineType Enum
-        if key == "EngineType":
-            val = getattr(defaults, key)
-            _registry.set(key, val, OriginType.SYSTEM)
-
-    # 2. Load simulation.yaml
     try:
         import yaml
         yaml_path = os.path.join(os.path.dirname(__file__), "simulation.yaml")
@@ -40,24 +30,24 @@ def _init_registry():
                 if yaml_config:
                     for k, v in yaml_config.items():
                         # Update registry with CONFIG origin
-                        _registry.set(k.upper(), v, OriginType.CONFIG)
+                        current_config.set(k.upper(), v, OriginType.CONFIG)
     except Exception as e:
         sys.stderr.write(f"Warning: Failed to load simulation.yaml: {e}\n")
 
-_init_registry()
+# Load YAML immediately
+_load_simulation_yaml()
 
 # Proxy for access
 def __getattr__(name):
-    val = _registry.get(name)
-    if val is not None:
-        return val
-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+    # Delegate to ConfigProxy which handles None values correctly via get_entry
+    # We must call getattr directly on the instance to trigger its __getattr__
+    try:
+        return getattr(current_config, name)
+    except AttributeError:
+        raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 def __dir__():
-    return list(_registry.snapshot().keys()) + ["registry"]
-
-# Expose registry instance for advanced usage
-registry = _registry
+    return list(current_config.snapshot().keys()) + ["registry"]
 
 # Type hinting support for static analysis (optional/partial)
 if TYPE_CHECKING:

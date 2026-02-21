@@ -31,3 +31,22 @@ def test_config_engine_type_access():
     from config.defaults import EngineType
     assert config.EngineType == EngineType
     assert config.EngineType.AI_DRIVEN == EngineType.AI_DRIVEN
+
+def test_defaults_loaded():
+    """
+    Verifies that a value present in config/defaults.py but not in simulation.yaml
+    is correctly loaded.
+    """
+    # FORMULA_TECH_LEVEL is 0.0 in defaults.py and not in simulation.yaml
+    assert hasattr(config, "FORMULA_TECH_LEVEL")
+    assert config.FORMULA_TECH_LEVEL == 0.0
+
+def test_none_handling():
+    """
+    Verifies that None values are handled correctly and don't trigger AttributeError.
+    """
+    registry.set("TEST_NONE_KEY", None, OriginType.CONFIG)
+    assert config.TEST_NONE_KEY is None
+
+    with pytest.raises(AttributeError):
+        _ = config.REALLY_MISSING_KEY

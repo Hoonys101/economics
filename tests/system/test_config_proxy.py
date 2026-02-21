@@ -28,8 +28,10 @@ def test_override():
     assert proxy.TAX_RATE == 0.2
 
     # Check if internal registry updated
-    assert proxy._registry["TAX_RATE"].value == 0.2
-    assert proxy._registry["TAX_RATE"].origin == OriginType.USER
+    # GlobalRegistry access via get_registry() and get_entry()
+    entry = proxy.get_registry().get_entry("TAX_RATE")
+    assert entry.value == 0.2
+    assert entry.origin == OriginType.USER
 
 def test_reset_to_defaults():
     proxy = ConfigProxy()
@@ -41,8 +43,10 @@ def test_reset_to_defaults():
     proxy.reset_to_defaults()
     assert proxy.TAX_RATE == 0.1
 
-    # Ensure registry entry is gone (implementation deletes it)
-    assert "TAX_RATE" not in proxy._registry
+    # Ensure registry entry is back to SYSTEM origin
+    entry = proxy.get_registry().get_entry("TAX_RATE")
+    assert entry.value == 0.1
+    assert entry.origin == OriginType.SYSTEM
 
 def test_observer():
     proxy = ConfigProxy()
@@ -61,7 +65,9 @@ def test_snapshot():
     assert snap["TAX_RATE"] == 0.1
     assert snap["MAX_TICKS"] == 100
     assert snap["NEW_KEY"] == 999
-    assert "lower_case_key" not in snap # Should filter out non-uppercase
+    # GlobalRegistry snapshot only includes active entries.
+    # lower_case_key was NOT added to registry in bootstrap_from_module because of isupper() check.
+    assert "lower_case_key" not in snap
 
 def test_get_method():
     proxy = ConfigProxy()
@@ -77,7 +83,8 @@ def test_lock_mechanism():
     proxy = ConfigProxy()
     # Lock a key
     proxy.set("LOCKED_KEY", 100, OriginType.CONFIG)
-    proxy._registry["LOCKED_KEY"].is_locked = True
+    # Use GlobalRegistry lock mechanism
+    proxy.get_registry().lock("LOCKED_KEY")
 
     # Try to overwrite with lower/same priority
     with pytest.raises(PermissionError):
