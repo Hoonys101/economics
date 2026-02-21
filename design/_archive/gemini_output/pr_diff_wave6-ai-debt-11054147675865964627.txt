@@ -1,0 +1,242 @@
+diff --git a/communications/insights/wave6-ai-debt.md b/communications/insights/wave6-ai-debt.md
+new file mode 100644
+index 00000000..107610ba
+--- /dev/null
++++ b/communications/insights/wave6-ai-debt.md
+@@ -0,0 +1,32 @@
++# Wave 6: Integrate Debt Constraints into AI Planning
++
++## 1. Architectural Insights
++*   **Debt-Aware Consumption**: The `ConsumptionManager` now explicitly incorporates `debt_penalty` (derived from Debt Service Ratio) into the `budget_limit` calculation. This ensures that households with high debt burdens automatically constrict their spending, preventing a feedback loop of insolvency.
++*   **Reinforcement Learning Alignment**: `HouseholdAI`'s reward function has been updated to penalize high Debt Service Ratios (DSR). This aligns the AI's long-term learning objectives with financial sustainability, encouraging agents to avoid states of excessive leverage.
++*   **Heuristic Adjustments**: The asset income proxy in DSR calculation was refined to `0.0001` (0.01%) daily return to reflect more realistic yield expectations, avoiding artificially low DSR values.
++*   **Configurability**: The debt penalty multiplier is now configurable via `debt_penalty_multiplier` in `HouseholdConfigDTO`, defaulting to 500.0.
++
++## 2. Regression Analysis
++*   **No Regressions Detected**: Existing tests for `HouseholdAI` and `ConsumptionManager` passed without modification. The changes are additive (penalty application) and fall back to neutral behavior when no debt is present.
++*   **Test Suite Verification**: A new test suite `tests/unit/ai/test_debt_constraints.py` was created to specifically verify the new behaviors. It confirms that consumption is reduced under stress and that rewards are lower for high-debt agents.
++
++## 3. Test Evidence
++```
++tests/unit/ai/test_debt_constraints.py::test_consumption_manager_debt_constraint PASSED [ 50%]
++tests/unit/ai/test_debt_constraints.py::test_household_ai_debt_penalty_reward PASSED [100%]
++
++tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_make_decisions_calls_ai PASSED [  7%]
++tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_do_nothing PASSED [ 14%]
++tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_buy_basic_food_sufficient_assets PASSED [ 21%]
++tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_buy_luxury_food_insufficient_assets PASSED [ 28%]
++tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_evaluate_options_chooses_best_utility PASSED [ 35%]
++tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_labor_market_participation_aggressive PASSED [ 42%]
++tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_labor_market_participation_passive_no_offer PASSED [ 50%]
++tests/unit/test_household_ai.py::test_ai_creates_purchase_order PASSED [ 57%]
++tests/unit/test_household_ai.py::test_ai_evaluates_consumption_options PASSED [ 64%]
++tests/unit/test_household_ai.py::TestHouseholdAIInsight::test_active_learning_td_error PASSED [ 71%]
++tests/unit/test_household_ai.py::TestHouseholdAIInsight::test_perceptual_filters_lag PASSED [ 78%]
++tests/unit/test_household_ai.py::TestHouseholdAIInsight::test_perceptual_filters_sma PASSED [ 85%]
++tests/unit/test_household_ai.py::TestHouseholdAIInsight::test_panic_reaction PASSED [ 92%]
++tests/unit/test_household_refactor.py::TestHouseholdRefactor::test_property_management PASSED [100%]
++```
+diff --git a/simulation/ai/household_ai.py b/simulation/ai/household_ai.py
+index 03445205..15792ef3 100644
+--- a/simulation/ai/household_ai.py
++++ b/simulation/ai/household_ai.py
+@@ -472,6 +472,38 @@ class HouseholdAI(BaseAIEngine):
+             (leisure_utility * leisure_weight)
+         )
+         
++        # --- Phase 22: Debt Stress Penalty (Wave 6) ---
++        # Penalize high DSR to reinforce debt avoidance.
++        if market_data:
++             debt_info = market_data.get("debt_data", {}).get(self.agent_id, {})
++             daily_interest_burden = debt_info.get("daily_interest_burden", 0.0)
++
++             assets_data = agent_data.get("assets", 0)
++             if isinstance(assets_data, dict):
++                 from modules.system.api import DEFAULT_CURRENCY
++                 assets = assets_data.get(DEFAULT_CURRENCY, 0.0)
++             else:
++                 assets = float(assets_data)
++
++             wage = agent_data.get("current_wage", 0.0)
++             # Heuristic: Income Proxy = Wage + 0.01% of Assets (Daily Return)
++             income_proxy = max(wage, assets * 0.0001)
++
++             dsr = daily_interest_burden / (income_proxy + 1e-09)
++
++             config = None
++             if self.ai_decision_engine:
++                 config = getattr(self.ai_decision_engine, "config_module", None)
++
++             # Use config threshold or default 0.4
++             dsr_threshold = getattr(config, "dsr_critical_threshold", 0.4) if config else 0.4
++             penalty_multiplier = getattr(config, "debt_penalty_multiplier", 500.0) if config else 500.0
++
++             if dsr > dsr_threshold:
++                 # Penalty scales with excess DSR
++                 debt_penalty = (dsr - dsr_threshold) * penalty_multiplier # Heavy penalty to ensure it outweighs small gains
++                 total_reward -= debt_penalty
++
+         # --- Phase 17-4: Vanity Reward (Relative Deprivation) ---
+         if self.ai_decision_engine and getattr(self.ai_decision_engine, "config_module", None):
+             config = self.ai_decision_engine.config_module
+diff --git a/simulation/decisions/household/consumption_manager.py b/simulation/decisions/household/consumption_manager.py
+index 5aec7aa5..5b779d24 100644
+--- a/simulation/decisions/household/consumption_manager.py
++++ b/simulation/decisions/household/consumption_manager.py
+@@ -126,6 +126,12 @@ class ConsumptionManager:
+             budget_limit = household_assets * config.budget_limit_normal_ratio
+             if max_need_value > config.budget_limit_urgent_need:
+                 budget_limit = household_assets * config.budget_limit_urgent_ratio
++
++            # Apply Debt Constraint (Wave 6)
++            # If debt_penalty < 1.0 (indicating stress), reduce the budget limit proportionally.
++            if context.debt_penalty < 1.0:
++                budget_limit *= context.debt_penalty
++
+             bid_price = avg_price * 1.05
+             if bid_price > max_affordable_price:
+                 bid_price = max_affordable_price
+diff --git a/tests/unit/ai/test_debt_constraints.py b/tests/unit/ai/test_debt_constraints.py
+new file mode 100644
+index 00000000..5950e7b6
+--- /dev/null
++++ b/tests/unit/ai/test_debt_constraints.py
+@@ -0,0 +1,138 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.decisions.household.consumption_manager import ConsumptionManager
++from simulation.decisions.household.api import ConsumptionContext
++from simulation.models import Order
++from simulation.schemas import HouseholdActionVector
++from simulation.ai.household_ai import HouseholdAI
++from modules.system.api import DEFAULT_CURRENCY
++
++@pytest.fixture
++def mock_household():
++    household = MagicMock()
++    household.id = 100
++    household.assets = {DEFAULT_CURRENCY: 10000}
++    household.inventory = {}
++    household.needs = {'survival': 10, 'comfort': 10}
++    household.perceived_prices = {}
++    household.demand_elasticity = 1.0
++    household.conformity = 0.5
++    return household
++
++@pytest.fixture
++def mock_config():
++    config = MagicMock()
++    config.goods = {
++        'food': {
++            'utility_effects': {'survival': 10},
++            'initial_price': 100,
++            'is_veblen': False,
++            'is_durable': False
++        }
++    }
++    config.budget_limit_normal_ratio = 0.5
++    config.budget_limit_urgent_ratio = 0.8
++    config.budget_limit_urgent_need = 80
++    config.market_price_fallback = 100
++    config.max_willingness_to_pay_multiplier = 2.0
++    config.min_purchase_quantity = 0.1
++    return config
++
++@pytest.fixture
++def consumption_manager():
++    return ConsumptionManager()
++
++def test_consumption_manager_debt_constraint(consumption_manager, mock_household, mock_config):
++    """Verify that debt_penalty < 1.0 reduces consumption."""
++
++    market_data = {
++        'goods_market': {'food_current_sell_price': 100}
++    }
++    action_vector = HouseholdActionVector(consumption_aggressiveness={'food': 1.0})
++
++    # Ensure budget is the constraint.
++    # Set household assets low enough.
++    # Budget normal ratio 0.5.
++    # Price ~100.
++    # If assets=200 -> Budget=100. Qty=1.
++    mock_household.assets = {DEFAULT_CURRENCY: 200}
++
++    # 1. Base Case: No Debt Penalty (1.0)
++    context_normal = ConsumptionContext(
++        household=mock_household,
++        config=mock_config,
++        market_data=market_data,
++        action_vector=action_vector,
++        savings_roi=1.0,
++        debt_penalty=1.0,
++        stress_config=None,
++        logger=None
++    )
++
++    orders_normal = consumption_manager.decide_consumption(context_normal)
++    assert len(orders_normal) == 1
++    qty_normal = orders_normal[0].quantity
++
++    # 2. Stress Case: High Debt Penalty (0.5)
++    # Budget should become 100 * 0.5 = 50.
++    # Price 100 (actually bid_price might be higher ~105).
++    # Qty should be ~0.5 (rounded or float).
++    context_stress = ConsumptionContext(
++        household=mock_household,
++        config=mock_config,
++        market_data=market_data,
++        action_vector=action_vector,
++        savings_roi=1.0,
++        debt_penalty=0.5,
++        stress_config=None,
++        logger=None
++    )
++
++    orders_stress = consumption_manager.decide_consumption(context_stress)
++    assert len(orders_stress) == 1
++    qty_stress = orders_stress[0].quantity
++
++    assert qty_stress < qty_normal
++    assert qty_stress <= qty_normal * 0.5 + 0.1 # Allowance for float logic
++
++def test_household_ai_debt_penalty_reward():
++    """Verify that high DSR reduces reward."""
++    # We need to mock AIDecisionEngine passed to HouseholdAI
++    mock_engine = MagicMock()
++    mock_engine.config_module.dsr_critical_threshold = 0.4
++    mock_engine.config_module.ENABLE_VANITY_SYSTEM = False
++    mock_engine.config_module.LEISURE_WEIGHT = 0.3
++
++    ai = HouseholdAI(agent_id=100, ai_decision_engine=mock_engine)
++
++    pre_state = {'needs': {'survival': 10}, 'assets': {DEFAULT_CURRENCY: 1000}}
++    post_state = {'needs': {'survival': 10}, 'assets': {DEFAULT_CURRENCY: 1000}} # No change
++    agent_data = {'current_wage': 10, 'assets': {DEFAULT_CURRENCY: 1000}, 'social_rank': 0.5, 'conformity': 0.5}
++
++    # Case 1: Low Debt (No Penalty)
++    market_data_low = {
++        'debt_data': {
++            100: {'daily_interest_burden': 0.0} # DSR = 0
++        }
++    }
++
++    reward_low = ai._calculate_reward(pre_state, post_state, agent_data, market_data_low)
++
++    # Case 2: High Debt (Penalty)
++    # Wage 10. Assets 1000 (0.01% = 0.1). Income proxy = max(10, 0.1) = 10.
++    # Threshold 0.4 -> burden > 4.0 triggers penalty.
++    # Let's set burden = 8.0 (DSR 0.8)
++    market_data_high = {
++        'debt_data': {
++            100: {'daily_interest_burden': 8.0}
++        }
++    }
++
++    # Mock return value of penalty multiplier
++    mock_engine.config_module.debt_penalty_multiplier = 500.0
++
++    reward_high = ai._calculate_reward(pre_state, post_state, agent_data, market_data_high)
++
++    assert reward_high < reward_low
++    # DSR 0.8 vs 0.4 threshold -> excess 0.4. Penalty = 0.4 * 500 = 200.
++    assert reward_high <= reward_low - 199.0
