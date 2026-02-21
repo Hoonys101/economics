@@ -4,7 +4,11 @@ import websockets
 import threading
 import time
 import socket
+from unittest.mock import MagicMock
 from modules.system.server import SimulationServer
+
+if isinstance(websockets, MagicMock):
+    pytest.skip("websockets is mocked, skipping server auth tests", allow_module_level=True)
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
 from modules.simulation.dtos.api import ServerConfigDTO
 
