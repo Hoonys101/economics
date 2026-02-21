@@ -1,0 +1,1778 @@
+audits\audit_consequences.py:15:class MockAuditAgent:
+config\defaults.py:85:class EngineType(Enum):
+config\defaults.py:724:    (1.0, 0.05),  # Working Class: 5% (was 10%)
+config\defaults.py:725:    (3.0, 0.10),  # Middle Class: 10% (was 20%)
+dashboard\components\visuals.py:7:class BaseVisualizer:
+dashboard\components\visuals.py:18:class ScenarioCardVisualizer(BaseVisualizer):
+dashboard\components\visuals.py:46:class AgentHeatmapVisualizer(BaseVisualizer):
+dashboard\services\registry_service.py:5:class RegistryService:
+dashboard\services\socket_manager.py:8:from dataclasses import asdict
+dashboard\services\socket_manager.py:12:class SocketManager:
+design\3_work_artifacts\hunt_leak.py:13:class TestBirthLeak(unittest.TestCase):
+frontend\node_modules\flatted\python\flatted.py:19:class _Known:
+frontend\node_modules\flatted\python\flatted.py:24:class _String:
+modules\agent_framework\api.py:5:This module facilitates the decomposition of God Class Agents (Firm/Household)
+modules\agent_framework\api.py:10:from dataclasses import dataclass
+modules\agent_framework\api.py:15:@dataclass(frozen=True)
+modules\agent_framework\api.py:16:class ComponentConfigDTO:
+modules\agent_framework\api.py:22:class IAgentComponent(Protocol):
+modules\agent_framework\api.py:36:class IInventoryComponent(IInventoryHandler, Protocol):
+modules\agent_framework\api.py:58:class IFinancialComponent(IFinancialEntity, Protocol):
+modules\agent_framework\api.py:76:class ITransactionOrchestrator(Protocol):
+modules\agent_framework\api.py:90:@dataclass
+modules\agent_framework\api.py:91:class InventoryStateDTO:
+modules\agent_framework\api.py:97:@dataclass
+modules\agent_framework\api.py:98:class FinancialStateDTO:
+modules\agent_framework\components\financial_component.py:16:class FinancialComponent(IFinancialComponent, ICreditFrozen):
+modules\agent_framework\components\inventory_component.py:15:class InventoryComponent(IInventoryComponent):
+modules\analysis\api.py:3:from dataclasses import dataclass
+modules\analysis\api.py:8:@dataclass
+modules\analysis\api.py:9:class CrisisDistributionDTO:
+modules\analysis\api.py:18:class VerificationConfigDTO(TypedDict):
+modules\analysis\api.py:28:class StormReportDTO(TypedDict):
+modules\analysis\api.py:39:class PhenomenonEventDTO(TypedDict):
+modules\analysis\api.py:48:class ResilienceIndexDTO(TypedDict):
+modules\analysis\api.py:56:class PolicySynergyMetrics(TypedDict):
+modules\analysis\api.py:63:class PhenomenaReportDTO(TypedDict):
+modules\analysis\api.py:73:class DetectorConfigDTO(TypedDict):
+modules\analysis\api.py:79:class AnalysisConfigDTO(TypedDict):
+modules\analysis\api.py:86:class IDetector(Protocol):
+modules\analysis\api.py:96:class IAnalyzer(Protocol):
+modules\analysis\bubble_observatory.py:14:class BubbleMetricsCalculator:
+modules\analysis\bubble_observatory.py:140:class BubbleObservatory(IBubbleObservatory):
+modules\analysis\crisis_monitor.py:12:class CrisisMonitor:
+modules\analysis\detectors\circuit_breaker_detector.py:5:class CircuitBreakerDetector(IDetector):
+modules\analysis\detectors\economic_health_detector.py:6:class EconomicHealthDetector(IDetector):
+modules\analysis\detectors\liquidity_crisis_detector.py:5:class LiquidityCrisisDetector(IDetector):
+modules\analysis\detectors\policy_effectiveness_detector.py:5:class PolicyEffectivenessDetector(IDetector):
+modules\analysis\detectors\solvency_detector.py:5:class SolvencyDetector(IDetector):
+modules\analysis\fiscal_monitor.py:4:class FiscalMonitor(IFiscalMonitor):
+modules\analysis\phenomena_analyzer.py:13:class PhenomenaAnalyzer(IAnalyzer):
+modules\analysis\phenomena_analyzer.py:34:            # Expecting 'package.subpackage.ClassName'
+modules\analysis\phenomena_analyzer.py:36:            class_name = parts[-1]
+modules\analysis\phenomena_analyzer.py:40:            module_name = re.sub(r'(?<!^)(?=[A-Z])', '_', class_name).lower()
+modules\analysis\phenomena_analyzer.py:46:                detector_class = getattr(module, class_name)
+modules\analysis\phenomena_analyzer.py:48:                detector_instance = detector_class(det_conf)
+modules\analysis\scenario_verifier\api.py:2:from dataclasses import dataclass
+modules\analysis\scenario_verifier\api.py:5:class ScenarioStatus(Enum):
+modules\analysis\scenario_verifier\api.py:11:@dataclass(frozen=True)
+modules\analysis\scenario_verifier\api.py:12:class ScenarioReportDTO:
+modules\analysis\scenario_verifier\api.py:23:class IScenarioJudge(Protocol):
+modules\analysis\scenario_verifier\engine.py:10:class ScenarioVerifier:
+modules\analysis\scenario_verifier\engine.py:14:        # Using class name or specific ID if judge exposes it. Assuming class name for now or judge.id if implemented.
+modules\analysis\scenario_verifier\engine.py:16:        self._active_scenarios: List[str] = [j.__class__.__name__ for j in judges]
+modules\analysis\scenario_verifier\engine.py:28:                logger.debug(f"Judge {judge.__class__.__name__} subscribed to {required}")
+modules\analysis\scenario_verifier\engine.py:41:                logger.error(f"Error evaluating scenario with {judge.__class__.__name__}: {e}", exc_info=True)
+modules\analysis\scenario_verifier\engine.py:44:                    scenario_id=judge.__class__.__name__,
+modules\analysis\scenario_verifier\judges\sc001_female_labor.py:4:class FemaleLaborParticipationJudge:
+modules\analysis\storm_verifier.py:7:class StormVerifier:
+modules\analytics\dtos.py:3:class AgentTickAnalyticsDTO(TypedDict):
+modules\analytics\loader.py:15:class DataLoader:
+modules\api\protocols.py:4:class ICommandService(Protocol):
+modules\api\protocols.py:11:class ISectorAgent(Protocol):
+modules\common\config\api.py:9:from dataclasses import dataclass, replace as dataclass_replace
+modules\common\config\api.py:15:@dataclass(frozen=True)
+modules\common\config\api.py:16:class BaseConfigDTO:
+modules\common\config\api.py:18:    Base class for all configuration DTOs. `frozen=True` makes instances
+modules\common\config\api.py:24:@dataclass(frozen=True)
+modules\common\config\api.py:25:class GovernmentConfigDTO(BaseConfigDTO):
+modules\common\config\api.py:66:@dataclass(frozen=True)
+modules\common\config\api.py:67:class FinanceConfigDTO(BaseConfigDTO):
+modules\common\config\api.py:91:@dataclass(frozen=True)
+modules\common\config\api.py:92:class StockMarketConfigDTO(BaseConfigDTO):
+modules\common\config\api.py:127:@dataclass(frozen=True)
+modules\common\config\api.py:128:class HouseholdConfigDTO(BaseConfigDTO):
+modules\common\config\api.py:182:class IConfigManager(ABC):
+modules\common\config\api.py:192:    def get_config(self, domain_name: str, dto_class: Type[T_ConfigDTO]) -> T_ConfigDTO:
+modules\common\config\api.py:198:            dto_class: The dataclass type to which the configuration should be deserialized.
+modules\common\config\api.py:235:    def register_domain(self, domain_name: str, dto_class: Type[T_ConfigDTO], default_data: Dict[str, Any]) -> None:
+modules\common\config\api.py:237:        Registers a new configuration domain, its DTO class, and default values.
+modules\common\config\api.py:242:            dto_class: The dataclass representing the domain's configuration.
+modules\common\config\impl.py:4:import dataclasses
+modules\common\config\impl.py:10:class ConfigManagerImpl(IConfigManager):
+modules\common\config\impl.py:39:    def get_config(self, domain_name: str, dto_class: Type[T_ConfigDTO]) -> T_ConfigDTO:
+modules\common\config\impl.py:44:        if not isinstance(config, dto_class):
+modules\common\config\impl.py:45:             raise TypeError(f"Config for domain '{domain_name}' is not of type {dto_class.__name__}, got {type(config).__name__}")
+modules\common\config\impl.py:59:    def register_domain(self, domain_name: str, dto_class: Type[T_ConfigDTO], default_data: Dict[str, Any]) -> None:
+modules\common\config\impl.py:61:            config = dto_class(**default_data)
+modules\common\config\impl.py:65:            raise ValueError(f"Failed to create {dto_class.__name__} from default data: {e}")
+modules\common\config\impl.py:111:            new_config = dataclasses.replace(current_config, **{attr: value})
+modules\common\config_manager\api.py:5:class ConfigManager:
+modules\common\config_manager\api.py:9:    not found in the YAML files. This class is designed as a leaf node and should not
+modules\common\config_manager\impl.py:13:class ConfigManagerImpl(ConfigManager):
+modules\common\dtos.py:1:from dataclasses import dataclass
+modules\common\dtos.py:4:@dataclass
+modules\common\dtos.py:5:class Claim:
+modules\common\interfaces.py:5:class IPropertyOwner(Protocol):
+modules\common\interfaces.py:16:class IResident(Protocol):
+modules\common\interfaces.py:22:class IMortgageBorrower(Protocol):
+modules\common\interfaces.py:29:class IInvestor(Protocol):
+modules\common\interfaces.py:34:class IIssuer(Protocol):
+modules\common\protocol.py:23:class ProtocolViolationError(Exception):
+modules\common\utils\logger.py:10:class CustomFormatter(logging.Formatter):
+modules\common\utils\logger.py:22:class ContextualFilter(logging.Filter):
+modules\common\utils\logger.py:40:class Logger:
+modules\common\utils\logging_manager.py:8:class TsvFormatter(logging.Formatter):
+modules\common\utils\logging_manager.py:25:class CsvFormatter(logging.Formatter):
+modules\common\utils\logging_manager.py:71:class SamplingFilter(logging.Filter):
+modules\common\utils\shadow_logger.py:8:class ShadowLogger:
+modules\demographics\api.py:11:class GenderStatsDTO(TypedDict):
+modules\demographics\api.py:20:class DemographicStatsDTO(TypedDict):
+modules\demographics\api.py:32:class IDemographicManager(Protocol):
+modules\demographics\genealogy\dtos.py:4:class AncestorDTO(BaseModel):
+modules\demographics\genealogy\dtos.py:10:class DescendantDTO(BaseModel):
+modules\demographics\genealogy\dtos.py:16:class GenealogyNodeDTO(BaseModel):
+modules\demographics\genealogy\dtos.py:24:class GenealogyTreeDTO(BaseModel):
+modules\demographics\genealogy\service.py:7:class GenealogyService:
+modules\demographics\genealogy\tests\test_genealogy.py:12:class MockRegistry:
+modules\events\dtos.py:3:class LoanDefaultedEvent(TypedDict):
+modules\events\dtos.py:15:class InsolvencyDeclaredEvent(TypedDict):
+modules\events\dtos.py:25:class DebtRestructuringRequiredEvent(TypedDict):
+modules\finance\api.py:3:from dataclasses import dataclass, field
+modules\finance\api.py:20:class Firm: pass
+modules\finance\api.py:21:class Household: pass # Assuming Household agent also interacts with the bank
+modules\finance\api.py:24:class IConfig(Protocol):
+modules\finance\api.py:29:class IFinancialEntity(Protocol):
+modules\finance\api.py:48:class IFinancialFirm(IFinancialEntity, Protocol):
+modules\finance\api.py:95:class IFinanceDepartment(Protocol):
+modules\finance\api.py:159:@dataclass
+modules\finance\api.py:160:class BondDTO:
+modules\finance\api.py:168:@dataclass(frozen=True)
+modules\finance\api.py:169:class BailoutCovenant:
+modules\finance\api.py:177:@dataclass
+modules\finance\api.py:178:class BailoutLoanDTO:
+modules\finance\api.py:185:@dataclass(frozen=True)
+modules\finance\api.py:186:class GrantBailoutCommand:
+modules\finance\api.py:195:@dataclass(frozen=True)
+modules\finance\api.py:196:class SettlementOrder:
+modules\finance\api.py:207:@dataclass(frozen=True)
+modules\finance\api.py:208:class PortfolioAsset:
+modules\finance\api.py:214:@dataclass(frozen=True)
+modules\finance\api.py:215:class PortfolioDTO:
+modules\finance\api.py:219:@dataclass(frozen=True)
+modules\finance\api.py:220:class TaxCollectionResult:
+modules\finance\api.py:231:@dataclass(frozen=True)
+modules\finance\api.py:232:class LoanInfoDTO:
+modules\finance\api.py:248:@dataclass(frozen=True)
+modules\finance\api.py:249:class DebtStatusDTO:
+modules\finance\api.py:257:class InsufficientFundsError(Exception):
+modules\finance\api.py:270:class LoanNotFoundError(Exception):
+modules\finance\api.py:274:class LoanRepaymentError(Exception):
+modules\finance\api.py:278:class LoanRollbackError(Exception):
+modules\finance\api.py:282:@dataclass(frozen=True)
+modules\finance\api.py:283:class BorrowerProfileDTO:
+modules\finance\api.py:296:@dataclass(frozen=True)
+modules\finance\api.py:297:class CreditAssessmentResultDTO:
+modules\finance\api.py:307:@dataclass(frozen=True)
+modules\finance\api.py:308:class LienDTO:
+modules\finance\api.py:318:@dataclass(frozen=True)
+modules\finance\api.py:319:class MortgageApplicationDTO:
+modules\finance\api.py:334:class ICreditScoringService(Protocol):
+modules\finance\api.py:340:    def assess_creditworthiness(self, profile: BorrowerProfileDTO, requested_loan_amount: int) -> CreditAssessmentResultDTO:
+modules\finance\api.py:353:@dataclass(frozen=True)
+modules\finance\api.py:354:class EquityStake:
+modules\finance\api.py:359:@dataclass(frozen=True)
+modules\finance\api.py:360:class LiquidationContext:
+modules\finance\api.py:368:class ILiquidatable(Protocol):
+modules\finance\api.py:398:class IFinancialAgent(Protocol):
+modules\finance\api.py:436:class IBankService(Protocol):
+modules\finance\api.py:444:    def stage_loan(self, borrower_id: int, amount: float, interest_rate: float, due_tick: Optional[int], borrower_profile: Optional[BorrowerProfileDTO]) -> Optional[LoanInfoDTO]: ...
+modules\finance\api.py:449:class IBank(IBankService, IFinancialAgent, Protocol):
+modules\finance\api.py:519:class IFiscalMonitor(Protocol):
+modules\finance\api.py:524:class IGovernmentFinance(IFinancialAgent, Protocol):
+modules\finance\api.py:530:class ISettlementSystem(Protocol):
+modules\finance\api.py:586:class IMonetaryAuthority(ISettlementSystem, Protocol):
+modules\finance\api.py:643:class IFinanceSystem(Protocol):
+modules\finance\api.py:687:        borrower_profile: BorrowerProfileDTO,
+modules\finance\api.py:723:@dataclass(frozen=True)
+modules\finance\api.py:724:class OMOInstructionDTO:
+modules\finance\api.py:735:class IMonetaryOperations(Protocol):
+modules\finance\api.py:753:class ICentralBank(IMonetaryOperations, Protocol):
+modules\finance\api.py:772:@dataclass(frozen=True)
+modules\finance\api.py:773:class SagaStateDTO:
+modules\finance\api.py:781:class IRealEstateRegistry(ABC):
+modules\finance\api.py:819:class ISagaRepository(ABC):
+modules\finance\api.py:832:class IPortfolioHandler(Protocol):
+modules\finance\api.py:857:class IHeirProvider(Protocol):
+modules\finance\api.py:865:class ICreditFrozen(Protocol):
+modules\finance\api.py:879:class ITaxService(ABC):
+modules\finance\api.py:887:@dataclass(frozen=True)
+modules\finance\api.py:888:class ShareholderData:
+modules\finance\api.py:894:class IShareholderView(Protocol):
+modules\finance\api.py:901:class IShareholderRegistry(Protocol):
+modules\finance\api.py:916:class ILoanManager(Protocol):
+modules\finance\api.py:931:class IDepositManager(Protocol):
+modules\finance\api.py:951:@dataclass(frozen=True)
+modules\finance\api.py:952:class SolvencyCheckInputDTO:
+modules\finance\api.py:958:@dataclass(frozen=True)
+modules\finance\api.py:959:class SolvencyCheckOutputDTO:
+modules\finance\api.py:970:class SolvencyEngine(Protocol):
+modules\finance\api.py:988:class IIncomeTracker(Protocol):
+modules\finance\api.py:994:class IConsumptionTracker(Protocol):
+modules\finance\api.py:1000:class IEconomicMetricsService(Protocol):
+modules\finance\api.py:1008:class IPanicRecorder(Protocol):
+modules\finance\api.py:1013:class ISalesTracker(Protocol):
+modules\finance\api.py:1019:class IRevenueTracker(Protocol):
+modules\finance\api.py:1024:class IExpenseTracker(Protocol):
+modules\finance\api.py:1029:class IConsumer(Protocol):
+modules\finance\api.py:1035:class ISolvencyChecker(Protocol):
+modules\finance\api.py:1040:class ILoanRepayer(Protocol):
+modules\finance\call_market\api.py:10:class CallLoanRequestDTO(TypedDict):
+modules\finance\call_market\api.py:18:class CallLoanOfferDTO(TypedDict):
+modules\finance\call_market\api.py:26:class CallLoanDTO(TypedDict):
+modules\finance\call_market\api.py:39:class MarketClearingResultDTO(TypedDict):
+modules\finance\call_market\api.py:51:class InsufficientReservesError(Exception):
+modules\finance\call_market\api.py:59:class ICallMarket(Protocol):
+modules\finance\call_market\service.py:17:class CallMarketService(ICallMarket):
+modules\finance\central_bank\api.py:17:class PolicyRateDTO(TypedDict):
+modules\finance\central_bank\api.py:26:class OpenMarketOperationResultDTO(TypedDict):
+modules\finance\central_bank\api.py:41:class InvalidPolicyRateError(Exception):
+modules\finance\central_bank\api.py:45:class TreasuryServiceError(Exception):
+modules\finance\central_bank\api.py:56:class ICentralBank(Protocol):
+modules\finance\central_bank\service.py:14:class CentralBankService:
+modules\finance\credit_scoring.py:5:    BorrowerProfileDTO,
+modules\finance\credit_scoring.py:11:class CreditScoringService(ICreditScoringService):
+modules\finance\credit_scoring.py:19:    def assess_creditworthiness(self, profile: BorrowerProfileDTO, requested_loan_amount: float) -> CreditAssessmentResultDTO:
+modules\finance\domain\corporate_finance.py:2:from dataclasses import dataclass
+modules\finance\domain\corporate_finance.py:4:class AltmanZScoreCalculator:
+modules\finance\dtos.py:6:class MoneyDTO(TypedDict):
+modules\finance\dtos.py:14:class MultiCurrencyWalletDTO(TypedDict):
+modules\finance\dtos.py:18:class InvestmentOrderDTO(TypedDict):
+modules\finance\dtos.py:28:class LoanApplicationDTO(TypedDict):
+modules\finance\dtos.py:35:class LoanDTO(TypedDict):
+modules\finance\dtos.py:46:class DepositDTO(TypedDict):
+modules\finance\engines\api.py:2:from dataclasses import dataclass
+modules\finance\engines\api.py:5:@dataclass(frozen=True)
+modules\finance\engines\api.py:6:class MonetaryStateDTO:
+modules\finance\engines\api.py:16:@dataclass(frozen=True)
+modules\finance\engines\api.py:17:class MonetaryDecisionDTO:
+modules\finance\engines\api.py:22:class IMonetaryEngine(Protocol):
+modules\finance\engines\debt_servicing_engine.py:8:class DebtServicingEngine(IDebtServicingEngine):
+modules\finance\engines\interest_rate_engine.py:6:class InterestRateEngine(IInterestRateEngine):
+modules\finance\engines\liquidation_engine.py:6:class LiquidationEngine(ILiquidationEngine):
+modules\finance\engines\loan_booking_engine.py:11:class LoanBookingEngine(ILoanBookingEngine):
+modules\finance\engines\loan_risk_engine.py:7:class LoanRiskEngine(ILoanRiskEngine):
+modules\finance\engines\loan_risk_engine.py:24:        # MIGRATION: Support updated BorrowerProfileDTO structure (float fields).
+modules\finance\engines\monetary_engine.py:12:class MonetaryEngine(IMonetaryEngine):
+modules\finance\engine_api.py:2:from dataclasses import dataclass, field
+modules\finance\engine_api.py:13:@dataclass
+modules\finance\engine_api.py:14:class LoanStateDTO:
+modules\finance\engine_api.py:26:@dataclass
+modules\finance\engine_api.py:27:class DepositStateDTO:
+modules\finance\engine_api.py:35:@dataclass
+modules\finance\engine_api.py:36:class BondStateDTO:
+modules\finance\engine_api.py:45:@dataclass
+modules\finance\engine_api.py:46:class BankStateDTO:
+modules\finance\engine_api.py:55:@dataclass
+modules\finance\engine_api.py:56:class TreasuryStateDTO:
+modules\finance\engine_api.py:62:@dataclass
+modules\finance\engine_api.py:63:class FinancialLedgerDTO:
+modules\finance\engine_api.py:75:@dataclass
+modules\finance\engine_api.py:76:class EngineOutputDTO:
+modules\finance\engine_api.py:81:@dataclass
+modules\finance\engine_api.py:82:class LoanApplicationDTO:
+modules\finance\engine_api.py:91:@dataclass
+modules\finance\engine_api.py:92:class LoanDecisionDTO:
+modules\finance\engine_api.py:98:@dataclass
+modules\finance\engine_api.py:99:class LiquidationRequestDTO:
+modules\finance\engine_api.py:110:class ILoanRiskEngine(Protocol):
+modules\finance\engine_api.py:120:class ILoanBookingEngine(Protocol):
+modules\finance\engine_api.py:131:class ILiquidationEngine(Protocol):
+modules\finance\engine_api.py:144:class IInterestRateEngine(Protocol):
+modules\finance\engine_api.py:155:class IDebtServicingEngine(Protocol):
+modules\finance\exchange\engine.py:7:class CurrencyExchangeEngine:
+modules\finance\kernel\api.py:11:class ISagaOrchestrator(Protocol):
+modules\finance\kernel\api.py:42:class IMonetaryLedger(Protocol):
+modules\finance\kernel\api.py:66:class ISettlementSystem(Protocol):
+modules\finance\kernel\ledger.py:9:class MonetaryLedger(IMonetaryLedger):
+modules\finance\sagas\housing_api.py:3:from dataclasses import dataclass
+modules\finance\sagas\housing_api.py:11:@dataclass(frozen=True)
+modules\finance\sagas\housing_api.py:12:class MortgageApprovalDTO:
+modules\finance\sagas\housing_api.py:21:@dataclass(frozen=True)
+modules\finance\sagas\housing_api.py:22:class HousingSagaAgentContext:
+modules\finance\sagas\housing_api.py:27:@dataclass
+modules\finance\sagas\housing_api.py:28:class HousingTransactionSagaStateDTO:
+modules\finance\sagas\housing_api.py:67:class IProperty(Protocol):
+modules\finance\sagas\housing_api.py:73:class IPropertyRegistry(Protocol):
+modules\finance\sagas\housing_api.py:98:class ILoanMarket(Protocol):
+modules\finance\sagas\housing_api.py:124:class IHousingTransactionSagaHandler(Protocol):
+modules\finance\sagas\housing_api.py:136:class ISagaManager(Protocol):
+modules\finance\sagas\orchestrator.py:12:class SagaOrchestrator(ISagaOrchestrator):
+modules\finance\saga_handler.py:21:class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
+modules\finance\service.py:11:class TaxService(ITaxService):
+modules\finance\shareholder_registry.py:6:class ShareholderRegistry:
+modules\finance\system.py:6:    InsufficientFundsError, GrantBailoutCommand, BorrowerProfileDTO, LoanInfoDTO,
+modules\finance\system.py:35:class FinanceSystem(IFinanceSystem):
+modules\finance\system.py:97:        borrower_profile: Union[Dict, BorrowerProfileDTO],
+modules\finance\system.py:103:        from dataclasses import asdict, is_dataclass
+modules\finance\system.py:112:        profile_dict = asdict(borrower_profile) if is_dataclass(borrower_profile) else borrower_profile
+modules\finance\system.py:444:        borrower_profile = BorrowerProfileDTO(
+modules\finance\tax\api.py:16:class TaxBracketDTO(TypedDict):
+modules\finance\tax\api.py:21:class TaxPayerDetailsDTO(TypedDict):
+modules\finance\tax\api.py:30:class TaxSystemConfigDTO(TypedDict):
+modules\finance\tax\api.py:39:class TaxCalculationInputDTO(TypedDict):
+modules\finance\tax\api.py:44:class TaxCalculationOutputDTO(TypedDict):
+modules\finance\tax\api.py:59:class TaxEngine(Protocol):
+modules\finance\transaction\adapter.py:6:class FinancialEntityAdapter:
+modules\finance\transaction\adapter.py:28:class FinancialAgentAdapter:
+modules\finance\transaction\adapter.py:50:class RegistryAccountAccessor(IAccountAccessor):
+modules\finance\transaction\adapter.py:93:class DictionaryAccountAccessor(IAccountAccessor):
+modules\finance\transaction\api.py:2:from dataclasses import dataclass
+modules\finance\transaction\api.py:9:@dataclass
+modules\finance\transaction\api.py:10:class TransactionDTO:
+modules\finance\transaction\api.py:23:@dataclass
+modules\finance\transaction\api.py:24:class TransactionResultDTO:
+modules\finance\transaction\api.py:38:class TransactionError(Exception):
+modules\finance\transaction\api.py:43:class ValidationError(TransactionError):
+modules\finance\transaction\api.py:48:class InsufficientFundsError(ValidationError):
+modules\finance\transaction\api.py:53:class InvalidAccountError(ValidationError):
+modules\finance\transaction\api.py:58:class NegativeAmountError(ValidationError):
+modules\finance\transaction\api.py:63:class ExecutionError(TransactionError):
+modules\finance\transaction\api.py:76:class ITransactionParticipant(Protocol):
+modules\finance\transaction\api.py:100:class IAccountAccessor(Protocol):
+modules\finance\transaction\api.py:118:class ITransactionValidator(Protocol):
+modules\finance\transaction\api.py:131:            ValidationError or its subclasses if the transaction is invalid.
+modules\finance\transaction\api.py:137:class ITransactionExecutor(Protocol):
+modules\finance\transaction\api.py:156:class ITransactionLedger(Protocol):
+modules\finance\transaction\api.py:172:class ITransactionEngine(Protocol):
+modules\finance\transaction\engine.py:26:class TransactionValidator(ITransactionValidator):
+modules\finance\transaction\engine.py:61:class TransactionExecutor(ITransactionExecutor):
+modules\finance\transaction\engine.py:118:class SimpleTransactionLedger(ITransactionLedger):
+modules\finance\transaction\engine.py:133:class TransactionEngine(ITransactionEngine):
+modules\finance\utils\zero_sum_verifier.py:8:class ZeroSumVerifier:
+modules\finance\wallet\api.py:4:from dataclasses import dataclass
+modules\finance\wallet\api.py:7:@dataclass(frozen=True)
+modules\finance\wallet\api.py:8:class WalletOpLogDTO:
+modules\finance\wallet\api.py:18:class IWallet(Protocol):
+modules\finance\wallet\wallet.py:10:class Wallet(IWallet):
+modules\firm\api.py:3:from dataclasses import dataclass, field
+modules\firm\api.py:20:class ICollateralizableAsset(Protocol):
+modules\firm\api.py:50:class FirmStrategy(Enum):
+modules\firm\api.py:55:@dataclass(frozen=True)
+modules\firm\api.py:56:class FirmSnapshotDTO:
+modules\firm\api.py:71:@dataclass(frozen=True)
+modules\firm\api.py:72:class FinanceDecisionInputDTO:
+modules\firm\api.py:80:@dataclass(frozen=True)
+modules\firm\api.py:81:class BudgetPlanDTO:
+modules\firm\api.py:93:@dataclass(frozen=True)
+modules\firm\api.py:94:class HRDecisionInputDTO:
+modules\firm\api.py:103:@dataclass(frozen=True)
+modules\firm\api.py:104:class HRDecisionOutputDTO:
+modules\firm\api.py:113:@dataclass(frozen=True)
+modules\firm\api.py:114:class ProductionInputDTO:
+modules\firm\api.py:122:@dataclass(frozen=True)
+modules\firm\api.py:123:class ProductionResultDTO:
+modules\firm\api.py:138:@dataclass(frozen=True)
+modules\firm\api.py:139:class AssetManagementInputDTO:
+modules\firm\api.py:145:@dataclass(frozen=True)
+modules\firm\api.py:146:class AssetManagementResultDTO:
+modules\firm\api.py:156:@dataclass(frozen=True)
+modules\firm\api.py:157:class LiquidationExecutionDTO:
+modules\firm\api.py:162:@dataclass(frozen=True)
+modules\firm\api.py:163:class LiquidationResultDTO:
+modules\firm\api.py:173:@dataclass(frozen=True)
+modules\firm\api.py:174:class RDInputDTO:
+modules\firm\api.py:180:@dataclass(frozen=True)
+modules\firm\api.py:181:class RDResultDTO:
+modules\firm\api.py:191:@dataclass(frozen=True)
+modules\firm\api.py:192:class PricingInputDTO:
+modules\firm\api.py:202:@dataclass(frozen=True)
+modules\firm\api.py:203:class PricingResultDTO:
+modules\firm\api.py:216:class IFinanceEngine(Protocol):
+modules\firm\api.py:235:class IHREngine(Protocol):
+modules\firm\api.py:247:class IProductionEngine(Protocol):
+modules\firm\api.py:260:class IAssetManagementEngine(Protocol):
+modules\firm\api.py:279:class IPricingEngine(Protocol):
+modules\firm\api.py:291:class IRDEngine(Protocol):
+modules\firm\api.py:303:class ISalesEngine(Protocol):
+modules\firm\api.py:325:class IBrandEngine(Protocol):
+modules\firm\api.py:345:class IFirmComponent(Protocol):
+modules\firm\api.py:349:@dataclass
+modules\firm\api.py:350:class InventoryComponentConfigDTO:
+modules\firm\api.py:354:class IInventoryComponent(IInventoryHandler, IFirmComponent, Protocol):
+modules\firm\api.py:368:@dataclass
+modules\firm\api.py:369:class FinancialComponentConfigDTO:
+modules\firm\api.py:374:class IFinancialComponent(IFinancialAgent, IFirmComponent, Protocol):
+modules\firm\engines\brand_engine.py:12:class BrandEngine:
+modules\firm\engines\pricing_engine.py:3:class PricingEngine(IPricingEngine):
+modules\firm\orchestrators\firm_action_executor.py:21:class FirmActionExecutor:
+modules\governance\api.py:11:class SystemCommandType(str, Enum):
+modules\governance\api.py:19:class BaseSystemCommand(BaseModel):
+modules\governance\api.py:23:class SetTaxRateCommand(BaseSystemCommand):
+modules\governance\api.py:29:class SetInterestRateCommand(BaseSystemCommand):
+modules\governance\api.py:45:class IFiscalPolicyHolder(Protocol):
+modules\governance\api.py:50:class IGovernment(Protocol):
+modules\governance\api.py:56:class ICentralBank(Protocol):
+modules\governance\api.py:61:class ISystemCommandHandler(Protocol):
+modules\governance\cockpit\api.py:13:class CockpitCommand(BaseModel):
+modules\governance\cockpit\api.py:20:class SetBaseRatePayload(BaseModel):
+modules\governance\cockpit\api.py:24:class SetTaxRatePayload(BaseModel):
+modules\governance\cockpit\api.py:29:class ICommandService(Protocol):
+modules\governance\judicial\api.py:2:from dataclasses import dataclass
+modules\governance\judicial\api.py:8:@dataclass
+modules\governance\judicial\api.py:9:class JudicialConfigDTO:
+modules\governance\judicial\api.py:15:@dataclass
+modules\governance\judicial\api.py:16:class SeizureRequestDTO:
+modules\governance\judicial\api.py:24:@dataclass
+modules\governance\judicial\api.py:25:class SeizureResultDTO:
+modules\governance\judicial\api.py:34:class IJudicialSystem(Protocol):
+modules\governance\judicial\api.py:56:class LoanDefaultedEvent(TypedDict):
+modules\governance\judicial\api.py:64:class DebtRestructuringRequiredEvent(TypedDict):
+modules\governance\judicial\system.py:19:class JudicialSystem(IJudicialSystem):
+modules\governance\processor.py:16:class SystemCommandProcessor(ISystemCommandHandler):
+modules\government\api.py:3:from dataclasses import dataclass
+modules\government\api.py:26:class ITaxableHousehold(IFinancialEntity, IAgent, Protocol):
+modules\government\api.py:35:class BondRepaymentDetailsDTO(TypedDict):
+modules\government\api.py:51:class IFiscalPolicyManager(Protocol):
+modules\government\api.py:62:class IMonetaryPolicyManager(Protocol):
+modules\government\api.py:69:class ITaxService(Protocol):
+modules\government\api.py:125:class IWelfareService(Protocol):
+modules\government\api.py:159:class IFiscalBondService(Protocol):
+modules\government\api.py:175:class IGovernment(Protocol):
+modules\government\api.py:183:@dataclass
+modules\government\api.py:184:class GovernmentExecutionContext:
+modules\government\api.py:195:class IGovernmentDecisionEngine(Protocol):
+modules\government\api.py:212:class IPolicyExecutionEngine(Protocol):
+modules\government\components\fiscal_policy_manager.py:10:class FiscalPolicyManager(IFiscalPolicyManager):
+modules\government\components\fiscal_policy_manager.py:39:             # MarketSignalDTO keys are attributes, not dict keys if it's a dataclass
+modules\government\components\infrastructure_manager.py:12:class InfrastructureManager:
+modules\government\components\monetary_ledger.py:8:class MonetaryLedger:
+modules\government\components\monetary_policy_manager.py:8:class MonetaryPolicyManager(IMonetaryPolicyManager):
+modules\government\components\policy_lockout_manager.py:7:class PolicyLockoutManager:
+modules\government\dtos.py:1:from dataclasses import dataclass, field
+modules\government\dtos.py:9:class IAgent(Protocol):
+modules\government\dtos.py:17:@dataclass
+modules\government\dtos.py:18:class TaxHistoryItemDTO:
+modules\government\dtos.py:23:@dataclass
+modules\government\dtos.py:24:class TaxBracketDTO:
+modules\government\dtos.py:32:@dataclass
+modules\government\dtos.py:33:class TaxPolicyDTO:
+modules\government\dtos.py:39:@dataclass
+modules\government\dtos.py:40:class FiscalPolicyDTO:
+modules\government\dtos.py:55:@dataclass
+modules\government\dtos.py:56:class MonetaryPolicyDTO:
+modules\government\dtos.py:63:@dataclass
+modules\government\dtos.py:64:class GovernmentStateDTO:
+modules\government\dtos.py:82:@dataclass
+modules\government\dtos.py:83:class PolicyDecisionDTO:
+modules\government\dtos.py:90:@dataclass
+modules\government\dtos.py:91:class ExecutionResultDTO:
+modules\government\dtos.py:100:@dataclass
+modules\government\dtos.py:101:class MacroEconomicSnapshotDTO:
+modules\government\dtos.py:108:@dataclass
+modules\government\dtos.py:109:class PolicyActionDTO:
+modules\government\dtos.py:120:@dataclass
+modules\government\dtos.py:121:class FiscalContextDTO:
+modules\government\dtos.py:129:@dataclass
+modules\government\dtos.py:130:class BondIssueRequestDTO:
+modules\government\dtos.py:137:@dataclass
+modules\government\dtos.py:138:class PaymentRequestDTO:
+modules\government\dtos.py:149:@dataclass
+modules\government\dtos.py:150:class BondIssuanceResultDTO:
+modules\government\dtos.py:155:@dataclass
+modules\government\dtos.py:156:class TaxCollectionResultDTO:
+modules\government\dtos.py:162:@dataclass
+modules\government\dtos.py:163:class WelfareResultDTO:
+modules\government\dtos.py:168:@dataclass
+modules\government\dtos.py:169:class BailoutResultDTO:
+modules\government\engines\api.py:2:from dataclasses import dataclass, field
+modules\government\engines\api.py:5:@dataclass(frozen=True)
+modules\government\engines\api.py:6:class FiscalStateDTO:
+modules\government\engines\api.py:22:@dataclass(frozen=True)
+modules\government\engines\api.py:23:class FirmFinancialsDTO:
+modules\government\engines\api.py:29:@dataclass(frozen=True)
+modules\government\engines\api.py:30:class FirmBailoutRequestDTO:
+modules\government\engines\api.py:35:@dataclass(frozen=True)
+modules\government\engines\api.py:36:class FiscalRequestDTO: # Union of all possible requests
+modules\government\engines\api.py:40:@dataclass(frozen=True)
+modules\government\engines\api.py:41:class GrantedBailoutDTO:
+modules\government\engines\api.py:47:@dataclass(frozen=True)
+modules\government\engines\api.py:48:class FiscalDecisionDTO:
+modules\government\engines\api.py:56:class IFiscalEngine(Protocol):
+modules\government\engines\decision_engine.py:13:class GovernmentDecisionEngine(IGovernmentDecisionEngine):
+modules\government\engines\execution_engine.py:11:class PolicyExecutionEngine(IPolicyExecutionEngine):
+modules\government\engines\fiscal_engine.py:17:class FiscalEngine(IFiscalEngine):
+modules\government\fiscal\api.py:6:class IFiscalService(Protocol):
+modules\government\policies\adaptive_gov_brain.py:9:class AdaptiveGovBrain:
+modules\government\policies\adaptive_gov_brain.py:120:        # Clone current state (using simple copy or kwargs since it's frozen/dataclass)
+modules\government\policies\adaptive_gov_brain.py:121:        from dataclasses import replace
+modules\government\policies\adaptive_gov_brain.py:194:            # Focus on Equality and Working Class
+modules\government\policies\api.py:7:class IAdaptiveGovBrain(Protocol):
+modules\government\politics_system.py:1:import dataclasses
+modules\government\politics_system.py:8:class PoliticsSystem:
+modules\government\politics_system.py:38:            # dataclasses.replace creates a new immutable instance.
+modules\government\politics_system.py:39:            new_gov_config = dataclasses.replace(current_gov_config, income_tax_rate=new_rate)
+modules\government\proxy.py:8:class GovernmentFiscalProxy(IFinancialAgent):
+modules\government\services\fiscal_bond_service.py:16:class FiscalBondService(IFiscalBondService):
+modules\government\services\welfare_service.py:25:class WelfareService(IWelfareService):
+modules\government\tax\api.py:8:class ITaxService(Protocol):
+modules\government\tax\service.py:22:class TaxService(ITaxService):
+modules\government\tax\tests\test_service.py:8:class TestTaxService(unittest.TestCase):
+modules\government\taxation\system.py:1:from dataclasses import dataclass
+modules\government\taxation\system.py:18:class ITaxConfig(Protocol):
+modules\government\taxation\system.py:28:@dataclass
+modules\government\taxation\system.py:29:class TaxIntent:
+modules\government\taxation\system.py:35:class TaxationSystem:
+modules\government\treasury\api.py:4:from dataclasses import dataclass
+modules\government\treasury\api.py:11:@dataclass
+modules\government\treasury\api.py:12:class BondDTO:
+modules\government\treasury\api.py:23:class TreasuryOperationResultDTO(TypedDict):
+modules\government\treasury\api.py:34:class ITreasuryService(Protocol):
+modules\government\welfare\api.py:5:class IWelfareRecipient(IAgent, Protocol):
+modules\government\welfare\manager.py:3:class WelfareManager(WelfareService):
+modules\household\api.py:3:from dataclasses import dataclass, field
+modules\household\api.py:20:@dataclass
+modules\household\api.py:21:class PrioritizedNeed:
+modules\household\api.py:28:@dataclass
+modules\household\api.py:29:class BudgetPlan:
+modules\household\api.py:35:@dataclass
+modules\household\api.py:36:class HousingActionDTO:
+modules\household\api.py:49:@dataclass
+modules\household\api.py:50:class LifecycleInputDTO:
+modules\household\api.py:56:@dataclass
+modules\household\api.py:57:class NeedsInputDTO:
+modules\household\api.py:66:@dataclass
+modules\household\api.py:67:class SocialInputDTO:
+modules\household\api.py:76:@dataclass
+modules\household\api.py:77:class BudgetInputDTO:
+modules\household\api.py:85:@dataclass
+modules\household\api.py:86:class ConsumptionInputDTO:
+modules\household\api.py:95:@dataclass
+modules\household\api.py:96:class BeliefInputDTO:
+modules\household\api.py:107:@dataclass
+modules\household\api.py:108:class PanicSellingInputDTO:
+modules\household\api.py:116:@dataclass
+modules\household\api.py:117:class LifecycleOutputDTO:
+modules\household\api.py:122:@dataclass
+modules\household\api.py:123:class NeedsOutputDTO:
+modules\household\api.py:127:@dataclass
+modules\household\api.py:128:class SocialOutputDTO:
+modules\household\api.py:131:@dataclass
+modules\household\api.py:132:class BudgetOutputDTO:
+modules\household\api.py:137:@dataclass
+modules\household\api.py:138:class ConsumptionOutputDTO:
+modules\household\api.py:144:@dataclass
+modules\household\api.py:145:class BeliefResultDTO:
+modules\household\api.py:151:@dataclass
+modules\household\api.py:152:class PanicSellingResultDTO:
+modules\household\api.py:158:class ILifecycleEngine(Protocol):
+modules\household\api.py:163:class INeedsEngine(Protocol):
+modules\household\api.py:168:class ISocialEngine(Protocol):
+modules\household\api.py:173:class IBudgetEngine(Protocol):
+modules\household\api.py:178:class IConsumptionEngine(Protocol):
+modules\household\api.py:193:class IBeliefEngine(Protocol):
+modules\household\api.py:198:class ICrisisEngine(Protocol):
+modules\household\api.py:204:class OrchestrationContextDTO(TypedDict):
+modules\household\api.py:212:class IConsumptionManager(Protocol):
+modules\household\api.py:236:class IDecisionUnit(Protocol):
+modules\household\api.py:247:class IEconComponent(Protocol):
+modules\household\api.py:272:@dataclass
+modules\household\api.py:273:class HouseholdFactoryContext:
+modules\household\api.py:291:class IHouseholdFactory(Protocol):
+modules\household\bio_component.py:14:class BioComponent(IBioComponent):
+modules\household\connectors\housing_connector.py:9:class IHousingSystem(Protocol):
+modules\household\connectors\housing_connector.py:12:class HousingConnector:
+modules\household\consumption_manager.py:9:class ConsumptionManager(IConsumptionManager):
+modules\household\decision_unit.py:14:class DecisionUnit(IDecisionUnit):
+modules\household\dtos.py:2:from dataclasses import dataclass, field
+modules\household\dtos.py:18:@dataclass
+modules\household\dtos.py:19:class BioStateDTO:
+modules\household\dtos.py:40:@dataclass
+modules\household\dtos.py:41:class EconStateDTO:
+modules\household\dtos.py:147:@dataclass
+modules\household\dtos.py:148:class SocialStateDTO:
+modules\household\dtos.py:186:@dataclass
+modules\household\dtos.py:187:class HouseholdSnapshotDTO:
+modules\household\dtos.py:202:@dataclass
+modules\household\dtos.py:203:class HouseholdStateDTO:
+modules\household\dtos.py:207:    Used by the DecisionEngine to make decisions without direct dependency on the Household class.
+modules\household\dtos.py:250:@dataclass
+modules\household\dtos.py:251:class CloningRequestDTO:
+modules\household\dtos.py:257:@dataclass
+modules\household\dtos.py:258:class EconContextDTO:
+modules\household\dtos.py:264:@dataclass
+modules\household\dtos.py:265:class SocialContextDTO:
+modules\household\dtos.py:270:@dataclass
+modules\household\dtos.py:271:class LifecycleDTO:
+modules\household\econ_component.py:18:class EconComponent(IEconComponent):
+modules\household\engines\belief_engine.py:6:class BeliefEngine(IBeliefEngine):
+modules\household\engines\budget.py:20:class BudgetEngine(IBudgetEngine):
+modules\household\engines\budget.py:63:            class StateWrapper:
+modules\household\engines\consumption_engine.py:16:class ConsumptionEngine(IConsumptionEngine):
+modules\household\engines\crisis_engine.py:5:class CrisisEngine(ICrisisEngine):
+modules\household\engines\lifecycle.py:11:class LifecycleEngine(ILifecycleEngine):
+modules\household\engines\needs.py:10:class NeedsEngine(INeedsEngine):
+modules\household\engines\social.py:23:class SocialEngine(ISocialEngine):
+modules\household\mixins\_financials.py:12:class HouseholdFinancialsMixin:
+modules\household\mixins\_lifecycle.py:20:class HouseholdLifecycleMixin:
+modules\household\mixins\_properties.py:12:class HouseholdPropertiesMixin:
+modules\household\mixins\_reproduction.py:18:class HouseholdReproductionMixin:
+modules\household\mixins\_state_access.py:20:class HouseholdStateAccessMixin:
+modules\household\political_component.py:9:class PoliticalComponent:
+modules\household\services.py:7:class HouseholdSnapshotAssembler:
+modules\household\social_component.py:16:class SocialComponent(ISocialComponent):
+modules\housing\api.py:13:class IHousingPlanner(ABC):
+modules\housing\api.py:25:class IHousingTransactionSagaHandler(ABC):
+modules\housing\api.py:39:class IHousingService(ABC):
+modules\housing\dtos.py:3:from dataclasses import dataclass
+modules\housing\dtos.py:11:class MortgageApprovalDTO(TypedDict):
+modules\housing\dtos.py:19:class HousingTransactionSagaStateDTO(TypedDict):
+modules\housing\dtos.py:43:class HousingDecisionRequestDTO(TypedDict):
+modules\housing\dtos.py:52:class HousingPurchaseDecisionDTO(TypedDict):
+modules\housing\dtos.py:63:class HousingRentalDecisionDTO(TypedDict):
+modules\housing\dtos.py:70:class HousingStayDecisionDTO(TypedDict):
+modules\housing\planner.py:14:class HousingPlanner(IHousingPlanner):
+modules\housing\service.py:17:class HousingService(IHousingService):
+modules\hr\api.py:11:class IHRService(ABC):
+modules\hr\api.py:17:class IEmployeeDataProvider(IFinancialAgent, Protocol):
+modules\hr\service.py:9:class HRService(IHRService):
+modules\inventory\api.py:3:class IInventoryHandler(Protocol):
+modules\inventory\manager.py:8:class InventoryManager(IInventoryHandler):
+modules\market\api.py:1:from dataclasses import dataclass, field
+modules\market\api.py:17:@dataclass(frozen=True)
+modules\market\api.py:18:class CanonicalOrderDTO:
+modules\market\api.py:112:class StockIDHelper:
+modules\market\api.py:144:class HousingConfigDTO(TypedDict):
+modules\market\api.py:150:@dataclass
+modules\market\api.py:151:class MarketConfigDTO:
+modules\market\api.py:157:@dataclass
+modules\market\api.py:158:class HousingTransactionContextDTO:
+modules\market\api.py:172:class TransactionType(Enum):
+modules\market\api.py:177:@dataclass
+modules\market\api.py:178:class TransactionResultDTO:
+modules\market\api.py:185:@dataclass
+modules\market\api.py:186:class OrderBookStateDTO:
+modules\market\api.py:192:@dataclass
+modules\market\api.py:193:class StockMarketStateDTO:
+modules\market\api.py:199:@dataclass
+modules\market\api.py:200:class MatchingResultDTO:
+modules\market\api.py:209:class IMatchingEngine(Protocol):
+modules\market\api.py:215:class ISpecializedTransactionHandler(Protocol):
+modules\market\api.py:233:class IHousingTransactionHandler(ISpecializedTransactionHandler, Protocol):
+modules\market\api.py:238:class IHousingTransactionParticipant(IPropertyOwner, IFinancialAgent, Protocol):
+modules\market\api.py:259:class IMarket(Protocol):
+modules\market\handlers\housing_transaction_handler.py:6:from modules.finance.api import BorrowerProfileDTO, LienDTO, IFinancialAgent
+modules\market\handlers\housing_transaction_handler.py:16:class HousingTransactionHandler(ITransactionHandler, IHousingTransactionHandler):
+modules\market\handlers\housing_transaction_handler.py:205:    def _create_borrower_profile(self, buyer: Any, trade_value: float, context: HousingTransactionContextDTO, currency: str = DEFAULT_CURRENCY) -> BorrowerProfileDTO:
+modules\market\handlers\housing_transaction_handler.py:224:        return BorrowerProfileDTO(
+modules\market\housing_planner.py:17:class HousingPlanner(IHousingPlanner):
+modules\market\housing_planner_api.py:3:from dataclasses import dataclass
+modules\market\housing_planner_api.py:12:@dataclass(frozen=True)
+modules\market\housing_planner_api.py:13:class HousingDecisionRequestDTO:
+modules\market\housing_planner_api.py:23:@dataclass(frozen=True)
+modules\market\housing_planner_api.py:24:class HousingDecisionDTO:
+modules\market\housing_planner_api.py:34:@dataclass(frozen=True)
+modules\market\housing_planner_api.py:35:class HousingBubbleMetricsDTO:
+modules\market\housing_planner_api.py:49:class IHousingPlanner(ABC):
+modules\market\housing_planner_api.py:62:class ILoanMarket(ABC):
+modules\market\housing_planner_api.py:107:class IBubbleObservatory(ABC):
+modules\market\housing_purchase_api.py:11:class HousingPurchaseSagaDataDTO(TypedDict):
+modules\market\housing_purchase_api.py:25:class HousingPurchaseSagaDTO(TypedDict):
+modules\market\housing_purchase_api.py:47:class ILoanMarket(ABC):
+modules\market\housing_purchase_api.py:67:class ISettlementSystem(ABC):
+modules\memory\api.py:5:class MemoryV2Interface(ABC):
+modules\memory\V2\dtos.py:1:from dataclasses import dataclass, field
+modules\memory\V2\dtos.py:4:@dataclass
+modules\memory\V2\dtos.py:5:class MemoryRecordDTO:
+modules\memory\V2\dtos.py:11:@dataclass
+modules\memory\V2\dtos.py:12:class QueryDTO:
+modules\memory\V2\memory_manager.py:6:class MemoryManager(MemoryV2Interface):
+modules\memory\V2\storage\base_storage.py:5:class StorageInterface(ABC):
+modules\memory\V2\storage\file_storage.py:6:from dataclasses import asdict
+modules\memory\V2\storage\file_storage.py:8:class FileStorage(StorageInterface):
+modules\simulation\api.py:2:from dataclasses import dataclass, field
+modules\simulation\api.py:24:@dataclass
+modules\simulation\api.py:25:class AgentCoreConfigDTO:
+modules\simulation\api.py:34:@dataclass
+modules\simulation\api.py:35:class ItemDTO:
+modules\simulation\api.py:40:@dataclass
+modules\simulation\api.py:41:class InventorySlotDTO:
+modules\simulation\api.py:44:@dataclass
+modules\simulation\api.py:45:class AgentStateDTO:
+modules\simulation\api.py:52:class AgentSensorySnapshotDTO(TypedDict):
+modules\simulation\api.py:60:@dataclass
+modules\simulation\api.py:61:class DecisionDTO:
+modules\simulation\api.py:65:class ShockConfigDTO(TypedDict):
+modules\simulation\api.py:72:@dataclass
+modules\simulation\api.py:73:class EconomicIndicatorsDTO:
+modules\simulation\api.py:81:@dataclass
+modules\simulation\api.py:82:class SystemStateDTO:
+modules\simulation\api.py:92:@dataclass(frozen=True)
+modules\simulation\api.py:93:class HouseholdSnapshotDTO:
+modules\simulation\api.py:105:@dataclass
+modules\simulation\api.py:106:class LiquidationConfigDTO:
+modules\simulation\api.py:116:class IConfigurable(Protocol):
+modules\simulation\api.py:122:class ISensoryDataProvider(Protocol):
+modules\simulation\api.py:129:class InventorySlot(Enum):
+modules\simulation\api.py:135:class IInventoryHandler(Protocol):
+modules\simulation\api.py:147:class IDecisionEngine(Protocol):
+modules\simulation\api.py:152:class IAgent(Protocol):
+modules\simulation\api.py:157:class IOrchestratorAgent(IAgent, Protocol):
+modules\simulation\api.py:165:class IFirm(IAgent, Protocol):
+modules\simulation\api.py:168:class IHousehold(IAgent, Protocol):
+modules\simulation\api.py:172:class IEducated(Protocol):
+modules\simulation\api.py:187:class ITalented(Protocol):
+modules\simulation\api.py:194:class ICentralBank(Protocol):
+modules\simulation\api.py:198:class IGovernment(Protocol):
+modules\simulation\api.py:204:class IEconomicIndicatorTracker(Protocol):
+modules\simulation\api.py:213:class IAgentRepository(Protocol):
+modules\simulation\api.py:221:class ShareholderData(TypedDict):
+modules\simulation\api.py:227:class IShareholderRegistry(Protocol):
+modules\simulation\api.py:239:class IConfig(Protocol):
+modules\simulation\api.py:242:class ISimulationState(Protocol):
+modules\simulation\api.py:274:class IShockInjector(Protocol):
+modules\simulation\api.py:289:@dataclass
+modules\simulation\api.py:290:class HouseholdFactoryContext:
+modules\simulation\api.py:302:class IHouseholdFactory(Protocol):
+modules\simulation\dtos\api.py:6:from dataclasses import dataclass, field
+modules\simulation\dtos\api.py:13:class IFirmStateProvider(Protocol):
+modules\simulation\dtos\api.py:24:@dataclass(frozen=True)
+modules\simulation\dtos\api.py:25:class FinanceStateDTO:
+modules\simulation\dtos\api.py:41:@dataclass(frozen=True)
+modules\simulation\dtos\api.py:42:class ProductionStateDTO:
+modules\simulation\dtos\api.py:55:@dataclass(frozen=True)
+modules\simulation\dtos\api.py:56:class SalesStateDTO:
+modules\simulation\dtos\api.py:64:@dataclass(frozen=True)
+modules\simulation\dtos\api.py:65:class HRStateDTO:
+modules\simulation\dtos\api.py:70:@dataclass(frozen=True)
+modules\simulation\dtos\api.py:71:class FirmStateDTO:
+modules\simulation\dtos\api.py:74:    Used by DecisionEngines to make decisions without direct dependency on the Firm class.
+modules\simulation\dtos\api.py:91:    @classmethod
+modules\simulation\dtos\api.py:103:@dataclass
+modules\simulation\dtos\api.py:104:class HouseholdConfigDTO:
+modules\simulation\dtos\api.py:243:@dataclass
+modules\simulation\dtos\api.py:244:class FirmConfigDTO:
+modules\simulation\dtos\api.py:325:@dataclass
+modules\simulation\dtos\api.py:326:class ServerConfigDTO:
+modules\simulation\shock_injector.py:8:class ShockInjector:
+modules\system\api.py:4:from dataclasses import dataclass, field
+modules\system\api.py:13:@dataclass
+modules\system\api.py:14:class MarketContextDTO:
+modules\system\api.py:25:@dataclass(frozen=True)
+modules\system\api.py:26:class MarketSignalDTO:
+modules\system\api.py:41:@dataclass(frozen=True)
+modules\system\api.py:42:class HousingMarketUnitDTO:
+modules\system\api.py:48:@dataclass(frozen=True)
+modules\system\api.py:49:class HousingMarketSnapshotDTO:
+modules\system\api.py:55:@dataclass(frozen=True)
+modules\system\api.py:56:class LoanMarketSnapshotDTO:
+modules\system\api.py:59:@dataclass(frozen=True)
+modules\system\api.py:60:class LaborMarketSnapshotDTO:
+modules\system\api.py:63:@dataclass(frozen=True)
+modules\system\api.py:64:class MarketSnapshotDTO:
+modules\system\api.py:75:class AgentBankruptcyEventDTO(TypedDict):
+modules\system\api.py:80:@dataclass(frozen=True)
+modules\system\api.py:81:class PublicManagerReportDTO:
+modules\system\api.py:88:class OriginType(IntEnum):
+modules\system\api.py:98:class RegistryValueDTO(BaseModel):
+modules\system\api.py:101:    Replaces the legacy RegistryEntry dataclass.
+modules\system\api.py:114:class RegistryObserver(Protocol):
+modules\system\api.py:119:class IConfigurationRegistry(Protocol):
+modules\system\api.py:154:class IGlobalRegistry(Protocol):
+modules\system\api.py:184:class IRestorableRegistry(IGlobalRegistry, Protocol):
+modules\system\api.py:205:class IProtocolEnforcer(Protocol):
+modules\system\api.py:217:class IAgentRegistry(Protocol):
+modules\system\api.py:228:class ICurrencyHolder(Protocol):
+modules\system\api.py:240:class IAssetRecoverySystem(Protocol):
+modules\system\config_api.py:9:from dataclasses import dataclass, field
+modules\system\config_api.py:17:@dataclass
+modules\system\config_api.py:18:class ConfigKeyMeta:
+modules\system\config_api.py:26:class ConfigProxy:
+modules\system\config_api.py:36:        will still bind early. This class is the enabler for the refactor.
+modules\system\crystallizer\api.py:7:from dataclasses import dataclass
+modules\system\crystallizer\api.py:10:class InsightMetadata(TypedDict):
+modules\system\crystallizer\api.py:19:@dataclass
+modules\system\crystallizer\api.py:20:class InsightEntry:
+modules\system\crystallizer\api.py:28:@dataclass
+modules\system\crystallizer\api.py:29:class ManualContext:
+modules\system\crystallizer\api.py:36:@dataclass
+modules\system\crystallizer\api.py:37:class ProposalDiff:
+modules\system\crystallizer\api.py:46:class ManualUpdateProposalDTO(TypedDict):
+modules\system\crystallizer\api.py:55:class IInsightLoader(Protocol):
+modules\system\crystallizer\api.py:62:class IManualSynthesizer(Protocol):
+modules\system\crystallizer\api.py:72:class ICrystallizerEngine(Protocol):
+modules\system\crystallizer\engine.py:16:class InsightLoader(IInsightLoader):
+modules\system\crystallizer\engine.py:63:class ManualSynthesizer(IManualSynthesizer):
+modules\system\crystallizer\engine.py:89:class CrystallizerEngine(ICrystallizerEngine):
+modules\system\escrow_agent.py:6:class EscrowAgent(IFinancialAgent):
+modules\system\event_bus\api.py:10:class IEventBus(Protocol[E]):
+modules\system\event_bus\event_bus.py:7:class EventBus(IEventBus[E]):
+modules\system\execution\public_manager.py:9:class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
+modules\system\registry.py:11:class AgentRegistry(IAgentRegistry):
+modules\system\registry.py:51:class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
+modules\system\server.py:10:from dataclasses import asdict, is_dataclass
+modules\system\server.py:20:class SimulationServer:
+modules\system\server.py:166:        # Access 'tick' safely regardless of type (BaseModel, Dataclass, or Dict)
+modules\system\server.py:177:                elif is_dataclass(snapshot):
+modules\system\server_bridge.py:10:class TelemetryExchange:
+modules\system\services\command_service.py:3:from dataclasses import dataclass, field
+modules\system\services\command_service.py:21:@dataclass
+modules\system\services\command_service.py:22:class UndoRecord:
+modules\system\services\command_service.py:33:class UndoStack:
+modules\system\services\command_service.py:59:class CommandService:
+modules\system\services\schema_loader.py:9:class SchemaLoader:
+modules\system\telemetry.py:7:class TelemetryCollector:
+modules\testing\mock_governance\api.py:8:from dataclasses import dataclass
+modules\testing\mock_governance\api.py:14:@dataclass
+modules\testing\mock_governance\api.py:15:class MockViolationDTO:
+modules\testing\mock_governance\api.py:27:class IProtocolInspector(Protocol):
+modules\testing\mock_governance\api.py:29:    Service interface for analyzing Protocol classes to extract their full contract,
+modules\testing\mock_governance\api.py:46:class IMockFactory(Protocol):
+modules\testing\mock_governance\api.py:56:            protocol: The Protocol class to mock.
+modules\testing\mock_governance\api.py:72:class IMockRegistry(Protocol):
+modules\testing\mock_governance\core.py:9:class ProtocolInspector(IProtocolInspector):
+modules\testing\mock_governance\core.py:11:    Analyzes Protocol classes to extract their full contract.
+modules\testing\mock_governance\core.py:18:            # Skip non-Protocol base classes like 'object', 'Generic', or implementation details
+modules\testing\mock_governance\core.py:19:            # Standard typing.Protocol classes have _is_protocol=True
+modules\testing\mock_governance\core.py:24:            # Skip the 'Protocol' class itself if it appears in MRO (it has _is_protocol=True)
+modules\testing\mock_governance\core.py:50:class MockRegistry(IMockRegistry):
+modules\testing\mock_governance\core.py:63:class StrictMockFactory(IMockFactory):
+scripts\audit_inventory_access.py:13:    r"class .*InventoryHandler", # Interface
+scripts\bench_tech.py:5:from dataclasses import dataclass
+scripts\bench_tech.py:8:# Mock Classes and DTOs
+scripts\bench_tech.py:9:@dataclass
+scripts\bench_tech.py:10:class MockConfig:
+scripts\bench_tech.py:16:class MockLogger:
+scripts\experiments\education_roi_analysis.py:239:  - Target > 0.9. High correlation indicates a rigid class structure where wealth buys credentials.
+scripts\fixture_harvester.py:25:from dataclasses import dataclass, asdict
+scripts\fixture_harvester.py:49:@dataclass
+scripts\fixture_harvester.py:50:class HouseholdSnapshot:
+scripts\fixture_harvester.py:65:@dataclass 
+scripts\fixture_harvester.py:66:class FirmSnapshot:
+scripts\fixture_harvester.py:81:@dataclass
+scripts\fixture_harvester.py:82:class GoldenFixture:
+scripts\fixture_harvester.py:92:class FixtureHarvester:
+scripts\fixture_harvester.py:198:        # Convert dataclasses to dicts for JSON serialization
+scripts\fixture_harvester.py:215:class GoldenLoader:
+scripts\fixture_harvester.py:233:    @classmethod
+scripts\fixture_harvester.py:243:    def create_household_mocks(self, mock_class=None):
+scripts\fixture_harvester.py:252:            if mock_class:
+scripts\fixture_harvester.py:253:                mock = MagicMock(spec=mock_class)
+scripts\fixture_harvester.py:302:    def create_firm_mocks(self, mock_class=None):
+scripts\fixture_harvester.py:310:            if mock_class:
+scripts\fixture_harvester.py:311:                mock = MagicMock(spec=mock_class)
+scripts\fixture_harvester.py:421:    class DummyHousehold:
+scripts\fixture_harvester.py:435:    class DummyFirm:
+scripts\ledger_manager.py:14:class LedgerItemDTO(TypedDict):
+scripts\ledger_manager.py:25:class Block:
+scripts\ledger_manager.py:28:class TextBlock(Block):
+scripts\ledger_manager.py:35:class TableBlock(Block):
+scripts\ledger_manager.py:46:class LedgerManager:
+scripts\operation_forensics.py:18:class ForensicLogHandler(logging.Handler):
+scripts\operation_forensics.py:117:        # Classification Logic
+scripts\operation_forensics.py:135:        report_lines.append("## Classification Summary")
+scripts\operation_forensics.py:141:        report_lines.append("## Classification Summary\n- No deaths recorded.")
+scripts\recon_normal_1000.py:15:class ForensicLogHandler(logging.Handler):
+scripts\recon_normal_1000.py:108:        # Classification Logic (Priority: A -> B -> C -> D)
+scripts\recon_normal_1000.py:129:            assigned_type = "Unclassified"
+scripts\recon_normal_1000.py:136:        report_lines.append("## Classification Summary")
+scripts\recon_normal_1000.py:142:        report_lines.append("## Classification Summary")
+scripts\run_phase_audit.py:105:        phase_name = phase.__class__.__name__
+scripts\verify_atomic_housing_purchase.py:16:class TestAtomicHousingPurchase(unittest.TestCase):
+scripts\verify_brand_economy.py:31:    class MockConfig:
+scripts\verify_brand_economy.py:57:    class MockActionProposalEngine:
+scripts\verify_brand_economy.py:60:    class MockStateBuilder:
+scripts\verify_genesis.py:91:                assigned_type = "Unclassified"
+scripts\verify_housing_transaction_integrity.py:15:class TestAtomicHousingPurchaseV3(unittest.TestCase):
+scripts\verify_inflation_psychology.py:19:class TestInflationPsychology(unittest.TestCase):
+scripts\verify_innovation.py:19:# Mock Config class
+scripts\verify_innovation.py:20:class Config:
+scripts\verify_maslow.py:15:class TestMaslowVerification(unittest.TestCase):
+scripts\verify_monetary_policy.py:11:class MockTracker:
+scripts\verify_monetary_policy.py:21:class MockConfig:
+scripts\verify_monetary_policy.py:29:class TestCentralBank(unittest.TestCase):
+scripts\verify_penny_migration_gov.py:13:class TestPennyMigrationGov(unittest.TestCase):
+scripts\verify_phase23_harvest.py:47:class Phase23Verifier:
+scripts\verify_phase23_harvest.py:73:        # 2. Configure for Abundance (Override Config Class directly)
+scripts\verify_soft_landing.py:7:from dataclasses import dataclass, field
+scripts\verify_soft_landing.py:32:@dataclass
+scripts\verify_soft_landing.py:33:class SimulationResults:
+scripts\verify_soft_landing.py:230:    # Serialize dataclass to dict
+scripts\verify_stock_market.py:24:class MockConfig:
+scripts\_archive\debug_phase23_tech.py:27:class MockConfigManager(ConfigManager):
+scripts\_archive\verify_banking_v2.py:16:class TestBankingSystemVerification(unittest.TestCase):
+scripts\_archive\verify_banking_v3.py:16:class TestBankingTransactionLogic(unittest.TestCase):
+scripts\_archive\verify_great_reset_stability.py:15:class VerificationLogHandler(logging.Handler):
+scripts\_archive\verify_ma_bankruptcy.py:15:class MockSimulation:
+scripts\_archive\verify_ma_bankruptcy.py:21:class TestPhase9MA(unittest.TestCase):
+scripts\_archive\verify_phases.py:34:        actual_order = [phase.__class__.__name__ for phase in orchestrator.phases]
+server.py:7:# from dataclasses import asdict # Removed as we use Pydantic now
+simulation\action_processor.py:14:class ActionProcessor:
+simulation\agents\central_bank.py:18:class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity):
+simulation\agents\government.py:61:class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
+simulation\agents\government.py:300:        # Prepare Market Snapshot DTO (Dataclass for Engines)
+simulation\ai\action_selector.py:9:class ActionSelector:
+simulation\ai\ai_training_manager.py:16:class AITrainingManager:
+simulation\ai\api.py:27:class BaseAIEngine(ABC):
+simulation\ai\enums.py:5:class Intention(Enum):
+simulation\ai\enums.py:27:class Tactic(Enum):
+simulation\ai\enums.py:76:class Personality(Enum):
+simulation\ai\enums.py:95:class Aggressiveness(Enum):
+simulation\ai\enums.py:105:class PoliticalParty(Enum):
+simulation\ai\enums.py:113:class EconomicSchool(Enum):
+simulation\ai\enums.py:122:class PoliticalVision(Enum):
+simulation\ai\enums.py:130:class PolicyActionTag(Enum):
+simulation\ai\firm_ai.py:17:class FirmAI(BaseAIEngine):
+simulation\ai\firm_ai.py:244:            # Better: firm_agent.prev_market_share tracked in Firm class?
+simulation\ai\firm_system2_planner.py:9:class FirmSystem2Planner:
+simulation\ai\government_ai.py:9:class GovernmentAI:
+simulation\ai\household_ai.py:15:class HouseholdAI(BaseAIEngine):
+simulation\ai\household_system2.py:7:class HousingDecisionInputs(NamedTuple):
+simulation\ai\household_system2.py:15:class HouseholdSystem2Planner:
+simulation\ai\learning_tracker.py:10:class LearningTracker:
+simulation\ai\model_wrapper.py:14:class ModelWrapper:
+simulation\ai\q_table_manager.py:10:class QTableManager:
+simulation\ai\reward_calculator.py:5:class RewardCalculator:
+simulation\ai\service_firm_ai.py:12:class ServiceFirmAI(FirmAI):
+simulation\ai\state_builder.py:4:class StateBuilder:
+simulation\ai\system2_planner.py:8:class System2Planner:
+simulation\ai\vectorized_planner.py:5:class VectorizedHouseholdPlanner:
+simulation\ai_model.py:16:class AIDecisionEngine:
+simulation\ai_model.py:76:class AIEngineRegistry:
+simulation\api.py:3:It re-exports core classes and functions from various sub-modules,
+simulation\api.py:7:from dataclasses import dataclass, field
+simulation\api.py:34:@dataclass(frozen=True)
+simulation\api.py:35:class GoodsDTO:
+simulation\api.py:42:@dataclass(frozen=True)
+simulation\api.py:43:class GoodsInfoDTO:
+simulation\api.py:59:@dataclass(frozen=True)
+simulation\api.py:60:class MarketHistoryDTO:
+simulation\api.py:76:@dataclass(frozen=True)
+simulation\api.py:77:class GovernmentPolicyDTO:
+simulation\api.py:93:@dataclass(frozen=True)
+simulation\api.py:94:class DecisionContext:
+simulation\bank.py:9:    BorrowerProfileDTO,
+simulation\bank.py:21:from dataclasses import replace, is_dataclass
+simulation\bank.py:33:class Bank(IBank, ICurrencyHolder, IFinancialEntity):
+simulation\bank.py:152:    def grant_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanInfoDTO, Transaction]]:
+simulation\bank.py:171:        if borrower_profile and is_dataclass(borrower_profile):
+simulation\bank.py:174:            # Convert dict to BorrowerProfileDTO
+simulation\bank.py:182:            # MIGRATION: Updated to new BorrowerProfileDTO signature
+simulation\bank.py:183:            profile = BorrowerProfileDTO(
+simulation\bank.py:194:            profile = BorrowerProfileDTO(
+simulation\bank.py:213:        # Strict DTO enforcement: loan_dto must be an object (dataclass)
+simulation\bank.py:243:    def stage_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
+simulation\components\agent_lifecycle.py:7:class AgentLifecycleComponent(IAgentLifecycleComponent):
+simulation\components\api.py:3:from dataclasses import dataclass, field
+simulation\components\api.py:13:@dataclass
+simulation\components\api.py:14:class DemographicsDTO:
+simulation\components\api.py:25:    @classmethod
+simulation\components\api.py:42:class IDemographicsComponent(Protocol):
+simulation\components\api.py:45:    (birth, aging, marriage, death) of a household. The Household class delegates
+simulation\components\consumption_behavior.py:10:class ConsumptionBehavior:
+simulation\components\demographics_component.py:12:class DemographicsComponent:
+simulation\components\economy_manager.py:10:class EconomyManager:
+simulation\components\engines\asset_management_engine.py:13:class AssetManagementEngine(IAssetManagementEngine):
+simulation\components\engines\finance_engine.py:17:class FinanceEngine(IFinanceEngine):
+simulation\components\engines\hr_engine.py:16:class HREngine(IHREngine):
+simulation\components\engines\production_engine.py:8:class ProductionEngine(IProductionEngine):
+simulation\components\engines\rd_engine.py:8:class RDEngine(IRDEngine):
+simulation\components\engines\real_estate_component.py:4:class RealEstateUtilizationComponent:
+simulation\components\engines\sales_engine.py:14:class SalesEngine(ISalesEngine):
+simulation\components\engines\sales_engine.py:66:        from dataclasses import replace
+simulation\components\labor_manager.py:11:class LaborManager:
+simulation\components\leisure_manager.py:11:class LeisureManager:
+simulation\components\leisure_manager.py:60:        """Helper to classify leisure based on context."""
+simulation\components\market_component.py:7:class MarketComponent(IMarketComponent):
+simulation\components\psychology_component.py:11:class PsychologyComponent:
+simulation\components\state\firm_state_models.py:2:from dataclasses import dataclass, field
+simulation\components\state\firm_state_models.py:8:@dataclass
+simulation\components\state\firm_state_models.py:9:class HRState:
+simulation\components\state\firm_state_models.py:16:@dataclass
+simulation\components\state\firm_state_models.py:17:class FinanceState:
+simulation\components\state\firm_state_models.py:66:@dataclass
+simulation\components\state\firm_state_models.py:67:class ProductionState:
+simulation\components\state\firm_state_models.py:89:@dataclass
+simulation\components\state\firm_state_models.py:90:class SalesState:
+simulation\core_agents.py:69:class Household(
+simulation\core_markets.py:10:class Market(ABC):
+simulation\core_markets.py:21:        and are no longer enforced by the base class to allow for protocol compliance (TD-271).
+simulation\db\agent_repository.py:12:class AgentRepository(BaseRepository):
+simulation\db\analytics_repository.py:12:class AnalyticsRepository(BaseRepository):
+simulation\db\base_repository.py:8:class BaseRepository:
+simulation\db\base_repository.py:10:    Base class for repositories to share database connection logic.
+simulation\db\database.py:9:class DatabaseManager:
+simulation\db\db_manager.py:7:class DBManager:
+simulation\db\logger.py:9:class SimulationLogger:
+simulation\db\market_repository.py:11:class MarketRepository(BaseRepository):
+simulation\db\repository.py:25:class SimulationRepository:
+simulation\db\run_repository.py:9:class RunRepository(BaseRepository):
+simulation\decisions\action_proposal.py:7:class ActionProposalEngine:
+simulation\decisions\action_proposal.py:22:        agent_type = agent.__class__.__name__.lower()
+simulation\decisions\ai_driven_firm_engine.py:5:from dataclasses import replace
+simulation\decisions\ai_driven_firm_engine.py:17:class AIDrivenFirmDecisionEngine(BaseDecisionEngine):
+simulation\decisions\ai_driven_household_engine.py:25:class AIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+simulation\decisions\base_decision_engine.py:11:class BaseDecisionEngine:
+simulation\decisions\corporate_manager.py:18:class CorporateManager:
+simulation\decisions\firm\api.py:2:from dataclasses import dataclass, field
+simulation\decisions\firm\api.py:7:@dataclass
+simulation\decisions\firm\api.py:8:class FinancialPlanDTO:
+simulation\decisions\firm\api.py:11:@dataclass
+simulation\decisions\firm\api.py:12:class HRPlanDTO:
+simulation\decisions\firm\api.py:15:@dataclass
+simulation\decisions\firm\api.py:16:class OperationsPlanDTO:
+simulation\decisions\firm\api.py:19:@dataclass
+simulation\decisions\firm\api.py:20:class SalesPlanDTO:
+simulation\decisions\firm\api.py:23:class FinancialStrategyProtocol(Protocol):
+simulation\decisions\firm\api.py:27:class HRStrategyProtocol(Protocol):
+simulation\decisions\firm\api.py:31:class ProductionStrategyProtocol(Protocol):
+simulation\decisions\firm\api.py:35:class SalesManagerProtocol(Protocol):
+simulation\decisions\firm\financial_strategy.py:6:from modules.finance.api import BorrowerProfileDTO
+simulation\decisions\firm\financial_strategy.py:11:class FinancialStrategy:
+simulation\decisions\firm\financial_strategy.py:72:                borrower_profile = BorrowerProfileDTO(borrower_id=firm.id, gross_income=gross_income, existing_debt_payments=daily_burden * 30, collateral_value=0.0)
+simulation\decisions\firm\hr_strategy.py:9:class HRStrategy:
+simulation\decisions\firm\production_strategy.py:9:class ProductionStrategy:
+simulation\decisions\firm\sales_manager.py:8:class SalesManager:
+simulation\decisions\household\api.py:3:from dataclasses import dataclass
+simulation\decisions\household\api.py:12:@dataclass
+simulation\decisions\household\api.py:13:class ConsumptionContext:
+simulation\decisions\household\api.py:23:@dataclass
+simulation\decisions\household\api.py:24:class LaborContext:
+simulation\decisions\household\api.py:32:@dataclass
+simulation\decisions\household\api.py:33:class AssetManagementContext:
+simulation\decisions\household\api.py:44:@dataclass
+simulation\decisions\household\api.py:45:class HousingContext:
+simulation\decisions\household\api.py:54:class ConsumptionManagerProtocol(Protocol):
+simulation\decisions\household\api.py:57:class LaborManagerProtocol(Protocol):
+simulation\decisions\household\api.py:60:class AssetManagerProtocol(Protocol):
+simulation\decisions\household\api.py:65:class HousingManagerProtocol(Protocol):
+simulation\decisions\household\asset_manager.py:10:class AssetManager:
+simulation\decisions\household\consumption_manager.py:8:class ConsumptionManager:
+simulation\decisions\household\labor_manager.py:7:class LaborManager:
+simulation\decisions\household\stock_trader.py:5:class StockTrader:
+simulation\decisions\portfolio_manager.py:5:class PortfolioManager:
+simulation\decisions\rule_based_firm_engine.py:9:class RuleBasedFirmDecisionEngine(BaseDecisionEngine):
+simulation\decisions\rule_based_household_engine.py:14:class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
+simulation\decisions\standalone_rule_based_firm_engine.py:13:class StandaloneRuleBasedFirmDecisionEngine(BaseDecisionEngine):
+simulation\dtos\agents.py:4:class AgentBasicDTO(BaseModel):
+simulation\dtos\agents.py:11:class AgentDetailDTO(AgentBasicDTO):
+simulation\dtos\api.py:2:from dataclasses import dataclass, field
+simulation\dtos\api.py:22:@dataclass
+simulation\dtos\api.py:23:class TransactionData:
+simulation\dtos\api.py:36:@dataclass
+simulation\dtos\api.py:37:class AgentStateData:
+simulation\dtos\api.py:58:@dataclass
+simulation\dtos\api.py:59:class EconomicIndicatorData:
+simulation\dtos\api.py:82:@dataclass
+simulation\dtos\api.py:83:class MarketHistoryData:
+simulation\dtos\api.py:96:@dataclass
+simulation\dtos\api.py:97:class AIDecisionData:
+simulation\dtos\api.py:106:class GoodsDTO(TypedDict, total=False):
+simulation\dtos\api.py:120:class MarketHistoryDTO(TypedDict, total=False):
+simulation\dtos\api.py:143:@dataclass
+simulation\dtos\api.py:144:class GovernmentPolicyDTO:
+simulation\dtos\api.py:157:@dataclass
+simulation\dtos\api.py:158:class DecisionInputDTO:
+simulation\dtos\api.py:176:@dataclass
+simulation\dtos\api.py:177:class DecisionContext:
+simulation\dtos\api.py:205:@dataclass
+simulation\dtos\api.py:206:class FiscalContext:
+simulation\dtos\api.py:215:@dataclass
+simulation\dtos\api.py:216:class SimulationState:
+simulation\dtos\api.py:322:@dataclass
+simulation\dtos\api.py:323:class StockMarketHistoryData:
+simulation\dtos\api.py:346:@dataclass
+simulation\dtos\api.py:347:class WealthDistributionData:
+simulation\dtos\api.py:371:@dataclass
+simulation\dtos\api.py:372:class HouseholdIncomeData:
+simulation\dtos\api.py:387:@dataclass
+simulation\dtos\api.py:388:class SocialMobilityData:
+simulation\dtos\api.py:416:@dataclass
+simulation\dtos\api.py:417:class PersonalityStatisticsData:
+simulation\dtos\api.py:454:@dataclass
+simulation\dtos\api.py:455:class TimeBudgetDTO:
+simulation\dtos\api.py:464:@dataclass
+simulation\dtos\api.py:465:class FamilyInfoDTO:
+simulation\dtos\api.py:474:@dataclass
+simulation\dtos\api.py:475:class LeisureEffectDTO:
+simulation\dtos\api.py:482:@dataclass
+simulation\dtos\api.py:483:class GovernmentSensoryDTO:
+simulation\dtos\api.py:500:@dataclass
+simulation\dtos\api.py:501:class MacroFinancialContext:
+simulation\dtos\api.py:513:@dataclass
+simulation\dtos\api.py:514:class LaborResult:
+simulation\dtos\api.py:520:@dataclass
+simulation\dtos\api.py:521:class ConsumptionResult:
+simulation\dtos\api.py:525:@dataclass
+simulation\dtos\api.py:526:class JobOfferDTO:
+simulation\dtos\api.py:533:@dataclass
+simulation\dtos\api.py:534:class JobSeekerDTO:
+simulation\dtos\commands.py:1:from dataclasses import dataclass, field
+simulation\dtos\commands.py:6:@dataclass(frozen=True)
+simulation\dtos\commands.py:7:class GodCommandDTO:
+simulation\dtos\commands.py:27:@dataclass(frozen=True)
+simulation\dtos\commands.py:28:class GodResponseDTO:
+simulation\dtos\context_dtos.py:1:from dataclasses import dataclass, field
+simulation\dtos\context_dtos.py:5:@dataclass
+simulation\dtos\context_dtos.py:6:class PayrollProcessingContext:
+simulation\dtos\context_dtos.py:17:@dataclass
+simulation\dtos\context_dtos.py:18:class FinancialTransactionContext:
+simulation\dtos\context_dtos.py:27:@dataclass
+simulation\dtos\context_dtos.py:28:class SalesContext:
+simulation\dtos\decision_dtos.py:1:from dataclasses import dataclass
+simulation\dtos\decision_dtos.py:5:@dataclass
+simulation\dtos\decision_dtos.py:6:class DecisionOutputDTO:
+simulation\dtos\household_state_container.py:7:class HouseholdStateContainer:
+simulation\dtos\hr_dtos.py:1:from dataclasses import dataclass, field
+simulation\dtos\hr_dtos.py:6:@dataclass(frozen=True)
+simulation\dtos\hr_dtos.py:7:class TaxPolicyDTO:
+simulation\dtos\hr_dtos.py:13:@dataclass(frozen=True)
+simulation\dtos\hr_dtos.py:14:class HRPayrollContextDTO:
+simulation\dtos\hr_dtos.py:25:@dataclass(frozen=True)
+simulation\dtos\hr_dtos.py:26:class EmployeeUpdateDTO:
+simulation\dtos\hr_dtos.py:33:@dataclass(frozen=True)
+simulation\dtos\hr_dtos.py:34:class HRPayrollResultDTO:
+simulation\dtos\production_dtos.py:1:from dataclasses import dataclass, field
+simulation\dtos\production_dtos.py:4:@dataclass(frozen=True)
+simulation\dtos\production_dtos.py:5:class ProductionInputDTO:
+simulation\dtos\production_dtos.py:14:@dataclass(frozen=True)
+simulation\dtos\production_dtos.py:15:class ProductionResultDTO:
+simulation\dtos\registry_dtos.py:4:class ParameterSchemaDTO(BaseModel):
+simulation\dtos\sales_dtos.py:1:from dataclasses import dataclass
+simulation\dtos\sales_dtos.py:4:@dataclass(frozen=True)
+simulation\dtos\sales_dtos.py:5:class SalesPostAskContextDTO:
+simulation\dtos\sales_dtos.py:19:@dataclass(frozen=True)
+simulation\dtos\sales_dtos.py:20:class SalesMarketingContextDTO:
+simulation\dtos\sales_dtos.py:30:@dataclass(frozen=True)
+simulation\dtos\sales_dtos.py:31:class MarketingAdjustmentResultDTO:
+simulation\dtos\settlement_dtos.py:1:from dataclasses import dataclass
+simulation\dtos\settlement_dtos.py:4:@dataclass
+simulation\dtos\settlement_dtos.py:5:class SettlementResultDTO:
+simulation\dtos\strategy.py:2:from dataclasses import dataclass, field
+simulation\dtos\strategy.py:5:@dataclass
+simulation\dtos\strategy.py:6:class ScenarioStrategy:
+simulation\dtos\telemetry.py:4:class TelemetrySnapshotDTO(BaseModel):
+simulation\dtos\transactions.py:3:from dataclasses import dataclass
+simulation\dtos\transactions.py:5:# Avoid circular import by using TYPE_CHECKING or just relying on users to import Transaction from models if they need the full class.
+simulation\dtos\transactions.py:6:# But for DTO alias, we need the class.
+simulation\dtos\transactions.py:14:@dataclass
+simulation\dtos\transactions.py:15:class TransactionResult:
+simulation\dtos\transactions.py:22:class TransactionContext(TypedDict):
+simulation\dtos\watchtower.py:4:class IntegrityDTO(BaseModel):
+simulation\dtos\watchtower.py:8:class MacroDTO(BaseModel):
+simulation\dtos\watchtower.py:14:class FinanceRatesDTO(BaseModel):
+simulation\dtos\watchtower.py:20:class FinanceSupplyDTO(BaseModel):
+simulation\dtos\watchtower.py:26:class FinanceDTO(BaseModel):
+simulation\dtos\watchtower.py:30:class PoliticsApprovalDTO(BaseModel):
+simulation\dtos\watchtower.py:36:class PoliticsStatusDTO(BaseModel):
+simulation\dtos\watchtower.py:40:class PoliticsFiscalDTO(BaseModel):
+simulation\dtos\watchtower.py:45:class PoliticsDTO(BaseModel):
+simulation\dtos\watchtower.py:50:class PopulationDistributionDTO(BaseModel):
+simulation\dtos\watchtower.py:57:class PopulationMetricsDTO(BaseModel):
+simulation\dtos\watchtower.py:61:class PopulationDTO(BaseModel):
+simulation\dtos\watchtower.py:66:class WatchtowerSnapshotDTO(BaseModel):
+simulation\dtos\watchtower_v2.py:1:from dataclasses import dataclass, field
+simulation\dtos\watchtower_v2.py:8:@dataclass
+simulation\dtos\watchtower_v2.py:9:class WatchtowerV2DTO:
+simulation\engine.py:26:class Simulation:
+simulation\factories\agent_factory.py:21:class HouseholdFactory:
+simulation\factories\firm_factory.py:5:from dataclasses import replace
+simulation\factories\firm_factory.py:18:class FirmFactory:
+simulation\factories\golden_agents.py:9:class GoldenAgent(IPropertyOwner, IResident, IMortgageBorrower, IWelfareRecipient, IFinancialAgent, ITaxableHousehold, IAgent):
+simulation\factories\household_factory.py:16:class HouseholdFactory(IHouseholdFactory):
+simulation\finance\api.py:5:class ITransaction(TypedDict):
+simulation\finance\api.py:21:class IMintingSystem(Protocol):
+simulation\firms.py:17:from dataclasses import replace
+simulation\firms.py:82:class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner, IFirmStateProvider, ISalesTracker):
+simulation\firms.py:913:        # We rely on the concrete LoanMarket class because Firm is coupled to it via constructor.
+simulation\initialization\api.py:6:class Simulation:
+simulation\initialization\api.py:9:class SimulationInitializerInterface:
+simulation\initialization\initializer.py:87:class SimulationInitializer(SimulationInitializerInterface):
+simulation\interfaces\market_interface.py:5:class IMarket(Protocol):
+simulation\interfaces\policy_interface.py:4:class IGovernmentPolicy(ABC):
+simulation\loan_market.py:6:from modules.finance.api import IBankService, LoanNotFoundError, LoanRepaymentError, BorrowerProfileDTO
+simulation\loan_market.py:20:class LoanMarket(Market, ILoanMarket):
+simulation\markets\matching_engine.py:2:from dataclasses import replace
+simulation\markets\matching_engine.py:8:class OrderBookMatchingEngine(IMatchingEngine):
+simulation\markets\matching_engine.py:77:        class MutableOrder:
+simulation\markets\matching_engine.py:217:        class MutableOrder:
+simulation\markets\matching_engine.py:295:class StockMatchingEngine(IMatchingEngine):
+simulation\markets\matching_engine.py:332:        class MutableOrder:
+simulation\markets\order_book_market.py:5:from dataclasses import dataclass
+simulation\markets\order_book_market.py:14:@dataclass
+simulation\markets\order_book_market.py:15:class MarketOrder:
+simulation\markets\order_book_market.py:27:    @classmethod
+simulation\markets\order_book_market.py:61:class OrderBookMarket(Market):
+simulation\markets\stock_market.py:10:from dataclasses import dataclass, replace
+simulation\markets\stock_market.py:18:@dataclass
+simulation\markets\stock_market.py:19:class ManagedOrder:
+simulation\markets\stock_market.py:25:class StockMarket(Market):
+simulation\metrics\economic_tracker.py:20:class EconomicIndicatorTracker:
+simulation\metrics\inequality_tracker.py:19:class InequalityTracker:
+simulation\metrics\stock_tracker.py:21:class StockMarketTracker:
+simulation\metrics\stock_tracker.py:150:class PersonalityStatisticsTracker:
+simulation\models.py:1:from dataclasses import dataclass, field
+simulation\models.py:12:@dataclass
+simulation\models.py:13:class Transaction:
+simulation\models.py:30:@dataclass
+simulation\models.py:31:class Share:
+simulation\models.py:40:@dataclass
+simulation\models.py:41:class RealEstateUnit:
+simulation\models.py:68:@dataclass
+simulation\models.py:69:class Talent:
+simulation\models.py:75:@dataclass
+simulation\models.py:76:class Skill:
+simulation\orchestration\agent_service.py:14:class AgentService:
+simulation\orchestration\api.py:10:class IPhaseStrategy(Protocol):
+simulation\orchestration\api.py:26:class IMarketSignalFactory(Protocol):
+simulation\orchestration\api.py:41:class IDecisionInputFactory(Protocol):
+simulation\orchestration\dashboard_service.py:20:class DashboardService:
+simulation\orchestration\factories.py:23:class MarketSignalFactory:
+simulation\orchestration\factories.py:72:class MarketSnapshotFactory:
+simulation\orchestration\factories.py:152:class DecisionInputFactory:
+simulation\orchestration\persistence_bridge.py:1:from dataclasses import asdict
+simulation\orchestration\persistence_bridge.py:14:class PersistenceBridge:
+simulation\orchestration\persistence_bridge.py:38:            # Convert DTO to dict (dataclasses.asdict is expensive, manual is faster for simple structures)
+simulation\orchestration\phases\bankruptcy.py:13:class Phase_Bankruptcy(IPhaseStrategy):
+simulation\orchestration\phases\bank_debt.py:13:class Phase_BankAndDebt(IPhaseStrategy):
+simulation\orchestration\phases\consumption.py:14:class Phase_Consumption(IPhaseStrategy):
+simulation\orchestration\phases\decision.py:4:from dataclasses import replace
+simulation\orchestration\phases\decision.py:19:class Phase1_Decision(IPhaseStrategy):
+simulation\orchestration\phases\firm_operations.py:13:class Phase_FirmProductionAndSalaries(IPhaseStrategy):
+simulation\orchestration\phases\government_programs.py:13:class Phase_GovernmentPrograms(IPhaseStrategy):
+simulation\orchestration\phases\housing_saga.py:13:class Phase_HousingSaga(IPhaseStrategy):
+simulation\orchestration\phases\intercept.py:15:class Phase0_Intercept(IPhaseStrategy):
+simulation\orchestration\phases\matching.py:14:class Phase2_Matching(IPhaseStrategy):
+simulation\orchestration\phases\monetary_processing.py:13:class Phase_MonetaryProcessing(IPhaseStrategy):
+simulation\orchestration\phases\post_sequence.py:16:class Phase5_PostSequence(IPhaseStrategy):
+simulation\orchestration\phases\pre_sequence.py:19:class Phase0_PreSequence(IPhaseStrategy):
+simulation\orchestration\phases\production.py:13:class Phase_Production(IPhaseStrategy):
+simulation\orchestration\phases\scenario_analysis.py:15:class Phase_ScenarioAnalysis(IPhaseStrategy):
+simulation\orchestration\phases\system_commands.py:14:class Phase_SystemCommands(IPhaseStrategy):
+simulation\orchestration\phases\taxation_intents.py:13:class Phase_TaxationIntents(IPhaseStrategy):
+simulation\orchestration\phases\transaction.py:15:class Phase3_Transaction(IPhaseStrategy):
+simulation\orchestration\phases_recovery.py:16:class Phase_SystemicLiquidation(IPhaseStrategy):
+simulation\orchestration\tick_orchestrator.py:26:class TickOrchestrator:
+simulation\orchestration\utils.py:21:    from dataclasses import asdict, is_dataclass
+simulation\orchestration\utils.py:33:                if is_dataclass(debt_status):
+simulation\orchestration\utils.py:39:                    if is_dataclass(loan):
+simulation\orchestration\utils.py:44:                if is_dataclass(debt_status):
+simulation\orchestration\utils.py:51:                if is_dataclass(debt_status):
+simulation\policies\adaptive_gov_policy.py:14:class AdaptiveGovPolicy(IGovernmentPolicy):
+simulation\policies\smart_leviathan_policy.py:8:class SmartLeviathanPolicy(IGovernmentPolicy):
+simulation\policies\taylor_rule_policy.py:9:class TaylorRulePolicy(IGovernmentPolicy):
+simulation\portfolio.py:5:class Portfolio:
+simulation\schemas.py:1:from dataclasses import dataclass, field
+simulation\schemas.py:4:@dataclass
+simulation\schemas.py:5:class FirmActionVector:
+simulation\schemas.py:41:@dataclass
+simulation\schemas.py:42:class HouseholdActionVector:
+simulation\service_firms.py:17:class ServiceFirm(Firm):
+simulation\service_firms.py:132:        # Copy-paste is safer to avoid modifying base class significantly for this one deviation.
+simulation\systems\accounting.py:10:class AccountingSystem(IAccountingSystem):
+simulation\systems\analytics_system.py:14:class AnalyticsSystem:
+simulation\systems\analytics_system.py:93:                agent_dto.agent_type = agent.__class__.__name__.lower()
+simulation\systems\api.py:2:God Class 리팩토링을 위한 새로운 시스템 및 컴포넌트의 계약을 정의합니다.
+simulation\systems\api.py:9:from dataclasses import dataclass
+simulation\systems\api.py:37:class SocialMobilityContext(TypedDict):
+simulation\systems\api.py:42:class EventContext(TypedDict):
+simulation\systems\api.py:51:class SensoryContext(TypedDict):
+simulation\systems\api.py:59:class CommerceContext(TypedDict):
+simulation\systems\api.py:71:class LifecycleContext(TypedDict):
+simulation\systems\api.py:77:class MarketInteractionContext(TypedDict):
+simulation\systems\api.py:81:class LearningUpdateContext(TypedDict):
+simulation\systems\api.py:91:class SystemInterface(Protocol):
+simulation\systems\api.py:98:class ISocialSystem(Protocol):
+simulation\systems\api.py:111:class IEventSystem(Protocol):
+simulation\systems\api.py:120:class ISensorySystem(Protocol):
+simulation\systems\api.py:141:class ICommerceSystem(Protocol):
+simulation\systems\api.py:161:class IAgentLifecycleComponent(Protocol):
+simulation\systems\api.py:175:class IMarketComponent(Protocol):
+simulation\systems\api.py:186:class ILaborMarketAnalyzer(Protocol):
+simulation\systems\api.py:208:class ILearningAgent(Protocol):
+simulation\systems\api.py:223:class AgentLifecycleManagerInterface(SystemInterface, Protocol):
+simulation\systems\api.py:233:class IMintingAuthority(Protocol):
+simulation\systems\api.py:246:class IAccountingSystem(Protocol):
+simulation\systems\api.py:255:class IRegistry(Protocol):
+simulation\systems\api.py:263:class ISpecializedTransactionHandler(Protocol):
+simulation\systems\api.py:271:class ITransactionManager(SystemInterface, Protocol):
+simulation\systems\api.py:277:@dataclass(frozen=True)
+simulation\systems\api.py:278:class TransactionContext:
+simulation\systems\api.py:301:class ITransactionHandler(ABC):
+simulation\systems\api.py:303:    Abstract Base Class defining the interface for handling a specific
+simulation\systems\bootstrapper.py:12:class Bootstrapper:
+simulation\systems\central_bank_system.py:9:class CentralBankSystem(IMintingAuthority, ICentralBank):
+simulation\systems\commerce_system.py:16:class CommerceSystem(ICommerceSystem):
+simulation\systems\demographic_manager.py:19:class DemographicManager(IDemographicManager):
+simulation\systems\event_system.py:17:class EventSystem(IEventSystem):
+simulation\systems\firm_management.py:18:class FirmSystem:
+simulation\systems\firm_management.py:104:        instance_class = ServiceFirm if is_service else Firm
+simulation\systems\firm_management.py:124:        new_firm = instance_class(
+simulation\systems\generational_wealth_audit.py:9:class GenerationalWealthAudit:
+simulation\systems\handlers\asset_transfer_handler.py:11:class AssetTransferHandler(ITransactionHandler):
+simulation\systems\handlers\emergency_handler.py:9:class EmergencyTransactionHandler(ITransactionHandler):
+simulation\systems\handlers\escheatment_handler.py:9:class EscheatmentHandler(ITransactionHandler):
+simulation\systems\handlers\financial_handler.py:11:class FinancialTransactionHandler(ITransactionHandler):
+simulation\systems\handlers\goods_handler.py:14:class GoodsTransactionHandler(ITransactionHandler):
+simulation\systems\handlers\government_spending_handler.py:8:class GovernmentSpendingHandler(ITransactionHandler):
+simulation\systems\handlers\inheritance_handler.py:10:class InheritanceHandler(ITransactionHandler):
+simulation\systems\handlers\labor_handler.py:13:class LaborTransactionHandler(ITransactionHandler):
+simulation\systems\handlers\monetary_handler.py:9:class MonetaryTransactionHandler(ITransactionHandler):
+simulation\systems\handlers\public_manager_handler.py:12:class PublicManagerTransactionHandler(ITransactionHandler):
+simulation\systems\handlers\stock_handler.py:10:class StockTransactionHandler(ITransactionHandler):
+simulation\systems\housing_system.py:5:from dataclasses import asdict, is_dataclass
+simulation\systems\housing_system.py:23:class HousingSystem:
+simulation\systems\housing_system.py:75:                                if is_dataclass(lien) or isinstance(lien, LienDTO):
+simulation\systems\housing_system.py:178:        # decision is now a dataclass, but check type to be safe or use getattr
+simulation\systems\housing_system.py:180:        target_id = decision.target_property_id if is_dataclass(decision) else decision['target_property_id']
+simulation\systems\housing_system.py:194:                if is_dataclass(debt_status):
+simulation\systems\housing_system.py:202:                    if is_dataclass(loan):
+simulation\systems\housing_system.py:227:        # Access dataclass fields
+simulation\systems\housing_system.py:228:        if is_dataclass(decision):
+simulation\systems\immigration_manager.py:17:class ImmigrationManager:
+simulation\systems\inheritance_manager.py:15:class InheritanceManager:
+simulation\systems\labor_market_analyzer.py:8:class LaborMarketAnalyzer(ILaborMarketAnalyzer):
+simulation\systems\lifecycle\aging_system.py:13:class IAgingFirm(Protocol):
+simulation\systems\lifecycle\aging_system.py:26:class AgingSystem(IAgingSystem):
+simulation\systems\lifecycle\api.py:7:class ILifecycleSubsystem(Protocol):
+simulation\systems\lifecycle\api.py:20:class IAgingSystem(ILifecycleSubsystem, Protocol):
+simulation\systems\lifecycle\api.py:28:class IBirthSystem(ILifecycleSubsystem, Protocol):
+simulation\systems\lifecycle\api.py:36:class IDeathSystem(ILifecycleSubsystem, Protocol):
+simulation\systems\lifecycle\birth_system.py:16:class BirthSystem(IBirthSystem):
+simulation\systems\lifecycle\death_system.py:14:class DeathSystem(IDeathSystem):
+simulation\systems\lifecycle_manager.py:31:class AgentLifecycleManager(AgentLifecycleManagerInterface):
+simulation\systems\liquidation_handlers.py:17:class ILiquidationHandler(ABC):
+simulation\systems\liquidation_handlers.py:28:class InventoryLiquidationHandler(ILiquidationHandler):
+simulation\systems\liquidation_manager.py:19:class LiquidationManager:
+simulation\systems\ma_manager.py:13:class MAManager:
+simulation\systems\ministry_of_education.py:12:class MinistryOfEducation:
+simulation\systems\perception_system.py:3:from dataclasses import replace
+simulation\systems\perception_system.py:12:class PerceptionSystem:
+simulation\systems\persistence_manager.py:17:class PersistenceManager:
+simulation\systems\registry.py:20:class Registry(IRegistry):
+simulation\systems\sensory_system.py:10:class SensorySystem(ISensorySystem):
+simulation\systems\settlement_system.py:30:class SettlementSystem(IMonetaryAuthority):
+simulation\systems\social_system.py:7:class SocialSystem(ISocialSystem):
+simulation\systems\system_effects_manager.py:10:class SystemEffectsManager:
+simulation\systems\tax_agency.py:7:class TaxAgency:
+simulation\systems\tech\api.py:9:class FirmTechInfoDTO(TypedDict):
+simulation\systems\tech\api.py:15:class HouseholdEducationDTO(TypedDict):
+simulation\systems\tech\api.py:22:class TechnologySystemAPI(Protocol):
+simulation\systems\technology_manager.py:5:from dataclasses import dataclass, field
+simulation\systems\technology_manager.py:15:@dataclass
+simulation\systems\technology_manager.py:16:class TechNode:
+simulation\systems\technology_manager.py:28:class TechnologyManager:
+simulation\systems\transaction_processor.py:20:class TransactionProcessor(SystemInterface):
+simulation\utils\config_factory.py:1:import dataclasses
+simulation\utils\config_factory.py:6:def create_config_dto(config_module: object, dto_class: Type[T]) -> T:
+simulation\utils\config_factory.py:13:    for field in dataclasses.fields(cast(Any, dto_class)):
+simulation\utils\config_factory.py:18:        elif field.default is not dataclasses.MISSING or field.default_factory is not dataclasses.MISSING:
+simulation\utils\config_factory.py:19:            continue # Use dataclass default
+simulation\utils\config_factory.py:24:                f"but is required by DTO '{dto_class.__name__}'."
+simulation\utils\config_factory.py:27:    return dto_class(**config_values)
+simulation\utils\golden_loader.py:6:class GoldenLoader:
+simulation\utils\golden_loader.py:38:            spec: Optional class to use as the spec for the created Mock (only for the top-level dict).
+simulation\viewmodels\agent_state_viewmodel.py:6:class AgentStateViewModel:
+simulation\viewmodels\economic_indicators_viewmodel.py:9:class EconomicIndicatorsViewModel:
+simulation\viewmodels\economic_indicators_viewmodel.py:86:        # Firm class has 'liquidity_need' and maybe others depending on implementation.
+simulation\viewmodels\market_history_viewmodel.py:6:class MarketHistoryViewModel:
+simulation\world_state.py:55:class WorldState:
+simulation\world_state.py:177:            if hasattr(holder, '__class__') and holder.__class__.__name__ == "CentralBank":
+simulation\world_state.py:202:            if hasattr(holder, '__class__') and holder.__class__.__name__ == "Bank":
+simulation\world_state.py:205:                # Better to check class or interface if possible, or rely on explicit list
+simulation\world_state.py:208:            # Explicit check for Bank class
+tests\common\test_protocol.py:10:class TestProtocolShield(unittest.TestCase):
+tests\finance\test_circular_imports_fix.py:15:class MockConfig:
+tests\finance\test_circular_imports_fix.py:29:class MockBank(IBank):
+tests\finance\test_circular_imports_fix.py:59:class MockGovernment(IGovernmentFinance):
+tests\finance\test_circular_imports_fix.py:76:class MockFirm(IFinancialFirm):
+tests\finance\test_protocol_integrity.py:3:from dataclasses import dataclass, field
+tests\finance\test_protocol_integrity.py:13:@dataclass
+tests\finance\test_protocol_integrity.py:14:class MockAgent:
+tests\finance\test_protocol_integrity.py:53:@dataclass
+tests\finance\test_protocol_integrity.py:54:class MockCentralBank:
+tests\finance\test_protocol_integrity.py:88:class TestProtocolIntegrity:
+tests\finance\test_protocol_integrity.py:163:        class MockConfig:
+tests\finance\test_protocol_integrity.py:201:        class MockConfig:
+tests\finance\test_settlement_integrity.py:8:class TestSettlementIntegrity:
+tests\finance\test_solvency_logic.py:9:class TestSolvencyLogic:
+tests\finance\test_solvency_logic.py:72:        """Verify Firm class implements IFinancialFirm correctly."""
+tests\finance\test_solvency_logic.py:77:            print("Firm has no class attribute 'age'")
+tests\integration\mission_int_02_stress_test.py:17:class MockAgent(IFinancialAgent, IInventoryHandler):
+tests\integration\mission_int_02_stress_test.py:66:class MockBank(MockAgent, IBank): # Inherits basic agent props
+tests\integration\mission_int_02_stress_test.py:101:class MockSettlementSystem:
+tests\integration\scenarios\test_stress_scenarios.py:14:class TestPhase28StressScenarios:
+tests\integration\scenarios\verification\verify_inheritance.py:10:class TestInheritance:
+tests\integration\scenarios\verification\verify_mitosis.py:237:    # `modules/simulation/api.py`: class IEducated(Protocol): education_xp: float ...
+tests\integration\scenarios\verify_agent_soul_e2e.py:37:    households = [a for a in sim.get_all_agents() if a.__class__.__name__ == 'Household']
+tests\integration\scenarios\verify_agent_soul_e2e.py:38:    firms = [a for a in sim.get_all_agents() if a.__class__.__name__ == 'Firm']
+tests\integration\scenarios\verify_ai_v2_architecture.py:21:class MockRepository(SimulationRepository):
+tests\integration\scenarios\verify_ai_v2_architecture.py:35:class MockAIRegistry:
+tests\integration\scenarios\verify_automation_tax.py:7:class TestAutomationTax(unittest.TestCase):
+tests\integration\scenarios\verify_capital_labor_dynamics.py:28:class TestCapitalLaborDynamics(unittest.TestCase):
+tests\integration\scenarios\verify_corporate_tax.py:11:class TestCorporateTax(unittest.TestCase):
+tests\integration\scenarios\verify_economic_equilibrium.py:21:class TestEconomicConservation(unittest.TestCase):
+tests\integration\scenarios\verify_gold_standard.py:23:class MockRepository:
+tests\integration\scenarios\verify_gold_standard.py:33:class VerifyGoldStandard(unittest.TestCase):
+tests\integration\scenarios\verify_labor_dynamics.py:21:class TestLaborDynamics(unittest.TestCase):
+tests\integration\scenarios\verify_maslow_education.py:9:class MockConfig:
+tests\integration\scenarios\verify_monetary_integrity.py:14:class MockRepository:
+tests\integration\scenarios\verify_monetary_integrity.py:22:class TestMonetaryIntegrity(unittest.TestCase):
+tests\integration\scenarios\verify_multi_good_market.py:21:class TestMultiGoodMarket(unittest.TestCase):
+tests\integration\scenarios\verify_needs_fluctuation.py:13:class TestNeedsFluctuation(unittest.TestCase):
+tests\integration\scenarios\verify_population_dynamics.py:13:class TestPopulationDynamics(unittest.TestCase):
+tests\integration\scenarios\verify_population_dynamics.py:93:        # Social Rank 0.8 (Upper Class expectation?) or Middle?
+tests\integration\scenarios\verify_population_dynamics.py:119:        # If satisfied (>1.2 for upper class), prob is 0.05.
+tests\integration\scenarios\verify_population_dynamics.py:120:        # Ratio = 1.0. For Upper Class, >1.2 needed. So still 0.0.
+tests\integration\scenarios\verify_population_dynamics.py:123:        # Middle class satisfied if > 1.0. Ratio is 1.0. > 1.0? No, == 1.0.
+tests\integration\scenarios\verify_service_market.py:17:class TestServiceMarket(unittest.TestCase):
+tests\integration\scenarios\verify_socio_tech_logic.py:7:class MockConfig:
+tests\integration\scenarios\verify_socio_tech_logic.py:11:class TestHouseholdAI_TimeAllocation(unittest.TestCase):
+tests\integration\scenarios\verify_step1.py:8:class TestStep1Foundation(unittest.TestCase):
+tests\integration\scenarios\verify_stock_trading.py:38:class TestStockTradingIntegration(unittest.TestCase):
+tests\integration\scenarios\verify_supply_shock.py:21:class TestSupplyShock(unittest.TestCase):
+tests\integration\scenarios\verify_system2_integration.py:9:class TestSystem2Integration(unittest.TestCase):
+tests\integration\scenarios\verify_td_115_111.py:173:        # but method_calls on the class mock might collect calls to children
+tests\integration\scenarios\verify_wo103_phase1.py:13:class TestWO103Phase1(unittest.TestCase):
+tests\integration\test_atomic_settlement.py:8:class MockAgent: # Implements IFinancialEntity and IFinancialAgent
+tests\integration\test_atomic_settlement.py:49:class MockRegistry:
+tests\integration\test_decision_engine_integration.py:86:class TestDecisionEngineIntegration:
+tests\integration\test_finance_bailout.py:8:# A simple stub class for config attributes
+tests\integration\test_finance_bailout.py:9:class MockConfig:
+tests\integration\test_fiscal_integrity.py:11:class MockConfig:
+tests\integration\test_generational_wealth_audit.py:6:class TestGenerationalWealthAudit(unittest.TestCase):
+tests\integration\test_government_ai_logic.py:6:class TestGovernmentAILogic(unittest.TestCase):
+tests\integration\test_government_finance.py:10:class MockRefluxSystem:
+tests\integration\test_government_finance.py:37:class MockSettlementSystem(ISettlementSystem):
+tests\integration\test_government_finance.py:57:class MockConfig:
+tests\integration\test_government_fiscal_integration.py:7:class TestGovernmentFiscalIntegration:
+tests\integration\test_government_integration.py:6:class MockTaxableAgent:
+tests\integration\test_government_refactor_behavior.py:19:class MockTaxableAgent:
+tests\integration\test_government_refactor_behavior.py:32:class TestGovernmentRefactor:
+tests\integration\test_government_tax.py:6:class TestGovernmentTax:
+tests\integration\test_interest_sensitivity.py:6:class TestInterestSensitivityLogic:
+tests\integration\test_lifecycle_cycle.py:10:class TestLifecycleCycle:
+tests\integration\test_liquidation_services.py:10:class TestLiquidationServices(unittest.TestCase):
+tests\integration\test_liquidation_waterfall.py:18:class TestLiquidationWaterfallIntegration(unittest.TestCase):
+tests\integration\test_m2_integrity.py:7:class TestM2Integrity(unittest.TestCase):
+tests\integration\test_multicurrency_liquidation.py:15:class TestMultiCurrencyLiquidation(unittest.TestCase):
+tests\integration\test_omo_system.py:13:class OMOTestAgent: # Implements IFinancialEntity and IFinancialAgent
+tests\integration\test_omo_system.py:66:class MockRegistry:
+tests\integration\test_omo_system.py:81:    # SettlementSystem checks for "CENTRAL_BANK" ID or "CentralBank" class name to allow overdraft (Minting)
+tests\integration\test_phase20_integration.py:10:class TestPhase20Integration:
+tests\integration\test_phase20_scaffolding.py:11:class TestPhase20Scaffolding(unittest.TestCase):
+tests\integration\test_phase23_production.py:7:class TestPhase23Production:
+tests\integration\test_portfolio_integration.py:8:class TestPortfolioIntegration(unittest.TestCase):
+tests\integration\test_public_manager_integration.py:12:class MockAgent(IInventoryHandler):
+tests\integration\test_public_manager_integration.py:60:class TestPublicManagerIntegration:
+tests\integration\test_purity_gate.py:17:    # but since it's a dataclass, it might accept kwargs if we are not careful,
+tests\integration\test_registry_metadata.py:7:class TestRegistryMetadata:
+tests\integration\test_reporting_pennies.py:39:    # better to use a minimal subclass or mock the dependencies carefully.
+tests\integration\test_reporting_pennies.py:61:class TestReportingPennies:
+tests\integration\test_server_integration.py:8:from dataclasses import dataclass
+tests\integration\test_shareholder_registry.py:4:class MockConfig:
+tests\integration\test_td194_integration.py:12:class TestTD194Integration:
+tests\integration\test_telemetry_pipeline.py:9:class TestTelemetryPipeline:
+tests\integration\test_thoughtstream_logger.py:61:        class SnapshotDTO:
+tests\integration\test_tick_normalization.py:10:class TestTickNormalization:
+tests\integration\test_tick_normalization.py:91:        # Patch the phases classes to return mocks
+tests\integration\test_wo048_breeding.py:8:class TestWO048Breeding(unittest.TestCase):
+tests\integration\test_wo167_grace_protocol.py:16:# Concrete Mock Class for Firm
+tests\integration\test_wo167_grace_protocol.py:17:class DummyFirm(IAgingFirm, ICurrencyHolder):
+tests\integration\test_wo167_grace_protocol.py:48:# Concrete Mock Class for Market
+tests\integration\test_wo167_grace_protocol.py:49:class DummyMarket(IMarket):
+tests\integration\test_wo167_grace_protocol.py:66:class TestGraceProtocol:
+tests\market\test_labor_matching.py:6:class TestLaborMatching:
+tests\market\test_matching_engine_hardening.py:7:class TestMatchingEngineHardening:
+tests\market\test_precision_matching.py:6:class TestPrecisionMatching(unittest.TestCase):
+tests\market\test_stock_id_helper.py:4:class TestStockIDHelper:
+tests\market\test_stock_market_pennies.py:6:class TestStockMarketPennies(unittest.TestCase):
+tests\mocks\mock_settlement_system.py:5:class MockSettlementSystem(ISettlementSystem):
+tests\modules\agent_framework\test_components.py:15:class TestInventoryComponent:
+tests\modules\agent_framework\test_components.py:81:class TestFinancialComponent:
+tests\modules\finance\engines\test_monetary_engine.py:18:class TestMonetaryEngine:
+tests\modules\finance\test_exchange_engine.py:6:class TestCurrencyExchangeEngine(unittest.TestCase):
+tests\modules\finance\transaction\test_processor.py:3:from dataclasses import dataclass
+tests\modules\finance\transaction\test_processor.py:16:@dataclass
+tests\modules\finance\transaction\test_processor.py:17:class MockState:
+tests\modules\governance\test_system_command_processor.py:79:    # We use a dummy class that definitely doesn't implement the protocol
+tests\modules\governance\test_system_command_processor.py:80:    class NotGovernment:
+tests\modules\government\engines\test_fiscal_engine.py:24:class TestFiscalEngine:
+tests\modules\government\engines\test_fiscal_guardrails.py:20:class TestFiscalGuardrails:
+tests\modules\system\test_global_registry.py:7:class TestGlobalRegistry:
+tests\modules\testing\test_mock_governance.py:8:class SimpleProtocol(Protocol):
+tests\modules\testing\test_mock_governance.py:14:class InheritedProtocol(SimpleProtocol, Protocol):
+tests\modules\testing\test_mock_governance.py:18:class TestMockGovernance:
+tests\orchestration\test_state_synchronization.py:8:class MockPhase(IPhaseStrategy):
+tests\orchestration\test_state_synchronization.py:16:class TestStateSynchronization:
+tests\repro_td_issues.py:16:class TestReproTD(unittest.TestCase):
+tests\repro_td_issues.py:37:        cb.__class__.__name__ = "CentralBank"
+tests\scenarios\test_leviathan_emergence.py:10:class TestLeviathanEmergence:
+tests\system\test_audit_integrity.py:17:class TestEconomicIntegrityAudit(unittest.TestCase):
+tests\system\test_audit_integrity.py:50:        # Since dm.__init__ instantiates HouseholdFactory, we mock the class before init or patch it.
+tests\system\test_audit_integrity.py:51:        # Here we patched the class, so dm.household_factory will be a Mock.
+tests\system\test_config_proxy.py:7:class DummyDefaults:
+tests\system\test_engine.py:107:        (1.0, 0.05),  # Working Class: 5%
+tests\system\test_engine.py:108:        (3.0, 0.10),  # Middle Class: 10%
+tests\system\test_engine.py:332:# Test Cases for Simulation class
+tests\system\test_engine.py:333:class TestSimulation:
+tests\system\test_phase29_depression.py:16:class TestPhase29Depression(unittest.TestCase):
+tests\system\test_serialization.py:8:class TestSerialization:
+tests\test_firm_surgical_separation.py:13:class TestFirmSurgicalSeparation:
+tests\test_policy_lockout.py:7:class TestPolicyLockout(unittest.TestCase):
+tests\unit\analysis\test_scenario_verifier.py:7:class TestScenarioVerifier:
+tests\unit\components\test_demographics_component.py:7:class TestDemographicsComponent(unittest.TestCase):
+tests\unit\components\test_engines.py:16:class TestHREngine:
+tests\unit\components\test_engines.py:89:class TestSalesEngine:
+tests\unit\components\test_engines.py:146:class TestFinanceEngine:
+tests\unit\components\test_engines.py:184:class TestProductionEngine:
+tests\unit\corporate\conftest.py:7:class MockConfig:
+tests\unit\corporate\test_corporate_orchestrator.py:3:from dataclasses import replace
+tests\unit\corporate\test_financial_strategy.py:14:    from dataclasses import replace
+tests\unit\corporate\test_hr_strategy.py:2:from dataclasses import replace
+tests\unit\corporate\test_production_strategy.py:5:    from dataclasses import replace
+tests\unit\corporate\test_production_strategy.py:22:    from dataclasses import replace
+tests\unit\corporate\test_sales_manager.py:5:    from dataclasses import replace
+tests\unit\dashboard\components\test_controls.py:7:class TestControls(unittest.TestCase):
+tests\unit\dashboard\test_registry_service.py:6:class TestRegistryService(unittest.TestCase):
+tests\unit\dashboard\test_socket_manager.py:8:class TestSocketManager(unittest.TestCase):
+tests\unit\decisions\legacy_household_engine_fixture.py:17:class LegacyAIDrivenHouseholdDecisionEngine(BaseDecisionEngine):
+tests\unit\decisions\test_animal_spirits_phase2.py:10:class TestHouseholdSurvivalOverride:
+tests\unit\decisions\test_animal_spirits_phase2.py:69:class TestFirmPricingLogic:
+tests\unit\decisions\test_finance_rules.py:6:class TestFinanceRules:
+tests\unit\decisions\test_household_integration_new.py:11:class TestHouseholdIntegrationNew(unittest.TestCase):
+tests\unit\decisions\test_hr_rules.py:6:class TestHRRules:
+tests\unit\decisions\test_production_rules.py:5:class TestProductionRules:
+tests\unit\decisions\test_sales_rules.py:8:class TestSalesRules:
+tests\unit\finance\call_market\test_service.py:10:class TestCallMarketService(unittest.TestCase):
+tests\unit\finance\test_bank_service_interface.py:16:class TestBankServiceInterface:
+tests\unit\finance\test_credit_scoring.py:4:from modules.finance.api import BorrowerProfileDTO
+tests\unit\finance\test_credit_scoring.py:6:class MockConfig:
+tests\unit\finance\test_credit_scoring.py:16:    profile = BorrowerProfileDTO(
+tests\unit\finance\test_credit_scoring.py:30:    profile = BorrowerProfileDTO(
+tests\unit\finance\test_credit_scoring.py:42:    profile = BorrowerProfileDTO(
+tests\unit\finance\test_credit_scoring.py:55:    profile = BorrowerProfileDTO(
+tests\unit\finance\test_credit_scoring.py:68:    profile = BorrowerProfileDTO(
+tests\unit\finance\test_finance_system_refactor.py:7:class MockGovernment:
+tests\unit\finance\test_finance_system_refactor.py:14:class MockCentralBank:
+tests\unit\finance\test_finance_system_refactor.py:18:class MockFirm:
+tests\unit\firm\test_firm_actions.py:9:class TestFirmActionExecutor:
+tests\unit\governance\test_judicial_system.py:11:class MockAgent:
+tests\unit\helpers\dto_factory.py:6:class DTOFactory:
+tests\unit\household\test_housing_connector.py:6:class TestHousingConnector:
+tests\unit\household\test_snapshot_assembler.py:10:class TestHouseholdSnapshotAssembler:
+tests\unit\markets\test_circuit_breaker_relaxation.py:6:class TestCircuitBreakerRelaxation:
+tests\unit\markets\test_loan_market.py:10:class TestLoanMarket:
+tests\unit\markets\test_loan_market_mortgage.py:10:class TestLoanMarketMortgage:
+tests\unit\markets\test_order_book_market.py:33:class TestOrderBookMarket:
+tests\unit\markets\test_order_book_market_cancellation.py:6:class TestOrderBookMarketCancellation:
+tests\unit\markets\test_stock_market_cancellation.py:6:class TestStockMarketCancellation:
+tests\unit\mocks\mock_config.py:1:from dataclasses import dataclass, field
+tests\unit\mocks\mock_config.py:3:@dataclass
+tests\unit\mocks\mock_config.py:4:class MockAIConfig:
+tests\unit\mocks\mock_config.py:9:@dataclass
+tests\unit\mocks\mock_config.py:10:class MockEconomyConfig:
+tests\unit\mocks\mock_config.py:14:@dataclass
+tests\unit\mocks\mock_config.py:15:class MockMarketConfig:
+tests\unit\mocks\mock_config.py:19:@dataclass
+tests\unit\mocks\mock_config.py:20:class MockSimulationConfig:
+tests\unit\mocks\mock_factory.py:11:class MockFactory:
+tests\unit\modules\analysis\test_bubble_observatory.py:9:class TestBubbleObservatory:
+tests\unit\modules\common\config\test_impl.py:5:from dataclasses import dataclass
+tests\unit\modules\common\config\test_impl.py:7:@dataclass(frozen=True)
+tests\unit\modules\common\config\test_impl.py:8:class ConfigDTOTest(BaseConfigDTO):
+tests\unit\modules\common\config\test_impl.py:42:    class LegacyConfig:
+tests\unit\modules\demographics\test_event_consistency.py:9:class MockAgent:
+tests\unit\modules\finance\test_corporate_finance.py:4:class TestAltmanZScoreCalculator:
+tests\unit\modules\finance\test_double_entry.py:12:class MockGovernment:
+tests\unit\modules\finance\test_double_entry.py:40:class MockCentralBank:
+tests\unit\modules\finance\test_double_entry.py:59:class MockBank:
+tests\unit\modules\finance\test_double_entry.py:79:class MockFirm:
+tests\unit\modules\finance\test_double_entry.py:98:class MockConfig:
+tests\unit\modules\finance\test_double_entry.py:125:class TestDoubleEntry(unittest.TestCase):
+tests\unit\modules\finance\test_qe.py:7:class TestQE:
+tests\unit\modules\finance\test_settlement_purity.py:10:class TestSettlementPurity:
+tests\unit\modules\finance\test_settlement_purity.py:37:        mock_cb = MagicMock() # CentralBank is a class forward ref, tricky to mock spec strict without import
+tests\unit\modules\finance\test_sovereign_debt.py:10:class TestSovereignDebt:
+tests\unit\modules\finance\test_system.py:40:class StubGovernment:
+tests\unit\modules\finance\test_system.py:63:class StubCentralBank:
+tests\unit\modules\finance\test_system.py:83:class StubBank:
+tests\unit\modules\finance\test_system.py:130:class StubFirm:
+tests\unit\modules\firm\test_engines.py:12:class TestFinanceEngine:
+tests\unit\modules\firm\test_engines.py:110:class TestHREngine:
+tests\unit\modules\firm\test_engines.py:190:        # Mock input is a frozen dataclass, so we must replace it (or create new)
+tests\unit\modules\firm\test_engines.py:193:        from dataclasses import replace
+tests\unit\modules\government\components\test_fiscal_policy_manager.py:7:class TestFiscalPolicyManager:
+tests\unit\modules\government\components\test_monetary_ledger_expansion.py:7:class TestMonetaryLedgerExpansion(unittest.TestCase):
+tests\unit\modules\government\components\test_monetary_policy_manager.py:7:class TestMonetaryPolicyManager(unittest.TestCase):
+tests\unit\modules\government\test_fiscal_bond_service.py:7:class TestFiscalBondService:
+tests\unit\modules\government\test_politics_system.py:5:import dataclasses
+tests\unit\modules\household\test_consumption_manager.py:11:class TestConsumptionManager:
+tests\unit\modules\household\test_decision_unit.py:13:class TestDecisionUnit:
+tests\unit\modules\household\test_econ_component.py:12:class TestEconComponent:
+tests\unit\modules\household\test_new_engines.py:9:class TestBeliefEngine:
+tests\unit\modules\household\test_new_engines.py:27:class TestCrisisEngine:
+tests\unit\modules\memory\test_memory_v2.py:28:class TestMemoryManager:
+tests\unit\modules\system\execution\test_public_manager.py:6:class TestPublicManager:
+tests\unit\modules\system\execution\test_public_manager_compliance.py:7:class TestPublicManagerCompliance:
+tests\unit\modules\system\services\test_schema_loader.py:10:class TestSchemaLoader(unittest.TestCase):
+tests\unit\modules\system\test_config_bridge.py:5:class TestConfigBridge:
+tests\unit\modules\system\test_registry.py:6:class TestGlobalRegistry:
+tests\unit\modules\system\test_server_bridge.py:8:class TestTelemetryExchange(unittest.TestCase):
+tests\unit\modules\system\test_telemetry.py:6:class MockRegistry:
+tests\unit\modules\system\test_telemetry_robustness.py:5:class MockRegistry:
+tests\unit\modules\system\test_telemetry_robustness.py:12:class TestTelemetryRobustness(unittest.TestCase):
+tests\unit\modules\system\test_telemetry_robustness.py:40:        class Gov:
+tests\unit\modules\watchtower\test_agent_service.py:8:# Helper to attach attributes to mock since spec=Class prevents setting new attributes
+tests\unit\orchestration\test_phase_housing_saga.py:62:    class MockSystemWithoutMethod:
+tests\unit\sagas\test_orchestrator.py:15:    # Use dataclass constructor
+tests\unit\sagas\test_orchestrator.py:71:        # But we hold a ref to 'saga'. It is mutable (dataclass).
+tests\unit\systems\handlers\test_housing_handler.py:12:class DummyHousingParticipant(IHousingTransactionParticipant, IResident):
+tests\unit\systems\handlers\test_housing_handler.py:24:class DummySeller(IPropertyOwner):
+tests\unit\systems\handlers\test_housing_handler.py:33:class TestHousingTransactionHandler(unittest.TestCase):
+tests\unit\systems\handlers\test_housing_handler.py:47:        # Add configs used in BorrowerProfileDTO construction
+tests\unit\systems\handlers\test_liquidation_handlers.py:9:class MockLiquidatableFirm(IInventoryHandler, IConfigurable):
+tests\unit\systems\handlers\test_liquidation_handlers.py:11:    Mock class that satisfies protocols for isinstance checks.
+tests\unit\systems\handlers\test_liquidation_handlers.py:22:class TestInventoryLiquidationHandler(unittest.TestCase):
+tests\unit\systems\lifecycle\test_aging_system.py:9:class MockMarket:
+tests\unit\systems\lifecycle\test_aging_system.py:19:class MockWallet:
+tests\unit\systems\lifecycle\test_aging_system.py:25:class MockFirm:
+tests\unit\systems\lifecycle\test_aging_system.py:49:class TestAgingSystem:
+tests\unit\systems\lifecycle\test_birth_system.py:8:class TestBirthSystem:
+tests\unit\systems\lifecycle\test_death_system.py:8:class TestDeathSystem:
+tests\unit\systems\test_firm_management_leak.py:8:class TestFirmManagementLeak(unittest.TestCase):
+tests\unit\systems\test_firm_management_refactor.py:5:class TestFirmManagementRefactor(unittest.TestCase):
+tests\unit\systems\test_housing_system.py:3:from dataclasses import dataclass, field
+tests\unit\systems\test_housing_system.py:14:@dataclass
+tests\unit\systems\test_housing_system.py:15:class MockAgent:
+tests\unit\systems\test_housing_system.py:50:class TestHousingSystemRefactor(unittest.TestCase):
+tests\unit\systems\test_inheritance_manager.py:8:class TestInheritanceManager:
+tests\unit\systems\test_lifecycle_manager_integration.py:6:class TestAgentLifecycleManager:
+tests\unit\systems\test_liquidation_manager.py:15:class TestLiquidationManager(unittest.TestCase):
+tests\unit\systems\test_ma_manager.py:7:class TestMAManager(unittest.TestCase):
+tests\unit\systems\test_ma_manager.py:32:        mock_firm.hr_state = MagicMock() # Manually mock instance attribute not in class spec
+tests\unit\systems\test_ministry_of_education.py:5:class TestMinistryOfEducation(unittest.TestCase):
+tests\unit\systems\test_ministry_of_education.py:33:        h.__class__.__name__ = "Household"
+tests\unit\systems\test_perception_system.py:4:from dataclasses import replace
+tests\unit\systems\test_settlement_saga_integration.py:11:class TestSettlementSagaIntegration:
+tests\unit\systems\test_settlement_security.py:7:class StrictMockBank(IBank):
+tests\unit\systems\test_settlement_security.py:70:class StrictFinancialAgent(IFinancialAgent, IFinancialEntity):
+tests\unit\systems\test_settlement_security.py:157:    class BadAgent:
+tests\unit\systems\test_settlement_security.py:179:    class BadAgent:
+tests\unit\systems\test_settlement_system.py:10:class MockRegistry(IAgentRegistry):
+tests\unit\systems\test_settlement_system.py:27:class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
+tests\unit\systems\test_settlement_system.py:95:class MockCentralBank(MockAgent, ICentralBank):
+tests\unit\systems\test_settlement_system.py:106:class MockBank(IBank):
+tests\unit\systems\test_settlement_system.py:272:    class FaultyAgent(MockAgent):
+tests\unit\systems\test_settlement_system.py:412:    class FaultyAgent(MockAgent):
+tests\unit\systems\test_social_system.py:6:class MockHousehold:
+tests\unit\systems\test_tax_agency.py:5:class TestTaxAgency(unittest.TestCase):
+tests\unit\systems\test_technology_manager.py:11:class FakeMatrix:
+tests\unit\systems\test_technology_manager.py:32:class FakeNumpy:
+tests\unit\systems\test_technology_manager.py:66:# Test Class
+tests\unit\systems\test_technology_manager.py:69:class TestTechnologyManager:
+tests\unit\test_api_extensions.py:13:class TestEconomicIndicatorsViewModel:
+tests\unit\test_api_history.py:6:class TestHistoryAPI(unittest.TestCase):
+tests\unit\test_bank_decomposition.py:8:from modules.finance.api import LoanInfoDTO, BorrowerProfileDTO
+tests\unit\test_bank_decomposition.py:14:class TestBankDecomposition(unittest.TestCase):
+tests\unit\test_bank_decomposition.py:86:        # Expect a BorrowerProfileDTO object now, not a dict
+tests\unit\test_bank_decomposition.py:90:        self.assertIsInstance(kwargs['borrower_profile'], BorrowerProfileDTO)
+tests\unit\test_consumption_manager_survival.py:38:class TestConsumptionManagerSurvival:
+tests\unit\test_factories.py:9:class TestMarketSignalFactory:
+tests\unit\test_factories.py:31:class TestMarketSnapshotFactory:
+tests\unit\test_factories.py:76:class TestDecisionInputFactory:
+tests\unit\test_firms.py:9:class TestFirmBookValue:
+tests\unit\test_firms.py:90:class TestFirmProduction:
+tests\unit\test_firms.py:151:class TestFirmSales:
+tests\unit\test_god_command_protocol.py:10:class MockRegistry(IRestorableRegistry):
+tests\unit\test_god_command_protocol.py:44:class MockSettlementSystem:
+tests\unit\test_god_command_protocol.py:56:class MockAgentRegistry(IAgentRegistry):
+tests\unit\test_god_command_protocol.py:65:    # We use MagicMock but with our custom class as spec to ensure methods exist
+tests\unit\test_goods_handler_precision.py:10:class TestGoodsHandlerPrecision:
+tests\unit\test_government_structure.py:8:class TestGovernmentStructure:
+tests\unit\test_handlers_fix.py:14:class TestHandlerFix(unittest.TestCase):
+tests\unit\test_household_ai.py:116:class TestHouseholdAIInsight:
+tests\unit\test_household_ai_insight.py:7:class TestHouseholdAIInsight:
+tests\unit\test_household_decision_engine_new.py:170:class TestAIDrivenHouseholdDecisionEngine:
+tests\unit\test_household_refactor.py:11:class TestHouseholdRefactor:
+tests\unit\test_household_system2.py:9:class TestHouseholdSystem2(unittest.TestCase):
+tests\unit\test_learning_tracker.py:4:class TestLearningTracker(unittest.TestCase):
+tests\unit\test_lifecycle_reset.py:7:class TestLifecycleReset:
+tests\unit\test_logger.py:11:class TestLogger(unittest.TestCase):
+tests\unit\test_marketing_roi.py:7:class TestMarketingROI(unittest.TestCase):
+tests\unit\test_markets_v2.py:16:class TestOrderBookMarketInitialization:
+tests\unit\test_markets_v2.py:28:class TestPlaceOrderToBook:
+tests\unit\test_markets_v2.py:91:class TestOrderMatching:
+tests\unit\test_markets_v2.py:196:class TestMarketAPI:
+tests\unit\test_market_adapter.py:2:from dataclasses import dataclass
+tests\unit\test_market_adapter.py:5:class TestMarketAdapter:
+tests\unit\test_ma_pennies.py:8:class TestMAManagerPennies:
+tests\unit\test_monetary_ledger_repayment.py:7:class TestMonetaryLedgerRepayment:
+tests\unit\test_phase1_refactor.py:24:class TestPhase1DecisionRefactor:
+tests\unit\test_phase1_refactor.py:55:        # We need to mock them *after* instantiation or patch the classes
+tests\unit\test_phase1_refactor.py:70:            # dataclasses.replace requires a real dataclass instance
+tests\unit\test_phase1_refactor.py:78:            # Note: We mocked MarketSnapshotFactory class, and Phase1_Decision instantiates it in __init__.
+tests\unit\test_protocol_lockdown.py:6:class MockFinancialEntity:
+tests\unit\test_protocol_lockdown.py:18:class IncompleteFinancialEntity:
+tests\unit\test_protocol_lockdown.py:31:class MockSettlementSystem:
+tests\unit\test_protocol_lockdown.py:53:class MockTransactionExecutor:
+tests\unit\test_protocol_lockdown.py:61:class MockBankService:
+tests\unit\test_sensory_purity.py:7:class MockAgent:
+tests\unit\test_sensory_purity.py:20:class MockInequalityTracker:
+tests\unit\test_sensory_purity.py:25:class TestSensoryPurity(unittest.TestCase):
+tests\unit\test_socio_tech.py:9:class TestSocioTechDynamics(unittest.TestCase):
+tests\unit\test_ssot_compliance.py:12:class TestSSoTCompliance:
+tests\unit\test_ssot_compliance.py:32:        # and spec only sees class attributes/properties.
+tests\unit\test_stock_market.py:39:class TestStockMarketInitialization:
+tests\unit\test_stock_market.py:56:class TestStockOrderPlacement:
+tests\unit\test_stock_market.py:95:class TestStockOrderMatching:
+tests\unit\test_stock_market.py:129:class TestOrderExpiry:
+tests\unit\test_strict_mocking.py:39:    class BadSettlement:
+tests\unit\test_strict_mocking.py:43:    class GoodSettlement:
+tests\unit\test_taxation_system.py:7:class MockConfig:
+tests\unit\test_taxation_system.py:59:    class EmptyConfig:
+tests\unit\test_tax_collection.py:8:# Mock classes
+tests\unit\test_tax_collection.py:9:class MockConfig:
+tests\unit\test_tax_collection.py:22:class MockAgent:
+tests\unit\test_tax_collection.py:49:class MockSettlementSystem:
+tests\unit\test_tax_incidence.py:32:class TestTaxIncidence(unittest.TestCase):
+tests\unit\test_transaction_handlers.py:11:class TestGoodsTransactionHandler(unittest.TestCase):
+tests\unit\test_transaction_handlers.py:107:class TestLaborTransactionHandler(unittest.TestCase):
+tests\unit\test_transaction_integrity.py:7:class TestTransactionIntegrity:
+tests\unit\test_transaction_rollback.py:14:class MockExecutor:
+tests\unit\test_watchtower_hardening.py:10:class TestWatchtowerHardening(unittest.TestCase):
+tests\unit\test_watchtower_hardening.py:70:            # Easiest is to directly manipulate the deques or subclass.
+tests\unit\test_wo157_dynamic_pricing.py:12:class TestWO157DynamicPricing:
+tests\unit\utils\test_config_factory.py:2:from dataclasses import dataclass
+tests\unit\utils\test_config_factory.py:6:@dataclass
+tests\unit\utils\test_config_factory.py:7:class SampleConfigDTO:
+tests\utils\protocol.py:15:                 if attr.startswith('_') or attr in ['__abstractmethods__', '__annotations__', '__dict__', '__doc__', '__init__', '__module__', '__new__', '__slots__', '__subclasshook__', '__weakref__', '_abc_impl', '_is_protocol']:
+_internal\registry\api.py:9:from dataclasses import dataclass, field
+_internal\registry\api.py:18:class MissionType(str, Enum):
+_internal\registry\api.py:22:@dataclass
+_internal\registry\api.py:23:class MissionDTO:
+_internal\registry\api.py:40:        from dataclasses import asdict
+_internal\registry\api.py:46:class IMissionRegistryService(Protocol):
+_internal\registry\api.py:54:class MissionContext(TypedDict):
+_internal\registry\api.py:58:class GeminiMissionDefinition(TypedDict):
+_internal\registry\api.py:70:class MissionMetadata(TypedDict, total=False):
+_internal\registry\api.py:76:@dataclass
+_internal\registry\api.py:77:class RegisteredMission:
+_internal\registry\api.py:90:class IMissionRegistry(Protocol):
+_internal\registry\api.py:107:class GeminiMissionRegistry:
+_internal\registry\api.py:159:    Decorator to register a function or class as a Gemini Mission.
+_internal\registry\mission_protocol.py:19:3. DTO Purity: Use typed DTOs/Dataclasses for cross-boundary data. Avoid raw dicts.
+_internal\registry\mission_protocol.py:36:2. No Mock Drift: Do not invent attributes on mocks. Use `MagicMock(spec=RealClass)`.
+_internal\registry\mission_protocol.py:78:class ArtifactType(Enum):
+_internal\registry\service.py:7:from dataclasses import asdict
+_internal\registry\service.py:15:class MissionLock:
+_internal\registry\service.py:46:class MissionRegistryService:
+_internal\scripts\cmd_ops.py:68:3. DTO Purity: Use typed DTOs/Dataclasses for cross-boundary data. Avoid raw dicts.
+_internal\scripts\cmd_ops.py:141:        formatter_class=argparse.RawDescriptionHelpFormatter,
+_internal\scripts\gemini_worker.py:20:class BaseGeminiWorker(ABC):
+_internal\scripts\gemini_worker.py:22:    Abstract base class for Gemini Workers.
+_internal\scripts\gemini_worker.py:148:class SpecDrafter(BaseGeminiWorker):
+_internal\scripts\gemini_worker.py:164:                "1. Hidden dependencies or God Classes.\n"
+_internal\scripts\gemini_worker.py:230:class GitReviewer(BaseGeminiWorker):
+_internal\scripts\gemini_worker.py:264:class Reporter(BaseGeminiWorker):
+_internal\scripts\gemini_worker.py:298:class GitOperator(BaseGeminiWorker):
+_internal\scripts\gemini_worker.py:360:class ContextManager(BaseGeminiWorker):
+_internal\scripts\gemini_worker.py:382:class Validator(BaseGeminiWorker):
+_internal\scripts\gemini_worker.py:406:class Crystallizer(BaseGeminiWorker):
+_internal\scripts\jules_bridge.py:12:from dataclasses import dataclass
+_internal\scripts\jules_bridge.py:39:class AutomationMode(Enum):
+_internal\scripts\jules_bridge.py:48:@dataclass
+_internal\scripts\jules_bridge.py:49:class JulesSession:
+_internal\scripts\jules_bridge.py:60:class JulesBridge:
+_internal\scripts\jules_monitor.py:47:class JulesMonitor:
+_internal\scripts\session_manager.py:89:class SpecDetector:

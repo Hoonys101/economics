@@ -100,6 +100,30 @@
       "output_path": "artifacts/specs/MISSION_fix_db_migration_spec.md",
       "model": null,
       "audit_requirements": null
+    },
+    "tech-debt-full-audit": {
+      "key": "tech-debt-full-audit",
+      "title": "Full Tech Debt Exhaustive Audit",
+      "type": "gemini",
+      "instruction_raw": "TECH_DEBT_LEDGER.md\uc5d0 \ub4f1\ub85d\ub41c '\ubaa8\ub4e0' \ubbf8\uacb0 \ubd80\ucc44(Open, Identified, Partial) \ud56d\ubaa9\ub4e4\uc774 \ud604\uc7ac \ucf54\ub4dc\ubca0\uc774\uc2a4\uc5d0 \uc2e4\uc81c\ub85c \uc5b4\ub5bb\uac8c \uc874\uc7ac\ud558\ub294\uc9c0 \uc804\uc218 \uc870\uc0ac\ub97c \uc218\ud589\ud558\uc2ed\uc2dc\uc624.\n- Wave 1-3 \uc774\ud6c4\uc758 \ucd5c\uc2e0 \ucf54\ub4dc \uc0c1\ud0dc\ub97c \ubc18\uc601\ud558\uc5ec, \uac01 \ud56d\ubaa9\uc758 \uc2e4\uc81c \uc704\ud5d8\ub3c4\uc640 \uc794\uc874 \uc5ec\ubd80\ub97c \ud310\uc815\ud558\uc2ed\uc2dc\uc624.\n- \ud2b9\ud788 27\uac1c\uc758 \ud14c\uc2a4\ud2b8 \uc2e4\ud328 \uc0ac\ub840(`fails.txt`)\uc640 \uc7a5\ubd80\uc0c1\uc758 \ubd80\ucc44 \ud56d\ubaa9\ub4e4 \uac04\uc758 \uc0c1\uad00\uad00\uacc4(\uc608: DTO \ubd88\uc77c\uce58, FP/Int \ud63c\uc6a9 \ub4f1)\ub97c \uad6c\uccb4\uc801\uc73c\ub85c \uc2dd\ubcc4\ud558\uc2ed\uc2dc\uc624.\n- [\uc0dd\uc874 / \ud574\uacb0\ub428 / \ubd80\ubd84 \ud574\uacb0] \uc0c1\ud0dc\ub97c \uba85\ud655\ud788 \ud558\uace0, \uc989\uc2dc \uc218\uc815\uc774 \ud544\uc694\ud55c 'Critical' \ud56d\ubaa9\uc744 \uc6b0\uc120 \uc21c\uc704\ub85c \uc815\ub82c\ud558\uc5ec \ubcf4\uace0\ud558\uc2ed\uc2dc\uc624.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "verify",
+      "context_files": [
+        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
+        "modules/finance/transaction/engine.py",
+        "simulation/initialization/initializer.py",
+        "simulation/firms.py",
+        "simulation/core_agents.py",
+        "simulation/engine.py",
+        "modules/simulation/dtos/api.py",
+        "reports/diagnostic_findings.md"
+      ],
+      "output_path": "reports/full_tech_debt_audit_report.md",
+      "model": "gemini-3-pro-preview",
+      "audit_requirements": null
     }
   }
 }

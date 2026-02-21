@@ -18,6 +18,7 @@ GUARDRAILS = """
 2. Protocol Purity: Use `@runtime_checkable` Protocols and `isinstance()`. Avoid `hasattr()`.
 3. DTO Purity: Use typed DTOs/Dataclasses for cross-boundary data. Avoid raw dicts.
 4. Logic Separation: Keep business logic in Systems/Services, data in State/Repository.
+5. DTO/API Audit: "DTO나 API"가 변경되는 구현업무인 경우 구현체를 전수조사하여 변동을 반영하시오.
 
 🚨 [MANDATORY REPORTING]
 Before completing this task, you MUST create a NEW insight report file at:

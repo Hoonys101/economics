@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "fix-sys-registry": {
-      "key": "fix-sys-registry",
-      "title": "Fix System Agent Registration & Standardize IDs",
-      "type": "jules",
-      "instruction_raw": "",
-      "command": "create",
-      "file_path": "artifacts/specs/MISSION_fix_sys_registry_spec.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "fix-pm-funding": {
       "key": "fix-pm-funding",
       "title": "Fix Public Manager Funding & Escheatment",
@@ -40,6 +25,21 @@
       "instruction_raw": "",
       "command": "create",
       "file_path": "artifacts/specs/MISSION_fix_db_migration_spec.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "fix-sys-registry": {
+      "key": "fix-sys-registry",
+      "title": "Fix System Agent Registration & Standardize IDs",
+      "type": "jules",
+      "instruction_raw": "",
+      "command": "create",
+      "file_path": "artifacts/specs/MISSION_fix_sys_registry_spec.md",
       "wait": false,
       "session_id": null,
       "worker": null,
