@@ -60,6 +60,7 @@ class SalesStateDTO:
     brand_awareness: float
     perceived_quality: float
     marketing_budget: int # Converted to int (pennies)
+    adstock: float = 0.0 # Added for stateless BrandEngine
 
 @dataclass(frozen=True)
 class HRStateDTO:

@@ -140,6 +140,17 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         self.rd_engine: IRDEngine = RDEngine()
         self.brand_engine: IBrandEngine = BrandEngine()
         self.pricing_engine: IPricingEngine = PricingEngine()
+
+        # Protocol Integrity Check
+        if not isinstance(self.hr_engine, IHREngine): raise TypeError("hr_engine violation")
+        if not isinstance(self.finance_engine, IFinanceEngine): raise TypeError("finance_engine violation")
+        if not isinstance(self.production_engine, IProductionEngine): raise TypeError("production_engine violation")
+        if not isinstance(self.sales_engine, ISalesEngine): raise TypeError("sales_engine violation")
+        if not isinstance(self.asset_management_engine, IAssetManagementEngine): raise TypeError("asset_management_engine violation")
+        if not isinstance(self.rd_engine, IRDEngine): raise TypeError("rd_engine violation")
+        if not isinstance(self.brand_engine, IBrandEngine): raise TypeError("brand_engine violation")
+        if not isinstance(self.pricing_engine, IPricingEngine): raise TypeError("pricing_engine violation")
+
         self.action_executor = FirmActionExecutor()
 
         # Initialize core attributes in State
@@ -630,9 +641,12 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             price_pennies = price
 
         context = self._build_sales_post_ask_context(item_id, price_pennies, quantity, market.id, current_tick)
-        return self.sales_engine.post_ask(
+        order = self.sales_engine.post_ask(
             self.sales_state, context
         )
+        # Apply side-effects (Stateless Engine Orchestration)
+        self.sales_state.last_prices[item_id] = price_pennies
+        return order
 
     def calculate_brand_premium(self, market_data: Dict[str, Any]) -> float:
         item_id = self.specialization
@@ -725,7 +739,8 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             price_history=self.sales_state.last_prices.copy(),
             brand_awareness=self.sales_state.brand_awareness,
             perceived_quality=self.sales_state.perceived_quality,
-            marketing_budget=self.sales_state.marketing_budget_pennies # MIGRATION: int pennies
+            marketing_budget=self.sales_state.marketing_budget_pennies, # MIGRATION: int pennies
+            adstock=self.sales_state.adstock # Added for stateless BrandEngine
         )
         
         return FirmSnapshotDTO(
@@ -1042,11 +1057,15 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         # Filter external orders for further processing
         external_orders = [o for o in all_orders if o.market_id != "internal"]
 
-        self.sales_engine.check_and_apply_dynamic_pricing(
+        pricing_result = self.sales_engine.check_and_apply_dynamic_pricing(
             self.sales_state, external_orders, current_time,
             config=self.config,
             unit_cost_estimator=lambda item_id: self.finance_engine.get_estimated_unit_cost(self.finance_state, item_id, self.config)
         )
+
+        # Apply Dynamic Pricing Results (Stateless Orchestration)
+        external_orders = pricing_result.orders
+        self.sales_state.last_prices.update(pricing_result.price_updates)
 
         if market_snapshot:
              self._calculate_invisible_hand_price(market_snapshot, current_time)
@@ -1237,13 +1256,18 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             transactions.append(tx_marketing)
 
         # Brand Update
-        self.brand_engine.update(
-            self.sales_state,
+        # Using stateless engine, applying result
+        brand_metrics = self.brand_engine.update(
+            self.get_snapshot_dto().sales, # Pass DTO for purity
             self.config,
             float(self.sales_state.marketing_budget_pennies),
             self.productivity_factor / PRODUCTIVITY_DIVIDER,
             self.id
         )
+        # Apply State
+        self.sales_state.adstock = brand_metrics.adstock
+        self.sales_state.brand_awareness = brand_metrics.brand_awareness
+        self.sales_state.perceived_quality = brand_metrics.perceived_quality
 
         # WO-4.6: Finance cleanup is now handled in Post-Sequence via reset()
         # This ensures expenses_this_tick accumulates for the full tick duration.

@@ -93,6 +93,13 @@ class TestFirmSurgicalSeparation:
         mock_pricing_result.excess_demand_ratio = 0.0
         mock_firm.pricing_engine.calculate_price.return_value = mock_pricing_result
 
+        # Configure Sales Engine Mock (check_and_apply_dynamic_pricing)
+        # It must return DynamicPricingResultDTO with the passed orders
+        def side_effect_dynamic_pricing(state, orders, *args, **kwargs):
+            from modules.firm.api import DynamicPricingResultDTO
+            return DynamicPricingResultDTO(orders=orders, price_updates={})
+        mock_firm.sales_engine.check_and_apply_dynamic_pricing.side_effect = side_effect_dynamic_pricing
+
         # Setup Legacy Decision Engine Return
         legacy_order_keep = Order(
             agent_id=1, side="SELL", item_id="food", quantity=10,

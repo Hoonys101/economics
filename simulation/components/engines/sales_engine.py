@@ -6,7 +6,7 @@ from simulation.models import Order, Transaction
 from simulation.components.state.firm_state_models import SalesState
 from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingContextDTO, MarketingAdjustmentResultDTO
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
-from modules.firm.api import ISalesEngine
+from modules.firm.api import ISalesEngine, DynamicPricingResultDTO
 if TYPE_CHECKING:
     from modules.simulation.dtos.api import FirmConfigDTO
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class SalesEngine(ISalesEngine):
         Validates quantity against inventory.
         """
         actual_quantity = min(context.quantity, context.inventory_quantity)
-        state.last_prices[context.item_id] = context.price_pennies
+        # Mutation removed for statelessness. Orchestrator must update last_prices.
         return Order(agent_id=context.firm_id, side='SELL', item_id=context.item_id, quantity=actual_quantity, price_pennies=context.price_pennies, price_limit=context.price_pennies / 100.0, market_id=context.market_id, brand_info=context.brand_snapshot, currency=DEFAULT_CURRENCY)
 
     def adjust_marketing_budget(self, state: SalesState, market_context: MarketContextDTO, revenue_this_turn: int, last_revenue: int=0, last_marketing_spend: int=0) -> MarketingAdjustmentResultDTO:
@@ -54,17 +54,24 @@ class SalesEngine(ISalesEngine):
             return Transaction(buyer_id=context.firm_id, seller_id=context.government_id, item_id='marketing', quantity=1.0, price=budget / 100.0, market_id='system', transaction_type='marketing', time=context.current_time, currency=DEFAULT_CURRENCY, total_pennies=budget)
         return None
 
-    def check_and_apply_dynamic_pricing(self, state: SalesState, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> None:
+    def check_and_apply_dynamic_pricing(self, state: SalesState, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> DynamicPricingResultDTO:
         """
         Overrides prices in orders if dynamic pricing logic dictates.
         WO-157: Applies dynamic pricing discounts to stale inventory.
+        Returns new orders list and price updates.
         """
+        # Default result (no changes)
+        price_updates: Dict[str, int] = {}
+        new_orders = list(orders) # Create copy to avoid mutation if we were just modifying list, but we are returning new list
+
         if not config:
-            return
+            return DynamicPricingResultDTO(orders=new_orders, price_updates=price_updates)
+
         sale_timeout = config.sale_timeout_ticks
         reduction_factor = config.dynamic_price_reduction_factor
         from dataclasses import replace
-        for i, order in enumerate(orders):
+
+        for i, order in enumerate(new_orders):
             if not hasattr(order, 'item_id') or not order.item_id:
                 continue
             side = getattr(order, 'side', getattr(order, 'order_type', None))
@@ -72,14 +79,26 @@ class SalesEngine(ISalesEngine):
                 item_id = order.item_id
                 last_sale = state.inventory_last_sale_tick.get(item_id, 0)
                 if current_time - last_sale > sale_timeout:
-                    original_price = getattr(order, 'price_limit', getattr(order, 'price', 0))
-                    discounted_price = original_price * reduction_factor
+                    # Original price is float price_limit or price
+                    original_price_limit = getattr(order, 'price_limit', getattr(order, 'price', 0.0))
+
+                    # Discount logic works on float price limit
+                    discounted_price = original_price_limit * reduction_factor
                     final_price = discounted_price
+
                     if unit_cost_estimator:
-                        unit_cost = unit_cost_estimator(item_id)
-                        final_price = max(discounted_price, unit_cost)
-                    final_price_int = int(final_price)
-                    if final_price_int < original_price:
-                        new_order = replace(order, price_limit=final_price_int, price_pennies=int(final_price_int * 100))
-                        orders[i] = new_order
-                        state.last_prices[item_id] = final_price_int
+                        # unit_cost_estimator returns int pennies
+                        unit_cost_pennies = unit_cost_estimator(item_id)
+                        unit_cost_float = unit_cost_pennies / 100.0
+                        final_price = max(discounted_price, unit_cost_float)
+
+                    # New Price Pennies
+                    final_price_pennies = int(final_price * 100)
+                    original_price_pennies = getattr(order, 'price_pennies', int(original_price_limit * 100))
+
+                    if final_price_pennies < original_price_pennies:
+                        new_order = replace(order, price_limit=final_price, price_pennies=final_price_pennies)
+                        new_orders[i] = new_order
+                        price_updates[item_id] = final_price_pennies
+
+        return DynamicPricingResultDTO(orders=new_orders, price_updates=price_updates)
