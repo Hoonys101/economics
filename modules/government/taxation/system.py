@@ -129,7 +129,12 @@ class TaxationSystem:
         Does NOT execute any transfer.
         """
         intents: List[TaxIntent] = []
-        trade_value = int(transaction.quantity * transaction.price)
+
+        # Use total_pennies for precision if available
+        if hasattr(transaction, 'total_pennies') and transaction.total_pennies is not None:
+             trade_value = transaction.total_pennies
+        else:
+             trade_value = int(transaction.quantity * transaction.price)
 
         # 1. Sales Tax (Goods)
         if transaction.transaction_type == "goods":
@@ -274,16 +279,19 @@ class TaxationSystem:
             tax_amount = self.calculate_corporate_tax(profit, corporate_tax_rate)
 
             if tax_amount > 0:
+                # Convert pennies to dollars for display price
+                price_display = tax_amount / 100.0
+
                 transaction = Transaction(
                     buyer_id=firm.id,
                     seller_id="GOVERNMENT", # Placeholder, will be resolved by Orchestrator
                     item_id="corporate_tax",
                     quantity=1.0,
-                    price=tax_amount,
+                    price=price_display,
                     market_id="system",
                     transaction_type="tax",
                     time=current_tick
-                , total_pennies=int(tax_amount * 1.0 * 100))
+                , total_pennies=tax_amount)
                 intents.append(transaction)
 
         return intents
