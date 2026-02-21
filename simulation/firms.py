@@ -58,7 +58,7 @@ from modules.agent_framework.components.inventory_component import InventoryComp
 from modules.agent_framework.components.financial_component import FinancialComponent
 
 from modules.common.utils.shadow_logger import log_shadow
-from modules.finance.api import InsufficientFundsError, IFinancialFirm, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake, IBank
+from modules.finance.api import InsufficientFundsError, IFinancialFirm, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake, IBank, ISalesTracker
 from modules.common.interfaces import IPropertyOwner
 from modules.common.dtos import Claim
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
@@ -79,7 +79,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner, IFirmStateProvider):
+class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner, IFirmStateProvider, ISalesTracker):
     """
     Firm Agent (Orchestrator).
     Manages state and delegates logic to stateless engines.
@@ -88,6 +88,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
     # Explicitly override age property from Protocol to allow instance attribute usage
     age: int = 0
+    sales_volume_this_tick: float = 0.0
 
     def __init__(
         self,

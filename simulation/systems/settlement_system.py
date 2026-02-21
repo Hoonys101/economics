@@ -43,9 +43,6 @@ class SettlementSystem(IMonetaryAuthority):
         self.agent_registry: Optional[IAgentRegistry] = None # Injected by SimulationInitializer
         self.panic_recorder: Optional[IPanicRecorder] = None # Injected by SimulationInitializer
 
-    def set_panic_recorder(self, recorder: IPanicRecorder) -> None:
-        self.panic_recorder = recorder
-
         # Transaction Engine (Initialized lazily)
         self._transaction_engine: Optional[TransactionEngine] = None
 
@@ -54,6 +51,9 @@ class SettlementSystem(IMonetaryAuthority):
         self._bank_depositors: Dict[int, Set[int]] = defaultdict(set)
         # AgentID -> Set[BankID] (for fast removal)
         self._agent_banks: Dict[int, Set[int]] = defaultdict(set)
+
+    def set_panic_recorder(self, recorder: IPanicRecorder) -> None:
+        self.panic_recorder = recorder
 
     def set_metrics_service(self, service: IEconomicMetricsService) -> None:
         """Sets the economic metrics service for recording system-wide financial events."""
@@ -335,7 +335,8 @@ class SettlementSystem(IMonetaryAuthority):
         # Central Bank check
         if isinstance(agent, ICentralBank):
             return True
-        if isinstance(agent, IFinancialAgent) and agent.id == ID_CENTRAL_BANK:
+        # Legacy ID Check (Only as fallback for non-protocol compliant mocks)
+        if hasattr(agent, 'id') and (agent.id == ID_CENTRAL_BANK or str(agent.id) == str(ID_CENTRAL_BANK)):
              return True
 
         current_cash = 0
@@ -427,7 +428,13 @@ class SettlementSystem(IMonetaryAuthority):
         """
         if amount <= 0: return None
 
-        is_central_bank = isinstance(source_authority, ICentralBank) or (source_authority.id == ID_CENTRAL_BANK)
+        # Protocol Strict Check
+        is_central_bank = isinstance(source_authority, ICentralBank)
+
+        # Legacy fallback
+        if not is_central_bank and hasattr(source_authority, 'id'):
+             if source_authority.id == ID_CENTRAL_BANK:
+                 is_central_bank = True
 
         if is_central_bank:
             # Minting is special: Source doesn't need funds.
@@ -467,7 +474,12 @@ class SettlementSystem(IMonetaryAuthority):
         """
         if amount <= 0: return None
 
-        is_central_bank = isinstance(sink_authority, ICentralBank) or (sink_authority.id == ID_CENTRAL_BANK)
+        is_central_bank = isinstance(sink_authority, ICentralBank)
+
+        # Legacy fallback
+        if not is_central_bank and hasattr(sink_authority, 'id'):
+             if sink_authority.id == ID_CENTRAL_BANK:
+                 is_central_bank = True
 
         if is_central_bank:
             # Burning: Withdraw from source.
