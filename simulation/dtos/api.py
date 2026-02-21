@@ -9,7 +9,9 @@ from modules.simulation.api import AgentID
 from modules.governance.api import SystemCommand
 from simulation.dtos.commands import GodCommandDTO
 
-# Alias for standardization
+# Renamed to enforce explicit usage of CanonicalOrderDTO vs Legacy Order
+LegacySimulationOrder = Order
+# Deprecated alias kept for backward compatibility until all consumers are updated
 OrderDTO = Order
 
 

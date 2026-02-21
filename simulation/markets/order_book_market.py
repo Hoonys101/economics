@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from simulation.models import Order, Transaction
 from simulation.core_markets import Market
-from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO
+from modules.market.api import CanonicalOrderDTO, OrderBookStateDTO, OrderTelemetrySchema
 from simulation.markets.matching_engine import OrderBookMatchingEngine
 
 logger = logging.getLogger(__name__)
@@ -447,3 +447,16 @@ class OrderBookMarket(Market):
         해당 시장의 일일 거래량을 반환합니다.
         """
         return sum(tx.quantity for tx in self.matched_transactions)
+
+    def get_telemetry_snapshot(self) -> List[OrderTelemetrySchema]:
+        """Returns Pydantic schemas for UI consumption."""
+        snapshot = []
+        for item_id, orders in self._buy_orders.items():
+            for order in orders:
+                dto = order.to_dto(self.id)
+                snapshot.append(OrderTelemetrySchema.from_canonical(dto))
+        for item_id, orders in self._sell_orders.items():
+            for order in orders:
+                dto = order.to_dto(self.id)
+                snapshot.append(OrderTelemetrySchema.from_canonical(dto))
+        return snapshot
