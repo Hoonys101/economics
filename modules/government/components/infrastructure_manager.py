@@ -36,16 +36,17 @@ class InfrastructureManager:
 
         if current_assets < effective_cost:
             needed = int(effective_cost - current_assets)
+            needed_pennies = needed * 100 # Convert dollars to pennies for FinanceSystem
             # Use new synchronous method
             if hasattr(self.government.finance_system, 'issue_treasury_bonds_synchronous'):
-                success, bond_txs = self.government.finance_system.issue_treasury_bonds_synchronous(self.government, needed, current_tick)
+                success, bond_txs = self.government.finance_system.issue_treasury_bonds_synchronous(self.government, needed_pennies, current_tick)
                 if not success:
                      logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed} for infrastructure.")
                      return []
                 transactions.extend(bond_txs)
             else:
                 # Fallback to old behavior (should not happen if system is updated)
-                bonds, txs = self.government.finance_system.issue_treasury_bonds(needed, current_tick)
+                bonds, txs = self.government.finance_system.issue_treasury_bonds(needed_pennies, current_tick)
                 if not bonds:
                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed} for infrastructure.")
                     return []
@@ -73,15 +74,16 @@ class InfrastructureManager:
                 seller_id=h.id,
                 item_id="infrastructure_labor",
                 quantity=1.0,
-                price=amount_per_hh,
+                price=float(amount_per_hh),
                 market_id="system",
                 transaction_type="infrastructure_spending",
                 time=current_tick,
                 metadata={
                     "triggers_effect": "GOVERNMENT_INFRA_UPGRADE" if h == active_households[0] else None,
                     "is_public_works": True
-                }
-            , total_pennies=int(amount_per_hh * 1.0 * 100))
+                },
+                total_pennies=int(amount_per_hh * 100)
+            )
             transactions.append(tx)
 
         logger.info(

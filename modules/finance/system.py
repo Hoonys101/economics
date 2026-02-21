@@ -403,11 +403,12 @@ class FinanceSystem(IFinanceSystem):
             seller_id=self.government.id,
             item_id=bond_id,
             quantity=1.0,
-            price=amount,
+            price=amount / 100.0,
             market_id="financial",
             transaction_type="bond_purchase",
-            time=current_tick
-        , total_pennies=int(amount * 1.0 * 100))
+            time=current_tick,
+            total_pennies=amount
+        )
 
         # Map to legacy BondDTO for return signature compatibility
         bond_dto = BondDTO(

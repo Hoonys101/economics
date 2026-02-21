@@ -26,6 +26,34 @@ class Transaction:
     quality: float = 1.0  # Phase 15: Durables Quality
     metadata: Optional[Dict[str, Any]] = None  # WO-109: Metadata for side-effects
 
+    # --- ITransaction Protocol Implementation ---
+    @property
+    def sender_id(self) -> int | str:
+        """Alias for buyer_id in payment context."""
+        return self.buyer_id
+
+    @property
+    def receiver_id(self) -> int | str:
+        """Alias for seller_id in payment context."""
+        return self.seller_id
+
+    @property
+    def amount_pennies(self) -> int:
+        """Alias for total_pennies."""
+        return self.total_pennies
+
+    @property
+    def tick(self) -> int:
+        """Alias for time."""
+        return self.time
+
+    @property
+    def memo(self) -> Optional[str]:
+        """Accessor for memo within metadata."""
+        if self.metadata:
+            return self.metadata.get("memo")
+        return None
+
 
 @dataclass
 class Share:
