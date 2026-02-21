@@ -19,13 +19,13 @@ from typing import Dict, Any
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
     # Wave 5: Data & Config Purity
     "wave5-dto-purity": {
-        "title": "Implement Canonical Order and UI DTOs",
+        "title": "[Wave 5] Implement Canonical Order and UI DTOs",
         "command": "create",
         "instruction": "Execute the full implementation spec exactly as documented.",
         "file": "artifacts/specs/MISSION_wave5_dto_purity_JULES_SPEC.md"
     },
     "wave5-config-purity": {
-        "title": "Implement Config Proxy for Runtime Binding",
+        "title": "[Wave 5] Implement Config Proxy for Runtime Binding",
         "command": "create",
         "instruction": "Execute the full implementation spec exactly as documented.",
         "file": "artifacts/specs/MISSION_wave5_config_purity_JULES_SPEC.md"
@@ -33,15 +33,29 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
     
     # Wave 6: AI & Logic Refinement
     "wave6-ai-debt": {
-        "title": "Integrate Debt Constraints into AI Planning",
+        "title": "[Wave 6] Integrate Debt Constraints into AI Planning",
         "command": "create",
         "instruction": "Execute the full implementation spec exactly as documented.",
         "file": "artifacts/specs/MISSION_wave6_ai_debt_JULES_SPEC.md"
     },
     "wave6-fiscal-masking": {
-        "title": "Implement Progressive Taxation and Wage Scaling",
+        "title": "[Wave 6] Implement Progressive Taxation and Wage Scaling",
         "command": "create",
         "instruction": "Execute the full implementation spec exactly as documented.",
         "file": "artifacts/specs/MISSION_wave6_fiscal_masking_JULES_SPEC.md"
+    },
+    
+    # Wave 7: Architecture & Ops Cleanup
+    "wave7-firm-mutation": {
+        "title": "[Wave 7] Enforce Stateless Engine Orchestration in Firm",
+        "command": "create",
+        "instruction": "Execute the full implementation spec exactly as documented.",
+        "file": "artifacts/specs/MISSION_wave7_firm_mutation_JULES_SPEC.md"
+    },
+    "wave7-dx-automation": {
+        "title": "[Wave 7] Automate Mission Registration and Optimize Death System",
+        "command": "create",
+        "instruction": "Execute the full implementation spec exactly as documented.",
+        "file": "artifacts/specs/MISSION_wave7_dx_automation_JULES_SPEC.md"
     }
 }

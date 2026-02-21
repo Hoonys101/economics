@@ -1,0 +1,413 @@
+diff --git a/communications/insights/wave5-config-purity.md b/communications/insights/wave5-config-purity.md
+new file mode 100644
+index 00000000..7c360ab8
+--- /dev/null
++++ b/communications/insights/wave5-config-purity.md
+@@ -0,0 +1,66 @@
++# Insight Report: Wave 5 Config Purity
++
++## Architectural Insights
++
++### 1. Unification of ConfigProxy and GlobalRegistry
++The codebase previously had a split-brain configuration issue. `modules/system/config_api.py` defined a `ConfigProxy` with its own internal registry, while `config/__init__.py` used a `GlobalRegistry` instance directly. This meant that changes made via `ConfigProxy` were not reflected in the main application configuration, and vice versa.
++
++We have unified this by:
++-   Refactoring `ConfigProxy` to wrap a `GlobalRegistry` instance.
++-   Implementing the `IConfigurationRegistry` protocol in `ConfigProxy`.
++-   Updating `config/__init__.py` to delegate all access to the `current_config` singleton (instance of `ConfigProxy`).
++-   Ensuring that `simulation.yaml` loading logic in `config/__init__.py` updates the same shared registry.
++
++This ensures a Single Source of Truth (SSoT) for configuration, enabling true Runtime Binding and Hot Swapping.
++
++### 2. Protocol Purity
++The `ConfigProxy` now strictly implements the `IConfigurationRegistry` protocol. This adheres to the "Protocol Purity" guardrail, ensuring that dependency injection and mocking can rely on stable interfaces.
++
++### 3. Legacy Compatibility
++We maintained backward compatibility for legacy code patterns:
++-   `import config; config.VALUE` works via `__getattr__` delegation.
++-   `from config import registry` continues to work by exposing the underlying `GlobalRegistry` from `ConfigProxy`.
++
++### 4. Robustness Improvements
++We identified and fixed a bug where configuration values set to `None` were incorrectly treated as missing keys, triggering unnecessary fallback logic or `AttributeError`. We updated `ConfigProxy.__getattr__` to distinguish between a missing key and a `None` value using `GlobalRegistry.get_entry()`.
++
++### 5. Architectural Layering
++We refactored how defaults are loaded. Initially, `modules/system/config_api.py` was bootstrapping `config.defaults`. We identified this as a layering violation (System layer depending on Application config). We moved the explicit bootstrapping to `config/__init__.py`, decoupling the system module from specific configuration values.
++
++## Regression Analysis
++
++We ran the full test suite (953 tests) and found no regressions.
++
++### Key Areas Verified:
++-   **Config Proxy Behavior**: `tests/system/test_config_proxy.py` was updated to test the new `GlobalRegistry`-backed implementation.
++-   **Hot Swap**: `tests/integration/test_config_hot_swap.py` confirmed that runtime changes to the registry are immediately reflected in `config` module access.
++-   **Defaults Loading**: Verified that system defaults from `config/defaults.py` are correctly loaded even if not present in `simulation.yaml`.
++-   **None Value Handling**: Verified that keys with `None` values are correctly retrieved.
++-   **System Integrity**: All existing unit and integration tests passed, confirming that the configuration refactor did not break dependent systems (Finance, Simulation, etc.).
++
++## Test Evidence
++
++### Full Test Suite Execution
++```
++============================= test session starts ==============================
++platform linux -- Python 3.12.12, pytest-8.3.4, pluggy-1.5.0
++rootdir: /app
++configfile: pytest.ini
++plugins: anyio-4.8.0, asyncio-0.25.3, cov-6.0.0
++collected 953 items
++
++... [Truncated for brevity] ...
++
++tests/unit/utils/test_config_factory.py::test_create_config_dto_success PASSED [ 99%]
++tests/unit/utils/test_config_factory.py::test_create_config_dto_missing_field PASSED [100%]
++
++============================= 953 passed in 18.98s =============================
++```
++
++### Specific Verification: Hot Swap & Defaults
++```
++tests/integration/test_config_hot_swap.py::test_config_hot_swap PASSED   [ 25%]
++tests/integration/test_config_hot_swap.py::test_config_engine_type_access PASSED [ 50%]
++tests/integration/test_config_hot_swap.py::test_defaults_loaded PASSED   [ 75%]
++tests/integration/test_config_hot_swap.py::test_none_handling PASSED     [100%]
++```
+diff --git a/config/__init__.py b/config/__init__.py
+index 091fad8f..0c73137a 100644
+--- a/config/__init__.py
++++ b/config/__init__.py
+@@ -8,29 +8,19 @@ try:
+ except ImportError:
+     pass
+ 
+-from modules.system.registry import GlobalRegistry, OriginType
++from modules.system.config_api import current_config, OriginType
+ import config.defaults as defaults
+ 
+-# FOUND-01: GlobalRegistry Integration
+-_registry = GlobalRegistry()
++# Bootstrap defaults into the global registry
++current_config.bootstrap_from_module(defaults)
+ 
+-def _init_registry():
++# Expose registry instance for advanced usage (legacy support)
++registry = current_config.get_registry()
++
++def _load_simulation_yaml():
+     """
+-    Populates GlobalRegistry from defaults module and simulation.yaml.
++    Loads simulation.yaml into the configuration.
+     """
+-    # 1. Load System Defaults from config/defaults.py
+-    for key in dir(defaults):
+-        # Heuristic: Uppercase for constants
+-        if key.isupper():
+-            val = getattr(defaults, key)
+-            _registry.set(key, val, OriginType.SYSTEM)
+-
+-        # Explicitly handle EngineType Enum
+-        if key == "EngineType":
+-            val = getattr(defaults, key)
+-            _registry.set(key, val, OriginType.SYSTEM)
+-
+-    # 2. Load simulation.yaml
+     try:
+         import yaml
+         yaml_path = os.path.join(os.path.dirname(__file__), "simulation.yaml")
+@@ -40,24 +30,24 @@ def _init_registry():
+                 if yaml_config:
+                     for k, v in yaml_config.items():
+                         # Update registry with CONFIG origin
+-                        _registry.set(k.upper(), v, OriginType.CONFIG)
++                        current_config.set(k.upper(), v, OriginType.CONFIG)
+     except Exception as e:
+         sys.stderr.write(f"Warning: Failed to load simulation.yaml: {e}\n")
+ 
+-_init_registry()
++# Load YAML immediately
++_load_simulation_yaml()
+ 
+ # Proxy for access
+ def __getattr__(name):
+-    val = _registry.get(name)
+-    if val is not None:
+-        return val
+-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
++    # Delegate to ConfigProxy which handles None values correctly via get_entry
++    # We must call getattr directly on the instance to trigger its __getattr__
++    try:
++        return getattr(current_config, name)
++    except AttributeError:
++        raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+ 
+ def __dir__():
+-    return list(_registry.snapshot().keys()) + ["registry"]
+-
+-# Expose registry instance for advanced usage
+-registry = _registry
++    return list(current_config.snapshot().keys()) + ["registry"]
+ 
+ # Type hinting support for static analysis (optional/partial)
+ if TYPE_CHECKING:
+diff --git a/modules/system/config_api.py b/modules/system/config_api.py
+index 71197e2a..d9e53e3f 100644
+--- a/modules/system/config_api.py
++++ b/modules/system/config_api.py
+@@ -8,6 +8,7 @@ from __future__ import annotations
+ from typing import Any, Dict, Optional, Type, Union, TYPE_CHECKING, List
+ from dataclasses import dataclass, field
+ from modules.system.api import IConfigurationRegistry, RegistryValueDTO, OriginType, RegistryObserver
++from modules.system.registry import GlobalRegistry
+ import importlib
+ import types
+ 
+@@ -23,10 +24,13 @@ class ConfigKeyMeta:
+     max_value: Optional[Union[int, float]] = None
+     is_hot_swappable: bool = True
+ 
+-class ConfigProxy:
++class ConfigProxy(IConfigurationRegistry):
+     """
+     A Singleton Proxy that provides dynamic access to configuration values.
+ 
++    It wraps the GlobalRegistry to ensure runtime binding while providing
++    a dot-notation interface and maintaining backward compatibility.
++
+     Usage:
+         from modules.system.config_api import current_config
+         tax_rate = current_config.TAX_RATE  # Resolved at runtime
+@@ -38,11 +42,9 @@ class ConfigProxy:
+ 
+     def __init__(self):
+         # The internal store of all config values
+-        self._registry: Dict[str, RegistryValueDTO] = {}
++        self._registry = GlobalRegistry()
+         # Metadata for validation
+         self._metadata: Dict[str, ConfigKeyMeta] = {}
+-        # Observers for reactive updates
+-        self._observers: List[RegistryObserver] = []
+         # Fallback module (legacy config/defaults.py)
+         self._defaults_module: Optional[ModuleType] = None
+ 
+@@ -51,18 +53,22 @@ class ConfigProxy:
+         Loads initial values from a Python module (e.g., config.defaults).
+         """
+         self._defaults_module = module
++        # Populate registry with SYSTEM origin
++        for key in dir(module):
++            if key.isupper():
++                val = getattr(module, key)
++                self._registry.set(key, val, OriginType.SYSTEM)
++
++            # Explicitly handle EngineType Enum
++            if key == "EngineType":
++                val = getattr(module, key)
++                self._registry.set(key, val, OriginType.SYSTEM)
+ 
+     def get(self, key: str, default: Any = None) -> Any:
+         """
+-        Retrieves a value. Priority: USER > CONFIG > SYSTEM (Defaults).
++        Retrieves a value. Delegate to GlobalRegistry.
+         """
+-        if key in self._registry:
+-            return self._registry[key].value
+-
+-        if self._defaults_module and hasattr(self._defaults_module, key):
+-            return getattr(self._defaults_module, key)
+-
+-        return default
++        return self._registry.get(key, default)
+ 
+     def __getattr__(self, name: str) -> Any:
+         """
+@@ -72,9 +78,14 @@ class ConfigProxy:
+         if name.startswith("_"):
+             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+ 
+-        if name in self._registry:
+-            return self._registry[name].value
++        # Check registry first using get_entry to differentiate None value from missing key
++        entry = self._registry.get_entry(name)
++        if entry is not None:
++            return entry.value
+ 
++        # Fallback to defaults module directly if not in registry?
++        # bootstrap_from_module should have populated it.
++        # But just in case:
+         if self._defaults_module and hasattr(self._defaults_module, name):
+             return getattr(self._defaults_module, name)
+ 
+@@ -82,7 +93,7 @@ class ConfigProxy:
+ 
+     def set(self, key: str, value: Any, origin: OriginType = OriginType.USER) -> None:
+         """
+-        Updates a value with origin tracking and notifies observers.
++        Updates a value with origin tracking. Delegate to GlobalRegistry.
+         """
+         # Validate if metadata exists
+         if key in self._metadata:
+@@ -94,69 +105,36 @@ class ConfigProxy:
+                  except (ValueError, TypeError):
+                      pass # Let it fail or be strictly checked? strict for now.
+ 
+-        # Check lock
+-        if key in self._registry:
+-            entry = self._registry[key]
+-            if entry.is_locked and origin < OriginType.GOD_MODE:
+-                raise PermissionError(f"Config key '{key}' is locked.")
+-
+-            entry.value = value
+-            entry.origin = origin
+-        else:
+-            # Create new entry
+-            entry = RegistryValueDTO(
+-                key=key,
+-                value=value,
+-                origin=origin
+-            )
+-            self._registry[key] = entry
+-
+-        # Notify observers
+-        for observer in self._observers:
+-            observer.on_registry_update(key, value, origin)
++        self._registry.set(key, value, origin)
+ 
+     def snapshot(self) -> Dict[str, Any]:
+         """Returns a dict of current effective values."""
+-        result = {}
+-        # First load defaults
+-        if self._defaults_module:
+-            for key in dir(self._defaults_module):
+-                if key.isupper():
+-                    result[key] = getattr(self._defaults_module, key)
+-
+-        # Overlay registry values
+-        for key, entry in self._registry.items():
+-            result[key] = entry.value
++        # GlobalRegistry.snapshot returns Dict[str, RegistryValueDTO]
++        # We need to return Dict[str, Any] (values) to match IConfigurationRegistry signature if it implies values
++        # But wait, IConfigurationRegistry.snapshot signature in api.py is Dict[str, Any]
++        # RegistryValueDTO is Any.
+ 
++        # Let's map it to values to be consistent with previous implementation
++        snapshot_dtos = self._registry.snapshot()
++        result = {}
++        for key, dto in snapshot_dtos.items():
++            result[key] = dto.value
+         return result
+ 
+     def register_observer(self, observer: RegistryObserver) -> None:
+-        self._observers.append(observer)
++        self._registry.subscribe(observer)
+ 
+     def reset_to_defaults(self) -> None:
+         """
+-        Resets all configuration values to their SYSTEM or CONFIG defaults,
+-        clearing USER overrides.
++        Resets all configuration values to their SYSTEM or CONFIG defaults.
+         """
+-        # Create a list of keys to remove or reset
+-        keys_to_reset = []
+-        for key, val in self._registry.items():
+-            if val.origin >= OriginType.USER:
+-                keys_to_reset.append(key)
+-
+-        for key in keys_to_reset:
+-            del self._registry[key]
+-            # Notify observers of reset (value back to default)
+-            default_val = getattr(self._defaults_module, key) if self._defaults_module and hasattr(self._defaults_module, key) else None
+-            for observer in self._observers:
+-                observer.on_registry_update(key, default_val, OriginType.SYSTEM)
++        self._registry.reset_to_defaults()
++
++    def get_registry(self) -> GlobalRegistry:
++        """
++        Returns the underlying GlobalRegistry instance.
++        """
++        return self._registry
+ 
+ # Singleton Instance
+ current_config = ConfigProxy()
+-
+-# Bootstrap immediately
+-try:
+-    import config.defaults
+-    current_config.bootstrap_from_module(config.defaults)
+-except ImportError:
+-    pass
+diff --git a/tests/integration/test_config_hot_swap.py b/tests/integration/test_config_hot_swap.py
+index d9073b19..b6dae2ea 100644
+--- a/tests/integration/test_config_hot_swap.py
++++ b/tests/integration/test_config_hot_swap.py
+@@ -31,3 +31,22 @@ def test_config_engine_type_access():
+     from config.defaults import EngineType
+     assert config.EngineType == EngineType
+     assert config.EngineType.AI_DRIVEN == EngineType.AI_DRIVEN
++
++def test_defaults_loaded():
++    """
++    Verifies that a value present in config/defaults.py but not in simulation.yaml
++    is correctly loaded.
++    """
++    # FORMULA_TECH_LEVEL is 0.0 in defaults.py and not in simulation.yaml
++    assert hasattr(config, "FORMULA_TECH_LEVEL")
++    assert config.FORMULA_TECH_LEVEL == 0.0
++
++def test_none_handling():
++    """
++    Verifies that None values are handled correctly and don't trigger AttributeError.
++    """
++    registry.set("TEST_NONE_KEY", None, OriginType.CONFIG)
++    assert config.TEST_NONE_KEY is None
++
++    with pytest.raises(AttributeError):
++        _ = config.REALLY_MISSING_KEY
+diff --git a/tests/system/test_config_proxy.py b/tests/system/test_config_proxy.py
+index 3a11c47b..cea3790e 100644
+--- a/tests/system/test_config_proxy.py
++++ b/tests/system/test_config_proxy.py
+@@ -28,8 +28,10 @@ def test_override():
+     assert proxy.TAX_RATE == 0.2
+ 
+     # Check if internal registry updated
+-    assert proxy._registry["TAX_RATE"].value == 0.2
+-    assert proxy._registry["TAX_RATE"].origin == OriginType.USER
++    # GlobalRegistry access via get_registry() and get_entry()
++    entry = proxy.get_registry().get_entry("TAX_RATE")
++    assert entry.value == 0.2
++    assert entry.origin == OriginType.USER
+ 
+ def test_reset_to_defaults():
+     proxy = ConfigProxy()
+@@ -41,8 +43,10 @@ def test_reset_to_defaults():
+     proxy.reset_to_defaults()
+     assert proxy.TAX_RATE == 0.1
+ 
+-    # Ensure registry entry is gone (implementation deletes it)
+-    assert "TAX_RATE" not in proxy._registry
++    # Ensure registry entry is back to SYSTEM origin
++    entry = proxy.get_registry().get_entry("TAX_RATE")
++    assert entry.value == 0.1
++    assert entry.origin == OriginType.SYSTEM
+ 
+ def test_observer():
+     proxy = ConfigProxy()
+@@ -61,7 +65,9 @@ def test_snapshot():
+     assert snap["TAX_RATE"] == 0.1
+     assert snap["MAX_TICKS"] == 100
+     assert snap["NEW_KEY"] == 999
+-    assert "lower_case_key" not in snap # Should filter out non-uppercase
++    # GlobalRegistry snapshot only includes active entries.
++    # lower_case_key was NOT added to registry in bootstrap_from_module because of isupper() check.
++    assert "lower_case_key" not in snap
+ 
+ def test_get_method():
+     proxy = ConfigProxy()
+@@ -77,7 +83,8 @@ def test_lock_mechanism():
+     proxy = ConfigProxy()
+     # Lock a key
+     proxy.set("LOCKED_KEY", 100, OriginType.CONFIG)
+-    proxy._registry["LOCKED_KEY"].is_locked = True
++    # Use GlobalRegistry lock mechanism
++    proxy.get_registry().lock("LOCKED_KEY")
+ 
+     # Try to overwrite with lower/same priority
+     with pytest.raises(PermissionError):

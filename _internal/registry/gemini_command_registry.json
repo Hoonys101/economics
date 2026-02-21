@@ -3,46 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "wave7-firm-mutation": {
-      "key": "wave7-firm-mutation",
-      "title": "[TD-ARCH-FIRM-MUTATION] Enforce Stateless Engine Orchestration in Firm",
-      "type": "gemini",
-      "instruction_raw": "Read artifacts/specs/MISSION_wave7_firm_mutation_SPEC.md and generate a full Jules implementation spec.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "artifacts/specs/MISSION_wave7_firm_mutation_SPEC.md",
-        "simulation/firms.py",
-        "modules/firm/sales_engine.py",
-        "modules/firm/brand_engine.py"
-      ],
-      "output_path": "artifacts/specs/MISSION_wave7_firm_mutation_JULES_SPEC.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "wave7-dx-automation": {
-      "key": "wave7-dx-automation",
-      "title": "[TD-DX-AUTO-CRYSTAL] Automate Mission Registration and Optimize Death System",
-      "type": "gemini",
-      "instruction_raw": "Read artifacts/specs/MISSION_wave7_dx_automation_SPEC.md and generate a full Jules implementation spec.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "artifacts/specs/MISSION_wave7_dx_automation_SPEC.md",
-        "_internal/scripts/launcher.py",
-        "_internal/registry/service.py",
-        "modules/system/death_system.py"
-      ],
-      "output_path": "artifacts/specs/MISSION_wave7_dx_automation_JULES_SPEC.md",
-      "model": null,
-      "audit_requirements": null
-    },
     "wave5-dto-purity": {
       "key": "wave5-dto-purity",
       "title": "[TD-UI-DTO-PURITY] Enforce Canonical Order and UI DTOs",
@@ -114,6 +74,46 @@
         "modules/firm/hr_engine.py"
       ],
       "output_path": "artifacts/specs/MISSION_wave6_fiscal_masking_JULES_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "wave7-firm-mutation": {
+      "key": "wave7-firm-mutation",
+      "title": "[TD-ARCH-FIRM-MUTATION] Enforce Stateless Engine Orchestration in Firm",
+      "type": "gemini",
+      "instruction_raw": "Read artifacts/specs/MISSION_wave7_firm_mutation_SPEC.md and generate a full Jules implementation spec.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "artifacts/specs/MISSION_wave7_firm_mutation_SPEC.md",
+        "simulation/firms.py",
+        "modules/firm/sales_engine.py",
+        "modules/firm/brand_engine.py"
+      ],
+      "output_path": "artifacts/specs/MISSION_wave7_firm_mutation_JULES_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "wave7-dx-automation": {
+      "key": "wave7-dx-automation",
+      "title": "[TD-DX-AUTO-CRYSTAL] Automate Mission Registration and Optimize Death System",
+      "type": "gemini",
+      "instruction_raw": "Read artifacts/specs/MISSION_wave7_dx_automation_SPEC.md and generate a full Jules implementation spec.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "artifacts/specs/MISSION_wave7_dx_automation_SPEC.md",
+        "_internal/scripts/launcher.py",
+        "_internal/registry/service.py",
+        "modules/system/death_system.py"
+      ],
+      "output_path": "artifacts/specs/MISSION_wave7_dx_automation_JULES_SPEC.md",
       "model": null,
       "audit_requirements": null
     }
