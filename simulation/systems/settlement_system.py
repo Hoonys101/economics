@@ -20,7 +20,7 @@ from modules.common.protocol import enforce_purity
 # Transaction Engine Imports
 from modules.finance.transaction.api import TransactionResultDTO, TransactionDTO
 from modules.finance.transaction.engine import (
-    TransactionEngine, TransactionValidator, TransactionExecutor, SimpleTransactionLedger
+    LedgerEngine, TransactionValidator, TransactionExecutor, SimpleTransactionLedger
 )
 from modules.finance.transaction.adapter import RegistryAccountAccessor, DictionaryAccountAccessor
 
@@ -49,8 +49,8 @@ class SettlementSystem(IMonetaryAuthority):
         self.agent_registry = agent_registry # Injected by SimulationInitializer
         self.panic_recorder: Optional[IPanicRecorder] = None # Injected by SimulationInitializer
 
-        # Transaction Engine (Initialized lazily)
-        self._transaction_engine: Optional[TransactionEngine] = None
+        # Ledger Engine (Initialized lazily)
+        self._transaction_engine: Optional[LedgerEngine] = None
 
         # TD-INT-STRESS-SCALE: Reverse Index for Bank Accounts
         # BankID -> Set[AgentID]
@@ -65,7 +65,7 @@ class SettlementSystem(IMonetaryAuthority):
         """Sets the economic metrics service for recording system-wide financial events."""
         self.metrics_service = service
 
-    def _get_engine(self, context_agents: Optional[List[Any]] = None) -> TransactionEngine:
+    def _get_engine(self, context_agents: Optional[List[Any]] = None) -> LedgerEngine:
         """
         Retrieves the TransactionEngine.
         If Registry is available, returns the cached registry-backed engine.
@@ -78,7 +78,7 @@ class SettlementSystem(IMonetaryAuthority):
                 validator = TransactionValidator(accessor)
                 executor = TransactionExecutor(accessor)
                 ledger = SimpleTransactionLedger(self.logger)
-                self._transaction_engine = TransactionEngine(validator, executor, ledger)
+                self._transaction_engine = LedgerEngine(validator, executor, ledger)
             return self._transaction_engine
 
         # Fallback for Tests: Create temporary engine with local map
@@ -94,7 +94,7 @@ class SettlementSystem(IMonetaryAuthority):
             validator = TransactionValidator(accessor)
             executor = TransactionExecutor(accessor)
             ledger = SimpleTransactionLedger(self.logger)
-            return TransactionEngine(validator, executor, ledger)
+            return LedgerEngine(validator, executor, ledger)
 
         raise RuntimeError("Agent Registry not initialized in SettlementSystem and no context agents provided.")
 

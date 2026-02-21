@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, call, ANY
 from typing import List
 
 from modules.finance.transaction.engine import (
-    TransactionEngine,
+    LedgerEngine,
     TransactionValidator,
     TransactionExecutor,
     SimpleTransactionLedger
@@ -43,7 +43,7 @@ def executor(mock_accessor):
 
 @pytest.fixture
 def engine(validator, executor, mock_ledger, mock_clock):
-    return TransactionEngine(validator, executor, mock_ledger, mock_clock)
+    return LedgerEngine(validator, executor, mock_ledger, mock_clock)
 
 # ==============================================================================
 # Validator Tests

@@ -1,0 +1,766 @@
+diff --git a/communications/insights/fix_td_tx_handlers.md b/communications/insights/fix_td_tx_handlers.md
+new file mode 100644
+index 00000000..103be05d
+--- /dev/null
++++ b/communications/insights/fix_td_tx_handlers.md
+@@ -0,0 +1,96 @@
++# Insight Report: TD-RUNTIME-TX-HANDLER Resolution
++
++## [Architectural Insights]
++This mission addressed the "Technical Debt: Runtime Transaction Handler" by introducing a Registry-based Transaction Engine and specialized handlers for complex financial operations.
++
++### Key Decisions:
++1.  **Engine Separation**: The existing `TransactionEngine` (in `modules/finance/transaction/engine.py`) was renamed to `LedgerEngine` to better reflect its purpose as a low-level financial transfer mechanism (debit/credit).
++2.  **High-Level Transaction Engine**: A new `TransactionEngine` class was introduced in the same module. This engine implements the Registry Pattern, allowing specialized `ITransactionHandler` implementations to be registered for specific `TransactionType`s.
++3.  **Protocol Refinement**:
++    *   `ILedgerEngine`: Renamed from `ITransactionEngine` (low-level).
++    *   `ITransactionEngine`: New protocol for the registry-based dispatcher (high-level).
++    *   `ITransactionHandler`: New protocol for business logic handlers.
++    *   `IBondMarketSystem`: New protocol for bond lifecycle operations.
++4.  **Specialized Handlers**:
++    *   `BailoutHandler`: Delegates to `IAssetRecoverySystem`.
++    *   `BondIssuanceHandler`: Coordinates payment via `LedgerEngine` and asset creation via `BondMarketSystem`.
++    *   `TransferHandler`: Wraps `LedgerEngine` for standard transfers.
++
++### Benefits:
++*   **Decoupling**: Business logic (e.g., Bond Issuance rules) is separated from the core transfer logic (`LedgerEngine`).
++*   **Extensibility**: New transaction types can be added by implementing a new handler and registering it, without modifying the core engine.
++*   **Testability**: Handlers can be tested in isolation with mocked dependencies.
++
++## [Regression Analysis]
++*   **Renaming Impact**: Renaming `TransactionEngine` to `LedgerEngine` required updating `tests/unit/test_transaction_engine.py` and `tests/unit/test_transaction_rollback.py`. No other production code imported `TransactionEngine` directly (it was primarily an internal implementation detail or used via interfaces).
++*   **Test Compatibility**: Existing tests for the low-level engine were preserved and renamed to target `LedgerEngine`, ensuring zero loss of test coverage for the critical financial transfer logic.
++*   **Interface Integrity**: The `process_transaction` signature for `LedgerEngine` remains unchanged, preserving backward compatibility for any potential consumers (though none were found outside tests).
++
++## [Test Evidence]
++```
++tests/unit/test_transaction_engine.py::test_validator_success PASSED     [  4%]
++tests/unit/test_transaction_engine.py::test_validator_negative_amount PASSED [  8%]
++tests/unit/test_transaction_engine.py::test_validator_insufficient_funds PASSED [ 12%]
++tests/unit/test_transaction_engine.py::test_validator_invalid_account PASSED [ 16%]
++tests/unit/test_transaction_engine.py::test_executor_success PASSED      [ 20%]
++tests/unit/test_transaction_engine.py::test_executor_failure_rollback
++-------------------------------- live log call ---------------------------------
++WARNING  modules.finance.transaction.engine:engine.py:96 Deposit failed for dst. Rolling back withdrawal from src. Error: DB Error
++PASSED                                                                   [ 25%]
++tests/unit/test_transaction_engine.py::test_ledger_engine_process_transaction_success PASSED [ 29%]
++tests/unit/test_transaction_engine.py::test_ledger_engine_process_transaction_validation_fail PASSED [ 33%]
++tests/unit/test_transaction_engine.py::test_ledger_engine_process_transaction_execution_fail PASSED [ 37%]
++tests/unit/test_transaction_engine.py::test_ledger_engine_process_batch_success PASSED [ 41%]
++tests/unit/test_transaction_engine.py::test_ledger_engine_process_batch_rollback
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.transaction.engine:engine.py:361 Rollback successful for 1
++PASSED                                                                   [ 45%]
++tests/unit/test_transaction_engine.py::test_transaction_engine_registry
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.transaction.engine:engine.py:149 Registered handler for transaction type: TransactionType.TRANSFER
++PASSED                                                                   [ 50%]
++tests/unit/test_transaction_engine.py::test_transaction_engine_dispatch_success
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.transaction.engine:engine.py:149 Registered handler for transaction type: TransactionType.TRANSFER
++PASSED                                                                   [ 54%]
++tests/unit/test_transaction_engine.py::test_transaction_engine_dispatch_fail_validation
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.transaction.engine:engine.py:149 Registered handler for transaction type: TransactionType.TRANSFER
++PASSED                                                                   [ 58%]
++tests/unit/test_transaction_engine.py::test_transaction_engine_no_handler PASSED [ 62%]
++tests/unit/test_transaction_engine.py::test_transaction_engine_with_context
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.transaction.engine:engine.py:149 Registered handler for transaction type: TransactionType.TRANSFER
++PASSED                                                                   [ 66%]
++tests/unit/test_transaction_engine.py::test_adapter_registry_accessor PASSED [ 70%]
++tests/unit/test_transaction_rollback.py::test_process_batch_rollback_integrity
++-------------------------------- live log call ---------------------------------
++INFO     modules.finance.transaction.engine:engine.py:361 Rollback successful for tx1
++PASSED                                                                   [ 75%]
++tests/unit/handlers/test_bailout_handler.py::test_bailout_handler_validate_success PASSED [ 79%]
++tests/unit/handlers/test_bailout_handler.py::test_bailout_handler_validate_fail_type PASSED [ 83%]
++tests/unit/handlers/test_bailout_handler.py::test_bailout_handler_execute_success PASSED [ 87%]
++tests/unit/handlers/test_bond_issuance_handler.py::test_bond_issuance_handler_success PASSED [ 91%]
++tests/unit/handlers/test_bond_issuance_handler.py::test_bond_issuance_handler_payment_fail
++-------------------------------- live log call ---------------------------------
++ERROR    modules.finance.handlers.bond_issuance:bond_issuance.py:41 Bond Issuance Payment Failed: No Funds
++PASSED                                                                   [ 95%]
++tests/unit/handlers/test_bond_issuance_handler.py::test_bond_issuance_handler_asset_fail_rollback
++-------------------------------- live log call ---------------------------------
++WARNING  modules.finance.handlers.bond_issuance:bond_issuance.py:52 Bond Creation Failed: Bond Market System returned False. Initiating Payment Rollback.
++PASSED                                                                   [100%]
++
++=============================== warnings summary ===============================
++../home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
++  /home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_default_fixture_loop_scope
++
++    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
++
++../home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
++  /home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_mode
++
++    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
++
++-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
++======================== 24 passed, 2 warnings in 0.91s ========================
++```
+diff --git a/modules/finance/api.py b/modules/finance/api.py
+index 30785373..f62670b7 100644
+--- a/modules/finance/api.py
++++ b/modules/finance/api.py
+@@ -1,6 +1,7 @@
+ from __future__ import annotations
+ from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple, runtime_checkable, TYPE_CHECKING, Union, Callable
+ from dataclasses import dataclass, field
++from enum import Enum
+ import abc
+ from abc import ABC, abstractmethod
+ from uuid import UUID
+@@ -1052,3 +1053,96 @@ class ILoanRepayer(Protocol):
+     """Protocol for entities that can repay loans."""
+     def repay_loan(self, loan_id: str, amount: int) -> int: ...
+ 
++# ==============================================================================
++# === TRANSACTION HANDLER PROTOCOLS (TD-RUNTIME-TX-HANDLER)
++# ==============================================================================
++
++class TransactionType(str, Enum):
++    TRANSFER = "TRANSFER"
++    PAYMENT = "PAYMENT"
++    TAX = "TAX"
++    BAILOUT = "BAILOUT"
++    BOND_ISSUANCE = "BOND_ISSUANCE"
++    # Legacy/Market types
++    TRADE = "TRADE"
++    HOUSING = "housing"
++    GOODS = "goods"
++    LABOR = "labor"
++
++@dataclass(frozen=True)
++class BondIssuanceRequestDTO:
++    """
++    DTO for Bond Issuance Transaction.
++    Represents the primary market sale of a bond from an Issuer to a Buyer.
++    """
++    issuer_id: AgentID
++    buyer_id: AgentID
++    face_value: int         # Face value per bond in pennies
++    issue_price: int        # Actual price paid per bond in pennies
++    quantity: int           # Number of bonds
++    coupon_rate: float      # Annual coupon rate (0.05 = 5%)
++    maturity_tick: int      # Tick when the bond matures
++    bond_series_id: Optional[str] = None # Optional ID for grouping
++
++@runtime_checkable
++class ITransactionHandler(Protocol):
++    """
++    Protocol for specialized transaction logic.
++    Each TransactionType maps to a concrete implementation of this protocol.
++    """
++    def validate(self, request: Any, context: Any) -> bool:
++        """
++        Pure validation logic. Checks solvency, permissions, and data integrity.
++        Must NOT mutate state.
++        """
++        ...
++
++    def execute(self, request: Any, context: Any) -> Any:
++        """
++        Executes the transaction.
++        Responsible for calling the appropriate System/Service to mutate state.
++        Returns a TransactionResultDTO-like object.
++        """
++        ...
++
++    def rollback(self, transaction_id: str, context: Any) -> bool:
++        """
++        Reverses the transaction effects.
++        Critical for Atomic Sagas.
++        """
++        ...
++
++@runtime_checkable
++class IBondMarketSystem(Protocol):
++    """
++    Interface for the Bond Market System.
++    Handles the lifecycle of bond assets (creation, registration, redemption).
++    """
++    def issue_bond(self, request: BondIssuanceRequestDTO) -> bool:
++        """
++        Creates the Bond asset, assigns it to the Buyer, and registers the Liability to the Issuer.
++        """
++        ...
++
++    def register_bond_series(self, issuer_id: AgentID, series_id: str, details: Dict[str, Any]) -> None:
++        """
++        Registers a new bond series in the security master.
++        """
++        ...
++
++@runtime_checkable
++class ITransactionEngine(Protocol):
++    """
++    Interface for the central Transaction Engine (High-Level).
++    """
++    def register_handler(self, tx_type: TransactionType, handler: ITransactionHandler) -> None:
++        """
++        Registers a handler for a specific transaction type.
++        """
++        ...
++
++    def process_transaction(self, tx_type: TransactionType, data: Any) -> Any:
++        """
++        Dispatches the transaction to the registered handler.
++        """
++        ...
+diff --git a/modules/finance/handlers/__init__.py b/modules/finance/handlers/__init__.py
+new file mode 100644
+index 00000000..646eb759
+--- /dev/null
++++ b/modules/finance/handlers/__init__.py
+@@ -0,0 +1 @@
++# Transaction Handlers Package
+\ No newline at end of file
+diff --git a/modules/finance/handlers/bailout.py b/modules/finance/handlers/bailout.py
+new file mode 100644
+index 00000000..1b110c88
+--- /dev/null
++++ b/modules/finance/handlers/bailout.py
+@@ -0,0 +1,40 @@
++from typing import Any
++from modules.finance.api import ITransactionHandler
++from modules.system.api import AssetBuyoutRequestDTO, IAssetRecoverySystem, AssetBuyoutResultDTO
++
++class BailoutHandler(ITransactionHandler):
++    """
++    Handler for Bailout Transactions (Asset Buyouts).
++    Delegates execution to the Asset Recovery System (Public Manager).
++    """
++    def __init__(self, asset_recovery_system: IAssetRecoverySystem):
++        self.asset_recovery_system = asset_recovery_system
++
++    def validate(self, request: Any, context: Any) -> bool:
++        """
++        Validates the bailout request.
++        """
++        if not isinstance(request, AssetBuyoutRequestDTO):
++            return False
++
++        # Additional validation (e.g. check if seller exists) could be added here
++        # But we rely on AssetRecoverySystem to handle business logic validation usually.
++        # This layer validates DTO integrity.
++        return True
++
++    def execute(self, request: Any, context: Any) -> AssetBuyoutResultDTO:
++        """
++        Executes the asset buyout.
++        """
++        if not isinstance(request, AssetBuyoutRequestDTO):
++             raise ValueError("Invalid request type for BailoutHandler")
++
++        return self.asset_recovery_system.execute_asset_buyout(request)
++
++    def rollback(self, transaction_id: str, context: Any) -> bool:
++        """
++        Rollback for bailouts is complex (returning assets).
++        Currently not supported/implemented for Phase 1.
++        """
++        # TODO: Implement generic rollback
++        return False
+diff --git a/modules/finance/handlers/bond_issuance.py b/modules/finance/handlers/bond_issuance.py
+new file mode 100644
+index 00000000..d1f22d13
+--- /dev/null
++++ b/modules/finance/handlers/bond_issuance.py
+@@ -0,0 +1,73 @@
++from typing import Any
++import logging
++from modules.finance.api import ITransactionHandler, IBondMarketSystem, BondIssuanceRequestDTO
++from modules.finance.transaction.api import ILedgerEngine
++from modules.system.api import DEFAULT_CURRENCY
++
++logger = logging.getLogger(__name__)
++
++class BondIssuanceHandler(ITransactionHandler):
++    """
++    Handler for Bond Issuance Transactions.
++    Co-ordinates payment (via LedgerEngine) and asset creation (via BondMarketSystem).
++    """
++    def __init__(self, bond_market_system: IBondMarketSystem, ledger_engine: ILedgerEngine):
++        self.bond_market_system = bond_market_system
++        self.ledger_engine = ledger_engine
++
++    def validate(self, request: Any, context: Any) -> bool:
++        if not isinstance(request, BondIssuanceRequestDTO):
++            return False
++        return True
++
++    def execute(self, request: Any, context: Any) -> bool:
++        if not isinstance(request, BondIssuanceRequestDTO):
++            raise ValueError("Invalid request type for BondIssuanceHandler")
++
++        # 1. Calculate Total Cost
++        total_cost = request.issue_price * request.quantity
++
++        # 2. Execute Financial Transfer (Buyer -> Issuer)
++        # Note: We assume DEFAULT_CURRENCY (USD) as BondIssuanceRequestDTO doesn't specify currency yet.
++        ledger_result = self.ledger_engine.process_transaction(
++            source_account_id=str(request.buyer_id),
++            destination_account_id=str(request.issuer_id),
++            amount=total_cost,
++            currency=DEFAULT_CURRENCY,
++            description=f"Bond Issuance: {request.quantity} units @ {request.issue_price/100:.2f}"
++        )
++
++        if ledger_result.status != 'COMPLETED':
++            logger.error(f"Bond Issuance Payment Failed: {ledger_result.message}")
++            # We return False (or raise exception depending on protocol contract - currently Any)
++            # Raising exception is safer for now to propagate error message
++            raise ValueError(f"Bond Issuance Payment Failed: {ledger_result.message}")
++
++        # 3. Execute Asset Creation (Bond Market System)
++        try:
++            if not self.bond_market_system.issue_bond(request):
++                raise ValueError("Bond Market System returned False")
++        except Exception as e:
++            # ROLLBACK Payment!
++            logger.warning(f"Bond Creation Failed: {e}. Initiating Payment Rollback.")
++
++            try:
++                reverse_result = self.ledger_engine.process_transaction(
++                    source_account_id=str(request.issuer_id),
++                    destination_account_id=str(request.buyer_id),
++                    amount=total_cost,
++                    currency=DEFAULT_CURRENCY,
++                    description=f"ROLLBACK: Bond Issuance Failed"
++                )
++                if reverse_result.status != 'COMPLETED':
++                    logger.critical(f"CRITICAL: Rollback failed for Bond Issuance! Money trapped in Issuer {request.issuer_id}. Error: {reverse_result.message}")
++            except Exception as rb_error:
++                logger.critical(f"CRITICAL: Rollback exception for Bond Issuance! Money trapped. Error: {rb_error}")
++
++            raise ValueError(f"Bond Issuance Failed during asset creation: {e}")
++
++        return True
++
++    def rollback(self, transaction_id: str, context: Any) -> bool:
++        # TODO: Implement full rollback (reverse payment, cancel bond)
++        return False
+diff --git a/modules/finance/handlers/transfer.py b/modules/finance/handlers/transfer.py
+new file mode 100644
+index 00000000..a14d25d8
+--- /dev/null
++++ b/modules/finance/handlers/transfer.py
+@@ -0,0 +1,33 @@
++from typing import Any
++from modules.finance.api import ITransactionHandler
++from modules.finance.transaction.api import ILedgerEngine, TransactionDTO, TransactionResultDTO
++
++class TransferHandler(ITransactionHandler):
++    """
++    Handler for basic financial transfers (TransactionType.TRANSFER).
++    Wraps the low-level LedgerEngine.
++    """
++    def __init__(self, ledger_engine: ILedgerEngine):
++        self.ledger_engine = ledger_engine
++
++    def validate(self, request: Any, context: Any) -> bool:
++        if not isinstance(request, TransactionDTO):
++            return False
++        return True
++
++    def execute(self, request: Any, context: Any) -> TransactionResultDTO:
++        if not isinstance(request, TransactionDTO):
++             raise ValueError("Invalid request type for TransferHandler. Expected TransactionDTO.")
++
++        # Delegate to LedgerEngine
++        return self.ledger_engine.process_transaction(
++            source_account_id=request.source_account_id,
++            destination_account_id=request.destination_account_id,
++            amount=request.amount,
++            currency=request.currency,
++            description=request.description
++        )
++
++    def rollback(self, transaction_id: str, context: Any) -> bool:
++        # TODO: Implement rollback
++        return False
+diff --git a/modules/finance/transaction/api.py b/modules/finance/transaction/api.py
+index ac0fc69b..da8cb199 100644
+--- a/modules/finance/transaction/api.py
++++ b/modules/finance/transaction/api.py
+@@ -169,10 +169,10 @@ class ITransactionLedger(Protocol):
+ 
+ 
+ @runtime_checkable
+-class ITransactionEngine(Protocol):
++class ILedgerEngine(Protocol):
+     """
+-    Interface for the main engine that orchestrates the entire transaction process.
+-    This is the primary entry point for external modules.
++    Interface for the ledger engine that orchestrates financial transfers (debit/credit).
++    Renamed from ITransactionEngine to avoid conflict with the High-Level Transaction Engine.
+     """
+     def process_transaction(
+         self,
+diff --git a/modules/finance/transaction/engine.py b/modules/finance/transaction/engine.py
+index 8101e7e8..8726c381 100644
+--- a/modules/finance/transaction/engine.py
++++ b/modules/finance/transaction/engine.py
+@@ -1,9 +1,14 @@
+ import uuid
+ import logging
+-from typing import Optional, Callable, List
++from typing import Optional, Callable, List, Dict, Any
+ 
++from modules.finance.api import (
++    ITransactionEngine as IHighLevelTransactionEngine,
++    TransactionType,
++    ITransactionHandler,
++)
+ from modules.finance.transaction.api import (
+-    ITransactionEngine,
++    ILedgerEngine,
+     ITransactionValidator,
+     ITransactionExecutor,
+     ITransactionLedger,
+@@ -130,7 +135,41 @@ class SimpleTransactionLedger(ITransactionLedger):
+         )
+ 
+ 
+-class TransactionEngine(ITransactionEngine):
++class TransactionEngine(IHighLevelTransactionEngine):
++    """
++    High-Level Transaction Engine implementing the Registry Pattern.
++    Dispatches specialized transactions to registered handlers.
++    """
++    def __init__(self):
++        self._handlers: Dict[TransactionType, ITransactionHandler] = {}
++        self.logger = logging.getLogger(__name__)
++
++    def register_handler(self, tx_type: TransactionType, handler: ITransactionHandler) -> None:
++        self._handlers[tx_type] = handler
++        self.logger.info(f"Registered handler for transaction type: {tx_type}")
++
++    def process_transaction(self, tx_type: TransactionType, data: Any) -> Any:
++        handler = self._handlers.get(tx_type)
++        if not handler:
++            raise ValueError(f"No handler registered for transaction type: {tx_type}")
++
++        request = data
++        context = None
++
++        # Support passing context via tuple (request, context)
++        if isinstance(data, tuple) and len(data) == 2:
++            request, context = data
++
++        if not handler.validate(request, context):
++             raise ValueError(f"Validation failed for transaction type: {tx_type}")
++
++        return handler.execute(request, context)
++
++
++class LedgerEngine(ILedgerEngine):
++    """
++    Low-level engine for processing financial transfers (Ledger operations).
++    """
+     def __init__(
+         self,
+         validator: ITransactionValidator,
+diff --git a/tests/unit/handlers/test_bailout_handler.py b/tests/unit/handlers/test_bailout_handler.py
+new file mode 100644
+index 00000000..dc011bb8
+--- /dev/null
++++ b/tests/unit/handlers/test_bailout_handler.py
+@@ -0,0 +1,31 @@
++import pytest
++from unittest.mock import Mock, MagicMock
++from modules.finance.handlers.bailout import BailoutHandler
++from modules.system.api import AssetBuyoutRequestDTO, IAssetRecoverySystem, AssetBuyoutResultDTO
++
++def test_bailout_handler_validate_success():
++    handler = BailoutHandler(Mock(spec=IAssetRecoverySystem))
++    request = AssetBuyoutRequestDTO(
++        seller_id=1,
++        inventory={},
++        market_prices={},
++        distress_discount=0.5
++    )
++    assert handler.validate(request, None) is True
++
++def test_bailout_handler_validate_fail_type():
++    handler = BailoutHandler(Mock(spec=IAssetRecoverySystem))
++    assert handler.validate("invalid", None) is False
++
++def test_bailout_handler_execute_success():
++    mock_system = Mock(spec=IAssetRecoverySystem)
++    expected_result = AssetBuyoutResultDTO(True, 100, {}, 1, "tx1")
++    mock_system.execute_asset_buyout.return_value = expected_result
++
++    handler = BailoutHandler(mock_system)
++    request = AssetBuyoutRequestDTO(1, {}, {}, 0.5)
++
++    result = handler.execute(request, None)
++
++    assert result == expected_result
++    mock_system.execute_asset_buyout.assert_called_with(request)
+diff --git a/tests/unit/handlers/test_bond_issuance_handler.py b/tests/unit/handlers/test_bond_issuance_handler.py
+new file mode 100644
+index 00000000..75a46d17
+--- /dev/null
++++ b/tests/unit/handlers/test_bond_issuance_handler.py
+@@ -0,0 +1,75 @@
++import pytest
++from unittest.mock import Mock, MagicMock
++from modules.finance.handlers.bond_issuance import BondIssuanceHandler
++from modules.finance.api import BondIssuanceRequestDTO, IBondMarketSystem
++from modules.finance.transaction.api import ILedgerEngine, TransactionResultDTO
++from modules.system.api import DEFAULT_CURRENCY
++
++def test_bond_issuance_handler_success():
++    mock_bond_system = Mock(spec=IBondMarketSystem)
++    mock_bond_system.issue_bond.return_value = True
++
++    mock_ledger = Mock(spec=ILedgerEngine)
++    mock_ledger.process_transaction.return_value = TransactionResultDTO(
++        transaction=Mock(), status='COMPLETED', message="OK", timestamp=0.0
++    )
++
++    handler = BondIssuanceHandler(mock_bond_system, mock_ledger)
++
++    request = BondIssuanceRequestDTO(
++        issuer_id=1, buyer_id=2, face_value=100, issue_price=90,
++        quantity=10, coupon_rate=0.05, maturity_tick=100
++    )
++
++    result = handler.execute(request, None)
++
++    assert result is True
++    # Verify Payment
++    mock_ledger.process_transaction.assert_called_once()
++    args = mock_ledger.process_transaction.call_args[1]
++    assert args['source_account_id'] == "2"
++    assert args['destination_account_id'] == "1"
++    assert args['amount'] == 900 # 90 * 10
++
++    # Verify Asset Creation
++    mock_bond_system.issue_bond.assert_called_with(request)
++
++def test_bond_issuance_handler_payment_fail():
++    mock_bond_system = Mock(spec=IBondMarketSystem)
++    mock_ledger = Mock(spec=ILedgerEngine)
++    mock_ledger.process_transaction.return_value = TransactionResultDTO(
++        transaction=Mock(), status='FAILED', message="No Funds", timestamp=0.0
++    )
++
++    handler = BondIssuanceHandler(mock_bond_system, mock_ledger)
++    request = BondIssuanceRequestDTO(1, 2, 100, 90, 10, 0.05, 100)
++
++    with pytest.raises(ValueError, match="Bond Issuance Payment Failed"):
++        handler.execute(request, None)
++
++    mock_bond_system.issue_bond.assert_not_called()
++
++def test_bond_issuance_handler_asset_fail_rollback():
++    mock_bond_system = Mock(spec=IBondMarketSystem)
++    mock_bond_system.issue_bond.return_value = False # Fail asset creation
++
++    mock_ledger = Mock(spec=ILedgerEngine)
++    mock_ledger.process_transaction.side_effect = [
++        TransactionResultDTO(Mock(), 'COMPLETED', "OK", 0.0), # Payment
++        TransactionResultDTO(Mock(), 'COMPLETED', "OK", 0.0)  # Rollback
++    ]
++
++    handler = BondIssuanceHandler(mock_bond_system, mock_ledger)
++    request = BondIssuanceRequestDTO(1, 2, 100, 90, 10, 0.05, 100)
++
++    with pytest.raises(ValueError, match="Bond Market System returned False"):
++        handler.execute(request, None)
++
++    # Verify Payment and Rollback
++    assert mock_ledger.process_transaction.call_count == 2
++    # Check Rollback call
++    # Note: call_args_list is a list of Call objects. Call objects are tuple-like.
++    rollback_call = mock_ledger.process_transaction.call_args_list[1]
++    rollback_args = rollback_call.kwargs
++    assert rollback_args['source_account_id'] == "1" # Issuer returns money
++    assert rollback_args['destination_account_id'] == "2"
+diff --git a/tests/unit/test_transaction_engine.py b/tests/unit/test_transaction_engine.py
+index 5793bd62..e5bc70ca 100644
+--- a/tests/unit/test_transaction_engine.py
++++ b/tests/unit/test_transaction_engine.py
+@@ -16,8 +16,10 @@ from modules.finance.transaction.api import (
+ from modules.finance.transaction.engine import (
+     TransactionValidator,
+     TransactionExecutor,
++    LedgerEngine,
+     TransactionEngine
+ )
++from modules.finance.api import TransactionType, ITransactionHandler
+ from modules.finance.transaction.adapter import RegistryAccountAccessor
+ from modules.finance.api import IFinancialAgent, IFinancialEntity
+ from modules.system.api import IAgentRegistry, DEFAULT_CURRENCY
+@@ -173,15 +175,15 @@ def test_executor_failure_rollback():
+ 
+ 
+ # ==============================================================================
+-# Engine Tests
++# Ledger Engine Tests (Renamed from Transaction Engine)
+ # ==============================================================================
+ 
+-def test_engine_process_transaction_success():
++def test_ledger_engine_process_transaction_success():
+     mock_validator = Mock(spec=ITransactionValidator)
+     mock_executor = Mock(spec=ITransactionExecutor)
+     mock_ledger = Mock(spec=ITransactionLedger)
+ 
+-    engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
++    engine = LedgerEngine(mock_validator, mock_executor, mock_ledger)
+ 
+     result = engine.process_transaction("src", "dst", 10000, DEFAULT_CURRENCY, "test")
+ 
+@@ -191,13 +193,13 @@ def test_engine_process_transaction_success():
+     mock_ledger.record.assert_called_once()
+     assert mock_ledger.record.call_args[0][0].status == 'COMPLETED'
+ 
+-def test_engine_process_transaction_validation_fail():
++def test_ledger_engine_process_transaction_validation_fail():
+     mock_validator = Mock(spec=ITransactionValidator)
+     mock_validator.validate.side_effect = InsufficientFundsError("Not enough money")
+     mock_executor = Mock(spec=ITransactionExecutor)
+     mock_ledger = Mock(spec=ITransactionLedger)
+ 
+-    engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
++    engine = LedgerEngine(mock_validator, mock_executor, mock_ledger)
+ 
+     result = engine.process_transaction("src", "dst", 10000, DEFAULT_CURRENCY, "test")
+ 
+@@ -207,13 +209,13 @@ def test_engine_process_transaction_validation_fail():
+     mock_ledger.record.assert_called_once()
+     assert mock_ledger.record.call_args[0][0].status == 'FAILED'
+ 
+-def test_engine_process_transaction_execution_fail():
++def test_ledger_engine_process_transaction_execution_fail():
+     mock_validator = Mock(spec=ITransactionValidator)
+     mock_executor = Mock(spec=ITransactionExecutor)
+     mock_executor.execute.side_effect = ExecutionError("Critical fail")
+     mock_ledger = Mock(spec=ITransactionLedger)
+ 
+-    engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
++    engine = LedgerEngine(mock_validator, mock_executor, mock_ledger)
+ 
+     result = engine.process_transaction("src", "dst", 10000, DEFAULT_CURRENCY, "test")
+ 
+@@ -222,12 +224,12 @@ def test_engine_process_transaction_execution_fail():
+     mock_ledger.record.assert_called_once()
+     assert mock_ledger.record.call_args[0][0].status == 'CRITICAL_FAILURE'
+ 
+-def test_engine_process_batch_success():
++def test_ledger_engine_process_batch_success():
+     mock_validator = Mock(spec=ITransactionValidator)
+     mock_executor = Mock(spec=ITransactionExecutor)
+     mock_ledger = Mock(spec=ITransactionLedger)
+ 
+-    engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
++    engine = LedgerEngine(mock_validator, mock_executor, mock_ledger)
+ 
+     tx1 = TransactionDTO("1", "src", "dst", 100, DEFAULT_CURRENCY, "t1")
+     tx2 = TransactionDTO("2", "dst", "src", 50, DEFAULT_CURRENCY, "t2")
+@@ -240,12 +242,12 @@ def test_engine_process_batch_success():
+     assert mock_executor.execute.call_count == 2
+     assert mock_ledger.record.call_count == 2
+ 
+-def test_engine_process_batch_rollback():
++def test_ledger_engine_process_batch_rollback():
+     mock_validator = Mock(spec=ITransactionValidator)
+     mock_executor = Mock(spec=ITransactionExecutor)
+     mock_ledger = Mock(spec=ITransactionLedger)
+ 
+-    engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
++    engine = LedgerEngine(mock_validator, mock_executor, mock_ledger)
+ 
+     tx1 = TransactionDTO("1", "src", "dst", 100, DEFAULT_CURRENCY, "t1")
+     tx2 = TransactionDTO("2", "dst", "src", 50, DEFAULT_CURRENCY, "t2")
+@@ -275,6 +277,64 @@ def test_engine_process_batch_rollback():
+     assert calls[1][0][0].transaction_id == "2"
+     assert calls[2][0][0].transaction_id == "rollback_1"
+ 
++# ==============================================================================
++# High-Level Transaction Engine Tests (New)
++# ==============================================================================
++
++def test_transaction_engine_registry():
++    engine = TransactionEngine()
++    mock_handler = Mock(spec=ITransactionHandler)
++
++    engine.register_handler(TransactionType.TRANSFER, mock_handler)
++
++    # Verify handler stored (impl detail, but confirms registration)
++    assert engine._handlers[TransactionType.TRANSFER] == mock_handler
++
++def test_transaction_engine_dispatch_success():
++    engine = TransactionEngine()
++    mock_handler = Mock(spec=ITransactionHandler)
++    mock_handler.validate.return_value = True
++    mock_handler.execute.return_value = "SUCCESS"
++
++    engine.register_handler(TransactionType.TRANSFER, mock_handler)
++
++    result = engine.process_transaction(TransactionType.TRANSFER, "data")
++
++    assert result == "SUCCESS"
++    mock_handler.validate.assert_called_with("data", None)
++    mock_handler.execute.assert_called_with("data", None)
++
++def test_transaction_engine_dispatch_fail_validation():
++    engine = TransactionEngine()
++    mock_handler = Mock(spec=ITransactionHandler)
++    mock_handler.validate.return_value = False
++
++    engine.register_handler(TransactionType.TRANSFER, mock_handler)
++
++    with pytest.raises(ValueError, match="Validation failed"):
++        engine.process_transaction(TransactionType.TRANSFER, "data")
++
++def test_transaction_engine_no_handler():
++    engine = TransactionEngine()
++    with pytest.raises(ValueError, match="No handler registered"):
++        engine.process_transaction(TransactionType.TRANSFER, "data")
++
++def test_transaction_engine_with_context():
++    engine = TransactionEngine()
++    mock_handler = Mock(spec=ITransactionHandler)
++    mock_handler.validate.return_value = True
++
++    engine.register_handler(TransactionType.TRANSFER, mock_handler)
++
++    context = {"user": "agent"}
++    request = "request"
++
++    engine.process_transaction(TransactionType.TRANSFER, (request, context))
++
++    mock_handler.validate.assert_called_with(request, context)
++    mock_handler.execute.assert_called_with(request, context)
++
++
+ # ==============================================================================
+ # Adapter Tests
+ # ==============================================================================
+diff --git a/tests/unit/test_transaction_rollback.py b/tests/unit/test_transaction_rollback.py
+index 53d6a8fe..d5c6de7d 100644
+--- a/tests/unit/test_transaction_rollback.py
++++ b/tests/unit/test_transaction_rollback.py
+@@ -9,7 +9,7 @@ from modules.finance.transaction.api import (
+     ITransactionValidator,
+     ITransactionLedger
+ )
+-from modules.finance.transaction.engine import TransactionEngine
++from modules.finance.transaction.engine import LedgerEngine
+ 
+ class MockExecutor:
+     def __init__(self):
+@@ -31,7 +31,7 @@ def test_process_batch_rollback_integrity():
+     mock_ledger = MagicMock(spec=ITransactionLedger)
+     executor = MockExecutor()
+ 
+-    engine = TransactionEngine(
++    engine = LedgerEngine(
+         validator=mock_validator,
+         executor=executor, # type: ignore
+         ledger=mock_ledger

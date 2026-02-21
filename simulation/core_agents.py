@@ -785,9 +785,24 @@ class Household(
 
     def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         self._econ_state.wallet.subtract(amount, currency=currency, memo="Withdraw")
+    @property
+    def balance_pennies(self) -> int:
+        """Returns the balance in the default currency (pennies)."""
+        return self.get_balance(DEFAULT_CURRENCY)
 
+    @override
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         return self._econ_state.wallet.get_balance(currency)
+
+    def get_liquid_assets(self, currency: CurrencyCode = "USD") -> float:
+        """Returns liquid assets as float (legacy compatibility)."""
+        return float(self.get_balance(currency))
+
+    def get_total_debt(self) -> float:
+        """Returns total debt as float (legacy compatibility)."""
+        # Household doesn't traditionally have debt in the same way Firms do here,
+        # but we provide the method for protocol compliance.
+        return 0.0
 
     @override
     def get_all_balances(self) -> Dict[CurrencyCode, int]:

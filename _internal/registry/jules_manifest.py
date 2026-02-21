@@ -17,6 +17,11 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
+    "fix_13_failures": {
+        "title": "Fix 13 Test Failures related to Mock Drift",
+        "instruction": "Implement the fixes detailed in the analysis spec to resolve the 13 test failures related to Mock drift and logic mismatches.",
+        "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_13_failures_analysis_spec.md"
+    },
     "fix_penny_standard_tests": {
         "title": "Fix Penny Standard Migration Test Failures",
         "instruction": (

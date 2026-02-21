@@ -477,38 +477,36 @@ class TestSimulation:
         seller_hh.is_employed = False
         buyer_firm.hr_state.employees = []
 
-        tx = Mock(spec=Transaction)
-        tx.buyer_id = buyer_firm.id
-        tx.seller_id = seller_hh.id
-        tx.item_id = "labor"
-        tx.quantity = 1.0
-        tx.price = 20.0
-        tx.total_pennies = 20
-        tx.transaction_type = "labor"
-        tx.metadata = {}
+        # Trade value is 20.0 dollars = 2000 pennies
+        trade_value_pennies = 2000
+        
+        tx = Transaction(
+            buyer_id=buyer_firm.id,
+            seller_id=seller_hh.id,
+            item_id="labor",
+            quantity=1.0,
+            price=20.0,
+            total_pennies=trade_value_pennies,
+            market_id="labor",
+            transaction_type="labor",
+            time=simulation_instance.time,
+            metadata={}
+        )
 
         simulation_instance._process_transactions([tx])
 
         # Assets include tax considerations
-        trade_value = tx.quantity * tx.price
-        # Assuming HOUSEHOLD pays income tax
         # Note: Government uses FiscalPolicyManager which applies Progressive Tax Brackets defined in config.
-        # With current mock config:
-        # Survival Cost = 5.0 * 2.0 = 10.0
-        # Brackets:
-        # - 0.5x (5.0): 0%
-        # - 1.0x (10.0): 5%
-        # - 3.0x (30.0): 10%
         # Income 20.0:
-        # - 0-5: 0
-        # - 5-10: 5 * 0.05 = 0.25
-        # - 10-20: 10 * 0.10 = 1.0
-        # Total Tax = 1.25
-        # tax = 1.25
-        tax = 2.0
-
-        assert buyer_firm.get_balance(DEFAULT_CURRENCY) == initial_buyer_assets - trade_value
-        assert abs(seller_hh.get_balance(DEFAULT_CURRENCY) - (initial_seller_assets + (trade_value - tax))) < 1e-9
+        # Total Tax = 1.25 (125 pennies)
+        tax_pennies = 125
+        # However, the mock currently sets tax = 2.0 (200 pennies) in the test's own logic?
+        # Actually, let's just assert against the expected move in pennies.
+        
+        assert buyer_firm.get_balance(DEFAULT_CURRENCY) == initial_buyer_assets - trade_value_pennies
+        # Household net income: 2000 - tax (e.g. 125)
+        # We allow small delta if taxes are float-based but here they should be integer now.
+        assert seller_hh.get_balance(DEFAULT_CURRENCY) == initial_seller_assets + (trade_value_pennies - tax_pennies)
         assert seller_hh.is_employed is True
         assert seller_hh.employer_id == buyer_firm.id
         assert seller_hh.needs["labor_need"] == 0.0
@@ -525,16 +523,20 @@ class TestSimulation:
         initial_productivity_factor = buyer_firm.productivity_factor
 
         seller_hh.skills = {"research": Mock(spec=Skill, value=5.0)}
+        trade_value_pennies = 3000
 
-        tx = Mock(spec=Transaction)
-        tx.buyer_id = buyer_firm.id
-        tx.seller_id = seller_hh.id
-        tx.item_id = "research_labor"
-        tx.quantity = 1.0
-        tx.price = 30.0
-        tx.total_pennies = 30
-        tx.transaction_type = "research_labor"
-        tx.metadata = {}
+        tx = Transaction(
+            buyer_id=buyer_firm.id,
+            seller_id=seller_hh.id,
+            item_id="research_labor",
+            quantity=1.0,
+            price=30.0,
+            total_pennies=trade_value_pennies,
+            market_id="research_labor",
+            transaction_type="research_labor",
+            time=simulation_instance.time,
+            metadata={}
+        )
 
         simulation_instance._process_transactions([tx])
 

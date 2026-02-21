@@ -1,0 +1,563 @@
+diff --git a/communications/insights/fix_td_life_stale.md b/communications/insights/fix_td_life_stale.md
+new file mode 100644
+index 00000000..02214d61
+--- /dev/null
++++ b/communications/insights/fix_td_life_stale.md
+@@ -0,0 +1,56 @@
++# Insight Report: TD-TEST-LIFE-STALE Resolution
++
++## 1. Architectural Insights
++
++### 1.1. Lifecycle Logic Refactoring
++The resolution of `TD-TEST-LIFE-STALE` involved aligning the agent lifecycle logic (specifically death and liquidation) with the `IAssetRecoverySystem` architecture.
++
++- **Problem**: The legacy system used `process_bankruptcy_event` in `DeathSystem`, which simply absorbed assets without financial compensation or proper transaction flow. This violated "Zero-Sum Integrity" as assets disappeared and value was not recovered for creditors/heirs.
++- **Solution**: Refactored `DeathSystem` to use `execute_asset_buyout` (via `PublicManager`).
++  - **Logic Flow**:
++    1. Agent dies.
++    2. `DeathSystem` liquidates inventory by selling it to `PublicManager` (`execute_asset_buyout`).
++    3. `PublicManager` pays the agent (funds transferred via `SettlementSystem`).
++    4. `InheritanceManager` runs, distributing the now-liquidated cash to heirs or tax.
++  - **Benefits**:
++    - Ensures "Zero-Sum Integrity": PublicManager pays for assets.
++    - Preserves Value: Inventory is converted to cash before inheritance.
++    - Protocol Compliance: Uses `IAssetRecoverySystem` interface.
++
++### 1.2. Liquidation Handler Alignment
++The `InventoryLiquidationHandler` (used for Firm Bankruptcy) was also refactored to use `execute_asset_buyout`, unifying the liquidation logic across Firms and Households.
++
++## 2. Regression Analysis
++
++### 2.1. Existing Failures in `test_engine.py`
++During verification, significant failures were observed in `tests/system/test_engine.py`, particularly in `TestSimulation.test_process_transactions_goods_trade` and `TestSimulation.test_prepare_market_data_basic`.
++- **Cause**: These tests appear to rely on legacy `Firm` behavior (e.g., `_deposit` method, which was removed during `TD-ARCH-FIRM-COUP` refactoring).
++- **Impact**: While these failures are critical, they pre-date the current task and are outside the scope of `TD-TEST-LIFE-STALE`.
++- **Action**: The new test case `test_death_system_executes_asset_buyout` was successfully added and passes, verifying the specific lifecycle logic fix. The existing failures should be addressed in a separate task (likely `TD-ARCH-FIRM-COUP` cleanup).
++
++### 2.2. Unit Test Updates
++- `tests/unit/systems/handlers/test_liquidation_handlers.py`: Updated to mock `execute_asset_buyout` and verify `SettlementSystem.transfer` logic.
++- `tests/unit/modules/system/execution/test_public_manager_compliance.py`: Added compliance test for `execute_asset_buyout`.
++
++## 3. Test Evidence
++
++### 3.1. New Lifecycle Test (PASSED)
++```
++tests/system/test_engine.py::test_death_system_executes_asset_buyout PASSED
++```
++
++### 3.2. Unit Tests (PASSED)
++```
++tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_execute_asset_buyout PASSED
++tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_asset_buyout_compliance PASSED
++tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_with_inventory PASSED
++```
++
++### 3.3. Full Run Output (Selected)
++```
++tests/system/test_engine.py::test_death_system_executes_asset_buyout PASSED [ 58%]
++tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_process_bankruptcy_event PASSED [ 64%]
++tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_execute_asset_buyout PASSED [ 70%]
++tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_asset_buyout_compliance PASSED [ 82%]
++tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_with_inventory PASSED [ 94%]
++```
+diff --git a/simulation/systems/lifecycle/death_system.py b/simulation/systems/lifecycle/death_system.py
+index e4fc693b..668c6ec8 100644
+--- a/simulation/systems/lifecycle/death_system.py
++++ b/simulation/systems/lifecycle/death_system.py
+@@ -8,7 +8,7 @@ from simulation.systems.inheritance_manager import InheritanceManager
+ from simulation.systems.liquidation_manager import LiquidationManager
+ from simulation.finance.api import ISettlementSystem
+ from modules.finance.api import ILiquidatable, IShareholderRegistry, IFinancialEntity
+-from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, DEFAULT_CURRENCY
++from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, DEFAULT_CURRENCY, AssetBuyoutRequestDTO
+ from simulation.interfaces.market_interface import IMarket
+ 
+ class DeathSystem(IDeathSystem):
+@@ -90,33 +90,15 @@ class DeathSystem(IDeathSystem):
+              if state.inactive_agents is not None:
+                  state.inactive_agents[household.id] = household
+ 
++             # Inventory Liquidation (Asset Buyout) via Public Manager
++             # Must occur BEFORE inheritance so cash is available for heirs/tax.
++             self._liquidate_agent_inventory(household, state)
++
+              # Inheritance Manager (Executes transactions via side-effects)
+              if state.primary_government:
+                   inheritance_txs = self.inheritance_manager.process_death(household, state.primary_government, state)
+                   transactions.extend(inheritance_txs)
+ 
+-             # Inventory Liquidation (Bankruptcy Event) via Public Manager
+-             # Access inventory via property or attribute
+-             inventory = None
+-             if hasattr(household, 'inventory'):
+-                 inventory = household.inventory
+-             elif hasattr(household, '_econ_state'):
+-                 inventory = household._econ_state.inventory
+-
+-             if self.public_manager and inventory:
+-                 bankruptcy_event = {
+-                     "agent_id": household.id,
+-                     "tick": state.time,
+-                     "inventory": inventory.copy()
+-                 }
+-                 self.public_manager.process_bankruptcy_event(bankruptcy_event)
+-
+-                 # Clear inventory
+-                 if hasattr(household, 'clear_inventory'):
+-                     household.clear_inventory()
+-                 elif hasattr(inventory, 'clear'):
+-                     inventory.clear()
+-
+              # Cleanup
+              if isinstance(household, ICurrencyHolder):
+                 state.unregister_currency_holder(household)
+@@ -199,6 +181,80 @@ class DeathSystem(IDeathSystem):
+                         f"ORDER_SCRUB_FAIL | Failed to cancel orders for agent {agent_id} in market {getattr(market, 'id', 'unknown')}: {e}"
+                     )
+ 
++    def _liquidate_agent_inventory(self, agent: Any, state: SimulationState) -> None:
++        """
++        Liquidates agent inventory by selling to Public Manager (Asset Buyout).
++        Transfers cash to the agent and clears inventory.
++        """
++        if not self.public_manager or not self.settlement_system:
++            return
++
++        inventory = None
++        if hasattr(agent, 'inventory'):
++             inventory = agent.inventory
++        elif hasattr(agent, '_econ_state'):
++             inventory = agent._econ_state.inventory
++
++        if not inventory or not isinstance(inventory, dict) or len(inventory) == 0:
++            return
++
++        # Prepare Market Prices
++        market_prices = {}
++        # Simple Logic: Get price from market or default
++        default_price_float = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
++        default_price_pennies = int(default_price_float * 100)
++
++        for item_id in inventory.keys():
++             price_pennies = default_price_pennies
++             # Try to get market price
++             if state.markets:
++                 if item_id in state.markets:
++                     m = state.markets[item_id]
++                     if isinstance(m, IMarket):
++                         try:
++                            p = m.get_price(item_id)
++                            if p > 0: price_pennies = int(p * 100)
++                         except: pass
++                 elif "goods_market" in state.markets: # Fallback to aggregate market
++                     m = state.markets["goods_market"]
++                     if isinstance(m, IMarket):
++                         try:
++                            p = m.get_price(item_id)
++                            if p > 0: price_pennies = int(p * 100)
++                         except: pass
++
++             market_prices[item_id] = price_pennies
++
++        # Execute Buyout
++        request = AssetBuyoutRequestDTO(
++            seller_id=agent.id,
++            inventory=inventory.copy(),
++            market_prices=market_prices,
++            distress_discount=0.5 # Default distress discount for death/forced sale
++        )
++
++        result = self.public_manager.execute_asset_buyout(request)
++
++        if result.success and result.total_paid_pennies > 0:
++            # Transfer Cash: PM -> Agent
++            success = self.settlement_system.transfer(
++                self.public_manager,
++                agent,
++                result.total_paid_pennies,
++                f"Asset Buyout (Death) - Agent {agent.id}",
++                currency=DEFAULT_CURRENCY
++            )
++
++            if success:
++                self.logger.info(f"ASSET_BUYOUT_SUCCESS | Agent {agent.id} sold inventory for {result.total_paid_pennies} pennies.")
++                # Clear Inventory
++                if hasattr(agent, 'clear_inventory'):
++                     agent.clear_inventory()
++                elif hasattr(inventory, 'clear'):
++                     inventory.clear()
++            else:
++                 self.logger.error(f"ASSET_BUYOUT_FAIL | Payment failed for Agent {agent.id}")
++
+     def _calculate_inventory_value(self, inventory: dict, markets: dict) -> int:
+         """
+         Calculates total inventory value in integer pennies.
+diff --git a/simulation/systems/liquidation_handlers.py b/simulation/systems/liquidation_handlers.py
+index 5b9b9fa1..534abfb9 100644
+--- a/simulation/systems/liquidation_handlers.py
++++ b/simulation/systems/liquidation_handlers.py
+@@ -2,7 +2,7 @@ from __future__ import annotations
+ from abc import ABC, abstractmethod
+ from typing import TYPE_CHECKING, Dict, Any, Optional
+ import logging
+-from modules.system.api import DEFAULT_CURRENCY
++from modules.system.api import DEFAULT_CURRENCY, AssetBuyoutRequestDTO
+ from modules.finance.api import ILiquidatable
+ from modules.simulation.api import IInventoryHandler, IConfigurable
+ 
+@@ -52,47 +52,38 @@ class InventoryLiquidationHandler(ILiquidationHandler):
+         default_price = liq_config.default_price
+         market_prices = liq_config.market_prices
+ 
+-        # Calculate Total Value
+-        total_value = 0.0
+-
+-        inventory_transfer = {}
+-        # Iterate via Interface
+-        for item_id, qty in agent.get_all_items().items():
+-            if qty <= 0:
+-                continue
+-
+-            # Determine fair value
++        # Prepare Market Prices for DTO
++        # Convert all prices to pennies int
++        prices_pennies = {}
++        for item_id in agent.get_all_items().keys():
+             price = market_prices.get(item_id, 0.0)
+-
+             if price <= 0:
+-                # Fallback to configured initial price
+                 price = initial_prices.get(item_id, default_price)
++            prices_pennies[item_id] = int(price)
+ 
+-            # Apply Liquidation Discount (Haircut)
+-            liquidation_value = price * qty * (1.0 - haircut)
+-            total_value += liquidation_value
+-            inventory_transfer[item_id] = qty
++        # Execute Buyout
++        # distress_discount is the multiplier (e.g. 0.8 for 20% haircut)
++        request = AssetBuyoutRequestDTO(
++            seller_id=agent.id,
++            inventory=agent.get_all_items().copy(),
++            market_prices=prices_pennies,
++            distress_discount=1.0 - haircut
++        )
+ 
+-        if total_value > 0:
+-            # Transfer Funds: PublicManager -> Agent
+-            # Value is already in pennies (since price is in pennies)
+-            amount_pennies = int(total_value)
++        result = self.public_manager.execute_asset_buyout(request)
+ 
++        if result.success and result.total_paid_pennies > 0:
+             success = self.settlement_system.transfer(
+                 self.public_manager,
+                 agent,
+-                amount_pennies,
++                result.total_paid_pennies,
+                 f"Asset Liquidation (Inventory) - Agent {agent.id}",
+                 currency=DEFAULT_CURRENCY
+             )
+ 
+             if success:
+-                logger.info(f"LIQUIDATION_ASSET_SALE | Agent {agent.id} sold inventory to PublicManager for {total_value:.2f}.")
+-
+-                # Transfer Inventory via Interface (Encapsulation)
+-                self.public_manager.receive_liquidated_assets(inventory_transfer)
+-
++                logger.info(f"LIQUIDATION_ASSET_SALE | Agent {agent.id} sold inventory to PublicManager for {result.total_paid_pennies}.")
+                 # Clear Agent Inventory
+                 agent.clear_inventory()
+             else:
+-                logger.error(f"LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay {total_value:.2f} to Agent {agent.id}.")
++                logger.error(f"LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay {result.total_paid_pennies} to Agent {agent.id}.")
+diff --git a/tests/system/test_engine.py b/tests/system/test_engine.py
+index da078049..644b8ca9 100644
+--- a/tests/system/test_engine.py
++++ b/tests/system/test_engine.py
+@@ -16,7 +16,8 @@ import config
+ from simulation.dtos.api import SimulationState
+ from tests.utils.factories import create_household_config_dto, create_firm_config_dto
+ from modules.simulation.api import AgentCoreConfigDTO
+-from modules.system.api import DEFAULT_CURRENCY
++from modules.system.api import DEFAULT_CURRENCY, AssetBuyoutRequestDTO, AssetBuyoutResultDTO, IAssetRecoverySystem
++from simulation.finance.api import ISettlementSystem
+ from modules.system.constants import ID_CENTRAL_BANK, ID_ESCROW, ID_PUBLIC_MANAGER
+ 
+ # Mock Logger to prevent actual file writes during tests
+@@ -851,3 +852,92 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
+     assert household_active in firm_active.hr_state.employees
+ 
+     assert len(firm_inactive.hr_state.employees) == 0
++
++
++def test_death_system_executes_asset_buyout(setup_simulation_for_lifecycle):
++    """
++    Verify that DeathSystem delegates inventory liquidation to PublicManager.execute_asset_buyout
++    and transfers funds to the dying agent.
++    """
++    (
++        sim,
++        household_active,
++        _,
++        _,
++        _,
++        _,
++    ) = setup_simulation_for_lifecycle
++
++    # Setup
++    sim.public_manager = MagicMock(spec=IAssetRecoverySystem)
++    sim.settlement_system = MagicMock(spec=ISettlementSystem)
++
++    # We need to patch the DeathSystem instance attached to the simulation
++    death_system = sim.lifecycle_manager.death_system
++    death_system.public_manager = sim.public_manager
++    death_system.settlement_system = sim.settlement_system
++
++    # Configure Mock
++    buyout_result = AssetBuyoutResultDTO(
++        success=True,
++        total_paid_pennies=500,
++        items_acquired={"food": 10},
++        buyer_id=ID_PUBLIC_MANAGER
++    )
++    sim.public_manager.execute_asset_buyout.return_value = buyout_result
++    sim.settlement_system.transfer.return_value = True
++
++    # Setup Agent with Inventory
++    household_active.is_active = False # Mark for death
++    household_active._econ_state.inventory = {"food": 10}
++
++    # Execute
++    state = SimulationState(
++        time=sim.time,
++        households=sim.households,
++        firms=sim.firms,
++        agents=sim.agents,
++        markets=sim.markets,
++        primary_government=sim.government,
++        governments=[sim.government],
++        bank=sim.bank,
++        central_bank=sim.central_bank,
++        stock_market=sim.stock_market,
++        stock_tracker=sim.stock_tracker,
++        goods_data=sim.goods_data,
++        market_data={},
++        config_module=sim.config_module,
++        tracker=sim.tracker,
++        logger=sim.logger,
++        ai_training_manager=sim.ai_training_manager,
++        ai_trainer=sim.ai_trainer,
++        next_agent_id=sim.next_agent_id,
++        real_estate_units=sim.real_estate_units,
++        transaction_processor=sim.transaction_processor,
++        escrow_agent=getattr(sim, 'escrow_agent', None),
++    )
++
++    death_system.execute(state)
++
++    # Verify
++    # 1. execute_asset_buyout called
++    sim.public_manager.execute_asset_buyout.assert_called_once()
++    args, _ = sim.public_manager.execute_asset_buyout.call_args
++    request_dto = args[0]
++    assert isinstance(request_dto, AssetBuyoutRequestDTO)
++    assert request_dto.seller_id == household_active.id
++    assert request_dto.inventory == {"food": 10}
++
++    # 2. Settlement Transfer called
++    sim.settlement_system.transfer.assert_called_once()
++    # Verify arguments: Debit PM, Credit HH, Amount 500
++    call_args = sim.settlement_system.transfer.call_args
++    # call_args.args or kwargs
++    # transfer(debit_agent, credit_agent, amount, ...)
++    # public_manager is a Mock, household_active is Real
++    assert call_args[0][0] == sim.public_manager
++    assert call_args[0][1] == household_active
++    assert call_args[0][2] == 500
++
++    # 3. Agent Removed (Standard DeathSystem behavior)
++    assert household_active not in sim.households
+diff --git a/tests/unit/modules/system/execution/test_public_manager_compliance.py b/tests/unit/modules/system/execution/test_public_manager_compliance.py
+index f4c8afd4..a9c5f50e 100644
+--- a/tests/unit/modules/system/execution/test_public_manager_compliance.py
++++ b/tests/unit/modules/system/execution/test_public_manager_compliance.py
+@@ -2,7 +2,7 @@ import pytest
+ from unittest.mock import MagicMock
+ from modules.system.execution.public_manager import PublicManager
+ from modules.finance.api import IFinancialAgent, InsufficientFundsError
+-from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, IAssetRecoverySystem, ISystemFinancialAgent
++from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, IAssetRecoverySystem, ISystemFinancialAgent, AssetBuyoutRequestDTO, AssetBuyoutResultDTO
+ from modules.system.constants import ID_PUBLIC_MANAGER
+ 
+ class TestPublicManagerCompliance:
+@@ -53,4 +53,20 @@ class TestPublicManagerCompliance:
+         order = orders[0]
+         assert order.agent_id == public_manager.id
+         assert isinstance(order.agent_id, int)
+-        assert order.agent_id == ID_PUBLIC_MANAGER
+\ No newline at end of file
++        assert order.agent_id == ID_PUBLIC_MANAGER
++
++    def test_asset_buyout_compliance(self, public_manager):
++        """Verify execute_asset_buyout strictly follows the protocol."""
++        request = AssetBuyoutRequestDTO(
++            seller_id=1,
++            inventory={'gold': 10},
++            market_prices={'gold': 100},
++            distress_discount=0.5
++        )
++        result = public_manager.execute_asset_buyout(request)
++
++        assert isinstance(result, AssetBuyoutResultDTO)
++        assert isinstance(result.total_paid_pennies, int)
++        assert isinstance(result.success, bool)
++        assert isinstance(result.items_acquired, dict)
++        assert result.buyer_id == public_manager.id
+\ No newline at end of file
+diff --git a/tests/unit/systems/handlers/test_liquidation_handlers.py b/tests/unit/systems/handlers/test_liquidation_handlers.py
+index 74ef9035..209f17a6 100644
+--- a/tests/unit/systems/handlers/test_liquidation_handlers.py
++++ b/tests/unit/systems/handlers/test_liquidation_handlers.py
+@@ -1,7 +1,8 @@
+ import unittest
+-from unittest.mock import MagicMock
++from unittest.mock import MagicMock, ANY
+ from simulation.systems.liquidation_handlers import InventoryLiquidationHandler
+-from modules.system.api import DEFAULT_CURRENCY
++from modules.system.api import DEFAULT_CURRENCY, AssetBuyoutRequestDTO, AssetBuyoutResultDTO
++from modules.system.constants import ID_PUBLIC_MANAGER
+ from simulation.dtos.api import SimulationState
+ from modules.simulation.api import IInventoryHandler, IConfigurable, LiquidationConfigDTO
+ from typing import Dict, Optional
+@@ -18,6 +19,8 @@ class MockLiquidatableFirm(IInventoryHandler, IConfigurable):
+     def get_quality(self, item_id: str) -> float: ...
+     def get_all_items(self) -> Dict[str, float]: ...
+     def clear_inventory(self) -> None: ...
++    @property
++    def id(self) -> int: return 1
+ 
+ class TestInventoryLiquidationHandler(unittest.TestCase):
+     def setUp(self):
+@@ -36,7 +39,25 @@ class TestInventoryLiquidationHandler(unittest.TestCase):
+         self.firm.get_all_items.return_value = {}
+         self.firm.get_liquidation_config.return_value = LiquidationConfigDTO(0.2, {}, 10.0, {})
+ 
++        # Should not call execute_asset_buyout if no inventory?
++        # The handler iterates items. If empty, loop doesn't run.
++        # But wait, logic is:
++        # prices_pennies = {}
++        # for item in items: ...
++        # request = AssetBuyoutRequestDTO(inventory=items, ...)
++        # public.execute_asset_buyout(request)
++        # So it IS called even with empty inventory?
++        # Let's check logic:
++        # request = AssetBuyoutRequestDTO(...)
++        # result = public.execute_asset_buyout(request)
++
++        # Configure mock return for safety
++        self.mock_public.execute_asset_buyout.return_value = AssetBuyoutResultDTO(True, 0, {}, ID_PUBLIC_MANAGER)
++
+         self.handler.liquidate(self.firm, self.state)
++
++        # It might be called with empty inventory
++        # But transfer should NOT happen because total_paid_pennies > 0 check.
+         self.mock_settlement.transfer.assert_not_called()
+ 
+     def test_liquidate_with_inventory(self):
+@@ -48,20 +69,38 @@ class TestInventoryLiquidationHandler(unittest.TestCase):
+             market_prices={"apple": 500}
+         )
+ 
+-        # 10 * 500 * (1 - 0.2) = 5000 * 0.8 = 4000.0
++        # Expected:
++        # Request with inventory={"apple": 10}, market_prices={"apple": 500}, distress_discount=0.8
++        # Result mock: total_paid=4000
+ 
++        buyout_result = AssetBuyoutResultDTO(
++            success=True,
++            total_paid_pennies=4000,
++            items_acquired={"apple": 10},
++            buyer_id=ID_PUBLIC_MANAGER
++        )
++        self.mock_public.execute_asset_buyout.return_value = buyout_result
+         self.mock_settlement.transfer.return_value = True
+ 
+         self.handler.liquidate(self.firm, self.state)
+ 
++        # Verify execute_asset_buyout called
++        self.mock_public.execute_asset_buyout.assert_called_once()
++        args, _ = self.mock_public.execute_asset_buyout.call_args
++        request = args[0]
++        self.assertEqual(request.inventory, {"apple": 10})
++        self.assertEqual(request.market_prices, {"apple": 500})
++        self.assertAlmostEqual(request.distress_discount, 0.8)
++
++        # Verify Transfer
+         self.mock_settlement.transfer.assert_called_once_with(
+             self.mock_public,
+             self.firm,
+-            4000, # 40.0 * 100 pennies
++            4000,
+             "Asset Liquidation (Inventory) - Agent 1",
+             currency=DEFAULT_CURRENCY
+         )
+-        self.mock_public.receive_liquidated_assets.assert_called_once_with({"apple": 10})
++
+         # Check inventory is cleared
+         self.firm.clear_inventory.assert_called_once()
+ 
+@@ -73,16 +112,27 @@ class TestInventoryLiquidationHandler(unittest.TestCase):
+             default_price=1000,
+             market_prices={}
+         )
+-        # default price 1000
+-        # 10 * 1000 * 0.8 = 8000.0
+ 
++        buyout_result = AssetBuyoutResultDTO(
++            success=True,
++            total_paid_pennies=8000, # 10 * 1000 * 0.8
++            items_acquired={"unknown": 10},
++            buyer_id=ID_PUBLIC_MANAGER
++        )
++        self.mock_public.execute_asset_buyout.return_value = buyout_result
+         self.mock_settlement.transfer.return_value = True
++
+         self.handler.liquidate(self.firm, self.state)
+ 
++        # Verify Request uses fallback price
++        args, _ = self.mock_public.execute_asset_buyout.call_args
++        request = args[0]
++        self.assertEqual(request.market_prices, {"unknown": 1000})
++
+         self.mock_settlement.transfer.assert_called_once_with(
+             self.mock_public,
+             self.firm,
+-            8000, # 80.0 * 100 pennies
++            8000,
+             "Asset Liquidation (Inventory) - Agent 1",
+             currency=DEFAULT_CURRENCY
+         )
+@@ -97,13 +147,20 @@ class TestInventoryLiquidationHandler(unittest.TestCase):
+             market_prices={"apple": 500}
+         )
+ 
++        buyout_result = AssetBuyoutResultDTO(
++            success=True,
++            total_paid_pennies=4000,
++            items_acquired={"apple": 10},
++            buyer_id=ID_PUBLIC_MANAGER
++        )
++        self.mock_public.execute_asset_buyout.return_value = buyout_result
++
+         self.mock_settlement.transfer.return_value = False
+ 
+         self.handler.liquidate(self.firm, self.state)
+ 
+         self.mock_settlement.transfer.assert_called_once()
+-        self.mock_public.receive_liquidated_assets.assert_not_called()
+-        # Inventory should NOT be cleared
++        # Inventory should NOT be cleared if payment fails
+         self.firm.clear_inventory.assert_not_called()
+ 
+     def test_liquidate_no_public_manager(self):

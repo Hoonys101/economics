@@ -1,0 +1,13 @@
+FAILED tests/finance/test_solvency_logic.py::TestSolvencyLogic::test_firm_implementation - assert False
+FAILED tests/integration/scenarios/diagnosis/test_agent_decision.py::test_firm_makes_decision - AssertionError: assert 'BUY' == 'SELL'
+FAILED tests/integration/test_liquidation_waterfall.py::TestLiquidationWaterfallIntegration::test_asset_rich_cash_poor_liquidation - TypeError: '>' not supported between instances of 'MagicMock' and 'int'
+FAILED tests/integration/test_liquidation_waterfall.py::TestLiquidationWaterfallIntegration::test_severance_priority_over_shareholders - TypeError: '>' not supported between instances of 'MagicMock' and 'int'
+FAILED tests/integration/test_liquidation_waterfall.py::TestLiquidationWaterfallIntegration::test_waterfall_tiers - TypeError: '>' not supported between instances of 'MagicMock' and 'int'
+FAILED tests/integration/test_multicurrency_liquidation.py::TestMultiCurrencyLiquidation::test_foreign_currency_distribution_to_shareholders - TypeError: '>' not supported between instances of 'MagicMock' and 'int'
+FAILED tests/system/test_engine.py::TestSimulation::test_process_transactions_labor_trade - AssertionError: assert 2098 == (100 + (2000 - 125))
+FAILED tests/system/test_phase29_depression.py::TestPhase29Depression::test_crisis_monitor_logging - AttributeError: Mock object has no attribute 'get_financial_snapshot'
+FAILED tests/system/test_phase29_depression.py::TestPhase29Depression::test_depression_scenario_triggers - AttributeError: Mock object has no attribute 'get_financial_snapshot'
+FAILED tests/test_firm_surgical_separation.py::TestFirmSurgicalSeparation::test_make_decision_orchestrates_engines - TypeError: '>' not supported between instances of 'MagicMock' and 'int'
+FAILED tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_asset_liquidation_integration - TypeError: '>' not supported between instances of 'MagicMock' and 'int'
+FAILED tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_bank_claim_handling - TypeError: '>' not supported between instances of 'MagicMock' and 'int'
+FAILED tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_initiate_liquidation_orchestration - TypeError: '>' not supported between instances of 'MagicMock' and 'int'

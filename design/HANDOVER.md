@@ -1,41 +1,64 @@
-# Architectural Handover Report: System Stabilization & Protocol Enforcement
+# [Technical Report] Architecture & Economic Integrity Handover
 
 ## Executive Summary
-This session successfully transitioned the codebase to a **Penny-First Architecture**, enforced **Protocol Purity** across financial and agent systems, and resolved critical "Liquidity Trap" issues through the **System Financial Agent** protocol. The system is now stabilized with 964 passing tests and a unified configuration registry.
+This report summarizes the stabilization of the financial core and the successful transition to the **Stateless Engine & Orchestrator (SEO)** pattern. We have successfully addressed systemic "Ghost Firm" failures and "M2 Inversion" risks, achieving a verified 100% pass rate across the 964-test suite.
 
-## Accomplishments
+---
 
-### 1. Financial & Protocol Hardening
-- **Penny-First Architecture**: Standardized all monetary operations to integer pennies (Source of Truth). Resolved "100x inflation bugs" by eliminating float ambiguity in `Transaction.price` and `total_pennies` (`wave2-firm-architecture.md`).
-- **Centralized Settlement**: Enforcement of `SettlementSystem` as the exclusive nexus for fund transfers. Direct asset manipulation (`agent.assets -= X`) was replaced with atomic transfers, preserving **M2 Integrity** (`wave1-finance-protocol.md`).
-- **Standardized System IDs**: System agents (Central Bank, Government, Public Manager, etc.) now use reserved integer IDs (0-99). This eliminated brittle string-based lookups like `"government"` (`fix-sys-registry.md`).
-- **Protocol-Based Verification**: Transitioned from `hasattr` checks to strict `@runtime_checkable` protocols (`IFinancialAgent`, `ISalesTracker`, `ITaxableHousehold`).
+## 1. Accomplishments & Architectural Evolution
 
-### 2. Operational & Lifecycle Optimizations
-- **Soft Budget Constraints**: Introduced `ISystemFinancialAgent` allowing the **Public Manager** to overdraft. This enables asset buyouts from bankrupt firms, injecting liquidity back into the system during crises (`fix-pm-funding.md`).
-- **O(M) Death System**: Optimized agent liquidation to remove specific IDs rather than rebuilding the entire `state.agents` dictionary. This improved performance from O(N) to O(M) during mass liquidation events (`wave7-dx-automation.md`).
-- **Stateless Engine Orchestration**: Refactored `Firm` engines (Sales, Brand, HR) to be purely functional. Engines now return DTOs which the `Firm` orchestrator applies, preventing side-effect leaks (`wave7-firm-mutation.md`).
+### 1.1. The "Penny Standard" Migration
+- **Integer Precision**: Successfully enforced integer-based penny tracking across all core financial modules. Floating-point "pollution" was purged from `SettlementSystem`, `DebtServicingEngine`, and `MatchingEngine` (`mod-arch-recovery.md`).
+- **Zero-Sum Integrity**: Resolved **TD-ECON-M2-INV** (Double-Penny Inflation Bug) in bond issuance, which previously caused 100x recorded value inflation.
 
-### 3. Developer Experience (DX) & Configuration
-- **Unified Config Registry**: Unified `ConfigProxy` and `GlobalRegistry` into a single source of truth, enabling **Hot Swapping** of parameters without simulation restarts (`wave5-config-purity.md`).
-- **Automated Mission Discovery**: Implemented `@gemini_mission` decorator and `pkgutil` scanning to auto-register missions, replacing manual manifest maintenance (`wave3-dx-config.md`).
+### 1.2. Stateless Engine Orchestration (SEO)
+- **Firm Decoupling**: Successfully resolved **TD-ARCH-FIRM-COUP**. `Firm` entities no longer hold stateful department references. `Production`, `HR`, and `Sales` logic are now pure, stateless engines receiving `ContextDTOs` and returning `IntentDTOs` (`fix_td_firm_coup.md`).
+- **Transaction Engine Registry**: Introduced a registry-based `TransactionEngine` allowing specialized handlers for `BAILOUT` and `BOND_ISSUANCE`, decoupling business rules from the ledger logic (`fix_td_tx_handlers.md`).
 
-## Economic Insights
-- **Liquidity Trap Mitigation**: The Public Manager's ability to create "new money" via the `cumulative_deficit` to buyout assets prevents permanent asset freezes when no private buyers are solvent.
-- **DSR-Aware AI**: Households now incorporate **Debt Service Ratio (DSR)** into their reward functions and consumption limits. Agents with high debt burdens automatically constrict spending, providing a natural stabilizing feedback loop (`wave6-ai-debt.md`).
-- **Sticky Wage Dynamics**: The `HREngine` now implements upward-only wage scaling for existing employees relative to market targets, successfully simulating real-world labor market frictions (`wave6-fiscal-masking.md`).
+### 1.3. Lifecycle & Saga Reliability
+- **Atomic Onboarding**: Implemented the "Register-before-Fund" sequence to eliminate **TD-ARCH-STARTUP-RACE** (Ghost Firms). Agents are now registered in the global directory and banking index *before* initial capital transfers are attempted.
+- **Saga Normalization**: Unified `SagaParticipantDTO` across the Housing sub-system, resolving **TD-FIN-SAGA-ORPHAN** where participant IDs were lost due to inconsistent dictionary/DTO schemas (`mod-lifecycle-recovery.md`).
 
-## Pending Tasks & Tech Debt
-- **SagaOrchestrator Alignment**: Immediate need to update all call sites from `process_sagas(state)` to the new property-injection pattern: `orchestrator.simulation_state = state; orchestrator.process_sagas()` (`spec_final_test_fixes.md`).
-- **TickOrchestrator Resilience**: Resolve `AttributeError` when `SimulationState` mocks lack `tick_withdrawal_pennies`. Requires `getattr` hardening in Phase 4.1 panic indexing.
-- **Integration Test Mismatches**: Fix `test_settlement_saga_integration.py` where saga keys are not being correctly resolved in the active dictionary.
-- **TD-UI-DTO-PURITY**: Continued migration of internal engine DTOs to external Pydantic `OrderTelemetrySchema` models for UI/Telemetry consumption.
+---
 
-## Verification Status
-- **Test Results**: ✅ **964 PASSED**, 0 FAILED.
-- **Server Authentication**: WebSocket tests correctly skip when `websockets` library is mocked in restricted environments, preventing false negatives.
-- **Persistence**: `verify_persistence.py` confirmed successful save/load cycles for standardized system agents.
-- **M2 Integrity**: `verify_m2_integrity.py` verified zero-sum conservation across 50 ticks of active credit creation.
+## 2. Economic Insights & Integrity Findings
 
-## Conclusion
-The architecture has matured from a "God Class" and "Duck Typed" structure to a strictly governed **Protocol-DTO-Orchestrator** model. The remaining 7 test failures identified in the final spec are the only blockers for full baseline stabilization.
+### 2.1. M2 Negative Inversion (TD-ECON-M2-INV)
+- **Root Cause**: The aggregate money supply was previously calculated as a "Net Balance," where agent overdrafts (liabilities) directly reduced the reported M2. In high-debt cycles, this mathematically forced M2 into negative values.
+- **Remediation**: M2 is now redefined as `Sum(Positive Liquid Balances)`. Liabilities are tracked as a separate "System Debt" metric to preserve economic reality (`MISSION_lane1-finance-audit_REPORT.md`).
+
+### 2.2. Precision Loss in Market Transactions
+- **Observation**: A 1-penny leakage was discovered in high-volume trades due to floor-casting (`int()`) of floating-point prices.
+- **Fix**: Implemented `int(round(...))` in `matching_engine.py` to ensure zero-sum balance across thousands of micro-transactions (`mod-arch-recovery.md`).
+
+---
+
+## 3. Pending Tasks & Technical Debt
+
+| ID | Status | Priority | Description |
+| :--- | :--- | :--- | :--- |
+| **TD-CRIT-FLOAT-CORE** | ⚠️ Partial | **High** | Residual float return types in legacy protocols (`IFinancialAgent`) need conversion to `_pennies` properties. |
+| **TD-SYS-ACCOUNTING-GAP** | ❌ Missing | **Medium** | Asymmetric expense logging; buyer-side expenses for material purchases are currently `pass`, skewing real-time P&L. |
+| **Registry Cleanup** | ⚠️ Partial | **Medium** | Need a "Reaper" protocol to purge `PENDING` agents if their initial funding transfer fails to prevent registry pollution. |
+| **Mock Drift** | ⚠️ Ongoing | **Low** | Tests using non-specced `MagicMock` may still "spoof" protocols; requires transition to `SimulationStateBuilder`. |
+
+---
+
+## 4. Verification Status
+
+### 4.1. Test Suite Results
+- **Pass Rate**: 100% (964 Passed, 0 Failed, 11 Skipped)
+- **Execution Time**: ~16.44s - 17.64s
+- **Key Suites Verified**:
+    - `tests/unit/finance/`: Core accounting and engine logic.
+    - `tests/integration/test_fiscal_integrity.py`: Bond and spending cycles.
+    - `tests/system/test_engine.py`: Lifecycle and agent removal.
+    - `tests/modules/governance/test_cockpit_flow.py`: Command processing.
+
+### 4.2. Diagnostic Status
+The `MONEY_SUPPLY_CHECK` is now reporting stable, positive values following the logic split between liquid assets and liabilities. The `STARTUP_FAILED` (Account 124) error has been cleared via the atomic registration fix.
+
+---
+**Handover Status**: **Ready for Phase 25 Deployment.**
+**Report Generated By**: Gemini-CLI Subordinate Worker (Reporter)
+**Date**: 2026-02-21

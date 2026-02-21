@@ -17,64 +17,71 @@ class LaborTransactionHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        # SSoT: Use total_pennies directly (Strict Schema Enforced)
-        trade_value = tx.total_pennies
+        print(f"DEBUG_LABOR_HANDLER | Handling {tx.transaction_type} for {buyer.id} -> {seller.id}")
+        try:
+            # SSoT: Use total_pennies directly (Strict Schema Enforced)
+            trade_value = tx.total_pennies
 
-        # 1. Prepare Settlement (Calculate tax intents)
-        # Note: TransactionProcessor used market_data.get("goods_market")?
-        # But TaxationSystem.calculate_tax_intents signature expects 'market_data'.
-        intents = context.taxation_system.calculate_tax_intents(tx, buyer, seller, context.government, context.market_data)
+            # 1. Prepare Settlement (Calculate tax intents)
+            # Note: TransactionProcessor used market_data.get("goods_market")?
+            # But TaxationSystem.calculate_tax_intents signature expects 'market_data'.
+            intents = context.taxation_system.calculate_tax_intents(tx, buyer, seller, context.government, context.market_data)
 
-        credits: List[Tuple[Any, int, str]] = []
-        seller_net_amount = trade_value
-        buyer_total_cost = trade_value
+            credits: List[Tuple[Any, int, str]] = []
+            seller_net_amount = trade_value
+            buyer_total_cost = trade_value
 
-        # Variables for logging or tracking
-        seller_tax_paid = 0
-        buyer_tax_paid = 0
+            # Variables for logging or tracking
+            seller_tax_paid = 0
+            buyer_tax_paid = 0
 
-        for intent in intents:
-            amount_int = int(intent.amount)
-            credits.append((context.government, amount_int, intent.reason))
-            if intent.payer_id == seller.id:
-                # If Seller (Worker) pays, deduct from their receipt (Withholding)
-                seller_net_amount -= amount_int
-                seller_tax_paid += amount_int
-            elif intent.payer_id == buyer.id:
-                # If Buyer (Firm) pays, it's extra cost
-                buyer_total_cost += amount_int
-                buyer_tax_paid += amount_int
-
-        # Add Net Wage Credit to Seller
-        credits.append((seller, int(seller_net_amount), f"labor_wage:{tx.transaction_type}"))
-
-        # 2. Execute Settlement (Atomic)
-        # Buyer pays Total Cost (Gross + Buyer Tax) implicitly by covering all credits
-        # Actually settle_atomic sums up credits.
-        # Credits = [Tax1, Tax2, SellerNet]
-        # Sum = Tax1 + Tax2 + (Trade - TaxSeller)
-        # If Buyer pays TaxBuyer (Tax1) and Seller pays TaxSeller (Tax2):
-        # Total Debit = TaxBuyer + TaxSeller + (Trade - TaxSeller) = TaxBuyer + Trade
-        # This matches buyer_total_cost. Correct.
-
-        settlement_success = context.settlement_system.settle_atomic(buyer, credits, context.time)
-
-        # 3. Apply Side-Effects
-        if settlement_success:
-            # Record Revenue for Tax Purposes
             for intent in intents:
-                context.government.record_revenue({
-                     "success": True,
-                     "amount_collected": intent.amount,
-                     "tax_type": intent.reason,
-                     "payer_id": intent.payer_id,
-                     "payee_id": intent.payee_id,
-                     "error_message": None
-                })
+                amount_int = int(intent.amount)
+                credits.append((context.government, amount_int, intent.reason))
+                if intent.payer_id == seller.id:
+                    # If Seller (Worker) pays, deduct from their receipt (Withholding)
+                    seller_net_amount -= amount_int
+                    seller_tax_paid += amount_int
+                elif intent.payer_id == buyer.id:
+                    # If Buyer (Firm) pays, it's extra cost
+                    buyer_total_cost += amount_int
+                    buyer_tax_paid += amount_int
 
-            self._apply_labor_effects(tx, buyer, seller, seller_net_amount, buyer_total_cost, context)
+            # Add Net Wage Credit to Seller
+            credits.append((seller, int(seller_net_amount), f"labor_wage:{tx.transaction_type}"))
 
-        return settlement_success
+            # 2. Execute Settlement (Atomic)
+            # Buyer pays Total Cost (Gross + Buyer Tax) implicitly by covering all credits
+            # Actually settle_atomic sums up credits.
+            # Credits = [Tax1, Tax2, SellerNet]
+            # Sum = Tax1 + Tax2 + (Trade - TaxSeller)
+            # If Buyer pays TaxBuyer (Tax1) and Seller pays TaxSeller (Tax2):
+            # Total Debit = TaxBuyer + TaxSeller + (Trade - TaxSeller) = TaxBuyer + Trade
+            # This matches buyer_total_cost. Correct.
+
+            settlement_success = context.settlement_system.settle_atomic(buyer, credits, context.time)
+
+            # 3. Apply Side-Effects
+            if settlement_success:
+                # Record Revenue for Tax Purposes
+                for intent in intents:
+                    context.government.record_revenue({
+                         "success": True,
+                         "amount_collected": intent.amount,
+                         "tax_type": intent.reason,
+                         "payer_id": intent.payer_id,
+                         "payee_id": intent.payee_id,
+                         "error_message": None
+                    })
+
+                self._apply_labor_effects(tx, buyer, seller, seller_net_amount, buyer_total_cost, context)
+
+            return settlement_success
+        except Exception as e:
+            print(f"DEBUG_LABOR_HANDLER | ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
 
     def _apply_labor_effects(self, tx: Transaction, buyer: Any, seller: Any, seller_net_income: int, buyer_total_cost: int, context: TransactionContext):
         """

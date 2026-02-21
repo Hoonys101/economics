@@ -282,6 +282,54 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
     def wallet(self) -> Wallet:
         return self.financial_component.wallet
 
+    # --- IFinancialAgent & ICurrencyHolder Implementation ---
+
+    def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        """Returns the current balance for the specified currency."""
+        return self.financial_component.get_balance(currency)
+
+    @property
+    def balance_pennies(self) -> int:
+        """Returns the balance in the default currency (pennies)."""
+        return self.financial_component.balance_pennies
+
+    def get_all_balances(self) -> Dict[CurrencyCode, int]:
+        """Returns a copy of all currency balances."""
+        return self.financial_component.get_all_balances()
+
+    def get_assets_by_currency(self) -> Dict[CurrencyCode, int]:
+        """Alias for get_all_balances required by ICurrencyHolder."""
+        return self.get_all_balances()
+
+    @property
+    def total_wealth(self) -> int:
+        """Returns the total wealth in default currency estimation."""
+        return self.financial_component.total_wealth
+
+    def get_liquid_assets(self, currency: CurrencyCode = "USD") -> float:
+        """Returns liquid assets as float (legacy compatibility)."""
+        return float(self.get_balance(currency))
+
+    def get_total_debt(self) -> float:
+        """Returns total debt as float (legacy compatibility)."""
+        return float(self.finance_state.total_debt_pennies)
+
+    def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Internal deposit implementation."""
+        self.financial_component.deposit(amount, currency)
+
+    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Internal withdraw implementation."""
+        self.financial_component.withdraw(amount, currency)
+
+    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Public deposit implementation."""
+        self.financial_component.deposit(amount_pennies, currency)
+
+    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """Public withdraw implementation."""
+        self.financial_component.withdraw(amount_pennies, currency)
+
     # --- ICreditFrozen Implementation ---
 
     @property
@@ -436,6 +484,38 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
     @total_debt.setter
     def total_debt(self, value: int):
         self.finance_state.total_debt_pennies = value
+
+    @property
+    def total_debt_pennies(self) -> int:
+        """Alias for total_debt to satisfy IFinancialFirm."""
+        return self.total_debt
+
+    @property
+    def capital_stock_pennies(self) -> int:
+        """Capital stock value in pennies."""
+        return int(self.production_state.capital_stock) # Capital is in units or val? Assuming units for now, if val it should be pennies.
+
+    @property
+    def inventory_value_pennies(self) -> int:
+        """Total value of all inventory in pennies."""
+        # Calculate on the fly or use cached valuation?
+        # calculate_valuation() does this.
+        val = 0
+        for item, qty in self.get_all_items().items():
+            price = self.last_prices.get(item, DEFAULT_PRICE)
+            val += int(qty * price)
+        return val
+
+    @property
+    def monthly_wage_bill_pennies(self) -> int:
+        """Total monthly wage bill estimate."""
+        return sum(self.hr_state.employee_wages.values())
+
+    @property
+    def retained_earnings_pennies(self) -> int:
+        """Total retained earnings."""
+        # Simple estimate for now
+        return sum(self.finance_state.profit_history)
 
     @property
     def inventory_last_sale_tick(self) -> Dict[str, int]:
