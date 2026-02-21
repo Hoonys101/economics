@@ -240,7 +240,7 @@ def test_issue_treasury_bonds_market(finance_system, mock_government, mock_bank)
     assert len(txs) == 1
     assert txs[0].buyer_id == mock_bank.id
     assert txs[0].seller_id == mock_government.id
-    assert txs[0].price == amount
+    assert txs[0].total_pennies == amount
 
 def test_issue_treasury_bonds_qe(finance_system, mock_government, mock_central_bank, mock_bank):
     # Setup Central Bank in Ledger (QE logic not implemented in FinanceSystem.issue_treasury_bonds yet?
@@ -319,5 +319,5 @@ def test_service_debt_central_bank_repayment(finance_system, mock_government, mo
     assert len(txs) == 1
     assert txs[0].buyer_id == mock_government.id
     assert txs[0].seller_id == mock_central_bank.id
-    assert txs[0].price == expected_interest
+    assert txs[0].total_pennies == expected_interest
     assert txs[0].transaction_type == "bond_interest"

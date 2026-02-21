@@ -70,7 +70,7 @@ class TestSovereignDebt:
         assert len(txs) == 1
         assert txs[0].buyer_id == fs.bank.id
         assert txs[0].seller_id == fs.government.id
-        assert txs[0].price == 100
+        assert txs[0].total_pennies == 100
 
     def test_collect_corporate_tax_calls_settlement_system(self, setup_system):
         fs = setup_system

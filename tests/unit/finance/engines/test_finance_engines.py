@@ -156,7 +156,7 @@ def test_debt_servicing_engine(empty_ledger):
     # Check Transaction
     tx = output.generated_transactions[0]
     assert tx.transaction_type == "loan_interest"
-    assert tx.price == expected_interest
+    assert tx.total_pennies == expected_interest
 
     # Integrity Check
     assert ZeroSumVerifier.verify_ledger_integrity(output.updated_ledger)

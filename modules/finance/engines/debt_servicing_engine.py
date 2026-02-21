@@ -46,7 +46,7 @@ class DebtServicingEngine(IDebtServicingEngine):
                         seller_id=bank_id, # Pay to Bank (Replenish Reserves)
                         item_id=loan_id,
                         quantity=1,
-                        price=interest_pennies, # Int
+                        price=interest_pennies / 100.0,
                         market_id="financial",
                         transaction_type="loan_interest",
                         time=ledger.current_tick
@@ -65,7 +65,7 @@ class DebtServicingEngine(IDebtServicingEngine):
                                 seller_id=bank_id, # Pay to Bank
                                 item_id=loan_id,
                                 quantity=1,
-                                price=principal_due,
+                                price=principal_due / 100.0,
                                 market_id="financial",
                                 transaction_type="loan_repayment",
                                 time=ledger.current_tick
@@ -81,7 +81,7 @@ class DebtServicingEngine(IDebtServicingEngine):
                                 seller_id=bank_id, # Pay to Bank
                                 item_id=loan_id,
                                 quantity=1,
-                                price=pay,
+                                price=pay / 100.0,
                                 market_id="financial",
                                 transaction_type="loan_repayment",
                                 time=ledger.current_tick
@@ -119,7 +119,7 @@ class DebtServicingEngine(IDebtServicingEngine):
                     seller_id=receiver_id,
                     item_id=bond_id,
                     quantity=1,
-                    price=interest_pennies,
+                    price=interest_pennies / 100.0,
                     market_id="financial",
                     transaction_type="bond_interest",
                     time=ledger.current_tick

@@ -57,6 +57,7 @@ def test_infrastructure_investment():
     # Needs finance system mock
     gov.finance_system = Mock()
     gov.finance_system.issue_treasury_bonds.return_value = ([], [])
+    gov.finance_system.issue_treasury_bonds_synchronous.return_value = (True, [])
 
     gov.firm_subsidy_budget_multiplier = 1.0
 

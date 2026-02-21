@@ -203,7 +203,7 @@ class TestDoubleEntry(unittest.TestCase):
             tx = txs[0]
             self.assertEqual(tx.buyer_id, self.mock_cb.id)
             self.assertEqual(tx.seller_id, self.mock_gov.id)
-            self.assertEqual(tx.price, bond_amount)
+            self.assertEqual(tx.total_pennies, bond_amount)
 
     def test_market_bond_issuance_generates_transaction(self):
         """
@@ -227,7 +227,7 @@ class TestDoubleEntry(unittest.TestCase):
         tx = txs[0]
         self.assertEqual(tx.buyer_id, self.mock_bank.id) # Bank buys
         self.assertEqual(tx.seller_id, self.mock_gov.id)
-        self.assertEqual(tx.price, bond_amount)
+        self.assertEqual(tx.total_pennies, bond_amount)
 
 if __name__ == '__main__':
     unittest.main()
