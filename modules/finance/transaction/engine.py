@@ -1,9 +1,14 @@
 import uuid
 import logging
-from typing import Optional, Callable, List
+from typing import Optional, Callable, List, Dict, Any
 
+from modules.finance.api import (
+    ITransactionEngine as IHighLevelTransactionEngine,
+    TransactionType,
+    ITransactionHandler,
+)
 from modules.finance.transaction.api import (
-    ITransactionEngine,
+    ILedgerEngine,
     ITransactionValidator,
     ITransactionExecutor,
     ITransactionLedger,
@@ -130,7 +135,41 @@ class SimpleTransactionLedger(ITransactionLedger):
         )
 
 
-class TransactionEngine(ITransactionEngine):
+class TransactionEngine(IHighLevelTransactionEngine):
+    """
+    High-Level Transaction Engine implementing the Registry Pattern.
+    Dispatches specialized transactions to registered handlers.
+    """
+    def __init__(self):
+        self._handlers: Dict[TransactionType, ITransactionHandler] = {}
+        self.logger = logging.getLogger(__name__)
+
+    def register_handler(self, tx_type: TransactionType, handler: ITransactionHandler) -> None:
+        self._handlers[tx_type] = handler
+        self.logger.info(f"Registered handler for transaction type: {tx_type}")
+
+    def process_transaction(self, tx_type: TransactionType, data: Any) -> Any:
+        handler = self._handlers.get(tx_type)
+        if not handler:
+            raise ValueError(f"No handler registered for transaction type: {tx_type}")
+
+        request = data
+        context = None
+
+        # Support passing context via tuple (request, context)
+        if isinstance(data, tuple) and len(data) == 2:
+            request, context = data
+
+        if not handler.validate(request, context):
+             raise ValueError(f"Validation failed for transaction type: {tx_type}")
+
+        return handler.execute(request, context)
+
+
+class LedgerEngine(ILedgerEngine):
+    """
+    Low-level engine for processing financial transfers (Ledger operations).
+    """
     def __init__(
         self,
         validator: ITransactionValidator,

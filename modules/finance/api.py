@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Protocol, Dict, List, Any, Optional, TypedDict, Literal, Tuple, runtime_checkable, TYPE_CHECKING, Union, Callable
 from dataclasses import dataclass, field
+from enum import Enum
 import abc
 from abc import ABC, abstractmethod
 from uuid import UUID
@@ -1052,3 +1053,96 @@ class ILoanRepayer(Protocol):
     """Protocol for entities that can repay loans."""
     def repay_loan(self, loan_id: str, amount: int) -> int: ...
 
+# ==============================================================================
+# === TRANSACTION HANDLER PROTOCOLS (TD-RUNTIME-TX-HANDLER)
+# ==============================================================================
+
+class TransactionType(str, Enum):
+    TRANSFER = "TRANSFER"
+    PAYMENT = "PAYMENT"
+    TAX = "TAX"
+    BAILOUT = "BAILOUT"
+    BOND_ISSUANCE = "BOND_ISSUANCE"
+    # Legacy/Market types
+    TRADE = "TRADE"
+    HOUSING = "housing"
+    GOODS = "goods"
+    LABOR = "labor"
+
+@dataclass(frozen=True)
+class BondIssuanceRequestDTO:
+    """
+    DTO for Bond Issuance Transaction.
+    Represents the primary market sale of a bond from an Issuer to a Buyer.
+    """
+    issuer_id: AgentID
+    buyer_id: AgentID
+    face_value: int         # Face value per bond in pennies
+    issue_price: int        # Actual price paid per bond in pennies
+    quantity: int           # Number of bonds
+    coupon_rate: float      # Annual coupon rate (0.05 = 5%)
+    maturity_tick: int      # Tick when the bond matures
+    bond_series_id: Optional[str] = None # Optional ID for grouping
+
+@runtime_checkable
+class ITransactionHandler(Protocol):
+    """
+    Protocol for specialized transaction logic.
+    Each TransactionType maps to a concrete implementation of this protocol.
+    """
+    def validate(self, request: Any, context: Any) -> bool:
+        """
+        Pure validation logic. Checks solvency, permissions, and data integrity.
+        Must NOT mutate state.
+        """
+        ...
+
+    def execute(self, request: Any, context: Any) -> Any:
+        """
+        Executes the transaction.
+        Responsible for calling the appropriate System/Service to mutate state.
+        Returns a TransactionResultDTO-like object.
+        """
+        ...
+
+    def rollback(self, transaction_id: str, context: Any) -> bool:
+        """
+        Reverses the transaction effects.
+        Critical for Atomic Sagas.
+        """
+        ...
+
+@runtime_checkable
+class IBondMarketSystem(Protocol):
+    """
+    Interface for the Bond Market System.
+    Handles the lifecycle of bond assets (creation, registration, redemption).
+    """
+    def issue_bond(self, request: BondIssuanceRequestDTO) -> bool:
+        """
+        Creates the Bond asset, assigns it to the Buyer, and registers the Liability to the Issuer.
+        """
+        ...
+
+    def register_bond_series(self, issuer_id: AgentID, series_id: str, details: Dict[str, Any]) -> None:
+        """
+        Registers a new bond series in the security master.
+        """
+        ...
+
+@runtime_checkable
+class ITransactionEngine(Protocol):
+    """
+    Interface for the central Transaction Engine (High-Level).
+    """
+    def register_handler(self, tx_type: TransactionType, handler: ITransactionHandler) -> None:
+        """
+        Registers a handler for a specific transaction type.
+        """
+        ...
+
+    def process_transaction(self, tx_type: TransactionType, data: Any) -> Any:
+        """
+        Dispatches the transaction to the registered handler.
+        """
+        ...

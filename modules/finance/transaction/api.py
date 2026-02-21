@@ -169,10 +169,10 @@ class ITransactionLedger(Protocol):
 
 
 @runtime_checkable
-class ITransactionEngine(Protocol):
+class ILedgerEngine(Protocol):
     """
-    Interface for the main engine that orchestrates the entire transaction process.
-    This is the primary entry point for external modules.
+    Interface for the ledger engine that orchestrates financial transfers (debit/credit).
+    Renamed from ITransactionEngine to avoid conflict with the High-Level Transaction Engine.
     """
     def process_transaction(
         self,

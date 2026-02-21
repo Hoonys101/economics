@@ -16,8 +16,10 @@ from modules.finance.transaction.api import (
 from modules.finance.transaction.engine import (
     TransactionValidator,
     TransactionExecutor,
+    LedgerEngine,
     TransactionEngine
 )
+from modules.finance.api import TransactionType, ITransactionHandler
 from modules.finance.transaction.adapter import RegistryAccountAccessor
 from modules.finance.api import IFinancialAgent, IFinancialEntity
 from modules.system.api import IAgentRegistry, DEFAULT_CURRENCY
@@ -173,15 +175,15 @@ def test_executor_failure_rollback():
 
 
 # ==============================================================================
-# Engine Tests
+# Ledger Engine Tests (Renamed from Transaction Engine)
 # ==============================================================================
 
-def test_engine_process_transaction_success():
+def test_ledger_engine_process_transaction_success():
     mock_validator = Mock(spec=ITransactionValidator)
     mock_executor = Mock(spec=ITransactionExecutor)
     mock_ledger = Mock(spec=ITransactionLedger)
 
-    engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
+    engine = LedgerEngine(mock_validator, mock_executor, mock_ledger)
 
     result = engine.process_transaction("src", "dst", 10000, DEFAULT_CURRENCY, "test")
 
@@ -191,13 +193,13 @@ def test_engine_process_transaction_success():
     mock_ledger.record.assert_called_once()
     assert mock_ledger.record.call_args[0][0].status == 'COMPLETED'
 
-def test_engine_process_transaction_validation_fail():
+def test_ledger_engine_process_transaction_validation_fail():
     mock_validator = Mock(spec=ITransactionValidator)
     mock_validator.validate.side_effect = InsufficientFundsError("Not enough money")
     mock_executor = Mock(spec=ITransactionExecutor)
     mock_ledger = Mock(spec=ITransactionLedger)
 
-    engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
+    engine = LedgerEngine(mock_validator, mock_executor, mock_ledger)
 
     result = engine.process_transaction("src", "dst", 10000, DEFAULT_CURRENCY, "test")
 
@@ -207,13 +209,13 @@ def test_engine_process_transaction_validation_fail():
     mock_ledger.record.assert_called_once()
     assert mock_ledger.record.call_args[0][0].status == 'FAILED'
 
-def test_engine_process_transaction_execution_fail():
+def test_ledger_engine_process_transaction_execution_fail():
     mock_validator = Mock(spec=ITransactionValidator)
     mock_executor = Mock(spec=ITransactionExecutor)
     mock_executor.execute.side_effect = ExecutionError("Critical fail")
     mock_ledger = Mock(spec=ITransactionLedger)
 
-    engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
+    engine = LedgerEngine(mock_validator, mock_executor, mock_ledger)
 
     result = engine.process_transaction("src", "dst", 10000, DEFAULT_CURRENCY, "test")
 
@@ -222,12 +224,12 @@ def test_engine_process_transaction_execution_fail():
     mock_ledger.record.assert_called_once()
     assert mock_ledger.record.call_args[0][0].status == 'CRITICAL_FAILURE'
 
-def test_engine_process_batch_success():
+def test_ledger_engine_process_batch_success():
     mock_validator = Mock(spec=ITransactionValidator)
     mock_executor = Mock(spec=ITransactionExecutor)
     mock_ledger = Mock(spec=ITransactionLedger)
 
-    engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
+    engine = LedgerEngine(mock_validator, mock_executor, mock_ledger)
 
     tx1 = TransactionDTO("1", "src", "dst", 100, DEFAULT_CURRENCY, "t1")
     tx2 = TransactionDTO("2", "dst", "src", 50, DEFAULT_CURRENCY, "t2")
@@ -240,12 +242,12 @@ def test_engine_process_batch_success():
     assert mock_executor.execute.call_count == 2
     assert mock_ledger.record.call_count == 2
 
-def test_engine_process_batch_rollback():
+def test_ledger_engine_process_batch_rollback():
     mock_validator = Mock(spec=ITransactionValidator)
     mock_executor = Mock(spec=ITransactionExecutor)
     mock_ledger = Mock(spec=ITransactionLedger)
 
-    engine = TransactionEngine(mock_validator, mock_executor, mock_ledger)
+    engine = LedgerEngine(mock_validator, mock_executor, mock_ledger)
 
     tx1 = TransactionDTO("1", "src", "dst", 100, DEFAULT_CURRENCY, "t1")
     tx2 = TransactionDTO("2", "dst", "src", 50, DEFAULT_CURRENCY, "t2")
@@ -274,6 +276,64 @@ def test_engine_process_batch_rollback():
     assert calls[0][0][0].transaction_id == "1"
     assert calls[1][0][0].transaction_id == "2"
     assert calls[2][0][0].transaction_id == "rollback_1"
+
+# ==============================================================================
+# High-Level Transaction Engine Tests (New)
+# ==============================================================================
+
+def test_transaction_engine_registry():
+    engine = TransactionEngine()
+    mock_handler = Mock(spec=ITransactionHandler)
+
+    engine.register_handler(TransactionType.TRANSFER, mock_handler)
+
+    # Verify handler stored (impl detail, but confirms registration)
+    assert engine._handlers[TransactionType.TRANSFER] == mock_handler
+
+def test_transaction_engine_dispatch_success():
+    engine = TransactionEngine()
+    mock_handler = Mock(spec=ITransactionHandler)
+    mock_handler.validate.return_value = True
+    mock_handler.execute.return_value = "SUCCESS"
+
+    engine.register_handler(TransactionType.TRANSFER, mock_handler)
+
+    result = engine.process_transaction(TransactionType.TRANSFER, "data")
+
+    assert result == "SUCCESS"
+    mock_handler.validate.assert_called_with("data", None)
+    mock_handler.execute.assert_called_with("data", None)
+
+def test_transaction_engine_dispatch_fail_validation():
+    engine = TransactionEngine()
+    mock_handler = Mock(spec=ITransactionHandler)
+    mock_handler.validate.return_value = False
+
+    engine.register_handler(TransactionType.TRANSFER, mock_handler)
+
+    with pytest.raises(ValueError, match="Validation failed"):
+        engine.process_transaction(TransactionType.TRANSFER, "data")
+
+def test_transaction_engine_no_handler():
+    engine = TransactionEngine()
+    with pytest.raises(ValueError, match="No handler registered"):
+        engine.process_transaction(TransactionType.TRANSFER, "data")
+
+def test_transaction_engine_with_context():
+    engine = TransactionEngine()
+    mock_handler = Mock(spec=ITransactionHandler)
+    mock_handler.validate.return_value = True
+
+    engine.register_handler(TransactionType.TRANSFER, mock_handler)
+
+    context = {"user": "agent"}
+    request = "request"
+
+    engine.process_transaction(TransactionType.TRANSFER, (request, context))
+
+    mock_handler.validate.assert_called_with(request, context)
+    mock_handler.execute.assert_called_with(request, context)
+
 
 # ==============================================================================
 # Adapter Tests
