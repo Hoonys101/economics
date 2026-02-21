@@ -22,91 +22,23 @@
    - model (str, Optional): 모델 지정 ('gemini-3-pro-preview', 'gemini-3-flash-preview').
 """
 from typing import Dict, Any
-from _internal.registry.api import mission_registry
 
-LEGACY_GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "debt-liquidation-plan": {
-        "title": "Technical Debt Liquidation Strategy",
+GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
+       "test-stabilization-spec": {
+        "title": "Test Suite Stabilization (Protocol Alignment)",
         "worker": "spec",
-        "instruction": "Analyze the TECH_DEBT_LEDGER.md and formulate a comprehensive technical debt liquidation plan. Design the plan such that we execute 2-3 independent missions in parallel per 'wave', and clear all remaining technical debts within 2 to 3 waves total. Ensure missions within the same wave do not have overlapping file dependencies to prevent merge conflicts. Output this execution schedule as a formatted Markdown report.",
+        "instruction": "Create a MISSION_spec for Jules to resolve 5 integration test failures caused by new absolute protocol enforcements (ITaxableHousehold, IFinancialAgent, ICentralBank). The spec must instruct Jules to update mock agents in the affected test files to implement these protocols. Do not change production code. Affected tests: test_government_integration.py, test_government_refactor_behavior.py, test_omo_system.py, test_settlement_security.py, test_tax_collection.py.",
         "context_files": [
-            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
-        ],
-        "output_path": "artifacts/reports/tech_debt_liquidation_plan.md"
-    },
-    
-    # 🌊 WAVE 1: Foundation & Integrity 
-    # wave1-finance-protocol-spec migrated to _internal.missions.wave1
-
-    "wave1-lifecycle-hygiene-spec": {
-        "title": "Wave 1: System Lifecycle & Dependency Hygiene Spec",
-        "worker": "spec",
-        "instruction": "Create a MISSION_spec for Jules to execute Mission 1.2. Resolve TD-ARCH-DI-SETTLE, TD-SYS-PERF-DEATH, and TD-LIFECYCLE-STALE by using Factory-based DI for Settlement AgentRegistry injection, optimizing DeathSystem O(N) rebuilds, and scrubbing the inter_tick_queue upon agent death.",
-        "context_files": [
+            "tests/integration/test_government_integration.py",
+            "tests/integration/test_government_refactor_behavior.py",
+            "tests/integration/test_omo_system.py",
+            "tests/unit/systems/test_settlement_security.py",
+            "tests/unit/test_tax_collection.py",
+            "modules/government/api.py",
+            "modules/finance/api.py",
             "simulation/systems/settlement_system.py",
-            "simulation/systems/lifecycle/death_system.py",
-            "simulation/systems/lifecycle/agent_lifecycle_manager.py",
-            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+            "modules/government/tax/service.py"
         ],
-        "output_path": "artifacts/specs/MISSION_wave1_lifecycle_hygiene_spec.md"
-    },
-
-    # 🌊 WAVE 2: Structural Decoupling
-    "wave2-firm-architecture-spec": {
-        "title": "Wave 2: Firm Architecture Overhaul Spec",
-        "worker": "spec",
-        "instruction": "Create a MISSION_spec for Jules to execute Mission 2.1. Resolve TD-ARCH-FIRM-COUP and TD-ARCH-FIRM-MUTATION by removing self.parent pointers from all Firm Departments (HR, Finance, Production, Sales), replacing them with DTO injections. Ensure BrandEngine and SalesEngine return ResultDTOs instead of mutating states in-place.",
-        "context_files": [
-            "simulation/firms/firm.py",
-            "modules/firm/engines/brand_engine.py",
-            "simulation/components/engines/sales_engine.py",
-            "simulation/components/engines/hr_engine.py",
-            "simulation/components/engines/production_engine.py",
-            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
-        ],
-        "output_path": "artifacts/specs/MISSION_wave2_firm_architecture_spec.md"
-    },
-    "wave2-market-policy-spec": {
-        "title": "Wave 2: Market & Policy Refinement Spec",
-        "worker": "spec",
-        "instruction": "Create a MISSION_spec for Jules to execute Mission 2.2. Resolve TD-DEPR-STOCK-DTO, TD-MARKET-STRING-PARSE, and TD-ECON-WAR-STIMULUS. Replace StockOrder with CanonicalOrderDTO, refactor StockMarket matching extraction to use Tuple IDs, and implement progressive taxation logically in Government handling.",
-        "context_files": [
-            "simulation/markets/stock_market.py",
-            "simulation/agents/government.py",
-            "modules/market/api.py",
-            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
-        ],
-        "output_path": "artifacts/specs/MISSION_wave2_market_policy_spec.md"
-    },
-
-    # 🌊 WAVE 3: Operations & Polish
-    "wave3-analytics-purity-spec": {
-        "title": "Wave 3: Operational & Analytics Purity Spec",
-        "worker": "spec",
-        "instruction": "Create a MISSION_spec for Jules to execute Mission 3.1. Resolve TD-ANALYTICS-DTO-BYPASS and TD-UI-DTO-PURITY. Ensure AnalyticsSystem operates strictly on SnapshotDTOs rather than reading raw mutable agents, and enforce Pydantic Models for UI telemetry parsing.",
-        "context_files": [
-            "simulation/systems/analytics_system.py",
-            "modules/simulation/dtos/api.py",
-            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
-        ],
-        "output_path": "artifacts/specs/MISSION_wave3_analytics_purity_spec.md"
-    },
-    "wave3-dx-config-spec": {
-        "title": "Wave 3: Developer Experience & Config Hardening Spec",
-        "worker": "spec",
-        "instruction": "Create a MISSION_spec for Jules to execute Mission 3.2. Resolve TD-DX-AUTO-CRYSTAL and TD-CONF-GHOST-BIND. Implement an auto-discovery registry decorator for Gemini missions to reduce boilerplate, and create a ConfigProxy to lazily resolve dynamic constants avoiding import-time lock-ins.",
-        "context_files": [
-            "_internal/registry/gemini_manifest.py",
-            "config/default_config.py",
-            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
-        ],
-        "output_path": "artifacts/specs/MISSION_wave3_dx_config_spec.md"
+        "output_path": "artifacts/specs/MISSION_test_stabilization_spec.md"
     }
 }
-
-# Scan for new missions
-mission_registry.scan_packages("_internal.missions")
-
-# Merge: Priority to Registry (New) over Legacy (Old)
-GEMINI_MISSIONS = LEGACY_GEMINI_MISSIONS.copy()
-GEMINI_MISSIONS.update(mission_registry.to_manifest())

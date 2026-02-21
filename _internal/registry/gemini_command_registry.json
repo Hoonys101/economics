@@ -3,155 +3,28 @@
     "version": "1.0"
   },
   "missions": {
-    "debt-liquidation-plan": {
-      "key": "debt-liquidation-plan",
-      "title": "Technical Debt Liquidation Strategy",
+    "test-stabilization-spec": {
+      "key": "test-stabilization-spec",
+      "title": "Test Suite Stabilization (Protocol Alignment)",
       "type": "gemini",
-      "instruction_raw": "Analyze the TECH_DEBT_LEDGER.md and formulate a comprehensive technical debt liquidation plan. Design the plan such that we execute 2-3 independent missions in parallel per 'wave', and clear all remaining technical debts within 2 to 3 waves total. Ensure missions within the same wave do not have overlapping file dependencies to prevent merge conflicts. Output this execution schedule as a formatted Markdown report.",
-      "status": "pending",
-      "created_at": "",
+      "instruction_raw": "Create a MISSION_spec for Jules to resolve 5 integration test failures caused by new absolute protocol enforcements (ITaxableHousehold, IFinancialAgent, ICentralBank). The spec must instruct Jules to update mock agents in the affected test files to implement these protocols. Do not change production code. Affected tests: test_government_integration.py, test_government_refactor_behavior.py, test_omo_system.py, test_settlement_security.py, test_tax_collection.py.",
       "command": null,
       "file_path": null,
       "wait": false,
       "session_id": null,
       "worker": "spec",
       "context_files": [
-        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
-      ],
-      "output_path": "artifacts/reports/tech_debt_liquidation_plan.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "wave3-analytics-purity-spec": {
-      "key": "wave3-analytics-purity-spec",
-      "title": "Wave 3: Operational & Analytics Purity Spec",
-      "type": "gemini",
-      "instruction_raw": "Create a MISSION_spec for Jules to execute Mission 3.1. Resolve TD-ANALYTICS-DTO-BYPASS and TD-UI-DTO-PURITY. Ensure AnalyticsSystem operates strictly on SnapshotDTOs rather than reading raw mutable agents, and enforce Pydantic Models for UI telemetry parsing.",
-      "status": "pending",
-      "created_at": "",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "simulation/systems/analytics_system.py",
-        "modules/simulation/dtos/api.py",
-        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
-      ],
-      "output_path": "artifacts/specs/MISSION_wave3_analytics_purity_spec.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "wave3-dx-config-spec": {
-      "key": "wave3-dx-config-spec",
-      "title": "Wave 3: Developer Experience & Config Hardening Spec",
-      "type": "gemini",
-      "instruction_raw": "Create a MISSION_spec for Jules to execute Mission 3.2. Resolve TD-DX-AUTO-CRYSTAL and TD-CONF-GHOST-BIND. Implement an auto-discovery registry decorator for Gemini missions to reduce boilerplate, and create a ConfigProxy to lazily resolve dynamic constants avoiding import-time lock-ins.",
-      "status": "pending",
-      "created_at": "",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "_internal/registry/gemini_manifest.py",
-        "config/default_config.py",
-        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
-      ],
-      "output_path": "artifacts/specs/MISSION_wave3_dx_config_spec.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "wave2-firm-architecture-spec": {
-      "key": "wave2-firm-architecture-spec",
-      "title": "Wave 2: Firm Architecture Overhaul Spec",
-      "type": "gemini",
-      "instruction_raw": "Create a MISSION_spec for Jules to execute Mission 2.1. Resolve TD-ARCH-FIRM-COUP and TD-ARCH-FIRM-MUTATION by removing self.parent pointers from all Firm Departments (HR, Finance, Production, Sales), replacing them with DTO injections. Ensure BrandEngine and SalesEngine return ResultDTOs instead of mutating states in-place.",
-      "status": "pending",
-      "created_at": "",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "simulation/firms/firm.py",
-        "modules/firm/engines/brand_engine.py",
-        "simulation/components/engines/sales_engine.py",
-        "simulation/components/engines/hr_engine.py",
-        "simulation/components/engines/production_engine.py",
-        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
-      ],
-      "output_path": "artifacts/specs/MISSION_wave2_firm_architecture_spec.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "wave2-market-policy-spec": {
-      "key": "wave2-market-policy-spec",
-      "title": "Wave 2: Market & Policy Refinement Spec",
-      "type": "gemini",
-      "instruction_raw": "Create a MISSION_spec for Jules to execute Mission 2.2. Resolve TD-DEPR-STOCK-DTO, TD-MARKET-STRING-PARSE, and TD-ECON-WAR-STIMULUS. Replace StockOrder with CanonicalOrderDTO, refactor StockMarket matching extraction to use Tuple IDs, and implement progressive taxation logically in Government handling.",
-      "status": "pending",
-      "created_at": "",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "simulation/markets/stock_market.py",
-        "simulation/agents/government.py",
-        "modules/market/api.py",
-        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
-      ],
-      "output_path": "artifacts/specs/MISSION_wave2_market_policy_spec.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "wave1-finance-protocol-spec": {
-      "key": "wave1-finance-protocol-spec",
-      "title": "Wave 1: Financial Protocol Enforcement Spec",
-      "type": "gemini",
-      "instruction_raw": "Create a MISSION_spec for Jules to execute Mission 1.1. Resolve TD-PROTO-MONETARY, TD-INT-BANK-ROLLBACK, and TD-SYS-ACCOUNTING-GAP by enforcing IInvestor and IPropertyOwner protocols, implementing strict rollback interfaces, and fixing buyer expense tracking in accounting.",
-      "status": "pending",
-      "created_at": "",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "simulation/systems/handlers/monetary_handler.py",
+        "tests/integration/test_government_integration.py",
+        "tests/integration/test_government_refactor_behavior.py",
+        "tests/integration/test_omo_system.py",
+        "tests/unit/systems/test_settlement_security.py",
+        "tests/unit/test_tax_collection.py",
+        "modules/government/api.py",
         "modules/finance/api.py",
-        "modules/finance/bank.py",
-        "simulation/accounting.py",
-        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
-      ],
-      "output_path": "artifacts/specs/MISSION_wave1_finance_protocol_spec.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "wave1-lifecycle-hygiene-spec": {
-      "key": "wave1-lifecycle-hygiene-spec",
-      "title": "Wave 1: System Lifecycle & Dependency Hygiene Spec",
-      "type": "gemini",
-      "instruction_raw": "Create a MISSION_spec for Jules to execute Mission 1.2. Resolve TD-ARCH-DI-SETTLE, TD-SYS-PERF-DEATH, and TD-LIFECYCLE-STALE by using Factory-based DI for Settlement AgentRegistry injection, optimizing DeathSystem O(N) rebuilds, and scrubbing the inter_tick_queue upon agent death.",
-      "status": "pending",
-      "created_at": "",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
         "simulation/systems/settlement_system.py",
-        "simulation/systems/lifecycle/death_system.py",
-        "simulation/systems/lifecycle/agent_lifecycle_manager.py",
-        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+        "modules/government/tax/service.py"
       ],
-      "output_path": "artifacts/specs/MISSION_wave1_lifecycle_hygiene_spec.md",
+      "output_path": "artifacts/specs/MISSION_test_stabilization_spec.md",
       "model": null,
       "audit_requirements": null
     }

@@ -35,6 +35,14 @@ class MissionDTO:
     model: Optional[str] = None
     audit_requirements: Optional[Any] = None
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert DTO to dictionary for legacy compatibility."""
+        from dataclasses import asdict
+        d = asdict(self)
+        if isinstance(d.get("type"), MissionType):
+            d["type"] = d["type"].value
+        return d
+
 class IMissionRegistryService(Protocol):
     def register_mission(self, mission: MissionDTO) -> None: ...
     def get_mission(self, key: str) -> Optional[MissionDTO]: ...
@@ -71,6 +79,13 @@ class RegisteredMission:
     key: str
     definition: GeminiMissionDefinition
     metadata: Optional[MissionMetadata] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary format."""
+        res = dict(self.definition)
+        if self.metadata:
+            res["metadata"] = dict(self.metadata)
+        return res
 
 class IMissionRegistry(Protocol):
     """Interface for the Mission Registry."""
