@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "fix_td_firm_coup": {
-      "key": "fix_td_firm_coup",
-      "title": "Implement TD-ARCH-FIRM-COUP Resolution",
-      "type": "jules",
-      "instruction_raw": "Implement the Firm Decoupling Spec to resolve TD-ARCH-FIRM-COUP.",
-      "command": "create",
-      "file_path": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_firm_coup_spec.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "fix_td_tx_handlers": {
       "key": "fix_td_tx_handlers",
       "title": "Implement TD-RUNTIME-TX-HANDLER Resolution",
@@ -70,6 +55,21 @@
       "instruction_raw": "Fix the 5 failing tests caused by Penny Standard migration. 1. C:/coding/economics/modules/government/components/infrastructure_manager.py:43 - Fix unpacking error (`issue_treasury_bonds_synchronous` returns bool, list). 2. test_double_entry.py - test_market_bond_issuance_generates_transaction (20.0 -> 2000). 3. test_double_entry.py - test_qe_bond_issuance_generates_transaction (10.0 -> 1000). 4. test_sovereign_debt.py - test_issue_treasury_bonds_calls_settlement_system (1.0 -> 100). 5. test_system.py - test_issue_treasury_bonds_market (1000.0 -> 100000). Verify with `pytest -rfE --tb=line --no-header tests/`.",
       "command": "create",
       "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "fix_td_firm_coup": {
+      "key": "fix_td_firm_coup",
+      "title": "Implement TD-ARCH-FIRM-COUP Resolution",
+      "type": "jules",
+      "instruction_raw": "Implement the Firm Decoupling Spec to resolve TD-ARCH-FIRM-COUP.",
+      "command": "create",
+      "file_path": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_firm_coup_spec.md",
       "wait": false,
       "session_id": null,
       "worker": null,
