@@ -16,7 +16,8 @@ import config
 from simulation.dtos.api import SimulationState
 from tests.utils.factories import create_household_config_dto, create_firm_config_dto
 from modules.simulation.api import AgentCoreConfigDTO
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, AssetBuyoutRequestDTO, AssetBuyoutResultDTO, IAssetRecoverySystem
+from simulation.finance.api import ISettlementSystem
 from modules.system.constants import ID_CENTRAL_BANK, ID_ESCROW, ID_PUBLIC_MANAGER
 
 # Mock Logger to prevent actual file writes during tests
@@ -851,3 +852,92 @@ def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lif
     assert household_active in firm_active.hr_state.employees
 
     assert len(firm_inactive.hr_state.employees) == 0
+
+
+def test_death_system_executes_asset_buyout(setup_simulation_for_lifecycle):
+    """
+    Verify that DeathSystem delegates inventory liquidation to PublicManager.execute_asset_buyout
+    and transfers funds to the dying agent.
+    """
+    (
+        sim,
+        household_active,
+        _,
+        _,
+        _,
+        _,
+    ) = setup_simulation_for_lifecycle
+
+    # Setup
+    sim.public_manager = MagicMock(spec=IAssetRecoverySystem)
+    sim.settlement_system = MagicMock(spec=ISettlementSystem)
+
+    # We need to patch the DeathSystem instance attached to the simulation
+    death_system = sim.lifecycle_manager.death_system
+    death_system.public_manager = sim.public_manager
+    death_system.settlement_system = sim.settlement_system
+
+    # Configure Mock
+    buyout_result = AssetBuyoutResultDTO(
+        success=True,
+        total_paid_pennies=500,
+        items_acquired={"food": 10},
+        buyer_id=ID_PUBLIC_MANAGER
+    )
+    sim.public_manager.execute_asset_buyout.return_value = buyout_result
+    sim.settlement_system.transfer.return_value = True
+
+    # Setup Agent with Inventory
+    household_active.is_active = False # Mark for death
+    household_active._econ_state.inventory = {"food": 10}
+
+    # Execute
+    state = SimulationState(
+        time=sim.time,
+        households=sim.households,
+        firms=sim.firms,
+        agents=sim.agents,
+        markets=sim.markets,
+        primary_government=sim.government,
+        governments=[sim.government],
+        bank=sim.bank,
+        central_bank=sim.central_bank,
+        stock_market=sim.stock_market,
+        stock_tracker=sim.stock_tracker,
+        goods_data=sim.goods_data,
+        market_data={},
+        config_module=sim.config_module,
+        tracker=sim.tracker,
+        logger=sim.logger,
+        ai_training_manager=sim.ai_training_manager,
+        ai_trainer=sim.ai_trainer,
+        next_agent_id=sim.next_agent_id,
+        real_estate_units=sim.real_estate_units,
+        transaction_processor=sim.transaction_processor,
+        escrow_agent=getattr(sim, 'escrow_agent', None),
+    )
+
+    death_system.execute(state)
+
+    # Verify
+    # 1. execute_asset_buyout called
+    sim.public_manager.execute_asset_buyout.assert_called_once()
+    args, _ = sim.public_manager.execute_asset_buyout.call_args
+    request_dto = args[0]
+    assert isinstance(request_dto, AssetBuyoutRequestDTO)
+    assert request_dto.seller_id == household_active.id
+    assert request_dto.inventory == {"food": 10}
+
+    # 2. Settlement Transfer called
+    sim.settlement_system.transfer.assert_called_once()
+    # Verify arguments: Debit PM, Credit HH, Amount 500
+    call_args = sim.settlement_system.transfer.call_args
+    # call_args.args or kwargs
+    # transfer(debit_agent, credit_agent, amount, ...)
+    # public_manager is a Mock, household_active is Real
+    assert call_args[0][0] == sim.public_manager
+    assert call_args[0][1] == household_active
+    assert call_args[0][2] == 500
+
+    # 3. Agent Removed (Standard DeathSystem behavior)
+    assert household_active not in sim.households

@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Dict, Any, Optional
 import logging
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, AssetBuyoutRequestDTO
 from modules.finance.api import ILiquidatable
 from modules.simulation.api import IInventoryHandler, IConfigurable
 
@@ -52,47 +52,38 @@ class InventoryLiquidationHandler(ILiquidationHandler):
         default_price = liq_config.default_price
         market_prices = liq_config.market_prices
 
-        # Calculate Total Value
-        total_value = 0.0
-
-        inventory_transfer = {}
-        # Iterate via Interface
-        for item_id, qty in agent.get_all_items().items():
-            if qty <= 0:
-                continue
-
-            # Determine fair value
+        # Prepare Market Prices for DTO
+        # Convert all prices to pennies int
+        prices_pennies = {}
+        for item_id in agent.get_all_items().keys():
             price = market_prices.get(item_id, 0.0)
-
             if price <= 0:
-                # Fallback to configured initial price
                 price = initial_prices.get(item_id, default_price)
+            prices_pennies[item_id] = int(price)
 
-            # Apply Liquidation Discount (Haircut)
-            liquidation_value = price * qty * (1.0 - haircut)
-            total_value += liquidation_value
-            inventory_transfer[item_id] = qty
+        # Execute Buyout
+        # distress_discount is the multiplier (e.g. 0.8 for 20% haircut)
+        request = AssetBuyoutRequestDTO(
+            seller_id=agent.id,
+            inventory=agent.get_all_items().copy(),
+            market_prices=prices_pennies,
+            distress_discount=1.0 - haircut
+        )
 
-        if total_value > 0:
-            # Transfer Funds: PublicManager -> Agent
-            # Value is already in pennies (since price is in pennies)
-            amount_pennies = int(total_value)
+        result = self.public_manager.execute_asset_buyout(request)
 
+        if result.success and result.total_paid_pennies > 0:
             success = self.settlement_system.transfer(
                 self.public_manager,
                 agent,
-                amount_pennies,
+                result.total_paid_pennies,
                 f"Asset Liquidation (Inventory) - Agent {agent.id}",
                 currency=DEFAULT_CURRENCY
             )
 
             if success:
-                logger.info(f"LIQUIDATION_ASSET_SALE | Agent {agent.id} sold inventory to PublicManager for {total_value:.2f}.")
-
-                # Transfer Inventory via Interface (Encapsulation)
-                self.public_manager.receive_liquidated_assets(inventory_transfer)
-
+                logger.info(f"LIQUIDATION_ASSET_SALE | Agent {agent.id} sold inventory to PublicManager for {result.total_paid_pennies}.")
                 # Clear Agent Inventory
                 agent.clear_inventory()
             else:
-                logger.error(f"LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay {total_value:.2f} to Agent {agent.id}.")
+                logger.error(f"LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay {result.total_paid_pennies} to Agent {agent.id}.")
