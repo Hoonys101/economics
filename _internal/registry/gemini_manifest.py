@@ -60,5 +60,46 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
             "c:/coding/economics/tests/unit/simulation/test_engine.py"
         ],
         "output_path": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_life_stale_spec.md"
+    },
+    "review_td_firm_coup": {
+        "title": "Review: Firm Decoupling Spec",
+        "worker": "review",
+        "instruction": "Review the Firm Decoupling Spec for alignment with the SEO Pattern and Zero-Sum Integrity. Generate a review report.",
+        "context_files": [
+            "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_firm_coup_spec.md",
+            "c:/coding/economics/design/1_architecture/ARCH_OVERVIEW.md",
+            "c:/coding/economics/design/1_architecture/ARCH_AGENTS.md"
+        ],
+        "output_path": "c:/coding/economics/design/3_work_artifacts/audits/REVIEW_td_firm_coup.md"
+    },
+    "review_td_tx_handlers": {
+        "title": "Review: Missing Tx Handlers Spec",
+        "worker": "review",
+        "instruction": "Review the Missing Tx Handlers Spec for alignment with Zero-Sum Integrity and Protocol Purity. Generate a review report.",
+        "context_files": [
+            "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_tx_handlers_spec.md",
+            "c:/coding/economics/design/1_architecture/ARCH_TRANSACTIONS.md"
+        ],
+        "output_path": "c:/coding/economics/design/3_work_artifacts/audits/REVIEW_td_tx_handlers.md"
+    },
+    "review_td_cockpit_mock": {
+        "title": "Review: Cockpit Mock Spec",
+        "worker": "review",
+        "instruction": "Review the Cockpit Mock Spec for alignment with Testing Stability guidelines. Generate a review report.",
+        "context_files": [
+            "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_cockpit_mock_spec.md",
+            "c:/coding/economics/design/1_architecture/TESTING_STABILITY.md"
+        ],
+        "output_path": "c:/coding/economics/design/3_work_artifacts/audits/REVIEW_td_cockpit_mock.md"
+    },
+    "review_td_life_stale": {
+        "title": "Review: Stale Lifecycle Spec",
+        "worker": "review",
+        "instruction": "Review the Stale Lifecycle Tests Spec against current Asset Recovery Architecture. Generate a review report.",
+        "context_files": [
+            "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_life_stale_spec.md",
+            "c:/coding/economics/design/1_architecture/ARCH_OVERVIEW.md"
+        ],
+        "output_path": "c:/coding/economics/design/3_work_artifacts/audits/REVIEW_td_life_stale.md"
     }
 }
