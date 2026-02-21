@@ -3,13 +3,13 @@
     "version": "1.0"
   },
   "missions": {
-    "fix-db-migration": {
-      "key": "fix-db-migration",
-      "title": "Fix Database Schema Drift & Auto-Migration",
+    "wave5-dto-purity": {
+      "key": "wave5-dto-purity",
+      "title": "Implement Canonical Order and UI DTOs",
       "type": "jules",
-      "instruction_raw": "",
+      "instruction_raw": "Execute the full implementation spec exactly as documented.",
       "command": "create",
-      "file_path": "artifacts/specs/MISSION_fix_db_migration_spec.md",
+      "file_path": "artifacts/specs/MISSION_wave5_dto_purity_JULES_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,
@@ -18,13 +18,13 @@
       "model": null,
       "audit_requirements": null
     },
-    "fix-sys-registry": {
-      "key": "fix-sys-registry",
-      "title": "Fix System Agent Registration & Standardize IDs",
+    "wave5-config-purity": {
+      "key": "wave5-config-purity",
+      "title": "Implement Config Proxy for Runtime Binding",
       "type": "jules",
-      "instruction_raw": "",
+      "instruction_raw": "Execute the full implementation spec exactly as documented.",
       "command": "create",
-      "file_path": "artifacts/specs/MISSION_fix_sys_registry_spec.md",
+      "file_path": "artifacts/specs/MISSION_wave5_config_purity_JULES_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,
@@ -33,13 +33,28 @@
       "model": null,
       "audit_requirements": null
     },
-    "fix-pm-funding": {
-      "key": "fix-pm-funding",
-      "title": "Fix Public Manager Funding & Escheatment",
+    "wave6-ai-debt": {
+      "key": "wave6-ai-debt",
+      "title": "Integrate Debt Constraints into AI Planning",
       "type": "jules",
-      "instruction_raw": "",
+      "instruction_raw": "Execute the full implementation spec exactly as documented.",
       "command": "create",
-      "file_path": "artifacts/specs/MISSION_fix_pm_funding_spec.md",
+      "file_path": "artifacts/specs/MISSION_wave6_ai_debt_JULES_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "wave6-fiscal-masking": {
+      "key": "wave6-fiscal-masking",
+      "title": "Implement Progressive Taxation and Wage Scaling",
+      "type": "jules",
+      "instruction_raw": "Execute the full implementation spec exactly as documented.",
+      "command": "create",
+      "file_path": "artifacts/specs/MISSION_wave6_fiscal_masking_JULES_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,

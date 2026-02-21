@@ -89,6 +89,11 @@ This document archives resolved technical debt items to keep the primary ledger 
 | **TD-RUNTIME-DEST-MISS** | Lifecycle | **Ghost Destination**: Transactions failing for non-existent agents (Sequence error in `spawn_firm`). | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
 | **TD-TEST-MOCK-STALE** | Testing | **Stale Mocks**: `WorldState` mocks used deprecated `system_command_queue`. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
 | **TD-GOV-SOLVENCY** | Government | **Binary Gates**: Spending modules use all-or-nothing logic; lack partial execution/solvency pre-checks. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-CRIT-SYS0-MISSING** | Systems | **Fix**: Registered `sim.central_bank` in `SimulationInitializer`. | Phase 24 | [Review](../../_archive/gemini_output/pr_review_fix-sys-registry-13312846699871297983.md) |
+| **TD-CRIT-PM-MISSING** | Systems | **Fix**: Registered Public Manager and funded with PM overdraft. | Phase 24 | [Review](../../_archive/gemini_output/pr_review_fix-pm-funding-15893498075582379062.md) |
+| **TD-DB-SCHEMA-DRIFT** | Systems | **Fix**: Implemented runtime migration for `total_pennies` column in DB. | Phase 24 | [Review](../../_archive/gemini_output/pr_review_fix-db-migration-12248755876135984758.md) |
+| **TD-DTO-DESYNC-BORROWER** | Finance | **Fix**: Aligned `BorrowerProfileDTO` usage in major endpoints to match definition. | Phase 24 | [Walkthrough](../../../../../C:/Users/Gram%20Pro/.gemini/antigravity/brain/2544cb5b-523b-4d11-8540-a8515a2e9ef7/walkthrough.md) |
+
 | **TD-CRIT-LIFECYCLE-ATOM** | Lifecycle | **Agent Startup Atomicity**: Firm registration (Registry) must occur *before* financial initialization (Transfer). | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
 | **TD-SYS-QUEUE-SCRUB** | Lifecycle | **Lifecycle Queue Scrubbing**: AgentLifecycleManager fails to remove stale IDs from queues. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
 | **TD-GOV-SPEND-GATE** | Government | **Binary Spending Gates**: Infrastructure/Welfare modules need "Partial Execution" support. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |

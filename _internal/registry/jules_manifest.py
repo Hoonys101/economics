@@ -17,16 +17,31 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "fix-sys-registry": {
-        "title": "Fix System Agent Registration & Standardize IDs",
-        "file": "artifacts/specs/MISSION_fix_sys_registry_spec.md"
+    # Wave 5: Data & Config Purity
+    "wave5-dto-purity": {
+        "title": "Implement Canonical Order and UI DTOs",
+        "command": "create",
+        "instruction": "Execute the full implementation spec exactly as documented.",
+        "file": "artifacts/specs/MISSION_wave5_dto_purity_JULES_SPEC.md"
     },
-    "fix-pm-funding": {
-        "title": "Fix Public Manager Funding & Escheatment",
-        "file": "artifacts/specs/MISSION_fix_pm_funding_spec.md"
+    "wave5-config-purity": {
+        "title": "Implement Config Proxy for Runtime Binding",
+        "command": "create",
+        "instruction": "Execute the full implementation spec exactly as documented.",
+        "file": "artifacts/specs/MISSION_wave5_config_purity_JULES_SPEC.md"
     },
-    "fix-db-migration": {
-        "title": "Fix Database Schema Drift & Auto-Migration",
-        "file": "artifacts/specs/MISSION_fix_db_migration_spec.md"
+    
+    # Wave 6: AI & Logic Refinement
+    "wave6-ai-debt": {
+        "title": "Integrate Debt Constraints into AI Planning",
+        "command": "create",
+        "instruction": "Execute the full implementation spec exactly as documented.",
+        "file": "artifacts/specs/MISSION_wave6_ai_debt_JULES_SPEC.md"
+    },
+    "wave6-fiscal-masking": {
+        "title": "Implement Progressive Taxation and Wage Scaling",
+        "command": "create",
+        "instruction": "Execute the full implementation spec exactly as documented.",
+        "file": "artifacts/specs/MISSION_wave6_fiscal_masking_JULES_SPEC.md"
     }
 }

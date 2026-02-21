@@ -3,126 +3,118 @@
     "version": "1.0"
   },
   "missions": {
-    "diag-log-analyze": {
-      "key": "diag-log-analyze",
-      "title": "Analyze Refined Diagnostic Logs",
+    "wave7-firm-mutation": {
+      "key": "wave7-firm-mutation",
+      "title": "[TD-ARCH-FIRM-MUTATION] Enforce Stateless Engine Orchestration in Firm",
       "type": "gemini",
-      "instruction_raw": "\uc815\uc81c\ub41c \uc2dc\ubbac\ub808\uc774\uc158 \ubcf4\uace0\uc11c(AUTOPSY_REPORT.md)\uc640 \uc815\uc81c\ub41c \ub85c\uadf8(diagnostic_refined.md), \uadf8\ub9ac\uace0 \uc544\ud0a4\ud14d\ucc98 \uac00\uc774\ub4dc(ARCH_*)\ub97c \ubd84\uc11d\ud558\uc5ec \uc2dc\uc2a4\ud15c\uc758 \uc624\uc791\ub3d9 \ud328\ud134\uc744 \uc2dd\ubcc4\ud558\uc2ed\uc2dc\uc624.\n- \ud2b9\ud788 \ub2e4\uc911 \ud1b5\ud654(FX) \uc815\uc0b0\uc5d0\uc11c\uc758 \ubd80\ub3d9 \uc18c\uc218\uc810 \ub204\uc218\ub098 \uc815\uc0b0 \uc21c\uc11c \uc624\ub958\ub97c \ucc3e\uc73c\uc2ed\uc2dc\uc624.\n- \ubc1c\uacac\ub41c \uc774\uc288\ubcc4\ub85c '\uc65c(Why)' \ubc1c\uc0dd\ud588\ub294\uc9c0 \uadfc\ubcf8 \uc6d0\uc778\uc744 \uae30\uc220\ud558\uace0, \uad6c\uccb4\uc801\uc778 \uc218\uc815 \ubc29\ud5a5\uc744 \uc81c\uc548\ud558\uc2ed\uc2dc\uc624.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "audit",
-      "context_files": [
-        "reports/AUTOPSY_REPORT.md",
-        "reports/diagnostic_refined.md",
-        "design/1_governance/architecture/ARCH_TRANSACTIONS.md",
-        "design/1_governance/architecture/ARCH_AGENTS.md"
-      ],
-      "output_path": "reports/diagnostic_findings.md",
-      "model": "gemini-3-pro-preview",
-      "audit_requirements": null
-    },
-    "tech-debt-audit": {
-      "key": "tech-debt-audit",
-      "title": "Tech Debt Survival Verification Audit",
-      "type": "gemini",
-      "instruction_raw": "TECH_DEBT_LEDGER.md\uc5d0 \ub4f1\ub85d\ub41c 'Open' \ubc0f 'Identified' \uae30\uc220 \ubd80\ucc44 \ud56d\ubaa9\ub4e4\uc774 \ud604\uc7ac \ucf54\ub4dc\ubca0\uc774\uc2a4\uc5d0 \uc2e4\uc81c\ub85c \uc794\uc874\ud558\ub294\uc9c0 \uac80\uc99d\ud558\uc2ed\uc2dc\uc624.\n- \ud2b9\ud788 Wave 1-3(Finance Protocol, Firm Architecture, Operational Purity \ub4f1)\uc744 \ud1b5\ud574 \ud574\uacb0\ub418\uc5c8\uc5b4\uc57c \ud560 \ud56d\ubaa9\ub4e4\uc774 \uc5ec\uc804\ud788 \uc7a5\ubd80\uc5d0 \ub0a8\uc544\uc788\ub294\uc9c0 \uccb4\ud06c\ud558\uc2ed\uc2dc\uc624.\n- \uac01 \ubd80\ucc44\ubcc4\ub85c [\uc794\uc874 / \uc218\uc815\ub428(False Positive) / \ubd80\ubd84 \uc218\uc815] \uc0c1\ud0dc\ub97c \ud310\uc815\ud558\uace0 \uc774\uc720\ub97c \uae30\uc220\ud558\uc2ed\uc2dc\uc624.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "verify",
-      "context_files": [
-        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
-        "modules/finance/transaction/engine.py",
-        "simulation/initialization/initializer.py",
-        "simulation/agents/government.py",
-        "simulation/agents/central_bank.py"
-      ],
-      "output_path": "reports/tech_debt_audit_report.md",
-      "model": "gemini-3-pro-preview",
-      "audit_requirements": null
-    },
-    "spec-fix-sys-registry": {
-      "key": "spec-fix-sys-registry",
-      "title": "SPEC: Fix System Agent Registration",
-      "type": "gemini",
-      "instruction_raw": "\uc911\uc559\uc740\ud589(ID 0)\uacfc \uacf5\uacf5\uad00\ub9ac\uc790(PublicManager)\uac00 SimulationInitializer\uc5d0\uc11c AgentRegistry\uc5d0 \ub4f1\ub85d\ub418\uc9c0 \uc54a\ub294 \ubb38\uc81c\ub97c \ud574\uacb0\ud558\uae30 \uc704\ud55c MISSION_spec\uc744 \uc791\uc131\ud558\uc2ed\uc2dc\uc624.\n- `SimulationInitializer.build_simulation()`\uc5d0\uc11c \uc774\ub4e4\uc744 `sim.agents`\uc5d0 \uba85\uc2dc\uc801\uc73c\ub85c \ucd94\uac00\ud558\ub294 \ub85c\uc9c1\uc744 \ud3ec\ud568\ud558\uc2ed\uc2dc\uc624.\n- \ubaa8\ub4e0 \uc2dc\uc2a4\ud15c \uc608\uc57d ID(0-99)\uac00 \uc77c\uad00\ub418\uac8c \uad00\ub9ac\ub418\ub3c4\ub85d \uc124\uacc4\ud558\uc2ed\uc2dc\uc624.",
+      "instruction_raw": "Read artifacts/specs/MISSION_wave7_firm_mutation_SPEC.md and generate a full Jules implementation spec.",
       "command": null,
       "file_path": null,
       "wait": false,
       "session_id": null,
       "worker": "spec",
       "context_files": [
-        "simulation/initialization/initializer.py",
-        "modules/system/constants.py",
-        "modules/system/registry.py"
-      ],
-      "output_path": "artifacts/specs/MISSION_fix_sys_registry_spec.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "spec-fix-pm-funding": {
-      "key": "spec-fix-pm-funding",
-      "title": "SPEC: Public Manager funding & Escheatment",
-      "type": "gemini",
-      "instruction_raw": "\uacf5\uacf5\uad00\ub9ac\uc790(PublicManager)\uac00 \ud30c\uc0b0 \uae30\uc5c5\uc758 \uc790\uc0b0\uc744 \uc778\uc218(Escheatment)\ud560 \ub54c \uc790\uae08 \ubd80\uc871\uc73c\ub85c \uc2e4\ud328\ud558\ub294 \ubb38\uc81c\ub97c \ud574\uacb0\ud558\uae30 \uc704\ud55c MISSION_spec\uc744 \uc791\uc131\ud558\uc2ed\uc2dc\uc624.\n- PM\uc5d0\uac8c \ubb34\uc81c\ud55c \ub2f9\uc88c\ub300\uc6d4(overdraft) \uad8c\ud55c\uc744 \ubd80\uc5ec\ud558\uac70\ub098, \ud654\ud3d0 \ubc1c\ud589(Mint) \uad8c\ud55c\uc744 \uac00\uc9c4 IMonetaryAuthority \uc778\ud130\ud398\uc774\uc2a4\ub97c \uc5f0\ub3d9\ud558\uc2ed\uc2dc\uc624.\n- `escheatment_handler` \ubc0f `FinancialEntityAdapter`\ub97c \uc218\uc815\ud558\uc5ec PM\uc758 \uac15\uc81c \uc790\uc0b0 \uc778\uc218\uac00 \ubcf4\uc7a5\ub418\ub3c4\ub85d \ud558\uc2ed\uc2dc\uc624.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "modules/system/execution/public_manager.py",
-        "simulation/systems/handlers/escheatment_handler.py",
-        "modules/finance/api.py"
-      ],
-      "output_path": "artifacts/specs/MISSION_fix_pm_funding_spec.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "spec-fix-db-migration": {
-      "key": "spec-fix-db-migration",
-      "title": "SPEC: Database Schema Migration (total_pennies)",
-      "type": "gemini",
-      "instruction_raw": "SQLite \ud14c\uc774\ube14(`transactions`)\uc5d0 `total_pennies` \uceec\ub7fc\uc774 \ub204\ub77d\ub418\uc5b4 \ubc1c\uc0dd\ud558\ub294 \uc800\uc7a5 \uc624\ub958\ub97c \ud574\uacb0\ud558\uae30 \uc704\ud55c MISSION_spec\uc744 \uc791\uc131\ud558\uc2ed\uc2dc\uc624.\n- \ucf54\ub4dc\uc5d0\uc11c \ud574\ub2f9 \uceec\ub7fc \uc874\uc7ac \uc5ec\ubd80\ub97c \uccb4\ud06c\ud558\uace0, \uc5c6\uc744 \uacbd\uc6b0 `ALTER TABLE`\uc744 \uc218\ud589\ud558\uac70\ub098 \uc2a4\ud0a4\ub9c8\ub97c \uc790\ub3d9 \uac31\uc2e0\ud558\ub294 \ub85c\uc9c1\uc744 \uc124\uacc4\ud558\uc2ed\uc2dc\uc624.\n- legacy DB\ub85c \uc778\ud55c \ub7f0\ud0c0\uc784 \uc5d0\ub7ec \ubc29\uc9c0\ub97c \ucd5c\uc6b0\uc120\uc73c\ub85c \ud558\uc2ed\uc2dc\uc624.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "simulation/db/schema.py",
-        "simulation/db/db_manager.py",
-        "simulation/db/repository.py"
-      ],
-      "output_path": "artifacts/specs/MISSION_fix_db_migration_spec.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "tech-debt-full-audit": {
-      "key": "tech-debt-full-audit",
-      "title": "Full Tech Debt Exhaustive Audit",
-      "type": "gemini",
-      "instruction_raw": "TECH_DEBT_LEDGER.md\uc5d0 \ub4f1\ub85d\ub41c '\ubaa8\ub4e0' \ubbf8\uacb0 \ubd80\ucc44(Open, Identified, Partial) \ud56d\ubaa9\ub4e4\uc774 \ud604\uc7ac \ucf54\ub4dc\ubca0\uc774\uc2a4\uc5d0 \uc2e4\uc81c\ub85c \uc5b4\ub5bb\uac8c \uc874\uc7ac\ud558\ub294\uc9c0 \uc804\uc218 \uc870\uc0ac\ub97c \uc218\ud589\ud558\uc2ed\uc2dc\uc624.\n- Wave 1-3 \uc774\ud6c4\uc758 \ucd5c\uc2e0 \ucf54\ub4dc \uc0c1\ud0dc\ub97c \ubc18\uc601\ud558\uc5ec, \uac01 \ud56d\ubaa9\uc758 \uc2e4\uc81c \uc704\ud5d8\ub3c4\uc640 \uc794\uc874 \uc5ec\ubd80\ub97c \ud310\uc815\ud558\uc2ed\uc2dc\uc624.\n- \ud2b9\ud788 27\uac1c\uc758 \ud14c\uc2a4\ud2b8 \uc2e4\ud328 \uc0ac\ub840(`fails.txt`)\uc640 \uc7a5\ubd80\uc0c1\uc758 \ubd80\ucc44 \ud56d\ubaa9\ub4e4 \uac04\uc758 \uc0c1\uad00\uad00\uacc4(\uc608: DTO \ubd88\uc77c\uce58, FP/Int \ud63c\uc6a9 \ub4f1)\ub97c \uad6c\uccb4\uc801\uc73c\ub85c \uc2dd\ubcc4\ud558\uc2ed\uc2dc\uc624.\n- [\uc0dd\uc874 / \ud574\uacb0\ub428 / \ubd80\ubd84 \ud574\uacb0] \uc0c1\ud0dc\ub97c \uba85\ud655\ud788 \ud558\uace0, \uc989\uc2dc \uc218\uc815\uc774 \ud544\uc694\ud55c 'Critical' \ud56d\ubaa9\uc744 \uc6b0\uc120 \uc21c\uc704\ub85c \uc815\ub82c\ud558\uc5ec \ubcf4\uace0\ud558\uc2ed\uc2dc\uc624.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "verify",
-      "context_files": [
-        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
-        "modules/finance/transaction/engine.py",
-        "simulation/initialization/initializer.py",
+        "artifacts/specs/MISSION_wave7_firm_mutation_SPEC.md",
         "simulation/firms.py",
-        "simulation/core_agents.py",
-        "simulation/engine.py",
-        "modules/simulation/dtos/api.py",
-        "reports/diagnostic_findings.md"
+        "modules/firm/sales_engine.py",
+        "modules/firm/brand_engine.py"
       ],
-      "output_path": "reports/full_tech_debt_audit_report.md",
-      "model": "gemini-3-pro-preview",
+      "output_path": "artifacts/specs/MISSION_wave7_firm_mutation_JULES_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "wave7-dx-automation": {
+      "key": "wave7-dx-automation",
+      "title": "[TD-DX-AUTO-CRYSTAL] Automate Mission Registration and Optimize Death System",
+      "type": "gemini",
+      "instruction_raw": "Read artifacts/specs/MISSION_wave7_dx_automation_SPEC.md and generate a full Jules implementation spec.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "artifacts/specs/MISSION_wave7_dx_automation_SPEC.md",
+        "_internal/scripts/launcher.py",
+        "_internal/registry/service.py",
+        "modules/system/death_system.py"
+      ],
+      "output_path": "artifacts/specs/MISSION_wave7_dx_automation_JULES_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "wave5-dto-purity": {
+      "key": "wave5-dto-purity",
+      "title": "[TD-UI-DTO-PURITY] Enforce Canonical Order and UI DTOs",
+      "type": "gemini",
+      "instruction_raw": "Read artifacts/specs/MISSION_wave5_dto_purity_SPEC.md and generate a full Jules implementation spec.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "artifacts/specs/MISSION_wave5_dto_purity_SPEC.md",
+        "modules/market/api.py",
+        "modules/system/telemetry_exchange.py"
+      ],
+      "output_path": "artifacts/specs/MISSION_wave5_dto_purity_JULES_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "wave5-config-purity": {
+      "key": "wave5-config-purity",
+      "title": "[TD-CONF-GHOST-BIND] Implement Config Proxy for Runtime Binding",
+      "type": "gemini",
+      "instruction_raw": "Read artifacts/specs/MISSION_wave5_config_purity_SPEC.md and generate a full Jules implementation spec.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "artifacts/specs/MISSION_wave5_config_purity_SPEC.md",
+        "modules/finance/engine.py"
+      ],
+      "output_path": "artifacts/specs/MISSION_wave5_config_purity_JULES_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "wave6-ai-debt": {
+      "key": "wave6-ai-debt",
+      "title": "[TD-AI-DEBT-AWARE] Integrate Debt Constraints into AI Planning",
+      "type": "gemini",
+      "instruction_raw": "Read artifacts/specs/MISSION_wave6_ai_debt_aware_SPEC.md and generate a full Jules implementation spec.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "artifacts/specs/MISSION_wave6_ai_debt_aware_SPEC.md",
+        "modules/firm/planner.py"
+      ],
+      "output_path": "artifacts/specs/MISSION_wave6_ai_debt_JULES_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "wave6-fiscal-masking": {
+      "key": "wave6-fiscal-masking",
+      "title": "[TD-ECON-WAR-STIMULUS] Implement Progressive Taxation and Wage Scaling",
+      "type": "gemini",
+      "instruction_raw": "Read artifacts/specs/MISSION_wave6_fiscal_masking_SPEC.md and generate a full Jules implementation spec.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "artifacts/specs/MISSION_wave6_fiscal_masking_SPEC.md",
+        "modules/government/policy_engine.py",
+        "modules/firm/hr_engine.py"
+      ],
+      "output_path": "artifacts/specs/MISSION_wave6_fiscal_masking_JULES_SPEC.md",
+      "model": null,
       "audit_requirements": null
     }
   }

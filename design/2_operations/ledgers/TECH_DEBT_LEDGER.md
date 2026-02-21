@@ -17,24 +17,16 @@
 | ID | Module / Component | Description | Priority / Impact | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **TD-ARCH-FIRM-COUP** | Architecture | **Parent Pointer Pollution**: `Firm` departments use `self.parent`, bypassing Orchestrator. | **High**: Structural Integrity. | Open |
-| **TD-ARCH-DI-SETTLE** | Architecture | **DI Timing**: `AgentRegistry` injection into `SettlementSystem` happens post-init. | **Low**: Fragility. | **RESOLVED** |
 | **TD-ARCH-GOV-MISMATCH** | Architecture | **Singleton vs List**: `WorldState` has `governments` (List) vs Singleton `government`. | **Medium**: Logic Drift. | Open |
 | **TD-CRIT-FLOAT-CORE** | Finance | **Float Core**: `SettlementSystem` and `MatchingEngine` use `float` instead of `int`. | **Critical**: Determinism. | **PARTIAL** |
 | **TD-INT-BANK-ROLLBACK** | Finance | **Rollback Coupling**: Bank rollback logic dependent on `hasattr` implementation. | **Low**: Leak. | Open |
 | **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Handler**: `bailout`, `bond_issuance` tx types not registered. | **High**: Failure. | Open |
-| **TD-PROTO-MONETARY** | Transaction | **Monetary Protocol Violation**: `MonetaryHandler` uses `hasattr` instead of Protocols. | **Low**: Fragility. | **RESOLVED** |
 | **TD-AI-DEBT-AWARE** | AI | **Constraint Blindness**: AI spams spend intents at debt ceiling; NPV ignores debt. | **Medium**: AI Performance. | Open |
-| **TD-CONF-MAGIC-NUMBERS** | Config | **Magic Numbers**: Hardcoded constants in `FinanceEngine` (Z-Score, Divisors). | **Low**: Configurability. | **RESOLVED** |
-| **TD-ARCH-LOAN-CIRCULAR** | Architecture | **Circular Dependency**: Firm depends on concrete `LoanMarket` for debt status. | **Medium**: Coupling. | **RESOLVED** |
 | **TD-ECON-WAR-STIMULUS** | Economic | **Fiscal Masking**: Stimulus prevents GDP 0 but masks wage-affordability imbalances. | **Medium**: Policy. | Open |
-| **TD-MARKET-FLOAT-CAST** | Market | **Unsafe Quantization**: Direct `int()` cast in `matching_engine.py` instead of rounding. | **Medium**: Precision. | **RESOLVED** |
-| **TD-MARKET-STRING-PARSE** | Market | **Brittle Key Parsing**: `StockMarket` splits strings to find `firm_id`. | **Low**: Fragility. | **RESOLVED** |
 | **TD-DEPR-STOCK-DTO** | Market | **Legacy DTO**: `StockOrder` is deprecated. Use `CanonicalOrderDTO`. | **Low**: Tech Debt. | Open |
-| **TD-LIFECYCLE-STALE** | Lifecycle | **Queue Pollution**: Missing scrubbing of `inter_tick_queue` after liquidation. | **Medium**: Determinism. | **RESOLVED** |
 | **TD-CONF-GHOST-BIND** | Config | **Ghost Constants**: Modules bind config values at import time. | **Medium**: Dynamic. | Identified |
 | **TD-SYS-ACCOUNTING-GAP** | Systems | **Accounting Accuracy**: `accounting.py` misses tracking buyer expenses. | **Medium**: Accuracy. | Open |
 | **TD-ARCH-FIRM-MUTATION** | Agents | **In-place State Mutation**: `Firm` engines mutate state objects directly. | **Medium**: Structural. | Open |
-| **TD-ANALYTICS-DTO-BYPASS** | Systems | **Encapsulation Bypass**: `analytics_system.py` calls `agent.get_quantity` directly. | **Low**: Purity. | **RESOLVED** |
 | **TD-SYS-PERF-DEATH** | Systems | **O(N) Rebuild**: `death_system.py` uses O(N) rebuild for `state.agents`. | **Low**: Perf. | Open |
 | **TD-TEST-TX-MOCK-LAG** | Testing | **Transaction Test Lag**: `test_transaction_engine.py` mocks are out of sync. | **Low**: Flakiness. | Identified |
 | **TD-TEST-COCKPIT-MOCK** | Testing | **Cockpit 2.0 Mock Regressions**: Tests use deprecated `system_command_queue`. | **High**: Silent Failure. | Identified |
@@ -42,10 +34,6 @@
 | **TD-TEST-TAX-DEPR** | Testing | **Deprecated Tax API in Tests**: `test_transaction_handlers.py` still uses `collect_tax`. | **Medium**: Tech Debt. | Identified |
 | **TD-UI-DTO-PURITY** | Cockpit | **Manual Deserialization**: UI uses raw dicts/manual mapping for Telemetry. | **Medium**: Quality. | Open |
 | **TD-DX-AUTO-CRYSTAL** | DX / Ops | **Crystallization Overhead**: Manual Gemini Manifest registration required. | **Medium**: Friction. | Open |
-| **TD-CRIT-SYS0-MISSING** | Systems | **Missing Account 0**: Central Bank not in Registry. | **Critical**: Reliability. | **OPEN** |
-| **TD-CRIT-PM-MISSING** | Systems | **Missing PM**: Public Manager not in Registry; insolvency risk. | **Critical**: Liquidation. | **OPEN** |
-| **TD-DB-SCHEMA-DRIFT** | Systems | **DB Out-of-Sync**: `total_pennies` column missing in legacy `percept_storm.db`. | **Critical**: Data loss. | **OPEN** |
-| **TD-DTO-DESYNC-BORROWER** | Finance | **DTO Version Drift**: `BorrowerProfileDTO` signature mismatch (17 fails). | **High**: Stability. | **IDENTIFIED** |
 | **TD-ECON-INSTABILITY-V2** | Economic | **Rapid Collapse**: Sudden Zombie/Fire Sale clusters despite high initial assets. | **High**: Logic Drift. | **IDENTIFIED** |
 
 ---
@@ -65,13 +53,6 @@
 - **Symptom**: `firm.py` passes `self.sales_state` to engines without capturing a return DTO.
 - **Risk**: Violates the "Stateless Engine & Orchestrator" pattern.
 - **Solution**: Refactor `BrandEngine` and `SalesEngine` to return `ResultDTOs`.
-
-### ID: TD-ARCH-DI-SETTLE
-- **Title**: Dependency Injection Timing
-- **Symptom**: Circular dependency risks due to post-init service injection.
-- **Risk**: Initialization fragility.
-- **Solution**: Move to Factory-based initialization or early registry lookup.
-- **Status**: **RESOLVED** (Wave 1.2: Refactored `SimulationInitializer` and `SettlementSystem` constructor)
 
 ### ID: TD-ARCH-GOV-MISMATCH
 - **Title**: Singleton vs List Mismatch
@@ -101,13 +82,6 @@
 - **Risk**: Runtime Failure.
 - **Solution**: Register all transaction types with the `TransactionEngine`.
 
-### ID: TD-PROTO-MONETARY
-- **Title**: Monetary Protocol Violation
-- **Symptom**: `MonetaryTransactionHandler` uses `isinstance` checks on concrete classes.
-- **Risk**: Logic Fragility.
-- **Solution**: Refactor to use `IInvestor` and `IPropertyOwner` protocols throughout.
-- **Status**: **RESOLVED** (Wave 1.2: Introduced `IIssuer` protocol)
-
 ---
 
 ## AI & Economic Simulation
@@ -129,18 +103,6 @@
 
 ## Market & Systems
 ---
-### ID: TD-MARKET-FLOAT-CAST
-- **Title**: Unsafe Quantization in Market Matching
-- **Symptom**: `matching_engine.py` uses direct `int()` casting for `trade_total_pennies`.
-- **Risk**: Potential calculation loss if quantities involve extremely small precision floats.
-- **Solution**: Replace with explicit `round_to_pennies` logic.
-
-### ID: TD-MARKET-STRING-PARSE
-- **Title**: Brittle ID Parsing in StockMarket
-- **Symptom**: `StockMarket.get_price` splits `item_id` using strings to extract `firm_id`.
-- **Risk**: Highly coupled to naming conventions, preventing scalable keys.
-- **Solution**: Create dedicated DTO keys or pass semantic ID tuples.
-
 ### ID: TD-DEPR-STOCK-DTO
 - **Title**: Legacy DTO Usage
 - **Symptom**: `StockOrder` is deprecated.
@@ -153,13 +115,6 @@
 - **Risk**: Asymmetric financial logging that complicates GDP and profit analyses.
 - **Solution**: Update Handler and `accounting.py` to ensure reciprocal debit/credit logging.
 
-### ID: TD-ANALYTICS-DTO-BYPASS
-- **Title**: Encapsulation Bypass in Analytics
-- **Symptom**: `analytics_system.py` calls `agent.get_quantity` instead of reading snapshot.
-- **Risk**: Purity Violation.
-- **Solution**: Analytics should operate on immutable snapshots or DTOs.
-- **Status**: **RESOLVED** (Wave 1.2: Refactored to use `SnapshotDTO`)
-
 ### ID: TD-SYS-PERF-DEATH
 - **Title**: O(N) Rebuild in Death System
 - **Symptom**: `death_system.py` uses O(N) rebuild for `state.agents` dict.
@@ -170,12 +125,6 @@
 
 ## Lifecycle & Configuration
 ---
-### ID: TD-LIFECYCLE-STALE
-- **Title**: Persistent Queue Pollution (Stale IDs)
-- **Symptom**: Transactions for dead agents linger in `inter_tick_queue`.
-- **Risk**: Ghost transactions attempts bloat logs.
-- **Solution**: Implement a `ScrubbingPhase` in `AgentLifecycleManager`.
-
 ### ID: TD-CONF-GHOST-BIND
 - **Title**: Ghost Constant Binding (Import Time)
 - **Symptom**: Constants locked at import time prevent effective runtime hot-swaps.
@@ -219,31 +168,6 @@
 - **Symptom**: Cockpit UI uses dict indexing instead of Pydantic models for telemetry.
 - **Risk**: Code Quality.
 - **Solution**: Enforce DTO Purity in the frontend-backend interface.
-
-### ID: TD-CRIT-SYS0-MISSING
-- **Title**: Missing System Account 0 (Central Bank)
-- **Status**: **OPEN** (Confirmed by Audit)
-- **Symptom**: `Source account does not exist: 0`.
-- **Solution**: Register `sim.central_bank` in `SimulationInitializer`.
-
-### ID: TD-CRIT-PM-MISSING
-- **Title**: Public Manager Registration & Funding
-- **Status**: **OPEN** (Confirmed by Audit)
-- **Symptom**: `LIQUIDATION_ASSET_SALE_FAIL`. PM is missing from registry and lacks overdraft.
-- **Solution**: Register PM and enable Soft Budget Constraint (Overdraft).
-
-### ID: TD-DTO-DESYNC-BORROWER
-- **Title**: DTO Version Drift (BorrowerProfileDTO)
-- **Status**: **IDENTIFIED** (New from Audit)
-- **Symptom**: `TypeError: __init__() got an unexpected keyword argument 'borrower_id'`.
-- **Risk**: 17 core test failures. Protocol misalignment.
-- **Solution**: Align `BorrowerProfileDTO` definition in `modules/finance/api.py` with its call sites.
-
-### ID: TD-DB-SCHEMA-DRIFT
-- **Title**: Database Column Mismatch (total_pennies)
-- **Status**: **OPEN** (Confirmed by Audit)
-- **Symptom**: `OperationalError: no such column: total_pennies`.
-- **Solution**: Implement `SchemaMigrator` in `SimulationRepository`.
 
 ### ID: TD-ARCH-FIRM-COUP
 - **Title**: Parent Pointer Pollution
