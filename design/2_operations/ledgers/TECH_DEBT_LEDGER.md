@@ -27,6 +27,10 @@
 | **TD-TEST-LIFE-STALE** | Testing | **Stale Lifecycle Logic**: `test_engine.py` calls refactored liquidation methods. | **High**: Breakdown. | Identified |
 | **TD-TEST-TAX-DEPR** | Testing | **Deprecated Tax API in Tests**: `test_transaction_handlers.py` still uses `collect_tax`. | **Medium**: Tech Debt. | Identified |
 | **TD-ECON-INSTABILITY-V2** | Economic | **Rapid Collapse**: Sudden Zombie/Fire Sale clusters despite high initial assets. | **High**: Logic Drift. | **IDENTIFIED** |
+| **TD-ARCH-ORCH-HARD** | Architecture | **Orchestrator Fragility**: `TickOrchestrator` lacks hardening against missing DTO attributes in mocks. | **Medium**: Resilience. | **NEW (PH21)** |
+| **TD-ECON-M2-INV** | Economic | **M2 Inversion**: Negative money supply due to overdrafts subtracted from aggregate cash. | **CRITICAL**: Integrity. | **NEW (PH21)** |
+| **TD-ARCH-STARTUP-RACE** | Architecture | **Ghost Firm Registry**: Transactions attempted before agent/bank registration. | **High**: Failure. | **IDENTIFIED** |
+| **TD-FIN-SAGA-ORPHAN** | Finance | **Saga Participant Drift**: Missing or stale participant IDs causing `SAGA_SKIP`. | **Medium**: Logic Gap. | **IDENTIFIED** |
 
 ---
 
@@ -69,6 +73,18 @@
 - **Symptom**: `accounting.py` fails to track expenses for raw materials on the buyer's side.
 - **Risk**: Asymmetric financial logging that complicates GDP and profit analyses.
 - **Solution**: Update Handler and `accounting.py` to ensure reciprocal debit/credit logging.
+
+### ID: TD-ECON-M2-INV
+- **Title**: M2 Negative Inversion
+- **Symptom**: Aggregate money supply becomes negative when debt > cash.
+- **Risk**: Simulation logic breaks (interest rates, policy) when "Money" is negative.
+- **Solution**: Distinguish Liquidity from Liability in `calculate_total_money()`.
+
+### ID: TD-ARCH-STARTUP-RACE
+- **Title**: Firm Startup Race Condition
+- **Symptom**: `SETTLEMENT_FAIL` during `spawn_firm` due to missing destination account.
+- **Risk**: New firms start as zombies or fail to launch entirely.
+- **Solution**: Implement blocking `open_account` before capital injection transaction.
 
 ---
 > [!NOTE]

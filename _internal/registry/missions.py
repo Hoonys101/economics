@@ -102,3 +102,19 @@ def wave7_firm_mutation():
 )
 def wave7_dx_automation():
     pass
+
+@gemini_mission(
+    key="forensic-audit-ph21",
+    title="[FORENSIC-AUDIT] Post-Crash Structural Logic Recovery",
+    worker="audit",
+    instruction="Analyze reports/diagnostic_refined.md and reports/AUTOPSY_REPORT.md to identify systemic logic failures (M2 leaks, startup sequence issues) remaining after the Housing Saga crash fix. Generate a Phase 22 Structural Fix specification.",
+    context_files=[
+        "reports/diagnostic_refined.md",
+        "reports/AUTOPSY_REPORT.md",
+        "simulation/orchestration/tick_orchestrator.py",
+        "simulation/dtos/api.py"
+    ],
+    output_path="artifacts/reports/forensic_audit_ph21_report.md"
+)
+def forensic_audit_ph21():
+    pass

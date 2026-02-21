@@ -22,10 +22,29 @@
    - model (str, Optional): 모델 지정 ('gemini-3-pro-preview', 'gemini-3-flash-preview').
 """
 from typing import Dict, Any
-from _internal.registry.api import mission_registry
 
-# Import mission definitions to trigger registration
-import _internal.registry.missions
+GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
+    "parallel-debt-recovery": {
+        "title": "Parallel Architecture Recovery Plan (Phase 25)",
+        "worker": "audit",
+        "instruction": """
+Analyze diagnostic logs, the tech debt ledger, and the provided source code to design a parallelized remediation strategy.
 
-# Dynamically populate the manifest
-GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = mission_registry.to_manifest()
+1. **Conflict-Free Partitioning**: Identify which debt items can be resolved simultaneously (e.g., Lane 1: Finance Logic, Lane 2: Structural Sequencing, Lane 3: DX & Tests).
+2. **Clear API/DTO Contracts**: For each remediation unit, define the exact DTO changes or API signatures required to prevent implementation drift across lanes.
+3. **Atomic Mission Specs**: Generate separate MISSION_SPEC definitions for each lane. Each spec must be a standalone unit of work for Jules.
+4. **Root Cause Mapping**: Link diagnostic failures (SAGA_SKIP, SETTLEMENT_FAIL) directly to specific ledger items (e.g., TD-CRIT-FLOAT-CORE).
+
+Prioritize M2 Integrity (TD-ECON-M2-INV) and Startup Race (TD-ARCH-STARTUP-RACE) as the foundation.
+""",
+        "context_files": [
+            "reports/diagnostic_refined.md",
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
+            "simulation/dtos/api.py",
+            "simulation/orchestration/tick_orchestrator.py",
+            "simulation/orchestration/phases_recovery.py",
+            "modules/finance/engine.py"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_parallel-debt-recovery_PLAN.md"
+    }
+}

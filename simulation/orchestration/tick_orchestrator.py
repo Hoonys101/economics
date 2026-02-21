@@ -172,6 +172,8 @@ class TickOrchestrator:
             shareholder_registry=state.shareholder_registry, # TD-275
             system_commands=commands_for_tick, # TD-255
             god_command_snapshot=god_commands_for_tick, # Renamed to god_command_snapshot
+            housing_service=getattr(state, "housing_service", None), # Phase 4.1 Fix
+            registry=getattr(state, "registry", None),
             effects_queue=[], # TD-192: Init empty
             inter_tick_queue=[], # TD-192: Init empty
             transactions=[], # TD-192: Init empty

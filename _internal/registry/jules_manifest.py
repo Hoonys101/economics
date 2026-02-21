@@ -17,51 +17,25 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Wave 5: Data & Config Purity
-    "wave5-dto-purity": {
-        "title": "[Wave 5] Implement Canonical Order and UI DTOs",
+    "lane1-finance-integrity": {
+        "title": "Lane 1: Financial Logic & M2 Integrity",
         "command": "create",
-        "instruction": "Execute the full implementation spec exactly as documented.",
-        "file": "artifacts/specs/MISSION_wave5_dto_purity_JULES_SPEC.md"
+        "file": "design/3_work_artifacts/specs/MISSION_parallel-debt-recovery_PLAN.md",
+        "instruction": "Implement Phase 1/Lane 1: Fix M2 Inversion (WorldState), enforce integer precision (MatchingEngine), and close buyer-side accounting gaps.",
+        "wait": True
     },
-    "wave5-config-purity": {
-        "title": "[Wave 5] Implement Config Proxy for Runtime Binding",
+    "lane2-structural-lifecycle": {
+        "title": "Lane 2: Structural Lifecycle & Sagas",
         "command": "create",
-        "instruction": "Execute the full implementation spec exactly as documented.",
-        "file": "artifacts/specs/MISSION_wave5_config_purity_JULES_SPEC.md"
+        "file": "design/3_work_artifacts/specs/MISSION_parallel-debt-recovery_PLAN.md",
+        "instruction": "Implement Phase 2/Lane 2: Resolve Startup Race conditions (FirmManager registration before transfer) and unify Saga DTOs (HousingTransactionSagaStateDTO).",
+        "wait": True
     },
-    
-    # Wave 6: AI & Logic Refinement
-    "wave6-ai-debt": {
-        "title": "[Wave 6] Integrate Debt Constraints into AI Planning",
+    "lane3-dx-stabilization": {
+        "title": "Lane 3: DX & Test Stabilization",
         "command": "create",
-        "instruction": "Execute the full implementation spec exactly as documented.",
-        "file": "artifacts/specs/MISSION_wave6_ai_debt_JULES_SPEC.md"
-    },
-    "wave6-fiscal-masking": {
-        "title": "[Wave 6] Implement Progressive Taxation and Wage Scaling",
-        "command": "create",
-        "instruction": "Execute the full implementation spec exactly as documented.",
-        "file": "artifacts/specs/MISSION_wave6_fiscal_masking_JULES_SPEC.md"
-    },
-    "test-stabilization": {
-        "title": "[Stabilization] Protocol Alignment and Mock Restoration",
-        "command": "create",
-        "instruction": "Execute the full implementation spec exactly as documented.",
-        "file": "artifacts/specs/MISSION_test_stabilization_spec.md"
-    },
-    
-    # Wave 7: Architecture & Ops Cleanup
-    "wave7-firm-mutation": {
-        "title": "[Wave 7] Enforce Stateless Engine Orchestration in Firm",
-        "command": "create",
-        "instruction": "Execute the full implementation spec exactly as documented.",
-        "file": "artifacts/specs/MISSION_wave7_firm_mutation_JULES_SPEC.md"
-    },
-    "wave7-dx-automation": {
-        "title": "[Wave 7] Automate Mission Registration and Optimize Death System",
-        "command": "create",
-        "instruction": "Execute the full implementation spec exactly as documented.",
-        "file": "artifacts/specs/MISSION_wave7_dx_automation_JULES_SPEC.md"
+        "file": "design/3_work_artifacts/specs/MISSION_parallel-debt-recovery_PLAN.md",
+        "instruction": "Implement Phase 3/Lane 3: Harden TickOrchestrator against missing attributes and synchronize transaction mocks with new IFinancialAgent protocols.",
+        "wait": True
     }
 }

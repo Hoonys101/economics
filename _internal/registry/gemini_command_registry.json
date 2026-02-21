@@ -3,118 +3,26 @@
     "version": "1.0"
   },
   "missions": {
-    "wave5-dto-purity": {
-      "key": "wave5-dto-purity",
-      "title": "[TD-UI-DTO-PURITY] Enforce Canonical Order and UI DTOs",
+    "parallel-debt-recovery": {
+      "key": "parallel-debt-recovery",
+      "title": "Parallel Architecture Recovery Plan (Phase 25)",
       "type": "gemini",
-      "instruction_raw": "Read artifacts/specs/MISSION_wave5_dto_purity_SPEC.md and generate a full Jules implementation spec.",
+      "instruction_raw": "\nAnalyze diagnostic logs, the tech debt ledger, and the provided source code to design a parallelized remediation strategy.\n\n1. **Conflict-Free Partitioning**: Identify which debt items can be resolved simultaneously (e.g., Lane 1: Finance Logic, Lane 2: Structural Sequencing, Lane 3: DX & Tests).\n2. **Clear API/DTO Contracts**: For each remediation unit, define the exact DTO changes or API signatures required to prevent implementation drift across lanes.\n3. **Atomic Mission Specs**: Generate separate MISSION_SPEC definitions for each lane. Each spec must be a standalone unit of work for Jules.\n4. **Root Cause Mapping**: Link diagnostic failures (SAGA_SKIP, SETTLEMENT_FAIL) directly to specific ledger items (e.g., TD-CRIT-FLOAT-CORE).\n\nPrioritize M2 Integrity (TD-ECON-M2-INV) and Startup Race (TD-ARCH-STARTUP-RACE) as the foundation.\n",
       "command": null,
       "file_path": null,
       "wait": false,
       "session_id": null,
-      "worker": "spec",
+      "worker": "audit",
       "context_files": [
-        "artifacts/specs/MISSION_wave5_dto_purity_SPEC.md",
-        "modules/market/api.py",
-        "modules/system/telemetry_exchange.py"
-      ],
-      "output_path": "artifacts/specs/MISSION_wave5_dto_purity_JULES_SPEC.md",
-      "model": "gemini-3-pro-preview",
-      "audit_requirements": null
-    },
-    "wave5-config-purity": {
-      "key": "wave5-config-purity",
-      "title": "[TD-CONF-GHOST-BIND] Implement Config Proxy for Runtime Binding",
-      "type": "gemini",
-      "instruction_raw": "Read artifacts/specs/MISSION_wave5_config_purity_SPEC.md and generate a full Jules implementation spec.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "artifacts/specs/MISSION_wave5_config_purity_SPEC.md",
+        "reports/diagnostic_refined.md",
+        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
+        "simulation/dtos/api.py",
+        "simulation/orchestration/tick_orchestrator.py",
+        "simulation/orchestration/phases_recovery.py",
         "modules/finance/engine.py"
       ],
-      "output_path": "artifacts/specs/MISSION_wave5_config_purity_JULES_SPEC.md",
-      "model": "gemini-3-pro-preview",
-      "audit_requirements": null
-    },
-    "wave6-ai-debt": {
-      "key": "wave6-ai-debt",
-      "title": "[TD-AI-DEBT-AWARE] Integrate Debt Constraints into AI Planning",
-      "type": "gemini",
-      "instruction_raw": "Read artifacts/specs/MISSION_wave6_ai_debt_aware_SPEC.md and generate a full Jules implementation spec.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "artifacts/specs/MISSION_wave6_ai_debt_aware_SPEC.md",
-        "modules/firm/planner.py"
-      ],
-      "output_path": "artifacts/specs/MISSION_wave6_ai_debt_JULES_SPEC.md",
-      "model": "gemini-3-pro-preview",
-      "audit_requirements": null
-    },
-    "wave6-fiscal-masking": {
-      "key": "wave6-fiscal-masking",
-      "title": "[TD-ECON-WAR-STIMULUS] Implement Progressive Taxation and Wage Scaling",
-      "type": "gemini",
-      "instruction_raw": "Read artifacts/specs/MISSION_wave6_fiscal_masking_SPEC.md and generate a full Jules implementation spec.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "artifacts/specs/MISSION_wave6_fiscal_masking_SPEC.md",
-        "modules/government/policy_engine.py",
-        "modules/firm/hr_engine.py"
-      ],
-      "output_path": "artifacts/specs/MISSION_wave6_fiscal_masking_JULES_SPEC.md",
-      "model": "gemini-3-pro-preview",
-      "audit_requirements": null
-    },
-    "wave7-firm-mutation": {
-      "key": "wave7-firm-mutation",
-      "title": "[TD-ARCH-FIRM-MUTATION] Enforce Stateless Engine Orchestration in Firm",
-      "type": "gemini",
-      "instruction_raw": "Read artifacts/specs/MISSION_wave7_firm_mutation_SPEC.md and generate a full Jules implementation spec.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "artifacts/specs/MISSION_wave7_firm_mutation_SPEC.md",
-        "simulation/firms.py",
-        "modules/firm/sales_engine.py",
-        "modules/firm/brand_engine.py"
-      ],
-      "output_path": "artifacts/specs/MISSION_wave7_firm_mutation_JULES_SPEC.md",
-      "model": "gemini-3-pro-preview",
-      "audit_requirements": null
-    },
-    "wave7-dx-automation": {
-      "key": "wave7-dx-automation",
-      "title": "[TD-DX-AUTO-CRYSTAL] Automate Mission Registration and Optimize Death System",
-      "type": "gemini",
-      "instruction_raw": "Read artifacts/specs/MISSION_wave7_dx_automation_SPEC.md and generate a full Jules implementation spec.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "artifacts/specs/MISSION_wave7_dx_automation_SPEC.md",
-        "_internal/scripts/launcher.py",
-        "_internal/registry/service.py",
-        "modules/system/death_system.py"
-      ],
-      "output_path": "artifacts/specs/MISSION_wave7_dx_automation_JULES_SPEC.md",
-      "model": "gemini-3-pro-preview",
+      "output_path": "design/3_work_artifacts/specs/MISSION_parallel-debt-recovery_PLAN.md",
+      "model": null,
       "audit_requirements": null
     }
   }

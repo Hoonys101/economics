@@ -252,6 +252,8 @@ class SimulationState:
     stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
     transaction_processor: Optional[Any] = None # Added for system delegation compatibility
     shareholder_registry: Optional[Any] = None # TD-275 Shareholder Registry
+    housing_service: Optional[Any] = None # Phase 4.1: Housing Saga Fix
+    registry: Optional[Any] = None # Standard Domain Registry
 
     # Phase 4.1: Saga Orchestration & Monetary Ledger (TD-253)
     saga_orchestrator: Optional[Any] = None

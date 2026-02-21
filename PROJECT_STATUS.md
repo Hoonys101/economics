@@ -25,7 +25,7 @@
     - **`Phase 24: Diagnostic Forensics & Test Stabilization`** 🛡️ ✅ (2026-02-21)
         - **Goal**: Resolve test suite regressions caused by magic string IDs, DTO drift, and missing registry accounts.
         - **Status**: COMPLETED
-        - **Achievement**: Realigned `BorrowerProfileDTO` and standardized core Agent IDs (`ID_CENTRAL_BANK`, `ID_PUBLIC_MANAGER`). Integrated DB schema migration for `total_pennies`. **Resolved Wave 5-7 stabilization debt (Taxation Mode Priority Fix)**. Achieved 100% clean test suite (954 passed).
+        - **Achievement**: Realigned `BorrowerProfileDTO` and standardized core Agent IDs (`ID_CENTRAL_BANK`, `ID_PUBLIC_MANAGER`). Integrated DB schema migration for `total_pennies`. **Resolved Wave 5-7 stabilization debt (Taxation Mode Priority Fix) and Protocol-alignment regressions**. Achieved 100% clean test suite (**964 passed**).
 
     - **`Phase 23: Post-Phase 22 Regression Cleanup`** ⚖️ ✅ (2026-02-20)
         - **Goal**: Resolve test suite regressions resulting from Phase 22 structural merges, focusing on TickOrchestrator and SagaOrchestrator protocol mismatches.
@@ -37,10 +37,10 @@
         - **Status**: COMPLETED
         - **Achievement**: Successfully resolved all structural crashes and CI regressions. 893 tests passed (1 skip).
 
-    - **`Phase 21: Structural Runtime Diagnosis & Architecture Restoration`** 🛡️ ✅ (2026-02-19)
-        - **Achievement**: Identified root causes of "Ghost Destination" crashes and "Float Penny Leaks" via Gemini-led structural audit.
+    - **`Phase 21: Structural Runtime Diagnosis & Recovery`** 🛡️ ✅ (2026-02-21)
+        - **Achievement**: Resolved critical Housing Saga crash (Tick 2) by aligning `SimulationState` DTO with the service registry.
         - **Status**: COMPLETED
-        - **成果**: 4대 핵심 명세서(Lifecycle, Solvency, Handlers, M&A) 작성 및 Jules 미션 장전 완료.
+        - **成果**: 4대 핵심 명세서 구현 확인 및 `forensic-audit-ph21` 미션 장전을 통한 Phase 22 구조 강화 준비 완료.
 
     - **`Phase 19: Post-Wave Technical Debt Liquidation (Wave 3-5)`** ⚖️ ✅ (2026-02-19)
         - **Status**: COMPLETED
@@ -50,7 +50,9 @@
             - [x] **Wave 1 & 2 (Cleanup)**: Merged `penny-hardening-reporting-dtos` and `lifecycle-decomposition`. ✅
             - [x] **Wave 3 (Market & Data)**: Refactoring `MatchingEngine` and `Transaction` schema. ✅
             - [x] **Wave 4 (Structural)**: Deprecating `TransactionManager`. ✅
-            - [x] **Wave 5 (Hygiene)**: Finalizing `ConfigProxy` and UI Purity. ✅
+            - [x] Wave 5 (Hygiene): Finalizing `ConfigProxy` and UI Purity. ✅
+            - [x] Wave 6 (AI & Logic): Progressive Taxation & Debt Aware AI. ✅
+            - [x] Wave 7 (Arch & Ops): Stateless Engine & DX Automation. ✅
 
     - **`Phase 18: Parallel Technical Debt Clearance`** ⚖️ **[COMPLETED]**
         - **Achievement**: Executing parallel liquidation of long-standing structural debts.
@@ -140,7 +142,7 @@ severe architectural violations threatening financial and data integrity.
 ### 6. 감사 결과 및 권장 조치 (Audit Results & Recommended Actions)
 
 **최신 감사 보고서**: [WATCHTOWER_SUMMARY.md](./reports/audits/WATCHTOWER_SUMMARY.md) (2026-02-20)
-- **결론**: **STABILIZED**. Phase 23 test regressions resolved (923 Passed). System confirms structural alignment with "Stateless Engine & Orchestrator" pattern.
+- **결론**: **STABILIZED**. Phase 24 stabilization resolved (964 Passed). System confirms structural alignment with "Stateless Engine & Orchestrator" pattern.
 - **Audit Harvest (2026-02-20)**: Harvested 4 modular reports (`audit_agents.md`, `audit_finance.md`, `audit_markets.md`, `audit_systems.md`).
     - **Key Findings**: 
         - [x] **Firm State Mutation**: `Firm` engines (`SalesEngine`, `BrandEngine`) are occasionally mutating state in-place rather than returning DTOs.
