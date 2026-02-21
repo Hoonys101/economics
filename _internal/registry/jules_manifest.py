@@ -16,10 +16,16 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "test-stabilization": {
-        "title": "Test Suite Stabilization (Protocol Alignment)",
-        "command": "create",
-        "file": "artifacts/specs/MISSION_test_stabilization_spec.md",
-        "wait": True
+    "fix-sys-registry": {
+        "title": "Fix System Agent Registration & Standardize IDs",
+        "file": "artifacts/specs/MISSION_fix_sys_registry_spec.md"
+    },
+    "fix-pm-funding": {
+        "title": "Fix Public Manager Funding & Escheatment",
+        "file": "artifacts/specs/MISSION_fix_pm_funding_spec.md"
+    },
+    "fix-db-migration": {
+        "title": "Fix Database Schema Drift & Auto-Migration",
+        "file": "artifacts/specs/MISSION_fix_db_migration_spec.md"
     }
 }

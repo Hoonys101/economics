@@ -23,6 +23,7 @@ I will update the `ARCH_AGENTS.md` file to accurately document the stateful comp
 - **인지적 특성 (Cognitive Attributes)**:
   - `market_insight`: 에이전트의 실시간 시장 정보 해석 능력. 높을수록 노이즈 없는 최신 데이터를 보며, 낮을수록 지연(Lag) 및 왜곡(Noise)된 정보를 바탕으로 판단합니다. (Continuous Decay 적용).
   - `education_level`: 노동 시장(Labor Market)에서 자신의 생산성을 증명하는 '신호(Signal)'로 작용하며, 지능(Insight) 습득의 보정치로 사용됩니다.
+  - `major (전공/분야)`: **[Architect Final Answer]** 노동자의 전문 분야를 나타내며, 기업의 `required_major`와 매칭되어 생산성 붕괴를 막는 **자연스러운 안전망(Domain Matcher)** 역할을 수행합니다.
 - **학습**: 각 틱의 결과에 따라 근원적 가치관을 보상값(Reward)으로 활용하여 전략을 고도화(TD-Error)합니다.
 
 ### 3.2 수량화 및 검증 (Rule-base Domain)
@@ -85,3 +86,8 @@ This pattern is the non-negotiable standard for all refactoring sprints.
 - **원인**: 이진적(Buy/No-buy) 의사결정 구조와 시장 가격에 대응하지 않는 가격 경직성.
 - **해결**: 가계의 수요를 불연속적인 단계가 아닌, 가격과 필요에 비례하는 **연속적인 수요 곡선(Continuous Demand Curve)**으로 모델링함.
 - **교훈**: AI의 전략적 판단(System 2)은 물리 법칙과 같은 경제적 제약(System 1 Physics: Elasticity)과 결합될 때 비로소 예측 가능하고 안정적인 거시 경제를 형성함.
+
+### 6.3 지대 추구와 인위적 장벽의 배제 (Exclusion of Rent-Seeking Barriers)
+- **원칙**: 정부의 인위적인 '자격 인증(Certification)' 제도는 노동 시장의 불확실성을 해결하는 안전망으로 사용하지 않습니다. 이는 밀턴 프리드먼이 명시한 **지대 추구(Rent-Seeking)** 행위로 간주되어 시스템의 효율성을 저해하기 때문입니다.
+- **구현**: 인증 제도는 기본 시스템 레이어가 아닌, **"프리드먼 시나리오(Friedman's Rent-Seeking Scenario)"**와 같은 실험적 레이어에서만 활성화하여 그 부정적 영향을 관찰하는 용도로 사용합니다.
+- **대안**: 시장의 자생적 질서는 에이전트의 인지 오류에도 불구하고 `Domain Matching (Major)` 기능을 통해 유지됩니다.

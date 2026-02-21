@@ -2,7 +2,7 @@ from enum import Enum
 import os
 
 # --- Simulation Parameters ---
-SIMULATION_TICKS = 100
+SIMULATION_TICKS = 60
 NUM_HOUSEHOLDS = 50
 NUM_FIRMS = 10
 NUM_HOUSING_UNITS = 60
@@ -78,7 +78,7 @@ INITIAL_MONEY_SUPPLY = 10000000  # 초기 화폐 총량 (검증용 기준값) - 
 # --- Simulation Parameters ---
 NUM_HOUSEHOLDS = 20
 NUM_FIRMS = 4
-SIMULATION_TICKS = 1000
+SIMULATION_TICKS = 60
 HOUSEHOLD_MIN_FOOD_INVENTORY = 0.0 # Operation Empty Warehouse: No initial safety net
 TARGET_FOOD_BUFFER_QUANTITY = 5.0 # WO-023: Maslow Constraint Threshold
 

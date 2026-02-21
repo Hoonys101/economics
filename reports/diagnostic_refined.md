@@ -1,0 +1,1468 @@
+# Refined Diagnostic Logs
+Critical events extracted for Gemini analysis.
+
+- **Tick ?** | **WARNING** | File locking (fcntl) is not supported on this platform. Concurrency safety is not guaranteed.
+- **Tick ?** | **ERROR** | Transaction Record: ID=34b8f5dd-5ea9-4c30-be14-da347eed804b, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=cbd1c378-014a-411f-a282-29e2bf6e722b, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=7a95d168-71e4-41c1-b08e-338a442842db, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=2c7cb155-765f-4845-9cc4-87a2d216506f, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=ecf8d1ca-611e-4e11-a3b0-2fbc8cad257c, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=c876b584-046f-4409-923e-9c0f94064309, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=d73ae4a1-942b-4703-bee9-3ee354a2f98b, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=ead18094-2236-4e95-a808-e8fa8830cd5f, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=c472dfd0-3ac5-4b46-aecc-b19559def6e4, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=4d552d27-a158-4206-985f-5bd0b8505b64, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=940a633a-5599-46d4-a8e1-6d90ee061070, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=3dd57043-d71c-4cfb-aea9-3b2baeb24182, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=0c507d89-f0d6-4f1a-83dd-fcc44cf5e857, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=7a71b6b0-267a-4723-9ee9-2cab8d4ef268, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=4b33d01a-2eda-4769-aa7f-e46cba3e16eb, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=7ecc5367-344a-49e8-88dd-afc0ee188541, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=3757c98b-009a-4666-ae56-12e47feee6d3, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=e43f916b-a00d-43b0-bdf8-770d544a548d, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=506e38d5-13de-47d5-a9ab-7523d85dce2a, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=a924d19f-0c13-40f1-8307-836e97a4c3de, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=08b9aa30-b74d-45db-95f2-8f60d9c608c7, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=884b9302-a189-405a-b35f-2f8b1b98eb09, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=3f1ea42d-5235-4a8f-8181-371ee5b3e987, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=368e0303-2926-43ec-b178-b446c9cdb041, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=b612525c-955c-48f0-9fc3-95f7761b53f0, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=9175f131-a835-44dd-8aa0-395b0316bfe3, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=2b10a080-9ca3-4a8f-9afc-c22bf868b8a5, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=babb96cf-6830-4228-b4b5-7a7c11d42810, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=fb3a4bcc-eef0-48e2-9f36-408ffe0c0134, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Source account does not exist: 0
+- **Tick 1** | **WARNING** | FIRE_SALE | Firm 120 dumping 556.5 of basic_food at 7.50
+- **Tick 1** | **WARNING** | FIRE_SALE | Firm 120 dumping 556.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 108.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 108.
+- **Tick 1** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 120
+  - Details: agent_id=120
+- **Tick 1** | **WARNING** | FIRE_SALE | Firm 121 dumping 556.5 of basic_food at 7.50
+- **Tick 1** | **WARNING** | FIRE_SALE | Firm 121 dumping 556.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 114.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 114.
+- **Tick 1** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 121
+  - Details: agent_id=121
+- **Tick 1** | **WARNING** | FIRE_SALE | Firm 122 dumping 556.5 of basic_food at 7.50
+- **Tick 1** | **WARNING** | FIRE_SALE | Firm 122 dumping 556.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 116.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 116.
+- **Tick 1** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 122
+  - Details: agent_id=122
+- **Tick 1** | **WARNING** | FIRE_SALE | Firm 123 dumping 556.5 of clothing at 12.50
+- **Tick 1** | **WARNING** | FIRE_SALE | Firm 123 dumping 556.5 of clothing at 12.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 101.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 101.
+- **Tick 1** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 123
+  - Details: agent_id=123
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 108. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 108. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 103. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 103. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 114. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 114. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 102. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 102. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 116. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 116. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 105. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 105. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 101. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 101. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2785.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2785.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2785.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2785.
+- **Tick 2** | **WARNING** | FIRE_SALE | Firm 120 dumping 1060.5 of basic_food at 7.50
+- **Tick 2** | **WARNING** | FIRE_SALE | Firm 120 dumping 1060.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 108.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 108.
+- **Tick 2** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 120
+  - Details: agent_id=120
+- **Tick 2** | **WARNING** | FIRE_SALE | Firm 121 dumping 1060.5 of basic_food at 7.50
+- **Tick 2** | **WARNING** | FIRE_SALE | Firm 121 dumping 1060.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 114.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 114.
+- **Tick 2** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 121
+  - Details: agent_id=121
+- **Tick 2** | **WARNING** | FIRE_SALE | Firm 122 dumping 1061.5 of basic_food at 7.50
+- **Tick 2** | **WARNING** | FIRE_SALE | Firm 122 dumping 1061.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 116.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 116.
+- **Tick 2** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 122
+  - Details: agent_id=122
+- **Tick 2** | **WARNING** | FIRE_SALE | Firm 123 dumping 1061.5 of clothing at 12.50
+- **Tick 2** | **WARNING** | FIRE_SALE | Firm 123 dumping 1061.5 of clothing at 12.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 101.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 101.
+- **Tick 2** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 123
+  - Details: agent_id=123
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 108. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 108. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 103. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 103. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 114. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 114. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 102. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 102. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 116. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 116. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 105. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 105. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 101. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 101. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 2** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 5305.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 5305.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 5310.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 5310.
+- **Tick 3** | **WARNING** | FIRE_SALE | Firm 120 dumping 1561.5 of basic_food at 7.50
+- **Tick 3** | **WARNING** | FIRE_SALE | Firm 120 dumping 1561.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 108.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 108.
+- **Tick 3** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 120
+  - Details: agent_id=120
+- **Tick 3** | **WARNING** | FIRE_SALE | Firm 121 dumping 1561.5 of basic_food at 7.50
+- **Tick 3** | **WARNING** | FIRE_SALE | Firm 121 dumping 1561.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 114.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 114.
+- **Tick 3** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 121
+  - Details: agent_id=121
+- **Tick 3** | **WARNING** | FIRE_SALE | Firm 122 dumping 1564.5 of basic_food at 7.50
+- **Tick 3** | **WARNING** | FIRE_SALE | Firm 122 dumping 1564.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 116.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 116.
+- **Tick 3** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 122
+  - Details: agent_id=122
+- **Tick 3** | **WARNING** | FIRE_SALE | Firm 123 dumping 1564.5 of clothing at 12.50
+- **Tick 3** | **WARNING** | FIRE_SALE | Firm 123 dumping 1564.5 of clothing at 12.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 101.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 101.
+- **Tick 3** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 123
+  - Details: agent_id=123
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 108. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 108. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 103. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 103. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 114. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 114. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 102. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 102. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 116. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 116. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 105. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 105. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 101. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 101. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 3** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 7810.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 7810.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 7825.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 7825.
+- **Tick 4** | **WARNING** | FIRE_SALE | Firm 120 dumping 2059.5 of basic_food at 7.50
+- **Tick 4** | **WARNING** | FIRE_SALE | Firm 120 dumping 2059.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 108.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 108.
+- **Tick 4** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 120
+  - Details: agent_id=120
+- **Tick 4** | **WARNING** | FIRE_SALE | Firm 121 dumping 2060.5 of basic_food at 7.50
+- **Tick 4** | **WARNING** | FIRE_SALE | Firm 121 dumping 2060.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 114.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 114.
+- **Tick 4** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 121
+  - Details: agent_id=121
+- **Tick 4** | **WARNING** | FIRE_SALE | Firm 122 dumping 2063.5 of basic_food at 7.50
+- **Tick 4** | **WARNING** | FIRE_SALE | Firm 122 dumping 2063.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 116.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 116.
+- **Tick 4** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 122
+  - Details: agent_id=122
+- **Tick 4** | **WARNING** | FIRE_SALE | Firm 123 dumping 2065.5 of clothing at 12.50
+- **Tick 4** | **WARNING** | FIRE_SALE | Firm 123 dumping 2065.5 of clothing at 12.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 101.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 101.
+- **Tick 4** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 123
+  - Details: agent_id=123
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 108. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 108. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 103. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 103. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 114. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 114. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 102. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 102. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 116. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 116. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 105. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 105. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 101. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 101. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 4** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 10300.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 10305.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 10320.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 10330.
+- **Tick 5** | **WARNING** | FIRE_SALE | Firm 120 dumping 2556.5 of basic_food at 7.50
+- **Tick 5** | **WARNING** | FIRE_SALE | Firm 120 dumping 2556.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 108.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 108.
+- **Tick 5** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 120
+  - Details: agent_id=120
+- **Tick 5** | **WARNING** | FIRE_SALE | Firm 121 dumping 2556.5 of basic_food at 7.50
+- **Tick 5** | **WARNING** | FIRE_SALE | Firm 121 dumping 2556.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 114.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 114.
+- **Tick 5** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 121
+  - Details: agent_id=121
+- **Tick 5** | **WARNING** | FIRE_SALE | Firm 122 dumping 2559.5 of basic_food at 7.50
+- **Tick 5** | **WARNING** | FIRE_SALE | Firm 122 dumping 2559.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 116.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 116.
+- **Tick 5** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 122
+  - Details: agent_id=122
+- **Tick 5** | **WARNING** | FIRE_SALE | Firm 123 dumping 2563.5 of clothing at 12.50
+- **Tick 5** | **WARNING** | FIRE_SALE | Firm 123 dumping 2563.5 of clothing at 12.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 101.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 101.
+- **Tick 5** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 123
+  - Details: agent_id=123
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 108. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 108. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 103. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 103. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 114. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 114. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 102. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 102. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 116. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 116. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 105. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 105. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 101. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 101. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 5** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 12785.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 12785.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 12800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 12820.
+- **Tick 6** | **WARNING** | FIRE_SALE | Firm 120 dumping 3051.5 of basic_food at 7.50
+- **Tick 6** | **WARNING** | FIRE_SALE | Firm 120 dumping 3051.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 108.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 108.
+- **Tick 6** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 120
+  - Details: agent_id=120
+- **Tick 6** | **WARNING** | FIRE_SALE | Firm 121 dumping 3049.5 of basic_food at 7.50
+- **Tick 6** | **WARNING** | FIRE_SALE | Firm 121 dumping 3049.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 114.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 114.
+- **Tick 6** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 121
+  - Details: agent_id=121
+- **Tick 6** | **WARNING** | FIRE_SALE | Firm 122 dumping 3052.5 of basic_food at 7.50
+- **Tick 6** | **WARNING** | FIRE_SALE | Firm 122 dumping 3052.5 of basic_food at 7.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 116.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 116.
+- **Tick 6** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 122
+  - Details: agent_id=122
+- **Tick 6** | **WARNING** | FIRE_SALE | Firm 123 dumping 3057.5 of clothing at 12.50
+- **Tick 6** | **WARNING** | FIRE_SALE | Firm 123 dumping 3057.5 of clothing at 12.50
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 101.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 101.
+- **Tick 6** | **WARNING** | Stock order price 0.60 out of limit range [0.01, 0.01] for firm 123
+  - Details: agent_id=123
+- **Tick 6** | **WARNING** | FIRM_INACTIVE | Firm 120 closed down. Assets: 0.00, Consecutive Loss Turns: 0
+  - Details: agent_id=120
+- **Tick 6** | **WARNING** | FIRM_INACTIVE | Firm 121 closed down. Assets: 0.00, Consecutive Loss Turns: 0
+  - Details: agent_id=121
+- **Tick 6** | **WARNING** | FIRM_INACTIVE | Firm 122 closed down. Assets: 0.00, Consecutive Loss Turns: 0
+  - Details: agent_id=122
+- **Tick 6** | **WARNING** | FIRM_INACTIVE | Firm 123 closed down. Assets: 0.00, Consecutive Loss Turns: 0
+  - Details: agent_id=123
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2441600.
+- **Tick ?** | **ERROR** | LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 2441600.00 to Agent 120.
+- **Tick ?** | **ERROR** | LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 2441600.00 to Agent 120.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2440000.
+- **Tick ?** | **ERROR** | LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 2440000.00 to Agent 121.
+- **Tick ?** | **ERROR** | LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 2440000.00 to Agent 121.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2442400.
+- **Tick ?** | **ERROR** | LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 2442400.00 to Agent 122.
+- **Tick ?** | **ERROR** | LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 2442400.00 to Agent 122.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2446400.
+- **Tick ?** | **ERROR** | LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 2446400.00 to Agent 123.
+- **Tick ?** | **ERROR** | LIQUIDATION_ASSET_SALE_FAIL | PublicManager failed to pay 2446400.00 to Agent 123.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 1200.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 24 insufficient reserves: 0 < 500000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 500000 for infrastructure.
+- **Tick ?** | **ERROR** | Error saving transactions batch: table transactions has no column named total_pennies
+- **Tick ?** | **ERROR** | Error saving transactions batch: table transactions has no column named total_pennies

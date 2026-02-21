@@ -91,6 +91,19 @@
 -   **정산 시**: `SettlementSystem`은 현금을 우선 차감하고 부족 시 예금을 인출합니다. 이때 자금의 성격이 '예금'에서 '현금'으로 변환되거나 타인의 '현금'으로 이전되므로, 전체 M2(`Cash + Deposits`)는 보존됩니다.
 -   **계산 공식**: `Total Money (M2) = sum(Non-Bank Agents Cashes) + sum(Bank Deposits)`.
 
+## 10. 다중 통화 및 환전 정합성 (Multi-Currency & FX Integrity)
+
+다중 통화 시스템 도입 시, 환율 변동으로 인한 통화량 증발 또는 무단 생성을 방지하기 위해 다음 원칙을 강제합니다.
+
+### 10.1 "Barter Only" Exchange Pattern
+- **원칙**: 환전은 단순한 수치 변환(`A * Rate = B`)이 아닌, **'물물교환(Barter)'** 트랜잭션으로 처리되어야 합니다.
+- **방어 메커니즘**: `OrderBookMatchingEngine`을 통해 한 주체가 A 통화를 내놓고 다른 주체(또는 시장 조성자/중앙은행)가 B 통화의 정수(Penny)를 직접 교환해야 합니다.
+- **효과**: 시스템 내 각 통화의 총량(M2)은 환율이 변하더라도 항상 보존(Conservation)됩니다.
+
+### 10.2 Floating Point Leakage Defense
+- 환율 계산 결과는 반드시 결제 프로토콜 진입 전 정수(Penny)로 양자화(Quantization)되어야 합니다.
+- **Rounding Rule**: 모든 환전 잔여물은 버리지 않고 특정 계정(Exchange Buffer)에 귀속시켜 제로섬 무결성을 유지합니다.
+
 ## 9. Wallet Abstraction Layer (WAL) - 도입 예정
 
 다중 통화(Multi-Currency) 체제하에서 `Dict[CurrencyCode, float]` 객체에 대한 직접 접근은 제로섬 위반과 데이터 드리프트의 주된 원인입니다. 이를 방지하기 위해 모든 에이전트는 날것의 자산 데이터 대신 `Wallet` 추상화 객체를 사용해야 합니다.

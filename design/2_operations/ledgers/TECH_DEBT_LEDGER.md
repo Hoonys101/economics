@@ -42,6 +42,10 @@
 | **TD-TEST-TAX-DEPR** | Testing | **Deprecated Tax API in Tests**: `test_transaction_handlers.py` still uses `collect_tax`. | **Medium**: Tech Debt. | Identified |
 | **TD-UI-DTO-PURITY** | Cockpit | **Manual Deserialization**: UI uses raw dicts/manual mapping for Telemetry. | **Medium**: Quality. | Open |
 | **TD-DX-AUTO-CRYSTAL** | DX / Ops | **Crystallization Overhead**: Manual Gemini Manifest registration required. | **Medium**: Friction. | Open |
+| **TD-CRIT-SYS0-MISSING** | Systems | **Missing Account 0**: settlement fails on "Source account does not exist: 0". | **Critical**: Reliability. | **IDENTIFIED** |
+| **TD-CRIT-PM-MISSING** | Systems | **Public Manager Ghost**: Register missing; insufficient funds for escheatment. | **High**: Liquidation. | **IDENTIFIED** |
+| **TD-DB-SCHEMA-DRIFT** | Systems | **DB Out-of-Sync**: `total_pennies` column missing in legacy `percept_storm.db`. | **Critical**: Data loss. | **IDENTIFIED** |
+| **TD-ECON-INSTABILITY-V2** | Economic | **Rapid Collapse**: Sudden Zombie/Fire Sale clusters despite high initial assets. | **High**: Logic Drift. | **IDENTIFIED** |
 
 ---
 
@@ -214,6 +218,30 @@
 - **Symptom**: Cockpit UI uses dict indexing instead of Pydantic models for telemetry.
 - **Risk**: Code Quality.
 - **Solution**: Enforce DTO Purity in the frontend-backend interface.
+
+### ID: TD-CRIT-SYS0-MISSING
+- **Title**: Missing System Account 0 (Central Bank)
+- **Symptom**: forensic logs show `Source account does not exist: 0` during settlement.
+- **Risk**: Critical settlement routines (Tax, Stimulus, OMO) fail silently. Central Bank not in Registry.
+- **Solution**: Explicitly register `sim.central_bank` in `SimulationInitializer.build_simulation()`.
+
+### ID: TD-CRIT-PM-MISSING
+- **Title**: Public Manager Registration & Funding
+- **Symptom**: `LIQUIDATION_ASSET_SALE_FAIL`. PM is missing from registry or lacks "Mint-to-Buy" capability.
+- **Risk**: Failed firms cannot be properly liquidated; assets are not recycled.
+- **Solution**: Register PM and ensure it has infinite overdraft or massive endowment for escheatment buys.
+
+### ID: TD-DB-SCHEMA-DRIFT
+- **Title**: Database Column Mismatch (total_pennies)
+- **Symptom**: `table transactions has no column named total_pennies`.
+- **Risk**: Transaction log persistence failure. Audit trails broken.
+- **Solution**: Add migration logic or auto-recreate DB when column mismatch is detected.
+
+### ID: TD-ECON-INSTABILITY-V2
+- **Title**: Structural Economic Instability
+- **Symptom**: Massive clusters of `ZOMBIE` households and `FIRE_SALE` firms.
+- **Risk**: Simulations fail to reach a stable state, resulting in a "rat race" death spiral.
+- **Solution**: Re-calibrate price-wage sensitivity and investigate if missing Account 0 (Liquidity source) is the cause.
 
 ### ID: TD-DX-AUTO-CRYSTAL
 - **Title**: Crystallization Overhead
