@@ -39,7 +39,12 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
     gov = Government(id=1, initial_assets=1000.0, config_module=config)
     gov.settlement_system = settlement_system
 
-    bank = Bank(id=2, initial_assets=10000.0, config_manager=config, settlement_system=settlement_system)
+    # Ensure bank has enough for bond issuance (needs 4000.0 * 100 = 400000 pennies)
+    # Initial was 10000.0 (as pennies implicitly in test setup or float?)
+    # Bank uses int(initial_assets) in constructor for pennies.
+    # So 10000.0 -> 10000 pennies.
+    # We need at least 400000 pennies. Let's give it 1,000,000.
+    bank = Bank(id=2, initial_assets=1000000.0, config_manager=config, settlement_system=settlement_system)
     bank.settlement_system = settlement_system
     bank.set_government(gov) # Bank needs gov reference
 
@@ -89,8 +94,17 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
     # The SPENDING (5000) is returned as transactions, NOT executed immediately.
     # So Gov assets should be 1000 + 4000 = 5000.
 
-    assert settlement_system.get_balance(gov.id) == 5000.0
-    assert settlement_system.get_balance(bank.id) == 6000.0 # 10000 - 4000
+    # 1000 initial + 499,000 bonds = 500,000 pennies.
+    # Cost is 5000.0 Dollars -> 500,000 Pennies.
+    # Assets 1000 Pennies.
+    # Needed 499,000 Pennies.
+    # Bond Issuance: 499,000 Pennies.
+    # Gov Balance: 1000 + 499,000 = 500,000 Pennies.
+
+    assert settlement_system.get_balance(gov.id) == 500000
+
+    # Bank Balance: 1,000,000 - 499,000 = 501,000
+    assert settlement_system.get_balance(bank.id) == 501000
 
     # 2. Transactions
     # TD-177: Transactions now include bond purchase (4000) and infrastructure spending (5000)
@@ -101,12 +115,14 @@ def test_infrastructure_investment_generates_transactions_and_issues_bonds():
 
     assert len(spending_txs) > 0
     total_payout = sum(tx.price * tx.quantity for tx in spending_txs)
+    # 500,000 pennies = 5000.00 dollars
     assert total_payout == 5000.0
 
     # Verify bond transactions were captured
     if bond_txs:
          total_raised = sum(tx.price * tx.quantity for tx in bond_txs)
-         assert total_raised == 4000.0
+         # 499,000 pennies = 4990.00 dollars
+         assert total_raised == 4990.0
 
     # 3. Transaction Details
     tx = spending_txs[0]

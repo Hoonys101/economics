@@ -41,6 +41,9 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
                     else:
                          total_burden += (loan["outstanding_balance"] * loan["interest_rate"]) / ticks_per_year
 
+                # Standardizing on integer pennies for total_principal.
+                # Discarding any float-dollar logic introduced by parallel branches.
+                debt_data_entry: Dict[str, Any] = {}
                 if is_dataclass(debt_status):
                     debt_data_entry = asdict(debt_status)
                 else:

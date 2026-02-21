@@ -26,28 +26,30 @@ class InfrastructureManager:
         else:
             cost = DEFAULT_INFRASTRUCTURE_INVESTMENT_COST
 
-        effective_cost = int(cost)
+        # Convert Dollars (Config) to Pennies (System)
+        # Assuming cost is in Dollars (e.g. 5000.0)
+        cost_pennies = int(cost * 100)
 
         if self.government.firm_subsidy_budget_multiplier < 0.8:
             return []
 
         # Synchronous Financing (WO-117)
-        current_assets = self.government.total_wealth
+        current_assets_pennies = self.government.total_wealth
 
-        if current_assets < effective_cost:
-            needed = int(effective_cost - current_assets)
+        if current_assets_pennies < cost_pennies:
+            needed_pennies = cost_pennies - current_assets_pennies
             # Use new synchronous method
             if hasattr(self.government.finance_system, 'issue_treasury_bonds_synchronous'):
-                success, bond_txs = self.government.finance_system.issue_treasury_bonds_synchronous(self.government, needed, current_tick)
+                success, bond_txs = self.government.finance_system.issue_treasury_bonds_synchronous(self.government, needed_pennies, current_tick)
                 if not success:
-                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed} for infrastructure.")
+                     logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed_pennies} pennies for infrastructure.")
                      return []
                 transactions.extend(bond_txs)
             else:
                 # Fallback to old behavior (should not happen if system is updated)
-                bonds, txs = self.government.finance_system.issue_treasury_bonds(needed, current_tick)
+                bonds, txs = self.government.finance_system.issue_treasury_bonds(needed_pennies, current_tick)
                 if not bonds:
-                    logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed} for infrastructure.")
+                    logger.warning(f"BOND_ISSUANCE_FAILED | Failed to raise {needed_pennies} pennies for infrastructure.")
                     return []
                 transactions.extend(txs)
 
@@ -61,10 +63,11 @@ class InfrastructureManager:
         if not active_households:
              return transactions
 
-        amount_per_hh = int(effective_cost / len(active_households))
+        # Distribute Pennies directly
+        amount_per_hh_pennies = int(cost_pennies / len(active_households))
 
         recipient_ids = sorted([h.id for h in active_households])
-        logger.debug(f"INFRA_DEBUG | Active HH: {len(active_households)}, Cost: {effective_cost}, AmountPerHH: {amount_per_hh}")
+        logger.debug(f"INFRA_DEBUG | Active HH: {len(active_households)}, Cost(p): {cost_pennies}, AmountPerHH(p): {amount_per_hh_pennies}")
         logger.debug(f"INFRA_RECIPIENTS | IDs: {recipient_ids}")
 
         for h in active_households:
@@ -73,19 +76,20 @@ class InfrastructureManager:
                 seller_id=h.id,
                 item_id="infrastructure_labor",
                 quantity=1.0,
-                price=amount_per_hh,
+                price=amount_per_hh_pennies / 100.0, # Convert pennies to dollars for display
                 market_id="system",
                 transaction_type="infrastructure_spending",
                 time=current_tick,
                 metadata={
                     "triggers_effect": "GOVERNMENT_INFRA_UPGRADE" if h == active_households[0] else None,
                     "is_public_works": True
-                }
-            , total_pennies=int(amount_per_hh * 1.0 * 100))
+                },
+                total_pennies=amount_per_hh_pennies
+            )
             transactions.append(tx)
 
         logger.info(
-            f"INFRASTRUCTURE_PENDING | Level {self.government.infrastructure_level + 1} initiated. Cost: {effective_cost}. Distributed to {len(active_households)} households.",
+            f"INFRASTRUCTURE_PENDING | Level {self.government.infrastructure_level + 1} initiated. Cost: {cost}. Distributed to {len(active_households)} households.",
             extra={
                 "tick": current_tick,
                 "agent_id": self.government.id,
