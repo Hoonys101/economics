@@ -4,6 +4,7 @@ import logging
 from collections import defaultdict
 from modules.system.api import IAssetRecoverySystem, AgentBankruptcyEventDTO, MarketSignalDTO, PublicManagerReportDTO, CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder
 from modules.finance.api import IFinancialAgent, InsufficientFundsError
+from modules.system.constants import ID_PUBLIC_MANAGER
 from simulation.models import Order
 
 class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
@@ -16,7 +17,7 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
     """
 
     def __init__(self, config: Any):
-        self._id = 999999
+        self._id = ID_PUBLIC_MANAGER
         self.config = config
         self.logger = logging.getLogger('PublicManager')
         self.managed_inventory: Dict[str, float] = defaultdict(float)

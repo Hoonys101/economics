@@ -15,7 +15,10 @@ TX_RESEARCH_LABOR = "research_labor"
 TX_TAX = "tax"
 TX_SUBSIDY = "subsidy"
 
-# Roles / IDs
-ID_GOVERNMENT = "government"
-ID_CENTRAL_BANK = 0  # Fixed ID for Central Bank (TD-220, TD-209)
-ID_SYSTEM = 888888  # Fixed ID for System-level distributions (e.g. Inheritance)
+# System Agent IDs (Fixed Integers)
+ID_CENTRAL_BANK = 0
+ID_GOVERNMENT = 1
+ID_BANK = 2
+ID_ESCROW = 3
+ID_PUBLIC_MANAGER = 4
+ID_SYSTEM = 5  # System-level distributions (e.g. Inheritance)

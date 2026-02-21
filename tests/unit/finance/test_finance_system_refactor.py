@@ -3,11 +3,12 @@ from unittest.mock import MagicMock
 from modules.finance.system import FinanceSystem
 from modules.finance.api import GrantBailoutCommand, BailoutCovenant
 from modules.system.api import DEFAULT_CURRENCY
+from modules.system.constants import ID_GOVERNMENT
 
 class MockGovernment:
     def __init__(self, assets):
         self.assets = assets
-        self.id = "GOVERNMENT"
+        self.id = ID_GOVERNMENT
         self.wallet = MagicMock()
         self.wallet.get_balance.return_value = assets.get(DEFAULT_CURRENCY, 0)
 

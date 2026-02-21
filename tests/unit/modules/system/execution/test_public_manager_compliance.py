@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 from modules.system.execution.public_manager import PublicManager
 from modules.finance.api import IFinancialAgent, InsufficientFundsError
 from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, IAssetRecoverySystem
+from modules.system.constants import ID_PUBLIC_MANAGER
 
 class TestPublicManagerCompliance:
 
@@ -16,7 +17,7 @@ class TestPublicManagerCompliance:
     def test_implements_financial_agent(self, public_manager):
         """Verify PublicManager strictly implements IFinancialAgent."""
         assert isinstance(public_manager.id, int), 'PublicManager.id must be an integer'
-        assert public_manager.id == 999999
+        assert public_manager.id == ID_PUBLIC_MANAGER
         assert public_manager.total_wealth == 0
         public_manager._deposit(100)
         assert public_manager.total_wealth == 100
@@ -44,4 +45,4 @@ class TestPublicManagerCompliance:
         order = orders[0]
         assert order.agent_id == public_manager.id
         assert isinstance(order.agent_id, int)
-        assert order.agent_id == 999999
+        assert order.agent_id == ID_PUBLIC_MANAGER

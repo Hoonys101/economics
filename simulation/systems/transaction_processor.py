@@ -9,6 +9,7 @@ from simulation.systems.api import (
 )
 from simulation.dtos.settlement_dtos import SettlementResultDTO
 from modules.finance.utils.currency_math import round_to_pennies
+from modules.system.constants import ID_PUBLIC_MANAGER
 
 if TYPE_CHECKING:
     from simulation.dtos.api import SimulationState
@@ -45,7 +46,8 @@ class TransactionProcessor(SystemInterface):
         """
         # 1. Check if it is a PM transaction
         is_pm_seller = (
-            tx.seller_id == "PUBLIC_MANAGER"
+            tx.seller_id == ID_PUBLIC_MANAGER
+            or tx.seller_id == "PUBLIC_MANAGER"
             or tx.seller_id == 999999
             or tx.seller_id == -1
         )

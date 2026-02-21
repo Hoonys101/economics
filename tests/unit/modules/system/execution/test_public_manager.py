@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from modules.system.execution.public_manager import PublicManager
 from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, DEFAULT_CURRENCY
+from modules.system.constants import ID_PUBLIC_MANAGER
 
 class TestPublicManager:
 
@@ -25,7 +26,7 @@ class TestPublicManager:
         orders = public_manager.generate_liquidation_orders(signals)
         assert len(orders) == 1
         order = orders[0]
-        assert order.agent_id == 999999
+        assert order.agent_id == ID_PUBLIC_MANAGER
         assert order.item_id == 'apple'
         assert order.order_type == 'SELL'
         assert order.quantity == 50.0

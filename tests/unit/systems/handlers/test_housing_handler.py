@@ -8,6 +8,7 @@ from simulation.agents.government import Government
 from simulation.core_agents import Household
 from modules.system.escrow_agent import EscrowAgent
 from modules.system.api import DEFAULT_CURRENCY
+from modules.system.constants import ID_GOVERNMENT
 
 class DummyHousingParticipant(IHousingTransactionParticipant, IResident):
     id = 3
@@ -52,7 +53,7 @@ class TestHousingTransactionHandler(unittest.TestCase):
         self.state.settlement_system = MagicMock()
         self.state.bank = MagicMock()
         self.state.government = MagicMock(spec=Government)
-        self.state.government.id = "GOVERNMENT"
+        self.state.government.id = ID_GOVERNMENT
         self.state.transactions = []
         self.state.transaction_queue = []
 
@@ -79,7 +80,7 @@ class TestHousingTransactionHandler(unittest.TestCase):
             3: self.buyer,
             4: self.seller,
             99: self.escrow_agent,
-            "GOVERNMENT": self.state.government
+            ID_GOVERNMENT: self.state.government
         }
 
         # Mock Unit

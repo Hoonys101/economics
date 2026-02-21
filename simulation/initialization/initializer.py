@@ -15,6 +15,7 @@ from modules.common.config_manager.api import ConfigManager
 from simulation.initialization.api import SimulationInitializerInterface
 from simulation.models import Order, RealEstateUnit
 from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder, OriginType
+from modules.system.constants import ID_CENTRAL_BANK, ID_GOVERNMENT, ID_BANK, ID_ESCROW, ID_PUBLIC_MANAGER
 from simulation.core_agents import Household
 from simulation.firms import Firm
 from simulation.core_markets import Market
@@ -120,6 +121,11 @@ class SimulationInitializer(SimulationInitializerInterface):
         from modules.system.services.command_service import CommandService
         command_service = CommandService(registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry)
         sim = Simulation(config_manager=self.config_manager, config_module=self.config, logger=self.logger, repository=self.repository, registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry, command_service=command_service)
+
+        # Initialize Registry State ASAP so that subsequent initialization steps (like Bootstrapper)
+        # can use the Registry/SettlementSystem.
+        sim.agent_registry.set_state(sim.world_state)
+
         sim._lock_file = lock_file
         sim.event_bus = EventBus()
         sim.world_state.taxation_system = TaxationSystem(config_module=self.config)
@@ -171,24 +177,37 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.goods_data = self.goods_data
         sim.agents: Dict[int, Any] = {h.id: h for h in self.households}
         sim.agents.update({f.id: f for f in self.firms})
-        sim.next_agent_id = len(self.households) + len(self.firms)
+
+        # Determine next available ID (assuming user agents start > 100)
+        max_user_id = 0
+        if sim.agents:
+            max_user_id = max(sim.agents.keys())
+        sim.next_agent_id = max(100, max_user_id + 1)
+
         for agent in sim.agents.values():
             agent.settlement_system = sim.settlement_system
         sim.ai_trainer = self.ai_trainer
         sim.time: int = 0
         credit_scoring_service = CreditScoringService(config_module=self.config)
-        sim.bank = Bank(id=sim.next_agent_id, initial_assets=0, config_manager=self.config_manager, settlement_system=sim.settlement_system, credit_scoring_service=credit_scoring_service, event_bus=sim.event_bus)
+
+        # Initialize System Agents with Fixed IDs
+        sim.bank = Bank(id=ID_BANK, initial_assets=0, config_manager=self.config_manager, settlement_system=sim.settlement_system, credit_scoring_service=credit_scoring_service, event_bus=sim.event_bus)
         sim.settlement_system.bank = sim.bank
         self.initial_balances[sim.bank.id] = self.config.INITIAL_BANK_ASSETS
         sim.bank.settlement_system = sim.settlement_system
         sim.agents[sim.bank.id] = sim.bank
-        sim.next_agent_id += 1
-        gov = Government(id=sim.next_agent_id, initial_assets=0.0, config_module=self.config, strategy=sim.strategy)
+
+        gov = Government(id=ID_GOVERNMENT, initial_assets=0.0, config_module=self.config, strategy=sim.strategy)
         sim.world_state.government = gov
         sim.government.settlement_system = sim.settlement_system
         sim.agents[sim.government.id] = sim.government
-        sim.next_agent_id += 1
         sim.bank.set_government(sim.government)
+
+        # Register Central Bank (Created earlier)
+        if hasattr(sim, 'central_bank') and sim.central_bank:
+             # Central Bank ID is handled internally by the class, but we register it here
+             # to ensure it exists in the primary agent lookup table.
+             sim.agents[ID_CENTRAL_BANK] = sim.central_bank
         sim.finance_system = FinanceSystem(government=sim.government, central_bank=sim.central_bank, bank=sim.bank, config_module=self.config_manager, settlement_system=sim.settlement_system)
         sim.government.finance_system = sim.finance_system
         sim.bank.set_finance_system(sim.finance_system)
@@ -282,11 +301,16 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.registry = Registry(housing_service=sim.housing_service, logger=self.logger)
         sim.accounting_system = AccountingSystem(logger=self.logger)
         sim.central_bank_system = CentralBankSystem(central_bank_agent=sim.central_bank, settlement_system=sim.settlement_system, logger=self.logger)
-        sim.escrow_agent = EscrowAgent(id=sim.next_agent_id)
+
+        sim.escrow_agent = EscrowAgent(id=ID_ESCROW)
         sim.agents[sim.escrow_agent.id] = sim.escrow_agent
-        sim.next_agent_id += 1
+
         sim.judicial_system = JudicialSystem(event_bus=sim.event_bus, settlement_system=sim.settlement_system, agent_registry=sim.agent_registry, shareholder_registry=sim.shareholder_registry, config_manager=self.config_manager)
         sim.public_manager = PublicManager(config=self.config)
+        # Verify and Register PublicManager
+        if hasattr(sim.public_manager, 'id') and sim.public_manager.id == ID_PUBLIC_MANAGER:
+            sim.agents[ID_PUBLIC_MANAGER] = sim.public_manager
+
         sim.world_state.public_manager = sim.public_manager
         sim.transaction_processor = TransactionProcessor(config_module=self.config)
         sim.transaction_processor.register_handler('goods', GoodsTransactionHandler())
@@ -352,7 +376,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.persistence_manager.run_id = sim.run_id
         sim.crisis_monitor.run_id = sim.run_id
         self.logger.info(f'Simulation run started with run_id: {sim.run_id}', extra={'run_id': sim.run_id})
-        sim.agent_registry.set_state(sim.world_state)
+
         from modules.analysis.scenario_verifier.engine import ScenarioVerifier
         from modules.analysis.scenario_verifier.judges.sc001_female_labor import FemaleLaborParticipationJudge
         sim.scenario_verifier = ScenarioVerifier(judges=[FemaleLaborParticipationJudge()])

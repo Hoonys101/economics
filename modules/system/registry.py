@@ -18,35 +18,14 @@ class AgentRegistry(IAgentRegistry):
     def get_agent(self, agent_id: Any) -> Optional[Agent]:
         if self._state is None:
             return None
-
-        agent = self._state.agents.get(agent_id)
-        if agent:
-            return agent
-
-        # Fallback for government if not in agents map
-        if hasattr(self._state, 'government') and self._state.government:
-            if agent_id == "government" or agent_id == self._state.government.id:
-                return self._state.government
-
-        return None
+        return self._state.agents.get(agent_id)
 
     def get_all_financial_agents(self) -> List[Any]:
         if self._state is None:
             return []
-
-        # Start with all registered agents
-        all_agents = list(self._state.agents.values())
-
-        # Ensure Government, Bank, Central Bank are included if not already
-        known_ids = {a.id for a in all_agents if hasattr(a, 'id')}
-
-        extras = [self._state.government, self._state.bank, self._state.central_bank]
-        for extra in extras:
-            if extra and hasattr(extra, 'id') and extra.id not in known_ids:
-                all_agents.append(extra)
-                known_ids.add(extra.id)
-
-        return all_agents
+        # Since all system agents (Government, Central Bank, etc) are now explicitly registered
+        # in state.agents by SimulationInitializer, we can simply return values.
+        return list(self._state.agents.values())
 
 class GlobalRegistry(IGlobalRegistry, IConfigurationRegistry):
     """

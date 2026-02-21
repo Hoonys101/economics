@@ -3,7 +3,7 @@ from tests.utils.factories import create_firm_config_dto, create_household_confi
 from unittest.mock import Mock, MagicMock
 from modules.finance.system import FinanceSystem
 from modules.finance.api import InsufficientFundsError, GrantBailoutCommand
-from modules.system.constants import ID_CENTRAL_BANK
+from modules.system.constants import ID_CENTRAL_BANK, ID_GOVERNMENT
 from modules.finance.engine_api import BankStateDTO, TreasuryStateDTO
 from modules.system.api import DEFAULT_CURRENCY
 from modules.finance.utils.currency_math import round_to_pennies
@@ -39,7 +39,7 @@ def mock_config():
 
 class StubGovernment:
     def __init__(self, assets=1000000): # 10000.00 -> 1000000 pennies
-        self.id = "GOVERNMENT"
+        self.id = ID_GOVERNMENT
         self._assets = assets
         self.total_debt = 0
         self.debt_to_gdp_ratio = 0.5
