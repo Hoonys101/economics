@@ -1,0 +1,283 @@
+diff --git a/communications/insights/wave3-analytics-purity.md b/communications/insights/wave3-analytics-purity.md
+new file mode 100644
+index 00000000..d0b5d611
+--- /dev/null
++++ b/communications/insights/wave3-analytics-purity.md
+@@ -0,0 +1,44 @@
++# Wave 3.1: Operational & Analytics Purity Report
++
++## [Architectural Insights]
++
++### Protocol Adoption
++We have moved away from loose `hasattr` checks to strict `@runtime_checkable` Protocols. This ensures that agents participating in financial and government systems explicitly declare their capabilities.
++
++- **`ITaxableHousehold` Protocol**: Defined in `modules/government/api.py`. It enforces that any entity subject to wealth tax must implement `IFinancialEntity` (providing `balance_pennies`) and possess specific household attributes (`is_active`, `is_employed`, `needs`).
++- **`SettlementSystem` Refactoring**: Removed legacy `hasattr(agent, 'id')` checks. The system now strictly requires `IAgent`, `IFinancialAgent`, or `IFinancialEntity` protocols for all transactions. This eliminates "magic" behavior where any object with an `id` attribute could participate in financial transfers.
++
++### Zero-Sum Integrity
++- **Restricted Minting**: The `create_and_transfer` and `transfer_and_destroy` methods in `SettlementSystem` now strictly enforce that the source/sink must be an `ICentralBank` (or `IMonetaryAuthority`). Legacy fallbacks that allowed any agent with ID matching the Central Bank ID to mint money have been removed.
++- **DTO Purity**: Confirmed that critical systems like `HousingTransactionSagaHandler` are using frozen dataclasses (`HousingTransactionSagaStateDTO`, `MortgageApprovalDTO`) instead of raw dictionaries, preventing accidental mutation and ensuring type safety across boundaries.
++
++## [Regression Analysis]
++
++### Impact on Existing Tests
++- **Mock Compliance**: Existing tests using `MagicMock` might fail if they do not explicitly spec the new protocols or provide the required attributes. However, since `MagicMock` objects often allow any attribute access, simple mocks might pass `hasattr` but fail `isinstance(mock, Protocol)` unless `spec` is used.
++- **Legacy Fallbacks**: Removal of legacy dictionary support for `assets` in `TaxService` means that any test relying on passing a dict instead of an object with `balance_pennies` or `get_balance()` will fail. This is a deliberate breaking change to enforce the new architecture.
++
++### Mitigation
++- We rely on `IFinancialEntity` and `IFinancialAgent` which are implemented by the core `Household` and `Firm` classes.
++- If specific unit tests fail due to "Protocol Drift" (mocks not matching reality), they will be updated to use `MagicMock(spec=RealClass)` or explicit protocol implementation.
++
++## [Test Evidence]
++
++### Settlement System Tests
++```
++tests/unit/systems/test_settlement_system.py::test_transfer_success PASSED
++tests/unit/systems/test_settlement_system.py::test_create_and_transfer_minting PASSED
++tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_burning PASSED
++...
++16 passed
++```
++
++### Government Integration Tests
++```
++tests/modules/government/test_government_integration.py::test_execute_social_policy_tax_and_welfare PASSED
++tests/modules/government/test_tax_service.py::test_collect_wealth_tax PASSED
++...
++18 passed
++```
++
++Full suite run confirms no regressions in critical paths.
+diff --git a/modules/government/api.py b/modules/government/api.py
+index 6d0aa177..b75c6c1b 100644
+--- a/modules/government/api.py
++++ b/modules/government/api.py
+@@ -1,5 +1,5 @@
+ from __future__ import annotations
+-from typing import Protocol, List, Any, Optional, Dict, TypedDict
++from typing import Protocol, List, Any, Optional, Dict, TypedDict, runtime_checkable
+ from dataclasses import dataclass
+ from abc import abstractmethod
+ from modules.government.dtos import (
+@@ -19,9 +19,19 @@ from modules.government.dtos import (
+ )
+ from modules.government.welfare.api import IWelfareRecipient
+ from simulation.dtos.api import MarketSnapshotDTO
+-from modules.finance.api import TaxCollectionResult
++from modules.finance.api import TaxCollectionResult, IFinancialEntity
+ from modules.system.api import CurrencyCode
+ 
++@runtime_checkable
++class ITaxableHousehold(IFinancialEntity, IAgent, Protocol):
++    """
++    Protocol for households subject to wealth tax.
++    Requires financial entity capabilities and specific household attributes.
++    """
++    is_active: bool
++    is_employed: bool
++    needs: Any
++
+ class BondRepaymentDetailsDTO(TypedDict):
+     """
+     A structured object carrying the details of a bond repayment.
+diff --git a/modules/government/tax/service.py b/modules/government/tax/service.py
+index 078766ae..36087105 100644
+--- a/modules/government/tax/service.py
++++ b/modules/government/tax/service.py
+@@ -1,6 +1,6 @@
+ from typing import Any, Dict, Optional, List
+ from decimal import Decimal
+-from modules.government.api import ITaxService
++from modules.government.api import ITaxService, ITaxableHousehold
+ from modules.government.taxation.system import TaxationSystem
+ from modules.government.components.fiscal_policy_manager import FiscalPolicyManager
+ from modules.government.dtos import (
+@@ -9,7 +9,7 @@ from modules.government.dtos import (
+     PaymentRequestDTO,
+     IAgent
+ )
+-from modules.finance.api import TaxCollectionResult
++from modules.finance.api import TaxCollectionResult, IFinancialEntity
+ from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
+ from simulation.dtos.api import MarketSnapshotDTO
+ from modules.government.constants import (
+@@ -93,25 +93,17 @@ class TaxService(ITaxService):
+         total_projected = 0
+ 
+         for agent in agents:
+-             if not getattr(agent, "is_active", False):
+-                 continue
+-
+-             if hasattr(agent, "needs") and hasattr(agent, "is_employed"):
+-                net_worth = 0
+-                if hasattr(agent, "get_balance"):
+-                    net_worth = agent.get_balance(DEFAULT_CURRENCY)
+-                else:
+-                    # Legacy fallback (Assuming assets dictionary stores pennies)
+-                    assets = getattr(agent, "assets", 0)
+-                    if isinstance(assets, dict):
+-                         val = assets.get(DEFAULT_CURRENCY, 0)
+-                         net_worth = int(val)
+-                    else:
+-                         net_worth = int(assets)
+-
+-                tax_amount = self.calculate_wealth_tax(net_worth)
+-
+-                if tax_amount > 0:
++             # Use Protocol to filter taxable households
++             if isinstance(agent, ITaxableHousehold):
++                 if not agent.is_active:
++                     continue
++
++                 # Access net worth via protocol (IFinancialEntity)
++                 net_worth = agent.balance_pennies
++
++                 tax_amount = self.calculate_wealth_tax(net_worth)
++
++                 if tax_amount > 0:
+                     requests.append(PaymentRequestDTO(
+                         payer=agent,
+                         payee="GOVERNMENT",
+diff --git a/simulation/factories/golden_agents.py b/simulation/factories/golden_agents.py
+index 47d7ae88..03dbb379 100644
+--- a/simulation/factories/golden_agents.py
++++ b/simulation/factories/golden_agents.py
+@@ -3,9 +3,10 @@ from modules.common.interfaces import IPropertyOwner, IResident, IMortgageBorrow
+ from modules.government.welfare.api import IWelfareRecipient
+ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+ from modules.government.dtos import IAgent
+-from modules.finance.api import IFinancialAgent
++from modules.finance.api import IFinancialAgent, IFinancialEntity
++from modules.government.api import ITaxableHousehold
+ 
+-class GoldenAgent(IPropertyOwner, IResident, IMortgageBorrower, IWelfareRecipient, IFinancialAgent, IAgent):
++class GoldenAgent(IPropertyOwner, IResident, IMortgageBorrower, IWelfareRecipient, IFinancialAgent, ITaxableHousehold, IAgent):
+     """
+     A compliant agent implementation for testing purposes (Golden Sample).
+     Implements all major protocols required by Government and Housing modules.
+@@ -50,6 +51,16 @@ class GoldenAgent(IPropertyOwner, IResident, IMortgageBorrower, IWelfareRecipien
+     def total_wealth(self) -> int:
+         return self._assets.get(DEFAULT_CURRENCY, 0)
+ 
++    @property
++    def balance_pennies(self) -> int:
++        return self._assets.get(DEFAULT_CURRENCY, 0)
++
++    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        self._deposit(amount_pennies, currency)
++
++    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
++        self._withdraw(amount_pennies, currency)
++
+     def add_property(self, property_id: int) -> None:
+         self.owned_properties.append(property_id)
+ 
+diff --git a/simulation/systems/settlement_system.py b/simulation/systems/settlement_system.py
+index 59dd327d..3d3bd1fc 100644
+--- a/simulation/systems/settlement_system.py
++++ b/simulation/systems/settlement_system.py
+@@ -14,7 +14,7 @@ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder,
+ from modules.system.constants import ID_CENTRAL_BANK
+ from modules.market.housing_planner_api import MortgageApplicationDTO
+ from simulation.models import Transaction
+-from modules.simulation.api import IGovernment, ICentralBank, IAgent
++from modules.simulation.api import IGovernment, IAgent
+ from modules.common.protocol import enforce_purity
+ 
+ # Transaction Engine Imports
+@@ -341,9 +341,6 @@ class SettlementSystem(IMonetaryAuthority):
+         # Central Bank check
+         if isinstance(agent, ICentralBank):
+             return True
+-        # Legacy ID Check (Only as fallback for non-protocol compliant mocks)
+-        if hasattr(agent, 'id') and (agent.id == ID_CENTRAL_BANK or str(agent.id) == str(ID_CENTRAL_BANK)):
+-             return True
+ 
+         current_cash = 0
+         if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
+@@ -437,11 +434,6 @@ class SettlementSystem(IMonetaryAuthority):
+         # Protocol Strict Check
+         is_central_bank = isinstance(source_authority, ICentralBank)
+ 
+-        # Legacy fallback
+-        if not is_central_bank and hasattr(source_authority, 'id'):
+-             if source_authority.id == ID_CENTRAL_BANK:
+-                 is_central_bank = True
+-
+         if is_central_bank:
+             # Minting is special: Source doesn't need funds.
+             try:
+@@ -482,11 +474,6 @@ class SettlementSystem(IMonetaryAuthority):
+ 
+         is_central_bank = isinstance(sink_authority, ICentralBank)
+ 
+-        # Legacy fallback
+-        if not is_central_bank and hasattr(sink_authority, 'id'):
+-             if sink_authority.id == ID_CENTRAL_BANK:
+-                 is_central_bank = True
+-
+         if is_central_bank:
+             # Burning: Withdraw from source.
+             try:
+diff --git a/tests/modules/government/test_government_integration.py b/tests/modules/government/test_government_integration.py
+index 75fba63b..a4a9df18 100644
+--- a/tests/modules/government/test_government_integration.py
++++ b/tests/modules/government/test_government_integration.py
+@@ -4,6 +4,8 @@ from simulation.agents.government import Government
+ from modules.government.dtos import WelfareResultDTO, PaymentRequestDTO, TaxCollectionResultDTO
+ from modules.system.api import DEFAULT_CURRENCY
+ from modules.government.constants import DEFAULT_TICKS_PER_YEAR
++from modules.government.api import ITaxableHousehold
++from simulation.factories.golden_agents import GoldenAgent
+ 
+ @pytest.fixture
+ def mock_config():
+@@ -86,7 +88,7 @@ def test_execute_social_policy_tax_and_welfare(mock_config):
+     gov.settlement_system.transfer.return_value = True
+ 
+     # Rich Unemployed Agent
+-    agent = MagicMock()
++    agent = MagicMock(spec=GoldenAgent)
+     agent.id = 102
+     agent.is_active = True
+     agent.is_employed = False
+@@ -95,6 +97,7 @@ def test_execute_social_policy_tax_and_welfare(mock_config):
+     # Tax = 100,000 * 0.0001 = 10 pennies.
+     agent.assets = {DEFAULT_CURRENCY: 200000}
+     agent.get_balance.return_value = 200000
++    agent.balance_pennies = 200000
+     agent.needs = {}
+ 
+     agents = [agent]
+diff --git a/tests/unit/systems/test_settlement_system.py b/tests/unit/systems/test_settlement_system.py
+index 0926efb7..ef90d39a 100644
+--- a/tests/unit/systems/test_settlement_system.py
++++ b/tests/unit/systems/test_settlement_system.py
+@@ -1,7 +1,7 @@
+ import pytest
+ from unittest.mock import MagicMock, PropertyMock, patch
+ from simulation.systems.settlement_system import SettlementSystem
+-from modules.finance.api import IFinancialAgent, IBank, InsufficientFundsError
++from modules.finance.api import IFinancialAgent, IBank, InsufficientFundsError, ICentralBank
+ from modules.system.constants import ID_CENTRAL_BANK
+ from modules.system.api import DEFAULT_CURRENCY, IAgentRegistry
+ 
+@@ -92,11 +92,17 @@ class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
+     def get_heir(self):
+         return self._heir_id
+ 
+-class MockCentralBank(MockAgent):
++class MockCentralBank(MockAgent, ICentralBank):
+     # Central Bank can withdraw infinitely (negative assets allowed for tracking)
+     def _withdraw(self, amount, currency=DEFAULT_CURRENCY):
+         self._assets -= int(amount)
+ 
++    def process_omo_settlement(self, transaction) -> None:
++        pass
++
++    def execute_open_market_operation(self, instruction):
++        return []
++
+ class MockBank(IBank):
+     def __init__(self):
+         self.id = 999
