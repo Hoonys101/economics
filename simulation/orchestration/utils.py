@@ -49,9 +49,9 @@ def prepare_market_data(state: SimulationState) -> Dict[str, Any]:
                 debt_data_entry["daily_interest_burden"] = total_burden
 
                 if is_dataclass(debt_status):
-                    debt_data_entry["total_principal"] = debt_status.total_outstanding_debt
+                    debt_data_entry["total_principal"] = debt_status.total_outstanding_pennies
                 else:
-                    debt_data_entry["total_principal"] = debt_status["total_outstanding_debt"]
+                    debt_data_entry["total_principal"] = debt_status.get("total_outstanding_pennies", 0)
 
                 debt_data_map[agent_id] = debt_data_entry
                 deposit_data_map[agent_id] = state.bank.get_balance(str(agent_id))

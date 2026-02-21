@@ -1,11 +1,15 @@
 
 import pytest
+from unittest.mock import MagicMock, patch
+
 try:
     from fastapi.testclient import TestClient
 except ImportError:
     pytest.skip("fastapi not installed", allow_module_level=True)
 
-from unittest.mock import MagicMock, patch
+if isinstance(TestClient, MagicMock) or (hasattr(TestClient, '__class__') and 'Mock' in TestClient.__class__.__name__):
+    pytest.skip("fastapi is mocked", allow_module_level=True)
+
 from server import app
 
 def test_websocket_endpoint():

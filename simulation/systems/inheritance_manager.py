@@ -75,7 +75,7 @@ class InheritanceManager:
         bank = getattr(simulation, 'bank', None)
         if bank and hasattr(bank, 'get_debt_status'):
             debt_status = bank.get_debt_status(deceased.id)
-            if debt_status.total_outstanding_debt > 0:
+            if debt_status.total_outstanding_pennies > 0:
                 for loan in debt_status.loans:
                     if loan.outstanding_balance > 0 and cash > 0:
                         repay_amount = min(cash, loan.outstanding_balance)

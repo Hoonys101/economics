@@ -3,9 +3,20 @@ import asyncio
 import websockets
 import time
 import socket
+from unittest.mock import MagicMock
 from modules.system.server import SimulationServer
 from modules.system.server_bridge import CommandQueue, TelemetryExchange
 from modules.simulation.dtos.api import ServerConfigDTO
+
+# Skip if websockets is mocked
+if isinstance(websockets, MagicMock) or (hasattr(websockets, '__class__') and 'Mock' in websockets.__class__.__name__):
+    pytest.skip("websockets is mocked", allow_module_level=True)
+
+# Skip if pytest-asyncio is not installed
+try:
+    import pytest_asyncio
+except ImportError:
+    pytest.skip("pytest-asyncio not installed", allow_module_level=True)
 
 @pytest.fixture
 def bridge():

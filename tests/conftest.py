@@ -3,7 +3,7 @@ from unittest.mock import Mock, MagicMock, patch
 import pytest
 
 # Mock missing dependencies for CI/Sandbox environments
-for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit", "pydantic"]:
+for module_name in ["numpy", "yaml", "joblib", "sklearn", "sklearn.linear_model", "sklearn.feature_extraction", "sklearn.preprocessing", "websockets", "streamlit", "pydantic", "fastapi", "fastapi.testclient", "uvicorn", "httpx", "starlette", "starlette.websockets", "starlette.status"]:
     if module_name in sys.modules:
         continue
     try:

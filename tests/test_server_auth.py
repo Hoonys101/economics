@@ -4,6 +4,9 @@ from unittest.mock import MagicMock, patch
 import sys
 import os
 
+if isinstance(TestClient, MagicMock) or (hasattr(TestClient, '__class__') and 'Mock' in TestClient.__class__.__name__):
+    pytest.skip("fastapi is mocked, skipping server auth tests", allow_module_level=True)
+
 # Add repo root to sys.path
 sys.path.append(os.getcwd())
 
