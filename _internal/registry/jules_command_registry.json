@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "wave6-ai-debt": {
-      "key": "wave6-ai-debt",
-      "title": "[Wave 6] Integrate Debt Constraints into AI Planning",
-      "type": "jules",
-      "instruction_raw": "Execute the full implementation spec exactly as documented.",
-      "command": "create",
-      "file_path": "artifacts/specs/MISSION_wave6_ai_debt_JULES_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "wave6-fiscal-masking": {
       "key": "wave6-fiscal-masking",
       "title": "[Wave 6] Implement Progressive Taxation and Wage Scaling",
