@@ -17,6 +17,7 @@ from simulation.dtos.api import SimulationState
 from tests.utils.factories import create_household_config_dto, create_firm_config_dto
 from modules.simulation.api import AgentCoreConfigDTO
 from modules.system.api import DEFAULT_CURRENCY
+from modules.system.constants import ID_CENTRAL_BANK, ID_ESCROW, ID_PUBLIC_MANAGER
 
 # Mock Logger to prevent actual file writes during tests
 @pytest.fixture(autouse=True)
@@ -171,15 +172,15 @@ def mock_households(mock_config_module, mock_logger):
 
         # Manually inject some test state that might be expected by tests relying on mocks
         h.is_active = True
-        inventory_dict = {"food": 10, "basic_food": 10} if id == 1 else {"food": 5, "basic_food": 5}
+        inventory_dict = {"food": 10, "basic_food": 10} if id == 201 else {"food": 5, "basic_food": 5}
         for item, qty in inventory_dict.items():
             h.add_item(item, qty)
 
         # Override decision engine markets if needed later
         return h
 
-    hh1 = _create_household(1, 100.0, "wealth_and_needs")
-    hh2 = _create_household(2, 150.0, "needs_and_growth")
+    hh1 = _create_household(201, 100.0, "wealth_and_needs")
+    hh2 = _create_household(202, 150.0, "needs_and_growth")
 
     return [hh1, hh2]
 
@@ -358,6 +359,8 @@ class TestSimulation:
             + [f.id for f in mock_firms]
             + [simulation_instance.bank.id]
             + [simulation_instance.government.id]
+            + [ID_CENTRAL_BANK]
+            + [ID_PUBLIC_MANAGER]
             # + [simulation_instance.escrow_agent.id] # Added Escrow Agent (Handled below)
         )
 
@@ -365,6 +368,8 @@ class TestSimulation:
         escrow_agent = getattr(simulation_instance, "escrow_agent", None)
         if escrow_agent:
             expected_agent_ids.append(escrow_agent.id)
+        else:
+             expected_agent_ids.append(ID_ESCROW)
 
         assert set(simulation_instance.agents.keys()) == set(expected_agent_ids)
 
@@ -621,13 +626,13 @@ def setup_simulation_for_lifecycle(
 
     # Core Configs for Households
     hh_active_config = AgentCoreConfigDTO(
-        id=1, name="Household_1", value_orientation="test", initial_needs=initial_needs.copy(), logger=mock_logger, memory_interface=None
+        id=201, name="Household_1", value_orientation="test", initial_needs=initial_needs.copy(), logger=mock_logger, memory_interface=None
     )
     hh_inactive_config = AgentCoreConfigDTO(
-        id=2, name="Household_2", value_orientation="test", initial_needs=initial_needs.copy(), logger=mock_logger, memory_interface=None
+        id=202, name="Household_2", value_orientation="test", initial_needs=initial_needs.copy(), logger=mock_logger, memory_interface=None
     )
     hh_employed_config = AgentCoreConfigDTO(
-        id=3, name="Household_3", value_orientation="test", initial_needs=initial_needs.copy(), logger=mock_logger, memory_interface=None
+        id=203, name="Household_3", value_orientation="test", initial_needs=initial_needs.copy(), logger=mock_logger, memory_interface=None
     )
 
     household_active = Household(

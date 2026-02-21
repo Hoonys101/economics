@@ -305,3 +305,39 @@ class ISystemFinancialAgent(Protocol):
     """
     def is_system_agent(self) -> bool:
         ...
+
+# ==============================================================================
+# New: Database & Migration Protocols
+# ==============================================================================
+
+@dataclass(frozen=True)
+class MigrationReportDTO:
+    """
+    Report generated after a database schema migration attempt.
+    """
+    success: bool
+    migrated_tables: List[str]
+    rows_affected: int
+    errors: List[str]
+    timestamp: float
+    schema_version: str = "1.0.0"
+
+@runtime_checkable
+class IDatabaseMigrator(Protocol):
+    """
+    Protocol for the Database Migration Service.
+    Responsible for ensuring the database schema matches the codebase's expectations.
+    """
+    def check_schema_health(self) -> Dict[str, bool]:
+        """
+        Verifies if critical tables and columns exist.
+        Returns a dict mapping 'Table.Column' to Boolean existence.
+        """
+        ...
+
+    def migrate(self) -> MigrationReportDTO:
+        """
+        Executes pending migrations (e.g., adding missing columns).
+        Must be idempotent.
+        """
+        ...

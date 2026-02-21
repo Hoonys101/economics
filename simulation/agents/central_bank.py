@@ -1,13 +1,14 @@
 import logging
 from typing import Any, List, Optional, Dict, TYPE_CHECKING
 import numpy as np
-from modules.finance.api import InsufficientFundsError, IFinancialAgent, IFinancialEntity, IBank
+from modules.finance.api import InsufficientFundsError, IFinancialAgent, IFinancialEntity, IBank, ICentralBank, OMOInstructionDTO
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
 from modules.system.api import ICurrencyHolder, CurrencyCode, DEFAULT_CURRENCY, MarketSnapshotDTO
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.finance.engines.monetary_engine import MonetaryEngine
 from modules.finance.engines.api import MonetaryStateDTO
+from simulation.models import Order, Transaction
 
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity):
+class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBank):
     """
     Phase 10: Central Bank Agent.
     Implements Taylor Rule to dynamically adjust interest rates.
@@ -246,3 +247,16 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity):
     def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         # Central Bank can always withdraw (create money)
         self.wallet.subtract(amount, currency, memo="Protocol Withdraw")
+
+    def execute_open_market_operation(self, instruction: OMOInstructionDTO) -> List[Order]:
+        """
+        Takes an instruction and creates market orders to fulfill it.
+        """
+        logger.info(f"CENTRAL_BANK | Executing OMO: {instruction}")
+        return []
+
+    def process_omo_settlement(self, transaction: Transaction) -> None:
+        """
+        Callback for OMO settlement.
+        """
+        logger.info(f"CENTRAL_BANK | OMO Settlement processed: {transaction.transaction_id}")

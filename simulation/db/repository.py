@@ -9,6 +9,7 @@ from simulation.db.agent_repository import AgentRepository
 from simulation.db.market_repository import MarketRepository
 from simulation.db.analytics_repository import AnalyticsRepository
 from simulation.db.run_repository import RunRepository
+from simulation.db.migration import SchemaMigrator
 
 if TYPE_CHECKING:
     from simulation.dtos import (
@@ -30,6 +31,15 @@ class SimulationRepository:
 
     def __init__(self):
         self.conn = get_db_connection()
+
+        # Database Migration
+        migrator = SchemaMigrator(self.conn)
+        report = migrator.migrate()
+        if not report.success:
+            logger.error(f"Database Migration Failed: {report.errors}")
+            raise RuntimeError(f"Database migration failed: {report.errors}")
+        elif report.migrated_tables:
+            logger.info(f"Database Migration Successful: {report.migrated_tables}, Rows affected: {report.rows_affected}")
 
         # Initialize sub-repositories sharing the same connection
         self.agents = AgentRepository(self.conn)
