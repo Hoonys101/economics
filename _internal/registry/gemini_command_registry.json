@@ -3,11 +3,55 @@
     "version": "1.0"
   },
   "missions": {
-    "parallel-debt-recovery": {
-      "key": "parallel-debt-recovery",
-      "title": "Parallel Architecture Recovery Plan (Phase 25)",
+    "lane1-finance-audit": {
+      "key": "lane1-finance-audit",
+      "title": "Lane 1 Audit: Finance & M2 Logic",
       "type": "gemini",
-      "instruction_raw": "\nAnalyze diagnostic logs, the tech debt ledger, and the provided source code to design a parallelized remediation strategy.\n\n1. **Conflict-Free Partitioning**: Identify which debt items can be resolved simultaneously (e.g., Lane 1: Finance Logic, Lane 2: Structural Sequencing, Lane 3: DX & Tests).\n2. **Clear API/DTO Contracts**: For each remediation unit, define the exact DTO changes or API signatures required to prevent implementation drift across lanes.\n3. **Atomic Mission Specs**: Generate separate MISSION_SPEC definitions for each lane. Each spec must be a standalone unit of work for Jules.\n4. **Root Cause Mapping**: Link diagnostic failures (SAGA_SKIP, SETTLEMENT_FAIL) directly to specific ledger items (e.g., TD-CRIT-FLOAT-CORE).\n\nPrioritize M2 Integrity (TD-ECON-M2-INV) and Startup Race (TD-ARCH-STARTUP-RACE) as the foundation.\n",
+      "instruction_raw": "\nPerform a deep audit of the financial engine and money supply logic.\n1. Trace the `MONEY_SUPPLY_CHECK` failure from diagnostic logs back to `world_state.py`.\n2. Review `MatchingEngine` for residual float precision issues.\n3. Propose a hardened `IFinancialEntity` protocol that prevents negative M2 values.\n",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "audit",
+      "context_files": [
+        "reports/diagnostic_refined.md",
+        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
+        "modules/finance/engine.py",
+        "simulation/world_state.py",
+        "modules/finance/api.py",
+        "simulation/systems/settlement_system.py"
+      ],
+      "output_path": "design/3_work_artifacts/audits/MISSION_lane1-finance-audit_REPORT.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "lane2-structural-audit": {
+      "key": "lane2-structural-audit",
+      "title": "Lane 2 Audit: Structural Lifecycle & Sagas",
+      "type": "gemini",
+      "instruction_raw": "\nAudit the agent lifecycle and Saga orchestration logic.\n1. Identify the race condition in `firm_management.py` that causes capital transfers to fail for newly spawned firms.\n2. Review the DTO mismatch for `HousingTransactionSagaStateDTO` across modules.\n3. Propose an atomic agent registration-before-injection sequence.\n",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "audit",
+      "context_files": [
+        "reports/diagnostic_refined.md",
+        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
+        "simulation/systems/firm_management.py",
+        "modules/finance/sagas/orchestrator.py",
+        "modules/finance/sagas/housing_api.py",
+        "simulation/orchestration/tick_orchestrator.py"
+      ],
+      "output_path": "design/3_work_artifacts/audits/MISSION_lane2-structural-audit_REPORT.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "lane3-dx-audit": {
+      "key": "lane3-dx-audit",
+      "title": "Lane 3 Audit: DX & Test Stabilization",
+      "type": "gemini",
+      "instruction_raw": "\nAudit the test suite and orchestrator resilience.\n1. Review `TickOrchestrator` for fragile DTO attribute access that leads to runtime crashes when attributes are missing.\n2. Audit the transaction mock strategy in the test suite to ensure alignment with the production `IFinancialAgent` protocols.\n3. Propose a plan to modernize deprecated tax collection calls in legacy tests.\n",
       "command": null,
       "file_path": null,
       "wait": false,
@@ -17,11 +61,69 @@
         "reports/diagnostic_refined.md",
         "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
         "simulation/dtos/api.py",
-        "simulation/orchestration/tick_orchestrator.py",
         "simulation/orchestration/phases_recovery.py",
+        "tests/test_settlement_system.py"
+      ],
+      "output_path": "design/3_work_artifacts/audits/MISSION_lane3-dx-audit_REPORT.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "lane1-finance-spec": {
+      "key": "lane1-finance-spec",
+      "title": "Lane 1 Spec: Monetary & Precision Hardening",
+      "type": "gemini",
+      "instruction_raw": "\nCreate a detailed MISSION_SPEC for Lane 1 based on the Lane 1 Audit Report.\n1. Define the exact refactor for `WorldState.calculate_total_money()`.\n2. Specify the `IFinancialEntity` protocol changes in `modules/finance/api.py`.\n3. Ensure all M2 check logic is synchronized with the new asset/liability split.\n4. Provide a step-by-step implementation roadmap for Jules.\n",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "design/3_work_artifacts/audits/MISSION_lane1-finance-audit_REPORT.md",
+        "simulation/world_state.py",
+        "modules/finance/api.py",
         "modules/finance/engine.py"
       ],
-      "output_path": "design/3_work_artifacts/specs/MISSION_parallel-debt-recovery_PLAN.md",
+      "output_path": "design/3_work_artifacts/specs/MISSION_lane1-finance_JULES_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "lane2-structural-spec": {
+      "key": "lane2-structural-spec",
+      "title": "Lane 2 Spec: Lifecycle & Saga Unification",
+      "type": "gemini",
+      "instruction_raw": "\nCreate a detailed MISSION_SPEC for Lane 2 based on the Lane 2 Audit Report.\n1. Define the atomic `register_agent()` and `onboard_agent()` protocols.\n2. Specify the code reordering in `firm_management.py` to ensure registration happens before funding.\n3. Provide a unified `HousingTransactionSagaStateDTO` schema that resolves participant ID desync.\n4. Outline the exact implementation steps for Jules.\n",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "design/3_work_artifacts/audits/MISSION_lane2-structural-audit_REPORT.md",
+        "simulation/systems/firm_management.py",
+        "modules/finance/sagas/orchestrator.py",
+        "modules/finance/sagas/housing_api.py"
+      ],
+      "output_path": "design/3_work_artifacts/specs/MISSION_lane2-structural_JULES_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "lane3-dx-spec": {
+      "key": "lane3-dx-spec",
+      "title": "Lane 3 Spec: Orchestrator & Test Recovery",
+      "type": "gemini",
+      "instruction_raw": "\nCreate a detailed MISSION_SPEC for Lane 3 based on the Lane 3 Audit Report.\n1. Specify the hardening of `TickOrchestrator` to handle missing DTO attributes via `getattr`.\n2. Provide the refactor plan for `test_phase_housing_saga.py` to use dataclass DTOs.\n3. Outline the steps to modernize legacy tax collection tests in `test_tax_agency.py`.\n4. Ensure all transaction mocks in the test suite align with `IFinancialAgent` protocols.\n",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "design/3_work_artifacts/audits/MISSION_lane3-dx-audit_REPORT.md",
+        "simulation/orchestration/tick_orchestrator.py",
+        "tests/test_settlement_system.py"
+      ],
+      "output_path": "design/3_work_artifacts/specs/MISSION_lane3-dx_JULES_SPEC.md",
       "model": null,
       "audit_requirements": null
     }

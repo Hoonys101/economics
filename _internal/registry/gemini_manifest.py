@@ -24,27 +24,113 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "parallel-debt-recovery": {
-        "title": "Parallel Architecture Recovery Plan (Phase 25)",
+    "lane1-finance-audit": {
+        "title": "Lane 1 Audit: Finance & M2 Logic",
         "worker": "audit",
         "instruction": """
-Analyze diagnostic logs, the tech debt ledger, and the provided source code to design a parallelized remediation strategy.
-
-1. **Conflict-Free Partitioning**: Identify which debt items can be resolved simultaneously (e.g., Lane 1: Finance Logic, Lane 2: Structural Sequencing, Lane 3: DX & Tests).
-2. **Clear API/DTO Contracts**: For each remediation unit, define the exact DTO changes or API signatures required to prevent implementation drift across lanes.
-3. **Atomic Mission Specs**: Generate separate MISSION_SPEC definitions for each lane. Each spec must be a standalone unit of work for Jules.
-4. **Root Cause Mapping**: Link diagnostic failures (SAGA_SKIP, SETTLEMENT_FAIL) directly to specific ledger items (e.g., TD-CRIT-FLOAT-CORE).
-
-Prioritize M2 Integrity (TD-ECON-M2-INV) and Startup Race (TD-ARCH-STARTUP-RACE) as the foundation.
+Perform a deep audit of the financial engine and money supply logic.
+1. Trace the `MONEY_SUPPLY_CHECK` failure from diagnostic logs back to `world_state.py`.
+2. Review `MatchingEngine` for residual float precision issues.
+3. Propose a hardened `IFinancialEntity` protocol that prevents negative M2 values.
+""",
+        "context_files": [
+            "reports/diagnostic_refined.md",
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
+            "modules/finance/engine.py",
+            "simulation/world_state.py",
+            "modules/finance/api.py",
+            "simulation/systems/settlement_system.py"
+        ],
+        "output_path": "design/3_work_artifacts/audits/MISSION_lane1-finance-audit_REPORT.md"
+    },
+    "lane2-structural-audit": {
+        "title": "Lane 2 Audit: Structural Lifecycle & Sagas",
+        "worker": "audit",
+        "instruction": """
+Audit the agent lifecycle and Saga orchestration logic.
+1. Identify the race condition in `firm_management.py` that causes capital transfers to fail for newly spawned firms.
+2. Review the DTO mismatch for `HousingTransactionSagaStateDTO` across modules.
+3. Propose an atomic agent registration-before-injection sequence.
+""",
+        "context_files": [
+            "reports/diagnostic_refined.md",
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
+            "simulation/systems/firm_management.py",
+            "modules/finance/sagas/orchestrator.py",
+            "modules/finance/sagas/housing_api.py",
+            "simulation/orchestration/tick_orchestrator.py"
+        ],
+        "output_path": "design/3_work_artifacts/audits/MISSION_lane2-structural-audit_REPORT.md"
+    },
+    "lane3-dx-audit": {
+        "title": "Lane 3 Audit: DX & Test Stabilization",
+        "worker": "audit",
+        "instruction": """
+Audit the test suite and orchestrator resilience.
+1. Review `TickOrchestrator` for fragile DTO attribute access that leads to runtime crashes when attributes are missing.
+2. Audit the transaction mock strategy in the test suite to ensure alignment with the production `IFinancialAgent` protocols.
+3. Propose a plan to modernize deprecated tax collection calls in legacy tests.
 """,
         "context_files": [
             "reports/diagnostic_refined.md",
             "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
             "simulation/dtos/api.py",
-            "simulation/orchestration/tick_orchestrator.py",
             "simulation/orchestration/phases_recovery.py",
+            "tests/test_settlement_system.py"
+        ],
+        "output_path": "design/3_work_artifacts/audits/MISSION_lane3-dx-audit_REPORT.md"
+    },
+    "lane1-finance-spec": {
+        "title": "Lane 1 Spec: Monetary & Precision Hardening",
+        "worker": "spec",
+        "instruction": """
+Create a detailed MISSION_SPEC for Lane 1 based on the Lane 1 Audit Report.
+1. Define the exact refactor for `WorldState.calculate_total_money()`.
+2. Specify the `IFinancialEntity` protocol changes in `modules/finance/api.py`.
+3. Ensure all M2 check logic is synchronized with the new asset/liability split.
+4. Provide a step-by-step implementation roadmap for Jules.
+""",
+        "context_files": [
+            "design/3_work_artifacts/audits/MISSION_lane1-finance-audit_REPORT.md",
+            "simulation/world_state.py",
+            "modules/finance/api.py",
             "modules/finance/engine.py"
         ],
-        "output_path": "design/3_work_artifacts/specs/MISSION_parallel-debt-recovery_PLAN.md"
+        "output_path": "design/3_work_artifacts/specs/MISSION_lane1-finance_JULES_SPEC.md"
+    },
+    "lane2-structural-spec": {
+        "title": "Lane 2 Spec: Lifecycle & Saga Unification",
+        "worker": "spec",
+        "instruction": """
+Create a detailed MISSION_SPEC for Lane 2 based on the Lane 2 Audit Report.
+1. Define the atomic `register_agent()` and `onboard_agent()` protocols.
+2. Specify the code reordering in `firm_management.py` to ensure registration happens before funding.
+3. Provide a unified `HousingTransactionSagaStateDTO` schema that resolves participant ID desync.
+4. Outline the exact implementation steps for Jules.
+""",
+        "context_files": [
+            "design/3_work_artifacts/audits/MISSION_lane2-structural-audit_REPORT.md",
+            "simulation/systems/firm_management.py",
+            "modules/finance/sagas/orchestrator.py",
+            "modules/finance/sagas/housing_api.py"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_lane2-structural_JULES_SPEC.md"
+    },
+    "lane3-dx-spec": {
+        "title": "Lane 3 Spec: Orchestrator & Test Recovery",
+        "worker": "spec",
+        "instruction": """
+Create a detailed MISSION_SPEC for Lane 3 based on the Lane 3 Audit Report.
+1. Specify the hardening of `TickOrchestrator` to handle missing DTO attributes via `getattr`.
+2. Provide the refactor plan for `test_phase_housing_saga.py` to use dataclass DTOs.
+3. Outline the steps to modernize legacy tax collection tests in `test_tax_agency.py`.
+4. Ensure all transaction mocks in the test suite align with `IFinancialAgent` protocols.
+""",
+        "context_files": [
+            "design/3_work_artifacts/audits/MISSION_lane3-dx-audit_REPORT.md",
+            "simulation/orchestration/tick_orchestrator.py",
+            "tests/test_settlement_system.py"
+        ],
+        "output_path": "design/3_work_artifacts/specs/MISSION_lane3-dx_JULES_SPEC.md"
     }
 }

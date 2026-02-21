@@ -17,25 +17,25 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "lane1-finance-integrity": {
-        "title": "Lane 1: Financial Logic & M2 Integrity",
+    "lane1-finance-recovery": {
+        "title": "Lane 1 Implementation: Finance & M2 Hardening",
         "command": "create",
-        "file": "design/3_work_artifacts/specs/MISSION_parallel-debt-recovery_PLAN.md",
-        "instruction": "Implement Phase 1/Lane 1: Fix M2 Inversion (WorldState), enforce integer precision (MatchingEngine), and close buyer-side accounting gaps.",
+        "file": "design/3_work_artifacts/specs/MISSION_lane1-finance_JULES_SPEC.md",
+        "instruction": "Refactor ICurrencyHolder protocol, update WorldState M2 calculation logic, and ensure integer precision across the finance module as per spec.",
         "wait": True
     },
-    "lane2-structural-lifecycle": {
-        "title": "Lane 2: Structural Lifecycle & Sagas",
+    "lane2-structural-recovery": {
+        "title": "Lane 2 Implementation: Lifecycle & Saga Fix",
         "command": "create",
-        "file": "design/3_work_artifacts/specs/MISSION_parallel-debt-recovery_PLAN.md",
-        "instruction": "Implement Phase 2/Lane 2: Resolve Startup Race conditions (FirmManager registration before transfer) and unify Saga DTOs (HousingTransactionSagaStateDTO).",
+        "file": "design/3_work_artifacts/specs/MISSION_lane2-structural_JULES_SPEC.md",
+        "instruction": "Enforce registration-before-funding lifecycle in firm_management.py and unify Saga DTOs using SagaParticipantDTO in housing_api.py.",
         "wait": True
     },
-    "lane3-dx-stabilization": {
-        "title": "Lane 3: DX & Test Stabilization",
+    "lane3-dx-hardening": {
+        "title": "Lane 3 Implementation: Orchestrator & Test Stabilization",
         "command": "create",
-        "file": "design/3_work_artifacts/specs/MISSION_parallel-debt-recovery_PLAN.md",
-        "instruction": "Implement Phase 3/Lane 3: Harden TickOrchestrator against missing attributes and synchronize transaction mocks with new IFinancialAgent protocols.",
+        "file": "design/3_work_artifacts/specs/MISSION_lane3-dx_JULES_SPEC.md",
+        "instruction": "Harden TickOrchestrator attribute access and refactor failing Saga unit tests to use strict dataclass DTOs as per spec.",
         "wait": True
     }
 }
