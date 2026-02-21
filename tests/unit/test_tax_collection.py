@@ -30,6 +30,16 @@ class MockAgent:
     def get_balance(self, currency=DEFAULT_CURRENCY):
         return self._wallet.get(currency, 0)
 
+    @property
+    def balance_pennies(self) -> int:
+        return int(self._wallet.get(DEFAULT_CURRENCY, 0))
+
+    def deposit(self, amount_pennies: int, currency=DEFAULT_CURRENCY) -> None:
+        self._deposit(amount_pennies, currency)
+
+    def withdraw(self, amount_pennies: int, currency=DEFAULT_CURRENCY) -> None:
+        self._withdraw(amount_pennies, currency)
+
     def _deposit(self, amount, currency=DEFAULT_CURRENCY):
         self._wallet[currency] = self._wallet.get(currency, 0) + amount
 

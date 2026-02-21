@@ -16,6 +16,19 @@ from modules.system.api import DEFAULT_CURRENCY
 from simulation.ai.enums import PolicyActionTag
 from simulation.ai.api import Personality
 
+class MockTaxableAgent:
+    def __init__(self, id, balance):
+        self.id = id
+        self.balance_pennies = balance
+        self.is_active = True
+        self.is_employed = True
+        self.needs = {}
+
+    def deposit(self, amount, currency='USD'): pass
+    def withdraw(self, amount, currency='USD'): pass
+    def get_balance(self, currency='USD'): return self.balance_pennies
+    def get_assets_by_currency(self): return {'USD': self.balance_pennies}
+
 class TestGovernmentRefactor:
 
     @pytest.fixture
@@ -173,13 +186,7 @@ class TestGovernmentRefactor:
     def test_social_policy_execution(self, government):
         """Verify social policy execution flow."""
         # Setup Agents
-        rich_agent = MagicMock()
-        rich_agent.id = 101
-        rich_agent.is_active = True
-        rich_agent.is_employed = True
-        rich_agent.needs = {}
-        rich_agent.get_balance.return_value = 2000000
-        rich_agent.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 2000000}
+        rich_agent = MockTaxableAgent(id=101, balance=2000000)
 
         agents = [rich_agent]
         market_data = {

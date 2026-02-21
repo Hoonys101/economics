@@ -59,6 +59,10 @@ class OMOTestAgent: # Implements IFinancialEntity and IFinancialAgent
     def get_total_debt(self) -> float:
         return 0.0
 
+    # ICentralBank methods
+    def execute_open_market_operation(self, instruction): return []
+    def process_omo_settlement(self, transaction): pass
+
 class MockRegistry:
     def __init__(self, agents: List[Any]):
         self.agents = {agent.id: agent for agent in agents}

@@ -62,6 +62,10 @@ class StrictMockBank(IBank):
     def close_account(self, agent_id) -> int: return 0
     def receive_repayment(self, borrower_id, amount: int) -> int: return amount
 
+    # ICentralBank methods
+    def execute_open_market_operation(self, instruction): return []
+    def process_omo_settlement(self, transaction): pass
+
 
 class StrictFinancialAgent(IFinancialAgent, IFinancialEntity):
     def __init__(self, id: AgentID, balance: int = 0):

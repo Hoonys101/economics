@@ -3,6 +3,19 @@ from unittest.mock import MagicMock
 from simulation.agents.government import Government
 from modules.system.api import DEFAULT_CURRENCY
 
+class MockTaxableAgent:
+    def __init__(self, id, balance):
+        self.id = id
+        self.balance_pennies = balance
+        self.is_active = True
+        self.is_employed = True
+        self.needs = {}
+
+    def deposit(self, amount, currency='USD'): pass
+    def withdraw(self, amount, currency='USD'): pass
+    def get_balance(self, currency='USD'): return self.balance_pennies
+    def get_assets_by_currency(self): return {'USD': self.balance_pennies}
+
 @pytest.fixture
 def mock_config():
     config = MagicMock()
@@ -31,24 +44,12 @@ def government(mock_config):
 def test_government_execute_social_policy_tax_and_welfare(government):
     # Setup Agents
     # 1. Rich Agent (Taxable)
-    rich_agent = MagicMock()
-    rich_agent.id = 101
-    rich_agent.is_active = True
-    rich_agent.is_employed = True
-    rich_agent.needs = {}
-    # Mock get_balance to support engines using IFinancialAgent
-    rich_agent.get_balance.return_value = 2000000
-    # Mock get_assets_by_currency for ICurrencyHolder
-    rich_agent.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 2000000}
+    rich_agent = MockTaxableAgent(id=101, balance=2000000)
 
     # 2. Poor Unemployed Agent (Welfare)
-    poor_agent = MagicMock()
-    poor_agent.id = 102
-    poor_agent.is_active = True
+    # Using MockTaxableAgent for convenience, though only welfare checks matter
+    poor_agent = MockTaxableAgent(id=102, balance=100)
     poor_agent.is_employed = False
-    poor_agent.needs = {}
-    poor_agent.get_balance.return_value = 100
-    poor_agent.get_assets_by_currency.return_value = {DEFAULT_CURRENCY: 100}
 
     agents = [rich_agent, poor_agent]
 
