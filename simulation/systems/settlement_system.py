@@ -14,7 +14,7 @@ from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, 
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.market.housing_planner_api import MortgageApplicationDTO
 from simulation.models import Transaction
-from modules.simulation.api import IGovernment, ICentralBank, IAgent
+from modules.simulation.api import IGovernment, IAgent
 from modules.common.protocol import enforce_purity
 
 # Transaction Engine Imports
@@ -341,9 +341,6 @@ class SettlementSystem(IMonetaryAuthority):
         # Central Bank check
         if isinstance(agent, ICentralBank):
             return True
-        # Legacy ID Check (Only as fallback for non-protocol compliant mocks)
-        if hasattr(agent, 'id') and (agent.id == ID_CENTRAL_BANK or str(agent.id) == str(ID_CENTRAL_BANK)):
-             return True
 
         current_cash = 0
         if isinstance(agent, IFinancialEntity) and currency == DEFAULT_CURRENCY:
@@ -437,11 +434,6 @@ class SettlementSystem(IMonetaryAuthority):
         # Protocol Strict Check
         is_central_bank = isinstance(source_authority, ICentralBank)
 
-        # Legacy fallback
-        if not is_central_bank and hasattr(source_authority, 'id'):
-             if source_authority.id == ID_CENTRAL_BANK:
-                 is_central_bank = True
-
         if is_central_bank:
             # Minting is special: Source doesn't need funds.
             try:
@@ -481,11 +473,6 @@ class SettlementSystem(IMonetaryAuthority):
         if amount <= 0: return None
 
         is_central_bank = isinstance(sink_authority, ICentralBank)
-
-        # Legacy fallback
-        if not is_central_bank and hasattr(sink_authority, 'id'):
-             if sink_authority.id == ID_CENTRAL_BANK:
-                 is_central_bank = True
 
         if is_central_bank:
             # Burning: Withdraw from source.

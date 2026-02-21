@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, PropertyMock, patch
 from simulation.systems.settlement_system import SettlementSystem
-from modules.finance.api import IFinancialAgent, IBank, InsufficientFundsError
+from modules.finance.api import IFinancialAgent, IBank, InsufficientFundsError, ICentralBank
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.system.api import DEFAULT_CURRENCY, IAgentRegistry
 
@@ -92,10 +92,16 @@ class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
     def get_heir(self):
         return self._heir_id
 
-class MockCentralBank(MockAgent):
+class MockCentralBank(MockAgent, ICentralBank):
     # Central Bank can withdraw infinitely (negative assets allowed for tracking)
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY):
         self._assets -= int(amount)
+
+    def process_omo_settlement(self, transaction) -> None:
+        pass
+
+    def execute_open_market_operation(self, instruction):
+        return []
 
 class MockBank(IBank):
     def __init__(self):

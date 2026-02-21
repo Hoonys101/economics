@@ -3,9 +3,10 @@ from modules.common.interfaces import IPropertyOwner, IResident, IMortgageBorrow
 from modules.government.welfare.api import IWelfareRecipient
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.government.dtos import IAgent
-from modules.finance.api import IFinancialAgent
+from modules.finance.api import IFinancialAgent, IFinancialEntity
+from modules.government.api import ITaxableHousehold
 
-class GoldenAgent(IPropertyOwner, IResident, IMortgageBorrower, IWelfareRecipient, IFinancialAgent, IAgent):
+class GoldenAgent(IPropertyOwner, IResident, IMortgageBorrower, IWelfareRecipient, IFinancialAgent, ITaxableHousehold, IAgent):
     """
     A compliant agent implementation for testing purposes (Golden Sample).
     Implements all major protocols required by Government and Housing modules.
@@ -49,6 +50,16 @@ class GoldenAgent(IPropertyOwner, IResident, IMortgageBorrower, IWelfareRecipien
     @property
     def total_wealth(self) -> int:
         return self._assets.get(DEFAULT_CURRENCY, 0)
+
+    @property
+    def balance_pennies(self) -> int:
+        return self._assets.get(DEFAULT_CURRENCY, 0)
+
+    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._deposit(amount_pennies, currency)
+
+    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._withdraw(amount_pennies, currency)
 
     def add_property(self, property_id: int) -> None:
         self.owned_properties.append(property_id)
