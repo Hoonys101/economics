@@ -21,39 +21,17 @@
 | **TD-CRIT-FLOAT-CORE** | Finance | **Float Core**: `SettlementSystem` and `MatchingEngine` use `float` instead of `int`. | **Critical**: Determinism. | **PARTIAL** |
 | **TD-INT-BANK-ROLLBACK** | Finance | **Rollback Coupling**: Bank rollback logic dependent on `hasattr` implementation. | **Low**: Leak. | Open |
 | **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Handler**: `bailout`, `bond_issuance` tx types not registered. | **High**: Failure. | Open |
-| **TD-AI-DEBT-AWARE** | AI | **Constraint Blindness**: AI spams spend intents at debt ceiling; NPV ignores debt. | **Medium**: AI Performance. | Open |
-| **TD-ECON-WAR-STIMULUS** | Economic | **Fiscal Masking**: Stimulus prevents GDP 0 but masks wage-affordability imbalances. | **Medium**: Policy. | Open |
-| **TD-DEPR-STOCK-DTO** | Market | **Legacy DTO**: `StockOrder` is deprecated. Use `CanonicalOrderDTO`. | **Low**: Tech Debt. | Open |
-| **TD-CONF-GHOST-BIND** | Config | **Ghost Constants**: Modules bind config values at import time. | **Medium**: Dynamic. | Identified |
 | **TD-SYS-ACCOUNTING-GAP** | Systems | **Accounting Accuracy**: `accounting.py` misses tracking buyer expenses. | **Medium**: Accuracy. | Open |
-| **TD-ARCH-FIRM-MUTATION** | Agents | **In-place State Mutation**: `Firm` engines mutate state objects directly. | **Medium**: Structural. | Open |
-| **TD-SYS-PERF-DEATH** | Systems | **O(N) Rebuild**: `death_system.py` uses O(N) rebuild for `state.agents`. | **Low**: Perf. | Open |
 | **TD-TEST-TX-MOCK-LAG** | Testing | **Transaction Test Lag**: `test_transaction_engine.py` mocks are out of sync. | **Low**: Flakiness. | Identified |
 | **TD-TEST-COCKPIT-MOCK** | Testing | **Cockpit 2.0 Mock Regressions**: Tests use deprecated `system_command_queue`. | **High**: Silent Failure. | Identified |
 | **TD-TEST-LIFE-STALE** | Testing | **Stale Lifecycle Logic**: `test_engine.py` calls refactored liquidation methods. | **High**: Breakdown. | Identified |
 | **TD-TEST-TAX-DEPR** | Testing | **Deprecated Tax API in Tests**: `test_transaction_handlers.py` still uses `collect_tax`. | **Medium**: Tech Debt. | Identified |
-| **TD-UI-DTO-PURITY** | Cockpit | **Manual Deserialization**: UI uses raw dicts/manual mapping for Telemetry. | **Medium**: Quality. | Open |
-| **TD-DX-AUTO-CRYSTAL** | DX / Ops | **Crystallization Overhead**: Manual Gemini Manifest registration required. | **Medium**: Friction. | Open |
 | **TD-ECON-INSTABILITY-V2** | Economic | **Rapid Collapse**: Sudden Zombie/Fire Sale clusters despite high initial assets. | **High**: Logic Drift. | **IDENTIFIED** |
 
 ---
 
 ## Architecture & Infrastructure
 ---
-### ID: TD-ARCH-FIRM-COUP
-- **Title**: Parent Pointer Pollution
-- **Symptom**: `Department` classes in `Firm` initialized with `self.parent = firm`.
-- **Risk**: Circular dependencies and "God-class" sprawl. Departments modify state in other departments directly.
-- **Solution**: Remove `.attach(self)` from `InventoryComponent` and `FinancialComponent`. Ensure Departments move to Stateless Engines (Engines done, Components pending).
-- **Current Status**: ⚠️ Partial. Engines migrated, but state components still use bi-directional links.
-- **Related**: [MISSION_firm_ai_hardening_spec.md](../../../artifacts/specs/MISSION_firm_ai_hardening_spec.md)
-
-### ID: TD-ARCH-FIRM-MUTATION
-- **Title**: Firm In-place State Mutation
-- **Symptom**: `firm.py` passes `self.sales_state` to engines without capturing a return DTO.
-- **Risk**: Violates the "Stateless Engine & Orchestrator" pattern.
-- **Solution**: Refactor `BrandEngine` and `SalesEngine` to return `ResultDTOs`.
-
 ### ID: TD-ARCH-GOV-MISMATCH
 - **Title**: Singleton vs List Mismatch
 - **Symptom**: `WorldState` has `governments` (List) vs Singleton `government`.
@@ -86,100 +64,11 @@
 
 ## AI & Economic Simulation
 ---
-### ID: TD-AI-DEBT-AWARE
-- **Title**: AI Constraint Blindness (Log Spam)
-- **Symptom**: AI proposes aggressive investments while in a debt spiral.
-- **Risk**: Inefficient decision-making. AI fails to "learn" the barrier.
-- **Solution**: Update `FirmSystem2Planner._calculate_npv` to include debt interest and repayment flows. Pass `current_debt_ratio` in AI input DTO.
-- **Current Status**: ❌ Open. Audit confirms AI planner remains strategically blind to debt, causing "Intent Spamming".
-
-### ID: TD-ECON-WAR-STIMULUS
-- **Title**: Fiscal Imbalance & Stimulus Dependency
-- **Symptom**: GDP/Welfare metrics are propped up by high frequency stimulus triggers.
-- **Risk**: Artificially propped economy. Masking logic errors in Firm pricing/wage models.
-- **Solution**: Implement progressive taxation and productivity-indexed wage scaling.
-
----
-
-## Market & Systems
----
-### ID: TD-DEPR-STOCK-DTO
-- **Title**: Legacy DTO Usage
-- **Symptom**: `StockOrder` is deprecated.
-- **Risk**: Technical Debt.
-- **Solution**: Use `CanonicalOrderDTO` instead of `StockOrder`.
-
 ### ID: TD-SYS-ACCOUNTING-GAP
 - **Title**: Missing Buyer Expense Tracking
 - **Symptom**: `accounting.py` fails to track expenses for raw materials on the buyer's side.
 - **Risk**: Asymmetric financial logging that complicates GDP and profit analyses.
 - **Solution**: Update Handler and `accounting.py` to ensure reciprocal debit/credit logging.
-
-### ID: TD-SYS-PERF-DEATH
-- **Title**: O(N) Rebuild in Death System
-- **Symptom**: `death_system.py` uses O(N) rebuild for `state.agents` dict.
-- **Risk**: Performance degradation with many agents.
-- **Solution**: Optimize agent removal to avoid full dictionary rebuilds.
-
----
-
-## Lifecycle & Configuration
----
-### ID: TD-CONF-GHOST-BIND
-- **Title**: Ghost Constant Binding (Import Time)
-- **Symptom**: Constants locked at import time prevent effective runtime hot-swaps.
-- **Risk**: Prevents dynamic tuning.
-- **Solution**: Use a `ConfigProxy` that resolves values at access time.
-
----
-
-## Testing & Quality Assurance
----
-### ID: TD-TEST-TX-MOCK-LAG
-- **Title**: Transaction Test Lag
-- **Symptom**: `test_transaction_engine.py` mocks are out of sync with `ITransactionParticipant`.
-- **Risk**: Test Flakiness.
-- **Solution**: Update mocks to reflect current `ITransactionParticipant` interface.
-
-### ID: TD-TEST-COCKPIT-MOCK
-- **Title**: Cockpit 2.0 Mock Regressions
-- **Symptom**: Old tests still reference `system_command_queue`.
-- **Risk**: Silent Test Failure.
-- **Solution**: Migrate tests to use the new `CommandService` interface.
-
-### ID: TD-TEST-LIFE-STALE
-- **Title**: Stale Lifecycle Logic in Tests
-- **Symptom**: `test_engine.py` calls refactored `_handle_agent_liquidation` with old signatures.
-- **Risk**: Test Breakdown.
-- **Solution**: Update test assertions to match refactored Lifecycle DTOs.
-
-### ID: TD-TEST-TAX-DEPR
-- **Title**: Deprecated Tax API in Tests
-- **Symptom**: `test_transaction_handlers.py` still uses `collect_tax`.
-- **Risk**: Technical Debt.
-- **Solution**: Update tests to use the new tax collection API.
-
----
-
-## DX & Cockpit Operations
----
-### ID: TD-UI-DTO-PURITY
-- **Title**: UI Manual Deserialization
-- **Symptom**: Cockpit UI uses dict indexing instead of Pydantic models for telemetry.
-- **Risk**: Code Quality.
-- **Solution**: Enforce DTO Purity in the frontend-backend interface.
-
-### ID: TD-ARCH-FIRM-COUP
-- **Title**: Parent Pointer Pollution
-- **Status**: **OPEN** (Confirmed by Audit)
-- **Symptom**: `self.parent` and `attach(self)` still present in `firms.py`.
-- **Solution**: Pure delegation via DTOs or independent components.
-
-### ID: TD-DX-AUTO-CRYSTAL
-- **Title**: Crystallization Overhead
-- **Symptom**: Manual steps required to register Gemini missions for distillation.
-- **Risk**: DX Friction.
-- **Solution**: Automate mission registration via a decorator/registry auto-discovery.
 
 ---
 > [!NOTE]

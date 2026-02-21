@@ -1,0 +1,379 @@
+diff --git a/_internal/registry/gemini_manifest.py b/_internal/registry/gemini_manifest.py
+index 2a8778fd..339ea78e 100644
+--- a/_internal/registry/gemini_manifest.py
++++ b/_internal/registry/gemini_manifest.py
+@@ -22,77 +22,10 @@
+    - model (str, Optional): 모델 지정 ('gemini-3-pro-preview', 'gemini-3-flash-preview').
+ """
+ from typing import Dict, Any
++from _internal.registry.api import mission_registry
+ 
+-GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
+-    # Wave 5: Data & DTO Purity
+-    "wave5-dto-purity": {
+-        "title": "[TD-UI-DTO-PURITY] Enforce Canonical Order and UI DTOs",
+-        "worker": "spec",
+-        "instruction": "Read artifacts/specs/MISSION_wave5_dto_purity_SPEC.md and generate a full Jules implementation spec.",
+-        "context_files": [
+-            "artifacts/specs/MISSION_wave5_dto_purity_SPEC.md",
+-            "modules/market/api.py",
+-            "modules/system/telemetry_exchange.py"
+-        ],
+-        "output_path": "artifacts/specs/MISSION_wave5_dto_purity_JULES_SPEC.md"
+-    },
+-    "wave5-config-purity": {
+-        "title": "[TD-CONF-GHOST-BIND] Implement Config Proxy for Runtime Binding",
+-        "worker": "spec",
+-        "instruction": "Read artifacts/specs/MISSION_wave5_config_purity_SPEC.md and generate a full Jules implementation spec.",
+-        "context_files": [
+-            "artifacts/specs/MISSION_wave5_config_purity_SPEC.md",
+-            "modules/finance/engine.py"
+-        ],
+-        "output_path": "artifacts/specs/MISSION_wave5_config_purity_JULES_SPEC.md"
+-    },
+-    
+-    # Wave 6: AI & Logic Refinement
+-    "wave6-ai-debt": {
+-        "title": "[TD-AI-DEBT-AWARE] Integrate Debt Constraints into AI Planning",
+-        "worker": "spec",
+-        "instruction": "Read artifacts/specs/MISSION_wave6_ai_debt_aware_SPEC.md and generate a full Jules implementation spec.",
+-        "context_files": [
+-            "artifacts/specs/MISSION_wave6_ai_debt_aware_SPEC.md",
+-            "modules/firm/planner.py"
+-        ],
+-        "output_path": "artifacts/specs/MISSION_wave6_ai_debt_JULES_SPEC.md"
+-    },
+-    "wave6-fiscal-masking": {
+-        "title": "[TD-ECON-WAR-STIMULUS] Implement Progressive Taxation and Wage Scaling",
+-        "worker": "spec",
+-        "instruction": "Read artifacts/specs/MISSION_wave6_fiscal_masking_SPEC.md and generate a full Jules implementation spec.",
+-        "context_files": [
+-            "artifacts/specs/MISSION_wave6_fiscal_masking_SPEC.md",
+-            "modules/government/policy_engine.py",
+-            "modules/firm/hr_engine.py"
+-        ],
+-        "output_path": "artifacts/specs/MISSION_wave6_fiscal_masking_JULES_SPEC.md"
+-    },
+-    
+-    # Wave 7: Architecture & Ops Cleanup
+-    "wave7-firm-mutation": {
+-        "title": "[TD-ARCH-FIRM-MUTATION] Enforce Stateless Engine Orchestration in Firm",
+-        "worker": "spec",
+-        "instruction": "Read artifacts/specs/MISSION_wave7_firm_mutation_SPEC.md and generate a full Jules implementation spec.",
+-        "context_files": [
+-            "artifacts/specs/MISSION_wave7_firm_mutation_SPEC.md",
+-            "simulation/firms.py",
+-            "modules/firm/sales_engine.py",
+-            "modules/firm/brand_engine.py"
+-        ],
+-        "output_path": "artifacts/specs/MISSION_wave7_firm_mutation_JULES_SPEC.md"
+-    },
+-    "wave7-dx-automation": {
+-        "title": "[TD-DX-AUTO-CRYSTAL] Automate Mission Registration and Optimize Death System",
+-        "worker": "spec",
+-        "instruction": "Read artifacts/specs/MISSION_wave7_dx_automation_SPEC.md and generate a full Jules implementation spec.",
+-        "context_files": [
+-            "artifacts/specs/MISSION_wave7_dx_automation_SPEC.md",
+-            "_internal/scripts/launcher.py",
+-            "_internal/registry/service.py",
+-            "modules/system/death_system.py"
+-        ],
+-        "output_path": "artifacts/specs/MISSION_wave7_dx_automation_JULES_SPEC.md"
+-    }
+-}
++# Import mission definitions to trigger registration
++import _internal.registry.missions
++
++# Dynamically populate the manifest
++GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = mission_registry.to_manifest()
+diff --git a/_internal/registry/missions.py b/_internal/registry/missions.py
+new file mode 100644
+index 00000000..5087b857
+--- /dev/null
++++ b/_internal/registry/missions.py
+@@ -0,0 +1,104 @@
++"""
++_internal/registry/missions.py
++
++Defines the initial set of Gemini Missions using the @gemini_mission decorator.
++This file is auto-discovered by the registry service.
++"""
++
++from _internal.registry.api import gemini_mission
++
++# Wave 5: Data & DTO Purity
++
++@gemini_mission(
++    key="wave5-dto-purity",
++    title="[TD-UI-DTO-PURITY] Enforce Canonical Order and UI DTOs",
++    worker="spec",
++    instruction="Read artifacts/specs/MISSION_wave5_dto_purity_SPEC.md and generate a full Jules implementation spec.",
++    context_files=[
++        "artifacts/specs/MISSION_wave5_dto_purity_SPEC.md",
++        "modules/market/api.py",
++        "modules/system/telemetry_exchange.py"
++    ],
++    output_path="artifacts/specs/MISSION_wave5_dto_purity_JULES_SPEC.md"
++)
++def wave5_dto_purity():
++    pass
++
++@gemini_mission(
++    key="wave5-config-purity",
++    title="[TD-CONF-GHOST-BIND] Implement Config Proxy for Runtime Binding",
++    worker="spec",
++    instruction="Read artifacts/specs/MISSION_wave5_config_purity_SPEC.md and generate a full Jules implementation spec.",
++    context_files=[
++        "artifacts/specs/MISSION_wave5_config_purity_SPEC.md",
++        "modules/finance/engine.py"
++    ],
++    output_path="artifacts/specs/MISSION_wave5_config_purity_JULES_SPEC.md"
++)
++def wave5_config_purity():
++    pass
++
++# Wave 6: AI & Logic Refinement
++
++@gemini_mission(
++    key="wave6-ai-debt",
++    title="[TD-AI-DEBT-AWARE] Integrate Debt Constraints into AI Planning",
++    worker="spec",
++    instruction="Read artifacts/specs/MISSION_wave6_ai_debt_aware_SPEC.md and generate a full Jules implementation spec.",
++    context_files=[
++        "artifacts/specs/MISSION_wave6_ai_debt_aware_SPEC.md",
++        "modules/firm/planner.py"
++    ],
++    output_path="artifacts/specs/MISSION_wave6_ai_debt_JULES_SPEC.md"
++)
++def wave6_ai_debt():
++    pass
++
++@gemini_mission(
++    key="wave6-fiscal-masking",
++    title="[TD-ECON-WAR-STIMULUS] Implement Progressive Taxation and Wage Scaling",
++    worker="spec",
++    instruction="Read artifacts/specs/MISSION_wave6_fiscal_masking_SPEC.md and generate a full Jules implementation spec.",
++    context_files=[
++        "artifacts/specs/MISSION_wave6_fiscal_masking_SPEC.md",
++        "modules/government/policy_engine.py",
++        "modules/firm/hr_engine.py"
++    ],
++    output_path="artifacts/specs/MISSION_wave6_fiscal_masking_JULES_SPEC.md"
++)
++def wave6_fiscal_masking():
++    pass
++
++# Wave 7: Architecture & Ops Cleanup
++
++@gemini_mission(
++    key="wave7-firm-mutation",
++    title="[TD-ARCH-FIRM-MUTATION] Enforce Stateless Engine Orchestration in Firm",
++    worker="spec",
++    instruction="Read artifacts/specs/MISSION_wave7_firm_mutation_SPEC.md and generate a full Jules implementation spec.",
++    context_files=[
++        "artifacts/specs/MISSION_wave7_firm_mutation_SPEC.md",
++        "simulation/firms.py",
++        "modules/firm/sales_engine.py",
++        "modules/firm/brand_engine.py"
++    ],
++    output_path="artifacts/specs/MISSION_wave7_firm_mutation_JULES_SPEC.md"
++)
++def wave7_firm_mutation():
++    pass
++
++@gemini_mission(
++    key="wave7-dx-automation",
++    title="[TD-DX-AUTO-CRYSTAL] Automate Mission Registration and Optimize Death System",
++    worker="spec",
++    instruction="Read artifacts/specs/MISSION_wave7_dx_automation_SPEC.md and generate a full Jules implementation spec.",
++    context_files=[
++        "artifacts/specs/MISSION_wave7_dx_automation_SPEC.md",
++        "_internal/scripts/launcher.py",
++        "_internal/registry/service.py",
++        "modules/system/death_system.py"
++    ],
++    output_path="artifacts/specs/MISSION_wave7_dx_automation_JULES_SPEC.md"
++)
++def wave7_dx_automation():
++    pass
+diff --git a/communications/insights/wave7-dx-automation.md b/communications/insights/wave7-dx-automation.md
+new file mode 100644
+index 00000000..c9097106
+--- /dev/null
++++ b/communications/insights/wave7-dx-automation.md
+@@ -0,0 +1,45 @@
++# Wave 7: Automate Mission Registration and Optimize Death System
++
++## 1. [Architectural Insights]
++
++### TD-DX-AUTO-CRYSTAL: Automated Mission Registration
++- **Decision**: Migrated the static `GEMINI_MISSIONS` dictionary in `_internal/registry/gemini_manifest.py` to a dynamic registration system using the `@gemini_mission` decorator.
++- **Implementation**: Created `_internal/registry/missions.py` to house the mission definitions using the decorator. `gemini_manifest.py` now imports this module and uses `mission_registry.to_manifest()` to populate `GEMINI_MISSIONS`.
++- **Benefit**: This eliminates the need for manual JSON editing and allows mission definitions to be co-located with their logic or in dedicated modules, improving discoverability and maintainability.
++
++### TD-SYS-PERF-DEATH: Optimized Death System
++- **Decision**: Refactored `DeathSystem._handle_agent_liquidation` to eliminate the O(N) rebuilding of the `state.agents` dictionary.
++- **Implementation**: Replaced `state.agents.clear()` and full rebuild with localized deletion (`del state.agents[agent_id]`) for only the agents that died.
++- **Benefit**: This changes the complexity of death processing from O(N) (where N is total agents) to O(M) (where M is dead agents), which is significantly more efficient during mass liquidation events. It also preserves "System Agents" or other entities in `state.agents` that are not part of `state.households` or `state.firms`.
++
++## 2. [Regression Analysis]
++
++- **Existing Tests**: `tests/internal/test_mission_registry.py` and `tests/unit/systems/lifecycle/test_death_system.py` passed without modification, indicating that the changes are backward compatible.
++- **New Tests**: `tests/unit/systems/lifecycle/test_death_system_performance.py` was added to verify the optimization. It specifically checks that unrelated agents ("ghost agents") are preserved in `state.agents`, proving that the dictionary is not being rebuilt from scratch.
++
++## 3. [Test Evidence]
++
++```
++tests/internal/test_mission_registry.py::test_manual_registration PASSED [ 12%]
++tests/internal/test_mission_registry.py::test_decorator_registration PASSED [ 25%]
++tests/internal/test_mission_registry.py::test_decorator_static_instruction PASSED [ 37%]
++tests/internal/test_mission_registry.py::test_scan_packages PASSED       [ 50%]
++tests/internal/test_mission_registry.py::test_to_manifest PASSED         [ 62%]
++tests/unit/systems/lifecycle/test_death_system.py::TestDeathSystem::test_firm_liquidation PASSED [ 75%]
++tests/unit/systems/lifecycle/test_death_system.py::TestDeathSystem::test_firm_liquidation_cancels_orders PASSED [ 87%]
++tests/unit/systems/lifecycle/test_death_system_performance.py::TestDeathSystemPerformance::test_localized_agent_removal PASSED [100%]
++
++=============================== warnings summary ===============================
++../home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
++  /home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_default_fixture_loop_scope
++
++    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
++
++../home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
++  /home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_mode
++
++    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
++
++-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
++======================== 8 passed, 2 warnings in 0.36s =========================
++```
+diff --git a/simulation/systems/lifecycle/death_system.py b/simulation/systems/lifecycle/death_system.py
+index 8ad741c2..e4fc693b 100644
+--- a/simulation/systems/lifecycle/death_system.py
++++ b/simulation/systems/lifecycle/death_system.py
+@@ -125,19 +125,20 @@ class DeathSystem(IDeathSystem):
+                 self.settlement_system.remove_agent_from_all_accounts(household.id)
+ 
+         # --- Global List Cleanup ---
++
++        # O(1) Dictionary Cleanup - TD-SYS-PERF-DEATH
++        for firm in inactive_firms:
++            if firm.id in state.agents:
++                del state.agents[firm.id]
++
++        for household in inactive_households:
++             if household.id in state.agents:
++                del state.agents[household.id]
++
+         # Modify lists in place to reflect removals
+         state.households[:] = [h for h in state.households if h.is_active]
+         state.firms[:] = [f for f in state.firms if f.is_active]
+ 
+-        # Rebuild agents dict
+-        state.agents.clear()
+-        state.agents.update({agent.id: agent for agent in state.households + state.firms})
+-        # Add system agents back
+-        if state.bank: state.agents[state.bank.id] = state.bank
+-        if state.primary_government: state.agents[state.primary_government.id] = state.primary_government
+-        if hasattr(state, 'central_bank') and state.central_bank: state.agents[state.central_bank.id] = state.central_bank
+-        if hasattr(state, 'escrow_agent') and state.escrow_agent: state.agents[state.escrow_agent.id] = state.escrow_agent
+-
+         return transactions
+ 
+     def _recover_external_assets(self, agent_id: int, state: SimulationState) -> None:
+diff --git a/tests/unit/systems/lifecycle/test_death_system_performance.py b/tests/unit/systems/lifecycle/test_death_system_performance.py
+new file mode 100644
+index 00000000..b64835a8
+--- /dev/null
++++ b/tests/unit/systems/lifecycle/test_death_system_performance.py
+@@ -0,0 +1,90 @@
++import pytest
++from unittest.mock import MagicMock
++from simulation.systems.lifecycle.death_system import DeathSystem
++from simulation.firms import Firm
++from simulation.core_agents import Household
++from modules.finance.api import ILiquidatable
++
++class TestDeathSystemPerformance:
++    @pytest.fixture
++    def death_system(self):
++        config = MagicMock()
++        inheritance_manager = MagicMock()
++        liquidation_manager = MagicMock()
++        settlement_system = MagicMock()
++        public_manager = MagicMock()
++        logger = MagicMock()
++
++        return DeathSystem(config, inheritance_manager, liquidation_manager, settlement_system, public_manager, logger)
++
++    def test_localized_agent_removal(self, death_system):
++        """
++        Verifies that DeathSystem removes agents via localized deletion (O(1))
++        instead of rebuilding the entire agents dictionary (O(N)).
++        """
++        # Setup active firm
++        active_firm = MagicMock(spec=Firm)
++        active_firm.is_active = True
++        active_firm.id = 1
++
++        # Setup dead firm
++        dead_firm = MagicMock(spec=Firm)
++        dead_firm.is_active = False
++        dead_firm.id = 2
++        dead_firm.get_all_items = MagicMock(return_value={})
++        dead_firm.hr_state = MagicMock()
++        dead_firm.hr_state.employees = []
++
++        # Setup active household
++        active_hh = MagicMock(spec=Household)
++        active_hh.is_active = True
++        active_hh.id = 101
++
++        # Setup dead household
++        dead_hh = MagicMock(spec=Household)
++        dead_hh.is_active = False
++        dead_hh.id = 102
++        dead_hh.get_all_items = MagicMock(return_value={})
++        dead_hh._econ_state = MagicMock()
++        dead_hh._econ_state.inventory = {}
++        dead_hh.inventory = {} # Fallback
++
++        # Setup "Ghost" agent (e.g. System Agent or just noise)
++        ghost_agent = MagicMock()
++        ghost_agent.id = 999
++
++        state = MagicMock()
++        state.firms = [active_firm, dead_firm]
++        state.households = [active_hh, dead_hh]
++        state.agents = {
++            1: active_firm,
++            2: dead_firm,
++            101: active_hh,
++            102: dead_hh,
++            999: ghost_agent # Should preserve if NOT rebuilding
++        }
++        state.time = 1
++        state.markets = {}
++        state.inactive_agents = {}
++        state.government = None
++
++        # Mock settlement system interaction
++        death_system.settlement_system.get_agent_banks.return_value = []
++
++        # Execute
++        death_system.execute(state)
++
++        # Assertions
++        assert 1 in state.agents
++        assert 101 in state.agents
++        assert 2 not in state.agents
++        assert 102 not in state.agents
++
++        # KEY ASSERTION: Ghost agent must remain if we are NOT rebuilding
++        assert 999 in state.agents, "Optimization Failed: state.agents was rebuilt, removing the Ghost agent."
++
++        # Verify list updates
++        assert active_firm in state.firms
++        assert dead_firm not in state.firms
++        assert active_hh in state.households
++        assert dead_hh not in state.households

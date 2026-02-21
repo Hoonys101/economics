@@ -63,6 +63,9 @@ class TaxationSystem:
             return 0
 
         raw_tax = 0.0
+        if tax_mode == "FLAT":
+            raw_tax = income_val * current_income_tax_rate
+            return self._round_currency(raw_tax)
 
         # NEW LOGIC: Use TaxBracketDTO if provided
         if tax_brackets and len(tax_brackets) > 0:
@@ -79,8 +82,6 @@ class TaxationSystem:
                     current_level_income = bracket.threshold
 
         # LEGACY LOGIC fallback
-        elif tax_mode == "FLAT":
-            raw_tax = income_val * current_income_tax_rate
         else:
             tax_brackets_legacy = getattr(self.config_module, "TAX_BRACKETS", [])
             if not tax_brackets_legacy:

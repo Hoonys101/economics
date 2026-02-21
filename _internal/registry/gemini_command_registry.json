@@ -19,7 +19,7 @@
         "modules/system/telemetry_exchange.py"
       ],
       "output_path": "artifacts/specs/MISSION_wave5_dto_purity_JULES_SPEC.md",
-      "model": null,
+      "model": "gemini-3-pro-preview",
       "audit_requirements": null
     },
     "wave5-config-purity": {
@@ -37,7 +37,7 @@
         "modules/finance/engine.py"
       ],
       "output_path": "artifacts/specs/MISSION_wave5_config_purity_JULES_SPEC.md",
-      "model": null,
+      "model": "gemini-3-pro-preview",
       "audit_requirements": null
     },
     "wave6-ai-debt": {
@@ -55,7 +55,7 @@
         "modules/firm/planner.py"
       ],
       "output_path": "artifacts/specs/MISSION_wave6_ai_debt_JULES_SPEC.md",
-      "model": null,
+      "model": "gemini-3-pro-preview",
       "audit_requirements": null
     },
     "wave6-fiscal-masking": {
@@ -74,7 +74,7 @@
         "modules/firm/hr_engine.py"
       ],
       "output_path": "artifacts/specs/MISSION_wave6_fiscal_masking_JULES_SPEC.md",
-      "model": null,
+      "model": "gemini-3-pro-preview",
       "audit_requirements": null
     },
     "wave7-firm-mutation": {
@@ -94,7 +94,7 @@
         "modules/firm/brand_engine.py"
       ],
       "output_path": "artifacts/specs/MISSION_wave7_firm_mutation_JULES_SPEC.md",
-      "model": null,
+      "model": "gemini-3-pro-preview",
       "audit_requirements": null
     },
     "wave7-dx-automation": {
@@ -114,7 +114,7 @@
         "modules/system/death_system.py"
       ],
       "output_path": "artifacts/specs/MISSION_wave7_dx_automation_JULES_SPEC.md",
-      "model": null,
+      "model": "gemini-3-pro-preview",
       "audit_requirements": null
     }
   }

@@ -25,7 +25,7 @@
     - **`Phase 24: Diagnostic Forensics & Test Stabilization`** 🛡️ ✅ (2026-02-21)
         - **Goal**: Resolve test suite regressions caused by magic string IDs, DTO drift, and missing registry accounts.
         - **Status**: COMPLETED
-        - **Achievement**: Realigned `BorrowerProfileDTO` and standardized core Agent IDs (`ID_CENTRAL_BANK`, `ID_PUBLIC_MANAGER`). Integrated DB schema migration for `total_pennies`. Achieved 100% clean test suite (953 passed).
+        - **Achievement**: Realigned `BorrowerProfileDTO` and standardized core Agent IDs (`ID_CENTRAL_BANK`, `ID_PUBLIC_MANAGER`). Integrated DB schema migration for `total_pennies`. **Resolved Wave 5-7 stabilization debt (Taxation Mode Priority Fix)**. Achieved 100% clean test suite (954 passed).
 
     - **`Phase 23: Post-Phase 22 Regression Cleanup`** ⚖️ ✅ (2026-02-20)
         - **Goal**: Resolve test suite regressions resulting from Phase 22 structural merges, focusing on TickOrchestrator and SagaOrchestrator protocol mismatches.

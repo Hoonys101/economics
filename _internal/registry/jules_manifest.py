@@ -44,6 +44,12 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "instruction": "Execute the full implementation spec exactly as documented.",
         "file": "artifacts/specs/MISSION_wave6_fiscal_masking_JULES_SPEC.md"
     },
+    "test-stabilization": {
+        "title": "[Stabilization] Protocol Alignment and Mock Restoration",
+        "command": "create",
+        "instruction": "Execute the full implementation spec exactly as documented.",
+        "file": "artifacts/specs/MISSION_test_stabilization_spec.md"
+    },
     
     # Wave 7: Architecture & Ops Cleanup
     "wave7-firm-mutation": {
