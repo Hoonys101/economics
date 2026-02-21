@@ -33,21 +33,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "wave7-firm-mutation": {
-      "key": "wave7-firm-mutation",
-      "title": "[Wave 7] Enforce Stateless Engine Orchestration in Firm",
-      "type": "jules",
-      "instruction_raw": "Execute the full implementation spec exactly as documented.",
-      "command": "create",
-      "file_path": "artifacts/specs/MISSION_wave7_firm_mutation_JULES_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "wave7-dx-automation": {
       "key": "wave7-dx-automation",
       "title": "[Wave 7] Automate Mission Registration and Optimize Death System",
