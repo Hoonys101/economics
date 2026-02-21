@@ -23,9 +23,11 @@ class TaxHistoryItemDTO:
 @dataclass
 class TaxBracketDTO:
     """Defines a single progressive tax bracket."""
-    floor: int # MIGRATION: pennies
+    threshold: int # Pennies (replaces floor)
     rate: float
-    ceiling: Optional[int] # MIGRATION: pennies (None for the highest bracket)
+    # Deprecated fields for compatibility
+    floor: int = 0
+    ceiling: Optional[int] = None
 
 @dataclass
 class TaxPolicyDTO:
@@ -37,10 +39,18 @@ class TaxPolicyDTO:
 @dataclass
 class FiscalPolicyDTO:
     """State of the current fiscal policy."""
-    progressive_tax_brackets: List[TaxBracketDTO]
+    tax_brackets: List[TaxBracketDTO] = field(default_factory=list)
     corporate_tax_rate: float = 0.2
     income_tax_rate: float = 0.1
-    # TBD: Other fiscal tools like subsidies, welfare
+
+    # Deprecated: alias for backward compatibility
+    @property
+    def progressive_tax_brackets(self) -> List[TaxBracketDTO]:
+        return self.tax_brackets
+
+    @progressive_tax_brackets.setter
+    def progressive_tax_brackets(self, value: List[TaxBracketDTO]):
+        self.tax_brackets = value
 
 @dataclass
 class MonetaryPolicyDTO:

@@ -10,7 +10,7 @@ from collections import defaultdict
 from dataclasses import dataclass, replace
 from simulation.models import Transaction, Order
 from simulation.core_markets import Market
-from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO
+from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO, StockIDHelper
 from modules.finance.api import IShareholderRegistry, IShareholderView
 from simulation.markets.matching_engine import StockMatchingEngine
 logger = logging.getLogger(__name__)
@@ -86,19 +86,18 @@ class StockMarket(Market):
         IMarket Implementation.
         """
         try:
-            # Parse 'stock_123' -> 123
-            if '_' in item_id:
-                parts = item_id.split('_')
-                # Assuming format 'stock_ID'
-                firm_id = int(parts[-1])
-            else:
-                firm_id = int(item_id)
-
+            firm_id = StockIDHelper.parse_firm_id(item_id)
             price = self.get_stock_price(firm_id)
             return price if price is not None else 0.0
-        except (ValueError, IndexError):
-            self.logger.warning(f"Invalid item_id for get_price: {item_id}")
-            return 0.0
+        except ValueError:
+            # Try parsing as raw int for legacy compatibility if strict parsing fails
+            try:
+                firm_id = int(item_id)
+                price = self.get_stock_price(firm_id)
+                return price if price is not None else 0.0
+            except ValueError:
+                self.logger.warning(f"Invalid item_id for get_price: {item_id}")
+                return 0.0
 
     def get_daily_avg_price(self, firm_id: Optional[int]=None) -> float:
         """
@@ -139,8 +138,8 @@ class StockMarket(Market):
             self.logger.error(f'Invalid order type passed to StockMarket: {type(order)}. Expected CanonicalOrderDTO.')
             return
         try:
-            firm_id = int(order.item_id.split('_')[1])
-        except (ValueError, IndexError):
+            firm_id = StockIDHelper.parse_firm_id(order.item_id)
+        except ValueError:
             self.logger.error(f"Invalid item_id format for stock order: {order.item_id}. Expected 'stock_<firm_id>'")
             return
         limit_rate = getattr(self.config_module, 'STOCK_PRICE_LIMIT_RATE', 0.1)

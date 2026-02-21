@@ -109,6 +109,36 @@ def convert_legacy_order_to_canonical(order: Any) -> CanonicalOrderDTO:
 
     raise ValueError(f"Cannot convert object of type {type(order)} to CanonicalOrderDTO")
 
+class StockIDHelper:
+    """Helper for Stock ID formatting and parsing."""
+    PREFIX = "stock"
+    SEPARATOR = "_"
+
+    @staticmethod
+    def is_valid_stock_id(item_id: str) -> bool:
+        """Checks if the item_id matches the 'stock_{int}' format."""
+        if not item_id or not isinstance(item_id, str):
+            return False
+        parts = item_id.split(StockIDHelper.SEPARATOR)
+        if len(parts) != 2 or parts[0] != StockIDHelper.PREFIX:
+            return False
+        return parts[1].isdigit()
+
+    @staticmethod
+    def parse_firm_id(item_id: str) -> int:
+        """
+        Parses the firm_id from a stock item_id.
+        Raises ValueError if format is invalid.
+        """
+        if not StockIDHelper.is_valid_stock_id(item_id):
+            raise ValueError(f"Invalid Stock ID format: {item_id}. Expected 'stock_<int>'.")
+        return int(item_id.split(StockIDHelper.SEPARATOR)[1])
+
+    @staticmethod
+    def format_stock_id(firm_id: int | str) -> str:
+        """Formats a firm_id into a stock item_id."""
+        return f"{StockIDHelper.PREFIX}{StockIDHelper.SEPARATOR}{firm_id}"
+
 # --- Data Transfer Objects (DTOs) ---
 
 class HousingConfigDTO(TypedDict):

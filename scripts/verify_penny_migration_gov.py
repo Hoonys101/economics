@@ -66,11 +66,23 @@ class TestPennyMigrationGov(unittest.TestCase):
         policy = fpm.determine_fiscal_stance(snapshot)
 
         # Check brackets. Survival cost should be 500 (5.0 * 100 * 1.0)
-        # Bracket 1: 1.0 * 500 = 500 ceiling
-        bracket0 = policy.progressive_tax_brackets[0]
-        self.assertEqual(bracket0.ceiling, 500)
-        self.assertIsInstance(bracket0.ceiling, int)
-        self.assertIsInstance(bracket0.floor, int)
+        # Bracket 1 (0.0%): Threshold 0
+        # Bracket 2 (10%): Threshold 500
+        # Bracket 3 (20%): Threshold 1500
+
+        # Note: FiscalPolicyManager logic:
+        # 1.0 * 500 = 500. Rate 0.0 applies to previous_ceiling (0).
+        # Next threshold = 500.
+
+        bracket0 = policy.tax_brackets[0]
+        self.assertEqual(bracket0.threshold, 0)
+        self.assertEqual(bracket0.rate, 0.0)
+
+        bracket1 = policy.tax_brackets[1]
+        self.assertEqual(bracket1.threshold, 500)
+        self.assertEqual(bracket1.rate, 0.10)
+
+        self.assertIsInstance(bracket1.threshold, int)
 
     def test_taxation_system_calculate_income_tax(self):
         """Verify income tax calculation uses ints."""
