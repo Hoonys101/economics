@@ -28,5 +28,25 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
             "5. test_system.py - test_issue_treasury_bonds_market (1000.0 -> 100000). "
             "Verify with `pytest -rfE --tb=line --no-header tests/`."
         )
+    },
+    "fix_td_firm_coup": {
+        "title": "Implement TD-ARCH-FIRM-COUP Resolution",
+        "instruction": "Implement the Firm Decoupling Spec to resolve TD-ARCH-FIRM-COUP.",
+        "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_firm_coup_spec.md"
+    },
+    "fix_td_tx_handlers": {
+        "title": "Implement TD-RUNTIME-TX-HANDLER Resolution",
+        "instruction": "Implement the Missing Tx Handlers Spec to resolve TD-RUNTIME-TX-HANDLER.",
+        "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_tx_handlers_spec.md"
+    },
+    "fix_td_cockpit_mock": {
+        "title": "Implement TD-TEST-COCKPIT-MOCK Resolution",
+        "instruction": "Implement the Cockpit Mock Fix Spec to modernize test mocks and resolve TD-TEST-COCKPIT-MOCK.",
+        "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_cockpit_mock_spec.md"
+    },
+    "fix_td_life_stale": {
+        "title": "Implement TD-TEST-LIFE-STALE Resolution",
+        "instruction": "Implement the Stale Lifecycle Tests Spec to align tests with IAssetRecoverySystem.",
+        "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_life_stale_spec.md"
     }
 }
