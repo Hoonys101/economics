@@ -117,7 +117,7 @@ class TestBankServiceInterface:
         status = bank.get_debt_status(borrower_id)
 
         assert status.borrower_id == int(borrower_id)
-        assert status.total_outstanding_debt == 150000.0
+        assert status.total_outstanding_pennies == 15000000
         assert len(status.loans) == 2
         assert status.is_insolvent is False
 

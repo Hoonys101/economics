@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from modules.housing.api import IHousingService
     from modules.memory.api import MemoryV2Interface
     from modules.system.api import CurrencyCode
+    from modules.finance.kernel.api import IMonetaryLedger
 
 # --- DTOs ---
 
@@ -183,9 +184,11 @@ class IOrchestratorAgent(IAgent, Protocol):
 
 class IFirm(IAgent, Protocol):
     productivity_factor: float
+    def reset(self) -> None: ...
 
 class IHousehold(IAgent, Protocol):
     inventory: Dict[str, float]
+    def reset_tick_state(self) -> None: ...
 
 @runtime_checkable
 class IEducated(Protocol):
@@ -277,6 +280,7 @@ class ISimulationState(Protocol):
     agents: Dict[AgentID, IAgent]
     bank: "IBankService"
     markets: Dict[str, "IMarket"]
+    monetary_ledger: Optional["IMonetaryLedger"]
 
     def get_economic_indicators(self) -> EconomicIndicatorsDTO:
         """

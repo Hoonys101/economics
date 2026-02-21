@@ -936,7 +936,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
                 try:
                     debt_status = bank.get_debt_status(self.id)
                     # Convert float dollars to int pennies
-                    self.finance_state.total_debt_pennies = int(debt_status.total_outstanding_debt * 100)
+                    self.finance_state.total_debt_pennies = debt_status.total_outstanding_pennies
 
                     # Calculate weighted average interest rate
                     total_principal = sum(l.outstanding_balance for l in debt_status.loans)

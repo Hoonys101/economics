@@ -43,6 +43,7 @@ if TYPE_CHECKING:
     from simulation.firms import Firm
     from simulation.dtos.scenario import StressScenarioConfig
     from modules.household.dtos import HouseholdStateDTO
+    from modules.finance.kernel.api import IMonetaryLedger
 
 @dataclass
 class TransactionData:
@@ -280,7 +281,7 @@ class SimulationState:
 
     # Phase 4.1: Saga Orchestration & Monetary Ledger (TD-253)
     saga_orchestrator: Optional[Any] = None
-    monetary_ledger: Optional[Any] = None
+    monetary_ledger: Optional["IMonetaryLedger"] = None
 
     # TD-255: System Command Pipeline
     system_commands: List[SystemCommand] = field(default_factory=list)

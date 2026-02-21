@@ -92,7 +92,7 @@ class TestSettlementSagaIntegration:
         mock_simulation_state.agents = {1: buyer, 2: seller}
 
         # Mock Housing Service
-        mock_simulation_state.housing_service.lock_asset.return_value = True
+        mock_simulation_state.housing_service.set_under_contract.return_value = True
 
         # Mock Loan Market
         mock_simulation_state.markets["loan"].stage_mortgage_application.return_value = "loan_staged_1"
@@ -114,7 +114,7 @@ class TestSettlementSagaIntegration:
         assert updated_saga.last_processed_tick == 100
 
         # Verify side effects
-        mock_simulation_state.housing_service.lock_asset.assert_called_with(101, saga_id)
+        mock_simulation_state.housing_service.set_under_contract.assert_called_with(101, saga_id)
         mock_simulation_state.markets["loan"].stage_mortgage_application.assert_called_once()
 
     def test_process_sagas_integration_cancellation(self, mock_simulation_state):
@@ -183,3 +183,4 @@ class TestSettlementSagaIntegration:
 
         # Check logs/mock calls to verify compensation was attempted
         mock_simulation_state.markets["loan"].void_staged_application.assert_called_with("loan_staged_x")
+        mock_simulation_state.housing_service.release_contract.assert_called_with(101, saga_id)

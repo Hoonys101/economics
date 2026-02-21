@@ -6,137 +6,146 @@ tests/common/test_protocol.py::TestProtocolShield::test_unauthorized_call PASSED
 tests/finance/test_circular_imports_fix.py::test_finance_system_instantiation_and_protocols PASSED [  0%]
 tests/finance/test_circular_imports_fix.py::test_issue_treasury_bonds_protocol_usage PASSED [  0%]
 tests/finance/test_circular_imports_fix.py::test_evaluate_solvency_protocol_usage PASSED [  0%]
-tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_transfer_float_raises_error PASSED [  0%]
-tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_create_and_transfer_float_raises_error PASSED [  0%]
+tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_settlement_overdraft_protection PASSED [  0%]
+tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_settlement_zero_sum PASSED [  0%]
+tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_central_bank_infinite_funds PASSED [  1%]
+tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_real_estate_unit_lien_dto PASSED [  1%]
+tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_housing_system_maintenance_zero_sum PASSED [  1%]
+tests/finance/test_protocol_integrity.py::TestProtocolIntegrity::test_housing_system_rent_zero_sum PASSED [  1%]
+tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_transfer_float_raises_error PASSED [  1%]
+tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_create_and_transfer_float_raises_error PASSED [  1%]
 tests/finance/test_settlement_integrity.py::TestSettlementIntegrity::test_issue_treasury_bonds_float_leak PASSED [  1%]
 tests/finance/test_solvency_logic.py::TestSolvencyLogic::test_solvency_grace_period_solvent PASSED [  1%]
 tests/finance/test_solvency_logic.py::TestSolvencyLogic::test_solvency_grace_period_insolvent PASSED [  1%]
 tests/finance/test_solvency_logic.py::TestSolvencyLogic::test_solvency_established_firm PASSED [  1%]
-tests/finance/test_solvency_logic.py::TestSolvencyLogic::test_firm_implementation PASSED [  1%]
-tests/integration/mission_int_02_stress_test.py::test_hyperinflation_scenario PASSED [  1%]
-tests/integration/mission_int_02_stress_test.py::test_bank_run_scenario PASSED [  1%]
-tests/integration/mission_int_02_stress_test.py::test_inventory_destruction_scenario PASSED [  1%]
-tests/integration/mission_int_02_stress_test.py::test_parameter_rollback PASSED [  1%]
+tests/finance/test_solvency_logic.py::TestSolvencyLogic::test_firm_implementation PASSED [  2%]
+tests/integration/mission_int_02_stress_test.py::test_hyperinflation_scenario PASSED [  2%]
+tests/integration/mission_int_02_stress_test.py::test_bank_run_scenario PASSED [  2%]
+tests/integration/mission_int_02_stress_test.py::test_inventory_destruction_scenario PASSED [  2%]
+tests/integration/mission_int_02_stress_test.py::test_parameter_rollback PASSED [  2%]
 tests/integration/scenarios/diagnosis/test_agent_decision.py::test_household_makes_decision PASSED [  2%]
 tests/integration/scenarios/diagnosis/test_agent_decision.py::test_firm_makes_decision PASSED [  2%]
 tests/integration/scenarios/diagnosis/test_api_contract.py::test_api_contract_placeholder PASSED [  2%]
 tests/integration/scenarios/diagnosis/test_dashboard_contract.py::test_dashboard_snapshot_structure PASSED [  2%]
-tests/integration/scenarios/diagnosis/test_indicator_pipeline.py::test_indicator_aggregation PASSED [  2%]
-tests/integration/scenarios/diagnosis/test_market_mechanics.py::test_order_book_matching PASSED [  2%]
-tests/integration/scenarios/phase21/test_automation.py::test_firm_automation_init PASSED [  2%]
-tests/integration/scenarios/phase21/test_automation.py::test_production_function_with_automation PASSED [  2%]
-tests/integration/scenarios/phase21/test_automation.py::test_system2_planner_guidance PASSED [  2%]
+tests/integration/scenarios/diagnosis/test_indicator_pipeline.py::test_indicator_aggregation PASSED [  3%]
+tests/integration/scenarios/diagnosis/test_market_mechanics.py::test_order_book_matching PASSED [  3%]
+tests/integration/scenarios/phase21/test_automation.py::test_firm_automation_init PASSED [  3%]
+tests/integration/scenarios/phase21/test_automation.py::test_production_function_with_automation PASSED [  3%]
+tests/integration/scenarios/phase21/test_automation.py::test_system2_planner_guidance PASSED [  3%]
 tests/integration/scenarios/phase21/test_firm_system2.py::test_system2_planner_guidance_automation_preference PASSED [  3%]
 tests/integration/scenarios/phase21/test_firm_system2.py::test_system2_planner_guidance_ma_preference PASSED [  3%]
+tests/integration/scenarios/phase21/test_firm_system2.py::test_system2_planner_with_debt PASSED [  3%]
 tests/integration/scenarios/test_stress_scenarios.py::TestPhase28StressScenarios::test_hyperinflation_trigger PASSED [  3%]
 tests/integration/scenarios/test_stress_scenarios.py::TestPhase28StressScenarios::test_deflation_asset_shock PASSED [  3%]
-tests/integration/scenarios/test_stress_scenarios.py::TestPhase28StressScenarios::test_consumption_pessimism PASSED [  3%]
-tests/integration/scenarios/test_stress_scenarios.py::TestPhase28StressScenarios::test_supply_shock PASSED [  3%]
-tests/integration/scenarios/test_stress_scenarios.py::TestPhase28StressScenarios::test_panic_selling_order_generation PASSED [  3%]
-tests/integration/scenarios/test_stress_scenarios.py::TestPhase28StressScenarios::test_hoarding_amplification PASSED [  3%]
-tests/integration/scenarios/test_stress_scenarios.py::TestPhase28StressScenarios::test_debt_repayment_priority PASSED [  3%]
+tests/integration/scenarios/test_stress_scenarios.py::TestPhase28StressScenarios::test_consumption_pessimism PASSED [  4%]
+tests/integration/scenarios/test_stress_scenarios.py::TestPhase28StressScenarios::test_supply_shock PASSED [  4%]
+tests/integration/scenarios/test_stress_scenarios.py::TestPhase28StressScenarios::test_panic_selling_order_generation PASSED [  4%]
+tests/integration/scenarios/test_stress_scenarios.py::TestPhase28StressScenarios::test_hoarding_amplification PASSED [  4%]
+tests/integration/scenarios/test_stress_scenarios.py::TestPhase28StressScenarios::test_debt_repayment_priority PASSED [  4%]
 tests/integration/test_app.py::test_app_placeholder PASSED               [  4%]
 tests/integration/test_atomic_settlement.py::test_settle_atomic_success PASSED [  4%]
 tests/integration/test_atomic_settlement.py::test_settle_atomic_rollback PASSED [  4%]
 tests/integration/test_cockpit_integration.py::test_simulation_processes_pause_resume PASSED [  4%]
 tests/integration/test_cockpit_integration.py::test_simulation_processes_set_base_rate PASSED [  4%]
-tests/integration/test_cockpit_integration.py::test_simulation_processes_set_tax_rate PASSED [  4%]
-tests/integration/test_config_hot_swap.py::test_config_hot_swap PASSED   [  4%]
-tests/integration/test_config_hot_swap.py::test_config_engine_type_access PASSED [  4%]
-tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_firm_places_sell_order_for_food PASSED [  4%]
-tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_household_places_buy_order_for_food PASSED [  4%]
+tests/integration/test_cockpit_integration.py::test_simulation_processes_set_tax_rate PASSED [  5%]
+tests/integration/test_config_hot_swap.py::test_config_hot_swap PASSED   [  5%]
+tests/integration/test_config_hot_swap.py::test_config_engine_type_access PASSED [  5%]
+tests/integration/test_config_hot_swap.py::test_defaults_loaded PASSED   [  5%]
+tests/integration/test_config_hot_swap.py::test_none_handling PASSED     [  5%]
+tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_firm_places_sell_order_for_food PASSED [  5%]
+tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_household_places_buy_order_for_food PASSED [  5%]
 tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_household_sells_labor PASSED [  5%]
 tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_firm_buys_labor PASSED [  5%]
-tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_goods_market_matching_integration PASSED [  5%]
-tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_labor_market_matching_integration PASSED [  5%]
-tests/integration/test_finance_bailout.py::test_grant_bailout_loan_success_and_covenant_type PASSED [  5%]
-tests/integration/test_finance_bailout.py::test_grant_bailout_loan_insufficient_government_funds PASSED [  5%]
-tests/integration/test_firm_decision_scenarios.py::test_growth_scenario_with_golden_firm PASSED [  5%]
-tests/integration/test_fiscal_integrity.py::test_infrastructure_investment_generates_transactions_and_issues_bonds PASSED [  5%]
-tests/integration/test_fiscal_integrity.py::test_education_spending_generates_transactions_only PASSED [  5%]
+tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_goods_market_matching_integration PASSED [  6%]
+tests/integration/test_decision_engine_integration.py::TestDecisionEngineIntegration::test_labor_market_matching_integration PASSED [  6%]
+tests/integration/test_finance_bailout.py::test_grant_bailout_loan_success_and_covenant_type PASSED [  6%]
+tests/integration/test_finance_bailout.py::test_grant_bailout_loan_insufficient_government_funds PASSED [  6%]
+tests/integration/test_firm_decision_scenarios.py::test_growth_scenario_with_golden_firm PASSED [  6%]
+tests/integration/test_fiscal_integrity.py::test_infrastructure_investment_generates_transactions_and_issues_bonds PASSED [  6%]
+tests/integration/test_fiscal_integrity.py::test_education_spending_generates_transactions_only PASSED [  6%]
 tests/integration/test_fiscal_policy.py::test_potential_gdp_ema_convergence PASSED [  6%]
 tests/integration/test_fiscal_policy.py::test_counter_cyclical_tax_adjustment_recession PASSED [  6%]
 tests/integration/test_fiscal_policy.py::test_counter_cyclical_tax_adjustment_boom PASSED [  6%]
-tests/integration/test_fiscal_policy.py::test_debt_ceiling_enforcement PASSED [  6%]
-tests/integration/test_fiscal_policy.py::test_calculate_income_tax_uses_current_rate PASSED [  6%]
-tests/integration/test_generational_wealth_audit.py::TestGenerationalWealthAudit::test_run_audit PASSED [  6%]
-tests/integration/test_generational_wealth_audit.py::TestGenerationalWealthAudit::test_run_audit_no_agents PASSED [  6%]
-tests/integration/test_government_ai_logic.py::TestGovernmentAILogic::test_calculate_reward PASSED [  6%]
-tests/integration/test_government_ai_logic.py::TestGovernmentAILogic::test_get_state_debt_crisis PASSED [  6%]
+tests/integration/test_fiscal_policy.py::test_debt_ceiling_enforcement PASSED [  7%]
+tests/integration/test_fiscal_policy.py::test_calculate_income_tax_uses_current_rate PASSED [  7%]
+tests/integration/test_generational_wealth_audit.py::TestGenerationalWealthAudit::test_run_audit PASSED [  7%]
+tests/integration/test_generational_wealth_audit.py::TestGenerationalWealthAudit::test_run_audit_no_agents PASSED [  7%]
+tests/integration/test_government_ai_logic.py::TestGovernmentAILogic::test_calculate_reward PASSED [  7%]
+tests/integration/test_government_ai_logic.py::TestGovernmentAILogic::test_get_state_debt_crisis PASSED [  7%]
 tests/integration/test_government_ai_logic.py::TestGovernmentAILogic::test_get_state_high_inflation_low_unemp PASSED [  7%]
 tests/integration/test_government_ai_logic.py::TestGovernmentAILogic::test_get_state_ideal PASSED [  7%]
 tests/integration/test_government_ai_logic.py::TestGovernmentAILogic::test_learning_flow PASSED [  7%]
 tests/integration/test_government_finance.py::test_invest_infrastructure_generates_transaction PASSED [  7%]
-tests/integration/test_government_fiscal_integration.py::TestGovernmentFiscalIntegration::test_calculate_income_tax_uses_fiscal_policy_manager PASSED [  7%]
-tests/integration/test_government_fiscal_integration.py::TestGovernmentFiscalIntegration::test_make_policy_decision_updates_fiscal_policy PASSED [  7%]
-tests/integration/test_government_fiscal_policy.py::test_tax_collection_and_bailouts PASSED [  7%]
-tests/integration/test_government_fiscal_policy.py::test_infrastructure_investment PASSED [  7%]
-tests/integration/test_government_integration.py::test_government_execute_social_policy_tax_and_welfare PASSED [  7%]
+tests/integration/test_government_fiscal_integration.py::TestGovernmentFiscalIntegration::test_calculate_income_tax_uses_fiscal_policy_manager PASSED [  8%]
+tests/integration/test_government_fiscal_integration.py::TestGovernmentFiscalIntegration::test_make_policy_decision_updates_fiscal_policy PASSED [  8%]
+tests/integration/test_government_fiscal_policy.py::test_tax_collection_and_bailouts PASSED [  8%]
+tests/integration/test_government_fiscal_policy.py::test_infrastructure_investment PASSED [  8%]
+tests/integration/test_government_integration.py::test_government_execute_social_policy_tax_and_welfare PASSED [  8%]
 tests/integration/test_government_refactor_behavior.py::TestGovernmentRefactor::test_fiscal_engine_taylor_rule PASSED [  8%]
 tests/integration/test_government_refactor_behavior.py::TestGovernmentRefactor::test_execution_engine_state_update PASSED [  8%]
 tests/integration/test_government_refactor_behavior.py::TestGovernmentRefactor::test_orchestrator_integration PASSED [  8%]
 tests/integration/test_government_refactor_behavior.py::TestGovernmentRefactor::test_social_policy_execution PASSED [  8%]
-tests/integration/test_government_tax.py::TestGovernmentTax::test_record_revenue_delegation PASSED [  8%]
-tests/integration/test_government_tax.py::TestGovernmentTax::test_collect_tax_removed PASSED [  8%]
-tests/integration/test_interest_sensitivity.py::TestInterestSensitivityLogic::test_savings_incentive_ant_high_rate PASSED [  8%]
-tests/integration/test_interest_sensitivity.py::TestInterestSensitivityLogic::test_savings_incentive_grasshopper_high_rate PASSED [  8%]
-tests/integration/test_interest_sensitivity.py::TestInterestSensitivityLogic::test_savings_incentive_at_neutral_rate PASSED [  8%]
-tests/integration/test_interest_sensitivity.py::TestInterestSensitivityLogic::test_savings_incentive_with_inflation_expectation PASSED [  8%]
+tests/integration/test_government_tax.py::TestGovernmentTax::test_record_revenue_delegation PASSED [  9%]
+tests/integration/test_government_tax.py::TestGovernmentTax::test_collect_tax_removed PASSED [  9%]
+tests/integration/test_interest_sensitivity.py::TestInterestSensitivityLogic::test_savings_incentive_ant_high_rate PASSED [  9%]
+tests/integration/test_interest_sensitivity.py::TestInterestSensitivityLogic::test_savings_incentive_grasshopper_high_rate PASSED [  9%]
+tests/integration/test_interest_sensitivity.py::TestInterestSensitivityLogic::test_savings_incentive_at_neutral_rate PASSED [  9%]
+tests/integration/test_interest_sensitivity.py::TestInterestSensitivityLogic::test_savings_incentive_with_inflation_expectation PASSED [  9%]
 tests/integration/test_interest_sensitivity.py::TestInterestSensitivityLogic::test_consumption_aggressiveness_reduction PASSED [  9%]
 tests/integration/test_interest_sensitivity.py::TestInterestSensitivityLogic::test_dsr_penalty_applied PASSED [  9%]
 tests/integration/test_interest_sensitivity.py::TestInterestSensitivityLogic::test_subsistence_constraint_bypasses_reduction PASSED [  9%]
 tests/integration/test_lifecycle_cycle.py::TestLifecycleCycle::test_lifecycle_transactions_processed_in_next_tick_strong_verify PASSED [  9%]
-tests/integration/test_liquidation_services.py::TestLiquidationServices::test_hr_service_severance PASSED [  9%]
-tests/integration/test_liquidation_services.py::TestLiquidationServices::test_hr_service_unpaid_wages PASSED [  9%]
-tests/integration/test_liquidation_services.py::TestLiquidationServices::test_tax_service PASSED [  9%]
-tests/integration/test_liquidation_waterfall.py::TestLiquidationWaterfallIntegration::test_asset_rich_cash_poor_liquidation PASSED [  9%]
-tests/integration/test_liquidation_waterfall.py::TestLiquidationWaterfallIntegration::test_severance_priority_over_shareholders PASSED [  9%]
+tests/integration/test_liquidation_services.py::TestLiquidationServices::test_hr_service_severance PASSED [ 10%]
+tests/integration/test_liquidation_services.py::TestLiquidationServices::test_hr_service_unpaid_wages PASSED [ 10%]
+tests/integration/test_liquidation_services.py::TestLiquidationServices::test_tax_service PASSED [ 10%]
+tests/integration/test_liquidation_waterfall.py::TestLiquidationWaterfallIntegration::test_asset_rich_cash_poor_liquidation PASSED [ 10%]
+tests/integration/test_liquidation_waterfall.py::TestLiquidationWaterfallIntegration::test_severance_priority_over_shareholders PASSED [ 10%]
 tests/integration/test_liquidation_waterfall.py::TestLiquidationWaterfallIntegration::test_waterfall_tiers PASSED [ 10%]
 tests/integration/test_m2_integrity.py::TestM2Integrity::test_credit_creation_expansion PASSED [ 10%]
 tests/integration/test_m2_integrity.py::TestM2Integrity::test_credit_destruction_contraction PASSED [ 10%]
 tests/integration/test_m2_integrity.py::TestM2Integrity::test_internal_transfers_are_neutral PASSED [ 10%]
 tests/integration/test_multicurrency_liquidation.py::TestMultiCurrencyLiquidation::test_foreign_currency_distribution_to_shareholders PASSED [ 10%]
-tests/integration/test_omo_system.py::test_execute_omo_purchase_order_creation PASSED [ 10%]
-tests/integration/test_omo_system.py::test_execute_omo_sale_order_creation PASSED [ 10%]
-tests/integration/test_omo_system.py::test_process_omo_purchase_transaction PASSED [ 10%]
-tests/integration/test_omo_system.py::test_process_omo_sale_transaction PASSED [ 10%]
+tests/integration/test_omo_system.py::test_execute_omo_purchase_order_creation PASSED [ 11%]
+tests/integration/test_omo_system.py::test_execute_omo_sale_order_creation PASSED [ 11%]
+tests/integration/test_omo_system.py::test_process_omo_purchase_transaction PASSED [ 11%]
+tests/integration/test_omo_system.py::test_process_omo_sale_transaction PASSED [ 11%]
 tests/integration/test_persistence_purity.py::test_analytics_system_purity PASSED [ 11%]
 tests/integration/test_phase20_integration.py::TestPhase20Integration::test_immigration_trigger PASSED [ 11%]
 tests/integration/test_phase20_integration.py::TestPhase20Integration::test_immigration_conditions_not_met PASSED [ 11%]
 tests/integration/test_phase20_integration.py::TestPhase20Integration::test_system2_housing_cost_renter PASSED [ 11%]
 tests/integration/test_phase20_integration.py::TestPhase20Integration::test_system2_housing_cost_owner PASSED [ 11%]
-tests/integration/test_phase20_scaffolding.py::TestPhase20Scaffolding::test_gender_distribution PASSED [ 11%]
-tests/integration/test_phase20_scaffolding.py::TestPhase20Scaffolding::test_household_attributes_initialization PASSED [ 11%]
-tests/integration/test_phase20_scaffolding.py::TestPhase20Scaffolding::test_system2_planner_projection_bankruptcy PASSED [ 11%]
-tests/integration/test_phase20_scaffolding.py::TestPhase20Scaffolding::test_system2_planner_projection_positive PASSED [ 11%]
+tests/integration/test_phase20_scaffolding.py::TestPhase20Scaffolding::test_gender_distribution PASSED [ 12%]
+tests/integration/test_phase20_scaffolding.py::TestPhase20Scaffolding::test_household_attributes_initialization PASSED [ 12%]
+tests/integration/test_phase20_scaffolding.py::TestPhase20Scaffolding::test_system2_planner_projection_bankruptcy PASSED [ 12%]
+tests/integration/test_phase20_scaffolding.py::TestPhase20Scaffolding::test_system2_planner_projection_positive PASSED [ 12%]
 tests/integration/test_phase23_production.py::TestPhase23Production::test_production_boost_from_fertilizer_tech PASSED [ 12%]
 tests/integration/test_portfolio_integration.py::TestPortfolioIntegration::test_bank_deposit_balance PASSED [ 12%]
 tests/integration/test_portfolio_integration.py::TestPortfolioIntegration::test_portfolio_manager_logic PASSED [ 12%]
 tests/integration/test_portfolio_integration.py::TestPortfolioIntegration::test_portfolio_manager_risk_averse PASSED [ 12%]
 tests/integration/test_public_manager_integration.py::TestPublicManagerIntegration::test_full_liquidation_cycle PASSED [ 12%]
 tests/integration/test_purity_gate.py::test_decision_context_purity PASSED [ 12%]
-tests/integration/test_purity_gate.py::test_standalone_firm_engine_uses_dto PASSED [ 12%]
-tests/integration/test_purity_gate.py::test_household_engine_uses_dto PASSED [ 12%]
-tests/integration/test_registry_metadata.py::TestRegistryMetadata::test_schema_loader_loads_data PASSED [ 12%]
+tests/integration/test_purity_gate.py::test_standalone_firm_engine_uses_dto PASSED [ 13%]
+tests/integration/test_purity_gate.py::test_household_engine_uses_dto PASSED [ 13%]
+tests/integration/test_registry_metadata.py::TestRegistryMetadata::test_schema_loader_loads_data PASSED [ 13%]
 tests/integration/test_registry_metadata.py::TestRegistryMetadata::test_global_registry_loads_metadata_on_init PASSED [ 13%]
 tests/integration/test_registry_metadata.py::TestRegistryMetadata::test_global_registry_get_metadata_returns_none_for_unknown_key PASSED [ 13%]
 tests/integration/test_registry_metadata.py::TestRegistryMetadata::test_global_registry_get_entry_returns_none_for_unset_key PASSED [ 13%]
 tests/integration/test_registry_metadata.py::TestRegistryMetadata::test_global_registry_get_entry_returns_entry PASSED [ 13%]
 tests/integration/test_reporting_pennies.py::TestReportingPennies::test_household_expenditure_tracking PASSED [ 13%]
 tests/integration/test_reporting_pennies.py::TestReportingPennies::test_household_income_tracking PASSED [ 13%]
-tests/integration/test_reporting_pennies.py::TestReportingPennies::test_goods_handler_calls_tracker PASSED [ 13%]
-tests/integration/test_reporting_pennies.py::TestReportingPennies::test_labor_handler_calls_tracker PASSED [ 13%]
-tests/integration/test_reporting_pennies.py::TestReportingPennies::test_economic_tracker_aggregation PASSED [ 13%]
-tests/integration/test_server_integration.py::test_command_injection PASSED [ 13%]
-tests/integration/test_server_integration.py::test_telemetry_broadcast PASSED [ 14%]
+tests/integration/test_reporting_pennies.py::TestReportingPennies::test_goods_handler_calls_tracker PASSED [ 14%]
+tests/integration/test_reporting_pennies.py::TestReportingPennies::test_labor_handler_calls_tracker PASSED [ 14%]
+tests/integration/test_reporting_pennies.py::TestReportingPennies::test_economic_tracker_aggregation PASSED [ 14%]
+tests/integration/test_server_integration.py::test_command_injection FAILED [ 14%]
+tests/integration/test_server_integration.py::test_telemetry_broadcast FAILED [ 14%]
 tests/integration/test_shareholder_registry.py::test_registry_basic_operations PASSED [ 14%]
 tests/integration/test_shareholder_registry.py::test_stock_market_integration PASSED [ 14%]
 tests/integration/test_td194_integration.py::TestTD194Integration::test_household_make_decision_integrity PASSED [ 14%]
 tests/integration/test_td194_integration.py::TestTD194Integration::test_firm_make_decision_integrity PASSED [ 14%]
 tests/integration/test_telemetry_pipeline.py::TestTelemetryPipeline::test_update_telemetry_command_updates_subscriptions PASSED [ 14%]
-tests/integration/test_telemetry_pipeline.py::TestTelemetryPipeline::test_update_telemetry_command_replaces_subscriptions PASSED [ 14%]
-tests/integration/test_telemetry_pipeline.py::TestTelemetryPipeline::test_update_telemetry_invalid_value_type PASSED [ 14%]
-tests/integration/test_thoughtstream_logger.py::test_logger_functionality PASSED [ 14%]
+tests/integration/test_telemetry_pipeline.py::TestTelemetryPipeline::test_update_telemetry_command_replaces_subscriptions PASSED [ 15%]
+tests/integration/test_telemetry_pipeline.py::TestTelemetryPipeline::test_update_telemetry_invalid_value_type PASSED [ 15%]
+tests/integration/test_thoughtstream_logger.py::test_logger_functionality PASSED [ 15%]
 tests/integration/test_tick_normalization.py::TestTickNormalization::test_run_tick_executes_phases PASSED [ 15%]
 tests/integration/test_wo048_breeding.py::TestWO048Breeding::test_scenario_a_pre_modern PASSED [ 15%]
 tests/integration/test_wo048_breeding.py::TestWO048Breeding::test_scenario_b_high_income PASSED [ 15%]
@@ -144,682 +153,712 @@ tests/integration/test_wo048_breeding.py::TestWO048Breeding::test_scenario_c_low
 tests/integration/test_wo048_breeding.py::TestWO048Breeding::test_scenario_d_middle_income PASSED [ 15%]
 tests/integration/test_wo058_production.py::test_bootstrapper_injection PASSED [ 15%]
 tests/integration/test_wo058_production.py::test_production_kickstart PASSED [ 15%]
-tests/integration/test_wo167_grace_protocol.py::TestGraceProtocol::test_firm_grace_protocol PASSED [ 15%]
-tests/integration/test_wo167_grace_protocol.py::TestGraceProtocol::test_household_grace_protocol PASSED [ 15%]
-tests/market/test_labor_matching.py::TestLaborMatching::test_utility_priority_matching PASSED [ 16%]
-tests/market/test_labor_matching.py::TestLaborMatching::test_affordability_constraint PASSED [ 16%]
-tests/market/test_labor_matching.py::TestLaborMatching::test_highest_bidder_priority PASSED [ 16%]
-tests/market/test_labor_matching.py::TestLaborMatching::test_education_impact_on_utility PASSED [ 16%]
-tests/market/test_labor_matching.py::TestLaborMatching::test_targeted_match_priority PASSED [ 16%]
-tests/market/test_labor_matching.py::TestLaborMatching::test_non_labor_market_uses_standard_logic PASSED [ 16%]
-tests/market/test_matching_engine_hardening.py::TestMatchingEngineHardening::test_order_book_matching_integer_math PASSED [ 16%]
-tests/market/test_matching_engine_hardening.py::TestMatchingEngineHardening::test_stock_matching_mid_price_rounding PASSED [ 16%]
-tests/market/test_matching_engine_hardening.py::TestMatchingEngineHardening::test_small_quantity_zero_pennies PASSED [ 16%]
-tests/market/test_precision_matching.py::TestPrecisionMatching::test_labor_market_pricing PASSED [ 17%]
-tests/market/test_precision_matching.py::TestPrecisionMatching::test_market_fractional_qty_rounding PASSED [ 17%]
-tests/market/test_precision_matching.py::TestPrecisionMatching::test_market_zero_sum_integer PASSED [ 17%]
-tests/market/test_stock_market_pennies.py::TestStockMarketPennies::test_stock_matching_fractional_shares PASSED [ 17%]
-tests/market/test_stock_market_pennies.py::TestStockMarketPennies::test_stock_matching_integer_math PASSED [ 17%]
-tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_add_remove_item_main PASSED [ 17%]
-tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_add_remove_item_input PASSED [ 17%]
-tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_quality_weighted_average PASSED [ 17%]
-tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_insufficient_remove PASSED [ 17%]
-tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_snapshot_restore PASSED [ 17%]
-tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_get_inventory_value PASSED [ 18%]
-tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_initial_balance PASSED [ 18%]
-tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_deposit_withdraw PASSED [ 18%]
-tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_insufficient_funds PASSED [ 18%]
-tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_credit_frozen PASSED [ 18%]
-tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_net_worth PASSED [ 18%]
-tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_owner_id_parsing PASSED [ 18%]
-tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_calculate_rate_neutral PASSED [ 18%]
-tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_calculate_rate_high_inflation PASSED [ 18%]
-tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_calculate_rate_recession PASSED [ 19%]
-tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_strategy_override PASSED [ 19%]
-tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_rate_multiplier PASSED [ 19%]
-tests/modules/finance/test_exchange_engine.py::TestCurrencyExchangeEngine::test_convert PASSED [ 19%]
-tests/modules/finance/test_exchange_engine.py::TestCurrencyExchangeEngine::test_load_parity PASSED [ 19%]
-tests/modules/finance/test_exchange_engine.py::TestCurrencyExchangeEngine::test_missing_config PASSED [ 19%]
-tests/modules/finance/transaction/test_engine.py::test_validator_success PASSED [ 19%]
-tests/modules/finance/transaction/test_engine.py::test_validator_negative_amount PASSED [ 19%]
-tests/modules/finance/transaction/test_engine.py::test_validator_invalid_type PASSED [ 19%]
-tests/modules/finance/transaction/test_engine.py::test_validator_account_not_exists PASSED [ 20%]
-tests/modules/finance/transaction/test_engine.py::test_validator_insufficient_funds PASSED [ 20%]
-tests/modules/finance/transaction/test_engine.py::test_executor_success PASSED [ 20%]
-tests/modules/finance/transaction/test_engine.py::test_executor_rollback_success PASSED [ 20%]
-tests/modules/finance/transaction/test_engine.py::test_executor_critical_rollback_failure PASSED [ 20%]
-tests/modules/finance/transaction/test_engine.py::test_process_transaction_success PASSED [ 20%]
-tests/modules/finance/transaction/test_engine.py::test_process_transaction_validation_fail PASSED [ 20%]
-tests/modules/finance/transaction/test_engine.py::test_process_batch_atomicity PASSED [ 20%]
-tests/modules/finance/transaction/test_engine.py::test_process_batch_rollback_failure PASSED [ 20%]
-tests/modules/finance/transaction/test_processor.py::test_processor_dispatch_success PASSED [ 21%]
-tests/modules/finance/transaction/test_processor.py::test_processor_dispatch_legacy_price PASSED [ 21%]
-tests/modules/finance/transaction/test_processor.py::test_processor_handler_failure PASSED [ 21%]
-tests/modules/finance/transaction/test_processor.py::test_processor_handler_exception PASSED [ 21%]
-tests/modules/finance/transaction/test_processor.py::test_processor_public_manager PASSED [ 21%]
-tests/modules/finance/transaction/test_processor.py::test_processor_public_manager_fail_missing_buyer PASSED [ 21%]
-tests/modules/finance/transaction/test_processor.py::test_processor_public_manager_exception PASSED [ 21%]
-tests/modules/governance/test_cockpit_flow.py::test_cockpit_command_flow_tax_rate PASSED [ 21%]
-tests/modules/governance/test_cockpit_flow.py::test_cockpit_command_flow_pause PASSED [ 21%]
-tests/modules/governance/test_system_command_processor.py::test_set_corporate_tax_rate PASSED [ 21%]
-tests/modules/governance/test_system_command_processor.py::test_set_income_tax_rate PASSED [ 22%]
-tests/modules/governance/test_system_command_processor.py::test_set_base_interest_rate PASSED [ 22%]
-tests/modules/governance/test_system_command_processor.py::test_missing_government PASSED [ 22%]
-tests/modules/governance/test_system_command_processor.py::test_protocol_guardrails PASSED [ 22%]
-tests/modules/government/engines/test_fiscal_engine.py::TestFiscalEngine::test_decide_expansionary PASSED [ 22%]
-tests/modules/government/engines/test_fiscal_engine.py::TestFiscalEngine::test_decide_contractionary PASSED [ 22%]
-tests/modules/government/engines/test_fiscal_engine.py::TestFiscalEngine::test_evaluate_bailout_solvent PASSED [ 22%]
-tests/modules/government/engines/test_fiscal_engine.py::TestFiscalEngine::test_evaluate_bailout_insolvent PASSED [ 22%]
-tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_debt_brake_welfare_reduction PASSED [ 22%]
-tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_debt_brake_extreme_welfare_cut PASSED [ 23%]
-tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_debt_brake_tax_hike_in_recession PASSED [ 23%]
-tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_bailout_rejection_due_to_debt PASSED [ 23%]
-tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_bailout_rejection_due_to_insufficient_funds PASSED [ 23%]
-tests/modules/government/test_government_integration.py::test_execute_social_policy_integration PASSED [ 23%]
-tests/modules/government/test_government_integration.py::test_execute_social_policy_tax_and_welfare PASSED [ 23%]
-tests/modules/government/test_government_integration.py::test_make_policy_decision_integration PASSED [ 23%]
-tests/modules/government/test_tax_service.py::test_collect_wealth_tax PASSED [ 23%]
-tests/modules/government/test_tax_service.py::test_collect_wealth_tax_below_threshold PASSED [ 23%]
-tests/modules/government/test_welfare_manager.py::test_run_welfare_check_unemployment PASSED [ 24%]
-tests/modules/government/test_welfare_manager.py::test_run_welfare_check_stimulus PASSED [ 24%]
-tests/modules/government/test_welfare_manager.py::test_provide_firm_bailout PASSED [ 24%]
-tests/modules/government/test_welfare_manager.py::test_run_welfare_check_with_firm PASSED [ 24%]
-tests/modules/household/engines/test_budget.py::test_allocate_budget_creates_orders_for_needs PASSED [ 24%]
-tests/modules/household/engines/test_consumption.py::test_generate_orders_uses_budget_orders PASSED [ 24%]
-tests/modules/household/test_political_component.py::test_initialize_state_growth_oriented PASSED [ 24%]
-tests/modules/household/test_political_component.py::test_initialize_state_conservative PASSED [ 24%]
-tests/modules/household/test_political_component.py::test_update_opinion_match PASSED [ 24%]
-tests/modules/household/test_political_component.py::test_update_opinion_mismatch_and_discontent PASSED [ 25%]
-tests/modules/household/test_political_component.py::test_trust_damper PASSED [ 25%]
-tests/modules/household/test_political_integration.py::test_household_update_political_opinion_integration PASSED [ 25%]
-tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_basic_set_get PASSED [ 25%]
-tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_locking_mechanism PASSED [ 25%]
-tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_migrate_from_dict PASSED [ 25%]
-tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_reset_to_defaults PASSED [ 25%]
-tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_delete_layer PASSED [ 25%]
-tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_snapshot_returns_pydantic PASSED [ 25%]
-tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_watchtower_dto_serialization PASSED [ 26%]
-tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_cockpit_command_validation PASSED [ 26%]
-tests/modules/testing/test_mock_governance.py::TestMockGovernance::test_protocol_inspector_members PASSED [ 26%]
-tests/modules/testing/test_mock_governance.py::TestMockGovernance::test_strict_mock_creation PASSED [ 26%]
-tests/modules/testing/test_mock_governance.py::TestMockGovernance::test_inherited_protocol_mock PASSED [ 26%]
-tests/modules/testing/test_mock_governance.py::TestMockGovernance::test_ibank_mock_real_world PASSED [ 26%]
-tests/modules/testing/test_mock_governance.py::TestMockGovernance::test_non_strict_mock PASSED [ 26%]
-tests/orchestration/test_state_synchronization.py::TestStateSynchronization::test_transient_queue_accumulation PASSED [ 26%]
-tests/orchestration/test_state_synchronization.py::TestStateSynchronization::test_reassignment_guardrail PASSED [ 26%]
-tests/scenarios/test_leviathan_emergence.py::TestLeviathanEmergence::test_scapegoat_emergence PASSED [ 26%]
-tests/scenarios/test_leviathan_emergence.py::TestLeviathanEmergence::test_paradox_support_emergence PASSED [ 27%]
-tests/scenarios/test_leviathan_emergence.py::TestLeviathanEmergence::test_political_business_cycle_emergence PASSED [ 27%]
-tests/security/test_god_mode_auth.py::test_websocket_connect_no_token_fails PASSED [ 27%]
-tests/security/test_god_mode_auth.py::test_websocket_connect_invalid_token_fails PASSED [ 27%]
-tests/security/test_god_mode_auth.py::test_websocket_connect_valid_token_succeeds PASSED [ 27%]
-tests/security/test_server_auth.py::test_websocket_connect_no_token_fails PASSED [ 27%]
-tests/security/test_server_auth.py::test_websocket_connect_invalid_token_fails PASSED [ 27%]
-tests/security/test_server_auth.py::test_websocket_connect_valid_token_succeeds PASSED [ 27%]
-tests/security/test_websocket_auth.py::test_auth_success PASSED          [ 27%]
-tests/security/test_websocket_auth.py::test_auth_missing_token PASSED    [ 28%]
-tests/security/test_websocket_auth.py::test_auth_invalid_token PASSED    [ 28%]
-tests/simulation/components/engines/test_asset_management_engine.py::test_invest_automation_success PASSED [ 28%]
-tests/simulation/components/engines/test_asset_management_engine.py::test_invest_automation_max_cap PASSED [ 28%]
-tests/simulation/components/engines/test_asset_management_engine.py::test_invest_capex_success PASSED [ 28%]
-tests/simulation/components/engines/test_asset_management_engine.py::test_invest_negative_amount PASSED [ 28%]
-tests/simulation/components/engines/test_asset_management_engine.py::test_invest_unknown_type PASSED [ 28%]
-tests/simulation/components/engines/test_production_engine.py::test_produce_success PASSED [ 28%]
-tests/simulation/components/engines/test_production_engine.py::test_produce_input_constraint PASSED [ 28%]
+tests/integration/test_wo167_grace_protocol.py::TestGraceProtocol::test_firm_grace_protocol PASSED [ 16%]
+tests/integration/test_wo167_grace_protocol.py::TestGraceProtocol::test_household_grace_protocol PASSED [ 16%]
+tests/internal/test_mission_registry.py::test_manual_registration PASSED [ 16%]
+tests/internal/test_mission_registry.py::test_decorator_registration PASSED [ 16%]
+tests/internal/test_mission_registry.py::test_decorator_static_instruction PASSED [ 16%]
+tests/internal/test_mission_registry.py::test_scan_packages PASSED       [ 16%]
+tests/internal/test_mission_registry.py::test_to_manifest PASSED         [ 16%]
+tests/market/test_dto_purity.py::test_canonical_order_dto_instantiation PASSED [ 16%]
+tests/market/test_dto_purity.py::test_order_telemetry_schema_serialization PASSED [ 16%]
+tests/market/test_dto_purity.py::test_order_telemetry_schema_validation PASSED [ 17%]
+tests/market/test_dto_purity.py::test_canonical_order_legacy_fields PASSED [ 17%]
+tests/market/test_labor_matching.py::TestLaborMatching::test_utility_priority_matching PASSED [ 17%]
+tests/market/test_labor_matching.py::TestLaborMatching::test_affordability_constraint PASSED [ 17%]
+tests/market/test_labor_matching.py::TestLaborMatching::test_highest_bidder_priority PASSED [ 17%]
+tests/market/test_labor_matching.py::TestLaborMatching::test_education_impact_on_utility PASSED [ 17%]
+tests/market/test_labor_matching.py::TestLaborMatching::test_targeted_match_priority PASSED [ 17%]
+tests/market/test_labor_matching.py::TestLaborMatching::test_non_labor_market_uses_standard_logic PASSED [ 17%]
+tests/market/test_matching_engine_hardening.py::TestMatchingEngineHardening::test_order_book_matching_integer_math PASSED [ 17%]
+tests/market/test_matching_engine_hardening.py::TestMatchingEngineHardening::test_stock_matching_mid_price_rounding PASSED [ 17%]
+tests/market/test_matching_engine_hardening.py::TestMatchingEngineHardening::test_small_quantity_zero_pennies PASSED [ 18%]
+tests/market/test_precision_matching.py::TestPrecisionMatching::test_labor_market_pricing PASSED [ 18%]
+tests/market/test_precision_matching.py::TestPrecisionMatching::test_market_fractional_qty_rounding PASSED [ 18%]
+tests/market/test_precision_matching.py::TestPrecisionMatching::test_market_zero_sum_integer PASSED [ 18%]
+tests/market/test_stock_id_helper.py::TestStockIDHelper::test_stock_id_helper_valid PASSED [ 18%]
+tests/market/test_stock_id_helper.py::TestStockIDHelper::test_stock_id_helper_invalid PASSED [ 18%]
+tests/market/test_stock_id_helper.py::TestStockIDHelper::test_format_stock_id_handles_string PASSED [ 18%]
+tests/market/test_stock_market_pennies.py::TestStockMarketPennies::test_stock_matching_fractional_shares PASSED [ 18%]
+tests/market/test_stock_market_pennies.py::TestStockMarketPennies::test_stock_matching_integer_math PASSED [ 18%]
+tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_add_remove_item_main PASSED [ 18%]
+tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_add_remove_item_input PASSED [ 19%]
+tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_quality_weighted_average PASSED [ 19%]
+tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_insufficient_remove PASSED [ 19%]
+tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_snapshot_restore PASSED [ 19%]
+tests/modules/agent_framework/test_components.py::TestInventoryComponent::test_get_inventory_value PASSED [ 19%]
+tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_initial_balance PASSED [ 19%]
+tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_deposit_withdraw PASSED [ 19%]
+tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_insufficient_funds PASSED [ 19%]
+tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_credit_frozen PASSED [ 19%]
+tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_net_worth PASSED [ 20%]
+tests/modules/agent_framework/test_components.py::TestFinancialComponent::test_owner_id_parsing PASSED [ 20%]
+tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_calculate_rate_neutral PASSED [ 20%]
+tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_calculate_rate_high_inflation PASSED [ 20%]
+tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_calculate_rate_recession PASSED [ 20%]
+tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_strategy_override PASSED [ 20%]
+tests/modules/finance/engines/test_monetary_engine.py::TestMonetaryEngine::test_rate_multiplier PASSED [ 20%]
+tests/modules/finance/test_exchange_engine.py::TestCurrencyExchangeEngine::test_convert PASSED [ 20%]
+tests/modules/finance/test_exchange_engine.py::TestCurrencyExchangeEngine::test_load_parity PASSED [ 20%]
+tests/modules/finance/test_exchange_engine.py::TestCurrencyExchangeEngine::test_missing_config PASSED [ 20%]
+tests/modules/finance/transaction/test_engine.py::test_validator_success PASSED [ 21%]
+tests/modules/finance/transaction/test_engine.py::test_validator_negative_amount PASSED [ 21%]
+tests/modules/finance/transaction/test_engine.py::test_validator_invalid_type PASSED [ 21%]
+tests/modules/finance/transaction/test_engine.py::test_validator_account_not_exists PASSED [ 21%]
+tests/modules/finance/transaction/test_engine.py::test_validator_insufficient_funds PASSED [ 21%]
+tests/modules/finance/transaction/test_engine.py::test_executor_success PASSED [ 21%]
+tests/modules/finance/transaction/test_engine.py::test_executor_rollback_success PASSED [ 21%]
+tests/modules/finance/transaction/test_engine.py::test_executor_critical_rollback_failure PASSED [ 21%]
+tests/modules/finance/transaction/test_engine.py::test_process_transaction_success PASSED [ 21%]
+tests/modules/finance/transaction/test_engine.py::test_process_transaction_validation_fail PASSED [ 21%]
+tests/modules/finance/transaction/test_engine.py::test_process_batch_atomicity PASSED [ 22%]
+tests/modules/finance/transaction/test_engine.py::test_process_batch_rollback_failure PASSED [ 22%]
+tests/modules/finance/transaction/test_processor.py::test_processor_dispatch_success PASSED [ 22%]
+tests/modules/finance/transaction/test_processor.py::test_processor_dispatch_legacy_price PASSED [ 22%]
+tests/modules/finance/transaction/test_processor.py::test_processor_handler_failure PASSED [ 22%]
+tests/modules/finance/transaction/test_processor.py::test_processor_handler_exception PASSED [ 22%]
+tests/modules/finance/transaction/test_processor.py::test_processor_public_manager PASSED [ 22%]
+tests/modules/finance/transaction/test_processor.py::test_processor_public_manager_fail_missing_buyer PASSED [ 22%]
+tests/modules/finance/transaction/test_processor.py::test_processor_public_manager_exception PASSED [ 22%]
+tests/modules/governance/test_cockpit_flow.py::test_cockpit_command_flow_tax_rate PASSED [ 23%]
+tests/modules/governance/test_cockpit_flow.py::test_cockpit_command_flow_pause PASSED [ 23%]
+tests/modules/governance/test_system_command_processor.py::test_set_corporate_tax_rate PASSED [ 23%]
+tests/modules/governance/test_system_command_processor.py::test_set_income_tax_rate PASSED [ 23%]
+tests/modules/governance/test_system_command_processor.py::test_set_base_interest_rate PASSED [ 23%]
+tests/modules/governance/test_system_command_processor.py::test_missing_government PASSED [ 23%]
+tests/modules/governance/test_system_command_processor.py::test_protocol_guardrails PASSED [ 23%]
+tests/modules/government/engines/test_fiscal_engine.py::TestFiscalEngine::test_decide_expansionary PASSED [ 23%]
+tests/modules/government/engines/test_fiscal_engine.py::TestFiscalEngine::test_decide_contractionary PASSED [ 23%]
+tests/modules/government/engines/test_fiscal_engine.py::TestFiscalEngine::test_evaluate_bailout_solvent PASSED [ 23%]
+tests/modules/government/engines/test_fiscal_engine.py::TestFiscalEngine::test_evaluate_bailout_insolvent PASSED [ 24%]
+tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_debt_brake_welfare_reduction PASSED [ 24%]
+tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_debt_brake_extreme_welfare_cut PASSED [ 24%]
+tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_debt_brake_tax_hike_in_recession PASSED [ 24%]
+tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_bailout_rejection_due_to_debt PASSED [ 24%]
+tests/modules/government/engines/test_fiscal_guardrails.py::TestFiscalGuardrails::test_bailout_rejection_due_to_insufficient_funds PASSED [ 24%]
+tests/modules/government/test_government_integration.py::test_execute_social_policy_integration PASSED [ 24%]
+tests/modules/government/test_government_integration.py::test_execute_social_policy_tax_and_welfare PASSED [ 24%]
+tests/modules/government/test_government_integration.py::test_make_policy_decision_integration PASSED [ 24%]
+tests/modules/government/test_tax_service.py::test_collect_wealth_tax PASSED [ 25%]
+tests/modules/government/test_tax_service.py::test_collect_wealth_tax_below_threshold PASSED [ 25%]
+tests/modules/government/test_welfare_manager.py::test_run_welfare_check_unemployment PASSED [ 25%]
+tests/modules/government/test_welfare_manager.py::test_run_welfare_check_stimulus PASSED [ 25%]
+tests/modules/government/test_welfare_manager.py::test_provide_firm_bailout PASSED [ 25%]
+tests/modules/government/test_welfare_manager.py::test_run_welfare_check_with_firm PASSED [ 25%]
+tests/modules/household/engines/test_budget.py::test_allocate_budget_creates_orders_for_needs PASSED [ 25%]
+tests/modules/household/engines/test_consumption.py::test_generate_orders_uses_budget_orders PASSED [ 25%]
+tests/modules/household/test_political_component.py::test_initialize_state_growth_oriented PASSED [ 25%]
+tests/modules/household/test_political_component.py::test_initialize_state_conservative PASSED [ 25%]
+tests/modules/household/test_political_component.py::test_update_opinion_match PASSED [ 26%]
+tests/modules/household/test_political_component.py::test_update_opinion_mismatch_and_discontent PASSED [ 26%]
+tests/modules/household/test_political_component.py::test_trust_damper PASSED [ 26%]
+tests/modules/household/test_political_integration.py::test_household_update_political_opinion_integration PASSED [ 26%]
+tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_basic_set_get PASSED [ 26%]
+tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_locking_mechanism PASSED [ 26%]
+tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_migrate_from_dict PASSED [ 26%]
+tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_reset_to_defaults PASSED [ 26%]
+tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_delete_layer PASSED [ 26%]
+tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_snapshot_returns_pydantic PASSED [ 26%]
+tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_watchtower_dto_serialization PASSED [ 27%]
+tests/modules/system/test_global_registry.py::TestGlobalRegistry::test_cockpit_command_validation PASSED [ 27%]
+tests/modules/testing/test_mock_governance.py::TestMockGovernance::test_protocol_inspector_members PASSED [ 27%]
+tests/modules/testing/test_mock_governance.py::TestMockGovernance::test_strict_mock_creation PASSED [ 27%]
+tests/modules/testing/test_mock_governance.py::TestMockGovernance::test_inherited_protocol_mock PASSED [ 27%]
+tests/modules/testing/test_mock_governance.py::TestMockGovernance::test_ibank_mock_real_world PASSED [ 27%]
+tests/modules/testing/test_mock_governance.py::TestMockGovernance::test_non_strict_mock PASSED [ 27%]
+tests/orchestration/test_state_synchronization.py::TestStateSynchronization::test_transient_queue_accumulation PASSED [ 27%]
+tests/orchestration/test_state_synchronization.py::TestStateSynchronization::test_reassignment_guardrail PASSED [ 27%]
+tests/scenarios/test_leviathan_emergence.py::TestLeviathanEmergence::test_scapegoat_emergence PASSED [ 28%]
+tests/scenarios/test_leviathan_emergence.py::TestLeviathanEmergence::test_paradox_support_emergence PASSED [ 28%]
+tests/scenarios/test_leviathan_emergence.py::TestLeviathanEmergence::test_political_business_cycle_emergence PASSED [ 28%]
+tests/security/test_god_mode_auth.py::test_websocket_connect_no_token_fails PASSED [ 28%]
+tests/security/test_god_mode_auth.py::test_websocket_connect_invalid_token_fails PASSED [ 28%]
+tests/security/test_god_mode_auth.py::test_websocket_connect_valid_token_succeeds PASSED [ 28%]
+tests/security/test_server_auth.py::test_websocket_connect_no_token_fails PASSED [ 28%]
+tests/security/test_server_auth.py::test_websocket_connect_invalid_token_fails PASSED [ 28%]
+tests/security/test_server_auth.py::test_websocket_connect_valid_token_succeeds PASSED [ 28%]
+tests/security/test_websocket_auth.py::test_auth_success FAILED          [ 28%]
+tests/security/test_websocket_auth.py::test_auth_missing_token FAILED    [ 29%]
+tests/security/test_websocket_auth.py::test_auth_invalid_token FAILED    [ 29%]
+tests/simulation/components/engines/test_asset_management_engine.py::test_invest_automation_success PASSED [ 29%]
+tests/simulation/components/engines/test_asset_management_engine.py::test_invest_automation_max_cap PASSED [ 29%]
+tests/simulation/components/engines/test_asset_management_engine.py::test_invest_capex_success PASSED [ 29%]
+tests/simulation/components/engines/test_asset_management_engine.py::test_invest_negative_amount PASSED [ 29%]
+tests/simulation/components/engines/test_asset_management_engine.py::test_invest_unknown_type PASSED [ 29%]
+tests/simulation/components/engines/test_production_engine.py::test_produce_success PASSED [ 29%]
+tests/simulation/components/engines/test_production_engine.py::test_produce_input_constraint PASSED [ 29%]
 tests/simulation/components/engines/test_production_engine.py::test_produce_no_employees PASSED [ 29%]
-tests/simulation/components/engines/test_rd_engine.py::test_research_success PASSED [ 29%]
-tests/simulation/components/engines/test_rd_engine.py::test_research_failure PASSED [ 29%]
-tests/simulation/components/engines/test_rd_engine.py::test_research_negative_amount PASSED [ 29%]
-tests/simulation/factories/test_agent_factory.py::test_create_household PASSED [ 29%]
-tests/simulation/factories/test_agent_factory.py::test_create_newborn PASSED [ 29%]
-tests/simulation/test_firm_refactor.py::test_firm_initialization_states PASSED [ 29%]
-tests/simulation/test_firm_refactor.py::test_command_bus_internal_orders_delegation PASSED [ 29%]
-tests/simulation/test_firm_refactor.py::test_produce_orchestration PASSED [ 29%]
+tests/simulation/components/engines/test_rd_engine.py::test_research_success PASSED [ 30%]
+tests/simulation/components/engines/test_rd_engine.py::test_research_failure PASSED [ 30%]
+tests/simulation/components/engines/test_rd_engine.py::test_research_negative_amount PASSED [ 30%]
+tests/simulation/factories/test_agent_factory.py::test_create_household PASSED [ 30%]
+tests/simulation/factories/test_agent_factory.py::test_create_newborn PASSED [ 30%]
+tests/simulation/test_firm_refactor.py::test_firm_initialization_states PASSED [ 30%]
+tests/simulation/test_firm_refactor.py::test_command_bus_internal_orders_delegation PASSED [ 30%]
+tests/simulation/test_firm_refactor.py::test_produce_orchestration PASSED [ 30%]
 tests/system/test_audit_integrity.py::TestEconomicIntegrityAudit::test_birth_gift_rounding PASSED [ 30%]
-tests/system/test_audit_integrity.py::TestEconomicIntegrityAudit::test_inheritance_distribution PASSED [ 30%]
-tests/system/test_audit_integrity.py::TestEconomicIntegrityAudit::test_public_manager_tax_atomicity PASSED [ 30%]
-tests/system/test_command_service_rollback.py::test_rollback_set_param_preserves_origin PASSED [ 30%]
-tests/system/test_command_service_rollback.py::test_rollback_set_param_deletes_new_key PASSED [ 30%]
-tests/system/test_command_service_rollback.py::test_rollback_inject_asset PASSED [ 30%]
-tests/system/test_engine.py::TestSimulation::test_simulation_initialization PASSED [ 30%]
-tests/system/test_engine.py::TestSimulation::test_prepare_market_data_basic PASSED [ 30%]
-tests/system/test_engine.py::TestSimulation::test_prepare_market_data_no_goods_market PASSED [ 30%]
-tests/system/test_engine.py::TestSimulation::test_prepare_market_data_with_best_ask PASSED [ 30%]
-tests/system/test_engine.py::TestSimulation::test_process_transactions_goods_trade PASSED [ 31%]
-tests/system/test_engine.py::TestSimulation::test_process_transactions_labor_trade PASSED [ 31%]
-tests/system/test_engine.py::TestSimulation::test_process_transactions_research_labor_trade PASSED [ 31%]
-tests/system/test_engine.py::TestSimulation::test_process_transactions_invalid_agents PASSED [ 31%]
-tests/system/test_engine.py::test_handle_agent_lifecycle_removes_inactive_agents PASSED [ 31%]
-tests/system/test_phase29_depression.py::TestPhase29Depression::test_crisis_monitor_logging PASSED [ 31%]
-tests/system/test_phase29_depression.py::TestPhase29Depression::test_depression_scenario_triggers PASSED [ 31%]
-tests/system/test_serialization.py::TestSerialization::test_firm_multi_inventory_save_load PASSED [ 31%]
-tests/system/test_serialization.py::TestSerialization::test_household_multi_inventory_save_load PASSED [ 31%]
-tests/system/test_server_auth.py::test_auth_success PASSED               [ 32%]
-tests/system/test_server_auth.py::test_auth_failure_invalid_token PASSED [ 32%]
-tests/system/test_server_auth.py::test_auth_failure_missing_token PASSED [ 32%]
-tests/system/test_server_security.py::test_server_config_dto_defaults PASSED [ 32%]
-tests/system/test_server_security.py::test_server_binding_check_secure PASSED [ 32%]
-tests/system/test_server_security.py::test_server_binding_check_insecure PASSED [ 32%]
-tests/system/test_server_security.py::test_server_properties_proxied PASSED [ 32%]
-tests/test_firm_inventory_slots.py::test_add_item_main_slot PASSED       [ 32%]
-tests/test_firm_inventory_slots.py::test_add_item_input_slot PASSED      [ 32%]
-tests/test_firm_inventory_slots.py::test_quality_averaging_main PASSED   [ 33%]
-tests/test_firm_inventory_slots.py::test_quality_averaging_input PASSED  [ 33%]
-tests/test_firm_inventory_slots.py::test_remove_item_input PASSED        [ 33%]
-tests/test_firm_inventory_slots.py::test_remove_item_input_insufficient PASSED [ 33%]
-tests/test_firm_inventory_slots.py::test_clear_inventory PASSED          [ 33%]
-tests/test_firm_inventory_slots.py::test_facade_property PASSED          [ 33%]
-tests/test_firm_surgical_separation.py::TestFirmSurgicalSeparation::test_make_decision_orchestrates_engines PASSED [ 33%]
-tests/test_firm_surgical_separation.py::TestFirmSurgicalSeparation::test_state_persistence_across_ticks PASSED [ 33%]
-tests/test_ledger_manager.py::test_parse_ledger_standard PASSED          [ 33%]
-tests/test_ledger_manager.py::test_archive_resolved_items PASSED         [ 34%]
-tests/test_ledger_manager.py::test_register_new_item PASSED              [ 34%]
-tests/test_ledger_manager.py::test_sync_with_codebase PASSED             [ 34%]
-tests/test_ledger_manager.py::test_parser_resilience PASSED              [ 34%]
-tests/test_ledger_manager.py::test_archive_atomicity_failure PASSED      [ 34%]
-tests/test_ledger_manager.py::test_get_next_id PASSED                    [ 34%]
-tests/test_policy_lockout.py::TestPolicyLockout::test_government_fire_advisor PASSED [ 34%]
-tests/test_policy_lockout.py::TestPolicyLockout::test_manager_lockout PASSED [ 34%]
-tests/test_server_auth.py::test_websocket_auth_query_param PASSED        [ 34%]
-tests/test_server_auth.py::test_websocket_auth_header PASSED             [ 34%]
-tests/test_server_auth.py::test_websocket_auth_failure PASSED            [ 35%]
-tests/test_wo_4_1_protocols.py::test_housing_handler_with_protocol_agent PASSED [ 35%]
-tests/test_wo_4_1_protocols.py::test_protocol_compliance PASSED          [ 35%]
-tests/test_ws.py::test_websocket_endpoint PASSED                         [ 35%]
-tests/unit/agents/test_government.py::test_calculate_income_tax_delegation PASSED [ 35%]
-tests/unit/agents/test_government.py::test_calculate_corporate_tax_delegation PASSED [ 35%]
-tests/unit/agents/test_government.py::test_collect_tax_removed PASSED    [ 35%]
-tests/unit/agents/test_government.py::test_run_public_education_delegation PASSED [ 35%]
-tests/unit/agents/test_government.py::test_deficit_spending_allowed_within_limit PASSED [ 35%]
-tests/unit/agents/test_government.py::test_deficit_spending_blocked_if_bond_fails PASSED [ 36%]
-tests/unit/analysis/test_scenario_verifier.py::TestScenarioVerifier::test_initialize_subscribes_to_telemetry PASSED [ 36%]
-tests/unit/analysis/test_scenario_verifier.py::TestScenarioVerifier::test_verify_tick_aggregates_reports PASSED [ 36%]
-tests/unit/analysis/test_scenario_verifier.py::TestScenarioVerifier::test_verify_tick_handles_missing_data PASSED [ 36%]
-tests/unit/analysis/test_scenario_verifier.py::TestScenarioVerifier::test_verify_tick_handles_running_state PASSED [ 36%]
-tests/unit/analysis/test_scenario_verifier.py::TestScenarioVerifier::test_verify_tick_handles_exception_in_judge PASSED [ 36%]
-tests/unit/components/test_agent_lifecycle.py::test_run_tick_execution_order PASSED [ 36%]
-tests/unit/components/test_agent_lifecycle.py::test_run_tick_unemployed PASSED [ 36%]
-tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_add_child PASSED [ 36%]
-tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_age_one_tick PASSED [ 37%]
-tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_create_offspring_demographics PASSED [ 37%]
-tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_get_generational_similarity PASSED [ 37%]
-tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_handle_death_above_threshold PASSED [ 37%]
-tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_handle_death_under_threshold PASSED [ 37%]
-tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_initialization PASSED [ 37%]
-tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_set_spouse PASSED [ 37%]
-tests/unit/components/test_engines.py::TestHREngine::test_create_fire_transaction PASSED [ 37%]
-tests/unit/components/test_engines.py::TestHREngine::test_process_payroll PASSED [ 37%]
-tests/unit/components/test_engines.py::TestSalesEngine::test_post_ask PASSED [ 38%]
-tests/unit/components/test_engines.py::TestSalesEngine::test_generate_marketing_transaction PASSED [ 38%]
-tests/unit/components/test_engines.py::TestFinanceEngine::test_generate_financial_transactions PASSED [ 38%]
-tests/unit/components/test_engines.py::TestProductionEngine::test_produce_depreciation PASSED [ 38%]
-tests/unit/components/test_market_component.py::test_choose_best_seller_utility PASSED [ 38%]
-tests/unit/components/test_market_component.py::test_choose_best_seller_no_market PASSED [ 38%]
-tests/unit/corporate/test_corporate_orchestrator.py::test_orchestration PASSED [ 38%]
-tests/unit/corporate/test_financial_strategy.py::test_dividend_logic PASSED [ 38%]
-tests/unit/corporate/test_financial_strategy.py::test_debt_logic_borrow PASSED [ 38%]
-tests/unit/corporate/test_hr_strategy.py::test_hiring_logic PASSED       [ 39%]
-tests/unit/corporate/test_production_strategy.py::test_rd_logic PASSED   [ 39%]
-tests/unit/corporate/test_production_strategy.py::test_automation_investment PASSED [ 39%]
-tests/unit/corporate/test_sales_manager.py::test_pricing_logic PASSED    [ 39%]
-tests/unit/dashboard/components/test_controls.py::TestControls::test_missing_registry_value_disables_widget PASSED [ 39%]
-tests/unit/dashboard/components/test_controls.py::TestControls::test_on_change_generates_command PASSED [ 39%]
-tests/unit/dashboard/components/test_controls.py::TestControls::test_render_dynamic_controls_tabs PASSED [ 39%]
-tests/unit/dashboard/test_registry_service.py::TestRegistryService::test_get_all_metadata PASSED [ 39%]
-tests/unit/dashboard/test_registry_service.py::TestRegistryService::test_get_metadata_by_key PASSED [ 39%]
-tests/unit/dashboard/test_registry_service.py::TestRegistryService::test_get_metadata_unknown_key PASSED [ 39%]
-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_audit_logs PASSED [ 40%]
-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_initialization PASSED [ 40%]
-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_send_command PASSED [ 40%]
-tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_telemetry_handling PASSED [ 40%]
-tests/unit/decisions/test_animal_spirits_phase2.py::TestHouseholdSurvivalOverride::test_survival_override_triggered PASSED [ 40%]
-tests/unit/decisions/test_animal_spirits_phase2.py::TestHouseholdSurvivalOverride::test_survival_override_insufficient_funds PASSED [ 40%]
-tests/unit/decisions/test_animal_spirits_phase2.py::TestFirmPricingLogic::test_cost_plus_fallback PASSED [ 40%]
-tests/unit/decisions/test_animal_spirits_phase2.py::TestFirmPricingLogic::test_fire_sale_trigger PASSED [ 40%]
-tests/unit/decisions/test_finance_rules.py::TestFinanceRules::test_rd_investment PASSED [ 40%]
-tests/unit/decisions/test_finance_rules.py::TestFinanceRules::test_capex_investment PASSED [ 41%]
-tests/unit/decisions/test_finance_rules.py::TestFinanceRules::test_dividend_setting PASSED [ 41%]
-tests/unit/decisions/test_household_engine_refactor.py::test_engine_execution_parity_smoke PASSED [ 41%]
-tests/unit/decisions/test_household_integration_new.py::TestHouseholdIntegrationNew::test_make_decision_integration PASSED [ 41%]
-tests/unit/decisions/test_hr_rules.py::TestHRRules::test_make_decisions_hires_labor PASSED [ 41%]
-tests/unit/decisions/test_hr_rules.py::TestHRRules::test_make_decisions_does_not_hire_when_full PASSED [ 41%]
-tests/unit/decisions/test_hr_rules.py::TestHRRules::test_make_decisions_fires_excess_labor PASSED [ 41%]
-tests/unit/decisions/test_production_rules.py::TestProductionRules::test_initialization PASSED [ 41%]
-tests/unit/decisions/test_production_rules.py::TestProductionRules::test_make_decisions_overstock_reduces_target PASSED [ 41%]
-tests/unit/decisions/test_production_rules.py::TestProductionRules::test_make_decisions_understock_increases_target PASSED [ 42%]
-tests/unit/decisions/test_production_rules.py::TestProductionRules::test_make_decisions_target_within_bounds_no_change PASSED [ 42%]
-tests/unit/decisions/test_production_rules.py::TestProductionRules::test_make_decisions_target_min_max_bounds PASSED [ 42%]
-tests/unit/decisions/test_sales_rules.py::TestSalesRules::test_sales_aggressiveness_impact_on_price PASSED [ 42%]
-tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_clear_market_matching PASSED [ 42%]
-tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_settle_matured_loans PASSED [ 42%]
-tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_submit_loan_offer_insufficient_reserves PASSED [ 42%]
-tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_submit_loan_offer_success PASSED [ 42%]
-tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_submit_loan_request PASSED [ 42%]
-tests/unit/finance/engines/test_finance_engines.py::test_loan_risk_engine_assess_approved PASSED [ 43%]
-tests/unit/finance/engines/test_finance_engines.py::test_loan_risk_engine_assess_denied PASSED [ 43%]
-tests/unit/finance/engines/test_finance_engines.py::test_loan_booking_engine_grant_loan PASSED [ 43%]
-tests/unit/finance/engines/test_finance_engines.py::test_liquidation_engine_liquidate PASSED [ 43%]
-tests/unit/finance/engines/test_finance_engines.py::test_debt_servicing_engine PASSED [ 43%]
-tests/unit/finance/engines/test_finance_engines.py::test_zero_sum_verifier PASSED [ 43%]
-tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_bank_methods_presence PASSED [ 43%]
-tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_grant_loan PASSED [ 43%]
-tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_repay_loan PASSED [ 43%]
-tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_get_balance PASSED [ 43%]
-tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_get_debt_status PASSED [ 44%]
-tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_interface_compliance_mypy PASSED [ 44%]
-tests/unit/finance/test_credit_scoring.py::test_assess_approved PASSED   [ 44%]
-tests/unit/finance/test_credit_scoring.py::test_assess_dti_fail PASSED   [ 44%]
-tests/unit/finance/test_credit_scoring.py::test_assess_ltv_fail PASSED   [ 44%]
-tests/unit/finance/test_credit_scoring.py::test_assess_unsecured_cap_fail PASSED [ 44%]
-tests/unit/finance/test_credit_scoring.py::test_zero_income_fail PASSED  [ 44%]
-tests/unit/finance/test_finance_system_refactor.py::test_request_bailout_loan_success PASSED [ 44%]
-tests/unit/finance/test_finance_system_refactor.py::test_request_bailout_loan_insufficient_funds PASSED [ 44%]
-tests/unit/finance/test_finance_system_refactor.py::test_grant_bailout_loan_deprecated PASSED [ 45%]
-tests/unit/finance/test_utils.py::test_round_to_pennies_basic PASSED     [ 45%]
-tests/unit/finance/test_utils.py::test_round_to_pennies_decimal PASSED   [ 45%]
-tests/unit/finance/test_utils.py::test_round_to_pennies_int PASSED       [ 45%]
-tests/unit/finance/test_utils.py::test_round_to_pennies_large PASSED     [ 45%]
-tests/unit/finance/test_utils.py::test_round_to_pennies_negative PASSED  [ 45%]
-tests/unit/firm/test_firm_actions.py::TestFirmActionExecutor::test_invest_automation_success PASSED [ 45%]
-tests/unit/firm/test_firm_actions.py::TestFirmActionExecutor::test_invest_rd_success PASSED [ 45%]
-tests/unit/firm/test_firm_actions.py::TestFirmActionExecutor::test_fire_employee PASSED [ 45%]
-tests/unit/firm/test_production_int_math.py::test_production_integer_depreciation PASSED [ 46%]
-tests/unit/firm/test_production_int_math.py::test_production_deterministic_output PASSED [ 46%]
-tests/unit/firm/test_production_int_math.py::test_production_deterministic_floor PASSED [ 46%]
-tests/unit/governance/test_judicial_ssot.py::test_waterfall_cash_only_ssot PASSED [ 46%]
-tests/unit/governance/test_judicial_ssot.py::test_waterfall_partial_cash PASSED [ 46%]
-tests/unit/governance/test_judicial_system.py::test_judicial_system_waterfall_full_recovery PASSED [ 46%]
-tests/unit/governance/test_judicial_system.py::test_judicial_system_waterfall_partial_recovery_and_restructuring PASSED [ 46%]
-tests/unit/household/test_housing_connector.py::TestHousingConnector::test_initiate_purchase PASSED [ 46%]
-tests/unit/household/test_housing_connector.py::TestHousingConnector::test_unknown_action PASSED [ 46%]
-tests/unit/household/test_snapshot_assembler.py::TestHouseholdSnapshotAssembler::test_assemble_snapshot_copies_state PASSED [ 47%]
-tests/unit/household/test_snapshot_assembler.py::TestHouseholdSnapshotAssembler::test_assemble_nested_structures PASSED [ 47%]
-tests/unit/markets/test_circuit_breaker_relaxation.py::TestCircuitBreakerRelaxation::test_sparse_history_returns_infinite_bounds PASSED [ 47%]
-tests/unit/markets/test_circuit_breaker_relaxation.py::TestCircuitBreakerRelaxation::test_sufficient_history_returns_finite_bounds PASSED [ 47%]
-tests/unit/markets/test_circuit_breaker_relaxation.py::TestCircuitBreakerRelaxation::test_no_history_returns_infinite_bounds PASSED [ 47%]
-tests/unit/markets/test_circuit_breaker_relaxation.py::TestCircuitBreakerRelaxation::test_default_config_fallback PASSED [ 47%]
-tests/unit/markets/test_housing_transaction_handler.py::test_housing_transaction_success PASSED [ 47%]
-tests/unit/markets/test_housing_transaction_handler.py::test_housing_transaction_insufficient_down_payment PASSED [ 47%]
-tests/unit/markets/test_housing_transaction_handler.py::test_housing_transaction_loan_rejected PASSED [ 47%]
-tests/unit/markets/test_housing_transaction_handler.py::test_housing_transaction_disbursement_failed PASSED [ 47%]
-tests/unit/markets/test_loan_market.py::TestLoanMarket::test_initialization PASSED [ 48%]
-tests/unit/markets/test_loan_market.py::TestLoanMarket::test_place_loan_request_grants_loan PASSED [ 48%]
-tests/unit/markets/test_loan_market.py::TestLoanMarket::test_place_loan_request_with_profile PASSED [ 48%]
-tests/unit/markets/test_loan_market.py::TestLoanMarket::test_place_loan_request_denies_loan PASSED [ 48%]
-tests/unit/markets/test_loan_market.py::TestLoanMarket::test_place_repayment_processes_repayment PASSED [ 48%]
-tests/unit/markets/test_loan_market.py::TestLoanMarket::test_place_order_unknown_type_logs_warning PASSED [ 48%]
-tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_evaluate_mortgage_success PASSED [ 48%]
-tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_evaluate_mortgage_fail_ltv PASSED [ 48%]
-tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_evaluate_mortgage_fail_dti PASSED [ 48%]
-tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_evaluate_mortgage_fail_dti_with_existing_debt PASSED [ 49%]
-tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_stage_mortgage_success PASSED [ 49%]
-tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_stage_mortgage_fail_eval PASSED [ 49%]
-tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_end_to_end_dto_purity PASSED [ 49%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_initialization PASSED [ 49%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_place_buy_order_adds_and_sorts PASSED [ 49%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_place_sell_order_adds_and_sorts PASSED [ 49%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_place_order_unknown_type_logs_warning PASSED [ 49%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_full_fill PASSED [ 49%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_partial_fill_buy_order PASSED [ 50%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_partial_fill_sell_order PASSED [ 50%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_no_match_price PASSED [ 50%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_multiple_matches PASSED [ 50%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_different_items PASSED [ 50%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_empty_books PASSED [ 50%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_transaction_type_goods PASSED [ 50%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_transaction_type_labor PASSED [ 50%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_get_best_ask_empty PASSED [ 50%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_get_best_ask_non_empty PASSED [ 51%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_get_best_bid_empty PASSED [ 51%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_get_best_bid_non_empty PASSED [ 51%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_get_order_book_status_empty PASSED [ 51%]
-tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_get_order_book_status_non_empty PASSED [ 51%]
-tests/unit/markets/test_order_book_market_cancellation.py::TestOrderBookMarketCancellation::test_cancel_orders_removes_agent_orders PASSED [ 51%]
-tests/unit/markets/test_order_book_market_cancellation.py::TestOrderBookMarketCancellation::test_cancel_orders_no_effect_if_no_orders PASSED [ 51%]
-tests/unit/markets/test_stock_market_cancellation.py::TestStockMarketCancellation::test_cancel_orders_removes_agent_orders PASSED [ 51%]
-tests/unit/markets/test_stock_market_cancellation.py::TestStockMarketCancellation::test_cancel_orders_mixed_int_str_id PASSED [ 51%]
-tests/unit/modules/analysis/test_bubble_observatory.py::TestBubbleObservatory::test_pir_calculation_normal PASSED [ 52%]
-tests/unit/modules/analysis/test_bubble_observatory.py::TestBubbleObservatory::test_pir_calculation_zero_income PASSED [ 52%]
-tests/unit/modules/analysis/test_bubble_observatory.py::TestBubbleObservatory::test_pir_alarm PASSED [ 52%]
-tests/unit/modules/analysis/test_bubble_observatory.py::TestBubbleObservatory::test_csv_logging_structure PASSED [ 52%]
-tests/unit/modules/common/config/test_impl.py::test_config_manager_load_and_get PASSED [ 52%]
-tests/unit/modules/common/config/test_impl.py::test_config_manager_override PASSED [ 52%]
-tests/unit/modules/common/config/test_impl.py::test_legacy_support PASSED [ 52%]
-tests/unit/modules/common/config_manager/test_config_manager.py::test_load_yaml PASSED [ 52%]
-tests/unit/modules/common/config_manager/test_config_manager.py::test_get_with_default PASSED [ 52%]
-tests/unit/modules/common/config_manager/test_config_manager.py::test_hybrid_fallback PASSED [ 52%]
-tests/unit/modules/common/config_manager/test_config_manager.py::test_set_value_for_test PASSED [ 53%]
-tests/unit/modules/demographics/test_event_consistency.py::test_demographic_event_consistency PASSED [ 53%]
-tests/unit/modules/demographics/test_event_consistency.py::test_sync_stats PASSED [ 53%]
-tests/unit/modules/finance/central_bank/test_cb_service.py::test_set_policy_rate_valid PASSED [ 53%]
-tests/unit/modules/finance/central_bank/test_cb_service.py::test_set_policy_rate_invalid PASSED [ 53%]
-tests/unit/modules/finance/central_bank/test_cb_service.py::test_conduct_omo_purchase_success PASSED [ 53%]
-tests/unit/modules/finance/central_bank/test_cb_service.py::test_conduct_omo_sale_success PASSED [ 53%]
-tests/unit/modules/finance/central_bank/test_cb_service.py::test_conduct_omo_failure PASSED [ 53%]
-tests/unit/modules/finance/test_corporate_finance.py::TestAltmanZScoreCalculator::test_calculate_safe_zone PASSED [ 53%]
-tests/unit/modules/finance/test_corporate_finance.py::TestAltmanZScoreCalculator::test_calculate_distress_zone PASSED [ 54%]
-tests/unit/modules/finance/test_corporate_finance.py::TestAltmanZScoreCalculator::test_calculate_zero_assets PASSED [ 54%]
-tests/unit/modules/finance/test_corporate_finance.py::TestAltmanZScoreCalculator::test_calculate_negative_values PASSED [ 54%]
-tests/unit/modules/finance/test_double_entry.py::TestDoubleEntry::test_bailout_loan_generates_command PASSED [ 54%]
-tests/unit/modules/finance/test_double_entry.py::TestDoubleEntry::test_market_bond_issuance_generates_transaction PASSED [ 54%]
-tests/unit/modules/finance/test_double_entry.py::TestDoubleEntry::test_qe_bond_issuance_generates_transaction PASSED [ 54%]
-tests/unit/modules/finance/test_monetary_engine.py::test_monetary_engine_calculate_rate_structure PASSED [ 54%]
-tests/unit/modules/finance/test_qe.py::TestQE::test_issue_treasury_bonds_qe_trigger PASSED [ 54%]
-tests/unit/modules/finance/test_qe.py::TestQE::test_issue_treasury_bonds_normal PASSED [ 54%]
-tests/unit/modules/finance/test_settlement_purity.py::TestSettlementPurity::test_settlement_system_implements_monetary_authority PASSED [ 55%]
-tests/unit/modules/finance/test_settlement_purity.py::TestSettlementPurity::test_finance_system_uses_monetary_authority PASSED [ 55%]
-tests/unit/modules/finance/test_sovereign_debt.py::TestSovereignDebt::test_issue_treasury_bonds_calls_settlement_system PASSED [ 55%]
-tests/unit/modules/finance/test_sovereign_debt.py::TestSovereignDebt::test_collect_corporate_tax_calls_settlement_system PASSED [ 55%]
-tests/unit/modules/finance/test_sovereign_debt.py::TestSovereignDebt::test_risk_premium_calculation PASSED [ 55%]
-tests/unit/modules/finance/test_sovereign_debt.py::TestSovereignDebt::test_insufficient_funds_fails_issuance PASSED [ 55%]
-tests/unit/modules/finance/test_system.py::test_evaluate_solvency_startup_pass PASSED [ 55%]
-tests/unit/modules/finance/test_system.py::test_evaluate_solvency_startup_fail PASSED [ 55%]
-tests/unit/modules/finance/test_system.py::test_evaluate_solvency_established_pass PASSED [ 55%]
-tests/unit/modules/finance/test_system.py::test_evaluate_solvency_established_fail PASSED [ 56%]
-tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_market PASSED [ 56%]
-tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_qe PASSED [ 56%]
-tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_fail PASSED [ 56%]
-tests/unit/modules/finance/test_system.py::test_bailout_fails_with_insufficient_government_funds PASSED [ 56%]
-tests/unit/modules/finance/test_system.py::test_grant_bailout_loan PASSED [ 56%]
-tests/unit/modules/finance/test_system.py::test_service_debt_central_bank_repayment PASSED [ 56%]
-tests/unit/modules/firm/test_engines.py::TestFinanceEngine::test_plan_budget_basics PASSED [ 56%]
-tests/unit/modules/firm/test_engines.py::TestFinanceEngine::test_plan_budget_with_debt PASSED [ 56%]
-tests/unit/modules/firm/test_engines.py::TestFinanceEngine::test_plan_budget_returns_integers PASSED [ 56%]
-tests/unit/modules/firm/test_engines.py::TestHREngine::test_manage_workforce_hiring PASSED [ 57%]
-tests/unit/modules/firm/test_engines.py::TestHREngine::test_manage_workforce_firing PASSED [ 57%]
-tests/unit/modules/firm/test_engines.py::TestHREngine::test_manage_workforce_wage_scaling PASSED [ 57%]
-tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_determine_fiscal_stance_calculates_survival_cost_correctly PASSED [ 57%]
-tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_determine_fiscal_stance_defaults_if_no_config PASSED [ 57%]
-tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_calculate_tax_liability_progressive PASSED [ 57%]
-tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_calculate_tax_liability_zero_or_negative PASSED [ 57%]
-tests/unit/modules/government/components/test_monetary_ledger_expansion.py::TestMonetaryLedgerExpansion::test_asset_liquidation_expansion PASSED [ 57%]
-tests/unit/modules/government/components/test_monetary_ledger_expansion.py::TestMonetaryLedgerExpansion::test_lender_of_last_resort_expansion PASSED [ 57%]
-tests/unit/modules/government/components/test_monetary_ledger_expansion.py::TestMonetaryLedgerExpansion::test_other_types_no_expansion PASSED [ 58%]
-tests/unit/modules/government/components/test_monetary_policy_manager.py::TestMonetaryPolicyManager::test_equilibrium PASSED [ 58%]
-tests/unit/modules/government/components/test_monetary_policy_manager.py::TestMonetaryPolicyManager::test_gdp_zero_or_negative PASSED [ 58%]
-tests/unit/modules/government/components/test_monetary_policy_manager.py::TestMonetaryPolicyManager::test_high_inflation PASSED [ 58%]
-tests/unit/modules/government/components/test_monetary_policy_manager.py::TestMonetaryPolicyManager::test_missing_data_defaults PASSED [ 58%]
-tests/unit/modules/government/components/test_monetary_policy_manager.py::TestMonetaryPolicyManager::test_overheating_economy PASSED [ 58%]
-tests/unit/modules/government/components/test_monetary_policy_manager.py::TestMonetaryPolicyManager::test_recession PASSED [ 58%]
-tests/unit/modules/government/test_adaptive_gov_brain.py::test_propose_actions_red_party PASSED [ 58%]
-tests/unit/modules/government/test_adaptive_gov_brain.py::test_propose_actions_blue_party PASSED [ 58%]
-tests/unit/modules/government/test_adaptive_gov_brain.py::test_candidates_generation PASSED [ 59%]
-tests/unit/modules/government/test_fiscal_bond_service.py::TestFiscalBondService::test_calculate_yield_low_debt PASSED [ 59%]
-tests/unit/modules/government/test_fiscal_bond_service.py::TestFiscalBondService::test_calculate_yield_high_debt PASSED [ 59%]
-tests/unit/modules/government/test_fiscal_bond_service.py::TestFiscalBondService::test_issue_bonds_normal_buyer PASSED [ 59%]
-tests/unit/modules/government/test_fiscal_bond_service.py::TestFiscalBondService::test_issue_bonds_qe_buyer PASSED [ 59%]
-tests/unit/modules/government/test_fiscal_bond_service.py::TestFiscalBondService::test_issue_bonds_no_buyer PASSED [ 59%]
-tests/unit/modules/government/test_fiscal_engine.py::test_fiscal_engine_decide_structure PASSED [ 59%]
-tests/unit/modules/government/test_politics_system.py::test_enact_new_tax_policy PASSED [ 59%]
-tests/unit/modules/household/test_consumption_manager.py::TestConsumptionManager::test_consume_basic PASSED [ 59%]
-tests/unit/modules/household/test_consumption_manager.py::TestConsumptionManager::test_consume_service PASSED [ 60%]
-tests/unit/modules/household/test_consumption_manager.py::TestConsumptionManager::test_decide_and_consume PASSED [ 60%]
-tests/unit/modules/household/test_decision_unit.py::TestDecisionUnit::test_orchestrate_housing_buy PASSED [ 60%]
-tests/unit/modules/household/test_decision_unit.py::TestDecisionUnit::test_shadow_wage_update PASSED [ 60%]
-tests/unit/modules/household/test_econ_component.py::TestEconComponent::test_update_perceived_prices_basic PASSED [ 60%]
-tests/unit/modules/household/test_econ_component.py::TestEconComponent::test_update_perceived_prices_hyperinflation PASSED [ 60%]
-tests/unit/modules/household/test_new_engines.py::TestBeliefEngine::test_update_beliefs_basic PASSED [ 60%]
-tests/unit/modules/household/test_new_engines.py::TestCrisisEngine::test_evaluate_distress_portfolio PASSED [ 60%]
-tests/unit/modules/memory/test_memory_v2.py::TestMemoryManager::test_add_and_query_record PASSED [ 60%]
-tests/unit/modules/memory/test_memory_v2.py::TestMemoryManager::test_query_filtering PASSED [ 60%]
-tests/unit/modules/memory/test_memory_v2.py::TestMemoryManager::test_persistence PASSED [ 61%]
-tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_process_bankruptcy_event PASSED [ 61%]
-tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_generate_liquidation_orders PASSED [ 61%]
-tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_confirm_sale PASSED [ 61%]
-tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_deposit_revenue PASSED [ 61%]
-tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_generate_liquidation_orders_no_signal PASSED [ 61%]
-tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_generate_liquidation_orders_resets_metrics PASSED [ 61%]
-tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_implements_financial_agent PASSED [ 61%]
-tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_implements_asset_recovery_system PASSED [ 61%]
-tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_bankruptcy_processing_id_handling PASSED [ 62%]
-tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_liquidation_order_generation_id PASSED [ 62%]
-tests/unit/modules/system/services/test_schema_loader.py::TestSchemaLoader::test_load_schema_file_not_found PASSED [ 62%]
-tests/unit/modules/system/services/test_schema_loader.py::TestSchemaLoader::test_load_schema_invalid_structure PASSED [ 62%]
-tests/unit/modules/system/services/test_schema_loader.py::TestSchemaLoader::test_load_schema_success PASSED [ 62%]
-tests/unit/modules/system/services/test_schema_loader.py::TestSchemaLoader::test_load_schema_yaml_error PASSED [ 62%]
-tests/unit/modules/system/test_command_service_unit.py::test_dispatch_set_param PASSED [ 62%]
-tests/unit/modules/system/test_command_service_unit.py::test_rollback_set_param_restorable PASSED [ 62%]
-tests/unit/modules/system/test_command_service_unit.py::test_rollback_set_param_fallback PASSED [ 62%]
-tests/unit/modules/system/test_command_service_unit.py::test_rollback_creation_restorable PASSED [ 63%]
-tests/unit/modules/system/test_command_service_unit.py::test_dispatch_inject_money PASSED [ 63%]
-tests/unit/modules/system/test_command_service_unit.py::test_rollback_inject_money PASSED [ 63%]
-tests/unit/modules/system/test_command_service_unit.py::test_commit_last_tick_clears_stack PASSED [ 63%]
-tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_direct_access PASSED [ 63%]
-tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_registry_integration PASSED [ 63%]
-tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_missing_attribute PASSED [ 63%]
-tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_dir_listing PASSED [ 63%]
-tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_enum_access PASSED [ 63%]
-tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_set_and_get_basic PASSED [ 64%]
-tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_origin_priority PASSED [ 64%]
-tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_locking_mechanism PASSED [ 64%]
-tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_observer_notification PASSED [ 64%]
-tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_key_specific_observer PASSED [ 64%]
-tests/unit/modules/system/test_server_bridge.py::TestTelemetryExchange::test_thread_safety PASSED [ 64%]
-tests/unit/modules/system/test_server_bridge.py::TestTelemetryExchange::test_unsubscribe_stops_notification PASSED [ 64%]
-tests/unit/modules/system/test_server_bridge.py::TestTelemetryExchange::test_update_notifies_listener PASSED [ 64%]
-tests/unit/modules/system/test_telemetry.py::test_subscribe_and_harvest_valid_path PASSED [ 64%]
-tests/unit/modules/system/test_telemetry.py::test_subscribe_invalid_path PASSED [ 65%]
-tests/unit/modules/system/test_telemetry.py::test_multi_frequency PASSED [ 65%]
-tests/unit/modules/system/test_telemetry.py::test_unsubscribe PASSED     [ 65%]
-tests/unit/modules/system/test_telemetry.py::test_runtime_error_handling PASSED [ 65%]
-tests/unit/modules/system/test_telemetry.py::test_deep_nested_path PASSED [ 65%]
-tests/unit/modules/system/test_telemetry.py::test_root_object_path PASSED [ 65%]
-tests/unit/modules/system/test_telemetry.py::test_subscribe_pre_validation PASSED [ 65%]
-tests/unit/modules/system/test_telemetry_robustness.py::TestTelemetryRobustness::test_flat_key_resolution PASSED [ 65%]
-tests/unit/modules/system/test_telemetry_robustness.py::TestTelemetryRobustness::test_mixed_resolution PASSED [ 65%]
-tests/unit/modules/watchtower/test_agent_service.py::test_get_agents_basic_empty PASSED [ 65%]
-tests/unit/modules/watchtower/test_agent_service.py::test_get_agents_basic_household PASSED [ 66%]
-tests/unit/modules/watchtower/test_agent_service.py::test_get_agents_basic_firm PASSED [ 66%]
-tests/unit/modules/watchtower/test_agent_service.py::test_get_agents_basic_inactive PASSED [ 66%]
-tests/unit/modules/watchtower/test_agent_service.py::test_get_agents_basic_limit PASSED [ 66%]
-tests/unit/modules/watchtower/test_agent_service.py::test_get_agent_detail_household PASSED [ 66%]
-tests/unit/modules/watchtower/test_agent_service.py::test_get_agent_detail_firm PASSED [ 66%]
-tests/unit/modules/watchtower/test_agent_service.py::test_get_agent_detail_not_found PASSED [ 66%]
-tests/unit/orchestration/test_phase_housing_saga.py::test_phase_housing_saga_execution PASSED [ 66%]
-tests/unit/orchestration/test_phase_housing_saga.py::test_phase_housing_saga_execution_fallback PASSED [ 66%]
-tests/unit/orchestration/test_phase_housing_saga.py::test_phase_housing_saga_no_settlement_system PASSED [ 67%]
-tests/unit/orchestration/test_phase_housing_saga.py::test_phase_housing_saga_system_no_method PASSED [ 67%]
-tests/unit/registry/test_service.py::test_load_missions_empty PASSED     [ 67%]
-tests/unit/registry/test_service.py::test_register_and_get_mission PASSED [ 67%]
-tests/unit/registry/test_service.py::test_delete_mission PASSED          [ 67%]
-tests/unit/registry/test_service.py::test_get_mission_prompt PASSED      [ 67%]
-tests/unit/registry/test_service.py::test_migration PASSED               [ 67%]
-tests/unit/registry/test_service.py::test_lock_timeout PASSED            [ 67%]
-tests/unit/registry/test_service.py::test_lock_success PASSED            [ 67%]
-tests/unit/sagas/test_orchestrator.py::test_submit_saga PASSED           [ 68%]
-tests/unit/sagas/test_orchestrator.py::test_process_sagas_liveness_check PASSED [ 68%]
-tests/unit/sagas/test_orchestrator.py::test_process_sagas_active_participants PASSED [ 68%]
-tests/unit/sagas/test_orchestrator.py::test_find_and_compensate_by_agent_success PASSED [ 68%]
-tests/unit/sagas/test_orchestrator.py::test_find_and_compensate_by_agent_no_handler PASSED [ 68%]
-tests/unit/simulation/orchestration/phases/test_intercept.py::test_execute_no_commands PASSED [ 68%]
-tests/unit/simulation/orchestration/phases/test_intercept.py::test_execute_commands_audit_pass PASSED [ 68%]
-tests/unit/simulation/systems/test_audit_total_m2.py::test_audit_total_m2_logic PASSED [ 68%]
-tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_disbursement_failure PASSED [ 68%]
-tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_government_seller PASSED [ 69%]
-tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_payment_failure PASSED [ 69%]
-tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_purchase_success PASSED [ 69%]
-tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_fallback_price PASSED [ 69%]
-tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_no_inventory PASSED [ 69%]
-tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_no_public_manager PASSED [ 69%]
-tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_payment_fail PASSED [ 69%]
-tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_with_inventory PASSED [ 69%]
-tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_execute_delegation PASSED [ 69%]
-tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_firm_distress PASSED [ 69%]
-tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_firm_grace_period_config PASSED [ 70%]
-tests/unit/systems/lifecycle/test_birth_system.py::TestBirthSystem::test_process_births_with_factory_zero_sum PASSED [ 70%]
-tests/unit/systems/lifecycle/test_death_system.py::TestDeathSystem::test_firm_liquidation PASSED [ 70%]
-tests/unit/systems/lifecycle/test_death_system.py::TestDeathSystem::test_firm_liquidation_cancels_orders PASSED [ 70%]
-tests/unit/systems/test_commerce_system.py::test_execute_consumption_and_leisure PASSED [ 70%]
-tests/unit/systems/test_commerce_system.py::test_fast_track_consumption_if_needed PASSED [ 70%]
-tests/unit/systems/test_commerce_system_logging.py::test_log_reject_when_stock_out_and_insolvent PASSED [ 70%]
-tests/unit/systems/test_commerce_system_logging.py::test_log_reject_when_stock_out_but_solvent PASSED [ 70%]
-tests/unit/systems/test_demographic_manager_newborn.py::test_newborn_receives_initial_needs_from_config PASSED [ 70%]
-tests/unit/systems/test_event_system.py::test_inflation_shock PASSED     [ 71%]
-tests/unit/systems/test_event_system.py::test_recession_shock PASSED     [ 71%]
-tests/unit/systems/test_event_system.py::test_no_event PASSED            [ 71%]
-tests/unit/systems/test_firm_management_leak.py::TestFirmManagementLeak::test_spawn_firm_leak_detection PASSED [ 71%]
-tests/unit/systems/test_firm_management_refactor.py::TestFirmManagementRefactor::test_spawn_firm_missing_settlement_system PASSED [ 71%]
-tests/unit/systems/test_firm_management_refactor.py::TestFirmManagementRefactor::test_spawn_firm_transfer_failure PASSED [ 71%]
-tests/unit/systems/test_housing_service.py::test_housing_service_handle_housing_updates_mortgage PASSED [ 71%]
-tests/unit/systems/test_housing_service.py::test_housing_service_handle_housing_clears_mortgage_if_missing PASSED [ 71%]
-tests/unit/systems/test_housing_system.py::TestHousingSystemRefactor::test_process_housing_maintenance_uses_transfer PASSED [ 71%]
-tests/unit/systems/test_housing_system.py::TestHousingSystemRefactor::test_process_housing_rent_collection_uses_transfer PASSED [ 72%]
-tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_distribution_transaction_generation PASSED [ 72%]
-tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_multiple_heirs_metadata PASSED [ 72%]
-tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_escheatment_when_no_heirs PASSED [ 72%]
-tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_zero_assets_distribution PASSED [ 72%]
-tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_tax_transaction_generation PASSED [ 72%]
-tests/unit/systems/test_labor_market_analyzer.py::test_update_market_history PASSED [ 72%]
-tests/unit/systems/test_labor_market_analyzer.py::test_calculate_shadow_reservation_wage_increase PASSED [ 72%]
-tests/unit/systems/test_labor_market_analyzer.py::test_calculate_shadow_reservation_wage_decay PASSED [ 72%]
+tests/system/test_audit_integrity.py::TestEconomicIntegrityAudit::test_inheritance_distribution PASSED [ 31%]
+tests/system/test_audit_integrity.py::TestEconomicIntegrityAudit::test_public_manager_tax_atomicity PASSED [ 31%]
+tests/system/test_command_service_rollback.py::test_rollback_set_param_preserves_origin PASSED [ 31%]
+tests/system/test_command_service_rollback.py::test_rollback_set_param_deletes_new_key PASSED [ 31%]
+tests/system/test_command_service_rollback.py::test_rollback_inject_asset PASSED [ 31%]
+tests/system/test_config_proxy.py::test_bootstrap PASSED                 [ 31%]
+tests/system/test_config_proxy.py::test_override PASSED                  [ 31%]
+tests/system/test_config_proxy.py::test_reset_to_defaults PASSED         [ 31%]
+tests/system/test_config_proxy.py::test_observer PASSED                  [ 31%]
+tests/system/test_config_proxy.py::test_snapshot PASSED                  [ 31%]
+tests/system/test_config_proxy.py::test_get_method PASSED                [ 32%]
+tests/system/test_config_proxy.py::test_lock_mechanism PASSED            [ 32%]
+tests/system/test_engine.py::TestSimulation::test_simulation_initialization PASSED [ 32%]
+tests/system/test_engine.py::TestSimulation::test_prepare_market_data_basic FAILED [ 32%]
+tests/system/test_engine.py::TestSimulation::test_prepare_market_data_no_goods_market FAILED [ 32%]
+tests/system/test_engine.py::TestSimulation::test_prepare_market_data_with_best_ask FAILED [ 32%]
+tests/system/test_engine.py::TestSimulation::test_process_transactions_goods_trade PASSED [ 32%]
+tests/system/test_engine.py::TestSimulation::test_process_transactions_labor_trade PASSED [ 32%]
+tests/system/test_engine.py::TestSimulation::test_process_transactions_research_labor_trade PASSED [ 32%]
+tests/system/test_engine.py::TestSimulation::test_process_transactions_invalid_agents PASSED [ 32%]
+tests/system/test_engine.py::test_handle_agent_lifecycle_removes_inactive_agents FAILED [ 33%]
+tests/system/test_phase29_depression.py::TestPhase29Depression::test_crisis_monitor_logging FAILED [ 33%]
+tests/system/test_phase29_depression.py::TestPhase29Depression::test_depression_scenario_triggers FAILED [ 33%]
+tests/system/test_serialization.py::TestSerialization::test_firm_multi_inventory_save_load PASSED [ 33%]
+tests/system/test_serialization.py::TestSerialization::test_household_multi_inventory_save_load PASSED [ 33%]
+tests/system/test_server_auth.py::test_auth_success FAILED               [ 33%]
+tests/system/test_server_auth.py::test_auth_failure_invalid_token FAILED [ 33%]
+tests/system/test_server_auth.py::test_auth_failure_missing_token FAILED [ 33%]
+tests/system/test_server_security.py::test_server_config_dto_defaults PASSED [ 33%]
+tests/system/test_server_security.py::test_server_binding_check_secure PASSED [ 34%]
+tests/system/test_server_security.py::test_server_binding_check_insecure PASSED [ 34%]
+tests/system/test_server_security.py::test_server_properties_proxied PASSED [ 34%]
+tests/test_db_migration.py::test_fresh_install_transactions_table_created PASSED [ 34%]
+tests/test_db_migration.py::test_migration_adds_total_pennies PASSED     [ 34%]
+tests/test_db_migration.py::test_idempotency PASSED                      [ 34%]
+tests/test_firm_inventory_slots.py::test_add_item_main_slot PASSED       [ 34%]
+tests/test_firm_inventory_slots.py::test_add_item_input_slot PASSED      [ 34%]
+tests/test_firm_inventory_slots.py::test_quality_averaging_main PASSED   [ 34%]
+tests/test_firm_inventory_slots.py::test_quality_averaging_input PASSED  [ 34%]
+tests/test_firm_inventory_slots.py::test_remove_item_input PASSED        [ 35%]
+tests/test_firm_inventory_slots.py::test_remove_item_input_insufficient PASSED [ 35%]
+tests/test_firm_inventory_slots.py::test_clear_inventory PASSED          [ 35%]
+tests/test_firm_inventory_slots.py::test_facade_property PASSED          [ 35%]
+tests/test_firm_surgical_separation.py::TestFirmSurgicalSeparation::test_make_decision_orchestrates_engines PASSED [ 35%]
+tests/test_firm_surgical_separation.py::TestFirmSurgicalSeparation::test_state_persistence_across_ticks PASSED [ 35%]
+tests/test_ledger_manager.py::test_parse_ledger_standard PASSED          [ 35%]
+tests/test_ledger_manager.py::test_archive_resolved_items PASSED         [ 35%]
+tests/test_ledger_manager.py::test_register_new_item PASSED              [ 35%]
+tests/test_ledger_manager.py::test_sync_with_codebase PASSED             [ 35%]
+tests/test_ledger_manager.py::test_parser_resilience PASSED              [ 36%]
+tests/test_ledger_manager.py::test_archive_atomicity_failure PASSED      [ 36%]
+tests/test_ledger_manager.py::test_get_next_id PASSED                    [ 36%]
+tests/test_policy_lockout.py::TestPolicyLockout::test_government_fire_advisor PASSED [ 36%]
+tests/test_policy_lockout.py::TestPolicyLockout::test_manager_lockout PASSED [ 36%]
+tests/test_server_auth.py::test_websocket_auth_query_param PASSED        [ 36%]
+tests/test_server_auth.py::test_websocket_auth_header PASSED             [ 36%]
+tests/test_server_auth.py::test_websocket_auth_failure PASSED            [ 36%]
+tests/test_wo_4_1_protocols.py::test_housing_handler_with_protocol_agent PASSED [ 36%]
+tests/test_wo_4_1_protocols.py::test_protocol_compliance PASSED          [ 37%]
+tests/test_ws.py::test_websocket_endpoint PASSED                         [ 37%]
+tests/unit/agents/test_government.py::test_calculate_income_tax_delegation PASSED [ 37%]
+tests/unit/agents/test_government.py::test_calculate_corporate_tax_delegation PASSED [ 37%]
+tests/unit/agents/test_government.py::test_collect_tax_removed PASSED    [ 37%]
+tests/unit/agents/test_government.py::test_run_public_education_delegation PASSED [ 37%]
+tests/unit/agents/test_government.py::test_deficit_spending_allowed_within_limit PASSED [ 37%]
+tests/unit/agents/test_government.py::test_deficit_spending_blocked_if_bond_fails PASSED [ 37%]
+tests/unit/ai/test_debt_constraints.py::test_consumption_manager_debt_constraint PASSED [ 37%]
+tests/unit/ai/test_debt_constraints.py::test_household_ai_debt_penalty_reward PASSED [ 37%]
+tests/unit/analysis/test_scenario_verifier.py::TestScenarioVerifier::test_initialize_subscribes_to_telemetry PASSED [ 38%]
+tests/unit/analysis/test_scenario_verifier.py::TestScenarioVerifier::test_verify_tick_aggregates_reports PASSED [ 38%]
+tests/unit/analysis/test_scenario_verifier.py::TestScenarioVerifier::test_verify_tick_handles_missing_data PASSED [ 38%]
+tests/unit/analysis/test_scenario_verifier.py::TestScenarioVerifier::test_verify_tick_handles_running_state PASSED [ 38%]
+tests/unit/analysis/test_scenario_verifier.py::TestScenarioVerifier::test_verify_tick_handles_exception_in_judge PASSED [ 38%]
+tests/unit/components/test_agent_lifecycle.py::test_run_tick_execution_order PASSED [ 38%]
+tests/unit/components/test_agent_lifecycle.py::test_run_tick_unemployed PASSED [ 38%]
+tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_add_child PASSED [ 38%]
+tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_age_one_tick PASSED [ 38%]
+tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_create_offspring_demographics PASSED [ 39%]
+tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_get_generational_similarity PASSED [ 39%]
+tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_handle_death_above_threshold PASSED [ 39%]
+tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_handle_death_under_threshold PASSED [ 39%]
+tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_initialization PASSED [ 39%]
+tests/unit/components/test_demographics_component.py::TestDemographicsComponent::test_set_spouse PASSED [ 39%]
+tests/unit/components/test_engines.py::TestHREngine::test_create_fire_transaction PASSED [ 39%]
+tests/unit/components/test_engines.py::TestHREngine::test_process_payroll PASSED [ 39%]
+tests/unit/components/test_engines.py::TestSalesEngine::test_post_ask PASSED [ 39%]
+tests/unit/components/test_engines.py::TestSalesEngine::test_generate_marketing_transaction PASSED [ 39%]
+tests/unit/components/test_engines.py::TestFinanceEngine::test_generate_financial_transactions PASSED [ 40%]
+tests/unit/components/test_engines.py::TestProductionEngine::test_produce_depreciation PASSED [ 40%]
+tests/unit/components/test_market_component.py::test_choose_best_seller_utility PASSED [ 40%]
+tests/unit/components/test_market_component.py::test_choose_best_seller_no_market PASSED [ 40%]
+tests/unit/corporate/test_corporate_orchestrator.py::test_orchestration PASSED [ 40%]
+tests/unit/corporate/test_financial_strategy.py::test_dividend_logic PASSED [ 40%]
+tests/unit/corporate/test_financial_strategy.py::test_debt_logic_borrow PASSED [ 40%]
+tests/unit/corporate/test_hr_strategy.py::test_hiring_logic PASSED       [ 40%]
+tests/unit/corporate/test_production_strategy.py::test_rd_logic PASSED   [ 40%]
+tests/unit/corporate/test_production_strategy.py::test_automation_investment PASSED [ 40%]
+tests/unit/corporate/test_sales_manager.py::test_pricing_logic PASSED    [ 41%]
+tests/unit/dashboard/components/test_controls.py::TestControls::test_missing_registry_value_disables_widget PASSED [ 41%]
+tests/unit/dashboard/components/test_controls.py::TestControls::test_on_change_generates_command PASSED [ 41%]
+tests/unit/dashboard/components/test_controls.py::TestControls::test_render_dynamic_controls_tabs PASSED [ 41%]
+tests/unit/dashboard/test_registry_service.py::TestRegistryService::test_get_all_metadata PASSED [ 41%]
+tests/unit/dashboard/test_registry_service.py::TestRegistryService::test_get_metadata_by_key PASSED [ 41%]
+tests/unit/dashboard/test_registry_service.py::TestRegistryService::test_get_metadata_unknown_key PASSED [ 41%]
+tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_audit_logs PASSED [ 41%]
+tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_initialization PASSED [ 41%]
+tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_send_command PASSED [ 42%]
+tests/unit/dashboard/test_socket_manager.py::TestSocketManager::test_telemetry_handling PASSED [ 42%]
+tests/unit/decisions/test_animal_spirits_phase2.py::TestHouseholdSurvivalOverride::test_survival_override_triggered PASSED [ 42%]
+tests/unit/decisions/test_animal_spirits_phase2.py::TestHouseholdSurvivalOverride::test_survival_override_insufficient_funds PASSED [ 42%]
+tests/unit/decisions/test_animal_spirits_phase2.py::TestFirmPricingLogic::test_cost_plus_fallback PASSED [ 42%]
+tests/unit/decisions/test_animal_spirits_phase2.py::TestFirmPricingLogic::test_fire_sale_trigger PASSED [ 42%]
+tests/unit/decisions/test_finance_rules.py::TestFinanceRules::test_rd_investment PASSED [ 42%]
+tests/unit/decisions/test_finance_rules.py::TestFinanceRules::test_capex_investment PASSED [ 42%]
+tests/unit/decisions/test_finance_rules.py::TestFinanceRules::test_dividend_setting PASSED [ 42%]
+tests/unit/decisions/test_household_engine_refactor.py::test_engine_execution_parity_smoke PASSED [ 42%]
+tests/unit/decisions/test_household_integration_new.py::TestHouseholdIntegrationNew::test_make_decision_integration PASSED [ 43%]
+tests/unit/decisions/test_hr_rules.py::TestHRRules::test_make_decisions_hires_labor PASSED [ 43%]
+tests/unit/decisions/test_hr_rules.py::TestHRRules::test_make_decisions_does_not_hire_when_full PASSED [ 43%]
+tests/unit/decisions/test_hr_rules.py::TestHRRules::test_make_decisions_fires_excess_labor PASSED [ 43%]
+tests/unit/decisions/test_production_rules.py::TestProductionRules::test_initialization PASSED [ 43%]
+tests/unit/decisions/test_production_rules.py::TestProductionRules::test_make_decisions_overstock_reduces_target PASSED [ 43%]
+tests/unit/decisions/test_production_rules.py::TestProductionRules::test_make_decisions_understock_increases_target PASSED [ 43%]
+tests/unit/decisions/test_production_rules.py::TestProductionRules::test_make_decisions_target_within_bounds_no_change PASSED [ 43%]
+tests/unit/decisions/test_production_rules.py::TestProductionRules::test_make_decisions_target_min_max_bounds PASSED [ 43%]
+tests/unit/decisions/test_sales_rules.py::TestSalesRules::test_sales_aggressiveness_impact_on_price PASSED [ 43%]
+tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_clear_market_matching PASSED [ 44%]
+tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_settle_matured_loans PASSED [ 44%]
+tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_submit_loan_offer_insufficient_reserves PASSED [ 44%]
+tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_submit_loan_offer_success PASSED [ 44%]
+tests/unit/finance/call_market/test_service.py::TestCallMarketService::test_submit_loan_request PASSED [ 44%]
+tests/unit/finance/engines/test_finance_engines.py::test_loan_risk_engine_assess_approved PASSED [ 44%]
+tests/unit/finance/engines/test_finance_engines.py::test_loan_risk_engine_assess_denied PASSED [ 44%]
+tests/unit/finance/engines/test_finance_engines.py::test_loan_booking_engine_grant_loan PASSED [ 44%]
+tests/unit/finance/engines/test_finance_engines.py::test_liquidation_engine_liquidate PASSED [ 44%]
+tests/unit/finance/engines/test_finance_engines.py::test_debt_servicing_engine PASSED [ 45%]
+tests/unit/finance/engines/test_finance_engines.py::test_zero_sum_verifier PASSED [ 45%]
+tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_bank_methods_presence PASSED [ 45%]
+tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_grant_loan PASSED [ 45%]
+tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_repay_loan PASSED [ 45%]
+tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_get_balance PASSED [ 45%]
+tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_get_debt_status FAILED [ 45%]
+tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_interface_compliance_mypy PASSED [ 45%]
+tests/unit/finance/test_credit_scoring.py::test_assess_approved PASSED   [ 45%]
+tests/unit/finance/test_credit_scoring.py::test_assess_dti_fail PASSED   [ 45%]
+tests/unit/finance/test_credit_scoring.py::test_assess_ltv_fail PASSED   [ 46%]
+tests/unit/finance/test_credit_scoring.py::test_assess_unsecured_cap_fail PASSED [ 46%]
+tests/unit/finance/test_credit_scoring.py::test_zero_income_fail PASSED  [ 46%]
+tests/unit/finance/test_finance_system_refactor.py::test_request_bailout_loan_success PASSED [ 46%]
+tests/unit/finance/test_finance_system_refactor.py::test_request_bailout_loan_insufficient_funds PASSED [ 46%]
+tests/unit/finance/test_finance_system_refactor.py::test_grant_bailout_loan_deprecated PASSED [ 46%]
+tests/unit/finance/test_settlement_system_overdraft.py::TestSettlementSystemOverdraft::test_normal_agent_cannot_overdraft PASSED [ 46%]
+tests/unit/finance/test_settlement_system_overdraft.py::TestSettlementSystemOverdraft::test_system_agent_can_overdraft PASSED [ 46%]
+tests/unit/finance/test_utils.py::test_round_to_pennies_basic PASSED     [ 46%]
+tests/unit/finance/test_utils.py::test_round_to_pennies_decimal PASSED   [ 46%]
+tests/unit/finance/test_utils.py::test_round_to_pennies_int PASSED       [ 47%]
+tests/unit/finance/test_utils.py::test_round_to_pennies_large PASSED     [ 47%]
+tests/unit/finance/test_utils.py::test_round_to_pennies_negative PASSED  [ 47%]
+tests/unit/firm/test_firm_actions.py::TestFirmActionExecutor::test_invest_automation_success PASSED [ 47%]
+tests/unit/firm/test_firm_actions.py::TestFirmActionExecutor::test_invest_rd_success PASSED [ 47%]
+tests/unit/firm/test_firm_actions.py::TestFirmActionExecutor::test_fire_employee PASSED [ 47%]
+tests/unit/firm/test_production_int_math.py::test_production_integer_depreciation PASSED [ 47%]
+tests/unit/firm/test_production_int_math.py::test_production_deterministic_output PASSED [ 47%]
+tests/unit/firm/test_production_int_math.py::test_production_deterministic_floor PASSED [ 47%]
+tests/unit/governance/test_judicial_ssot.py::test_waterfall_cash_only_ssot PASSED [ 48%]
+tests/unit/governance/test_judicial_ssot.py::test_waterfall_partial_cash PASSED [ 48%]
+tests/unit/governance/test_judicial_system.py::test_judicial_system_waterfall_full_recovery PASSED [ 48%]
+tests/unit/governance/test_judicial_system.py::test_judicial_system_waterfall_partial_recovery_and_restructuring PASSED [ 48%]
+tests/unit/household/test_housing_connector.py::TestHousingConnector::test_initiate_purchase PASSED [ 48%]
+tests/unit/household/test_housing_connector.py::TestHousingConnector::test_unknown_action PASSED [ 48%]
+tests/unit/household/test_snapshot_assembler.py::TestHouseholdSnapshotAssembler::test_assemble_snapshot_copies_state PASSED [ 48%]
+tests/unit/household/test_snapshot_assembler.py::TestHouseholdSnapshotAssembler::test_assemble_nested_structures PASSED [ 48%]
+tests/unit/markets/test_circuit_breaker_relaxation.py::TestCircuitBreakerRelaxation::test_sparse_history_returns_infinite_bounds PASSED [ 48%]
+tests/unit/markets/test_circuit_breaker_relaxation.py::TestCircuitBreakerRelaxation::test_sufficient_history_returns_finite_bounds PASSED [ 48%]
+tests/unit/markets/test_circuit_breaker_relaxation.py::TestCircuitBreakerRelaxation::test_no_history_returns_infinite_bounds PASSED [ 49%]
+tests/unit/markets/test_circuit_breaker_relaxation.py::TestCircuitBreakerRelaxation::test_default_config_fallback PASSED [ 49%]
+tests/unit/markets/test_housing_transaction_handler.py::test_housing_transaction_success PASSED [ 49%]
+tests/unit/markets/test_housing_transaction_handler.py::test_housing_transaction_insufficient_down_payment PASSED [ 49%]
+tests/unit/markets/test_housing_transaction_handler.py::test_housing_transaction_loan_rejected PASSED [ 49%]
+tests/unit/markets/test_housing_transaction_handler.py::test_housing_transaction_disbursement_failed PASSED [ 49%]
+tests/unit/markets/test_loan_market.py::TestLoanMarket::test_initialization PASSED [ 49%]
+tests/unit/markets/test_loan_market.py::TestLoanMarket::test_place_loan_request_grants_loan PASSED [ 49%]
+tests/unit/markets/test_loan_market.py::TestLoanMarket::test_place_loan_request_with_profile PASSED [ 49%]
+tests/unit/markets/test_loan_market.py::TestLoanMarket::test_place_loan_request_denies_loan PASSED [ 50%]
+tests/unit/markets/test_loan_market.py::TestLoanMarket::test_place_repayment_processes_repayment PASSED [ 50%]
+tests/unit/markets/test_loan_market.py::TestLoanMarket::test_place_order_unknown_type_logs_warning PASSED [ 50%]
+tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_evaluate_mortgage_success PASSED [ 50%]
+tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_evaluate_mortgage_fail_ltv PASSED [ 50%]
+tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_evaluate_mortgage_fail_dti PASSED [ 50%]
+tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_evaluate_mortgage_fail_dti_with_existing_debt PASSED [ 50%]
+tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_stage_mortgage_success PASSED [ 50%]
+tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_stage_mortgage_fail_eval PASSED [ 50%]
+tests/unit/markets/test_loan_market_mortgage.py::TestLoanMarketMortgage::test_end_to_end_dto_purity PASSED [ 50%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_initialization PASSED [ 51%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_place_buy_order_adds_and_sorts PASSED [ 51%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_place_sell_order_adds_and_sorts PASSED [ 51%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_place_order_unknown_type_logs_warning PASSED [ 51%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_full_fill PASSED [ 51%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_partial_fill_buy_order PASSED [ 51%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_partial_fill_sell_order PASSED [ 51%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_no_match_price PASSED [ 51%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_multiple_matches PASSED [ 51%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_different_items PASSED [ 51%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_empty_books PASSED [ 52%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_transaction_type_goods PASSED [ 52%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_match_orders_transaction_type_labor PASSED [ 52%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_get_best_ask_empty PASSED [ 52%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_get_best_ask_non_empty PASSED [ 52%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_get_best_bid_empty PASSED [ 52%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_get_best_bid_non_empty PASSED [ 52%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_get_order_book_status_empty PASSED [ 52%]
+tests/unit/markets/test_order_book_market.py::TestOrderBookMarket::test_get_order_book_status_non_empty PASSED [ 52%]
+tests/unit/markets/test_order_book_market_cancellation.py::TestOrderBookMarketCancellation::test_cancel_orders_removes_agent_orders PASSED [ 53%]
+tests/unit/markets/test_order_book_market_cancellation.py::TestOrderBookMarketCancellation::test_cancel_orders_no_effect_if_no_orders PASSED [ 53%]
+tests/unit/markets/test_stock_market_cancellation.py::TestStockMarketCancellation::test_cancel_orders_removes_agent_orders PASSED [ 53%]
+tests/unit/markets/test_stock_market_cancellation.py::TestStockMarketCancellation::test_cancel_orders_mixed_int_str_id PASSED [ 53%]
+tests/unit/modules/analysis/test_bubble_observatory.py::TestBubbleObservatory::test_pir_calculation_normal PASSED [ 53%]
+tests/unit/modules/analysis/test_bubble_observatory.py::TestBubbleObservatory::test_pir_calculation_zero_income PASSED [ 53%]
+tests/unit/modules/analysis/test_bubble_observatory.py::TestBubbleObservatory::test_pir_alarm PASSED [ 53%]
+tests/unit/modules/analysis/test_bubble_observatory.py::TestBubbleObservatory::test_csv_logging_structure PASSED [ 53%]
+tests/unit/modules/common/config/test_impl.py::test_config_manager_load_and_get PASSED [ 53%]
+tests/unit/modules/common/config/test_impl.py::test_config_manager_override PASSED [ 53%]
+tests/unit/modules/common/config/test_impl.py::test_legacy_support PASSED [ 54%]
+tests/unit/modules/common/config_manager/test_config_manager.py::test_load_yaml PASSED [ 54%]
+tests/unit/modules/common/config_manager/test_config_manager.py::test_get_with_default PASSED [ 54%]
+tests/unit/modules/common/config_manager/test_config_manager.py::test_hybrid_fallback PASSED [ 54%]
+tests/unit/modules/common/config_manager/test_config_manager.py::test_set_value_for_test PASSED [ 54%]
+tests/unit/modules/demographics/test_event_consistency.py::test_demographic_event_consistency PASSED [ 54%]
+tests/unit/modules/demographics/test_event_consistency.py::test_sync_stats PASSED [ 54%]
+tests/unit/modules/finance/central_bank/test_cb_service.py::test_set_policy_rate_valid PASSED [ 54%]
+tests/unit/modules/finance/central_bank/test_cb_service.py::test_set_policy_rate_invalid PASSED [ 54%]
+tests/unit/modules/finance/central_bank/test_cb_service.py::test_conduct_omo_purchase_success PASSED [ 54%]
+tests/unit/modules/finance/central_bank/test_cb_service.py::test_conduct_omo_sale_success PASSED [ 55%]
+tests/unit/modules/finance/central_bank/test_cb_service.py::test_conduct_omo_failure PASSED [ 55%]
+tests/unit/modules/finance/test_corporate_finance.py::TestAltmanZScoreCalculator::test_calculate_safe_zone PASSED [ 55%]
+tests/unit/modules/finance/test_corporate_finance.py::TestAltmanZScoreCalculator::test_calculate_distress_zone PASSED [ 55%]
+tests/unit/modules/finance/test_corporate_finance.py::TestAltmanZScoreCalculator::test_calculate_zero_assets PASSED [ 55%]
+tests/unit/modules/finance/test_corporate_finance.py::TestAltmanZScoreCalculator::test_calculate_negative_values PASSED [ 55%]
+tests/unit/modules/finance/test_double_entry.py::TestDoubleEntry::test_bailout_loan_generates_command PASSED [ 55%]
+tests/unit/modules/finance/test_double_entry.py::TestDoubleEntry::test_market_bond_issuance_generates_transaction PASSED [ 55%]
+tests/unit/modules/finance/test_double_entry.py::TestDoubleEntry::test_qe_bond_issuance_generates_transaction PASSED [ 55%]
+tests/unit/modules/finance/test_monetary_engine.py::test_monetary_engine_calculate_rate_structure PASSED [ 56%]
+tests/unit/modules/finance/test_qe.py::TestQE::test_issue_treasury_bonds_qe_trigger PASSED [ 56%]
+tests/unit/modules/finance/test_qe.py::TestQE::test_issue_treasury_bonds_normal PASSED [ 56%]
+tests/unit/modules/finance/test_settlement_purity.py::TestSettlementPurity::test_settlement_system_implements_monetary_authority PASSED [ 56%]
+tests/unit/modules/finance/test_settlement_purity.py::TestSettlementPurity::test_finance_system_uses_monetary_authority PASSED [ 56%]
+tests/unit/modules/finance/test_sovereign_debt.py::TestSovereignDebt::test_issue_treasury_bonds_calls_settlement_system PASSED [ 56%]
+tests/unit/modules/finance/test_sovereign_debt.py::TestSovereignDebt::test_collect_corporate_tax_calls_settlement_system PASSED [ 56%]
+tests/unit/modules/finance/test_sovereign_debt.py::TestSovereignDebt::test_risk_premium_calculation PASSED [ 56%]
+tests/unit/modules/finance/test_sovereign_debt.py::TestSovereignDebt::test_insufficient_funds_fails_issuance PASSED [ 56%]
+tests/unit/modules/finance/test_system.py::test_evaluate_solvency_startup_pass PASSED [ 56%]
+tests/unit/modules/finance/test_system.py::test_evaluate_solvency_startup_fail PASSED [ 57%]
+tests/unit/modules/finance/test_system.py::test_evaluate_solvency_established_pass PASSED [ 57%]
+tests/unit/modules/finance/test_system.py::test_evaluate_solvency_established_fail PASSED [ 57%]
+tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_market PASSED [ 57%]
+tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_qe PASSED [ 57%]
+tests/unit/modules/finance/test_system.py::test_issue_treasury_bonds_fail PASSED [ 57%]
+tests/unit/modules/finance/test_system.py::test_bailout_fails_with_insufficient_government_funds PASSED [ 57%]
+tests/unit/modules/finance/test_system.py::test_grant_bailout_loan PASSED [ 57%]
+tests/unit/modules/finance/test_system.py::test_service_debt_central_bank_repayment PASSED [ 57%]
+tests/unit/modules/firm/test_engines.py::TestFinanceEngine::test_plan_budget_basics PASSED [ 57%]
+tests/unit/modules/firm/test_engines.py::TestFinanceEngine::test_plan_budget_with_debt_healthy PASSED [ 58%]
+tests/unit/modules/firm/test_engines.py::TestFinanceEngine::test_plan_budget_with_debt_distressed PASSED [ 58%]
+tests/unit/modules/firm/test_engines.py::TestFinanceEngine::test_plan_budget_returns_integers PASSED [ 58%]
+tests/unit/modules/firm/test_engines.py::TestHREngine::test_manage_workforce_hiring PASSED [ 58%]
+tests/unit/modules/firm/test_engines.py::TestHREngine::test_manage_workforce_firing PASSED [ 58%]
+tests/unit/modules/firm/test_engines.py::TestHREngine::test_manage_workforce_wage_scaling PASSED [ 58%]
+tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_determine_fiscal_stance_calculates_survival_cost_correctly PASSED [ 58%]
+tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_determine_fiscal_stance_defaults_if_no_config PASSED [ 58%]
+tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_calculate_tax_liability_progressive PASSED [ 58%]
+tests/unit/modules/government/components/test_fiscal_policy_manager.py::TestFiscalPolicyManager::test_calculate_tax_liability_zero_or_negative PASSED [ 59%]
+tests/unit/modules/government/components/test_monetary_ledger_expansion.py::TestMonetaryLedgerExpansion::test_asset_liquidation_expansion PASSED [ 59%]
+tests/unit/modules/government/components/test_monetary_ledger_expansion.py::TestMonetaryLedgerExpansion::test_lender_of_last_resort_expansion PASSED [ 59%]
+tests/unit/modules/government/components/test_monetary_ledger_expansion.py::TestMonetaryLedgerExpansion::test_other_types_no_expansion PASSED [ 59%]
+tests/unit/modules/government/components/test_monetary_policy_manager.py::TestMonetaryPolicyManager::test_equilibrium PASSED [ 59%]
+tests/unit/modules/government/components/test_monetary_policy_manager.py::TestMonetaryPolicyManager::test_gdp_zero_or_negative PASSED [ 59%]
+tests/unit/modules/government/components/test_monetary_policy_manager.py::TestMonetaryPolicyManager::test_high_inflation PASSED [ 59%]
+tests/unit/modules/government/components/test_monetary_policy_manager.py::TestMonetaryPolicyManager::test_missing_data_defaults PASSED [ 59%]
+tests/unit/modules/government/components/test_monetary_policy_manager.py::TestMonetaryPolicyManager::test_overheating_economy PASSED [ 59%]
+tests/unit/modules/government/components/test_monetary_policy_manager.py::TestMonetaryPolicyManager::test_recession PASSED [ 59%]
+tests/unit/modules/government/test_adaptive_gov_brain.py::test_propose_actions_red_party PASSED [ 60%]
+tests/unit/modules/government/test_adaptive_gov_brain.py::test_propose_actions_blue_party PASSED [ 60%]
+tests/unit/modules/government/test_adaptive_gov_brain.py::test_candidates_generation PASSED [ 60%]
+tests/unit/modules/government/test_fiscal_bond_service.py::TestFiscalBondService::test_calculate_yield_low_debt PASSED [ 60%]
+tests/unit/modules/government/test_fiscal_bond_service.py::TestFiscalBondService::test_calculate_yield_high_debt PASSED [ 60%]
+tests/unit/modules/government/test_fiscal_bond_service.py::TestFiscalBondService::test_issue_bonds_normal_buyer PASSED [ 60%]
+tests/unit/modules/government/test_fiscal_bond_service.py::TestFiscalBondService::test_issue_bonds_qe_buyer PASSED [ 60%]
+tests/unit/modules/government/test_fiscal_bond_service.py::TestFiscalBondService::test_issue_bonds_no_buyer PASSED [ 60%]
+tests/unit/modules/government/test_fiscal_engine.py::test_fiscal_engine_decide_structure PASSED [ 60%]
+tests/unit/modules/government/test_politics_system.py::test_enact_new_tax_policy PASSED [ 60%]
+tests/unit/modules/household/test_consumption_manager.py::TestConsumptionManager::test_consume_basic PASSED [ 61%]
+tests/unit/modules/household/test_consumption_manager.py::TestConsumptionManager::test_consume_service PASSED [ 61%]
+tests/unit/modules/household/test_consumption_manager.py::TestConsumptionManager::test_decide_and_consume PASSED [ 61%]
+tests/unit/modules/household/test_decision_unit.py::TestDecisionUnit::test_orchestrate_housing_buy PASSED [ 61%]
+tests/unit/modules/household/test_decision_unit.py::TestDecisionUnit::test_shadow_wage_update PASSED [ 61%]
+tests/unit/modules/household/test_econ_component.py::TestEconComponent::test_update_perceived_prices_basic PASSED [ 61%]
+tests/unit/modules/household/test_econ_component.py::TestEconComponent::test_update_perceived_prices_hyperinflation PASSED [ 61%]
+tests/unit/modules/household/test_new_engines.py::TestBeliefEngine::test_update_beliefs_basic PASSED [ 61%]
+tests/unit/modules/household/test_new_engines.py::TestCrisisEngine::test_evaluate_distress_portfolio PASSED [ 61%]
+tests/unit/modules/memory/test_memory_v2.py::TestMemoryManager::test_add_and_query_record PASSED [ 62%]
+tests/unit/modules/memory/test_memory_v2.py::TestMemoryManager::test_query_filtering PASSED [ 62%]
+tests/unit/modules/memory/test_memory_v2.py::TestMemoryManager::test_persistence PASSED [ 62%]
+tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_process_bankruptcy_event PASSED [ 62%]
+tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_generate_liquidation_orders PASSED [ 62%]
+tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_confirm_sale PASSED [ 62%]
+tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_deposit_revenue PASSED [ 62%]
+tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_generate_liquidation_orders_no_signal PASSED [ 62%]
+tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_generate_liquidation_orders_resets_metrics PASSED [ 62%]
+tests/unit/modules/system/execution/test_public_manager.py::TestPublicManager::test_execute_asset_buyout PASSED [ 62%]
+tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_implements_financial_agent PASSED [ 63%]
+tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_implements_system_financial_agent PASSED [ 63%]
+tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_implements_asset_recovery_system PASSED [ 63%]
+tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_bankruptcy_processing_id_handling PASSED [ 63%]
+tests/unit/modules/system/execution/test_public_manager_compliance.py::TestPublicManagerCompliance::test_liquidation_order_generation_id PASSED [ 63%]
+tests/unit/modules/system/services/test_schema_loader.py::TestSchemaLoader::test_load_schema_file_not_found PASSED [ 63%]
+tests/unit/modules/system/services/test_schema_loader.py::TestSchemaLoader::test_load_schema_invalid_structure PASSED [ 63%]
+tests/unit/modules/system/services/test_schema_loader.py::TestSchemaLoader::test_load_schema_success PASSED [ 63%]
+tests/unit/modules/system/services/test_schema_loader.py::TestSchemaLoader::test_load_schema_yaml_error PASSED [ 63%]
+tests/unit/modules/system/test_command_service_unit.py::test_dispatch_set_param PASSED [ 64%]
+tests/unit/modules/system/test_command_service_unit.py::test_rollback_set_param_restorable PASSED [ 64%]
+tests/unit/modules/system/test_command_service_unit.py::test_rollback_set_param_fallback PASSED [ 64%]
+tests/unit/modules/system/test_command_service_unit.py::test_rollback_creation_restorable PASSED [ 64%]
+tests/unit/modules/system/test_command_service_unit.py::test_dispatch_inject_money PASSED [ 64%]
+tests/unit/modules/system/test_command_service_unit.py::test_rollback_inject_money PASSED [ 64%]
+tests/unit/modules/system/test_command_service_unit.py::test_commit_last_tick_clears_stack PASSED [ 64%]
+tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_direct_access PASSED [ 64%]
+tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_registry_integration PASSED [ 64%]
+tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_missing_attribute PASSED [ 64%]
+tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_dir_listing PASSED [ 65%]
+tests/unit/modules/system/test_config_bridge.py::TestConfigBridge::test_enum_access PASSED [ 65%]
+tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_set_and_get_basic PASSED [ 65%]
+tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_origin_priority PASSED [ 65%]
+tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_locking_mechanism PASSED [ 65%]
+tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_observer_notification PASSED [ 65%]
+tests/unit/modules/system/test_registry.py::TestGlobalRegistry::test_key_specific_observer PASSED [ 65%]
+tests/unit/modules/system/test_server_bridge.py::TestTelemetryExchange::test_thread_safety PASSED [ 65%]
+tests/unit/modules/system/test_server_bridge.py::TestTelemetryExchange::test_unsubscribe_stops_notification PASSED [ 65%]
+tests/unit/modules/system/test_server_bridge.py::TestTelemetryExchange::test_update_notifies_listener PASSED [ 65%]
+tests/unit/modules/system/test_telemetry.py::test_subscribe_and_harvest_valid_path PASSED [ 66%]
+tests/unit/modules/system/test_telemetry.py::test_subscribe_invalid_path PASSED [ 66%]
+tests/unit/modules/system/test_telemetry.py::test_multi_frequency PASSED [ 66%]
+tests/unit/modules/system/test_telemetry.py::test_unsubscribe PASSED     [ 66%]
+tests/unit/modules/system/test_telemetry.py::test_runtime_error_handling PASSED [ 66%]
+tests/unit/modules/system/test_telemetry.py::test_deep_nested_path PASSED [ 66%]
+tests/unit/modules/system/test_telemetry.py::test_root_object_path PASSED [ 66%]
+tests/unit/modules/system/test_telemetry.py::test_subscribe_pre_validation PASSED [ 66%]
+tests/unit/modules/system/test_telemetry_robustness.py::TestTelemetryRobustness::test_flat_key_resolution PASSED [ 66%]
+tests/unit/modules/system/test_telemetry_robustness.py::TestTelemetryRobustness::test_mixed_resolution PASSED [ 67%]
+tests/unit/modules/watchtower/test_agent_service.py::test_get_agents_basic_empty PASSED [ 67%]
+tests/unit/modules/watchtower/test_agent_service.py::test_get_agents_basic_household PASSED [ 67%]
+tests/unit/modules/watchtower/test_agent_service.py::test_get_agents_basic_firm PASSED [ 67%]
+tests/unit/modules/watchtower/test_agent_service.py::test_get_agents_basic_inactive PASSED [ 67%]
+tests/unit/modules/watchtower/test_agent_service.py::test_get_agents_basic_limit PASSED [ 67%]
+tests/unit/modules/watchtower/test_agent_service.py::test_get_agent_detail_household PASSED [ 67%]
+tests/unit/modules/watchtower/test_agent_service.py::test_get_agent_detail_firm PASSED [ 67%]
+tests/unit/modules/watchtower/test_agent_service.py::test_get_agent_detail_not_found PASSED [ 67%]
+tests/unit/orchestration/test_phase_housing_saga.py::test_phase_housing_saga_execution PASSED [ 67%]
+tests/unit/orchestration/test_phase_housing_saga.py::test_phase_housing_saga_execution_fallback PASSED [ 68%]
+tests/unit/orchestration/test_phase_housing_saga.py::test_phase_housing_saga_no_settlement_system PASSED [ 68%]
+tests/unit/orchestration/test_phase_housing_saga.py::test_phase_housing_saga_system_no_method PASSED [ 68%]
+tests/unit/registry/test_service.py::test_load_missions_empty PASSED     [ 68%]
+tests/unit/registry/test_service.py::test_register_and_get_mission PASSED [ 68%]
+tests/unit/registry/test_service.py::test_delete_mission PASSED          [ 68%]
+tests/unit/registry/test_service.py::test_get_mission_prompt PASSED      [ 68%]
+tests/unit/registry/test_service.py::test_migration PASSED               [ 68%]
+tests/unit/registry/test_service.py::test_lock_timeout PASSED            [ 68%]
+tests/unit/registry/test_service.py::test_lock_success PASSED            [ 68%]
+tests/unit/sagas/test_orchestrator.py::test_submit_saga PASSED           [ 69%]
+tests/unit/sagas/test_orchestrator.py::test_process_sagas_liveness_check PASSED [ 69%]
+tests/unit/sagas/test_orchestrator.py::test_process_sagas_active_participants PASSED [ 69%]
+tests/unit/sagas/test_orchestrator.py::test_find_and_compensate_by_agent_success PASSED [ 69%]
+tests/unit/sagas/test_orchestrator.py::test_find_and_compensate_by_agent_no_handler PASSED [ 69%]
+tests/unit/simulation/orchestration/phases/test_intercept.py::test_execute_no_commands PASSED [ 69%]
+tests/unit/simulation/orchestration/phases/test_intercept.py::test_execute_commands_audit_pass PASSED [ 69%]
+tests/unit/simulation/systems/test_audit_total_m2.py::test_audit_total_m2_logic PASSED [ 69%]
+tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_disbursement_failure PASSED [ 69%]
+tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_government_seller PASSED [ 70%]
+tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_payment_failure PASSED [ 70%]
+tests/unit/systems/handlers/test_housing_handler.py::TestHousingTransactionHandler::test_handle_purchase_success PASSED [ 70%]
+tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_fallback_price PASSED [ 70%]
+tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_no_inventory PASSED [ 70%]
+tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_no_public_manager PASSED [ 70%]
+tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_payment_fail PASSED [ 70%]
+tests/unit/systems/handlers/test_liquidation_handlers.py::TestInventoryLiquidationHandler::test_liquidate_with_inventory PASSED [ 70%]
+tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_execute_delegation PASSED [ 70%]
+tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_firm_distress PASSED [ 70%]
+tests/unit/systems/lifecycle/test_aging_system.py::TestAgingSystem::test_firm_grace_period_config PASSED [ 71%]
+tests/unit/systems/lifecycle/test_birth_system.py::TestBirthSystem::test_process_births_with_factory_zero_sum PASSED [ 71%]
+tests/unit/systems/lifecycle/test_death_system.py::TestDeathSystem::test_firm_liquidation PASSED [ 71%]
+tests/unit/systems/lifecycle/test_death_system.py::TestDeathSystem::test_firm_liquidation_cancels_orders PASSED [ 71%]
+tests/unit/systems/lifecycle/test_death_system_performance.py::TestDeathSystemPerformance::test_localized_agent_removal PASSED [ 71%]
+tests/unit/systems/test_commerce_system.py::test_execute_consumption_and_leisure PASSED [ 71%]
+tests/unit/systems/test_commerce_system.py::test_fast_track_consumption_if_needed PASSED [ 71%]
+tests/unit/systems/test_commerce_system_logging.py::test_log_reject_when_stock_out_and_insolvent PASSED [ 71%]
+tests/unit/systems/test_commerce_system_logging.py::test_log_reject_when_stock_out_but_solvent PASSED [ 71%]
+tests/unit/systems/test_demographic_manager_newborn.py::test_newborn_receives_initial_needs_from_config PASSED [ 71%]
+tests/unit/systems/test_event_system.py::test_inflation_shock PASSED     [ 72%]
+tests/unit/systems/test_event_system.py::test_recession_shock PASSED     [ 72%]
+tests/unit/systems/test_event_system.py::test_no_event PASSED            [ 72%]
+tests/unit/systems/test_firm_management_leak.py::TestFirmManagementLeak::test_spawn_firm_leak_detection PASSED [ 72%]
+tests/unit/systems/test_firm_management_refactor.py::TestFirmManagementRefactor::test_spawn_firm_missing_settlement_system PASSED [ 72%]
+tests/unit/systems/test_firm_management_refactor.py::TestFirmManagementRefactor::test_spawn_firm_transfer_failure PASSED [ 72%]
+tests/unit/systems/test_housing_service.py::test_housing_service_handle_housing_updates_mortgage PASSED [ 72%]
+tests/unit/systems/test_housing_service.py::test_housing_service_handle_housing_clears_mortgage_if_missing PASSED [ 72%]
+tests/unit/systems/test_housing_system.py::TestHousingSystemRefactor::test_process_housing_maintenance_uses_transfer PASSED [ 72%]
+tests/unit/systems/test_housing_system.py::TestHousingSystemRefactor::test_process_housing_rent_collection_uses_transfer PASSED [ 73%]
+tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_distribution_transaction_generation PASSED [ 73%]
+tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_multiple_heirs_metadata PASSED [ 73%]
+tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_escheatment_when_no_heirs PASSED [ 73%]
+tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_zero_assets_distribution PASSED [ 73%]
+tests/unit/systems/test_inheritance_manager.py::TestInheritanceManager::test_tax_transaction_generation PASSED [ 73%]
+tests/unit/systems/test_labor_market_analyzer.py::test_update_market_history PASSED [ 73%]
+tests/unit/systems/test_labor_market_analyzer.py::test_calculate_shadow_reservation_wage_increase PASSED [ 73%]
+tests/unit/systems/test_labor_market_analyzer.py::test_calculate_shadow_reservation_wage_decay PASSED [ 73%]
 tests/unit/systems/test_labor_market_analyzer.py::test_calculate_shadow_reservation_wage_floor PASSED [ 73%]
-tests/unit/systems/test_lifecycle_manager_integration.py::TestAgentLifecycleManager::test_execute_delegation PASSED [ 73%]
-tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_asset_liquidation_integration PASSED [ 73%]
-tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_bank_claim_handling PASSED [ 73%]
-tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_initiate_liquidation_orchestration PASSED [ 73%]
-tests/unit/systems/test_ma_manager.py::TestMAManager::test_execute_bankruptcy_records_loss_in_ledger PASSED [ 73%]
-tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_budget_constraints PASSED [ 73%]
-tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_run_public_education_basic_grant_legacy PASSED [ 73%]
-tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_run_public_education_basic_grant_settlement PASSED [ 73%]
-tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_run_public_education_scholarship_settlement PASSED [ 73%]
-tests/unit/systems/test_perception_system.py::test_perception_system_update PASSED [ 74%]
-tests/unit/systems/test_perception_system.py::test_smart_money_filter PASSED [ 74%]
-tests/unit/systems/test_perception_system.py::test_laggard_filter PASSED [ 74%]
-tests/unit/systems/test_perception_system.py::test_lemon_filter PASSED   [ 74%]
-tests/unit/systems/test_perception_system.py::test_policy_filter PASSED  [ 74%]
-tests/unit/systems/test_sensory_system.py::test_sensory_dto_generation PASSED [ 74%]
-tests/unit/systems/test_sensory_system.py::test_sensory_dto_missing_tracker PASSED [ 74%]
-tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_initiated_to_credit_check PASSED [ 74%]
-tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_cancellation PASSED [ 74%]
+tests/unit/systems/test_lifecycle_manager_integration.py::TestAgentLifecycleManager::test_execute_delegation PASSED [ 74%]
+tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_asset_liquidation_integration PASSED [ 74%]
+tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_bank_claim_handling PASSED [ 74%]
+tests/unit/systems/test_liquidation_manager.py::TestLiquidationManager::test_initiate_liquidation_orchestration PASSED [ 74%]
+tests/unit/systems/test_ma_manager.py::TestMAManager::test_execute_bankruptcy_records_loss_in_ledger PASSED [ 74%]
+tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_budget_constraints PASSED [ 74%]
+tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_run_public_education_basic_grant_legacy PASSED [ 74%]
+tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_run_public_education_basic_grant_settlement PASSED [ 74%]
+tests/unit/systems/test_ministry_of_education.py::TestMinistryOfEducation::test_run_public_education_scholarship_settlement PASSED [ 74%]
+tests/unit/systems/test_perception_system.py::test_perception_system_update PASSED [ 75%]
+tests/unit/systems/test_perception_system.py::test_smart_money_filter PASSED [ 75%]
+tests/unit/systems/test_perception_system.py::test_laggard_filter PASSED [ 75%]
+tests/unit/systems/test_perception_system.py::test_lemon_filter PASSED   [ 75%]
+tests/unit/systems/test_perception_system.py::test_policy_filter PASSED  [ 75%]
+tests/unit/systems/test_sensory_system.py::test_sensory_dto_generation PASSED [ 75%]
+tests/unit/systems/test_sensory_system.py::test_sensory_dto_missing_tracker PASSED [ 75%]
+tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_initiated_to_credit_check PASSED [ 75%]
+tests/unit/systems/test_settlement_saga_integration.py::TestSettlementSagaIntegration::test_process_sagas_integration_cancellation PASSED [ 75%]
 tests/unit/systems/test_settlement_security.py::test_audit_total_m2_strict_protocol PASSED [ 75%]
-tests/unit/systems/test_settlement_security.py::test_transfer_memo_validation PASSED [ 75%]
-tests/unit/systems/test_settlement_security.py::test_transfer_invalid_agent PASSED [ 75%]
-tests/unit/systems/test_settlement_security.py::test_mint_and_distribute_security PASSED [ 75%]
-tests/unit/systems/test_settlement_security.py::test_settle_atomic_logging PASSED [ 75%]
-tests/unit/systems/test_settlement_system.py::test_transfer_success PASSED [ 75%]
-tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_funds PASSED [ 75%]
-tests/unit/systems/test_settlement_system.py::test_create_and_transfer_minting PASSED [ 75%]
-tests/unit/systems/test_settlement_system.py::test_create_and_transfer_government_grant PASSED [ 75%]
+tests/unit/systems/test_settlement_security.py::test_transfer_memo_validation PASSED [ 76%]
+tests/unit/systems/test_settlement_security.py::test_transfer_invalid_agent PASSED [ 76%]
+tests/unit/systems/test_settlement_security.py::test_mint_and_distribute_security PASSED [ 76%]
+tests/unit/systems/test_settlement_security.py::test_settle_atomic_logging PASSED [ 76%]
+tests/unit/systems/test_settlement_system.py::test_transfer_success PASSED [ 76%]
+tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_funds PASSED [ 76%]
+tests/unit/systems/test_settlement_system.py::test_create_and_transfer_minting PASSED [ 76%]
+tests/unit/systems/test_settlement_system.py::test_create_and_transfer_government_grant PASSED [ 76%]
 tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_burning PASSED [ 76%]
 tests/unit/systems/test_settlement_system.py::test_transfer_and_destroy_tax PASSED [ 76%]
-tests/unit/systems/test_settlement_system.py::test_record_liquidation PASSED [ 76%]
-tests/unit/systems/test_settlement_system.py::test_record_liquidation_escheatment PASSED [ 76%]
-tests/unit/systems/test_settlement_system.py::test_transfer_rollback PASSED [ 76%]
-tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_cash_despite_bank_balance PASSED [ 76%]
-tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_total_funds PASSED [ 76%]
-tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_success PASSED [ 76%]
-tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_rollback PASSED [ 76%]
+tests/unit/systems/test_settlement_system.py::test_record_liquidation PASSED [ 77%]
+tests/unit/systems/test_settlement_system.py::test_record_liquidation_escheatment PASSED [ 77%]
+tests/unit/systems/test_settlement_system.py::test_transfer_rollback PASSED [ 77%]
+tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_cash_despite_bank_balance PASSED [ 77%]
+tests/unit/systems/test_settlement_system.py::test_transfer_insufficient_total_funds PASSED [ 77%]
+tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_success PASSED [ 77%]
+tests/unit/systems/test_settlement_system.py::test_execute_multiparty_settlement_rollback PASSED [ 77%]
 tests/unit/systems/test_settlement_system.py::test_settle_atomic_success PASSED [ 77%]
 tests/unit/systems/test_settlement_system.py::test_settle_atomic_rollback PASSED [ 77%]
-tests/unit/systems/test_settlement_system.py::test_settle_atomic_credit_fail_rollback PASSED [ 77%]
-tests/unit/systems/test_social_system.py::test_update_social_ranks PASSED [ 77%]
-tests/unit/systems/test_social_system.py::test_calculate_reference_standard PASSED [ 77%]
-tests/unit/systems/test_tax_agency.py::TestTaxAgency::test_calculate_corporate_tax PASSED [ 77%]
-tests/unit/systems/test_tax_agency.py::TestTaxAgency::test_calculate_income_tax_flat PASSED [ 77%]
-tests/unit/systems/test_tax_agency.py::TestTaxAgency::test_calculate_income_tax_progressive_scaling PASSED [ 77%]
-tests/unit/systems/test_tax_agency.py::TestTaxAgency::test_calculate_income_tax_progressive_with_brackets PASSED [ 77%]
+tests/unit/systems/test_settlement_system.py::test_settle_atomic_credit_fail_rollback PASSED [ 78%]
+tests/unit/systems/test_social_system.py::test_update_social_ranks PASSED [ 78%]
+tests/unit/systems/test_social_system.py::test_calculate_reference_standard PASSED [ 78%]
+tests/unit/systems/test_tax_agency.py::TestTaxAgency::test_calculate_corporate_tax PASSED [ 78%]
+tests/unit/systems/test_tax_agency.py::TestTaxAgency::test_calculate_income_tax_flat PASSED [ 78%]
+tests/unit/systems/test_tax_agency.py::TestTaxAgency::test_calculate_income_tax_progressive_scaling PASSED [ 78%]
+tests/unit/systems/test_tax_agency.py::TestTaxAgency::test_calculate_income_tax_progressive_with_brackets PASSED [ 78%]
 tests/unit/systems/test_tax_agency.py::TestTaxAgency::test_collect_tax PASSED [ 78%]
 tests/unit/systems/test_technology_manager.py::TestTechnologyManager::test_effective_diffusion_rate PASSED [ 78%]
 tests/unit/systems/test_technology_manager.py::TestTechnologyManager::test_unlock_mechanism PASSED [ 78%]
-tests/unit/systems/test_technology_manager.py::TestTechnologyManager::test_diffusion_over_time PASSED [ 78%]
-tests/unit/systems/test_technology_manager.py::TestTechnologyManager::test_productivity_multiplier PASSED [ 78%]
-tests/unit/test_ai_driven_firm_engine.py::test_adjust_price_tactic PASSED [ 78%]
-tests/unit/test_ai_training_manager.py::test_get_top_performing_agents PASSED [ 78%]
-tests/unit/test_ai_training_manager.py::test_get_under_performing_agents PASSED [ 78%]
-tests/unit/test_ai_training_manager.py::test_clone_and_mutate_q_table PASSED [ 78%]
-tests/unit/test_ai_training_manager.py::test_clone_from_fittest_agent PASSED [ 78%]
+tests/unit/systems/test_technology_manager.py::TestTechnologyManager::test_diffusion_over_time PASSED [ 79%]
+tests/unit/systems/test_technology_manager.py::TestTechnologyManager::test_productivity_multiplier PASSED [ 79%]
+tests/unit/test_ai_driven_firm_engine.py::test_adjust_price_tactic PASSED [ 79%]
+tests/unit/test_ai_training_manager.py::test_get_top_performing_agents PASSED [ 79%]
+tests/unit/test_ai_training_manager.py::test_get_under_performing_agents PASSED [ 79%]
+tests/unit/test_ai_training_manager.py::test_clone_and_mutate_q_table PASSED [ 79%]
+tests/unit/test_ai_training_manager.py::test_clone_from_fittest_agent PASSED [ 79%]
 tests/unit/test_ai_training_manager.py::test_run_imitation_learning_cycle PASSED [ 79%]
 tests/unit/test_api_extensions.py::TestEconomicIndicatorsViewModel::test_get_wealth_distribution PASSED [ 79%]
 tests/unit/test_api_extensions.py::TestEconomicIndicatorsViewModel::test_get_needs_distribution PASSED [ 79%]
-tests/unit/test_api_extensions.py::TestEconomicIndicatorsViewModel::test_get_sales_by_good PASSED [ 79%]
-tests/unit/test_api_extensions.py::TestEconomicIndicatorsViewModel::test_get_market_order_book PASSED [ 79%]
-tests/unit/test_api_history.py::TestHistoryAPI::test_gdp_history_on_refresh PASSED [ 79%]
-tests/unit/test_bank.py::test_bank_assets_delegation PASSED              [ 79%]
-tests/unit/test_bank.py::test_bank_deposit_delegation PASSED             [ 79%]
-tests/unit/test_bank.py::test_bank_withdraw_delegation PASSED            [ 79%]
+tests/unit/test_api_extensions.py::TestEconomicIndicatorsViewModel::test_get_sales_by_good PASSED [ 80%]
+tests/unit/test_api_extensions.py::TestEconomicIndicatorsViewModel::test_get_market_order_book PASSED [ 80%]
+tests/unit/test_api_history.py::TestHistoryAPI::test_gdp_history_on_refresh PASSED [ 80%]
+tests/unit/test_bank.py::test_bank_assets_delegation PASSED              [ 80%]
+tests/unit/test_bank.py::test_bank_deposit_delegation PASSED             [ 80%]
+tests/unit/test_bank.py::test_bank_withdraw_delegation PASSED            [ 80%]
 tests/unit/test_bank.py::test_grant_loan_delegation PASSED               [ 80%]
 tests/unit/test_bank.py::test_withdraw_for_customer PASSED               [ 80%]
 tests/unit/test_bank.py::test_run_tick_delegates_to_service_debt PASSED  [ 80%]
-tests/unit/test_bank.py::test_grant_loan_with_object_calls_transfer PASSED [ 80%]
-tests/unit/test_bank.py::test_grant_loan_with_id_skips_transfer PASSED   [ 80%]
-tests/unit/test_bank_decomposition.py::TestBankDecomposition::test_default_processing PASSED [ 80%]
-tests/unit/test_bank_decomposition.py::TestBankDecomposition::test_grant_loan_delegation PASSED [ 80%]
-tests/unit/test_bank_decomposition.py::TestBankDecomposition::test_run_tick_interest_collection PASSED [ 80%]
-tests/unit/test_config_parity.py::test_household_config_parity PASSED    [ 80%]
+tests/unit/test_bank.py::test_grant_loan_with_object_calls_transfer PASSED [ 81%]
+tests/unit/test_bank.py::test_grant_loan_with_id_skips_transfer PASSED   [ 81%]
+tests/unit/test_bank_decomposition.py::TestBankDecomposition::test_default_processing PASSED [ 81%]
+tests/unit/test_bank_decomposition.py::TestBankDecomposition::test_grant_loan_delegation PASSED [ 81%]
+tests/unit/test_bank_decomposition.py::TestBankDecomposition::test_run_tick_interest_collection PASSED [ 81%]
+tests/unit/test_config_parity.py::test_household_config_parity PASSED    [ 81%]
 tests/unit/test_config_parity.py::test_firm_config_parity PASSED         [ 81%]
 tests/unit/test_consumption_manager_survival.py::TestConsumptionManagerSurvival::test_check_survival_override_no_emergency PASSED [ 81%]
 tests/unit/test_consumption_manager_survival.py::TestConsumptionManagerSurvival::test_check_survival_override_emergency_triggered PASSED [ 81%]
 tests/unit/test_consumption_manager_survival.py::TestConsumptionManagerSurvival::test_check_survival_override_emergency_triggered_insufficient_funds PASSED [ 81%]
-tests/unit/test_consumption_manager_survival.py::TestConsumptionManagerSurvival::test_check_survival_override_no_signal PASSED [ 81%]
-tests/unit/test_diagnostics.py::test_get_total_system_money_diagnostics PASSED [ 81%]
-tests/unit/test_factories.py::TestMarketSignalFactory::test_create_market_signals PASSED [ 81%]
-tests/unit/test_factories.py::TestMarketSnapshotFactory::test_create_snapshot PASSED [ 81%]
-tests/unit/test_factories.py::TestMarketSnapshotFactory::test_create_snapshot_with_housing_quality PASSED [ 81%]
+tests/unit/test_consumption_manager_survival.py::TestConsumptionManagerSurvival::test_check_survival_override_no_signal PASSED [ 82%]
+tests/unit/test_diagnostics.py::test_get_total_system_money_diagnostics PASSED [ 82%]
+tests/unit/test_factories.py::TestMarketSignalFactory::test_create_market_signals PASSED [ 82%]
+tests/unit/test_factories.py::TestMarketSnapshotFactory::test_create_snapshot PASSED [ 82%]
+tests/unit/test_factories.py::TestMarketSnapshotFactory::test_create_snapshot_with_housing_quality PASSED [ 82%]
 tests/unit/test_factories.py::TestDecisionInputFactory::test_create_decision_input PASSED [ 82%]
 tests/unit/test_firm_profit.py::test_firm_profit_history_update PASSED   [ 82%]
 tests/unit/test_firm_profit.py::test_firm_revenue_expenses_reset PASSED  [ 82%]
 tests/unit/test_firms.py::TestFirmBookValue::test_book_value_no_liabilities PASSED [ 82%]
 tests/unit/test_firms.py::TestFirmBookValue::test_book_value_with_liabilities PASSED [ 82%]
-tests/unit/test_firms.py::TestFirmBookValue::test_book_value_with_treasury_shares PASSED [ 82%]
-tests/unit/test_firms.py::TestFirmBookValue::test_book_value_negative_net_assets PASSED [ 82%]
-tests/unit/test_firms.py::TestFirmBookValue::test_book_value_zero_shares PASSED [ 82%]
-tests/unit/test_firms.py::TestFirmProduction::test_produce PASSED        [ 82%]
-tests/unit/test_firms.py::TestFirmSales::test_post_ask PASSED            [ 82%]
+tests/unit/test_firms.py::TestFirmBookValue::test_book_value_with_treasury_shares PASSED [ 83%]
+tests/unit/test_firms.py::TestFirmBookValue::test_book_value_negative_net_assets PASSED [ 83%]
+tests/unit/test_firms.py::TestFirmBookValue::test_book_value_zero_shares PASSED [ 83%]
+tests/unit/test_firms.py::TestFirmProduction::test_produce PASSED        [ 83%]
+tests/unit/test_firms.py::TestFirmSales::test_post_ask PASSED            [ 83%]
 tests/unit/test_firms.py::TestFirmSales::test_adjust_marketing_budget_increase PASSED [ 83%]
 tests/unit/test_god_command_protocol.py::test_set_param_success PASSED   [ 83%]
 tests/unit/test_god_command_protocol.py::test_inject_asset_success PASSED [ 83%]
 tests/unit/test_god_command_protocol.py::test_audit_failure_rollback_money PASSED [ 83%]
-tests/unit/test_god_command_protocol.py::test_mixed_batch_atomic_rollback PASSED [ 83%]
-tests/unit/test_god_command_protocol.py::test_validation_failure_aborts_batch PASSED [ 83%]
-tests/unit/test_goods_handler_precision.py::TestGoodsHandlerPrecision::test_legacy_price_handling PASSED [ 83%]
-tests/unit/test_government_structure.py::TestGovernmentStructure::test_government_singleton PASSED [ 83%]
-tests/unit/test_government_structure.py::TestGovernmentStructure::test_simulation_delegation PASSED [ 83%]
+tests/unit/test_god_command_protocol.py::test_mixed_batch_atomic_rollback PASSED [ 84%]
+tests/unit/test_god_command_protocol.py::test_validation_failure_aborts_batch PASSED [ 84%]
+tests/unit/test_goods_handler_precision.py::TestGoodsHandlerPrecision::test_legacy_price_handling PASSED [ 84%]
+tests/unit/test_government_structure.py::TestGovernmentStructure::test_government_singleton PASSED [ 84%]
+tests/unit/test_government_structure.py::TestGovernmentStructure::test_simulation_delegation PASSED [ 84%]
 tests/unit/test_handlers_fix.py::TestHandlerFix::test_goods_handler_uses_record_consumption PASSED [ 84%]
 tests/unit/test_handlers_fix.py::TestHandlerFix::test_labor_handler_uses_add_labor_income PASSED [ 84%]
 tests/unit/test_household_ai.py::test_ai_creates_purchase_order PASSED   [ 84%]
 tests/unit/test_household_ai.py::test_ai_evaluates_consumption_options PASSED [ 84%]
 tests/unit/test_household_ai.py::TestHouseholdAIInsight::test_active_learning_td_error PASSED [ 84%]
-tests/unit/test_household_ai.py::TestHouseholdAIInsight::test_perceptual_filters_lag PASSED [ 84%]
-tests/unit/test_household_ai.py::TestHouseholdAIInsight::test_perceptual_filters_sma PASSED [ 84%]
-tests/unit/test_household_ai.py::TestHouseholdAIInsight::test_panic_reaction PASSED [ 84%]
-tests/unit/test_household_ai_insight.py::TestHouseholdAIInsight::test_active_learning_td_error PASSED [ 84%]
+tests/unit/test_household_ai.py::TestHouseholdAIInsight::test_perceptual_filters_lag PASSED [ 85%]
+tests/unit/test_household_ai.py::TestHouseholdAIInsight::test_perceptual_filters_sma PASSED [ 85%]
+tests/unit/test_household_ai.py::TestHouseholdAIInsight::test_panic_reaction PASSED [ 85%]
+tests/unit/test_household_ai_insight.py::TestHouseholdAIInsight::test_active_learning_td_error PASSED [ 85%]
 tests/unit/test_household_ai_insight.py::TestHouseholdAIInsight::test_perceptual_filters_lag PASSED [ 85%]
 tests/unit/test_household_ai_insight.py::TestHouseholdAIInsight::test_perceptual_filters_sma PASSED [ 85%]
 tests/unit/test_household_ai_insight.py::TestHouseholdAIInsight::test_panic_reaction PASSED [ 85%]
 tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_make_decisions_calls_ai PASSED [ 85%]
 tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_do_nothing PASSED [ 85%]
 tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_buy_basic_food_sufficient_assets PASSED [ 85%]
-tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_buy_luxury_food_insufficient_assets PASSED [ 85%]
-tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_evaluate_options_chooses_best_utility PASSED [ 85%]
-tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_labor_market_participation_aggressive PASSED [ 85%]
+tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_buy_luxury_food_insufficient_assets PASSED [ 86%]
+tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_consumption_evaluate_options_chooses_best_utility PASSED [ 86%]
+tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_labor_market_participation_aggressive PASSED [ 86%]
 tests/unit/test_household_decision_engine_new.py::TestAIDrivenHouseholdDecisionEngine::test_labor_market_participation_passive_no_offer PASSED [ 86%]
 tests/unit/test_household_refactor.py::TestHouseholdRefactor::test_property_management PASSED [ 86%]
 tests/unit/test_household_system2.py::TestHouseholdSystem2::test_dti_guardrail PASSED [ 86%]
 tests/unit/test_household_system2.py::TestHouseholdSystem2::test_npv_buy_calculation PASSED [ 86%]
 tests/unit/test_household_system2.py::TestHouseholdSystem2::test_rational_choice_buy PASSED [ 86%]
 tests/unit/test_hr_engine_refactor.py::test_process_payroll_solvent PASSED [ 86%]
-tests/unit/test_hr_engine_refactor.py::test_process_payroll_insolvent_severance PASSED [ 86%]
-tests/unit/test_hr_engine_refactor.py::test_process_payroll_zombie PASSED [ 86%]
-tests/unit/test_hr_engine_refactor.py::test_process_payroll_context_immutability PASSED [ 86%]
-tests/unit/test_learning_tracker.py::TestLearningTracker::test_get_summary_multiple_agents PASSED [ 86%]
+tests/unit/test_hr_engine_refactor.py::test_process_payroll_insolvent_severance PASSED [ 87%]
+tests/unit/test_hr_engine_refactor.py::test_process_payroll_zombie PASSED [ 87%]
+tests/unit/test_hr_engine_refactor.py::test_process_payroll_context_immutability PASSED [ 87%]
+tests/unit/test_learning_tracker.py::TestLearningTracker::test_get_summary_multiple_agents PASSED [ 87%]
 tests/unit/test_learning_tracker.py::TestLearningTracker::test_get_summary_no_data PASSED [ 87%]
 tests/unit/test_learning_tracker.py::TestLearningTracker::test_get_summary_single_agent PASSED [ 87%]
 tests/unit/test_ledger_manager.py::test_archive_resolved_items PASSED    [ 87%]
 tests/unit/test_ledger_manager.py::test_register_new_item PASSED         [ 87%]
 tests/unit/test_ledger_manager.py::test_sync_with_codebase PASSED        [ 87%]
 tests/unit/test_ledger_manager.py::test_pipe_escaping_in_ledger PASSED   [ 87%]
-tests/unit/test_lifecycle_reset.py::TestLifecycleReset::test_reset_tick_state PASSED [ 87%]
-tests/unit/test_lifecycle_reset.py::TestLifecycleReset::test_household_reset_logic PASSED [ 87%]
-tests/unit/test_logger.py::TestLogger::test_clear_logs PASSED            [ 87%]
+tests/unit/test_lifecycle_reset.py::TestLifecycleReset::test_reset_tick_state PASSED [ 88%]
+tests/unit/test_lifecycle_reset.py::TestLifecycleReset::test_household_reset_logic PASSED [ 88%]
+tests/unit/test_logger.py::TestLogger::test_clear_logs PASSED            [ 88%]
 tests/unit/test_logger.py::TestLogger::test_log_writing PASSED           [ 88%]
 tests/unit/test_logger.py::TestLogger::test_singleton_instance PASSED    [ 88%]
 tests/unit/test_ma_pennies.py::TestMAManagerPennies::test_friendly_merger_price_is_int PASSED [ 88%]
 tests/unit/test_ma_pennies.py::TestMAManagerPennies::test_hostile_takeover_price_is_int PASSED [ 88%]
 tests/unit/test_ma_pennies.py::TestMAManagerPennies::test_bankruptcy_liquidation_values_are_int PASSED [ 88%]
 tests/unit/test_market_adapter.py::TestMarketAdapter::test_pass_through PASSED [ 88%]
-tests/unit/test_market_adapter.py::TestMarketAdapter::test_convert_dict_legacy_format PASSED [ 88%]
-tests/unit/test_market_adapter.py::TestMarketAdapter::test_convert_dict_canonical_format PASSED [ 88%]
-tests/unit/test_market_adapter.py::TestMarketAdapter::test_invalid_input PASSED [ 88%]
+tests/unit/test_market_adapter.py::TestMarketAdapter::test_convert_dict_legacy_format PASSED [ 89%]
+tests/unit/test_market_adapter.py::TestMarketAdapter::test_convert_dict_canonical_format PASSED [ 89%]
+tests/unit/test_market_adapter.py::TestMarketAdapter::test_invalid_input PASSED [ 89%]
 tests/unit/test_marketing_roi.py::TestMarketingROI::test_budget_decrease_on_low_efficiency PASSED [ 89%]
 tests/unit/test_marketing_roi.py::TestMarketingROI::test_budget_increase_on_high_efficiency PASSED [ 89%]
 tests/unit/test_marketing_roi.py::TestMarketingROI::test_budget_stable_on_saturation PASSED [ 89%]
@@ -827,8 +866,8 @@ tests/unit/test_marketing_roi.py::TestMarketingROI::test_first_tick_skip PASSED 
 tests/unit/test_markets_v2.py::TestOrderBookMarketInitialization::test_market_initialization PASSED [ 89%]
 tests/unit/test_markets_v2.py::TestPlaceOrderToBook::test_add_single_buy_order PASSED [ 89%]
 tests/unit/test_markets_v2.py::TestPlaceOrderToBook::test_add_buy_orders_sorted PASSED [ 89%]
-tests/unit/test_markets_v2.py::TestPlaceOrderToBook::test_add_sell_orders_sorted PASSED [ 89%]
-tests/unit/test_markets_v2.py::TestPlaceOrderToBook::test_add_orders_with_same_price PASSED [ 89%]
+tests/unit/test_markets_v2.py::TestPlaceOrderToBook::test_add_sell_orders_sorted PASSED [ 90%]
+tests/unit/test_markets_v2.py::TestPlaceOrderToBook::test_add_orders_with_same_price PASSED [ 90%]
 tests/unit/test_markets_v2.py::TestOrderMatching::test_unfilled_order_no_match PASSED [ 90%]
 tests/unit/test_markets_v2.py::TestOrderMatching::test_full_match_one_to_one PASSED [ 90%]
 tests/unit/test_markets_v2.py::TestOrderMatching::test_partial_match_then_book PASSED [ 90%]
@@ -837,7 +876,7 @@ tests/unit/test_markets_v2.py::TestMarketAPI::test_get_best_bid_empty PASSED [ 9
 tests/unit/test_markets_v2.py::TestMarketAPI::test_get_best_bid_non_empty PASSED [ 90%]
 tests/unit/test_markets_v2.py::TestMarketAPI::test_get_best_ask_empty PASSED [ 90%]
 tests/unit/test_markets_v2.py::TestMarketAPI::test_get_best_ask_non_empty PASSED [ 90%]
-tests/unit/test_markets_v2.py::TestMarketAPI::test_get_last_traded_price PASSED [ 90%]
+tests/unit/test_markets_v2.py::TestMarketAPI::test_get_last_traded_price PASSED [ 91%]
 tests/unit/test_markets_v2.py::TestMarketAPI::test_get_spread PASSED     [ 91%]
 tests/unit/test_markets_v2.py::TestMarketAPI::test_get_spread_no_bid_or_ask PASSED [ 91%]
 tests/unit/test_markets_v2.py::TestMarketAPI::test_get_market_depth PASSED [ 91%]
@@ -846,8 +885,8 @@ tests/unit/test_monetary_ledger_repayment.py::TestMonetaryLedgerRepayment::test_
 tests/unit/test_monetary_ledger_repayment.py::TestMonetaryLedgerRepayment::test_interest_is_not_destroyed PASSED [ 91%]
 tests/unit/test_phase1_refactor.py::TestPhase1DecisionRefactor::test_execute_flow PASSED [ 91%]
 tests/unit/test_phase1_refactor.py::TestPhase1DecisionRefactor::test_dispatch_logic PASSED [ 91%]
-tests/unit/test_portfolio_macro.py::test_portfolio_optimization_under_stagflation PASSED [ 91%]
-tests/unit/test_protocol_lockdown.py::test_financial_entity_protocol_compliance PASSED [ 91%]
+tests/unit/test_portfolio_macro.py::test_portfolio_optimization_under_stagflation PASSED [ 92%]
+tests/unit/test_protocol_lockdown.py::test_financial_entity_protocol_compliance PASSED [ 92%]
 tests/unit/test_protocol_lockdown.py::test_settlement_system_protocol_compliance PASSED [ 92%]
 tests/unit/test_protocol_lockdown.py::test_transaction_executor_protocol_compliance PASSED [ 92%]
 tests/unit/test_protocol_lockdown.py::test_bank_service_protocol_compliance PASSED [ 92%]
@@ -856,7 +895,7 @@ tests/unit/test_real_estate_lien.py::test_liens_management PASSED        [ 92%]
 tests/unit/test_real_estate_lien.py::test_mortgage_id_backward_compatibility PASSED [ 92%]
 tests/unit/test_repository.py::test_save_and_get_simulation_run PASSED   [ 92%]
 tests/unit/test_repository.py::test_save_and_get_agent_state PASSED      [ 92%]
-tests/unit/test_repository.py::test_save_and_get_transaction PASSED      [ 92%]
+tests/unit/test_repository.py::test_save_and_get_transaction PASSED      [ 93%]
 tests/unit/test_repository.py::test_save_and_get_economic_indicators PASSED [ 93%]
 tests/unit/test_repository.py::test_indexes_created PASSED               [ 93%]
 tests/unit/test_sales_engine_refactor.py::test_adjust_marketing_budget PASSED [ 93%]
@@ -894,7 +933,7 @@ tests/unit/test_transaction_engine.py::test_validator_success PASSED     [ 96%]
 tests/unit/test_transaction_engine.py::test_validator_negative_amount PASSED [ 96%]
 tests/unit/test_transaction_engine.py::test_validator_insufficient_funds PASSED [ 96%]
 tests/unit/test_transaction_engine.py::test_validator_invalid_account PASSED [ 96%]
-tests/unit/test_transaction_engine.py::test_executor_success PASSED      [ 97%]
+tests/unit/test_transaction_engine.py::test_executor_success PASSED      [ 96%]
 tests/unit/test_transaction_engine.py::test_executor_failure_rollback PASSED [ 97%]
 tests/unit/test_transaction_engine.py::test_engine_process_transaction_success PASSED [ 97%]
 tests/unit/test_transaction_engine.py::test_engine_process_transaction_validation_fail PASSED [ 97%]
@@ -903,7 +942,7 @@ tests/unit/test_transaction_engine.py::test_engine_process_batch_success PASSED 
 tests/unit/test_transaction_engine.py::test_engine_process_batch_rollback PASSED [ 97%]
 tests/unit/test_transaction_engine.py::test_adapter_registry_accessor PASSED [ 97%]
 tests/unit/test_transaction_handlers.py::TestGoodsTransactionHandler::test_goods_settle_fail PASSED [ 97%]
-tests/unit/test_transaction_handlers.py::TestGoodsTransactionHandler::test_goods_success_atomic PASSED [ 98%]
+tests/unit/test_transaction_handlers.py::TestGoodsTransactionHandler::test_goods_success_atomic PASSED [ 97%]
 tests/unit/test_transaction_handlers.py::TestLaborTransactionHandler::test_labor_atomic_settlement PASSED [ 98%]
 tests/unit/test_transaction_integrity.py::TestTransactionIntegrity::test_commerce_system_transaction_total_pennies PASSED [ 98%]
 tests/unit/test_transaction_integrity.py::TestTransactionIntegrity::test_settlement_system_record_total_pennies PASSED [ 98%]
@@ -912,9 +951,11 @@ tests/unit/test_transaction_processor.py::test_transaction_processor_ignores_cre
 tests/unit/test_transaction_processor.py::test_goods_handler_uses_atomic_settlement PASSED [ 98%]
 tests/unit/test_transaction_processor.py::test_public_manager_routing PASSED [ 98%]
 tests/unit/test_transaction_processor.py::test_transaction_processor_dispatches_housing PASSED [ 98%]
-tests/unit/test_transaction_rollback.py::test_process_batch_rollback_integrity PASSED [ 99%]
-tests/unit/test_watchtower_hardening.py::TestWatchtowerHardening::test_repo_birth_counts PASSED [ 99%]
+tests/unit/test_transaction_rollback.py::test_process_batch_rollback_integrity PASSED [ 98%]
+tests/unit/test_watchtower_hardening.py::TestWatchtowerHardening::test_repo_birth_counts PASSED [ 98%]
 tests/unit/test_watchtower_hardening.py::TestWatchtowerHardening::test_tracker_sma_logic PASSED [ 99%]
+tests/unit/test_wave6_fiscal_masking.py::TestFiscalMasking::test_progressive_taxation_logic PASSED [ 99%]
+tests/unit/test_wave6_fiscal_masking.py::TestFiscalMasking::test_wage_scaling_logic PASSED [ 99%]
 tests/unit/test_wo157_dynamic_pricing.py::TestWO157DynamicPricing::test_record_sale_updates_tick PASSED [ 99%]
 tests/unit/test_wo157_dynamic_pricing.py::TestWO157DynamicPricing::test_dynamic_pricing_reduction PASSED [ 99%]
 tests/unit/test_wo157_dynamic_pricing.py::TestWO157DynamicPricing::test_dynamic_pricing_floor PASSED [ 99%]
@@ -923,4 +964,482 @@ tests/unit/test_wo157_dynamic_pricing.py::TestWO157DynamicPricing::test_transact
 tests/unit/utils/test_config_factory.py::test_create_config_dto_success PASSED [ 99%]
 tests/unit/utils/test_config_factory.py::test_create_config_dto_missing_field PASSED [100%]
 
-============================= 923 passed in 19.39s =============================
+=================================== FAILURES ===================================
+____________________________ test_command_injection ____________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+___________________________ test_telemetry_broadcast ___________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+______________________________ test_auth_success _______________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+___________________________ test_auth_missing_token ____________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+___________________________ test_auth_invalid_token ____________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+________________ TestSimulation.test_prepare_market_data_basic _________________
+
+self = <tests.system.test_engine.TestSimulation object at 0x7feb7dd85880>
+simulation_instance = <simulation.engine.Simulation object at 0x7feb7d2a3860>
+mock_goods_data = [{'id': 'food', 'name': 'Food', 'utility_per_need': {'survival_need': 10.0}}, {'id': 'luxury_food', 'name': 'Luxury Food', 'utility_per_need': {'recognition_need': 5.0}}]
+mock_tracker = <simulation.metrics.economic_tracker.EconomicIndicatorTracker object at 0x7feb7e4694f0>
+
+    def test_prepare_market_data_basic(
+        self, simulation_instance, mock_goods_data, mock_tracker
+    ):
+>       market_data = simulation_instance._prepare_market_data(mock_tracker)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/system/test_engine.py:384:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation/engine.py:297: in _prepare_market_data
+    return self.tick_orchestrator.prepare_market_data()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+simulation/orchestration/tick_orchestrator.py:331: in prepare_market_data
+    return prepare_market_data(sim_state)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+simulation/orchestration/utils.py:25: in prepare_market_data
+    debt_status = state.bank.get_debt_status(str(agent_id))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.bank.Bank object at 0x7feb7d2a0440>, borrower_id = '201'
+
+    def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
+        if self.finance_system and hasattr(self.finance_system, 'get_customer_debt_status'):
+             loans = self.finance_system.get_customer_debt_status(self.id, borrower_id)
+             # UPDATED: Use outstanding_balance (float) per new DTO spec
+             total_debt = sum(l.outstanding_balance for l in loans)
+>            return DebtStatusDTO(
+                 borrower_id=int(borrower_id),
+                 total_outstanding_debt=total_debt,
+                 loans=loans,
+                 is_insolvent=False,
+                 next_payment_due=None,
+                 next_payment_due_tick=None
+             )
+E            TypeError: DebtStatusDTO.__init__() got an unexpected keyword argument 'total_outstanding_debt'
+
+simulation/bank.py:282: TypeError
+___________ TestSimulation.test_prepare_market_data_no_goods_market ____________
+
+self = <tests.system.test_engine.TestSimulation object at 0x7feb7dd85cd0>
+simulation_instance = <simulation.engine.Simulation object at 0x7feb7dd5c9e0>
+mock_goods_data = [{'id': 'food', 'name': 'Food', 'utility_per_need': {'survival_need': 10.0}}, {'id': 'luxury_food', 'name': 'Luxury Food', 'utility_per_need': {'recognition_need': 5.0}}]
+mock_tracker = <simulation.metrics.economic_tracker.EconomicIndicatorTracker object at 0x7feb7d5ee420>
+
+    def test_prepare_market_data_no_goods_market(
+        self, simulation_instance, mock_goods_data, mock_tracker
+    ):
+        original_food_market = simulation_instance.markets["food"]
+        simulation_instance.markets["food"] = None
+
+>       market_data = simulation_instance._prepare_market_data(mock_tracker)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/system/test_engine.py:398:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation/engine.py:297: in _prepare_market_data
+    return self.tick_orchestrator.prepare_market_data()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+simulation/orchestration/tick_orchestrator.py:331: in prepare_market_data
+    return prepare_market_data(sim_state)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+simulation/orchestration/utils.py:25: in prepare_market_data
+    debt_status = state.bank.get_debt_status(str(agent_id))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.bank.Bank object at 0x7feb7d57a510>, borrower_id = '201'
+
+    def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
+        if self.finance_system and hasattr(self.finance_system, 'get_customer_debt_status'):
+             loans = self.finance_system.get_customer_debt_status(self.id, borrower_id)
+             # UPDATED: Use outstanding_balance (float) per new DTO spec
+             total_debt = sum(l.outstanding_balance for l in loans)
+>            return DebtStatusDTO(
+                 borrower_id=int(borrower_id),
+                 total_outstanding_debt=total_debt,
+                 loans=loans,
+                 is_insolvent=False,
+                 next_payment_due=None,
+                 next_payment_due_tick=None
+             )
+E            TypeError: DebtStatusDTO.__init__() got an unexpected keyword argument 'total_outstanding_debt'
+
+simulation/bank.py:282: TypeError
+____________ TestSimulation.test_prepare_market_data_with_best_ask _____________
+
+self = <tests.system.test_engine.TestSimulation object at 0x7feb7dd86120>
+simulation_instance = <simulation.engine.Simulation object at 0x7feb7d2acf50>
+mock_goods_data = [{'id': 'food', 'name': 'Food', 'utility_per_need': {'survival_need': 10.0}}, {'id': 'luxury_food', 'name': 'Luxury Food', 'utility_per_need': {'recognition_need': 5.0}}]
+mock_tracker = <simulation.metrics.economic_tracker.EconomicIndicatorTracker object at 0x7feb7d220dd0>
+
+    def test_prepare_market_data_with_best_ask(
+        self, simulation_instance, mock_goods_data, mock_tracker
+    ):
+        mock_food_market = Mock(spec=OrderBookMarket)
+        mock_food_market.get_best_ask.return_value = 10.0
+        mock_food_market.get_daily_avg_price.return_value = 10.0
+        simulation_instance.markets["food"] = mock_food_market
+
+        mock_luxury_market = Mock(spec=OrderBookMarket)
+        mock_luxury_market.get_best_ask.return_value = 30.0
+        mock_luxury_market.get_daily_avg_price.return_value = 30.0
+        simulation_instance.markets["luxury_food"] = mock_luxury_market
+
+        mock_basic_food_market = Mock(spec=OrderBookMarket)
+        mock_basic_food_market.get_best_ask.return_value = 12.0
+        mock_basic_food_market.get_daily_avg_price.return_value = 12.0
+        simulation_instance.markets["basic_food"] = mock_basic_food_market
+
+>       market_data = simulation_instance._prepare_market_data(mock_tracker)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/system/test_engine.py:420:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation/engine.py:297: in _prepare_market_data
+    return self.tick_orchestrator.prepare_market_data()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+simulation/orchestration/tick_orchestrator.py:331: in prepare_market_data
+    return prepare_market_data(sim_state)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+simulation/orchestration/utils.py:25: in prepare_market_data
+    debt_status = state.bank.get_debt_status(str(agent_id))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.bank.Bank object at 0x7feb7d527860>, borrower_id = '201'
+
+    def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
+        if self.finance_system and hasattr(self.finance_system, 'get_customer_debt_status'):
+             loans = self.finance_system.get_customer_debt_status(self.id, borrower_id)
+             # UPDATED: Use outstanding_balance (float) per new DTO spec
+             total_debt = sum(l.outstanding_balance for l in loans)
+>            return DebtStatusDTO(
+                 borrower_id=int(borrower_id),
+                 total_outstanding_debt=total_debt,
+                 loans=loans,
+                 is_insolvent=False,
+                 next_payment_due=None,
+                 next_payment_due_tick=None
+             )
+E            TypeError: DebtStatusDTO.__init__() got an unexpected keyword argument 'total_outstanding_debt'
+
+simulation/bank.py:282: TypeError
+_____________ test_handle_agent_lifecycle_removes_inactive_agents ______________
+
+setup_simulation_for_lifecycle = (<simulation.engine.Simulation object at 0x7feb7d1b09b0>, <simulation.core_agents.Household object at 0x7feb7d19d250>,...at 0x7feb7d1b7260>, <simulation.firms.Firm object at 0x7feb7d1b6de0>, <simulation.firms.Firm object at 0x7feb7d1b6930>)
+
+    def test_handle_agent_lifecycle_removes_inactive_agents(setup_simulation_for_lifecycle):
+        (
+            sim,
+            household_active,
+            household_inactive,
+            household_employed_by_inactive_firm,
+            firm_active,
+            firm_inactive,
+        ) = setup_simulation_for_lifecycle
+
+        assert len(sim.households) == 3
+        assert len(sim.firms) == 2
+        assert household_active in sim.households
+        assert household_inactive in sim.households
+        assert firm_active in sim.firms
+        assert firm_inactive in sim.firms
+        assert household_employed_by_inactive_firm.is_employed
+        assert household_employed_by_inactive_firm.employer_id == firm_inactive.id
+        assert household_active in firm_active.hr_state.employees
+        assert household_employed_by_inactive_firm in firm_inactive.hr_state.employees
+
+        # CHANGED: Replaced hasattr with direct access where safe, and getattr for optional components
+        state = SimulationState(
+            time=sim.time,
+            households=sim.households,
+            firms=sim.firms,
+            agents=sim.agents,
+            markets=sim.markets,
+            primary_government=sim.government, # Renamed
+            governments=[sim.government], # Added for TD-ARCH-GOV-MISMATCH
+            bank=sim.bank,
+            central_bank=sim.central_bank, # Direct access
+            escrow_agent=getattr(sim, 'escrow_agent', None), # Keep getattr for optional/dynamic
+            stock_market=sim.stock_market, # Direct access
+            stock_tracker=sim.stock_tracker, # Direct access
+            goods_data=sim.goods_data,
+            market_data={},
+            config_module=sim.config_module,
+            tracker=sim.tracker,
+            logger=sim.logger,
+            ai_training_manager=sim.ai_training_manager, # Direct access
+            ai_trainer=sim.ai_trainer, # Direct access
+            next_agent_id=sim.next_agent_id, # Direct access
+            real_estate_units=sim.real_estate_units, # Direct access
+            transaction_processor=sim.transaction_processor, # Inject processor
+        )
+
+        # Force inactive state as SimulationInitializer.build_simulation -> update_needs resets it
+        household_inactive.is_active = False
+        firm_inactive.is_active = False
+
+>       sim.lifecycle_manager.death_system.execute(state)
+
+tests/system/test_engine.py:832:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation/systems/lifecycle/death_system.py:38: in execute
+    return self._handle_agent_liquidation(state)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+simulation/systems/lifecycle/death_system.py:95: in _handle_agent_liquidation
+    inheritance_txs = self.inheritance_manager.process_death(household, state.primary_government, state)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+simulation/systems/inheritance_manager.py:77: in process_death
+    debt_status = bank.get_debt_status(deceased.id)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.bank.Bank object at 0x7feb7c7dbe00>, borrower_id = 202
+
+    def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
+        if self.finance_system and hasattr(self.finance_system, 'get_customer_debt_status'):
+             loans = self.finance_system.get_customer_debt_status(self.id, borrower_id)
+             # UPDATED: Use outstanding_balance (float) per new DTO spec
+             total_debt = sum(l.outstanding_balance for l in loans)
+>            return DebtStatusDTO(
+                 borrower_id=int(borrower_id),
+                 total_outstanding_debt=total_debt,
+                 loans=loans,
+                 is_insolvent=False,
+                 next_payment_due=None,
+                 next_payment_due_tick=None
+             )
+E            TypeError: DebtStatusDTO.__init__() got an unexpected keyword argument 'total_outstanding_debt'
+
+simulation/bank.py:282: TypeError
+______________ TestPhase29Depression.test_crisis_monitor_logging _______________
+
+self = <tests.system.test_phase29_depression.TestPhase29Depression testMethod=test_crisis_monitor_logging>
+
+    def test_crisis_monitor_logging(self):
+        """Test that crisis monitor logs data."""
+>       self.sim.run_tick() # Tick 1
+        ^^^^^^^^^^^^^^^^^^^
+
+tests/system/test_phase29_depression.py:380:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation/engine.py:203: in run_tick
+    self.tick_orchestrator.run_tick(injectable_sensory_dto)
+simulation/orchestration/tick_orchestrator.py:99: in run_tick
+    sim_state = phase.execute(sim_state)
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+simulation/orchestration/phases/pre_sequence.py:45: in execute
+    market_data = prepare_market_data(state)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+simulation/orchestration/utils.py:25: in prepare_market_data
+    debt_status = state.bank.get_debt_status(str(agent_id))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.bank.Bank object at 0x7feb7c4a00e0>, borrower_id = '100'
+
+    def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
+        if self.finance_system and hasattr(self.finance_system, 'get_customer_debt_status'):
+             loans = self.finance_system.get_customer_debt_status(self.id, borrower_id)
+             # UPDATED: Use outstanding_balance (float) per new DTO spec
+             total_debt = sum(l.outstanding_balance for l in loans)
+>            return DebtStatusDTO(
+                 borrower_id=int(borrower_id),
+                 total_outstanding_debt=total_debt,
+                 loans=loans,
+                 is_insolvent=False,
+                 next_payment_due=None,
+                 next_payment_due_tick=None
+             )
+E            TypeError: DebtStatusDTO.__init__() got an unexpected keyword argument 'total_outstanding_debt'
+
+simulation/bank.py:282: TypeError
+----------------------------- Captured stdout call -----------------------------
+WARNING: Scenario not loaded from file during test setup. Manually enabling.
+___________ TestPhase29Depression.test_depression_scenario_triggers ____________
+
+self = <tests.system.test_phase29_depression.TestPhase29Depression testMethod=test_depression_scenario_triggers>
+
+    def test_depression_scenario_triggers(self):
+        """Test that shocks are applied at start_tick."""
+
+        # Verify initial state
+        initial_base_rate = self.sim.bank.base_rate
+        initial_tax_rate = self.sim.government.corporate_tax_rate
+        print(f"Initial State: Base Rate={initial_base_rate}, Tax Rate={initial_tax_rate}")
+
+        # Run until before shock
+        start_tick = self.sim.stress_scenario_config.start_tick
+        print(f"Running until tick {start_tick}...")
+
+        for _ in range(start_tick):
+>           self.sim.run_tick()
+
+tests/system/test_phase29_depression.py:367:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+simulation/engine.py:203: in run_tick
+    self.tick_orchestrator.run_tick(injectable_sensory_dto)
+simulation/orchestration/tick_orchestrator.py:99: in run_tick
+    sim_state = phase.execute(sim_state)
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+simulation/orchestration/phases/pre_sequence.py:45: in execute
+    market_data = prepare_market_data(state)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+simulation/orchestration/utils.py:25: in prepare_market_data
+    debt_status = state.bank.get_debt_status(str(agent_id))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.bank.Bank object at 0x7feb7d3fd880>, borrower_id = '100'
+
+    def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
+        if self.finance_system and hasattr(self.finance_system, 'get_customer_debt_status'):
+             loans = self.finance_system.get_customer_debt_status(self.id, borrower_id)
+             # UPDATED: Use outstanding_balance (float) per new DTO spec
+             total_debt = sum(l.outstanding_balance for l in loans)
+>            return DebtStatusDTO(
+                 borrower_id=int(borrower_id),
+                 total_outstanding_debt=total_debt,
+                 loans=loans,
+                 is_insolvent=False,
+                 next_payment_due=None,
+                 next_payment_due_tick=None
+             )
+E            TypeError: DebtStatusDTO.__init__() got an unexpected keyword argument 'total_outstanding_debt'
+
+simulation/bank.py:282: TypeError
+----------------------------- Captured stdout call -----------------------------
+WARNING: Scenario not loaded from file during test setup. Manually enabling.
+Initial State: Base Rate=0.03, Tax Rate=0.2
+Running until tick 50...
+______________________________ test_auth_success _______________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+_______________________ test_auth_failure_invalid_token ________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+_______________________ test_auth_failure_missing_token ________________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+________________ TestBankServiceInterface.test_get_debt_status _________________
+
+self = <tests.unit.finance.test_bank_service_interface.TestBankServiceInterface object at 0x7feb7dcc20c0>
+bank = <simulation.bank.Bank object at 0x7feb7c7fef00>
+mock_finance_system = <MagicMock spec='IFinanceSystem' id='140649382794720'>
+
+    def test_get_debt_status(self, bank, mock_finance_system):
+        borrower_id = "303"
+
+        loans = [
+            LoanInfoDTO(
+                loan_id="l1", borrower_id=int(borrower_id), lender_id=1, original_amount=100000.0,
+                outstanding_balance=100000.0, interest_rate=0.05, origination_tick=0, due_tick=360,
+                status="ACTIVE", term_ticks=360
+            ),
+            LoanInfoDTO(
+                loan_id="l2", borrower_id=int(borrower_id), lender_id=1, original_amount=50000.0,
+                outstanding_balance=50000.0, interest_rate=0.06, origination_tick=0, due_tick=360,
+                status="ACTIVE", term_ticks=360
+            )
+        ]
+        mock_finance_system.get_customer_debt_status.return_value = loans
+
+>       status = bank.get_debt_status(borrower_id)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/finance/test_bank_service_interface.py:117:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <simulation.bank.Bank object at 0x7feb7c7fef00>, borrower_id = '303'
+
+    def get_debt_status(self, borrower_id: AgentID) -> DebtStatusDTO:
+        if self.finance_system and hasattr(self.finance_system, 'get_customer_debt_status'):
+             loans = self.finance_system.get_customer_debt_status(self.id, borrower_id)
+             # UPDATED: Use outstanding_balance (float) per new DTO spec
+             total_debt = sum(l.outstanding_balance for l in loans)
+>            return DebtStatusDTO(
+                 borrower_id=int(borrower_id),
+                 total_outstanding_debt=total_debt,
+                 loans=loans,
+                 is_insolvent=False,
+                 next_payment_due=None,
+                 next_payment_due_tick=None
+             )
+E            TypeError: DebtStatusDTO.__init__() got an unexpected keyword argument 'total_outstanding_debt'
+
+simulation/bank.py:282: TypeError
+=============================== warnings summary ===============================
+../home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
+  /home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_default_fixture_loop_scope
+
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+../home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
+  /home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_mode
+
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_server_integration.py::test_command_injection
+FAILED tests/integration/test_server_integration.py::test_telemetry_broadcast
+FAILED tests/security/test_websocket_auth.py::test_auth_success - Failed: asy...
+FAILED tests/security/test_websocket_auth.py::test_auth_missing_token - Faile...
+FAILED tests/security/test_websocket_auth.py::test_auth_invalid_token - Faile...
+FAILED tests/system/test_engine.py::TestSimulation::test_prepare_market_data_basic
+FAILED tests/system/test_engine.py::TestSimulation::test_prepare_market_data_no_goods_market
+FAILED tests/system/test_engine.py::TestSimulation::test_prepare_market_data_with_best_ask
+FAILED tests/system/test_engine.py::test_handle_agent_lifecycle_removes_inactive_agents
+FAILED tests/system/test_phase29_depression.py::TestPhase29Depression::test_crisis_monitor_logging
+FAILED tests/system/test_phase29_depression.py::TestPhase29Depression::test_depression_scenario_triggers
+FAILED tests/system/test_server_auth.py::test_auth_success - Failed: async de...
+FAILED tests/system/test_server_auth.py::test_auth_failure_invalid_token - Fa...
+FAILED tests/system/test_server_auth.py::test_auth_failure_missing_token - Fa...
+FAILED tests/unit/finance/test_bank_service_interface.py::TestBankServiceInterface::test_get_debt_status
+================= 15 failed, 949 passed, 2 warnings in 13.24s ==================
