@@ -21,8 +21,9 @@
    - model (str, Optional): 모델 지정 ('gemini-3-pro-preview', 'gemini-3-flash-preview').
 """
 from typing import Dict, Any
+from _internal.registry.api import mission_registry
 
-GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
+LEGACY_GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
     "debt-liquidation-plan": {
         "title": "Technical Debt Liquidation Strategy",
         "worker": "spec",
@@ -34,19 +35,8 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
     },
     
     # 🌊 WAVE 1: Foundation & Integrity 
-    "wave1-finance-protocol-spec": {
-        "title": "Wave 1: Financial Protocol Enforcement Spec",
-        "worker": "spec",
-        "instruction": "Create a MISSION_spec for Jules to execute Mission 1.1. Resolve TD-PROTO-MONETARY, TD-INT-BANK-ROLLBACK, and TD-SYS-ACCOUNTING-GAP by enforcing IInvestor and IPropertyOwner protocols, implementing strict rollback interfaces, and fixing buyer expense tracking in accounting.",
-        "context_files": [
-            "simulation/systems/handlers/monetary_handler.py",
-            "modules/finance/api.py",
-            "modules/finance/bank.py",
-            "simulation/accounting.py",
-            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
-        ],
-        "output_path": "artifacts/specs/MISSION_wave1_finance_protocol_spec.md"
-    },
+    # wave1-finance-protocol-spec migrated to _internal.missions.wave1
+
     "wave1-lifecycle-hygiene-spec": {
         "title": "Wave 1: System Lifecycle & Dependency Hygiene Spec",
         "worker": "spec",
@@ -112,3 +102,10 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
         "output_path": "artifacts/specs/MISSION_wave3_dx_config_spec.md"
     }
 }
+
+# Scan for new missions
+mission_registry.scan_packages("_internal.missions")
+
+# Merge: Priority to Registry (New) over Legacy (Old)
+GEMINI_MISSIONS = LEGACY_GEMINI_MISSIONS.copy()
+GEMINI_MISSIONS.update(mission_registry.to_manifest())

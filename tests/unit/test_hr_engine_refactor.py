@@ -27,7 +27,7 @@ def mock_employee():
 def hr_state(mock_employee):
     state = HRState()
     state.employees = [mock_employee]
-    state.employee_wages = {101: 20.0}
+    state.employee_wages = {101: 2000.0} # 20.00 dollars
     return state
 
 @pytest.fixture
@@ -45,8 +45,8 @@ def context():
         tax_policy=TaxPolicyDTO(income_tax_rate=0.1, survival_cost=10.0, government_agent_id=999),
         current_time=100,
         firm_id=1,
-        wallet_balances={DEFAULT_CURRENCY: 1000.0},
-        labor_market_min_wage=10.0
+        wallet_balances={DEFAULT_CURRENCY: 100000.0}, # 1000.00 dollars
+        labor_market_min_wage=1000.0
     )
 
 def test_process_payroll_solvent(hr_engine, hr_state, config, context, mock_employee):
@@ -70,7 +70,7 @@ def test_process_payroll_solvent(hr_engine, hr_state, config, context, mock_empl
     # Verify Employee Update
     update = result.employee_updates[0]
     assert update.employee_id == 101
-    assert update.net_income == 18.0
+    assert update.net_income == 1800.0
     assert not update.fire_employee
 
     # Verify NO side effects on employee object
@@ -99,24 +99,24 @@ def test_process_payroll_insolvent_severance(hr_engine, hr_state, config, contex
     # else: Fire (Insolvent)
 
     # So to fire, total_liquid < wage.
-    # context.wallet_balances = {DEFAULT: 10.0}. Wage = 20.0.
+    # context.wallet_balances = {DEFAULT: 1000.0}. Wage = 2000.0.
     # Fire logic triggered.
     # Inside _handle_insolvency_transactions:
     # if current_balance >= severance_pay: Fire with Severance
     # else: Zombie
 
     # So we need Balance < Wage AND Balance >= Severance.
-    # Wage = 20.
-    # Severance = Wage * 2 = 40.
-    # Impossible to have Balance < 20 AND Balance >= 40.
+    # Wage = 2000.
+    # Severance = Wage * 2 = 4000.
+    # Impossible to have Balance < 2000 AND Balance >= 4000.
 
     # Wait, usually severance is weeks of pay. If 'wage' is daily/tickly?
     # If wage is per tick, and severance is in weeks?
     # Spec says: severance_pay = wage * severance_weeks.
     # If severance_weeks = 2.0 (ticks? or weeks?). If ticks, then 2 ticks of wage.
-    # If wage is 20, severance is 40.
-    # If I set severance_weeks = 0.5. Severance = 10.0.
-    # Balance = 15.0. Wage = 20.0.
+    # If wage is 2000, severance is 4000.
+    # If I set severance_weeks = 0.5. Severance = 1000.0.
+    # Balance = 1500.0. Wage = 2000.0.
     # Balance < Wage (Can't pay wage).
     # Balance >= Severance (Can pay severance).
 
@@ -126,8 +126,8 @@ def test_process_payroll_insolvent_severance(hr_engine, hr_state, config, contex
         tax_policy=None,
         current_time=100,
         firm_id=1,
-        wallet_balances={DEFAULT_CURRENCY: 15.0}, # < 20, >= 10
-        labor_market_min_wage=10.0
+        wallet_balances={DEFAULT_CURRENCY: 1500.0}, # < 2000, >= 1000
+        labor_market_min_wage=1000.0
     )
 
     result = hr_engine.process_payroll(hr_state, context_low, config)
@@ -139,7 +139,7 @@ def test_process_payroll_insolvent_severance(hr_engine, hr_state, config, contex
     assert len(result.employee_updates) == 1
     update = result.employee_updates[0]
     assert update.fire_employee is True
-    assert update.severance_pay == 10.0
+    assert update.severance_pay == 1000.0
 
     # Verify NO side effects
     mock_employee.quit.assert_not_called()
@@ -147,14 +147,14 @@ def test_process_payroll_insolvent_severance(hr_engine, hr_state, config, contex
 
 def test_process_payroll_zombie(hr_engine, hr_state, config, context, mock_employee):
     """Test zombie state (cannot afford wage OR severance)."""
-    # Balance = 5.0. Wage = 20.0. Severance = 40.0 (default 2 weeks).
+    # Balance = 500.0. Wage = 2000.0. Severance = 4000.0 (default 2 weeks).
     context_zombie = HRPayrollContextDTO(
         exchange_rates={DEFAULT_CURRENCY: 1.0},
         tax_policy=None,
         current_time=100,
         firm_id=1,
-        wallet_balances={DEFAULT_CURRENCY: 5.0},
-        labor_market_min_wage=10.0
+        wallet_balances={DEFAULT_CURRENCY: 500.0},
+        labor_market_min_wage=1000.0
     )
 
     result = hr_engine.process_payroll(hr_state, context_zombie, config)
@@ -165,7 +165,7 @@ def test_process_payroll_zombie(hr_engine, hr_state, config, context, mock_emplo
     # Check internal state mutation (allowed for zombie tracking)
     assert mock_employee.id in hr_state.unpaid_wages
     assert len(hr_state.unpaid_wages[mock_employee.id]) == 1
-    assert hr_state.unpaid_wages[mock_employee.id][0] == (100, 20.0)
+    assert hr_state.unpaid_wages[mock_employee.id][0] == (100, 2000.0)
 
 def test_process_payroll_context_immutability(hr_engine, hr_state, config, context, mock_employee):
     """Verify that process_payroll does NOT mutate context.wallet_balances."""
