@@ -9,7 +9,7 @@ from modules.finance.transaction.api import (
     ITransactionValidator,
     ITransactionLedger
 )
-from modules.finance.transaction.engine import TransactionEngine
+from modules.finance.transaction.engine import LedgerEngine
 
 class MockExecutor:
     def __init__(self):
@@ -31,7 +31,7 @@ def test_process_batch_rollback_integrity():
     mock_ledger = MagicMock(spec=ITransactionLedger)
     executor = MockExecutor()
 
-    engine = TransactionEngine(
+    engine = LedgerEngine(
         validator=mock_validator,
         executor=executor, # type: ignore
         ledger=mock_ledger
