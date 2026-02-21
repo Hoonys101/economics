@@ -125,18 +125,19 @@ class DeathSystem(IDeathSystem):
                 self.settlement_system.remove_agent_from_all_accounts(household.id)
 
         # --- Global List Cleanup ---
+
+        # O(1) Dictionary Cleanup - TD-SYS-PERF-DEATH
+        for firm in inactive_firms:
+            if firm.id in state.agents:
+                del state.agents[firm.id]
+
+        for household in inactive_households:
+             if household.id in state.agents:
+                del state.agents[household.id]
+
         # Modify lists in place to reflect removals
         state.households[:] = [h for h in state.households if h.is_active]
         state.firms[:] = [f for f in state.firms if f.is_active]
-
-        # Rebuild agents dict
-        state.agents.clear()
-        state.agents.update({agent.id: agent for agent in state.households + state.firms})
-        # Add system agents back
-        if state.bank: state.agents[state.bank.id] = state.bank
-        if state.primary_government: state.agents[state.primary_government.id] = state.primary_government
-        if hasattr(state, 'central_bank') and state.central_bank: state.agents[state.central_bank.id] = state.central_bank
-        if hasattr(state, 'escrow_agent') and state.escrow_agent: state.agents[state.escrow_agent.id] = state.escrow_agent
 
         return transactions
 

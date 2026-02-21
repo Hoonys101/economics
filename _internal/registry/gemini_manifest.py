@@ -22,77 +22,10 @@
    - model (str, Optional): 모델 지정 ('gemini-3-pro-preview', 'gemini-3-flash-preview').
 """
 from typing import Dict, Any
+from _internal.registry.api import mission_registry
 
-GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Wave 5: Data & DTO Purity
-    "wave5-dto-purity": {
-        "title": "[TD-UI-DTO-PURITY] Enforce Canonical Order and UI DTOs",
-        "worker": "spec",
-        "instruction": "Read artifacts/specs/MISSION_wave5_dto_purity_SPEC.md and generate a full Jules implementation spec.",
-        "context_files": [
-            "artifacts/specs/MISSION_wave5_dto_purity_SPEC.md",
-            "modules/market/api.py",
-            "modules/system/telemetry_exchange.py"
-        ],
-        "output_path": "artifacts/specs/MISSION_wave5_dto_purity_JULES_SPEC.md"
-    },
-    "wave5-config-purity": {
-        "title": "[TD-CONF-GHOST-BIND] Implement Config Proxy for Runtime Binding",
-        "worker": "spec",
-        "instruction": "Read artifacts/specs/MISSION_wave5_config_purity_SPEC.md and generate a full Jules implementation spec.",
-        "context_files": [
-            "artifacts/specs/MISSION_wave5_config_purity_SPEC.md",
-            "modules/finance/engine.py"
-        ],
-        "output_path": "artifacts/specs/MISSION_wave5_config_purity_JULES_SPEC.md"
-    },
-    
-    # Wave 6: AI & Logic Refinement
-    "wave6-ai-debt": {
-        "title": "[TD-AI-DEBT-AWARE] Integrate Debt Constraints into AI Planning",
-        "worker": "spec",
-        "instruction": "Read artifacts/specs/MISSION_wave6_ai_debt_aware_SPEC.md and generate a full Jules implementation spec.",
-        "context_files": [
-            "artifacts/specs/MISSION_wave6_ai_debt_aware_SPEC.md",
-            "modules/firm/planner.py"
-        ],
-        "output_path": "artifacts/specs/MISSION_wave6_ai_debt_JULES_SPEC.md"
-    },
-    "wave6-fiscal-masking": {
-        "title": "[TD-ECON-WAR-STIMULUS] Implement Progressive Taxation and Wage Scaling",
-        "worker": "spec",
-        "instruction": "Read artifacts/specs/MISSION_wave6_fiscal_masking_SPEC.md and generate a full Jules implementation spec.",
-        "context_files": [
-            "artifacts/specs/MISSION_wave6_fiscal_masking_SPEC.md",
-            "modules/government/policy_engine.py",
-            "modules/firm/hr_engine.py"
-        ],
-        "output_path": "artifacts/specs/MISSION_wave6_fiscal_masking_JULES_SPEC.md"
-    },
-    
-    # Wave 7: Architecture & Ops Cleanup
-    "wave7-firm-mutation": {
-        "title": "[TD-ARCH-FIRM-MUTATION] Enforce Stateless Engine Orchestration in Firm",
-        "worker": "spec",
-        "instruction": "Read artifacts/specs/MISSION_wave7_firm_mutation_SPEC.md and generate a full Jules implementation spec.",
-        "context_files": [
-            "artifacts/specs/MISSION_wave7_firm_mutation_SPEC.md",
-            "simulation/firms.py",
-            "modules/firm/sales_engine.py",
-            "modules/firm/brand_engine.py"
-        ],
-        "output_path": "artifacts/specs/MISSION_wave7_firm_mutation_JULES_SPEC.md"
-    },
-    "wave7-dx-automation": {
-        "title": "[TD-DX-AUTO-CRYSTAL] Automate Mission Registration and Optimize Death System",
-        "worker": "spec",
-        "instruction": "Read artifacts/specs/MISSION_wave7_dx_automation_SPEC.md and generate a full Jules implementation spec.",
-        "context_files": [
-            "artifacts/specs/MISSION_wave7_dx_automation_SPEC.md",
-            "_internal/scripts/launcher.py",
-            "_internal/registry/service.py",
-            "modules/system/death_system.py"
-        ],
-        "output_path": "artifacts/specs/MISSION_wave7_dx_automation_JULES_SPEC.md"
-    }
-}
+# Import mission definitions to trigger registration
+import _internal.registry.missions
+
+# Dynamically populate the manifest
+GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = mission_registry.to_manifest()
