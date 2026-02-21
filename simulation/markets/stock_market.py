@@ -10,7 +10,7 @@ from collections import defaultdict
 from dataclasses import dataclass, replace
 from simulation.models import Transaction, Order
 from simulation.core_markets import Market
-from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO, StockIDHelper
+from modules.market.api import CanonicalOrderDTO, StockMarketStateDTO, StockIDHelper, OrderTelemetrySchema
 from modules.finance.api import IShareholderRegistry, IShareholderView
 from simulation.markets.matching_engine import StockMatchingEngine
 logger = logging.getLogger(__name__)
@@ -282,3 +282,15 @@ class StockMarket(Market):
                 f"CANCEL_ORDERS | Removed {removed_count} stock orders for agent {agent_id}",
                 extra={"market_id": self.id, "agent_id": agent_id, "removed_count": removed_count}
             )
+
+    def get_telemetry_snapshot(self) -> List[OrderTelemetrySchema]:
+        """Returns Pydantic schemas for UI consumption."""
+        snapshot = []
+        for firm_id, orders in self.buy_orders.items():
+            for managed in orders:
+                # ManagedOrder.order is CanonicalOrderDTO
+                snapshot.append(OrderTelemetrySchema.from_canonical(managed.order))
+        for firm_id, orders in self.sell_orders.items():
+            for managed in orders:
+                snapshot.append(OrderTelemetrySchema.from_canonical(managed.order))
+        return snapshot

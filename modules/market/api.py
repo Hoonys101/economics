@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, TypedDict, Protocol, TYPE_CHECKING, List, runtime_checkable, Union
 from enum import Enum
 import uuid
+from pydantic import BaseModel, Field, field_validator
 from modules.finance.dtos import MoneyDTO
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from modules.common.interfaces import IPropertyOwner
@@ -14,19 +15,27 @@ if TYPE_CHECKING:
     from modules.finance.api import IBank, ISettlementSystem
     from modules.simulation.api import IGovernment, IAgent
 
+class MarketSide(str, Enum):
+    BUY = "BUY"
+    SELL = "SELL"
+
 @dataclass(frozen=True)
 class CanonicalOrderDTO:
-    """Standardized Market Order Data Transfer Object.
-    Replaces legacy dictionary/tuple usage in decision engines.
-    Immutable to prevent side-effects during processing.
     """
-    agent_id: int | str
-    side: str  # "BUY" or "SELL" (formerly order_type)
+    Standardized Market Order Data Transfer Object (Engine Layer).
+    Immutable to prevent side-effects during processing.
+
+    Adheres to [SEO_PATTERN.md] - Pure Data.
+    """
+    agent_id: Union[int, str]
+    side: str  # "BUY" or "SELL" (Validated by MarketSide in logic)
     item_id: str
     quantity: float
     price_pennies: int # Integer pennies (The SSoT)
-    price_limit: float # Legacy float representation (for UI/Logging) - DEPRECATED
     market_id: str
+
+    # Legacy/Display fields (Deprecated but kept for transition)
+    price_limit: float = 0.0 # DEPRECATED: Use price_pennies
 
     # Phase 6/7 Extensions
     target_agent_id: Optional[int] = None  # Brand Loyalty / Supply Chain
@@ -38,17 +47,58 @@ class CanonicalOrderDTO:
     currency: CurrencyCode = DEFAULT_CURRENCY
 
     # Auto-generated ID
-    id: str = field(default_factory=lambda: str(uuid.uuid4()), init=False)
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     @property
     def price(self) -> float:
-        """Alias for legacy compatibility during migration."""
-        return self.price_limit
+        """Alias for legacy compatibility. Returns float dollars."""
+        if self.price_limit > 0:
+            return self.price_limit
+        return self.price_pennies / 100.0
 
     @property
     def order_type(self) -> str:
-        """Alias for legacy compatibility during migration."""
+        """Alias for legacy compatibility."""
         return self.side
+
+class OrderTelemetrySchema(BaseModel):
+    """
+    Pydantic model for strictly typed UI/Websocket serialization.
+    Satisfies [TD-UI-DTO-PURITY].
+    """
+    id: str
+    agent_id: Union[int, str]
+    side: MarketSide
+    item_id: str
+    quantity: float
+    price_pennies: int
+    price_display: float = Field(..., description="Human readable float price")
+    market_id: str
+    currency: str = DEFAULT_CURRENCY
+    timestamp: int = 0
+
+    @field_validator('side', mode='before')
+    @classmethod
+    def normalize_side(cls, v):
+        if isinstance(v, str):
+            return v.upper()
+        return v
+
+    @classmethod
+    def from_canonical(cls, dto: CanonicalOrderDTO, timestamp: int = 0) -> 'OrderTelemetrySchema':
+        """Adapter: CanonicalOrderDTO -> OrderTelemetrySchema"""
+        return cls(
+            id=dto.id,
+            agent_id=dto.agent_id,
+            side=dto.side,  # type: ignore
+            item_id=dto.item_id,
+            quantity=dto.quantity,
+            price_pennies=dto.price_pennies,
+            price_display=dto.price,
+            market_id=dto.market_id,
+            currency=dto.currency,
+            timestamp=timestamp
+        )
 
 # Alias for backward compatibility
 OrderDTO = CanonicalOrderDTO
@@ -74,7 +124,7 @@ def convert_legacy_order_to_canonical(order: Any) -> CanonicalOrderDTO:
         if price_pennies is None:
             if isinstance(raw_price, float):
                  # Assume Dollars -> Convert to Pennies
-                 price_pennies = int(raw_price * 100)
+                 price_pennies = int(round(raw_price * 100))
             elif isinstance(raw_price, str):
                  # Try convert to float first
                  try:
@@ -83,7 +133,7 @@ def convert_legacy_order_to_canonical(order: Any) -> CanonicalOrderDTO:
                      # But "10.50" becomes 10.5.
                      # If string has decimal, assume dollars.
                      if "." in raw_price:
-                         price_pennies = int(val * 100)
+                         price_pennies = int(round(val * 100))
                      else:
                          price_pennies = int(val)
                  except ValueError:
@@ -98,8 +148,8 @@ def convert_legacy_order_to_canonical(order: Any) -> CanonicalOrderDTO:
             item_id=item_id,
             quantity=order.get("quantity"),
             price_pennies=price_pennies,
-            price_limit=float(raw_price),
             market_id=order.get("market_id", "stock_market"),
+            price_limit=float(raw_price),
             target_agent_id=order.get("target_agent_id"),
             brand_info=order.get("brand_info"),
             metadata=order.get("metadata"),
@@ -283,4 +333,8 @@ class IMarket(Protocol):
 
     def cancel_orders(self, agent_id: str) -> None:
         """Cancels all orders for the specified agent."""
+        ...
+
+    def get_telemetry_snapshot(self) -> List[OrderTelemetrySchema]:
+        """Returns Pydantic schemas for UI consumption."""
         ...
