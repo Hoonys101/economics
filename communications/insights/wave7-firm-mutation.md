@@ -29,4 +29,41 @@ To enforce the new architecture:
 
 ## 3. Test Evidence
 
-(To be populated after implementation and verification run)
+```
+tests/unit/test_wo157_dynamic_pricing.py::TestWO157DynamicPricing::test_record_sale_updates_tick PASSED [  7%]
+tests/unit/test_wo157_dynamic_pricing.py::TestWO157DynamicPricing::test_dynamic_pricing_reduction PASSED [ 15%]
+tests/unit/test_wo157_dynamic_pricing.py::TestWO157DynamicPricing::test_dynamic_pricing_floor PASSED [ 23%]
+tests/unit/test_wo157_dynamic_pricing.py::TestWO157DynamicPricing::test_dynamic_pricing_not_stale PASSED [ 30%]
+tests/unit/test_wo157_dynamic_pricing.py::TestWO157DynamicPricing::test_transaction_processor_calls_record_sale
+-------------------------------- live log call ---------------------------------
+WARNING  simulation.systems.handlers.goods_handler:goods_handler.py:123 GOODS_HANDLER_WARN | Buyer <Mock name='mock.id' id='139628550683248'> does not implement IInventoryHandler
+PASSED                                                                   [ 38%]
+tests/test_firm_surgical_separation.py::TestFirmSurgicalSeparation::test_make_decision_orchestrates_engines PASSED [ 46%]
+tests/test_firm_surgical_separation.py::TestFirmSurgicalSeparation::test_state_persistence_across_ticks
+-------------------------------- live log call ---------------------------------
+INFO     modules.firm.orchestrators.firm_action_executor:firm_action_executor.py:147 INTERNAL_EXEC | Firm 1 fired employee 101.
+PASSED                                                                   [ 53%]
+tests/unit/components/test_engines.py::TestHREngine::test_create_fire_transaction
+-------------------------------- live log call ---------------------------------
+WARNING  simulation.components.engines.hr_engine:hr_engine.py:379 INTERNAL_EXEC | Firm 1 cannot afford severance to fire 101.
+PASSED                                                                   [ 61%]
+tests/unit/components/test_engines.py::TestHREngine::test_process_payroll PASSED [ 69%]
+tests/unit/components/test_engines.py::TestSalesEngine::test_post_ask PASSED [ 76%]
+tests/unit/components/test_engines.py::TestSalesEngine::test_generate_marketing_transaction PASSED [ 84%]
+tests/unit/components/test_engines.py::TestFinanceEngine::test_generate_financial_transactions PASSED [ 92%]
+tests/unit/components/test_engines.py::TestProductionEngine::test_produce_depreciation PASSED [100%]
+
+=============================== warnings summary ===============================
+../home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
+  /home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_default_fixture_loop_scope
+
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+../home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428
+  /home/jules/.local/share/pipx/venvs/pytest/lib/python3.12/site-packages/_pytest/config/__init__.py:1428: PytestConfigWarning: Unknown config option: asyncio_mode
+
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 13 passed, 2 warnings in 0.55s ========================
+```
