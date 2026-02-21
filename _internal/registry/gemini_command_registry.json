@@ -2,58 +2,5 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {
-    "spec_firm_decoupling": {
-      "key": "spec_firm_decoupling",
-      "title": "TD-ARCH-FIRM-COUP: Firm Decoupling Spec",
-      "type": "gemini",
-      "instruction_raw": "Analyze Firm-Department coupling (self.parent) and design Orchestrator-based messaging pattern. Write specification to output_path.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "c:/coding/economics/simulation/agents/firm.py",
-        "c:/coding/economics/simulation/orchestration/tick_orchestrator.py"
-      ],
-      "output_path": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_firm_coup_spec.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "spec_missing_tx_handlers": {
-      "key": "spec_missing_tx_handlers",
-      "title": "TD-RUNTIME-TX-HANDLER: Missing Tx Handlers Spec",
-      "type": "gemini",
-      "instruction_raw": "Design missing transaction handlers (bailout, bond_issuance) and their registration in the TransactionEngine. Write specification to output_path.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "c:/coding/economics/modules/transaction/engine.py"
-      ],
-      "output_path": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_tx_handlers_spec.md",
-      "model": null,
-      "audit_requirements": null
-    },
-    "spec_cockpit_test_regression": {
-      "key": "spec_cockpit_test_regression",
-      "title": "TD-TEST-COCKPIT-MOCK: Cockpit Regression Fix Spec",
-      "type": "gemini",
-      "instruction_raw": "Analyze test failures related to deprecated system_command_queue in Cockpit 2.0 tests. Write spec to modernize test mocks.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "c:/coding/economics/tests/unit/modules/command/test_service.py"
-      ],
-      "output_path": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_cockpit_mock_spec.md",
-      "model": null,
-      "audit_requirements": null
-    }
-  }
+  "missions": {}
 }
