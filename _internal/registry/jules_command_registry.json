@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "mod-arch-recovery": {
-      "key": "mod-arch-recovery",
-      "title": "Module B Fix: Architecture & Orchestration",
-      "type": "jules",
-      "instruction_raw": "Refactor architecture. CRITICAL: Do NOT modify shared API/DTO files. If a contract change is needed, mark it as # TODO: TD-CONTRACT-SYNC and implement internally.",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MOD_ARCH_SPEC.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "mod-lifecycle-recovery": {
       "key": "mod-lifecycle-recovery",
       "title": "Module C Fix: Lifecycle & Saga Reliability",
