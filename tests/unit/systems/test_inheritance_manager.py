@@ -32,7 +32,7 @@ class TestInheritanceManager:
         # Phase 4.1: Mock Bank for Debt Repayment
         simulation.bank = MagicMock()
         # Default: No debt
-        simulation.bank.get_debt_status.return_value = MagicMock(total_outstanding_debt=0, loans=[])
+        simulation.bank.get_debt_status.return_value = MagicMock(total_outstanding_pennies=0, loans=[])
 
         return simulation
 

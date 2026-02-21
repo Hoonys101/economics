@@ -281,13 +281,13 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
              total_debt = sum(l.outstanding_balance for l in loans)
              return DebtStatusDTO(
                  borrower_id=int(borrower_id),
-                 total_outstanding_debt=total_debt,
+                 total_outstanding_pennies=int(round(total_debt * 100)),
                  loans=loans,
                  is_insolvent=False,
-                 next_payment_due=None,
-                 next_payment_due_tick=None
+                 next_payment_pennies=0,
+                 next_payment_tick=0
              )
-        return DebtStatusDTO(borrower_id=int(borrower_id), total_outstanding_debt=0.0, loans=[], is_insolvent=False, next_payment_due=None, next_payment_due_tick=None)
+        return DebtStatusDTO(borrower_id=int(borrower_id), total_outstanding_pennies=0, loans=[], is_insolvent=False, next_payment_pennies=0, next_payment_tick=0)
 
     def terminate_loan(self, loan_id: str) -> Optional["Transaction"]:
         return None
