@@ -6,14 +6,14 @@ from modules.hr.api import IEmployeeDataProvider
 from simulation.models import Transaction, Order
 from simulation.components.state.firm_state_models import HRState
 from simulation.dtos.hr_dtos import HRPayrollContextDTO, HRPayrollResultDTO, EmployeeUpdateDTO
-from modules.firm.api import HRDecisionInputDTO, HRDecisionOutputDTO
+from modules.firm.api import HRDecisionInputDTO, HRDecisionOutputDTO, IHREngine
 
 if TYPE_CHECKING:
     from modules.simulation.dtos.api import FirmConfigDTO, FirmStateDTO
 
 logger = logging.getLogger(__name__)
 
-class HREngine:
+class HREngine(IHREngine):
     """
     Stateless Engine for HR operations.
     Manages employees, calculates wages (skill + halo), and handles insolvency firing.
@@ -234,11 +234,11 @@ class HREngine:
                     seller_id=employee.id, # Payee
                     item_id="labor_wage",
                     quantity=1.0,
-                    price=net_wage,
+                    price=net_wage / 100.0,
                     market_id="labor",
                     transaction_type="wage",
                     time=current_time
-                , total_pennies=int(net_wage * 1.0 * 100))
+                , total_pennies=net_wage)
                 transactions.append(tx_wage)
 
                 # Transaction 2: Income Tax (Firm -> Government) [Withholding]
@@ -248,11 +248,11 @@ class HREngine:
                         seller_id=context.tax_policy.government_agent_id, # Payee
                         item_id="income_tax",
                         quantity=1.0,
-                        price=income_tax,
+                        price=income_tax / 100.0,
                         market_id="system",
                         transaction_type="tax",
                         time=current_time
-                    , total_pennies=int(income_tax * 1.0 * 100))
+                    , total_pennies=income_tax)
                     transactions.append(tx_tax)
 
                 # Schedule Employee Update (Income)
@@ -322,11 +322,11 @@ class HREngine:
                 seller_id=employee.id,
                 item_id="severance_pay",
                 quantity=1.0,
-                price=severance_pay,
+                price=severance_pay / 100.0,
                 market_id="labor",
                 transaction_type="severance",
                 time=current_time
-            , total_pennies=int(severance_pay * 1.0 * 100))
+            , total_pennies=severance_pay)
             tx_list.append(tx)
 
             logger.info(
@@ -373,12 +373,12 @@ class HREngine:
             seller_id=employee.id,
             item_id="Severance",
             quantity=1.0,
-            price=severance_pay,
+            price=severance_pay / 100.0,
             market_id="system", # or labor?
             transaction_type="severance",
             time=current_time,
             currency=DEFAULT_CURRENCY
-        , total_pennies=int(severance_pay * 1.0 * 100))
+        , total_pennies=severance_pay)
 
     def finalize_firing(self, hr_state: HRState, employee_id: int):
         """

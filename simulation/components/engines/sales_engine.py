@@ -6,11 +6,12 @@ from simulation.models import Order, Transaction
 from simulation.components.state.firm_state_models import SalesState
 from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingContextDTO, MarketingAdjustmentResultDTO
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
+from modules.firm.api import ISalesEngine
 if TYPE_CHECKING:
     from modules.simulation.dtos.api import FirmConfigDTO
 logger = logging.getLogger(__name__)
 
-class SalesEngine:
+class SalesEngine(ISalesEngine):
     """
     Stateless Engine for Sales operations.
     Handles pricing, marketing, and order generation.
@@ -23,8 +24,8 @@ class SalesEngine:
         Validates quantity against inventory.
         """
         actual_quantity = min(context.quantity, context.inventory_quantity)
-        state.last_prices[context.item_id] = context.price
-        return Order(agent_id=context.firm_id, side='SELL', item_id=context.item_id, quantity=actual_quantity, price_pennies=int(context.price * 100), price_limit=context.price, market_id=context.market_id, brand_info=context.brand_snapshot, currency=DEFAULT_CURRENCY)
+        state.last_prices[context.item_id] = context.price_pennies
+        return Order(agent_id=context.firm_id, side='SELL', item_id=context.item_id, quantity=actual_quantity, price_pennies=context.price_pennies, price_limit=context.price_pennies / 100.0, market_id=context.market_id, brand_info=context.brand_snapshot, currency=DEFAULT_CURRENCY)
 
     def adjust_marketing_budget(self, state: SalesState, market_context: MarketContextDTO, revenue_this_turn: int, last_revenue: int=0, last_marketing_spend: int=0) -> MarketingAdjustmentResultDTO:
         """
@@ -50,7 +51,7 @@ class SalesEngine:
         """
         budget = state.marketing_budget_pennies
         if budget > 0 and context.wallet_balance >= budget and context.government_id:
-            return Transaction(buyer_id=context.firm_id, seller_id=context.government_id, item_id='marketing', quantity=1.0, price=budget, market_id='system', transaction_type='marketing', time=context.current_time, currency=DEFAULT_CURRENCY, total_pennies=int(budget * 1.0 * 100))
+            return Transaction(buyer_id=context.firm_id, seller_id=context.government_id, item_id='marketing', quantity=1.0, price=budget / 100.0, market_id='system', transaction_type='marketing', time=context.current_time, currency=DEFAULT_CURRENCY, total_pennies=budget)
         return None
 
     def check_and_apply_dynamic_pricing(self, state: SalesState, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> None:

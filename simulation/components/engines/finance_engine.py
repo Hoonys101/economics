@@ -7,14 +7,14 @@ from modules.finance.api import InsufficientFundsError, IShareholderRegistry
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
 from simulation.dtos.context_dtos import FinancialTransactionContext
-from modules.firm.api import FinanceDecisionInputDTO, BudgetPlanDTO
+from modules.firm.api import FinanceDecisionInputDTO, BudgetPlanDTO, IFinanceEngine
 
 if TYPE_CHECKING:
     from modules.simulation.dtos.api import FirmConfigDTO
 
 logger = logging.getLogger(__name__)
 
-class FinanceEngine:
+class FinanceEngine(IFinanceEngine):
     """
     Stateless Engine for Finance operations.
     Manages asset tracking, transaction generation, and financial health metrics.
@@ -157,7 +157,7 @@ class FinanceEngine:
                     seller_id=gov_id,
                     item_id="holding_cost",
                     quantity=1.0,
-                    price=holding_cost_pennies,
+                    price=holding_cost_pennies / 100.0,
                     market_id="system",
                     transaction_type="holding_cost",
                     time=current_time,
@@ -178,7 +178,7 @@ class FinanceEngine:
                     seller_id=gov_id,
                     item_id="firm_maintenance",
                     quantity=1.0,
-                    price=payment,
+                    price=payment / 100.0,
                     market_id="system",
                     transaction_type="tax",
                     time=current_time,
@@ -244,7 +244,7 @@ class FinanceEngine:
                         seller_id=gov_id,
                         item_id="bailout_repayment",
                         quantity=1.0,
-                        price=repayment,
+                        price=repayment / 100.0,
                         market_id="system",
                         transaction_type="repayment",
                         time=current_time,
@@ -281,7 +281,7 @@ class FinanceEngine:
                                 seller_id=agent_id,
                                 item_id="dividend",
                                 quantity=1.0,
-                                price=dividend_amount,
+                                price=dividend_amount / 100.0,
                                 market_id="financial",
                                 transaction_type="dividend",
                                 time=current_time,
@@ -373,7 +373,7 @@ class FinanceEngine:
             seller_id=context.government_id,
             item_id="Automation",
             quantity=1.0,
-            price=amount,
+            price=amount / 100.0,
             market_id="system",
             transaction_type="investment",
             time=current_time,
@@ -404,7 +404,7 @@ class FinanceEngine:
             seller_id=context.government_id,
             item_id="R&D",
             quantity=1.0,
-            price=amount,
+            price=amount / 100.0,
             market_id="system",
             transaction_type="investment",
             time=current_time,
@@ -435,7 +435,7 @@ class FinanceEngine:
             seller_id=context.government_id,
             item_id="CAPEX",
             quantity=1.0,
-            price=amount,
+            price=amount / 100.0,
             market_id="system",
             transaction_type="investment",
             time=current_time,
@@ -468,7 +468,7 @@ class FinanceEngine:
             seller_id=context.government_id,
             item_id=reason,
             quantity=1.0,
-            price=amount,
+            price=amount / 100.0,
             market_id="system",
             transaction_type="tax",
             time=current_time,
