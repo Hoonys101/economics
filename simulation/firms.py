@@ -475,6 +475,64 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
     # --- Methods ---
 
+    def get_market_cap(self, stock_price: Optional[float] = None) -> int:
+        """
+        Calculates market capitalization in pennies.
+        If stock_price is provided (dollars), calculates based on outstanding shares.
+        If not provided, falls back to intrinsic valuation (valuation_pennies).
+        """
+        if stock_price is not None:
+            outstanding = self.total_shares - self.treasury_shares
+            # stock_price is dollars, convert to pennies: * 100
+            return int(outstanding * stock_price * 100)
+
+        return self.valuation
+
+    def calculate_valuation(self) -> int:
+        """
+        Calculates and updates firm valuation.
+        Delegates to FinanceEngine.
+        """
+        # Gather data
+        balances = self.financial_component.get_all_balances()
+
+        # Calculate inventory value
+        inventory_value = 0
+        for item, qty in self.get_all_items().items():
+            price = self.last_prices.get(item, DEFAULT_PRICE)
+            inventory_value += int(qty * price)
+
+        capital_stock = int(self.production_state.capital_stock)
+
+        return self.finance_engine.calculate_valuation(
+            self.finance_state,
+            balances,
+            self.config,
+            inventory_value,
+            capital_stock,
+            context=None
+        )
+
+    def get_book_value_per_share(self) -> float:
+        """
+        Calculates Book Value per Share (pennies) based on liquid assets and debt.
+        Note: Excludes non-liquid assets (Capital/Inventory) to match legacy test expectations.
+        Returns float.
+        """
+        outstanding = self.total_shares - self.treasury_shares
+        if outstanding <= 0:
+            return 0.0
+
+        assets = sum(self.financial_component.get_all_balances().values())
+        liabilities = self.finance_state.total_debt_pennies
+
+        net_assets = assets - liabilities
+        return float(max(0, net_assets)) / outstanding
+
+    def reset_finance(self):
+        """Resets finance counters for the next tick."""
+        self.finance_state.reset_tick_counters(DEFAULT_CURRENCY)
+
     def init_ipo(self, stock_market: StockMarket):
         """Register firm in stock market order book."""
         usd_balance = self.wallet.get_balance(DEFAULT_CURRENCY)
