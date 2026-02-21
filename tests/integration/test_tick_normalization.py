@@ -10,14 +10,21 @@ from modules.system.api import DEFAULT_CURRENCY
 class TestTickNormalization:
     @pytest.fixture
     def mock_world_state(self):
-        # Remove spec=WorldState to avoid AttributeError on missing attributes like social_system
-        state = MagicMock()
+        from simulation.world_state import WorldState
+        # Use spec=WorldState to prevent Mock Drift
+        state = MagicMock(spec=WorldState)
         state.time = 0
         state.agents = {}
         state.firms = []
         state.households = []
         state.markets = {}
         state.transactions = []
+        state.inter_tick_queue = []
+        state.effects_queue = []
+        state.stock_tracker = None
+        state.inactive_agents = {}
+        state.global_registry = MagicMock()
+        state.lifecycle_manager = MagicMock()
 
         # Components
         state.bank = MagicMock()
@@ -77,6 +84,21 @@ class TestTickNormalization:
         state.settlement_system = MagicMock()
         state.ai_training_manager = None
         state.ai_trainer = None
+
+        # Add missing optional fields that Orchestrator might access
+        state.social_system = None
+        state.sensory_system = None
+        state.agent_registry = None
+        state.saga_orchestrator = None
+        state.monetary_ledger = None
+        state.shareholder_registry = None
+        state.taxation_system = None
+        state.labor_market_analyzer = None
+        state.public_manager = None
+        state.currency_holders = []
+        state.stress_scenario_config = None
+        state.escrow_agent = None
+        state.registry = None
 
         # Fix format issue
         state.calculate_total_money = MagicMock(return_value={DEFAULT_CURRENCY: 1000.0})

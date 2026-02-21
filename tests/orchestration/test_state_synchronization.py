@@ -17,7 +17,8 @@ class TestStateSynchronization:
 
     @pytest.fixture
     def world_state(self):
-        ws = MagicMock()
+        from simulation.world_state import WorldState
+        ws = MagicMock(spec=WorldState)
         ws.time = 1
         ws.next_agent_id = 100
         ws.households = []
@@ -45,6 +46,16 @@ class TestStateSynchronization:
         ws.ai_training_manager = MagicMock()
         ws.ai_trainer = MagicMock()
         ws.settlement_system = MagicMock()
+        # Add missing optional fields that Orchestrator might access
+        ws.escrow_agent = None
+        ws.taxation_system = None
+        ws.currency_holders = []
+        ws.stress_scenario_config = None
+        ws.saga_orchestrator = None
+        ws.monetary_ledger = None
+        ws.shareholder_registry = None
+        ws.housing_service = None
+        ws.registry = None
         return ws
 
     @pytest.fixture

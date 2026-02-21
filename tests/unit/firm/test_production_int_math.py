@@ -22,6 +22,7 @@ def test_production_integer_depreciation():
     prod_state.base_quality = 1.0
     prod_state.productivity_factor = 1.0
     prod_state.input_inventory = {}
+    prod_state.inventory = {}
 
     hr_state = MagicMock(spec=HRStateDTO)
     hr_state.employees_data = {1: {"skill": 1.0}}
@@ -61,6 +62,7 @@ def test_production_deterministic_output():
     prod_state.base_quality = 1.0
     prod_state.productivity_factor = 1.0
     prod_state.input_inventory = {}
+    prod_state.inventory = {}
 
     hr_state = MagicMock(spec=HRStateDTO)
     # 1 employee, skill 1.0
@@ -106,6 +108,7 @@ def test_production_deterministic_floor():
     prod_state.base_quality = 1.0
     prod_state.productivity_factor = 1.0
     prod_state.input_inventory = {}
+    prod_state.inventory = {}
 
     hr_state = MagicMock(spec=HRStateDTO)
     # Labor 1.5. sqrt(1.5) ~= 1.2247
