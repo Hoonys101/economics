@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "wave5-dto-purity": {
-      "key": "wave5-dto-purity",
-      "title": "Implement Canonical Order and UI DTOs",
-      "type": "jules",
-      "instruction_raw": "Execute the full implementation spec exactly as documented.",
-      "command": "create",
-      "file_path": "artifacts/specs/MISSION_wave5_dto_purity_JULES_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "wave5-config-purity": {
       "key": "wave5-config-purity",
       "title": "Implement Config Proxy for Runtime Binding",
