@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "mod-lifecycle-recovery": {
-      "key": "mod-lifecycle-recovery",
-      "title": "Module C Fix: Lifecycle & Saga Reliability",
-      "type": "jules",
-      "instruction_raw": "Standardize lifecycle. CRITICAL: Do NOT modify shared API/DTO files. If a contract change is needed, mark it as # TODO: TD-CONTRACT-SYNC and implement internally.",
-      "command": "create",
-      "file_path": "design/3_work_artifacts/specs/MOD_LIFECYCLE_SPEC.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "mod-test-recovery": {
       "key": "mod-test-recovery",
       "title": "Module D Fix: Test Suite Modernization",
