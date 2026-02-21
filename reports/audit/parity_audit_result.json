@@ -1,0 +1,22 @@
+{
+  "verified": [
+    "BrandEngine: Found in modules.firm.engines.brand_engine",
+    "PricingEngine: Found in modules.firm.engines.pricing_engine",
+    "ConsumptionManager: Found in modules.household.consumption_manager",
+    "Inheritance Verification Script: Found at tests/integration/scenarios/verification/verify_inheritance.py",
+    "Iron Test Script: Found at scripts/iron_test.py",
+    "Team Assignments: Found at communications/team_assignments.json"
+  ],
+  "design_drift": [
+    "GoodsTransactionHandler: Found in simulation.systems.handlers.goods_handler, Expected modules.finance.transaction.handlers.goods_handler",
+    "LaborTransactionHandler: Found in simulation.systems.handlers.labor_handler, Expected modules.finance.transaction.handlers.labor_handler",
+    "SalesEngine: Found in simulation.components.engines.sales_engine, Expected modules.firm.engines.sales_engine"
+  ],
+  "ghost_implementation": [
+    "BorrowerProfileDTO: Error importing modules.finance.api: 'NoneType' object has no attribute '__dict__'",
+    "ISettlementSystem: Error importing modules.finance.api: 'NoneType' object has no attribute '__dict__'"
+  ],
+  "data_contract_violation": [
+    "tests/goldens/initial_state.json: Schema matches DEPRECATED HouseholdStateDTO, not AgentStateDTO"
+  ]
+}
