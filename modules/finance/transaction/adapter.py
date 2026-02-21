@@ -1,7 +1,7 @@
 from typing import Any, cast, Dict, Optional
 from modules.finance.transaction.api import IAccountAccessor, InvalidAccountError, ITransactionParticipant, ITransactionValidator
 from modules.finance.api import IFinancialAgent, IFinancialEntity
-from modules.system.api import IAgentRegistry, CurrencyCode, DEFAULT_CURRENCY
+from modules.system.api import IAgentRegistry, CurrencyCode, DEFAULT_CURRENCY, ISystemFinancialAgent
 
 class FinancialEntityAdapter:
     """
@@ -21,6 +21,8 @@ class FinancialEntityAdapter:
 
     @property
     def allows_overdraft(self) -> bool:
+        if isinstance(self.entity, ISystemFinancialAgent) and self.entity.is_system_agent():
+            return True
         # Hardcoded ID check for Central Bank. IDs are usually int.
         from modules.system.constants import ID_CENTRAL_BANK
         return self.entity.id == ID_CENTRAL_BANK or str(self.entity.id) == str(ID_CENTRAL_BANK)
@@ -43,6 +45,8 @@ class FinancialAgentAdapter:
 
     @property
     def allows_overdraft(self) -> bool:
+        if isinstance(self.agent, ISystemFinancialAgent) and self.agent.is_system_agent():
+            return True
         from modules.system.constants import ID_CENTRAL_BANK
         return self.agent.id == ID_CENTRAL_BANK or str(self.agent.id) == str(ID_CENTRAL_BANK)
 

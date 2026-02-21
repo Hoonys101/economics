@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from modules.system.execution.public_manager import PublicManager
 from modules.finance.api import IFinancialAgent, InsufficientFundsError
-from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, IAssetRecoverySystem
+from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, IAssetRecoverySystem, ISystemFinancialAgent
 from modules.system.constants import ID_PUBLIC_MANAGER
 
 class TestPublicManagerCompliance:
@@ -23,8 +23,16 @@ class TestPublicManagerCompliance:
         assert public_manager.total_wealth == 100
         public_manager._withdraw(50)
         assert public_manager.total_wealth == 50
-        with pytest.raises(InsufficientFundsError):
-            public_manager._withdraw(100)
+
+        # Soft Budget Constraint: Should NOT raise InsufficientFundsError
+        public_manager._withdraw(100)
+        assert public_manager.get_balance() == -50
+        assert public_manager.get_deficit() > 0
+
+    def test_implements_system_financial_agent(self, public_manager):
+        """Verify PublicManager implements ISystemFinancialAgent."""
+        assert isinstance(public_manager, ISystemFinancialAgent)
+        assert public_manager.is_system_agent() is True
 
     def test_implements_asset_recovery_system(self, public_manager):
         """Verify PublicManager implements IAssetRecoverySystem."""

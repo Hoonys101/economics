@@ -14,33 +14,39 @@ class EscheatmentHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
+        subtype = tx.metadata.get('subtype')
+
+        if subtype == 'ASSET_BUYOUT':
+            # Phase A: PublicManager (Buyer) buys assets from Bankrupt Agent (Seller)
+            # PM injects liquidity. Soft Budget Constraint applies to PM.
+            amount = tx.total_pennies
+            if amount <= 0:
+                return True
+
+            credits = [(seller, amount, "asset_buyout")]
+            # PM pays Seller
+            success = context.settlement_system.settle_atomic(buyer, credits, context.time)
+            return success
+
+        # Phase C: Residual Escheatment (Cleanup)
         # Buyer: Agent (Deceased/Closed)
-        # Seller: Government (usually)
+        # Seller: Government
 
-        # TD-171: Use dynamic asset balance instead of static transaction price
-        escheatment_amount_raw = buyer.assets
-        escheatment_amount = 0.0
+        # Get actual balance from SSoT
+        balance = context.settlement_system.get_balance(buyer.id, DEFAULT_CURRENCY)
 
-        if isinstance(escheatment_amount_raw, dict):
-            escheatment_amount = escheatment_amount_raw.get(DEFAULT_CURRENCY, 0.0)
-        else:
-            try:
-                escheatment_amount = float(escheatment_amount_raw)
-            except (ValueError, TypeError):
-                escheatment_amount = 0.0
-
-        if escheatment_amount <= 0:
+        if balance <= 0:
             return True # No assets to transfer, consider success
 
         gov = context.government
-        credits = [(gov, escheatment_amount, "escheatment")]
+        credits = [(gov, balance, "escheatment")]
 
         success = context.settlement_system.settle_atomic(buyer, credits, context.time)
 
         if success:
               gov.record_revenue({
                      "success": True,
-                     "amount_collected": escheatment_amount,
+                     "amount_collected": balance,
                      "tax_type": "escheatment",
                      "payer_id": buyer.id,
                      "payee_id": gov.id,

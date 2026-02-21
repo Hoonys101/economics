@@ -10,7 +10,7 @@ from modules.finance.api import (
     IMonetaryAuthority, IEconomicMetricsService, IPanicRecorder, ICentralBank
 
 )
-from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry
+from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry, ISystemFinancialAgent
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.market.housing_planner_api import MortgageApplicationDTO
 from simulation.models import Transaction
@@ -340,6 +340,10 @@ class SettlementSystem(IMonetaryAuthority):
         """
         # Central Bank check
         if isinstance(agent, ICentralBank):
+            return True
+
+        # System Agent (Soft Budget Constraint) check
+        if isinstance(agent, ISystemFinancialAgent) and agent.is_system_agent():
             return True
 
         current_cash = 0

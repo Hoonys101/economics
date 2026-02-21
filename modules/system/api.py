@@ -76,6 +76,29 @@ class AgentBankruptcyEventDTO(TypedDict):
     agent_id: int
     tick: int
     inventory: Dict[str, float]
+    total_debt: int
+    creditor_ids: List[int]
+
+@dataclass(frozen=True)
+class AssetBuyoutRequestDTO:
+    """
+    Request payload for the PublicManager to purchase assets from a distressed entity.
+    """
+    seller_id: AgentID
+    inventory: Dict[str, float]
+    market_prices: Dict[str, int]  # Current market price (pennies) for valuation
+    distress_discount: float = 0.5 # e.g., 50% of market value
+
+@dataclass(frozen=True)
+class AssetBuyoutResultDTO:
+    """
+    Result of an asset buyout operation.
+    """
+    success: bool
+    total_paid_pennies: int
+    items_acquired: Dict[str, float]
+    buyer_id: AgentID  # PublicManager ID
+    transaction_id: Optional[str] = None
 
 @dataclass(frozen=True)
 class PublicManagerReportDTO:
@@ -84,6 +107,7 @@ class PublicManagerReportDTO:
     liquidation_revenue: Dict[str, int]
     managed_inventory_count: float
     system_treasury_balance: Dict[str, int]
+    cumulative_deficit: int = 0  # Added to track total "bailout" funding injected
 
 class OriginType(IntEnum):
     """
@@ -240,10 +264,18 @@ class ICurrencyHolder(Protocol):
 class IAssetRecoverySystem(Protocol):
     """
     Interface for the Public Manager acting as a receiver of assets.
+    Now supports active buyout logic to inject liquidity.
     """
     def process_bankruptcy_event(self, event: AgentBankruptcyEventDTO) -> None:
         """
-        Ingests assets from a bankrupt agent.
+        Legacy ingestion of assets (deprecated in favor of execute_asset_buyout).
+        """
+        ...
+
+    def execute_asset_buyout(self, request: AssetBuyoutRequestDTO) -> AssetBuyoutResultDTO:
+        """
+        Purchases assets from a distressed agent to provide liquidity for creditor repayment.
+        Allowed to go into overdraft (Soft Budget Constraint).
         """
         ...
 
@@ -257,4 +289,19 @@ class IAssetRecoverySystem(Protocol):
         """
         Generates SELL orders to liquidate managed assets into the market.
         """
+        ...
+
+    def get_deficit(self) -> int:
+        """
+        Returns the cumulative deficit (negative balance) incurred by operations.
+        """
+        ...
+
+@runtime_checkable
+class ISystemFinancialAgent(Protocol):
+    """
+    Marker interface for system agents (like PublicManager) that are exempt
+    from strict solvency checks during specific system operations.
+    """
+    def is_system_agent(self) -> bool:
         ...

@@ -2,12 +2,16 @@ from __future__ import annotations
 from typing import Dict, List, Any, Optional
 import logging
 from collections import defaultdict
-from modules.system.api import IAssetRecoverySystem, AgentBankruptcyEventDTO, MarketSignalDTO, PublicManagerReportDTO, CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder
+from modules.system.api import (
+    IAssetRecoverySystem, AgentBankruptcyEventDTO, MarketSignalDTO,
+    PublicManagerReportDTO, CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder,
+    AssetBuyoutRequestDTO, AssetBuyoutResultDTO, ISystemFinancialAgent
+)
 from modules.finance.api import IFinancialAgent, InsufficientFundsError
 from modules.system.constants import ID_PUBLIC_MANAGER
 from simulation.models import Order
 
-class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
+class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent, ISystemFinancialAgent):
     """
     A system-level service responsible for asset recovery and liquidation.
     It acts as a 'Receiver' in bankruptcy proceedings, taking custody of assets
@@ -26,6 +30,7 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
         self.last_tick_recovered_assets: Dict[str, float] = defaultdict(float)
         self.last_tick_revenue: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
         self.total_revenue_lifetime: Dict[CurrencyCode, int] = {DEFAULT_CURRENCY: 0}
+        self.cumulative_deficit: int = 0
 
     @property
     def id(self) -> int:
@@ -39,14 +44,32 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
             return
         self.deposit_revenue(amount, currency=currency)
 
-    def _withdraw(self, amount: int, currency: CurrencyCode=DEFAULT_CURRENCY) -> None:
-        """Withdraws funds from treasury."""
+    def is_system_agent(self) -> bool:
+        """Marker for SettlementSystem to allow overdraft (Soft Budget Constraint)."""
+        return True
+
+    def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        """
+        Withdraws funds from treasury.
+        MIGRATION: Soft Budget Constraint - Allows negative balance.
+        """
         if amount < 0:
             raise ValueError('Cannot withdraw negative amount.')
+
         current_bal = self.system_treasury.get(currency, 0)
-        if current_bal < amount:
-            raise InsufficientFundsError(f'PublicManager insufficient funds. Required: {amount} {currency}, Available: {current_bal}')
-        self.system_treasury[currency] -= amount
+
+        # Calculate deficit increase (money created via overdraft)
+        deficit_increase = 0
+        if current_bal < 0:
+            deficit_increase = amount
+        elif current_bal < amount:
+            deficit_increase = amount - current_bal
+
+        if deficit_increase > 0:
+            self.cumulative_deficit += deficit_increase
+
+        # Allow negative balance
+        self.system_treasury[currency] = current_bal - amount
 
     def get_balance(self, currency: CurrencyCode=DEFAULT_CURRENCY) -> int:
         """Returns the current balance for the specified currency."""
@@ -73,6 +96,35 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
                 self.managed_inventory[item_id] += quantity
                 self.last_tick_recovered_assets[item_id] += quantity
                 self.logger.info(f'Recovered {quantity} of {item_id}.')
+
+    def execute_asset_buyout(self, request: AssetBuyoutRequestDTO) -> AssetBuyoutResultDTO:
+        """
+        Purchases assets from a distressed agent.
+        Updates internal inventory state but does NOT move funds (caller must execute transfer).
+        """
+        total_value = 0
+        acquired_items = {}
+
+        for item_id, quantity in request.inventory.items():
+            if quantity <= 0:
+                continue
+            price = request.market_prices.get(item_id, 0)
+            value = int(price * quantity * request.distress_discount)
+            total_value += value
+            acquired_items[item_id] = quantity
+
+            # Update inventory immediately
+            self.managed_inventory[item_id] += quantity
+            self.last_tick_recovered_assets[item_id] += quantity
+
+        self.logger.info(f"Executed Asset Buyout from Agent {request.seller_id}. Paid: {total_value}, Items: {len(acquired_items)}")
+
+        return AssetBuyoutResultDTO(
+            success=True,
+            total_paid_pennies=total_value,
+            items_acquired=acquired_items,
+            buyer_id=self.id
+        )
 
     def receive_liquidated_assets(self, inventory: Dict[str, float]) -> None:
         """
@@ -139,5 +191,15 @@ class PublicManager(IAssetRecoverySystem, ICurrencyHolder, IFinancialAgent):
         self.last_tick_revenue[currency] += amount
         self.total_revenue_lifetime[currency] += amount
 
+    def get_deficit(self) -> int:
+        return self.cumulative_deficit
+
     def get_status_report(self) -> PublicManagerReportDTO:
-        return PublicManagerReportDTO(tick=0, newly_recovered_assets=dict(self.last_tick_recovered_assets), liquidation_revenue=self.last_tick_revenue, managed_inventory_count=sum(self.managed_inventory.values()), system_treasury_balance=self.system_treasury)
+        return PublicManagerReportDTO(
+            tick=0,
+            newly_recovered_assets=dict(self.last_tick_recovered_assets),
+            liquidation_revenue=self.last_tick_revenue,
+            managed_inventory_count=sum(self.managed_inventory.values()),
+            system_treasury_balance=self.system_treasury,
+            cumulative_deficit=self.cumulative_deficit
+        )

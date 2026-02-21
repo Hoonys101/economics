@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from modules.system.execution.public_manager import PublicManager
-from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, DEFAULT_CURRENCY
+from modules.system.api import AgentBankruptcyEventDTO, MarketSignalDTO, DEFAULT_CURRENCY, AssetBuyoutRequestDTO
 from modules.system.constants import ID_PUBLIC_MANAGER
 
 class TestPublicManager:
@@ -58,3 +58,17 @@ class TestPublicManager:
         public_manager.last_tick_revenue = {DEFAULT_CURRENCY: 500.0}
         public_manager.generate_liquidation_orders({})
         assert public_manager.last_tick_revenue == {DEFAULT_CURRENCY: 0.0}
+
+    def test_execute_asset_buyout(self, public_manager):
+        request = AssetBuyoutRequestDTO(
+            seller_id=1,
+            inventory={'gold': 10},
+            market_prices={'gold': 100},
+            distress_discount=0.5
+        )
+        result = public_manager.execute_asset_buyout(request)
+
+        assert result.success
+        assert result.total_paid_pennies == 500 # 10 * 100 * 0.5
+        assert public_manager.managed_inventory['gold'] == 10
+        assert public_manager.last_tick_recovered_assets['gold'] == 10
