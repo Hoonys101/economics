@@ -1,0 +1,158 @@
+diff --git a/communications/insights/fix_penny_standard_tests.md b/communications/insights/fix_penny_standard_tests.md
+new file mode 100644
+index 00000000..98632386
+--- /dev/null
++++ b/communications/insights/fix_penny_standard_tests.md
+@@ -0,0 +1,32 @@
++# Insight Report: Fix Penny Standard Migration Test Failures
++
++## Architectural Insights
++
++1.  **Strict Penny/Dollar Separation:** The codebase is moving towards a strict separation where internal value tracking uses integer pennies (`total_pennies`), and floating-point dollars (`price`) are primarily for display or derived representation. The `Transaction` object enforces this, but legacy tests and some engine components (`DebtServicingEngine`) were inconsistent.
++2.  **Stateless Engine Consistency:** The `DebtServicingEngine` was incorrectly assigning penny values to the `price` field in `Transaction` objects. This violated the protocol that `price` should be `total_pennies / 100.0`. Fixing this required updates to both the engine and the corresponding unit tests.
++3.  **Mock Fidelity:** Integration tests mocking complex systems like `FinanceSystem` must account for new methods like `issue_treasury_bonds_synchronous`. The failure in `test_infrastructure_investment` highlighted the need for mocks to keep pace with API evolution (fallback logic exists but was bypassed by partial mocking).
++
++## Regression Analysis
++
++### 1. `tests/integration/test_government_fiscal_policy.py`
++*   **Failure:** `TypeError: cannot unpack non-iterable Mock object`
++*   **Cause:** The test mocked `FinanceSystem` but did not provide a return value for `issue_treasury_bonds_synchronous`, which is now preferred by `InfrastructureManager`.
++*   **Fix:** Added `issue_treasury_bonds_synchronous` to the mock configuration.
++
++### 2. `tests/unit/modules/finance/test_double_entry.py` & `test_sovereign_debt.py` & `test_system.py`
++*   **Failure:** `AssertionError: X.0 != X00` (e.g., `20.0 != 2000`)
++*   **Cause:** Tests were asserting that `Transaction.price` (dollars) equaled the input `amount` (pennies).
++*   **Fix:** Updated assertions to verify `Transaction.total_pennies` matches the input amount, aligning with the "Penny Standard".
++
++### 3. `tests/unit/finance/engines/test_finance_engines.py`
++*   **Failure:** `AssertionError` on `price` check in `test_debt_servicing_engine`.
++*   **Cause:** `DebtServicingEngine` was incorrectly setting `price` to the penny integer value.
++*   **Fix:** Updated `DebtServicingEngine` to set `price = pennies / 100.0` and updated the test to assert against `total_pennies` for value correctness.
++
++## Test Evidence
++
++```
++================= 942 passed, 11 skipped, 2 warnings in 7.40s ==================
++```
++
++(Full output truncated for brevity, see execution logs for detailed trace. All 942 tests passed, confirming 100% pass rate.)
+diff --git a/modules/finance/engines/debt_servicing_engine.py b/modules/finance/engines/debt_servicing_engine.py
+index cfc95b17..e80279ab 100644
+--- a/modules/finance/engines/debt_servicing_engine.py
++++ b/modules/finance/engines/debt_servicing_engine.py
+@@ -46,7 +46,7 @@ class DebtServicingEngine(IDebtServicingEngine):
+                         seller_id=bank_id, # Pay to Bank (Replenish Reserves)
+                         item_id=loan_id,
+                         quantity=1,
+-                        price=interest_pennies, # Int
++                        price=interest_pennies / 100.0,
+                         market_id="financial",
+                         transaction_type="loan_interest",
+                         time=ledger.current_tick
+@@ -65,7 +65,7 @@ class DebtServicingEngine(IDebtServicingEngine):
+                                 seller_id=bank_id, # Pay to Bank
+                                 item_id=loan_id,
+                                 quantity=1,
+-                                price=principal_due,
++                                price=principal_due / 100.0,
+                                 market_id="financial",
+                                 transaction_type="loan_repayment",
+                                 time=ledger.current_tick
+@@ -81,7 +81,7 @@ class DebtServicingEngine(IDebtServicingEngine):
+                                 seller_id=bank_id, # Pay to Bank
+                                 item_id=loan_id,
+                                 quantity=1,
+-                                price=pay,
++                                price=pay / 100.0,
+                                 market_id="financial",
+                                 transaction_type="loan_repayment",
+                                 time=ledger.current_tick
+@@ -119,7 +119,7 @@ class DebtServicingEngine(IDebtServicingEngine):
+                     seller_id=receiver_id,
+                     item_id=bond_id,
+                     quantity=1,
+-                    price=interest_pennies,
++                    price=interest_pennies / 100.0,
+                     market_id="financial",
+                     transaction_type="bond_interest",
+                     time=ledger.current_tick
+diff --git a/tests/integration/test_government_fiscal_policy.py b/tests/integration/test_government_fiscal_policy.py
+index 310d9551..6f07ca6d 100644
+--- a/tests/integration/test_government_fiscal_policy.py
++++ b/tests/integration/test_government_fiscal_policy.py
+@@ -57,6 +57,7 @@ def test_infrastructure_investment():
+     # Needs finance system mock
+     gov.finance_system = Mock()
+     gov.finance_system.issue_treasury_bonds.return_value = ([], [])
++    gov.finance_system.issue_treasury_bonds_synchronous.return_value = (True, [])
+ 
+     gov.firm_subsidy_budget_multiplier = 1.0
+ 
+diff --git a/tests/unit/finance/engines/test_finance_engines.py b/tests/unit/finance/engines/test_finance_engines.py
+index 1764de08..b1c67f12 100644
+--- a/tests/unit/finance/engines/test_finance_engines.py
++++ b/tests/unit/finance/engines/test_finance_engines.py
+@@ -156,7 +156,7 @@ def test_debt_servicing_engine(empty_ledger):
+     # Check Transaction
+     tx = output.generated_transactions[0]
+     assert tx.transaction_type == "loan_interest"
+-    assert tx.price == expected_interest
++    assert tx.total_pennies == expected_interest
+ 
+     # Integrity Check
+     assert ZeroSumVerifier.verify_ledger_integrity(output.updated_ledger)
+diff --git a/tests/unit/modules/finance/test_double_entry.py b/tests/unit/modules/finance/test_double_entry.py
+index 54ef8c8f..958d3a1f 100644
+--- a/tests/unit/modules/finance/test_double_entry.py
++++ b/tests/unit/modules/finance/test_double_entry.py
+@@ -203,7 +203,7 @@ class TestDoubleEntry(unittest.TestCase):
+             tx = txs[0]
+             self.assertEqual(tx.buyer_id, self.mock_cb.id)
+             self.assertEqual(tx.seller_id, self.mock_gov.id)
+-            self.assertEqual(tx.price, bond_amount)
++            self.assertEqual(tx.total_pennies, bond_amount)
+ 
+     def test_market_bond_issuance_generates_transaction(self):
+         """
+@@ -227,7 +227,7 @@ class TestDoubleEntry(unittest.TestCase):
+         tx = txs[0]
+         self.assertEqual(tx.buyer_id, self.mock_bank.id) # Bank buys
+         self.assertEqual(tx.seller_id, self.mock_gov.id)
+-        self.assertEqual(tx.price, bond_amount)
++        self.assertEqual(tx.total_pennies, bond_amount)
+ 
+ if __name__ == '__main__':
+     unittest.main()
+diff --git a/tests/unit/modules/finance/test_sovereign_debt.py b/tests/unit/modules/finance/test_sovereign_debt.py
+index ae2b4af2..11ee208a 100644
+--- a/tests/unit/modules/finance/test_sovereign_debt.py
++++ b/tests/unit/modules/finance/test_sovereign_debt.py
+@@ -70,7 +70,7 @@ class TestSovereignDebt:
+         assert len(txs) == 1
+         assert txs[0].buyer_id == fs.bank.id
+         assert txs[0].seller_id == fs.government.id
+-        assert txs[0].price == 100
++        assert txs[0].total_pennies == 100
+ 
+     def test_collect_corporate_tax_calls_settlement_system(self, setup_system):
+         fs = setup_system
+diff --git a/tests/unit/modules/finance/test_system.py b/tests/unit/modules/finance/test_system.py
+index 7048f546..183eb88d 100644
+--- a/tests/unit/modules/finance/test_system.py
++++ b/tests/unit/modules/finance/test_system.py
+@@ -240,7 +240,7 @@ def test_issue_treasury_bonds_market(finance_system, mock_government, mock_bank)
+     assert len(txs) == 1
+     assert txs[0].buyer_id == mock_bank.id
+     assert txs[0].seller_id == mock_government.id
+-    assert txs[0].price == amount
++    assert txs[0].total_pennies == amount
+ 
+ def test_issue_treasury_bonds_qe(finance_system, mock_government, mock_central_bank, mock_bank):
+     # Setup Central Bank in Ledger (QE logic not implemented in FinanceSystem.issue_treasury_bonds yet?
+@@ -319,5 +319,5 @@ def test_service_debt_central_bank_repayment(finance_system, mock_government, mo
+     assert len(txs) == 1
+     assert txs[0].buyer_id == mock_government.id
+     assert txs[0].seller_id == mock_central_bank.id
+-    assert txs[0].price == expected_interest
++    assert txs[0].total_pennies == expected_interest
+     assert txs[0].transaction_type == "bond_interest"
