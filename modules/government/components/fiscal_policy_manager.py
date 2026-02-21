@@ -86,29 +86,27 @@ class FiscalPolicyManager(IFiscalPolicyManager):
             ]
 
         # 3. Convert to Absolute TaxBracketDTOs (in pennies)
-        progressive_tax_brackets: List[TaxBracketDTO] = []
+        tax_brackets: List[TaxBracketDTO] = []
         previous_ceiling = 0
 
         for multiple, rate in raw_brackets:
-            if multiple == float('inf'):
-                ceiling = None
-            else:
-                ceiling = int(multiple * survival_cost)
+            threshold = previous_ceiling
 
             bracket = TaxBracketDTO(
-                floor=previous_ceiling,
-                rate=rate,
-                ceiling=ceiling
+                threshold=threshold,
+                rate=rate
             )
-            progressive_tax_brackets.append(bracket)
+            tax_brackets.append(bracket)
 
-            if ceiling is None:
+            if multiple == float('inf'):
                 break # Reached infinity
-
-            previous_ceiling = ceiling
+            else:
+                previous_ceiling = int(multiple * survival_cost)
 
         return FiscalPolicyDTO(
-            progressive_tax_brackets=progressive_tax_brackets
+            tax_brackets=tax_brackets,
+            income_tax_rate=0.1, # Default placeholder
+            corporate_tax_rate=0.2 # Default placeholder
         )
 
     def calculate_tax_liability(self, policy: FiscalPolicyDTO, income: int) -> int:
@@ -119,27 +117,20 @@ class FiscalPolicyManager(IFiscalPolicyManager):
         if income <= 0:
             return 0
 
+        # Fallback to scalar rate if no brackets
+        if not policy.tax_brackets:
+            return round_to_pennies(income * policy.income_tax_rate)
+
         total_tax = 0.0
+        remaining_income = income
 
-        for bracket in policy.progressive_tax_brackets:
-            # Determine the income chunk that falls into this bracket
-            bracket_floor = bracket.floor
-            bracket_ceiling = bracket.ceiling if bracket.ceiling is not None else float('inf')
+        # Sort brackets descending by threshold
+        sorted_brackets = sorted(policy.tax_brackets, key=lambda b: b.threshold, reverse=True)
 
-            if income <= bracket_floor:
-                continue
-
-            # Calculate taxable amount in this bracket
-            # Use float('inf') comparison logic
-            if bracket.ceiling is None:
-                 taxable_in_bracket = income - bracket_floor
-            else:
-                 taxable_in_bracket = min(income, bracket_ceiling) - bracket_floor
-
-            if taxable_in_bracket > 0:
-                total_tax += taxable_in_bracket * bracket.rate
-
-            if bracket.ceiling is not None and income <= bracket_ceiling:
-                break
+        for bracket in sorted_brackets:
+            if remaining_income > bracket.threshold:
+                taxable_amount = remaining_income - bracket.threshold
+                total_tax += taxable_amount * bracket.rate
+                remaining_income = bracket.threshold
 
         return round_to_pennies(total_tax)
