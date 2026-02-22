@@ -42,11 +42,14 @@ class MarketContextDTO:
     Context object passed to agents for making decisions.
     Contains strictly external market data (prices, rates, signals).
     """
-    market_data: Dict[str, Any]
-    market_signals: Dict[str, int]
-    tick: int
+    market_data: Dict[str, Any] = field(default_factory=dict)
+    market_signals: Dict[str, int] = field(default_factory=dict)
+    tick: int = 0
     # Represents currency exchange rates relative to base currency
     exchange_rates: Optional[Dict[str, float]] = None
+    # Added for DTO Hygiene
+    benchmark_rates: Dict[str, float] = field(default_factory=dict)
+    fiscal_policy: Optional[Any] = None
 
 @dataclass(frozen=True)
 class MarketSignalDTO:

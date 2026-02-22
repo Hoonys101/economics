@@ -89,6 +89,13 @@ class TestSettlementPurity:
         }
         fs.ledger.banks[mock_bank.id].loans = {"LOAN_1": mock_loan_state}
 
+        # Mock bank_registry to return the loan (Since process_loan_application queries registry)
+        fs.bank_registry = MagicMock()
+        fs.bank_registry.get_loan.return_value = mock_loan_state
+        # Also need get_all_banks for fallback logic if needed, but lender_id is in profile/app
+        # But wait, app_dto.lender_id is set from profile.
+        # process_loan_application uses app_dto.lender_id.
+
         fs.loan_booking_engine.grant_loan.return_value = result
 
         # Execute

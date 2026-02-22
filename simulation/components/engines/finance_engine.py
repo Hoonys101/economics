@@ -214,7 +214,7 @@ class FinanceEngine(IFinanceEngine):
     ) -> List[Transaction]:
         """Internal helper for dividends and bailout repayment."""
         transactions = []
-        exchange_rates = context.market_context.get('exchange_rates', {})
+        exchange_rates = context.market_context.exchange_rates or {}
         gov_id = context.government_id
         registry = context.shareholder_registry
 
@@ -327,7 +327,7 @@ class FinanceEngine(IFinanceEngine):
         """
         Calculates firm valuation in pennies.
         """
-        exchange_rates = context.market_context.get('exchange_rates', {}) if context else {DEFAULT_CURRENCY: 1.0}
+        exchange_rates = (context.market_context.exchange_rates or {}) if context else {DEFAULT_CURRENCY: 1.0}
 
         def convert(amt: int, cur: str) -> int:
             rate = exchange_rates.get(cur, 1.0) if cur != DEFAULT_CURRENCY else 1.0

@@ -4,6 +4,7 @@ from simulation.systems.transaction_processor import TransactionProcessor
 from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
 from simulation.models import Transaction
 from modules.finance.api import IFinancialAgent
+from simulation.dtos.api import SimulationState
 
 def test_transaction_processor_dispatch_to_handler():
     # Setup
@@ -16,7 +17,7 @@ def test_transaction_processor_dispatch_to_handler():
     tp.register_handler("test_type", handler)
 
     # Setup State
-    state = MagicMock()
+    state = MagicMock(spec=SimulationState)
     state.agents = {1: MagicMock(), 2: MagicMock()}
     state.transactions = [
         Transaction(
@@ -24,7 +25,20 @@ def test_transaction_processor_dispatch_to_handler():
             market_id="m", transaction_type="test_type", time=0
         , total_pennies=1000)
     ]
-    state.taxation_system = MagicMock() # Ensure context building works
+    state.taxation_system = MagicMock()
+    state.public_manager = None
+    state.bank = MagicMock()
+    state.central_bank = MagicMock()
+    state.settlement_system = MagicMock()
+    state.primary_government = MagicMock()
+    state.stock_market = MagicMock()
+    state.real_estate_units = []
+    state.market_data = {}
+    state.logger = MagicMock()
+    state.time = 0
+    state.inactive_agents = {}
+    state.shareholder_registry = MagicMock()
+    state.effects_queue = []
 
     # Execute
     tp.execute(state)
@@ -41,7 +55,7 @@ def test_transaction_processor_ignores_credit_creation():
     config = MagicMock()
     tp = TransactionProcessor(config_module=config)
 
-    state = MagicMock()
+    state = MagicMock(spec=SimulationState)
     state.transactions = [
         Transaction(
             buyer_id=1, seller_id=2, item_id="credit", price=10, quantity=1,
@@ -49,6 +63,19 @@ def test_transaction_processor_ignores_credit_creation():
         , total_pennies=1000)
     ]
     state.agents = {1: MagicMock(), 2: MagicMock()}
+    state.public_manager = None
+    state.bank = MagicMock()
+    state.central_bank = MagicMock()
+    state.settlement_system = MagicMock()
+    state.primary_government = MagicMock()
+    state.stock_market = MagicMock()
+    state.real_estate_units = []
+    state.market_data = {}
+    state.logger = MagicMock()
+    state.time = 0
+    state.inactive_agents = {}
+    state.shareholder_registry = MagicMock()
+    state.effects_queue = []
 
     # No handler registered
     # Execute
@@ -104,8 +131,22 @@ def test_public_manager_routing():
     pm_handler = MagicMock()
     tp.register_public_manager_handler(pm_handler)
 
-    state = MagicMock()
+    state = MagicMock(spec=SimulationState)
     state.public_manager = MagicMock() # Ensure PM exists
+
+    # Fill required fields
+    state.bank = MagicMock()
+    state.central_bank = MagicMock()
+    state.settlement_system = MagicMock()
+    state.primary_government = MagicMock()
+    state.stock_market = MagicMock()
+    state.real_estate_units = []
+    state.market_data = {}
+    state.logger = MagicMock()
+    state.time = 0
+    state.inactive_agents = {}
+    state.shareholder_registry = MagicMock()
+    state.effects_queue = []
 
     # Transaction with PM as seller
     tx = Transaction(
@@ -126,7 +167,7 @@ def test_transaction_processor_dispatches_housing():
     housing_handler = MagicMock()
     tp.register_handler("housing", housing_handler)
 
-    state = MagicMock()
+    state = MagicMock(spec=SimulationState)
     state.transactions = [
         Transaction(
             buyer_id=1, seller_id=2, item_id="unit_1", price=100, quantity=1,
@@ -135,6 +176,19 @@ def test_transaction_processor_dispatches_housing():
     ]
     state.agents = {1: MagicMock(), 2: MagicMock()}
     state.taxation_system = MagicMock()
+    state.public_manager = None
+    state.bank = MagicMock()
+    state.central_bank = MagicMock()
+    state.settlement_system = MagicMock()
+    state.primary_government = MagicMock()
+    state.stock_market = MagicMock()
+    state.real_estate_units = []
+    state.market_data = {}
+    state.logger = MagicMock()
+    state.time = 0
+    state.inactive_agents = {}
+    state.shareholder_registry = MagicMock()
+    state.effects_queue = []
 
     tp.execute(state)
 

@@ -4,6 +4,7 @@ import logging
 
 from simulation.orchestration.api import IPhaseStrategy
 from simulation.dtos.api import SimulationState
+from modules.system.api import MarketContextDTO
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -30,10 +31,10 @@ class Phase_FirmProductionAndSalaries(IPhaseStrategy):
         # Fallback if no tracker
         if not market_context:
              from modules.system.api import DEFAULT_CURRENCY
-             market_context = {
-                 "exchange_rates": {DEFAULT_CURRENCY: 1.0},
-                 "benchmark_rates": {}
-             }
+             market_context = MarketContextDTO(
+                 exchange_rates={DEFAULT_CURRENCY: 1.0},
+                 benchmark_rates={}
+             )
 
         for firm in state.firms:
              if firm.is_active:

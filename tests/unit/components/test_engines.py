@@ -10,7 +10,7 @@ from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingCon
 from simulation.dtos.context_dtos import FinancialTransactionContext
 from modules.simulation.dtos.api import FirmConfigDTO
 from simulation.models import Transaction, Order
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, MarketContextDTO
 from modules.firm.api import FirmSnapshotDTO, ProductionInputDTO, ProductionResultDTO, FinanceStateDTO, HRStateDTO, SalesStateDTO, ProductionStateDTO
 
 class TestHREngine:
@@ -155,7 +155,7 @@ class TestFinanceEngine:
         context = FinancialTransactionContext(
             government_id=999,
             tax_rates={},
-            market_context={"exchange_rates": {DEFAULT_CURRENCY: 1.0}},
+            market_context=MarketContextDTO(exchange_rates={DEFAULT_CURRENCY: 1.0}, benchmark_rates={}),
             shareholder_registry=None
         )
 

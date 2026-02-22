@@ -6,7 +6,7 @@ from simulation.firms import Firm
 from simulation.decisions.ai_driven_firm_engine import AIDrivenFirmDecisionEngine
 from tests.utils.factories import create_firm_config_dto
 from modules.simulation.api import AgentCoreConfigDTO
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, MarketContextDTO
 
 @pytest.fixture
 def mock_firm():
@@ -54,7 +54,7 @@ def test_firm_profit_history_update(mock_firm):
     market_data = {}
     shareholder_registry = Mock()
     shareholder_registry.get_shareholders_of_firm.return_value = []
-    market_context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}}
+    market_context = MarketContextDTO(exchange_rates={DEFAULT_CURRENCY: 1.0}, benchmark_rates={})
     current_time = 1
 
     # Tick 1: Profit 10
@@ -110,7 +110,7 @@ def test_firm_revenue_expenses_reset(mock_firm):
     market_data = {}
     shareholder_registry = Mock()
     shareholder_registry.get_shareholders_of_firm.return_value = []
-    market_context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}}
+    market_context = MarketContextDTO(exchange_rates={DEFAULT_CURRENCY: 1.0}, benchmark_rates={})
 
     mock_firm.generate_transactions(government, market_data, shareholder_registry, 1, market_context)
 

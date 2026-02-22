@@ -302,6 +302,7 @@ class SimulationState:
     # Injection
     injectable_sensory_dto: Optional[Any] = None # GovernmentStateDTO
     currency_registry_handler: Optional[Any] = None # WorldState injection for strict registry
+    public_manager: Optional[Any] = None # PublicManager (Added for TransactionProcessor)
 
     def register_currency_holder(self, holder: Any) -> None:
         if self.currency_registry_handler:

@@ -846,10 +846,10 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
     def _adjust_marketing_budget(self, market_context: MarketContextDTO = None) -> None:
         if market_context is None:
-            market_context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}, "benchmark_rates": {}}
+            market_context = MarketContextDTO(exchange_rates={DEFAULT_CURRENCY: 1.0}, benchmark_rates={})
 
         # Calculate primary revenue for budget adjustment
-        exchange_rates = market_context['exchange_rates']
+        exchange_rates = market_context.exchange_rates or {}
         total_revenue = 0.0
         for cur, amount in self.finance_state.revenue_this_turn.items():
              rate = exchange_rates.get(cur, 1.0) if cur != DEFAULT_CURRENCY else 1.0
@@ -1384,7 +1384,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
     def _build_payroll_context(self, current_time: int, government: Optional[Any], market_context: MarketContextDTO) -> HRPayrollContextDTO:
         tax_policy = None
         # Extract from market_context if available (FiscalContext)
-        fiscal_policy = market_context.get("fiscal_policy")
+        fiscal_policy = market_context.fiscal_policy
         income_tax_rate = fiscal_policy.income_tax_rate if fiscal_policy else 0.0 # Default
         survival_cost = DEFAULT_SURVIVAL_COST # Default
 
@@ -1397,7 +1397,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         )
 
         return HRPayrollContextDTO(
-            exchange_rates=market_context.get("exchange_rates", {DEFAULT_CURRENCY: 1.0}),
+            exchange_rates=market_context.exchange_rates or {DEFAULT_CURRENCY: 1.0},
             tax_policy=tax_policy,
             current_time=current_time,
             firm_id=self.id,
@@ -1617,7 +1617,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         gov_id = government.id if government else None
 
         # Extract dynamic tax rates from MarketContext
-        fiscal_policy = market_context.get("fiscal_policy")
+        fiscal_policy = market_context.fiscal_policy
         corporate_tax_rate = fiscal_policy.corporate_tax_rate if fiscal_policy else DEFAULT_CORPORATE_TAX_RATE
 
         tax_rates = {"income_tax": corporate_tax_rate}

@@ -6,6 +6,27 @@ from simulation.firms import Firm
 
 class TestLaborConfigMigration:
 
+    @pytest.fixture(autouse=True)
+    def setup_config(self):
+        if not hasattr(config, "LABOR_MARKET"):
+            config.LABOR_MARKET = {
+                "majors": ["GENERAL", "AGRICULTURE", "MANUFACTURING", "SERVICES", "TECHNOLOGY"],
+                "compatibility": {
+                    "PERFECT": 1.2,
+                    "PARTIAL": 1.0,
+                    "MISMATCH": 0.8,
+                    "GENERAL_PENALTY": 1.0
+                },
+                "sector_map": {
+                    "FOOD": "AGRICULTURE",
+                    "GOODS": "MANUFACTURING",
+                    "SERVICE": "SERVICES",
+                    "MATERIAL": "MANUFACTURING",
+                    "LUXURY": "SERVICES",
+                    "TECH": "TECHNOLOGY"
+                }
+            }
+
     def test_household_majors_assigned(self):
         """Verify that all households are assigned a valid major from the configuration."""
         sim = create_simulation()

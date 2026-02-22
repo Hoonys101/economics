@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import Mock, MagicMock
 import math
 from simulation.firms import Firm
-from modules.system.api import DEFAULT_CURRENCY
+from modules.system.api import DEFAULT_CURRENCY, MarketContextDTO
 from simulation.components.state.firm_state_models import FinanceState, SalesState
 from tests.utils.factories import create_firm, create_firm_config_dto
 
@@ -206,7 +206,7 @@ class TestFirmSales:
         firm.finance_state.last_revenue_pennies = 100 # pennies
 
         # Need context with exchange rates
-        context = {"exchange_rates": {DEFAULT_CURRENCY: 1.0}}
+        context = MarketContextDTO(exchange_rates={DEFAULT_CURRENCY: 1.0}, benchmark_rates={})
 
         firm._adjust_marketing_budget(context)
 
