@@ -182,7 +182,11 @@ class HREngine(IHREngine, IHRDepartment):
                 quantity=float(intent.hiring_target),
                 price_pennies=offered_wage,
                 price_limit=float(offered_wage)/100.0,
-                market_id='labor'
+                market_id='labor',
+                metadata={
+                    'major': context.specialization,
+                    'required_education': 0 # Dynamic logic can be added here
+                }
             ))
 
         return HRDecisionOutputDTO(
@@ -224,7 +228,8 @@ class HREngine(IHREngine, IHRDepartment):
 
             min_employees=getattr(config, 'firm_min_employees', 1),
             max_employees=getattr(config, 'firm_max_employees', 100),
-            severance_pay_weeks=getattr(config, 'severance_pay_weeks', 2)
+            severance_pay_weeks=getattr(config, 'severance_pay_weeks', 2),
+            specialization=firm_state.production.specialization
         )
 
     def calculate_wage(self, employee: IEmployeeDataProvider, base_wage: int, config: FirmConfigDTO) -> int:

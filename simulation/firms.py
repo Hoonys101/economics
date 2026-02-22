@@ -1353,8 +1353,17 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
     def _build_production_context(self, productivity_multiplier: float) -> ProductionContextDTO:
         # Calculate derived values
         num_employees = len(self.hr_state.employees)
-        total_labor_skill = sum(getattr(emp, "labor_skill", 1.0) for emp in self.hr_state.employees)
-        avg_skill = total_labor_skill / num_employees if num_employees > 0 else 0.0
+
+        # Calculate effective skill (incorporating mismatch penalty)
+        total_effective_skill = 0.0
+        for emp in self.hr_state.employees:
+            base_skill = getattr(emp, "labor_skill", 1.0)
+            # Check for penalty modifier in HR data
+            emp_data = self.hr_state.employees_data.get(emp.id, {})
+            modifier = emp_data.get("productivity_modifier", 1.0)
+            total_effective_skill += (base_skill * modifier)
+
+        avg_skill = total_effective_skill / num_employees if num_employees > 0 else 0.0
 
         item_config = self.config.goods.get(self.production_state.specialization, {})
         tech_level = self.production_state.productivity_factor * productivity_multiplier
@@ -1425,7 +1434,8 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
             min_employees=getattr(self.config, 'firm_min_employees', 1),
             max_employees=getattr(self.config, 'firm_max_employees', 100),
-            severance_pay_weeks=getattr(self.config, 'severance_pay_weeks', 2)
+            severance_pay_weeks=getattr(self.config, 'severance_pay_weeks', 2),
+            specialization=self.production_state.specialization
         )
 
     def _generate_hr_orders(self, intent: HRIntentDTO, context: HRContextDTO) -> List[Order]:
@@ -1468,7 +1478,11 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
                 quantity=float(intent.hiring_target),
                 price_pennies=offered_wage,
                 price_limit=float(offered_wage)/100.0,
-                market_id='labor'
+                market_id='labor',
+                metadata={
+                    'major': context.specialization,
+                    'required_education': 0 # Could be dynamic based on tech level
+                }
             ))
         return orders
 

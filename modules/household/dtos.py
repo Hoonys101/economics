@@ -93,12 +93,13 @@ class EconStateDTO:
     consumption_expenditure_this_tick_pennies: int
     food_expenditure_this_tick_pennies: int
 
-    # Phase 4.1: Dynamic Cognitive Filter & Talent
+    # Phase 4.1: Dynamic Cognitive Filter & Talent & Major
     market_insight: float = 0.5
     expected_wage_pennies: int = 1000
     talent: Talent = field(default_factory=lambda: Talent(1.0, 1.0, 1.0))
     skills: Dict[str, Skill] = field(default_factory=dict)
     aptitude: float = 1.0
+    major: Optional[str] = None # Academic major/specialization
 
     # Legacy / Compatibility
     credit_frozen_until_tick: int = 0
@@ -198,6 +199,7 @@ class HouseholdSnapshotDTO:
     market_insight: float = 0.5 # Phase 4.1: Mirrored from EconState for Decision Logic
     monthly_income_pennies: int = 0 # Added for precision in financial decisions (TD-206)
     monthly_debt_payments_pennies: int = 0 # Added for precision in financial decisions (TD-206)
+    major: Optional[str] = None # Mirrored from EconState
 
 @dataclass
 class HouseholdStateDTO:
@@ -227,6 +229,7 @@ class HouseholdStateDTO:
     risk_aversion: float
     agent_data: Dict[str, Any]
     market_insight: float = 0.5 # Phase 4.1: Dynamic Cognitive Filter
+    major: Optional[str] = None
     perceived_prices: Dict[str, float] = field(default_factory=dict)
 
     # Additional fields needed by DecisionEngine
