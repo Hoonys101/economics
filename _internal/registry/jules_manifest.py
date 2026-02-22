@@ -28,5 +28,11 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "file": "gemini-output/spec/MISSION_labor_config_SPEC.md",
         "instruction": "Externalize labor majors to economy_params.yaml and update constants.py to load them dynamically. Add LaborConfigDTO to api.py.",
         "wait": False
+    },
+    "phase41_bank_registry_impl": {
+        "title": "Implement BankRegistry Service Extraction",
+        "file": "gemini-output/spec/MISSION_bank_registry_SPEC.md",
+        "instruction": "Extract bank account management logic from SettlementSystem into a dedicated BankRegistry service. Define IBankRegistry protocol in modules/finance/api.py and implement the service in simulation/systems/bank_registry.py. Ensure backward compatibility in SettlementSystem by delegating calls to the new registry class.",
+        "wait": False
     }
 }
