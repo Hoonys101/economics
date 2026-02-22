@@ -14,6 +14,7 @@ def test_production_engine_decoupled():
     context = ProductionContextDTO(
         firm_id=AgentID(1), tick=10, budget_pennies=10000, market_snapshot=MarketSnapshotDTO(10, {}, {}), available_cash_pennies=10000, is_solvent=True,
         inventory_raw_materials={'RAW': 100.0}, inventory_finished_goods={}, current_workforce_count=10,
+        production_target=100.0,
         technology_level=1.0, production_efficiency=1.0, capital_stock=100.0, automation_level=0.0,
         input_goods={'RAW': 2.0}, output_good_id='WIDGET', labor_alpha=0.5, automation_labor_reduction=0.0,
         labor_elasticity_min=0.1, capital_depreciation_rate=0.01, specialization='WIDGET', base_quality=1.0,

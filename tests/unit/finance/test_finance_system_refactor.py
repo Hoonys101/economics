@@ -21,7 +21,7 @@ class MockFirm:
         self.id = id
         self.total_debt = 0.0
         self.has_bailout_loan = False
-        self.capital_stock_pennies = 100000 # 1000.00
+        self.capital_stock_units = 1000
 
 @pytest.fixture
 def mock_dependencies():

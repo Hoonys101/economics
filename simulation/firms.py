@@ -492,9 +492,9 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         return self.total_debt
 
     @property
-    def capital_stock_pennies(self) -> int:
-        """Capital stock value in pennies."""
-        return int(self.production_state.capital_stock) # Capital is in units or val? Assuming units for now, if val it should be pennies.
+    def capital_stock_units(self) -> int:
+        """Capital stock quantity in units."""
+        return int(self.production_state.capital_stock)
 
     @property
     def inventory_value_pennies(self) -> int:
@@ -587,7 +587,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         # Calculate Total Assets in Pennies
         # Capital Stock Value (Estimate: 1 unit = 100 pennies)
-        capital_val = self.capital_stock_pennies * 100
+        capital_val = self.capital_stock_units * 100
 
         total_assets = total_cash + self.inventory_value_pennies + capital_val
 
@@ -1192,37 +1192,18 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         self.sales_state.marketing_budget_pennies = sales_intent.marketing_spend_pennies
         self.sales_state.marketing_budget_rate = sales_intent.new_marketing_budget_rate
 
-        # 5. Legacy Decision Engine (for BUYING materials only)
-        state_dto = self.get_state_dto()
-        context = DecisionContext(
-            state=state_dto,
-            config=self.config,
-            goods_data=goods_data,
-            market_data=market_data,
-            current_time=current_time,
-            stress_scenario_config=stress_scenario_config,
-            market_snapshot=market_snapshot,
-            government_policy=government_policy,
-            agent_registry=agent_registry or {},
-            market_context=market_context
-        )
-        decision_output = self.decision_engine.make_decisions(context)
-        
-        if hasattr(decision_output, "orders"):
-            legacy_orders = decision_output.orders
-            tactic = decision_output.metadata
-        else:
-            legacy_orders, tactic = decision_output
+        # 5. Production Engine: Decide Procurement (SEO Migration)
+        # Using 1.0 for productivity_multiplier as tech manager is not available in decision phase.
+        # This is acceptable for procurement planning.
+        prod_context = self._build_production_context(1.0, market_snapshot)
+        procurement_intent = self.production_engine.decide_procurement(prod_context)
+        procurement_orders = procurement_intent.purchase_orders
 
-        # Filter legacy orders: Keep only BUY orders for goods (exclude Labor, Fire, Sell)
-        filtered_legacy = [
-            o for o in legacy_orders
-            if o.market_id != 'labor' and o.order_type != 'FIRE'
-            and getattr(o, 'side', o.order_type) != 'SELL'
-        ]
+        # Legacy Decision Engine Removed (Migration Complete)
+        tactic = "SEO_PURE"
 
         # Merge orders
-        all_orders = engine_orders + filtered_legacy + sales_orders
+        all_orders = engine_orders + procurement_orders + sales_orders
 
         # Command Bus execution (Internal Orders like FIRE, SET_TARGET)
         self.execute_internal_orders(all_orders, fiscal_context, current_time, market_context)
@@ -1318,6 +1299,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             )
 
         prod_intent = self.production_engine.decide_production(prod_context)
+        procurement_intent = self.production_engine.decide_procurement(prod_context)
 
         # --- Sales Engine ---
         sales_context = self._build_sales_context(current_market_snapshot, current_tick)
@@ -1329,18 +1311,13 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         sales_intent = self.sales_engine.decide_pricing(sales_context)
 
-        # --- Legacy Decision Engine (Skipped for Brain Scan to avoid complexity unless mocked) ---
-        legacy_orders = []
-        if "decision_engine" in context.mock_responses:
-             legacy_orders = context.mock_responses["decision_engine"]
-
         # Aggregate Results
         payload = {
             "budget_plan": budget_plan,
             "hr_intent": hr_intent,
             "production_intent": prod_intent,
-            "sales_intent": sales_intent,
-            "legacy_orders_simulated": legacy_orders
+            "procurement_intent": procurement_intent,
+            "sales_intent": sales_intent
         }
 
         return FirmBrainScanResultDTO(
@@ -1476,6 +1453,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             inventory_raw_materials=self.inventory_component.input_inventory.copy(),
             inventory_finished_goods=self.inventory_component.main_inventory.copy(),
             current_workforce_count=num_employees,
+            production_target=self.production_state.production_target,
             technology_level=tech_level,
             production_efficiency=1.0,
 

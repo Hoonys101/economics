@@ -32,6 +32,7 @@ def firm_snapshot():
     prod = MagicMock(spec=ProductionStateDTO)
     prod.capital_stock = 100.0
     prod.automation_level = 0.2
+    prod.production_target = 100.0
     prod.productivity_factor = 1.0
     prod.base_quality = 1.0
     prod.specialization = "FOOD"

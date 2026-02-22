@@ -73,8 +73,8 @@ class IFinancialFirm(IFinancialEntity, Protocol):
         ...
 
     @property
-    def capital_stock_pennies(self) -> int:
-        """The capital stock value in pennies."""
+    def capital_stock_units(self) -> int:
+        """The capital stock quantity in units."""
         ...
 
     @property

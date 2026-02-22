@@ -18,6 +18,7 @@ def test_production_integer_depreciation():
     prod_state = MagicMock(spec=ProductionStateDTO)
     prod_state.capital_stock = 100000 # 100,000 pennies
     prod_state.automation_level = 0.0
+    prod_state.production_target = 100.0
     prod_state.specialization = "WIDGET"
     prod_state.base_quality = 1.0
     prod_state.productivity_factor = 1.0
@@ -58,6 +59,7 @@ def test_production_deterministic_output():
     prod_state = MagicMock(spec=ProductionStateDTO)
     prod_state.capital_stock = 10000
     prod_state.automation_level = 0.0
+    prod_state.production_target = 100.0
     prod_state.specialization = "WIDGET"
     prod_state.base_quality = 1.0
     prod_state.productivity_factor = 1.0
@@ -104,6 +106,7 @@ def test_production_deterministic_floor():
     prod_state = MagicMock(spec=ProductionStateDTO)
     prod_state.capital_stock = 100 # sqrt(100) = 10
     prod_state.automation_level = 0.0
+    prod_state.production_target = 100.0
     prod_state.specialization = "WIDGET"
     prod_state.base_quality = 1.0
     prod_state.productivity_factor = 1.0

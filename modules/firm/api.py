@@ -112,6 +112,7 @@ class ProductionContextDTO(BaseDepartmentContextDTO):
     inventory_raw_materials: Dict[str, float]
     inventory_finished_goods: Dict[str, float]
     current_workforce_count: int
+    production_target: float
     technology_level: float
     production_efficiency: float
     # Capital & Automation
@@ -143,6 +144,11 @@ class ProductionIntentDTO:
     capital_depreciation: int = 0
     automation_decay: float = 0.0
     quality: float = 1.0
+
+@dataclass(frozen=True)
+class ProcurementIntentDTO:
+    """Intent for procurement (buying inputs) from Production Department."""
+    purchase_orders: List[Order]
 
 @dataclass(frozen=True)
 class HRContextDTO(BaseDepartmentContextDTO):
@@ -430,6 +436,12 @@ class IProductionEngine(IProductionDepartment, Protocol):
         """
         ...
 
+    def decide_procurement(self, context: ProductionContextDTO) -> ProcurementIntentDTO:
+        """
+        Decides on procurement of raw materials.
+        """
+        ...
+
 
 @runtime_checkable
 class IAssetManagementEngine(Protocol):
@@ -584,6 +596,7 @@ __all__ = [
     'BaseDepartmentContextDTO',
     'ProductionContextDTO',
     'ProductionIntentDTO',
+    'ProcurementIntentDTO',
     'HRContextDTO',
     'HRIntentDTO',
     'SalesContextDTO',

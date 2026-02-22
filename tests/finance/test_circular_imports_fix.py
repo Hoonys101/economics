@@ -76,7 +76,7 @@ class MockGovernment(IGovernmentFinance):
 class MockFirm(IFinancialFirm):
     id: AgentID = AgentID(200)
     age: int = 10
-    capital_stock_pennies: int = 100000
+    capital_stock_units: int = 1000
     inventory_value_pennies: int = 50000
     monthly_wage_bill_pennies: int = 20000
     total_debt_pennies: int = 10000

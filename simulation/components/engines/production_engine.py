@@ -1,14 +1,15 @@
 from __future__ import annotations
 import logging
 import math
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from modules.firm.api import (
     IProductionEngine, ProductionInputDTO, ProductionResultDTO,
-    ProductionContextDTO, ProductionIntentDTO,
+    ProductionContextDTO, ProductionIntentDTO, ProcurementIntentDTO,
     IProductionDepartment, AgentID
 )
 from modules.system.api import MarketSnapshotDTO
+from simulation.models import Order
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +120,58 @@ class ProductionEngine(IProductionEngine, IProductionDepartment):
             quality=actual_quality
         )
 
+    def decide_procurement(self, context: ProductionContextDTO) -> ProcurementIntentDTO:
+        """
+        Decides on procurement of raw materials based on production target.
+        """
+        orders: List[Order] = []
+        if not context.input_goods:
+            return ProcurementIntentDTO(purchase_orders=[])
+
+        target_production = context.production_target
+        if target_production <= 0:
+            return ProcurementIntentDTO(purchase_orders=[])
+
+        market_signals = context.market_snapshot.market_signals if context.market_snapshot else {}
+        market_data = context.market_snapshot.market_data if context.market_snapshot else {}
+
+        for mat, req_per_unit in context.input_goods.items():
+            needed = target_production * req_per_unit
+            current = context.inventory_raw_materials.get(mat, 0.0)
+            deficit = needed - current
+
+            if deficit > 0:
+                bid_price = 1000 # Default 10.00 pennies
+
+                # Check Market Signals (Last Traded)
+                if mat in market_signals and market_signals[mat].last_traded_price:
+                     bid_price = market_signals[mat].last_traded_price
+                # Check Market Signals (Best Ask) if last traded is missing
+                elif mat in market_signals and market_signals[mat].best_ask:
+                     bid_price = market_signals[mat].best_ask
+                # Legacy Fallback
+                elif 'goods_market' in market_data:
+                     key = f'{mat}_avg_traded_price'
+                     if key in market_data['goods_market']:
+                         bid_price = int(market_data['goods_market'][key])
+
+                # Apply Premium
+                bid_price_pennies = int(bid_price * 1.05)
+                if bid_price_pennies <= 0: bid_price_pennies = 1000
+
+                order = Order(
+                    agent_id=context.firm_id,
+                    side='BUY',
+                    item_id=mat,
+                    quantity=deficit,
+                    price_pennies=bid_price_pennies,
+                    price_limit=float(bid_price_pennies)/100.0,
+                    market_id=mat
+                )
+                orders.append(order)
+
+        return ProcurementIntentDTO(purchase_orders=orders)
+
     def produce(
         self,
         input_dto: ProductionInputDTO
@@ -186,8 +239,9 @@ class ProductionEngine(IProductionEngine, IProductionDepartment):
             inventory_raw_materials=prod_state.input_inventory,
             inventory_finished_goods=prod_state.inventory,
             current_workforce_count=num_employees,
+            production_target=prod_state.production_target, # Populated from snapshot
             technology_level=tech_level,
-            production_efficiency=1.0, # Baseline efficiency multiplier, combined into tech_level here or separate? Logic uses tfp = production_efficiency * technology_level. Here tfp = tech_level. So prod_efficiency=1.0.
+            production_efficiency=1.0,
 
             capital_stock=prod_state.capital_stock,
             automation_level=prod_state.automation_level,

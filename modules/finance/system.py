@@ -265,10 +265,11 @@ class FinanceSystem(IFinanceSystem):
             # All inputs should be int pennies. Ratios will be same.
 
             inventory_value_pennies = firm.inventory_value_pennies
-            capital_stock_pennies = firm.capital_stock_pennies
+            # Capital Stock Value (Estimate: 1 unit = 100 pennies)
+            capital_stock_value = firm.capital_stock_units * 100
 
             # Total Assets = Cash + Inventory + Capital
-            total_assets = firm.balance_pennies + capital_stock_pennies + inventory_value_pennies
+            total_assets = firm.balance_pennies + capital_stock_value + inventory_value_pennies
 
             # Working Capital = Current Assets - Current Liabilities
             # Simplified: Cash + Inventory - Debt
@@ -446,7 +447,7 @@ class FinanceSystem(IFinanceSystem):
             borrower_id=firm.id,
             gross_income=0.0, # Unknown via IFinancialFirm
             existing_debt_payments=0.0,
-            collateral_value=float(firm.capital_stock_pennies),
+            collateral_value=float(firm.capital_stock_units * 100),
             credit_score=float(BAILOUT_CREDIT_SCORE),
             employment_status="FIRM",
             preferred_lender_id=self.bank.id

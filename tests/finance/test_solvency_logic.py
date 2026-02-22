@@ -59,7 +59,7 @@ class TestSolvencyLogic:
         # Set up financial data for Z-Score calculation
         mock_firm.balance_pennies = 10000      # Cash
         mock_firm.inventory_value_pennies = 5000
-        mock_firm.capital_stock_pennies = 20000
+        mock_firm.capital_stock_units = 200 # 200 units * 100 = 20000 pennies
         mock_firm.total_debt_pennies = 8000
         mock_firm.retained_earnings_pennies = 2000
         mock_firm.average_profit_pennies = 1000
@@ -102,8 +102,8 @@ class TestSolvencyLogic:
 
         # Check properties return int
         # Default initialization values
-        assert isinstance(firm.capital_stock_pennies, int)
-        assert firm.capital_stock_pennies == firm.production_state.capital_stock
+        assert isinstance(firm.capital_stock_units, int)
+        assert firm.capital_stock_units == firm.production_state.capital_stock
 
         assert isinstance(firm.inventory_value_pennies, int)
         assert firm.inventory_value_pennies == 0 # No inventory

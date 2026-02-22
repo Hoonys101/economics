@@ -143,7 +143,7 @@ class StubFirm:
         self.has_bailout_loan = False
         self.last_prices = {}
         # Backing fields for IFinancialFirm properties
-        self._capital_stock_pennies = 0
+        self._capital_stock_units = 0
         self._inventory_value_pennies = 0
 
     # IFinancialEntity
@@ -161,12 +161,12 @@ class StubFirm:
 
     # IFinancialFirm
     @property
-    def capital_stock_pennies(self) -> int:
-        return self._capital_stock_pennies
+    def capital_stock_units(self) -> int:
+        return self._capital_stock_units
 
-    @capital_stock_pennies.setter
-    def capital_stock_pennies(self, value: int):
-        self._capital_stock_pennies = value
+    @capital_stock_units.setter
+    def capital_stock_units(self, value: int):
+        self._capital_stock_units = value
 
     @property
     def inventory_value_pennies(self) -> int:

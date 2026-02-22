@@ -28,6 +28,11 @@ class TestFirmSurgicalSeparation:
         mock_config_dto.dividend_rate = 0.1
         mock_config_dto.profit_history_ticks = 10
         mock_config_dto.default_unit_cost = 10
+        mock_config_dto.goods = {}
+        mock_config_dto.labor_alpha = 0.5
+        mock_config_dto.automation_labor_reduction = 0.5
+        mock_config_dto.labor_elasticity_min = 0.1
+        mock_config_dto.capital_depreciation_rate = 0.01
 
         firm = Firm(
             core_config=mock_core_config,
@@ -110,21 +115,16 @@ class TestFirmSurgicalSeparation:
             return DynamicPricingResultDTO(orders=orders, price_updates={})
         mock_firm.sales_engine.check_and_apply_dynamic_pricing.side_effect = side_effect_dynamic_pricing
 
-        # Setup Legacy Decision Engine Return
-        # Must be BUY for non-labor/non-internal to pass new filters (SalesEngine handles SELL)
-        legacy_order_keep = Order(
+        # Configure Production Engine (Procurement)
+        from modules.firm.api import ProcurementIntentDTO
+        procurement_order = Order(
             agent_id=1, side="BUY", item_id="wood", quantity=10,
             price_pennies=500, market_id="wood",
             price_limit=5.0
         )
-        legacy_order_ignore = Order(
-            agent_id=1, side="BUY", item_id="labor", quantity=5, # Should be filtered
-            price_pennies=1000, market_id="labor",
-            price_limit=10.0
-        )
-
-        # Configure the DE that was injected in fixture
-        mock_firm.decision_engine.make_decisions.return_value = ([legacy_order_keep, legacy_order_ignore], "TACTIC")
+        mock_procurement_intent = MagicMock(spec=ProcurementIntentDTO)
+        mock_procurement_intent.purchase_orders = [procurement_order]
+        mock_firm.production_engine.decide_procurement.return_value = mock_procurement_intent
 
         # Act
         external_orders, tactic = mock_firm.make_decision(input_dto)
@@ -138,21 +138,23 @@ class TestFirmSurgicalSeparation:
         # Assert: HR Engine called
         assert mock_firm.hr_engine.decide_workforce.called
 
+        # Assert: Production Engine called
+        assert mock_firm.production_engine.decide_procurement.called
+
         # Assert: Internal execution called
         mock_firm.execute_internal_orders.assert_called_once()
         executed_orders = mock_firm.execute_internal_orders.call_args[0][0]
         # Should be a list, not a Mock
         assert isinstance(executed_orders, list)
 
-        # Assert: Orders Merged and Filtered
-        # external_orders should contain generated HR order and legacy_order_keep
+        # Assert: Orders Merged
+        # external_orders should contain generated HR order and procurement_order
         assert len(external_orders) == 2
-        assert legacy_order_keep in external_orders
+        assert procurement_order in external_orders
         # Verify HR order presence
         hr_orders = [o for o in external_orders if o.market_id == 'labor']
         assert len(hr_orders) == 1
         assert hr_orders[0].side == 'BUY'
-        assert legacy_order_ignore not in external_orders
 
     def test_state_persistence_across_ticks(self, mock_firm):
         """

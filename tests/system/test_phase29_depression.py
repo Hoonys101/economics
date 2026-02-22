@@ -252,7 +252,7 @@ class TestPhase29Depression(unittest.TestCase):
             # And get_financial_snapshot for EconomicIndicatorTracker
             f.configure_mock(
                 balance_pennies=500000,
-                capital_stock_pennies=0,
+                capital_stock_units=0,
                 inventory_value_pennies=0,
                 total_debt_pennies=0,
                 retained_earnings_pennies=100000,
