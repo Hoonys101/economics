@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "phase41_wave4_marriage": {
-      "key": "phase41_wave4_marriage",
-      "title": "Wave 4.2: Marriage Market & Household Merger",
-      "type": "jules",
-      "instruction_raw": "Implement the Marriage Market matcher and Execution Service (Absorption Strategy). Ensure Zero-Sum asset/debt transfer and lifecycle cleanup (resignation, etc.).",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_wave4-marriage-spec_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "phase41_wave4_health": {
       "key": "phase41_wave4_health",
       "title": "Wave 4.3: Social Health & Medical System",
