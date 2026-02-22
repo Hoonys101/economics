@@ -2,5 +2,36 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {}
+  "missions": {
+    "phase41_firm_refinement_impl": {
+      "key": "phase41_firm_refinement_impl",
+      "title": "Implement Firm Capital Stock Renaming & SEO Migration",
+      "type": "jules",
+      "instruction_raw": "Rename capital_stock_pennies to capital_stock_units and update valuation logic. Migrate make_decision to move procurement logic into SEO path as per the spec. Update all call sites and tests.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_firm_refinement_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "phase41_labor_config_impl": {
+      "key": "phase41_labor_config_impl",
+      "title": "Implement Labor Majors Config Migration",
+      "type": "jules",
+      "instruction_raw": "Externalize labor majors to economy_params.yaml and update constants.py to load them dynamically. Add LaborConfigDTO to api.py.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_labor_config_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    }
+  }
 }

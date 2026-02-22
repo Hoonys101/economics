@@ -17,5 +17,16 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "phase41_firm_refinement_impl": {
+        "title": "Implement Firm Capital Stock Renaming & SEO Migration",
+        "file": "gemini-output/spec/MISSION_firm_refinement_SPEC.md",
+        "instruction": "Rename capital_stock_pennies to capital_stock_units and update valuation logic. Migrate make_decision to move procurement logic into SEO path as per the spec. Update all call sites and tests.",
+        "wait": False
+    },
+    "phase41_labor_config_impl": {
+        "title": "Implement Labor Majors Config Migration",
+        "file": "gemini-output/spec/MISSION_labor_config_SPEC.md",
+        "instruction": "Externalize labor majors to economy_params.yaml and update constants.py to load them dynamically. Add LaborConfigDTO to api.py.",
+        "wait": False
+    }
 }

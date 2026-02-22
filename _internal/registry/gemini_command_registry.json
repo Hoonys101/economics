@@ -2,5 +2,64 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {}
+  "missions": {
+    "phase41_bank_registry_spec": {
+      "key": "phase41_bank_registry_spec",
+      "title": "Extract BankRegistry Service (TD-ARCH-SETTLEMENT-BLOAT)",
+      "type": "gemini",
+      "instruction_raw": "Extract bank account management logic from SettlementSystem into a dedicated BankRegistry service. Define IBankRegistry protocol in modules/finance/api.py and implement the service in simulation/systems/bank_registry.py. Ensure backward compatibility in SettlementSystem by delegating calls to the new registry.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "simulation/systems/settlement_system.py",
+        "simulation/bank.py",
+        "modules/finance/api.py",
+        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+      ],
+      "output_path": "gemini-output/spec/MISSION_bank_registry_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "phase41_firm_refinement_spec": {
+      "key": "phase41_firm_refinement_spec",
+      "title": "Rename Firm Capital Stock & Firm SEO Migration (TD-LIFECYCLE-NAMING, TD-ARCH-SEO-LEGACY)",
+      "type": "gemini",
+      "instruction_raw": "Rename 'capital_stock_pennies' to 'capital_stock_units' in firms.py and update associated valuation logic to prevent 100x inflation. Also, migrate Firm.make_decision to a pure SEO (Stateless Engine Orchestration) path by removing legacy decision branches.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "simulation/firms.py",
+        "modules/finance/api.py",
+        "design/HANDOVER.md"
+      ],
+      "output_path": "gemini-output/spec/MISSION_firm_refinement_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "phase41_labor_config_spec": {
+      "key": "phase41_labor_config_spec",
+      "title": "Externalize Labor Majors to Configuration (TD-CONFIG-HARDCODED-MAJORS)",
+      "type": "gemini",
+      "instruction_raw": "Move the hardcoded MAJORS list from modules/labor/constants.py to config/economy_params.yaml. Update the constants.py to load this list dynamically via ConfigManager to improve system flexibility.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "modules/labor/constants.py",
+        "config/economy_params.yaml",
+        "modules/common/config_manager/api.py"
+      ],
+      "output_path": "gemini-output/spec/MISSION_labor_config_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    }
+  }
 }
