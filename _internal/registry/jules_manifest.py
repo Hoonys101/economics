@@ -17,41 +17,22 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "fix_13_failures": {
-        "title": "Fix 13 Test Failures related to Mock Drift",
-        "instruction": "Implement the fixes detailed in the analysis spec to resolve the 13 test failures related to Mock drift and logic mismatches.",
-        "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_13_failures_analysis_spec.md"
+    "phase41_labor_implementation": {
+        "title": "Implementation: Labor Market Major-Matching",
+        "command": "create",
+        "instruction": "Implement the Major-Matching logic in HREngine, Household, and LaborMarket as per MISSION_phase41_labor_design_SPEC.md. Use CanonicalOrderDTO.metadata['major'] for compatibility.",
+        "file": "gemini-output/spec/MISSION_phase41_labor_design_SPEC.md"
     },
-    "fix_penny_standard_tests": {
-        "title": "Fix Penny Standard Migration Test Failures",
-        "instruction": (
-            "Fix the 5 failing tests caused by Penny Standard migration. "
-            "1. C:/coding/economics/modules/government/components/infrastructure_manager.py:43 - Fix unpacking error (`issue_treasury_bonds_synchronous` returns bool, list). "
-            "2. test_double_entry.py - test_market_bond_issuance_generates_transaction (20.0 -> 2000). "
-            "3. test_double_entry.py - test_qe_bond_issuance_generates_transaction (10.0 -> 1000). "
-            "4. test_sovereign_debt.py - test_issue_treasury_bonds_calls_settlement_system (1.0 -> 100). "
-            "5. test_system.py - test_issue_treasury_bonds_market (1000.0 -> 100000). "
-            "Verify with `pytest -rfE --tb=line --no-header tests/`."
-        )
+    "phase41_fx_barter_implementation": {
+        "title": "Implementation: Multi-Currency Barter-FX",
+        "command": "create",
+        "instruction": "Implement atomic 'Penny-level Barter Swaps' in SettlementSystem. Ensure zero-sum integrity and floor-rounding for dust management as per MISSION_phase41_fx_barter_SPEC.md.",
+        "file": "gemini-output/spec/MISSION_phase41_fx_barter_SPEC.md"
     },
-    "fix_td_firm_coup": {
-        "title": "Implement TD-ARCH-FIRM-COUP Resolution",
-        "instruction": "Implement the Firm Decoupling Spec to resolve TD-ARCH-FIRM-COUP.",
-        "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_firm_coup_spec.md"
-    },
-    "fix_td_tx_handlers": {
-        "title": "Implement TD-RUNTIME-TX-HANDLER Resolution",
-        "instruction": "Implement the Missing Tx Handlers Spec to resolve TD-RUNTIME-TX-HANDLER.",
-        "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_tx_handlers_spec.md"
-    },
-    "fix_td_cockpit_mock": {
-        "title": "Implement TD-TEST-COCKPIT-MOCK Resolution",
-        "instruction": "Implement the Cockpit Mock Fix Spec to modernize test mocks and resolve TD-TEST-COCKPIT-MOCK.",
-        "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_cockpit_mock_spec.md"
-    },
-    "fix_td_life_stale": {
-        "title": "Implement TD-TEST-LIFE-STALE Resolution",
-        "instruction": "Implement the Stale Lifecycle Tests Spec to align tests with IAssetRecoverySystem.",
-        "file": "c:/coding/economics/design/3_work_artifacts/specs/MISSION_td_life_stale_spec.md"
+    "phase41_firm_seo_implementation": {
+        "title": "Implementation: Firm SEO Brain-Scan Readiness",
+        "command": "create",
+        "instruction": "Refactor all Firm Engines to ensure they are pure functions (stateless). Update the Firm orchestrator to handle record_expense and finalize_firing locally. Verify with Brain Scan simulations as per MISSION_phase41_seo_brain_scan_SPEC.md.",
+        "file": "gemini-output/spec/MISSION_phase41_seo_brain_scan_SPEC.md"
     }
 }

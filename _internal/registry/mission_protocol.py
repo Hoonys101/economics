@@ -91,12 +91,12 @@ def get_artifact_path(mission_key: str, artifact_type: ArtifactType) -> Path:
     # But safer to use relative paths from CWD if running from root
     
     if artifact_type == ArtifactType.SPEC:
-        return Path(f"design/3_work_artifacts/specs/MISSION_{mission_key}_SPEC.md")
+        return Path(f"gemini-output/spec/MISSION_{mission_key}_SPEC.md")
     elif artifact_type == ArtifactType.AUDIT:
-        return Path(f"design/3_work_artifacts/audits/MISSION_{mission_key}_AUDIT.md")
+        return Path(f"gemini-output/audit/MISSION_{mission_key}_AUDIT.md")
     elif artifact_type == ArtifactType.REVIEW:
-        return Path(f"design/_archive/reviews/MISSION_{mission_key}_REVIEW.md")
+        return Path(f"gemini-output/review/MISSION_{mission_key}_REVIEW.md")
     elif artifact_type == ArtifactType.REPORT:
-        return Path(f"design/3_work_artifacts/reports/active/REPORT_{mission_key}.md")
+        return Path(f"gemini-output/insight/REPORT_{mission_key}.md")
     
     raise ValueError(f"Unknown artifact type: {artifact_type}")

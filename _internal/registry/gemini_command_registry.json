@@ -2,28 +2,5 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {
-    "analyze_13_failures": {
-      "key": "analyze_13_failures",
-      "title": "Analyze 13 Test Failures and Draft Remediation Spec",
-      "type": "gemini",
-      "instruction_raw": "\ubd84\uc11d \ub300\uc0c1: artifacts/recent_13_test_failures.txt\uc5d0 \ub098\uc5f4\ub41c 13\uac1c\uc758 \ud14c\uc2a4\ud2b8 \uc2e4\ud328. \n\uc791\uc5c5: \uc2e4\ud328\ub97c \ubaa8\ub4c8/\uc6d0\uc778\ubcc4\ub85c \uadf8\ub8f9\ud654\ud558\uace0, \uac01 \uadf8\ub8f9\uc5d0 \ub300\ud574 \ubc18\ub4dc\uc2dc \ub2e4\uc74c \uad6c\uc870\ub85c \ubb38\uc11c\ub97c \uc791\uc131\ud558\uc2dc\uc624:\n1. \uc6d0\uc778 \ud30c\uc545 (Root Cause) \n2. \ud574\uacb0\ubc29\uc548 (Solution) \n3. \uad6c\uccb4\uc801\uc778 spec (Detailed Spec).\n\n\ud2b9\uc774\uc0ac\ud56d: 'MagicMock'\uacfc 'int'\uc758 \ube44\uad50 \uc5d0\ub7ec \ubc0f 'get_financial_snapshot' \uc18d\uc131 \ub204\ub77d \ub4f1 Mock \uac1d\uccb4 \uad00\ub828 \uc5d0\ub7ec\uc5d0 \uc8fc\ubaa9\ud558\uc5ec \uae30\uc874 DTO/SSoT \ub9c8\uc774\uadf8\ub808\uc774\uc158\uacfc\uc758 \uc5f0\uad00\uc131\uc744 \ud30c\uc545\ud558\uc2dc\uc624.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "audit",
-      "context_files": [
-        "artifacts/recent_13_test_failures.txt",
-        "tests/integration/test_liquidation_waterfall.py",
-        "tests/unit/systems/test_liquidation_manager.py",
-        "tests/system/test_phase29_depression.py",
-        "tests/integration/scenarios/diagnosis/test_agent_decision.py",
-        "tests/test_firm_surgical_separation.py"
-      ],
-      "output_path": "design/3_work_artifacts/specs/MISSION_13_failures_analysis_spec.md",
-      "model": null,
-      "audit_requirements": null
-    }
-  }
+  "missions": {}
 }

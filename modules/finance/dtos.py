@@ -47,3 +47,24 @@ class DepositDTO(TypedDict):
     owner_id: AgentID
     balance_pennies: int
     interest_rate: float
+
+# --- Phase 4.1: FX Barter DTOs ---
+
+class FXMatchDTO(TypedDict):
+    """
+    Represents an atomic swap agreement between two parties.
+    Used by the Matching Engine to instruct Settlement.
+    """
+    party_a_id: AgentID
+    party_b_id: AgentID
+    
+    # Leg 1: A sends to B
+    amount_a_pennies: int
+    currency_a: CurrencyCode
+    
+    # Leg 2: B sends to A
+    amount_b_pennies: int
+    currency_b: CurrencyCode
+    
+    match_tick: int
+    rate_a_to_b: float     # Implicit exchange rate for record keeping

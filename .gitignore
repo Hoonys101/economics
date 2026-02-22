@@ -188,3 +188,6 @@ _internal/registry/*.bak
 
 # Allow manifest files explicitly if needed (we will rename them later)
 !_internal/registry/
+# Gemini Output (Tracked)
+!gemini-output/
+gemini-output/**

@@ -5,7 +5,7 @@ from enum import Enum
 import abc
 from abc import ABC, abstractmethod
 from uuid import UUID
-from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO, LoanApplicationDTO, LoanDTO, DepositDTO
+from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO, LoanApplicationDTO, LoanDTO, DepositDTO, FXMatchDTO
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY, CurrencyCode
 from modules.simulation.api import AgentID, AnyAgentID
 
@@ -559,6 +559,13 @@ class ISettlementSystem(Protocol):
         """Executes an immediate, single transfer. Returns transaction or None."""
         ...
 
+    def execute_swap(self, match: FXMatchDTO) -> Optional[ITransaction]:
+        """
+        Phase 4.1: Executes an atomic currency swap (Barter FX).
+        Ensures both legs (A->B, B->A) succeed or neither occurs.
+        """
+        ...
+
     def get_balance(self, agent_id: AgentID, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         """
         Queries the Single Source of Truth for an agent's current balance.
@@ -1068,6 +1075,7 @@ class TransactionType(str, Enum):
     HOUSING = "housing"
     GOODS = "goods"
     LABOR = "labor"
+    FX_SWAP = "FX_SWAP" # Phase 4.1: Barter-FX
 
 @dataclass(frozen=True)
 class BondIssuanceRequestDTO:

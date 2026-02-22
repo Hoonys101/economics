@@ -66,6 +66,32 @@ class FirmSnapshotDTO:
     hr: HRStateDTO
     strategy: FirmStrategy = FirmStrategy.PROFIT_MAXIMIZATION
 
+# --- Brain Scan Context DTOs ---
+
+@dataclass(frozen=True)
+class FirmBrainScanContextDTO:
+    """
+    Context override for hypothetical Brain Scan simulations.
+    Allows injecting "What-If" market conditions or configs.
+    """
+    agent_id: AgentID
+    current_tick: int
+    market_snapshot_override: Optional[MarketSnapshotDTO] = None
+    config_override: Optional[FirmConfigDTO] = None
+    mock_responses: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass(frozen=True)
+class FirmBrainScanResultDTO:
+    """
+    The result of a Brain Scan simulation.
+    Contains the strategic intent (Decision) the firm would make under the hypothetical context.
+    """
+    agent_id: AgentID
+    tick: int
+    intent_type: str  # e.g. "BUDGET_PLAN", "PRICING_DECISION"
+    intent_payload: Any # The specific IntentDTO (e.g. BudgetPlanDTO)
+    predicted_outcome: Optional[Dict[str, Any]] = None
+
 # --- Department Decoupling Context/Intent DTOs ---
 
 @dataclass(frozen=True)
@@ -360,17 +386,18 @@ class IFinanceEngine(Protocol):
     def plan_budget(self, input_dto: FinanceDecisionInputDTO) -> BudgetPlanDTO:
         ...
 
-    def get_estimated_unit_cost(self, finance_state: Any, item_id: str, config: FirmConfigDTO) -> int:
+    def get_estimated_unit_cost(self, finance_state: FinanceStateDTO, item_id: str, config: FirmConfigDTO) -> int:
          """Calculates estimated unit cost for an item."""
          ...
 
-    def record_expense(self, finance_state: Any, amount: int, currency: Any) -> None:
-         ...
-
-    def calculate_valuation(self, finance_state: Any, balances: Any, config: Any, inventory_value: int, capital_stock: int, context: Any) -> int:
+    def calculate_valuation(self, finance_state: FinanceStateDTO, balances: Dict[str, int], config: FirmConfigDTO, inventory_value: int, capital_stock: int, context: Optional[MarketContextDTO]) -> int:
         ...
 
-    def generate_financial_transactions(self, finance_state: Any, firm_id: int, balances: Any, config: Any, current_time: int, context: Any, inventory_value: int) -> List[Transaction]:
+    def generate_financial_transactions(self, finance_state: FinanceStateDTO, firm_id: int, balances: Dict[str, int], config: FirmConfigDTO, current_time: int, context: Any, inventory_value: int) -> List[Transaction]:
+        """
+        Pure generation of financial transactions based on current state.
+        Does NOT mutate state.
+        """
         ...
 
 @runtime_checkable
@@ -379,10 +406,7 @@ class IHREngine(IHRDepartment, Protocol):
     def manage_workforce(self, input_dto: HRDecisionInputDTO) -> HRDecisionOutputDTO:
         ...
 
-    def process_payroll(self, hr_state: Any, context: Any, config: Any) -> Any:
-        ...
-
-    def finalize_firing(self, hr_state: Any, employee_id: int) -> None:
+    def process_payroll(self, hr_state: HRStateDTO, context: Any, config: FirmConfigDTO) -> Any:
         ...
 
 @runtime_checkable
@@ -447,19 +471,19 @@ class ISalesEngine(ISalesDepartment, Protocol):
     Stateless Engine for Sales operations.
     Handles pricing, marketing, and order generation.
     """
-    def post_ask(self, state: Any, context: SalesPostAskContextDTO) -> Order:
+    def post_ask(self, state: SalesStateDTO, context: SalesPostAskContextDTO) -> Order:
         """Posts an ask order to the market."""
         ...
 
-    def adjust_marketing_budget(self, state: Any, market_context: MarketContextDTO, revenue_this_turn: int, last_revenue: int=0, last_marketing_spend: int=0) -> MarketingAdjustmentResultDTO:
+    def adjust_marketing_budget(self, state: SalesStateDTO, market_context: MarketContextDTO, revenue_this_turn: int, last_revenue: int=0, last_marketing_spend: int=0) -> MarketingAdjustmentResultDTO:
         """Adjusts marketing budget based on ROI or simple heuristic."""
         ...
 
-    def generate_marketing_transaction(self, state: Any, context: SalesMarketingContextDTO) -> Optional[Transaction]:
+    def generate_marketing_transaction(self, state: SalesStateDTO, context: SalesMarketingContextDTO) -> Optional[Transaction]:
         """Generates marketing spend transaction."""
         ...
 
-    def check_and_apply_dynamic_pricing(self, state: Any, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> DynamicPricingResultDTO:
+    def check_and_apply_dynamic_pricing(self, state: SalesStateDTO, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> DynamicPricingResultDTO:
         """Overrides prices in orders if dynamic pricing logic dictates. Returns new orders and price updates."""
         ...
 
@@ -470,7 +494,7 @@ class IBrandEngine(Protocol):
     """
     def update(
         self,
-        state: Any,
+        state: SalesStateDTO,
         config: FirmConfigDTO,
         marketing_spend: float,
         actual_quality: float,
@@ -529,6 +553,8 @@ __all__ = [
     'ICollateralizableAsset',
     'FirmSnapshotDTO',
     'FirmStrategy',
+    'FirmBrainScanContextDTO',
+    'FirmBrainScanResultDTO',
     'FinanceDecisionInputDTO',
     'BudgetPlanDTO',
     'HRDecisionInputDTO',
