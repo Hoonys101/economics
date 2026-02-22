@@ -2,2537 +2,636 @@
 Critical events extracted for Gemini analysis.
 
 - **Tick ?** | **WARNING** | File locking (fcntl) is not supported on this platform. Concurrency safety is not guaranteed.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 171540, Req: 2500000.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1563398, Req: 2500000.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2082701, Req: 2500000.
-- **Tick ?** | **ERROR** | Transaction Record: ID=105ae9a4-2ada-4508-b8dc-d91ab73739a2, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1168838, Req: 2500000.
-- **Tick ?** | **ERROR** | Transaction Record: ID=ec081865-bd20-43b5-8b3e-24a83fa772fd, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251166, Req: 2500000.
-- **Tick ?** | **ERROR** | Transaction Record: ID=aeb67405-5cc6-4564-9caa-b338693fd8c6, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1492022, Req: 2500000.
-- **Tick ?** | **ERROR** | Transaction Record: ID=3ca17269-6474-4ce5-bbee-d7c11cb57ecd, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1782424, Req: 2500000.
-- **Tick 8** | **WARNING** | Stock order price 0.49 out of limit range [0.01, 0.01] for firm 123
-  - Details: agent_id=123
-- **Tick ?** | **ERROR** | Transaction Record: ID=56c02566-c421-497d-9395-5f5d895b59a6, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2105413, Req: 2500000.
-- **Tick 9** | **WARNING** | Stock order price 0.49 out of limit range [0.01, 0.01] for firm 123
-  - Details: agent_id=123
-- **Tick ?** | **ERROR** | Transaction Record: ID=f0d4e793-c75c-46de-bdde-a01e00ca48f4, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2464633, Req: 2500000.
-- **Tick 10** | **WARNING** | Stock order price 0.49 out of limit range [0.01, 0.01] for firm 123
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 394251, Req: 2500000.
-- **Tick 11** | **WARNING** | Stock order price 0.49 out of limit range [0.01, 0.01] for firm 123
-  - Details: agent_id=123
-- **Tick ?** | **ERROR** | Transaction Record: ID=002c3865-5e83-4b58-af50-70992e19ce90, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1035905, Req: 2500000.
-- **Tick 12** | **WARNING** | Stock order price 0.39 out of limit range [0.01, 0.01] for firm 120
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42434600
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42434600 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40871652
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40871652 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 31082752
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 31082752 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 23060361
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 23060361 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 20199174
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 20199174 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 17574562
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 17574562 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 14807140
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 14807140 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 13963793
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 13963793 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 12694217
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 12694217 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 10393366
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 10393366 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 286789, Req: 288085.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 102549, Req: 215514.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 9788219
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 9788219 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 277508, Req: 331870.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 95689, Req: 250197.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 9177955
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 9177955 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 240757, Req: 375380.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 113403, Req: 284777.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8763116
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8763116 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 172330, Req: 290764.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 217030, Req: 418680.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 173335, Req: 318951.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8633237
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8633237 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 165887, Req: 327374.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 91918, Req: 140210.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 203460, Req: 463885.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 266389, Req: 352630.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8610030
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8610030 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 157713, Req: 363739.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 81423, Req: 155705.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 194215, Req: 508715.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 301809, Req: 385866.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8547750
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8547750 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 148643, Req: 399719.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 69461, Req: 171120.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 184045, Req: 553245.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 278028, Req: 420665.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8523815
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8523815 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 140478, Req: 435459.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 55512, Req: 186455.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 172671, Req: 597470.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 244726, Req: 457093.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8516898
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8516898 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 127720, Req: 470944.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38843, Req: 201705.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 159717, Req: 641390.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 256726, Req: 495288.
+- **Tick 19** | **WARNING** | FIRE_SALE | Firm 121 dumping 43374.5 of basic_food at 4.83
+- **Tick 19** | **WARNING** | FIRE_SALE | Firm 121 dumping 43374.5 of basic_food at 4.83
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8503440
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8503440 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 114012, Req: 506194.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 18411, Req: 216875.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 144672, Req: 685005.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 231726, Req: 533173.
+- **Tick 20** | **WARNING** | FIRE_SALE | Firm 121 dumping 46390.5 of basic_food at 4.83
+- **Tick 20** | **WARNING** | FIRE_SALE | Firm 121 dumping 46390.5 of basic_food at 4.83
+- **Tick 20** | **WARNING** | FIRM_INACTIVE | Firm 120 closed down. Assets: 1089.82, Consecutive Loss Turns: 20
   - Details: agent_id=120
-- **Tick 12** | **WARNING** | Stock order price 0.39 out of limit range [0.01, 0.01] for firm 121
+- **Tick 20** | **WARNING** | FIRM_INACTIVE | Firm 122 closed down. Assets: 1396.72, Consecutive Loss Turns: 20
+  - Details: agent_id=122
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick 20** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
   - Details: agent_id=121
-- **Tick 12** | **WARNING** | Stock order price 0.39 out of limit range [0.01, 0.01] for firm 122
-  - Details: agent_id=122
-- **Tick 12** | **WARNING** | Stock order price 0.49 out of limit range [0.01, 0.01] for firm 123
-  - Details: agent_id=123
-- **Tick ?** | **ERROR** | Transaction Record: ID=0720d335-69bb-4109-bf27-73f5ab9e58b3, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 102 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 102 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1565756, Req: 2500000.
-- **Tick 13** | **WARNING** | Stock order price 0.39 out of limit range [0.01, 0.01] for firm 120
-  - Details: agent_id=120
-- **Tick 13** | **WARNING** | Stock order price 0.37 out of limit range [0.01, 0.01] for firm 121
+- **Tick 20** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
   - Details: agent_id=121
-- **Tick 13** | **WARNING** | Stock order price 0.37 out of limit range [0.01, 0.01] for firm 122
-  - Details: agent_id=122
-- **Tick 13** | **WARNING** | Stock order price 0.47 out of limit range [0.01, 0.01] for firm 123
-  - Details: agent_id=123
-- **Tick ?** | **ERROR** | Transaction Record: ID=ee087602-ce04-455e-9677-6a4fb93891b4, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 213112, Req: 2500000.
-- **Tick 14** | **WARNING** | Stock order price 0.37 out of limit range [0.01, 0.01] for firm 120
-  - Details: agent_id=120
-- **Tick 14** | **WARNING** | Stock order price 0.35 out of limit range [0.01, 0.01] for firm 121
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8495964
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8495964 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14444, Req: 231955.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 298719, Req: 570893.
+- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -153521427.00, Expected: 49836763.00, Delta: -203358190.0000
+- **Tick 21** | **WARNING** | FIRE_SALE | Firm 121 dumping 49388.5 of basic_food at 4.83
+- **Tick 21** | **WARNING** | FIRE_SALE | Firm 121 dumping 49388.5 of basic_food at 4.83
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick 21** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
   - Details: agent_id=121
-- **Tick 14** | **WARNING** | Stock order price 0.35 out of limit range [0.01, 0.01] for firm 122
-  - Details: agent_id=122
-- **Tick 14** | **WARNING** | Stock order price 0.47 out of limit range [0.01, 0.01] for firm 123
-  - Details: agent_id=123
-- **Tick ?** | **ERROR** | Transaction Record: ID=1f05e54b-0ef5-42da-887f-5a8ecf876c69, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 869679, Req: 13032100.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1124630, Req: 2500000.
-- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 50431379.00, Expected: 50301058.00, Delta: 130321.0000
-- **Tick 15** | **WARNING** | Stock order price 0.37 out of limit range [0.01, 0.01] for firm 120
-  - Details: agent_id=120
-- **Tick 15** | **WARNING** | Stock order price 0.35 out of limit range [0.01, 0.01] for firm 121
+- **Tick 21** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
   - Details: agent_id=121
-- **Tick 15** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 122
-  - Details: agent_id=122
-- **Tick 15** | **WARNING** | Stock order price 0.47 out of limit range [0.01, 0.01] for firm 123
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1811106, Req: 2500000.
-- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 50431351.00, Expected: 50301058.00, Delta: 130293.0000
-- **Tick 16** | **WARNING** | Stock order price 0.37 out of limit range [0.01, 0.01] for firm 120
-  - Details: agent_id=120
-- **Tick 16** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 121
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8464694
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8464694 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9444, Req: 246945.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 313369, Req: 607866.
+- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -153521427.00, Expected: 49836763.00, Delta: -203358190.0000
+- **Tick 22** | **WARNING** | FIRE_SALE | Firm 121 dumping 52369.5 of basic_food at 4.83
+- **Tick 22** | **WARNING** | FIRE_SALE | Firm 121 dumping 52369.5 of basic_food at 4.83
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick 22** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
   - Details: agent_id=121
-- **Tick 16** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 122
-  - Details: agent_id=122
-- **Tick 16** | **WARNING** | Stock order price 0.47 out of limit range [0.01, 0.01] for firm 123
-  - Details: agent_id=123
-- **Tick ?** | **ERROR** | Transaction Record: ID=17f340f8-1642-4948-b4f3-a17ed9749d41, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 245219, Req: 2500000.
-- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 50431323.00, Expected: 50301058.00, Delta: 130265.0000
-- **Tick 17** | **WARNING** | Stock order price 0.37 out of limit range [0.01, 0.01] for firm 120
-  - Details: agent_id=120
-- **Tick 17** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 121
+- **Tick 22** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
   - Details: agent_id=121
-- **Tick 17** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 122
-  - Details: agent_id=122
-- **Tick 17** | **WARNING** | Stock order price 0.47 out of limit range [0.01, 0.01] for firm 123
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 159425, Req: 171330.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1575092, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1575092, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1575092, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1575092, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1575092, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1575092, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1575092, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1575092, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1575092, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1575092, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1575092, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1575092, Req: 2500000.
-- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 71087007.00, Expected: 50505570.00, Delta: 20581437.0000
-- **Tick 18** | **WARNING** | Stock order price 0.37 out of limit range [0.01, 0.01] for firm 120
-  - Details: agent_id=120
-- **Tick 18** | **WARNING** | FIRE_SALE | Firm 121 dumping 43904.5 of basic_food at 4.18
-- **Tick 18** | **WARNING** | FIRE_SALE | Firm 121 dumping 43904.5 of basic_food at 4.18
-- **Tick 18** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 121
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8466683
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8466683 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 7543, Req: 261850.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 317025, Req: 644604.
+- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -153521427.00, Expected: 49836763.00, Delta: -203358190.0000
+- **Tick 23** | **WARNING** | FIRE_SALE | Firm 121 dumping 55329.5 of basic_food at 4.83
+- **Tick 23** | **WARNING** | FIRE_SALE | Firm 121 dumping 55329.5 of basic_food at 4.83
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick 23** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
   - Details: agent_id=121
-- **Tick 18** | **WARNING** | FIRE_SALE | Firm 122 dumping 44799.5 of basic_food at 4.18
-- **Tick 18** | **WARNING** | FIRE_SALE | Firm 122 dumping 44799.5 of basic_food at 4.18
-- **Tick 18** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 122
-  - Details: agent_id=122
-- **Tick 18** | **WARNING** | Stock order price 0.47 out of limit range [0.01, 0.01] for firm 123
-  - Details: agent_id=123
-- **Tick ?** | **ERROR** | Transaction Record: ID=5f965b6e-6e23-40dc-9152-a4cefad237f5, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick 18** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 109. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick 18** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 109. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 144073, Req: 206155.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43791, Req: 219525.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11697, Req: 224000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 151217, Req: 182040.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1592217, Req: 2500000.
-- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 71086979.00, Expected: 50505570.00, Delta: 20581409.0000
-- **Tick 19** | **WARNING** | Stock order price 0.37 out of limit range [0.01, 0.01] for firm 120
-  - Details: agent_id=120
-- **Tick 19** | **WARNING** | FIRE_SALE | Firm 121 dumping 46954.5 of basic_food at 8.42
-- **Tick 19** | **WARNING** | FIRE_SALE | Firm 121 dumping 46954.5 of basic_food at 8.42
-- **Tick 19** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 121
+- **Tick 23** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
   - Details: agent_id=121
-- **Tick 19** | **WARNING** | FIRE_SALE | Firm 122 dumping 48101.5 of basic_food at 8.42
-- **Tick 19** | **WARNING** | FIRE_SALE | Firm 122 dumping 48101.5 of basic_food at 8.42
-- **Tick 19** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 122
-  - Details: agent_id=122
-- **Tick 19** | **WARNING** | Stock order price 0.47 out of limit range [0.01, 0.01] for firm 123
-  - Details: agent_id=123
-- **Tick ?** | **ERROR** | Transaction Record: ID=5de8dec3-75b4-474b-9d17-bd1bebb21682, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick 19** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 109. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick 19** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 109. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 134361, Req: 247110.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 32524, Req: 234775.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6697, Req: 240510.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 142548, Req: 192640.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611921, Req: 2500000.
-- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 71086951.00, Expected: 50505570.00, Delta: 20581381.0000
-- **Tick 20** | **WARNING** | Stock order price 0.37 out of limit range [0.01, 0.01] for firm 120
-  - Details: agent_id=120
-- **Tick 20** | **WARNING** | FIRE_SALE | Firm 121 dumping 49979.5 of basic_food at 6.16
-- **Tick 20** | **WARNING** | FIRE_SALE | Firm 121 dumping 49979.5 of basic_food at 6.16
-- **Tick 20** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 121
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8451684
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8451684 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 5155, Req: 276650.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 301560, Req: 683047.
+- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -153521427.00, Expected: 49836763.00, Delta: -203358190.0000
+- **Tick 24** | **WARNING** | FIRE_SALE | Firm 121 dumping 58272.5 of basic_food at 4.83
+- **Tick 24** | **WARNING** | FIRE_SALE | Firm 121 dumping 58272.5 of basic_food at 4.83
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick 24** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
   - Details: agent_id=121
-- **Tick 20** | **WARNING** | FIRE_SALE | Firm 122 dumping 51384.5 of basic_food at 6.16
-- **Tick 20** | **WARNING** | FIRE_SALE | Firm 122 dumping 51384.5 of basic_food at 6.16
-- **Tick 20** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 122
-  - Details: agent_id=122
-- **Tick 20** | **WARNING** | Stock order price 0.47 out of limit range [0.01, 0.01] for firm 123
-  - Details: agent_id=123
-- **Tick 20** | **WARNING** | FIRM_INACTIVE | Firm 120 closed down. Assets: 1293.61, Consecutive Loss Turns: 20
-  - Details: agent_id=120
-- **Tick 20** | **WARNING** | FIRM_INACTIVE | Firm 121 closed down. Assets: 275.24, Consecutive Loss Turns: 20
+- **Tick 24** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
   - Details: agent_id=121
-- **Tick 20** | **WARNING** | FIRM_INACTIVE | Firm 123 closed down. Assets: 1375.48, Consecutive Loss Turns: 20
-  - Details: agent_id=123
-- **Tick ?** | **ERROR** | Transaction Record: ID=b72d832d-e9c4-4121-91ed-8bd702d61c87, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick 20** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 109. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick 20** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 109. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2385, Req: 256925.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1611560, Req: 2500000.
-- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -47712322.00, Expected: 50505570.00, Delta: -98217892.0000
-- **Tick 21** | **WARNING** | FIRE_SALE | Firm 122 dumping 54647.5 of basic_food at 6.16
-- **Tick 21** | **WARNING** | FIRE_SALE | Firm 122 dumping 54647.5 of basic_food at 6.16
-- **Tick 21** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 122
-  - Details: agent_id=122
-- **Tick ?** | **ERROR** | Transaction Record: ID=bcd8ea92-9d6b-4808-a224-770e6656d1b3, Status=FAILED, Message=Destination account does not exist: 123
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 123
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 123. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 123. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick 21** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 109. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick 21** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 109. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1369, Req: 273240.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1610354, Req: 2500000.
-- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -47712350.00, Expected: 50505570.00, Delta: -98217920.0000
-- **Tick 22** | **WARNING** | FIRE_SALE | Firm 122 dumping 57891.5 of basic_food at 6.16
-- **Tick 22** | **WARNING** | FIRE_SALE | Firm 122 dumping 57891.5 of basic_food at 6.16
-- **Tick 22** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 122
-  - Details: agent_id=122
-- **Tick ?** | **ERROR** | Transaction Record: ID=31889966-e241-422e-86e9-28dd19a0d14f, Status=FAILED, Message=Destination account does not exist: 123
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 123
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 102 to new firm 123. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 102 to new firm 123. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick 22** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 109. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick 22** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 109. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1358, Req: 289460.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1609244, Req: 2500000.
-- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -47712378.00, Expected: 50505570.00, Delta: -98217948.0000
-- **Tick 23** | **WARNING** | FIRE_SALE | Firm 122 dumping 61115.5 of basic_food at 6.16
-- **Tick 23** | **WARNING** | FIRE_SALE | Firm 122 dumping 61115.5 of basic_food at 6.16
-- **Tick 23** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 122
-  - Details: agent_id=122
-- **Tick ?** | **ERROR** | Transaction Record: ID=311b3ee8-b555-4884-b8e8-dbda5ae92ad9, Status=FAILED, Message=Destination account does not exist: 123
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 123
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 123. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 123. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick 23** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 109. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick 23** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 109. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 677, Req: 305580.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1608205, Req: 2500000.
-- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -47712406.00, Expected: 50505570.00, Delta: -98217976.0000
-- **Tick 24** | **WARNING** | FIRE_SALE | Firm 122 dumping 64320.5 of basic_food at 6.16
-- **Tick 24** | **WARNING** | FIRE_SALE | Firm 122 dumping 64320.5 of basic_food at 6.16
-- **Tick 24** | **WARNING** | Stock order price 0.33 out of limit range [0.01, 0.01] for firm 122
-  - Details: agent_id=122
-- **Tick 24** | **WARNING** | FIRM_INACTIVE | Firm 122 closed down. Assets: 0.00, Consecutive Loss Turns: 24
-  - Details: agent_id=122
-- **Tick ?** | **ERROR** | Transaction Record: ID=d33009bb-3ddf-4d25-aec8-d0faceebb903, Status=FAILED, Message=Destination account does not exist: 123
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 123
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 123. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 123. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1605922, Req: 2500000.
-- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095558.00, Expected: 50505570.00, Delta: -149601128.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=f7a49a9e-0646-4356-88cb-4d7c66d78a44, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 102 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 102 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1603639, Req: 2500000.
-- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095586.00, Expected: 50505570.00, Delta: -149601156.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=f51dead6-44ca-43ea-aab8-65dd59a92496, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 102 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 102 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1601355, Req: 2500000.
-- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095614.00, Expected: 50505570.00, Delta: -149601184.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=61e5970c-dbe3-4919-b676-9641c7d74f71, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 102 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 102 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1599069, Req: 2500000.
-- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095642.00, Expected: 50505570.00, Delta: -149601212.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=281f6464-3760-43f6-b59f-a0222ac692d3, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1596783, Req: 2500000.
-- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095670.00, Expected: 50505570.00, Delta: -149601240.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=63a8c88b-396f-487a-8046-1e15166942cf, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1594495, Req: 2500000.
-- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095698.00, Expected: 50505570.00, Delta: -149601268.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=59bbbd72-7666-4ab5-ad01-4f67c14a06ef, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2297307, Req: 2500000.
-- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095726.00, Expected: 50505570.00, Delta: -149601296.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=b4c0dfcc-1571-4bbb-903f-b1fd1a1729bc, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2294996, Req: 2500000.
-- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095754.00, Expected: 50505570.00, Delta: -149601324.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=9d047ef6-3687-4f66-b5d9-978e2417eafb, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2292684, Req: 2500000.
-- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095782.00, Expected: 50505570.00, Delta: -149601352.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=42d83eef-f963-4372-8bf2-3071429f888f, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2290371, Req: 2500000.
-- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095810.00, Expected: 50505570.00, Delta: -149601380.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=364a0d41-fb1e-4aa4-a73d-61ec974b36c0, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2288056, Req: 2500000.
-- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095838.00, Expected: 50505570.00, Delta: -149601408.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=1e61ab83-8433-4708-9da2-19bcb5ccdba9, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2285740, Req: 2500000.
-- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095866.00, Expected: 50505570.00, Delta: -149601436.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=6cf1c808-e41e-4174-8dcc-d1fd62de5d9c, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2283423, Req: 2500000.
-- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095894.00, Expected: 50505570.00, Delta: -149601464.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=94d381aa-c2c6-467a-8abd-6b9b7173b460, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2281105, Req: 2500000.
-- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095922.00, Expected: 50505570.00, Delta: -149601492.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=7f719cd5-b48a-4a15-a40a-c0770c598671, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2278787, Req: 2500000.
-- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095950.00, Expected: 50505570.00, Delta: -149601520.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=ac257a58-567e-4f07-9c66-7818d5589f4c, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2276467, Req: 2500000.
-- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99095978.00, Expected: 50505570.00, Delta: -149601548.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=b68d4017-8199-4b00-97c7-aaef19fc91cd, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2274146, Req: 2500000.
-- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096006.00, Expected: 50505570.00, Delta: -149601576.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=98b8e27f-09a0-46c0-99c8-58fe7f9ccf4c, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2271824, Req: 2500000.
-- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096034.00, Expected: 50505570.00, Delta: -149601604.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=b45634dd-b878-491d-90e1-48b8c463fa22, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 102 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 102 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2269501, Req: 2500000.
-- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096062.00, Expected: 50505570.00, Delta: -149601632.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=6788d54a-bd39-4036-b164-a947f581db82, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2267177, Req: 2500000.
-- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096090.00, Expected: 50505570.00, Delta: -149601660.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=13f485f8-88c6-4bdf-a3ea-3dfec59b495b, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2264851, Req: 2500000.
-- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096118.00, Expected: 50505570.00, Delta: -149601688.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=f2e74a3f-68ca-46b4-91f1-85d994375e2e, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2262524, Req: 2500000.
-- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096146.00, Expected: 50505570.00, Delta: -149601716.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=6d74dfa6-23a0-4f7d-b0c2-6f045831fb84, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2260196, Req: 2500000.
-- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096174.00, Expected: 50505570.00, Delta: -149601744.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=79a20484-bef5-4dd5-a7da-72e5b09c3e23, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2257867, Req: 2500000.
-- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096202.00, Expected: 50505570.00, Delta: -149601772.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=f7af5927-ca24-40d8-b24c-837338163fc4, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2255537, Req: 2500000.
-- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096230.00, Expected: 50505570.00, Delta: -149601800.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=a20d7890-f405-4c67-bbe1-d798db8d3a7e, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2253206, Req: 2500000.
-- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096258.00, Expected: 50505570.00, Delta: -149601828.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=138c5f9e-a683-4b36-9f86-9327b9cc62b3, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2250874, Req: 2500000.
-- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096286.00, Expected: 50505570.00, Delta: -149601856.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=6e451a49-0b97-4a40-a184-06f3d1486e09, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2248541, Req: 2500000.
-- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096314.00, Expected: 50505570.00, Delta: -149601884.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=c17a177d-0056-4bb9-9ed4-b746010ac18f, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2246206, Req: 2500000.
-- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096342.00, Expected: 50505570.00, Delta: -149601912.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=bcf4df20-e324-43e0-a697-06e44c22e31b, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2243870, Req: 2500000.
-- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096370.00, Expected: 50505570.00, Delta: -149601940.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=eb1a8ca7-639e-4568-853a-8b94f5a4bc87, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2241533, Req: 2500000.
-- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096398.00, Expected: 50505570.00, Delta: -149601968.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=81b2e0bf-9fa9-4147-b9f3-07561f4cf732, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 444295, Req: 2500000.
-- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -99096426.00, Expected: 50505570.00, Delta: -149601996.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=ec3ac87c-9f62-46a1-abad-e63655ebc7e5, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1253672, Req: 2500000.
-- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -93285217.00, Expected: 50563107.00, Delta: -143848324.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=95bc4069-8030-4504-a8dc-3ba9f322f560, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1252811, Req: 2500000.
-- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -93285245.00, Expected: 50563107.00, Delta: -143848352.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=be895fb1-fc0c-434a-958a-9aaff039ef93, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251948, Req: 2500000.
-- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -93285273.00, Expected: 50563107.00, Delta: -143848380.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=bb724977-b27f-4e43-87fc-82315126df55, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1251084, Req: 2500000.
-- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -93285301.00, Expected: 50563107.00, Delta: -143848408.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=dfd0dabc-3f3f-47a3-9f07-810e7f693d34, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 101 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6db0783b-ed13-4095-a78e-2fefa2b2165c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 21919996-54b6-48ad-937d-9a1e8cd9cfe4 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 307e552c-2956-4a91-a758-97530eaf070d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78773dd3-bc7f-4fd9-b461-d5b3f9eefa4e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c712a216-163b-4ac9-83b6-cc3bb62dad7d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b1374b97-6bb9-4434-a87f-e50b87d2dde0 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 318e0f59-eafe-4363-ab1d-0f3ae4051f4b missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8ce0474b-8212-4cc4-b109-ab6a50d3f459 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 795a3560-efd9-4def-bed6-b69d185cf7ad missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2724b8bc-746e-41f6-8c34-ebb8432d1f08 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cbff7692-1557-417d-b0d9-3c12388d6a34 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5653b1a8-f7bd-46b5-85a3-284b68892795 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8c2d1519-0285-4e33-accf-b30549a84787 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7ad3b6eb-e07f-400d-ac30-6da24fb60ff3 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga f8106a85-0005-4f50-8cd1-1ef6aa356d86 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 686632f9-e37c-4d44-aedb-ed128511208a missing participant IDs.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1250219, Req: 2500000.
-- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -93285329.00, Expected: 50563107.00, Delta: -143848436.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8462544
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8462544 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3099, Req: 291365.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 305904, Req: 721216.
+- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -153521427.00, Expected: 49836763.00, Delta: -203358190.0000
+- **Tick 25** | **WARNING** | FIRE_SALE | Firm 121 dumping 61198.6 of basic_food at 4.83
+- **Tick 25** | **WARNING** | FIRE_SALE | Firm 121 dumping 61198.6 of basic_food at 4.83
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick 25** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 25** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8465692
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8465692 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2036, Req: 305995.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 296114, Req: 759036.
+- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -153521427.00, Expected: 49836763.00, Delta: -203358190.0000
+- **Tick 26** | **WARNING** | FIRE_SALE | Firm 121 dumping 64105.6 of basic_food at 4.83
+- **Tick 26** | **WARNING** | FIRE_SALE | Firm 121 dumping 64105.6 of basic_food at 4.83
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick 26** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 26** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8381957
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8381957 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2046, Req: 320530.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 268730, Req: 796549.
+- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -153521427.00, Expected: 49836763.00, Delta: -203358190.0000
+- **Tick 27** | **WARNING** | FIRE_SALE | Firm 121 dumping 66993.6 of basic_food at 4.83
+- **Tick 27** | **WARNING** | FIRE_SALE | Firm 121 dumping 66993.6 of basic_food at 4.83
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick 27** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 27** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8362664
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8362664 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 2056, Req: 334970.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 293119, Req: 835609.
+- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -153521427.00, Expected: 49836763.00, Delta: -203358190.0000
+- **Tick 28** | **WARNING** | FIRE_SALE | Firm 121 dumping 69862.6 of basic_food at 4.83
+- **Tick 28** | **WARNING** | FIRE_SALE | Firm 121 dumping 69862.6 of basic_food at 4.83
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick 28** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 28** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 110. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8357483
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8357483 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1023, Req: 349315.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 10.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 239352, Req: 876100.
+- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -153521427.00, Expected: 49836763.00, Delta: -203358190.0000
+- **Tick 29** | **WARNING** | FIRE_SALE | Firm 121 dumping 72712.6 of basic_food at 4.83
+- **Tick 29** | **WARNING** | FIRE_SALE | Firm 121 dumping 72712.6 of basic_food at 4.83
+- **Tick 29** | **WARNING** | FIRM_INACTIVE | Firm 121 closed down. Assets: 0.00, Consecutive Loss Turns: 1
+  - Details: agent_id=121
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8d68c5c5-918f-4b4d-97a9-379176ae7ca8 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe133517-ae89-41d8-b9b7-1c01530818ef missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 78f474e6-e740-444e-8813-13b3cc25f3ec missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga cd22dda1-e0a8-4848-8765-84e84bb05802 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8a24ee29-d2df-4efe-87f4-8a918b3feaea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 0ca730ca-2e47-455d-99fc-0ade68e8e7b6 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5bc722ff-c6bb-4253-8dd4-071b1a40548f missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9634d765-bc6e-4155-972e-84b5abe83cea missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 6a5f0ccd-7fcc-41c1-8edd-9b5e66524087 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3cd05a01-e7b8-44f6-a914-bb9b08146244 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 82fe7044-fb4d-40c5-ac6b-87683c5452c4 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9d9bf08c-d086-415e-9300-7c8608d37543 missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 2d557aeb-278c-4b83-a9a5-fb3b912c2e5a missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 54e3d035-93e7-47a6-b697-55e2ddb3deff missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fe11dce2-9a37-477d-a9a1-80d00a49095d missing participant IDs.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga da22c054-58c4-4cb0-83a0-82a238873d8c missing participant IDs.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 8371424
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 8371424 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 200658, Req: 916670.
+- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -211495371.00, Expected: 49836763.00, Delta: -261332134.0000

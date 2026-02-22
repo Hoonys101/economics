@@ -99,6 +99,13 @@ This document archives resolved technical debt items to keep the primary ledger 
 | **TD-GOV-SPEND-GATE** | Government | **Binary Spending Gates**: Infrastructure/Welfare modules need "Partial Execution" support. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
 | **TD-CRIT-FLOAT-MA** | Finance | **M&A Float Violation**: `MAManager` and `StockMarket` calculate and transfer `float` values. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
 | **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Fiscal Handlers**: `bailout`, `bond_issuance` types not registered in `TransactionProcessor`. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-ARCH-FIRM-COUP** | Architecture | **Fix**: `Firm` departments parent pointer pollution. | Phase 24 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-CRIT-FLOAT-CORE** | Finance | **Fix**: `SettlementSystem` float core usage. | Phase 24 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-TEST-COCKPIT-MOCK** | Testing | **Fix**: Cockpit 2.0 Mock Regressions. | Phase 24 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-TEST-LIFE-STALE** | Testing | **Fix**: Stale Lifecycle Logic in tests. | Phase 24 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-ECON-M2-INV** | Economic | **Fix**: M2 Negative Inversion due to overdrafts. | Phase 24 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-ARCH-STARTUP-RACE** | Architecture | **Fix**: Ghost Firm Registry race condition. | Phase 23 | [Insight](./TECH_DEBT_LEDGER.md) |
+| **TD-FIN-SAGA-ORPHAN** | Finance | **Fix**: Saga Participant Drift causing `SAGA_SKIP`. | Phase 24 | [Insight](./TECH_DEBT_LEDGER.md) |
 
 ## 📓 Implementation Lessons (Resolved Path)
 

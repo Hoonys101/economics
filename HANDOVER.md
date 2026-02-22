@@ -1,47 +1,28 @@
-# HANDOVER: 2026-02-21 (Phase 21 Closure - Structural Diagnosis & Recovery)
+# 🚀 Phase 4.1 Handover Report
+**Date**: 2026-02-22
+**Phase**: Phase 4.1: AI Logic & Simulation Re-architecture
 
-## 1. Executive Summary
+## 🏆 Session Achievements
+This session focused on the design and implementation of Phase 4.1 core directives.
+1. **API/DTO Design Complete**: Specs were generated and approved for Labor Matching, FX Barter, and Firm SEO Brain Scan.
+2. **Implementation (AG + Jules)**:
+   - **Multi-Currency Barter-FX**: Atomic swap functionality (`execute_swap`) implemented in the Settlement System with strict zero-sum adherence. Tests passed and PR merged.
+   - **Labor Market Major-Matching**: Generic labor order book replaced with bipartite `Major`-based matching. `HIRE` state transition added to bypass financial ledgers. Tests passed and PR merged.
+3. **Governance & Registry Cleanup**: Separated Gemini and Jules command registries.
+4. **Operation Forensics**: Ran the script to diagnose live code cleanliness and stability.
 
-This session finalized the Phase 21 technical debt liquidation and resolved a critical runtime crash in the Housing Saga. The simulation now runs to 60+ ticks, allowing for full forensic analysis of the remaining structural issues.
+## 🛑 Pending Work / Next Session (START HERE)
+*Review `reports/diagnostic_refined.md` to see the live logs for the issues below.*
 
----
+**1. Address Critical Forensics Regressions!**
+The `operation_forensics.py` scan identified several critical regressions and scale issues that need immediate action:
+- **`TD-ECON-M2-REGRESSION`**: The negative money supply inversion bug is back (e.g., M2 hit -153M).
+- **`TD-FIN-SAGA-REGRESSION`**: Sagas are being skipped rapidly due to missing participant IDs again.
+- **`TD-BANK-RESERVE-CRUNCH`**: Banks possess only 1M reserve and are failing to fund infrastructure bonds (8M+), halting macro-policy execution.
+- **`TD-ECON-ZOMBIE-FIRM`**: Firms (e.g., Firm 121, 122) rapidly plunge into consecutive losses, FIRE_SALE spam, ZOMBIE worker retention, and ultimate death within 30 ticks.
 
-## 2. Completed Work (Session Snapshot) ✅
-
-| Component | Achievement | Status |
-|:----------|:------------|:-------|
-| **Crash Fix** | Injected `housing_service` into `SimulationState` DTO/Orchestrator. | ✅ |
-| **Diagnostics** | Executed 60-tick forensic simulation (`operation_forensics.py`). | ✅ |
-| **Logic Verification** | 100% test pass rate (964 tests) maintained post-fix. | ✅ |
-| **Forensic Arming** | Registered `forensic-audit-ph21` Gemini mission for deep analysis. | ✅ |
-
----
-
-## 3. Road to Phase 22: "Structural Integrity Enforcement" ⚖️
-
-### 🟢 Resolved in this Session
-- **Housing Saga Crash**: Resolved `AttributeError` by aligning DTO with service registry.
-
-### 🔴 Strategic Directive: Remaining Fixes Required
-1. **Agent Startup Sequence (TD-ARCH-STARTUP-RACE)**: `spawn_firm` still transfers capital before registration (confirmed in Tick 7+ logs).
-2. **M2 Leakage (TD-ECON-M2-INV)**: Massive M2 inversion observed in 60-tick run (M2 < 0). Needs immediate isolation.
-3. **Saga Participant Drift (TD-FIN-SAGA-ORPHAN)**: `SAGA_SKIP` warnings indicate asynchronous initialization gaps.
+## 🗺️ Roadmap Status
+We are at the tail end of **Phase 4.1**. After merging the Firm SEO branch and addressing the Forensics Regressions above, Phase 4.1 will be fundamentally structurally complete, paving the way for testing dynamic Agent Insight/AI Modules.
 
 ---
-
-## 4. Work Artifacts & Specs
-
-- [Forensic Audit Payload](file:///c:/coding/economics/reports/diagnostic_refined.md)
-- [Agent Lifecycle Stability](file:///c:/coding/economics/design/3_work_artifacts/specs/AGENT_LIFECYCLE_STABILITY.md)
-- [M&A Pennies Migration Plan](file:///c:/coding/economics/design/3_work_artifacts/specs/MA_PENNIES_MIGRATION_PLAN.md)
-
----
-
-## 5. Next Session Objectives
-
-- **Mission Execution**: Run `gemini forensic-audit-ph21` to generate Phase 22 implementation specs.
-- **Structural Fix**: Implement the reversed `spawn_firm` sequence.
-- **M2 Isolation**: Hardened `StrictCurrencyRegistry` enforcement in `TickOrchestrator._finalize_tick`.
-
----
-*Report updated by Antigravity (Architect & Lead) following structural recovery session.*
+*End of session. Run `cleanup-go.bat` to clear environment and `git status` to verify commit readiness.*

@@ -17,22 +17,5 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "phase41_labor_implementation": {
-        "title": "Implementation: Labor Market Major-Matching",
-        "command": "create",
-        "instruction": "Implement the Major-Matching logic in HREngine, Household, and LaborMarket as per MISSION_phase41_labor_design_SPEC.md. Use CanonicalOrderDTO.metadata['major'] for compatibility.",
-        "file": "gemini-output/spec/MISSION_phase41_labor_design_SPEC.md"
-    },
-    "phase41_fx_barter_implementation": {
-        "title": "Implementation: Multi-Currency Barter-FX",
-        "command": "create",
-        "instruction": "Implement atomic 'Penny-level Barter Swaps' in SettlementSystem. Ensure zero-sum integrity and floor-rounding for dust management as per MISSION_phase41_fx_barter_SPEC.md.",
-        "file": "gemini-output/spec/MISSION_phase41_fx_barter_SPEC.md"
-    },
-    "phase41_firm_seo_implementation": {
-        "title": "Implementation: Firm SEO Brain-Scan Readiness",
-        "command": "create",
-        "instruction": "Refactor all Firm Engines to ensure they are pure functions (stateless). Update the Firm orchestrator to handle record_expense and finalize_firing locally. Verify with Brain Scan simulations as per MISSION_phase41_seo_brain_scan_SPEC.md.",
-        "file": "gemini-output/spec/MISSION_phase41_seo_brain_scan_SPEC.md"
-    }
+    # Add missions here
 }

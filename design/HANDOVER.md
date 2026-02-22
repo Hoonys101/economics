@@ -1,64 +1,64 @@
-# [Technical Report] Architecture & Economic Integrity Handover
+# Architectural Handover Report: Phase 4.1 Restoration & Agent Sophistication
 
 ## Executive Summary
-This report summarizes the stabilization of the financial core and the successful transition to the **Stateless Engine & Orchestrator (SEO)** pattern. We have successfully addressed systemic "Ghost Firm" failures and "M2 Inversion" risks, achieving a verified 100% pass rate across the 964-test suite.
+This session successfully restored the system from a state of "Mock Drift" instability (13+ failures) to a stable baseline (972 tests passing). Key architectural advancements include the implementation of atomic multi-currency FX swaps, the introduction of a specialized Major-Based Labor Market, and the deployment of "Brain Scan" (What-If Analysis) capabilities for Firm agents.
 
 ---
 
-## 1. Accomplishments & Architectural Evolution
+## 1. Accomplishments
 
-### 1.1. The "Penny Standard" Migration
-- **Integer Precision**: Successfully enforced integer-based penny tracking across all core financial modules. Floating-point "pollution" was purged from `SettlementSystem`, `DebtServicingEngine`, and `MatchingEngine` (`mod-arch-recovery.md`).
-- **Zero-Sum Integrity**: Resolved **TD-ECON-M2-INV** (Double-Penny Inflation Bug) in bond issuance, which previously caused 100x recorded value inflation.
+### 🔧 System Stability & Test Restoration
+- **Mock Drift Resolution**: Fixed 13 critical test failures by aligning legacy `MagicMock` fixtures with current DTO-based protocols (`ILiquidatable`, `IFirm`). 
+- **Penny Standard Enforcement**: Standardized financial arithmetic across `Firm` and `FinanceSystem` using strictly integer pennies.
+- **Protocol Adherence**: Added `get_financial_snapshot` to the `Firm` class and updated `spec=Firm` mocks to prevent `AttributeError` during runtime monitoring.
 
-### 1.2. Stateless Engine Orchestration (SEO)
-- **Firm Decoupling**: Successfully resolved **TD-ARCH-FIRM-COUP**. `Firm` entities no longer hold stateful department references. `Production`, `HR`, and `Sales` logic are now pure, stateless engines receiving `ContextDTOs` and returning `IntentDTOs` (`fix_td_firm_coup.md`).
-- **Transaction Engine Registry**: Introduced a registry-based `TransactionEngine` allowing specialized handlers for `BAILOUT` and `BOND_ISSUANCE`, decoupling business rules from the ledger logic (`fix_td_tx_handlers.md`).
+### 💱 Multi-Currency Barter (FX)
+- **Atomic FX Swaps**: Implemented `execute_swap` in `SettlementSystem`.
+- **Mechanism**: Utilizes `LedgerEngine.process_batch` to ensure both legs of a currency swap (A→B and B→A) are atomic.
+- **Rounding Logic**: Established a "Deflationary Floor" where fractional pennies in exchange rates are discarded, maintaining zero-sum integrity without inflationary "magic pennies."
 
-### 1.3. Lifecycle & Saga Reliability
-- **Atomic Onboarding**: Implemented the "Register-before-Fund" sequence to eliminate **TD-ARCH-STARTUP-RACE** (Ghost Firms). Agents are now registered in the global directory and banking index *before* initial capital transfers are attempted.
-- **Saga Normalization**: Unified `SagaParticipantDTO` across the Housing sub-system, resolving **TD-FIN-SAGA-ORPHAN** where participant IDs were lost due to inconsistent dictionary/DTO schemas (`mod-lifecycle-recovery.md`).
+### 👔 Labor Market Specialization
+- **Major-Based Matching**: Transitioned from generic labor orders to specialized matching based on **Major Compatibility** (e.g., TECH, FOOD, STEM).
+- **Hire vs. Wage**: Introduced the `HIRE` transaction type (0-cost state transition) to separate the employment contract from the periodic `WAGE` payment process.
 
----
-
-## 2. Economic Insights & Integrity Findings
-
-### 2.1. M2 Negative Inversion (TD-ECON-M2-INV)
-- **Root Cause**: The aggregate money supply was previously calculated as a "Net Balance," where agent overdrafts (liabilities) directly reduced the reported M2. In high-debt cycles, this mathematically forced M2 into negative values.
-- **Remediation**: M2 is now redefined as `Sum(Positive Liquid Balances)`. Liabilities are tracked as a separate "System Debt" metric to preserve economic reality (`MISSION_lane1-finance-audit_REPORT.md`).
-
-### 2.2. Precision Loss in Market Transactions
-- **Observation**: A 1-penny leakage was discovered in high-volume trades due to floor-casting (`int()`) of floating-point prices.
-- **Fix**: Implemented `int(round(...))` in `matching_engine.py` to ensure zero-sum balance across thousands of micro-transactions (`mod-arch-recovery.md`).
+### 🧠 Firm SEO (Stateless Engine Orchestration)
+- **Brain Scan Capability**: Implemented `IBrainScanReady` on `Firm` agents.
+- **What-If Analysis**: Firms can now simulate decisions given hypothetical `market_snapshot_override` or `config_override` without side effects (no mutation of state or ledger).
 
 ---
 
-## 3. Pending Tasks & Technical Debt
+## 2. Economic Insights
 
-| ID | Status | Priority | Description |
-| :--- | :--- | :--- | :--- |
-| **TD-CRIT-FLOAT-CORE** | ⚠️ Partial | **High** | Residual float return types in legacy protocols (`IFinancialAgent`) need conversion to `_pennies` properties. |
-| **TD-SYS-ACCOUNTING-GAP** | ❌ Missing | **Medium** | Asymmetric expense logging; buyer-side expenses for material purchases are currently `pass`, skewing real-time P&L. |
-| **Registry Cleanup** | ⚠️ Partial | **Medium** | Need a "Reaper" protocol to purge `PENDING` agents if their initial funding transfer fails to prevent registry pollution. |
-| **Mock Drift** | ⚠️ Ongoing | **Low** | Tests using non-specced `MagicMock` may still "spoof" protocols; requires transition to `SimulationStateBuilder`. |
+- **Productivity Penalties**: The labor matching system now simulates training costs/inefficiency by applying a `productivity_modifier` (0.8x - 0.9x) when a worker's major does not perfectly align with the firm's industry specialization.
+- **Deflationary FX Dust**: The strict floor rounding in `execute_swap` creates a microscopic deflationary pressure, which is architecturally preferred over floating-point leakage.
+- **Contractual Decoupling**: Treating `HIRE` as a non-monetary event allows the simulation to track long-term employment contracts independently of immediate cash flows.
+
+---
+
+## 3. Pending Tasks & Tech Debt
+
+### ⚠️ Immediate Technical Debt
+- **ID: TD-ARCH-SETTLEMENT-BLOAT**: `SettlementSystem` currently handles bank indexing, metrics, and transaction orchestration. It is approaching "God Class" status. **Action**: Extract `BankRegistry` logic into a dedicated service.
+- **ID: TD-LIFECYCLE-NAMING**: In `simulation/firms.py:L588`, `capital_stock_pennies` is multiplied by 100. The variable name implies it is already in pennies, but the logic suggests it tracks units. **Action**: Rename to `capital_stock_units` to prevent 100x valuation inflation.
+- **ID: TD-LABOR-CONSTANTS**: Majors (STEM, FOOD, etc.) are currently hardcoded in `modules/labor/constants.py`. **Action**: Move to `economy_params.yaml`.
+
+### 🛠️ Pending Features
+- **Legacy Decision Engine Deprecation**: `Firm.make_decision` still contains conditional branches for legacy logic. Full migration to SEO-only path is required.
+- **Order Metadata Refactor**: The `LaborMarket` currently uses `Order.metadata` to pass major information. This should be refactored to native DTO passing.
 
 ---
 
 ## 4. Verification Status
 
-### 4.1. Test Suite Results
-- **Pass Rate**: 100% (964 Passed, 0 Failed, 11 Skipped)
-- **Execution Time**: ~16.44s - 17.64s
-- **Key Suites Verified**:
-    - `tests/unit/finance/`: Core accounting and engine logic.
-    - `tests/integration/test_fiscal_integrity.py`: Bond and spending cycles.
-    - `tests/system/test_engine.py`: Lifecycle and agent removal.
-    - `tests/modules/governance/test_cockpit_flow.py`: Command processing.
+- **Failing Tests at Start**: 13 (`TypeError`, `AttributeError`)
+- **Current Passing**: 972
+- **Skipped**: 11
+- **Warnings**: 2 (Asyncio fixture scope warnings)
 
-### 4.2. Diagnostic Status
-The `MONEY_SUPPLY_CHECK` is now reporting stable, positive values following the logic split between liquid assets and liabilities. The `STARTUP_FAILED` (Account 124) error has been cleared via the atomic registration fix.
+### Key Passing Modules:
+- `tests/finance/test_settlement_fx_swap.py`: ✅ All 4 scenarios (Success, Insufficient Funds, Invalid Input, Missing Agent).
+- `tests/test_firm_brain_scan.py`: ✅ All 3 scenarios (Purity, Snapshot Override, Config Override).
+- `tests/unit/test_labor_market_system.py`: ✅ Match logic and Major compatibility verified.
 
 ---
-**Handover Status**: **Ready for Phase 25 Deployment.**
-**Report Generated By**: Gemini-CLI Subordinate Worker (Reporter)
-**Date**: 2026-02-21
+**Conclusion**: The system is in a "Healthy" state. The next session should prioritize the extraction of `BankRegistry` from `SettlementSystem` to prevent further architectural bloat.

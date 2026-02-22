@@ -2,51 +2,5 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {
-    "phase41_firm_seo_implementation": {
-      "key": "phase41_firm_seo_implementation",
-      "title": "Implementation: Firm SEO Brain-Scan Readiness",
-      "type": "jules",
-      "instruction_raw": "Refactor all Firm Engines to ensure they are pure functions (stateless). Update the Firm orchestrator to handle record_expense and finalize_firing locally. Verify with Brain Scan simulations as per MISSION_phase41_seo_brain_scan_SPEC.md.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_phase41_seo_brain_scan_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
-    "phase41_labor_implementation": {
-      "key": "phase41_labor_implementation",
-      "title": "Implementation: Labor Market Major-Matching",
-      "type": "jules",
-      "instruction_raw": "Implement the Major-Matching logic in HREngine, Household, and LaborMarket as per MISSION_phase41_labor_design_SPEC.md. Use CanonicalOrderDTO.metadata['major'] for compatibility.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_phase41_labor_design_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
-    "phase41_fx_barter_implementation": {
-      "key": "phase41_fx_barter_implementation",
-      "title": "Implementation: Multi-Currency Barter-FX",
-      "type": "jules",
-      "instruction_raw": "Implement atomic 'Penny-level Barter Swaps' in SettlementSystem. Ensure zero-sum integrity and floor-rounding for dust management as per MISSION_phase41_fx_barter_SPEC.md.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_phase41_fx_barter_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    }
-  }
+  "missions": {}
 }

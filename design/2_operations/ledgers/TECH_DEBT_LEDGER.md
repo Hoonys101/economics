@@ -16,26 +16,35 @@
 
 | ID | Module / Component | Description | Priority / Impact | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **TD-ARCH-FIRM-COUP** | Architecture | **Parent Pointer Pollution**: `Firm` departments use `self.parent`, bypassing Orchestrator. | **High**: Structural Integrity. | **RESOLVED** |
 | **TD-ARCH-GOV-MISMATCH** | Architecture | **Singleton vs List**: `WorldState` has `governments` (List) vs Singleton `government`. | **Medium**: Logic Drift. | Open |
-| **TD-CRIT-FLOAT-CORE** | Finance | **Float Core**: `SettlementSystem` and `MatchingEngine` use `float` instead of `int`. | **Critical**: Determinism. | **RESOLVED** |
 | **TD-INT-BANK-ROLLBACK** | Finance | **Rollback Coupling**: Bank rollback logic dependent on `hasattr` implementation. | **Low**: Leak. | Open |
-| **TD-RUNTIME-TX-HANDLER** | Transaction | **Missing Handler**: `bailout`, `bond_issuance` tx types not registered. | **High**: Failure. | **RESOLVED** |
 | **TD-SYS-ACCOUNTING-GAP** | Systems | **Accounting Accuracy**: `accounting.py` misses tracking buyer expenses. | **Medium**: Accuracy. | Open |
 | **TD-TEST-TX-MOCK-LAG** | Testing | **Transaction Test Lag**: `test_transaction_engine.py` mocks are out of sync. | **Low**: Flakiness. | Identified |
-| **TD-TEST-COCKPIT-MOCK** | Testing | **Cockpit 2.0 Mock Regressions**: Tests use deprecated `system_command_queue`. | **High**: Silent Failure. | **RESOLVED** |
-| **TD-TEST-LIFE-STALE** | Testing | **Stale Lifecycle Logic**: `test_engine.py` calls refactored liquidation methods. | **High**: Breakdown. | **RESOLVED** |
 | **TD-TEST-TAX-DEPR** | Testing | **Deprecated Tax API in Tests**: `test_transaction_handlers.py` still uses `collect_tax`. | **Medium**: Tech Debt. | Identified |
 | **TD-ECON-INSTABILITY-V2** | Economic | **Rapid Collapse**: Sudden Zombie/Fire Sale clusters despite high initial assets. | **High**: Logic Drift. | **IDENTIFIED** |
 | **TD-ARCH-ORCH-HARD** | Architecture | **Orchestrator Fragility**: `TickOrchestrator` lacks hardening against missing DTO attributes in mocks. | **Medium**: Resilience. | **NEW (PH21)** |
-| **TD-ECON-M2-INV** | Economic | **M2 Inversion**: Negative money supply due to overdrafts subtracted from aggregate cash. | **CRITICAL**: Integrity. | **RESOLVED** |
-| **TD-ARCH-STARTUP-RACE** | Architecture | **Ghost Firm Registry**: Transactions attempted before agent/bank registration. | **High**: Failure. | **RESOLVED** |
-| **TD-FIN-SAGA-ORPHAN** | Finance | **Saga Participant Drift**: Missing or stale participant IDs causing `SAGA_SKIP`. | **Medium**: Logic Gap. | **RESOLVED** |
+| **TD-ARCH-SETTLEMENT-BLOAT** | Architecture | **Settlement Overload**: `SettlementSystem` handles orchestration, ledgers, metrics, and indices. | **High**: Maintainability. | **NEW (PH4.1)** |
+| **TD-CONFIG-HARDCODED-MAJORS** | Configuration | **Hardcoded Majors**: `MAJORS` list hardcoded in `labor/constants.py` instead of yaml. | **Low**: Flexibility. | **NEW (PH4.1)** |
+| **TD-ECON-M2-REGRESSION** | Economic | **M2 Inversion Regression**: Money supply drops negative (e.g., -153M). | **CRITICAL**: Integrity. | **REGRESSION** |
+| **TD-FIN-SAGA-REGRESSION** | Finance | **Saga Drift Regression**: Sagas skipped due to missing participant IDs. | **High**: Protocol. | **REGRESSION** |
+| **TD-BANK-RESERVE-CRUNCH** | Finance | **Reserve Constraint**: Bank 2 lacks reserves (1M) to fund infrastructure bonds (8M+). | **Medium**: Logic. | **NEW** |
+| **TD-ECON-ZOMBIE-FIRM** | Economic | **Firm Extinction**: Rapid collapse of basic_food firms causing FIRE_SALE spam. | **High**: Balance. | **NEW** |
+| **TD-ARCH-SEO-LEGACY** | Firm | **Legacy SEO Gap**: `brain_scan` skips legacy decision logic unless mocked. | **Medium**: AI Integrity. | **NEW (PH4.1)** |
+| **TD-TEST-DTO-MOCK** | Testing | **DTO Hygiene**: `tests/test_firm_brain_scan.py` uses permissive `MagicMock` for DTOs. | **Low**: Stability. | **NEW (PH4.1)** |
+| **TD-LIFECYCLE-NAMING** | Lifecycle | **Variable Naming**: `capital_stock_pennies` multiplied by 100, implies units. | **Medium**: Inflation. | **NEW (PH4.1)** |
+| **TD-LABOR-METADATA** | Market | **Order Payload**: LaborMarket uses `Order.metadata` for Major matching instead of DTO. | **Low**: Typing. | **NEW (PH4.1)** |
 
 ---
 
 ## Architecture & Infrastructure
 ---
+### ID: TD-ARCH-SETTLEMENT-BLOAT
+- **Title**: SettlementSystem Responsibility Overload
+- **Symptom**: `SettlementSystem` handles transaction orchestration, ledger delegation, internal bank indexing (`_bank_depositors`), and metrics.
+- **Risk**: High coupling makes future FX/Market expansions (multi-hop swaps) difficult to test and maintain.
+- **Solution**: Extract `BankRegistry` and `MetricsRecording` into dedicated services. Keep `SettlementSystem` purely for orchestration.
+- **Status**: Identified (Phase 4.1)
+
 ### ID: TD-ARCH-GOV-MISMATCH
 - **Title**: Singleton vs List Mismatch
 - **Symptom**: `WorldState` has `governments` (List) vs Singleton `government`.
@@ -52,23 +61,50 @@
 - **Risk**: Runtime crash during hostile takeovers or mergers.
 - **Solution**: Quantize all valuations using `round_to_pennies()`.
 
+### ID: TD-FIN-SAGA-REGRESSION
+- **Title**: Saga Participant Drift (Regression)
+- **Symptom**: Massive spam of `SAGA_SKIP` logs with missing participant IDs.
+- **Risk**: Transactions, specially complex workflows, fail to complete, destroying protocol execution rates.
+- **Solution**: Revisit Saga definitions or the state injection in `TickOrchestrator` to ensure IDs are propagated correctly.
+- **Status**: REGRESSION (Phase 4.1 Diagnostics)
+
+### ID: TD-BANK-RESERVE-CRUNCH
+- **Title**: Bank Reserve Structural Constraint
+- **Symptom**: `BOND_ISSUANCE_FAILED` because Bank 2 only has 1,000,000 pennies in reserves but tries to issue bonds for 8M - 40M.
+- **Risk**: Macroeconomic scale of the government is completely stunted because central/commercial banks lack fractional elasticity.
+- **Solution**: Implement proper fractional reserve system or inject more liquidity early on.
+- **Status**: NEW
+
 ### ID: TD-INT-BANK-ROLLBACK
 - **Title**: Rollback Coupling
 - **Symptom**: Bank rollback logic dependent on `hasattr` implementation details.
 - **Risk**: Abstraction Leak.
 - **Solution**: Move rollback logic to `TransactionProcessor` and use strict protocols.
 
-### ID: TD-RUNTIME-TX-HANDLER
-- **Title**: Missing Transaction Handlers
-- **Symptom**: `bailout`, `bond_issuance` tx types not registered.
-- **Risk**: Runtime Failure.
-- **Solution**: Register all transaction types with the `TransactionEngine`.
-- **Status**: **RESOLVED** (Phase 22 - Registry pattern implemented)
-
----
 
 ## AI & Economic Simulation
 ---
+### ID: TD-ECON-M2-REGRESSION
+- **Title**: M2 Negative Inversion (Regression)
+- **Symptom**: Aggregate money supply goes negative (`Current: -153521427.00`).
+- **Risk**: Deflationary spiral, math errors in interest calculation.
+- **Solution**: The distinction between liquidity and liability added earlier was either reverted or bypassing standard accounting loops. Needs investigation.
+- **Status**: REGRESSION (Phase 4.1 Diagnostics)
+
+### ID: TD-ECON-ZOMBIE-FIRM
+- **Title**: Rapid Extinction of basic_food Firms
+- **Symptom**: Firms (e.g., Firm 121, 122) trigger `FIRE_SALE` continually, go `ZOMBIE` (cannot afford wage), and then `FIRM_INACTIVE` within the first 30 ticks.
+- **Risk**: Destruction of the simulation economy early in the run.
+- **Solution**: Re-tune pricing constraints, initial reserves, or labor cost expectations specifically for essential goods.
+- **Status**: NEW
+
+### ID: TD-LABOR-METADATA
+- **Title**: Order Metadata Refactor for Labor Matches
+- **Symptom**: The `LaborMarket` currently uses `Order.metadata` to pass major information rather than strongly typed logic.
+- **Risk**: Abstraction leak in the order pipeline. 
+- **Solution**: Refactor to pass Major information through native DTOs.
+- **Status**: NEW
+
 ### ID: TD-SYS-ACCOUNTING-GAP
 - **Title**: Missing Buyer Expense Tracking
 - **Symptom**: `accounting.py` fails to track expenses for raw materials on the buyer's side.
@@ -81,12 +117,15 @@
 - **Risk**: Simulation logic breaks (interest rates, policy) when "Money" is negative.
 - **Solution**: Distinguish Liquidity from Liability in `calculate_total_money()`.
 
-### ID: TD-ARCH-STARTUP-RACE
-- **Title**: Firm Startup Race Condition
-- **Symptom**: `SETTLEMENT_FAIL` during `spawn_firm` due to missing destination account.
-- **Risk**: New firms start as zombies or fail to launch entirely.
-- **Solution**: Implement blocking `open_account` before capital injection transaction. Fixed via Module C (Saga/Lifecycle).
-- **Status**: **RESOLVED**
+
+## Lifecycle & Configuration
+---
+### ID: TD-CONFIG-HARDCODED-MAJORS
+- **Title**: Hardcoded Labor Majors
+- **Symptom**: `MAJORS` list is currently hardcoded in `modules/labor/constants.py`.
+- **Risk**: Adding new sectors requires code changes rather than just adjusting `economy_params.yaml`.
+- **Solution**: Move `MAJORS` definitions to `economy_params.yaml` or a dedicated sector config file.
+- **Status**: Identified (Phase 4.1)
 
 ---
 > [!NOTE]
