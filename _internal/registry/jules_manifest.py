@@ -17,22 +17,22 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "phase41_wave3_domain_refactor": {
-        "title": "Wave 3.1: Industry Domain Mapping",
-        "file": "gemini-output/spec/MISSION_wave3_domain_refactor_SPEC.md",
-        "instruction": "Refactor Majors Enum to Industry Domains (FOOD_PROD, etc.) and align sectors 1:1. Replace string major with Enum in DTOs and Logic.",
+    "phase41_wave4_marriage": {
+        "title": "Wave 4.2: Marriage Market & Household Merger",
+        "file": "gemini-output/spec/MISSION_wave4-marriage-spec_SPEC.md",
+        "instruction": "Implement the Marriage Market matcher and Execution Service (Absorption Strategy). Ensure Zero-Sum asset/debt transfer and lifecycle cleanup (resignation, etc.).",
         "wait": False
     },
-    "phase41_wave3_blind_choice": {
-        "title": "Wave 3.2: Blind Major Choice & Sunk Costs",
-        "file": "gemini-output/spec/MISSION_wave3_blind_choice_SPEC.md",
-        "instruction": "Implement Envy-driven major selection (100-tick lag) and Education Sunk Costs in pennies.",
+    "phase41_wave4_health": {
+        "title": "Wave 4.3: Social Health & Medical System",
+        "file": "gemini-output/spec/MISSION_wave4-health-spec_SPEC.md",
+        "instruction": "Implement HealthDynamicsService, Medicine commodity consumption, and death triggers. Integrate with NeedsEngine for medicine prioritization.",
         "wait": False
     },
-    "phase41_wave3_bargaining_engine": {
-        "title": "Wave 3.3: Search & Bargaining Market Engine",
-        "file": "gemini-output/spec/MISSION_wave3_bargaining_engine_SPEC.md",
-        "instruction": "Implement Nash Bargaining for LaborMarket and Firm Adaptive Learning (TD-Error).",
+    "phase41_wave4_politics": {
+        "title": "Wave 4.4: Political Orchestrator & Policy Voting",
+        "file": "gemini-output/spec/MISSION_wave4-politics-spec_SPEC.md",
+        "instruction": "Implement PoliticalOrchestrator (Median Voter + Lobbying Vector). Ensure Zero-Sum lobbying payments to Gov treasury and policy clamping logic.",
         "wait": False
     }
 }
