@@ -54,6 +54,11 @@ class ProductionStateDTO:
     inventory_quality: Dict[str, float]
     major: IndustryDomain = IndustryDomain.GENERAL # Added for Major-Matching (Phase 4.1)
 
+    # --- Wave 4: Identity Economics ---
+    physical_quality: float = 1.0  # Quality derived from R&D investment
+    brand_prestige: float = 1.0  # "Identity Utility" derived from Marketing investment
+    # ----------------------------------
+
 @dataclass(frozen=True)
 class SalesStateDTO:
     """Composite state for Sales Department."""
@@ -336,6 +341,11 @@ class FirmConfigDTO:
 
     # Labor Market (Phase 4.1)
     labor_market: Dict[str, Any] = field(default_factory=dict)
+
+    # --- Wave 4: Identity Economics ---
+    # 0.0 = Pure R&D (Physical Quality), 1.0 = Pure Marketing (Brand Prestige)
+    identity_quality_ratio: float = 0.5
+    # ----------------------------------
 
 @dataclass
 class ServerConfigDTO:

@@ -338,3 +338,50 @@ class IMarket(Protocol):
     def get_telemetry_snapshot(self) -> List[OrderTelemetrySchema]:
         """Returns Pydantic schemas for UI consumption."""
         ...
+
+
+# --- Wave 4: Marriage Market DTOs & Protocol ---
+
+@dataclass(frozen=True)
+class MarriageProposalDTO:
+    """
+    Represents a proposal for household merger (M&A).
+    Financial values in Integer Pennies.
+    """
+    proposer_id: int
+    target_id: int
+    combined_wealth_pennies: int  # Projected total assets post-merger
+    synergy_score: float  # 0.0 to 1.0, social/personality compatibility
+
+
+@dataclass(frozen=True)
+class MarriageResultDTO:
+    """Result of a processed marriage proposal."""
+    success: bool
+    new_household_id: Optional[int]  # ID of resulting household
+    merged_assets_pennies: int  # Total liquid assets in the new wallet
+    message: str = ""
+
+
+@runtime_checkable
+class IMarriageMarket(Protocol):
+    """
+    Protocol for the centralized Marriage Market orchestration.
+    Handles matching, proposal validation, and execution of mergers.
+    Zero-Sum mandate: Sum(Assets_Before) == Sum(Assets_After).
+    """
+
+    def post_proposal(self, proposal: MarriageProposalDTO) -> None:
+        """Submits a proposal to the market ledger."""
+        ...
+
+    def execute_mergers(self) -> List[MarriageResultDTO]:
+        """
+        Processes all pending proposals, executes valid mergers
+        (Zero-Sum asset transfer), and clears the queue.
+        """
+        ...
+
+    def get_proposals_for(self, agent_id: int) -> List[MarriageProposalDTO]:
+        """Retrieves proposals targeting a specific agent."""
+        ...

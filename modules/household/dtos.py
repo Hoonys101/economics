@@ -29,6 +29,14 @@ class BioStateDTO:
     spouse_id: Optional[int] = None
     children_ids: List[int] = field(default_factory=list)
 
+    # --- Wave 4: Health & Marriage Extensions ---
+    # Biological Sex (Reproduction Logic, distinct from social 'gender')
+    sex: str = "F"  # "M" or "F"
+    # Health Dynamics
+    health_status: float = 1.0  # 0.0 (Dead) to 1.0 (Perfect)
+    has_disease: bool = False  # Condition triggering medical utility demand
+    # --------------------------------------------
+
     # Moved from SocialStateDTO for better alignment with NeedsEngine
     survival_need_high_turns: int = 0
 

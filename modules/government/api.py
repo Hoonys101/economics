@@ -227,3 +227,54 @@ class IPolicyExecutionEngine(Protocol):
         executable results by orchestrating various services (Tax, Welfare, etc.).
         """
         ...
+
+
+# --- Wave 4: Political System DTOs & Protocol ---
+
+from modules.common.enums import IndustryDomain
+
+
+@dataclass(frozen=True)
+class VoteRecordDTO:
+    """
+    A single vote cast by an agent for a specific policy.
+    """
+    agent_id: int
+    policy_type: str  # e.g., "INCOME_TAX_RATE", "CORPORATE_TAX", "WELFARE"
+    preferred_rate: float  # The rate (0.0-1.0) the agent is voting for
+    weight: float = 1.0  # Political weight (default 1.0, influenced by status)
+
+
+@dataclass(frozen=True)
+class LobbyingEffortDTO:
+    """
+    Represents a firm's investment to influence policy.
+    Financial values in Integer Pennies (Penny Standard).
+    """
+    firm_id: int
+    target_industry: IndustryDomain  # Sector to protect/subsidize
+    investment_pennies: int  # Cost of lobbying (transferred to gov treasury)
+    desired_policy_shift: float  # e.g., +0.01 or -0.01 shift in tax/subsidy
+
+
+@runtime_checkable
+class IPoliticalOrchestrator(Protocol):
+    """
+    Protocol for the Political System.
+    Aggregates votes and lobbying efforts to determine Government Policy.
+    """
+
+    def register_vote(self, vote: VoteRecordDTO) -> None:
+        """Ingests a vote from an agent."""
+        ...
+
+    def register_lobbying(self, effort: LobbyingEffortDTO) -> None:
+        """Ingests a lobbying effort from a firm."""
+        ...
+
+    def calculate_policy_outcome(self) -> Dict[str, float]:
+        """
+        Aggregates all votes and lobbying to determine new policy rates.
+        Returns a dict of {policy_type: new_rate}.
+        """
+        ...
