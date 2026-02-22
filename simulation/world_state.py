@@ -41,6 +41,7 @@ if TYPE_CHECKING:
     from simulation.db.repository import SimulationRepository
     from modules.common.config_manager.api import ConfigManager
     from simulation.dtos.scenario import StressScenarioConfig
+    from modules.government.politics_system import PoliticsSystem
 from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry # Added for Phase 33
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
@@ -132,6 +133,7 @@ class WorldState:
         self.crisis_monitor: Optional[CrisisMonitor] = None
         self.stress_scenario_config: Optional[StressScenarioConfig] = None
         self.public_manager: Optional[IAssetRecoverySystem] = None
+        self.politics_system: Optional[PoliticsSystem] = None # Phase 4.4: Political Orchestrator
         self.currency_holders: List[ICurrencyHolder] = [] # Added for Phase 33
         self._currency_holders_set: set = set()
         # FOUND-03: Global Registry - Initialized via Dependency Injection (simulation.lock via initializer)

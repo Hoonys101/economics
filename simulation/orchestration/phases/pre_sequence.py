@@ -53,10 +53,6 @@ class Phase0_PreSequence(IPhaseStrategy):
             ref_std = self.world_state.social_system.calculate_reference_standard(context)
             market_data["reference_standard"] = ref_std
 
-        # Government Public Opinion
-        if state.primary_government:
-            state.primary_government.update_public_opinion(state.households)
-
         # Sensory System
         sensory_context: SensoryContext = {
             "tracker": state.tracker,
@@ -81,13 +77,6 @@ class Phase0_PreSequence(IPhaseStrategy):
                 )
             else:
                 state.primary_government.update_sensory_data(sensory_dto)
-
-            # Government Policy Decision
-            latest_gdp = state.tracker.get_latest_indicators().get("total_production", 0.0)
-            market_data["total_production"] = latest_gdp
-            state.primary_government.make_policy_decision(market_data, state.time, state.central_bank)
-
-            state.primary_government.check_election(state.time)
 
         # WO-146: Monetary Policy Manager Integration
         # Ensure Central Bank updates its internal state (Potential GDP)

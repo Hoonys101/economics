@@ -44,6 +44,7 @@ if TYPE_CHECKING:
     from simulation.dtos.scenario import StressScenarioConfig
     from modules.household.dtos import HouseholdStateDTO
     from modules.finance.kernel.api import IMonetaryLedger
+    from modules.government.politics_system import PoliticsSystem
 
 @dataclass
 class TransactionData:
@@ -303,6 +304,7 @@ class SimulationState:
     injectable_sensory_dto: Optional[Any] = None # GovernmentStateDTO
     currency_registry_handler: Optional[Any] = None # WorldState injection for strict registry
     public_manager: Optional[Any] = None # PublicManager (Added for TransactionProcessor)
+    politics_system: Optional[PoliticsSystem] = None # Phase 4.4: Political Orchestrator
 
     def register_currency_holder(self, holder: Any) -> None:
         if self.currency_registry_handler:

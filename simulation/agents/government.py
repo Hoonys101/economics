@@ -227,37 +227,6 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
     def record_revenue(self, result: "TaxCollectionResult"):
         self.tax_service.record_revenue(result)
 
-    def update_public_opinion(self, households: List[Any]):
-        total_approval = 0
-        count = 0
-        for h in households:
-            if h._bio_state.is_active:
-                rating = h._social_state.approval_rating
-                total_approval += rating
-                count += 1
-        avg_approval = total_approval / count if count > 0 else 0.5
-        self.public_opinion_queue.append(avg_approval)
-        if len(self.public_opinion_queue) > 0:
-            self.perceived_public_opinion = self.public_opinion_queue[0]
-        self.approval_rating = avg_approval
-
-    def check_election(self, current_tick: int):
-        election_cycle = 100
-        if current_tick > 0 and current_tick % election_cycle == 0:
-            self.last_election_tick = current_tick
-            if self.perceived_public_opinion < 0.5:
-                old_party = self.ruling_party
-                self.ruling_party = PoliticalParty.RED if old_party == PoliticalParty.BLUE else PoliticalParty.BLUE
-                logger.warning(
-                    f"ELECTION_RESULTS | REGIME CHANGE! {old_party.name} -> {self.ruling_party.name}. Approval: {self.perceived_public_opinion:.2f}",
-                    extra={"tick": current_tick, "agent_id": self.id, "tags": ["election", "regime_change"]}
-                )
-            else:
-                logger.info(
-                    f"ELECTION_RESULTS | INCUMBENT VICTORY ({self.ruling_party.name}). Approval: {self.perceived_public_opinion:.2f}",
-                    extra={"tick": current_tick, "agent_id": self.id, "tags": ["election"]}
-                )
-
     # --- Refactored: Make Policy Decision ---
     def make_policy_decision(self, market_data: Dict[str, Any], current_tick: int, central_bank: "CentralBank"):
         """
@@ -273,6 +242,27 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             self.fiscal_policy = self.tax_service.determine_fiscal_stance(snapshot)
             self.fiscal_policy.corporate_tax_rate = self.corporate_tax_rate
             self.fiscal_policy.income_tax_rate = self.income_tax_rate
+
+        # 0.5. Execute Policy Engine (AI/Legacy)
+        # Allows AI to override parameters before FiscalEngine calculation or as parallel decision.
+        if self.policy_engine:
+             # Pass required arguments for SmartLeviathanPolicy (and ensure others handle it or use kwargs)
+             # IGovernmentPolicy signature usually requires more context.
+             try:
+                 # Attempt to call with SmartLeviathan signature (requires government instance)
+                 # Note: SmartLeviathanPolicy.decide(government, sensory_data, tick, cb)
+                 decision_legacy = self.policy_engine.decide(
+                     self,
+                     self.sensory_data,
+                     current_tick,
+                     central_bank
+                 )
+             except TypeError:
+                 # Fallback for policies with simpler signature (Legacy/TaylorRule: decide(market_data))
+                 decision_legacy = self.policy_engine.decide(market_data)
+
+             if decision_legacy and isinstance(decision_legacy, dict):
+                 self._apply_state_updates(decision_legacy)
 
         # Update Potential GDP (Agent Logic)
         current_gdp = market_data.get("total_production", 0.0)

@@ -11,10 +11,12 @@ from simulation.orchestration.phases import (
 )
 from simulation.orchestration.phases.intercept import Phase0_Intercept
 from simulation.orchestration.phases.system_commands import Phase_SystemCommands
+from simulation.orchestration.phases.politics import Phase_Politics
 from simulation.orchestration.utils import prepare_market_data
 from simulation.orchestration.phases_recovery import Phase_SystemicLiquidation
 from simulation.orchestration.phases.scenario_analysis import Phase_ScenarioAnalysis
 from modules.system.api import DEFAULT_CURRENCY
+from modules.government.politics_system import PoliticsSystem
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -28,6 +30,10 @@ class TickOrchestrator:
         self.world_state = world_state
         self.action_processor = action_processor
 
+        # Initialize Politics System (Phase 4.4)
+        self.politics_system = PoliticsSystem(world_state.config_manager)
+        world_state.politics_system = self.politics_system
+
         # Initialize phases with dependencies
         self.phases: List[IPhaseStrategy] = [
             Phase0_Intercept(world_state), # FOUND-03: Phase 0 Intercept
@@ -38,6 +44,7 @@ class TickOrchestrator:
             Phase_Bankruptcy(world_state),           # Phase 4 (Spec): Lifecycle & Bankruptcy
             Phase_HousingSaga(world_state),          # Phase 4.1: Advance Housing Sagas
             Phase_SystemicLiquidation(world_state),  # Phase 4.5 (Spec): Systemic Liquidation
+            Phase_Politics(world_state),             # Phase 4.4 (Spec): Political Orchestrator
             Phase2_Matching(world_state),            # Phase 5 (Spec): Matching
 
             # --- Decomposed Phase 3 ---
@@ -177,7 +184,8 @@ class TickOrchestrator:
             effects_queue=[], # TD-192: Init empty
             inter_tick_queue=[], # TD-192: Init empty
             transactions=[], # TD-192: Init empty
-            currency_registry_handler=state # Inject WorldState to handle strict registry updates
+            currency_registry_handler=state, # Inject WorldState to handle strict registry updates
+            politics_system=self.politics_system
         )
 
     def _drain_and_sync_state(self, sim_state: SimulationState):
