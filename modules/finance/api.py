@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from modules.common.dtos import Claim
     from modules.finance.wallet.api import IWallet
     from modules.hr.api import IHRService
+    from modules.finance.engine_api import BankStateDTO, DepositStateDTO, LoanStateDTO
 
 # Forward reference for type hinting
 class Firm: pass
@@ -1153,4 +1154,42 @@ class ITransactionEngine(Protocol):
         """
         Dispatches the transaction to the registered handler.
         """
+        ...
+
+# ==============================================================================
+# === BANK REGISTRY PROTOCOLS
+# ==============================================================================
+
+@runtime_checkable
+class IBankRegistry(Protocol):
+    """
+    Interface for the Bank Registry service.
+    Manages the collection of bank states within the financial system.
+    """
+    @property
+    def banks_dict(self) -> Dict[AgentID, "BankStateDTO"]:
+        """
+        Returns the underlying dictionary of banks.
+        Required for integration with FinancialLedgerDTO.
+        """
+        ...
+
+    def register_bank(self, bank_state: "BankStateDTO") -> None:
+        """Registers a bank state."""
+        ...
+
+    def get_bank(self, bank_id: AgentID) -> Optional["BankStateDTO"]:
+        """Retrieves a bank state by ID."""
+        ...
+
+    def get_all_banks(self) -> List["BankStateDTO"]:
+        """Returns all registered banks."""
+        ...
+
+    def get_deposit(self, bank_id: AgentID, deposit_id: str) -> Optional["DepositStateDTO"]:
+        """Retrieves a specific deposit state."""
+        ...
+
+    def get_loan(self, bank_id: AgentID, loan_id: str) -> Optional["LoanStateDTO"]:
+        """Retrieves a specific loan state."""
         ...

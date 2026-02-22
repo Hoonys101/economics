@@ -4,7 +4,7 @@ import uuid
 from modules.finance.api import (
     IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialAgent, IFinancialFirm,
     InsufficientFundsError, GrantBailoutCommand, BorrowerProfileDTO, LoanInfoDTO,
-    IConfig, IBank, IGovernmentFinance, IMonetaryAuthority
+    IConfig, IBank, IGovernmentFinance, IMonetaryAuthority, IBankRegistry
 )
 from modules.finance.domain import AltmanZScoreCalculator
 from modules.analysis.fiscal_monitor import FiscalMonitor
@@ -22,6 +22,7 @@ from modules.finance.engines.loan_booking_engine import LoanBookingEngine
 from modules.finance.engines.liquidation_engine import LiquidationEngine
 from modules.finance.engines.debt_servicing_engine import DebtServicingEngine
 from modules.finance.engines.interest_rate_engine import InterestRateEngine
+from modules.finance.registry.bank_registry import BankRegistry
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -39,7 +40,7 @@ class FinanceSystem(IFinanceSystem):
     MIGRATION: Uses integer pennies.
     """
 
-    def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Optional[IMonetaryAuthority] = None):
+    def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Optional[IMonetaryAuthority] = None, bank_registry: Optional[IBankRegistry] = None):
         self.government = government
         self.central_bank = central_bank
         self.bank = bank
@@ -56,18 +57,25 @@ class FinanceSystem(IFinanceSystem):
         self.debt_servicing_engine = DebtServicingEngine()
         self.interest_rate_engine = InterestRateEngine()
 
-        # 2. Initialize Ledger (Single Source of Truth)
+        # 2. Initialize Bank Registry
+        self.bank_registry = bank_registry or BankRegistry()
+
+        # Ensure initial bank is registered
+        if not self.bank_registry.get_bank(bank.id):
+            bank_state = BankStateDTO(
+                bank_id=bank.id,
+                base_rate=bank.base_rate,
+                reserves={DEFAULT_CURRENCY: 0}
+            )
+            self.bank_registry.register_bank(bank_state)
+
+        # 3. Initialize Ledger (Single Source of Truth)
         # We perform a basic sync from the legacy agents to the new ledger
+        # The ledger shares the banks dictionary with the registry
         self.ledger = FinancialLedgerDTO(
             current_tick=0,
             treasury=TreasuryStateDTO(government_id=government.id),
-            banks={
-                bank.id: BankStateDTO(
-                    bank_id=bank.id,
-                    base_rate=bank.base_rate,
-                    reserves={DEFAULT_CURRENCY: 0}
-                )
-            }
+            banks=self.bank_registry.banks_dict
         )
 
         # Sync Initial State (Optimistic) - REMOVED
@@ -79,8 +87,8 @@ class FinanceSystem(IFinanceSystem):
             return
 
         # Sync Bank Reserves
-        for bank_id, bank_state in self.ledger.banks.items():
-            balance = self.settlement_system.get_balance(bank_id, DEFAULT_CURRENCY)
+        for bank_state in self.bank_registry.get_all_banks():
+            balance = self.settlement_system.get_balance(bank_state.bank_id, DEFAULT_CURRENCY)
             bank_state.reserves[DEFAULT_CURRENCY] = balance
 
         # Sync Treasury
@@ -148,10 +156,16 @@ class FinanceSystem(IFinanceSystem):
         # Construct LoanInfoDTO for the caller
         # lender_id was set in app_dto
         lender_id = app_dto.lender_id
-        if not lender_id and self.ledger.banks:
-             lender_id = next(iter(self.ledger.banks.keys()))
+        if not lender_id:
+             # Fallback to first available bank
+             all_banks = self.bank_registry.get_all_banks()
+             if all_banks:
+                 lender_id = all_banks[0].bank_id
 
-        loan_state = self.ledger.banks[lender_id].loans.get(loan_id)
+        if not lender_id:
+            return None, result.generated_transactions
+
+        loan_state = self.bank_registry.get_loan(lender_id, loan_id)
 
         if not loan_state:
             return None, result.generated_transactions
@@ -179,17 +193,18 @@ class FinanceSystem(IFinanceSystem):
 
     def get_customer_balance(self, bank_id: AgentID, customer_id: AgentID) -> int:
         """Query the ledger for deposit balance."""
-        if bank_id in self.ledger.banks:
-            deposit_id = f"DEP_{customer_id}_{bank_id}"
-            if deposit_id in self.ledger.banks[bank_id].deposits:
-                return self.ledger.banks[bank_id].deposits[deposit_id].balance_pennies
+        deposit_id = f"DEP_{customer_id}_{bank_id}"
+        deposit = self.bank_registry.get_deposit(bank_id, deposit_id)
+        if deposit:
+            return deposit.balance_pennies
         return 0
 
     def get_customer_debt_status(self, bank_id: AgentID, customer_id: AgentID) -> List[LoanInfoDTO]:
         """Query the ledger for loans."""
         loans = []
-        if bank_id in self.ledger.banks:
-            for loan in self.ledger.banks[bank_id].loans.values():
+        bank_state = self.bank_registry.get_bank(bank_id)
+        if bank_state:
+            for loan in bank_state.loans.values():
                 if loan.borrower_id == customer_id and loan.remaining_principal_pennies > 0:
                     loans.append(LoanInfoDTO(
                         loan_id=loan.loan_id,
@@ -206,9 +221,9 @@ class FinanceSystem(IFinanceSystem):
         return loans
 
     def close_deposit_account(self, bank_id: AgentID, agent_id: AgentID) -> int:
-        if bank_id in self.ledger.banks:
+        bank_state = self.bank_registry.get_bank(bank_id)
+        if bank_state:
             deposit_id = f"DEP_{agent_id}_{bank_id}"
-            bank_state = self.ledger.banks[bank_id]
             if deposit_id in bank_state.deposits:
                 balance = bank_state.deposits[deposit_id].balance_pennies
                 del bank_state.deposits[deposit_id]
@@ -217,7 +232,7 @@ class FinanceSystem(IFinanceSystem):
 
     def record_loan_repayment(self, loan_id: str, amount: int) -> int:
         # Find loan in all banks
-        for bank_state in self.ledger.banks.values():
+        for bank_state in self.bank_registry.get_all_banks():
             if loan_id in bank_state.loans:
                 loan = bank_state.loans[loan_id]
                 applied = min(amount, loan.remaining_principal_pennies)
@@ -232,7 +247,7 @@ class FinanceSystem(IFinanceSystem):
         total_applied = 0
 
         loans_to_pay = []
-        for bank_state in self.ledger.banks.values():
+        for bank_state in self.bank_registry.get_all_banks():
             for loan in bank_state.loans.values():
                 # Ensure flexible ID matching (int vs str)
                 if int(loan.borrower_id) == int(borrower_id) and loan.remaining_principal_pennies > 0:
@@ -322,8 +337,9 @@ class FinanceSystem(IFinanceSystem):
         # Updates self.ledger.treasury.bonds
 
         base_rate = 0.03
-        if self.ledger.banks:
-            base_rate = next(iter(self.ledger.banks.values())).base_rate
+        all_banks = self.bank_registry.get_all_banks()
+        if all_banks:
+            base_rate = all_banks[0].base_rate
 
         yield_rate = base_rate + 0.01
         bond_maturity = 400
@@ -356,8 +372,9 @@ class FinanceSystem(IFinanceSystem):
         # Check funds in Ledger (only for Commercial Bank)
         if buyer_id == self.bank.id:
             bank_reserves = 0
-            if buyer_id in self.ledger.banks:
-                bank_reserves = self.ledger.banks[buyer_id].reserves.get(DEFAULT_CURRENCY, 0)
+            bank_state = self.bank_registry.get_bank(buyer_id)
+            if bank_state:
+                bank_reserves = bank_state.reserves.get(DEFAULT_CURRENCY, 0)
 
             if bank_reserves < amount:
                  logger.warning(f"BOND_ISSUANCE_SKIPPED | Bank {buyer_id} insufficient reserves: {bank_reserves} < {amount}")
@@ -479,8 +496,9 @@ class FinanceSystem(IFinanceSystem):
             return None
 
         base_rate = 0.03 # Default
-        if self.ledger.banks:
-            base_rate = next(iter(self.ledger.banks.values())).base_rate
+        all_banks = self.bank_registry.get_all_banks()
+        if all_banks:
+            base_rate = all_banks[0].base_rate
 
         penalty_premium = self.config_module.get("economy_params.BAILOUT_PENALTY_PREMIUM", 0.05)
 
