@@ -64,6 +64,10 @@ class TestFiscalMasking:
             101: {'wage': 1000, 'skill': 1.0, 'education_level': 0}, # Underpaid
             102: {'wage': 5000, 'skill': 1.0, 'education_level': 0}  # Well paid
         }
+        # Adaptive Learning History Mocks
+        hr_state.target_hires_prev_tick = 0
+        hr_state.hires_prev_tick = 0
+        hr_state.wage_offer_prev_tick = 0
 
         firm_snapshot = MagicMock(spec=FirmStateDTO)
         firm_snapshot.id = 1

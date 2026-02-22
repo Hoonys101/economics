@@ -138,6 +138,10 @@ class TestHREngine:
             4: {"wage": 1000, "skill": 1.0},
             5: {"wage": 1000, "skill": 1.0},
         }
+        # Adaptive Learning History Mocks
+        hr_state.target_hires_prev_tick = 0
+        hr_state.hires_prev_tick = 0
+        hr_state.wage_offer_prev_tick = 0
 
         fin_state = MagicMock(spec=FinanceStateDTO)
         fin_state.profit_history = [10000]

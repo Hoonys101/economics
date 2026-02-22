@@ -12,7 +12,25 @@ class HRState:
     employee_wages: Dict[int, int] = field(default_factory=dict) # MIGRATION: Wages in int pennies
     employees_data: Dict[int, Dict[str, Any]] = field(default_factory=dict) # Metadata (e.g. productivity_modifier)
     unpaid_wages: Dict[int, List[Tuple[int, int]]] = field(default_factory=dict) # MIGRATION: Wages in int pennies
-    hires_last_tick: int = 0
+
+    # Adaptive Learning / Bargaining Memory
+    hires_this_tick: int = 0
+    hires_prev_tick: int = 0
+
+    target_hires_this_tick: int = 0
+    target_hires_prev_tick: int = 0
+
+    wage_offer_this_tick: int = 0
+    wage_offer_prev_tick: int = 0
+
+    @property
+    def hires_last_tick(self) -> int:
+        """Deprecated alias for backward compatibility."""
+        return self.hires_this_tick
+
+    @hires_last_tick.setter
+    def hires_last_tick(self, value: int):
+        self.hires_this_tick = value
 
 @dataclass
 class FinanceState:

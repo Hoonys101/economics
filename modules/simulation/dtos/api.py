@@ -70,6 +70,11 @@ class HRStateDTO:
     employees: List[str]
     employees_data: Dict[str, Dict[str, Any]]
 
+    # Adaptive Learning / Bargaining Memory
+    hires_prev_tick: int = 0
+    target_hires_prev_tick: int = 0
+    wage_offer_prev_tick: int = 0
+
 @dataclass(frozen=True)
 class FirmStateDTO:
     """

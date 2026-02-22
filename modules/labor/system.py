@@ -132,19 +132,31 @@ class LaborMarket(ILaborMarket, IMarket):
                     if final_score > best_score:
                         best_score = final_score
                         best_candidate = seeker
-                        # Wage determination: usually offer wage, or mid-point?
-                        # For simplicity, use offer wage.
-                        best_wage = offer.offer_wage
+
+                        # Wave 3: Nash Bargaining
+                        # Surplus = WTP (Offer) - WTA (Reservation)
+                        surplus = offer.offer_wage - seeker.reservation_wage
+                        bargaining_power = 0.5 # Default split
+
+                        if surplus > 0:
+                            best_wage = seeker.reservation_wage + (surplus * bargaining_power)
+                        else:
+                            best_wage = offer.offer_wage # Fallback
+
                         best_compatibility = compatibility
 
             if best_candidate:
+                # Recalculate context for DTO
+                surplus = offer.offer_wage - best_candidate.reservation_wage
                 matches.append(LaborMarketMatchResultDTO(
                     employer_id=offer.firm_id,
                     employee_id=best_candidate.household_id,
                     base_wage=offer.offer_wage,
                     matched_wage=best_wage,
                     match_score=best_score,
-                    major_compatibility=best_compatibility
+                    major_compatibility=best_compatibility,
+                    surplus=surplus,
+                    bargaining_power=0.5
                 ))
                 matched_seeker_ids.add(best_candidate.household_id)
 
@@ -254,7 +266,9 @@ class LaborMarket(ILaborMarket, IMarket):
                 metadata={
                     "match_score": res.match_score,
                     "major_compatibility": res.major_compatibility,
-                    "base_wage": res.base_wage
+                    "base_wage": res.base_wage,
+                    "surplus": res.surplus,
+                    "bargaining_power": res.bargaining_power
                 }
             )
             transactions.append(tx)

@@ -658,9 +658,14 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         """
         self.reset_finance()
         self.sales_volume_this_tick = 0.0
-        # Reset other per-tick states if necessary
-        # e.g., self.production_state.current_production is state, not counter
-        # self.inventory_component.reset_tick() # If it exists
+
+        # Adaptive Learning Rotation
+        self.hr_state.hires_prev_tick = self.hr_state.hires_this_tick
+        self.hr_state.hires_this_tick = 0
+        self.hr_state.target_hires_prev_tick = self.hr_state.target_hires_this_tick
+        self.hr_state.target_hires_this_tick = 0
+        self.hr_state.wage_offer_prev_tick = self.hr_state.wage_offer_this_tick
+        self.hr_state.wage_offer_this_tick = 0
 
     def init_ipo(self, stock_market: StockMarket):
         """Register firm in stock market order book."""
@@ -888,7 +893,10 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         hr_dto = HRStateDTO(
             employees=employee_ids,
-            employees_data=employees_data
+            employees_data=employees_data,
+            hires_prev_tick=self.hr_state.hires_prev_tick,
+            target_hires_prev_tick=self.hr_state.target_hires_prev_tick,
+            wage_offer_prev_tick=self.hr_state.wage_offer_prev_tick
         )
 
         # 2. Finance State
@@ -1034,7 +1042,10 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         hr_dto = HRStateDTO(
             employees=employee_ids,
-            employees_data=employees_data
+            employees_data=employees_data,
+            hires_prev_tick=self.hr_state.hires_prev_tick,
+            target_hires_prev_tick=self.hr_state.target_hires_prev_tick,
+            wage_offer_prev_tick=self.hr_state.wage_offer_prev_tick
         )
 
         # 2. Finance State
@@ -1190,6 +1201,15 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         # Generate HR Orders
         hr_orders = self._generate_hr_orders(hr_intent, hr_context)
         engine_orders = hr_orders
+
+        # Adaptive Learning: Capture Hiring Intent
+        if hr_intent.hiring_target > 0:
+            self.hr_state.target_hires_this_tick = hr_intent.hiring_target
+            # Find the hiring order to get the price
+            for order in hr_orders:
+                if order.side == 'BUY' and order.item_id == 'labor':
+                    self.hr_state.wage_offer_this_tick = order.price_pennies
+                    break
 
         # 4. Sales Engine: Decide Pricing & Sales
         sales_context = self._build_sales_context(market_snapshot, current_time)
@@ -1520,7 +1540,10 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             max_employees=getattr(self.config, 'firm_max_employees', 100),
             severance_pay_weeks=getattr(self.config, 'severance_pay_weeks', 2),
             specialization=self.production_state.specialization,
-            major=self.major # Phase 4.1
+            major=self.major, # Phase 4.1
+            hires_prev_tick=self.hr_state.hires_prev_tick,
+            target_hires_prev_tick=self.hr_state.target_hires_prev_tick,
+            wage_offer_prev_tick=self.hr_state.wage_offer_prev_tick
         )
 
     def _generate_hr_orders(self, intent: HRIntentDTO, context: HRContextDTO) -> List[Order]:

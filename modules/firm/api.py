@@ -172,12 +172,18 @@ class HRContextDTO(BaseDepartmentContextDTO):
     specialization: str # Added for Major-Matching
     major: str # Added for Major-Matching (Phase 4.1)
 
+    # Adaptive Learning / Bargaining Memory
+    hires_prev_tick: int = 0
+    target_hires_prev_tick: int = 0
+    wage_offer_prev_tick: int = 0
+
 @dataclass(frozen=True)
 class HRIntentDTO:
     """Intent from HR Department."""
     hiring_target: int  # Positive to hire, Negative to fire
     wage_updates: Dict[AgentID, int]  # AgentID -> New Wage (Pennies)
     fire_employee_ids: List[AgentID] = field(default_factory=list)
+    hiring_wage_offer: int = 0 # Wage to offer for new hires (Pennies)
 
 @dataclass(frozen=True)
 class SalesContextDTO(BaseDepartmentContextDTO):
