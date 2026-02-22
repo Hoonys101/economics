@@ -539,10 +539,38 @@ class IGovernmentFinance(IFinancialAgent, Protocol):
     sensory_data: Optional[GovernmentSensoryDTO]
 
 @runtime_checkable
-class ISettlementSystem(Protocol):
+class IBankRegistry(Protocol):
+    """
+    Module A: Interface for the Bank Account Directory Service.
+    Decouples account lookup from transaction settlement.
+    """
+    def register_account(self, bank_id: int, agent_id: int) -> None:
+        """Registers an account link between a bank and an agent."""
+        ...
+
+    def deregister_account(self, bank_id: int, agent_id: int) -> None:
+        """Removes an account link between a bank and an agent."""
+        ...
+
+    def get_account_holders(self, bank_id: int) -> List[int]:
+        """Returns a list of all agents holding accounts at the specified bank."""
+        ...
+
+    def get_agent_banks(self, agent_id: int) -> List[int]:
+        """Returns a list of banks where the agent holds an account."""
+        ...
+
+    def remove_agent_from_all_accounts(self, agent_id: int) -> None:
+        """Removes an agent from all bank account indices."""
+        ...
+
+@runtime_checkable
+class ISettlementSystem(IBankRegistry, Protocol):
     """
     Interface for the centralized settlement system.
     Basic financial operations for Households and Firms.
+    Inherits IBankRegistry to maintain backward compatibility for account management
+    methods during the transition to a dedicated BankRegistry service.
     """
 
     def transfer(
@@ -570,34 +598,6 @@ class ISettlementSystem(Protocol):
         """
         Queries the Single Source of Truth for an agent's current balance.
         This is the ONLY permissible way to check another agent's funds.
-        """
-        ...
-
-    def get_account_holders(self, bank_id: int) -> List[int]:
-        """Returns a list of all agents holding accounts at the specified bank."""
-        ...
-
-    def get_agent_banks(self, agent_id: AgentID) -> List[int]:
-        """Returns a list of banks where the agent holds an account."""
-        ...
-
-    def register_account(self, bank_id: int, agent_id: int) -> None:
-        """
-        Registers an account link between a bank and an agent.
-        Used to maintain the reverse index for bank runs.
-        """
-        ...
-
-    def deregister_account(self, bank_id: int, agent_id: int) -> None:
-        """
-        Removes an account link between a bank and an agent.
-        """
-        ...
-
-    def remove_agent_from_all_accounts(self, agent_id: int) -> None:
-        """
-        Removes an agent from all bank account indices.
-        Called upon agent liquidation/deletion.
         """
         ...
 

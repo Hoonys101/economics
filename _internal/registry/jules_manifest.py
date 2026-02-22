@@ -17,22 +17,28 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "phase41_firm_refinement_impl": {
-        "title": "Implement Firm Capital Stock Renaming & SEO Migration",
-        "file": "gemini-output/spec/MISSION_firm_refinement_SPEC.md",
-        "instruction": "Rename capital_stock_pennies to capital_stock_units and update valuation logic. Migrate make_decision to move procurement logic into SEO path as per the spec. Update all call sites and tests.",
+    "phase41_bank_registry_impl": {
+        "title": "Implement BankRegistry Service Extraction",
+        "file": "gemini-output/spec/MISSION_bank_registry_FREEZE.md",
+        "instruction": "Extract bank account indexing from SettlementSystem into BankRegistry. Refactor SettlementSystem to use IBankRegistry. Update tests.",
         "wait": False
     },
     "phase41_labor_config_impl": {
-        "title": "Implement Labor Majors Config Migration",
-        "file": "gemini-output/spec/MISSION_labor_config_SPEC.md",
-        "instruction": "Externalize labor majors to economy_params.yaml and update constants.py to load them dynamically. Add LaborConfigDTO to api.py.",
+        "title": "Implement Labor Config Externalization",
+        "file": "gemini-output/spec/MISSION_labor_config_FREEZE.md",
+        "instruction": "Externalize labor majors to economy_params.yaml. Update constants.py and LaborMarket.configure. Ensure backward compatibility.",
         "wait": False
     },
-    "phase41_bank_registry_impl": {
-        "title": "Implement BankRegistry Service Extraction",
-        "file": "gemini-output/spec/MISSION_bank_registry_SPEC.md",
-        "instruction": "Extract bank account management logic from SettlementSystem into a dedicated BankRegistry service. Define IBankRegistry protocol in modules/finance/api.py and implement the service in simulation/systems/bank_registry.py. Ensure backward compatibility in SettlementSystem by delegating calls to the new registry class.",
+    "phase41_labor_metadata_impl": {
+        "title": "Implement Labor Metadata DTO Migration",
+        "file": "gemini-output/spec/MISSION_labor_metadata_SPEC.md",
+        "instruction": "Migrate LaborMarket to use LaborMatchDTO instead of raw Order.metadata. Update Firm and Household call sites.",
+        "wait": False
+    },
+    "phase41_test_dto_hygiene_impl": {
+        "title": "Implement DTO Test Hygiene",
+        "file": "gemini-output/spec/MISSION_test_dto_hygiene_SPEC.md",
+        "instruction": "Create FirmFactory in tests/factories/ and refactor test_firm_brain_scan.py to eliminate permissive MagicMocks for DTOs.",
         "wait": False
     }
 }

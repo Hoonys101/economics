@@ -3,9 +3,51 @@ DTOs and Protocols for the Labor Market Domain.
 Phase 4.1: Transition to Major-Based Matching.
 """
 from __future__ import annotations
-from dataclasses import dataclass
-from typing import List, Optional, Protocol, runtime_checkable
+from typing import List, Optional, Protocol, runtime_checkable, Dict, Any
+from dataclasses import dataclass, field
 from modules.simulation.api import AgentID
+
+@dataclass(frozen=True)
+class LaborConfigDTO:
+    """
+    Configuration DTO for the Labor Domain.
+    """
+    majors: List[str] = field(default_factory=list)
+
+@dataclass(frozen=True)
+class LaborMatchDTO:
+    """
+    Standardized payload for Labor Market Order Metadata.
+    """
+    major: str = "GENERAL"
+    education_level: int = 0
+    secondary_majors: List[str] = field(default_factory=list)
+    years_experience: float = 0.0
+    min_match_score: float = 0.0
+
+    def to_metadata(self) -> Dict[str, Any]:
+        return {
+            "major": self.major,
+            "education_level": self.education_level,
+            "secondary_majors": self.secondary_majors,
+            "years_experience": self.years_experience,
+            "min_match_score": self.min_match_score,
+            "__type": "LaborMatchDTO"
+        }
+
+    @classmethod
+    def from_metadata(cls, metadata: Dict[str, Any]) -> LaborMatchDTO:
+        edu_level = metadata.get("education_level")
+        if edu_level is None:
+            edu_level = metadata.get("required_education", 0)
+
+        return cls(
+            major=metadata.get("major", "GENERAL"),
+            education_level=int(edu_level),
+            secondary_majors=metadata.get("secondary_majors", []),
+            years_experience=float(metadata.get("years_experience", 0.0)),
+            min_match_score=float(metadata.get("min_match_score", 0.0))
+        )
 
 @dataclass(frozen=True)
 class JobOfferDTO:
@@ -56,6 +98,12 @@ class ILaborMarket(Protocol):
     """
     Protocol for the Labor Market.
     """
+    def configure(self, config: LaborConfigDTO) -> None:
+        """
+        Injects configuration into the Labor Market.
+        """
+        ...
+
     def post_job_offer(self, offer: JobOfferDTO) -> None:
         """Registers a job offer."""
         ...

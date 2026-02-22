@@ -24,38 +24,48 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "phase41_bank_registry_spec": {
-        "title": "Extract BankRegistry Service (TD-ARCH-SETTLEMENT-BLOAT)",
+    "phase41_bank_registry_planning": {
+        "title": "Wave 2: BankRegistry API/DTO Freeze",
         "worker": "spec",
-        "instruction": "Extract bank account management logic from SettlementSystem into a dedicated BankRegistry service. Define IBankRegistry protocol in modules/finance/api.py and implement the service in simulation/systems/bank_registry.py. Ensure backward compatibility in SettlementSystem by delegating calls to the new registry.",
+        "instruction": "Define the IBankRegistry protocol and update ISettlementSystem to include it. Focus strictly on freezing the interface and DTOs to enable parallel implementation. Ensure backward compatibility.",
         "context_files": [
+            "modules/finance/api.py",
             "simulation/systems/settlement_system.py",
-            "simulation/bank.py",
-            "modules/finance/api.py",
-            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+            "simulation/bank.py"
         ],
-        "output_path": "gemini-output/spec/MISSION_bank_registry_SPEC.md"
+        "output_path": "gemini-output/spec/MISSION_bank_registry_FREEZE.md"
     },
-    "phase41_firm_refinement_spec": {
-        "title": "Rename Firm Capital Stock & Firm SEO Migration (TD-LIFECYCLE-NAMING, TD-ARCH-SEO-LEGACY)",
+    "phase41_labor_config_planning": {
+        "title": "Wave 2: Labor Config API/DTO Freeze",
         "worker": "spec",
-        "instruction": "Rename 'capital_stock_pennies' to 'capital_stock_units' in firms.py and update associated valuation logic to prevent 100x inflation. Also, migrate Firm.make_decision to a pure SEO (Stateless Engine Orchestration) path by removing legacy decision branches.",
+        "instruction": "Define LaborConfigDTO and specify how MAJORS will be loaded from economy_params.yaml. Freeze the interface between constants.py and the config system.",
         "context_files": [
-            "simulation/firms.py",
-            "modules/finance/api.py",
-            "design/HANDOVER.md"
-        ],
-        "output_path": "gemini-output/spec/MISSION_firm_refinement_SPEC.md"
-    },
-    "phase41_labor_config_spec": {
-        "title": "Externalize Labor Majors to Configuration (TD-CONFIG-HARDCODED-MAJORS)",
-        "worker": "spec",
-        "instruction": "Move the hardcoded MAJORS list from modules/labor/constants.py to config/economy_params.yaml. Update the constants.py to load this list dynamically via ConfigManager to improve system flexibility.",
-        "context_files": [
+            "modules/labor/api.py",
             "modules/labor/constants.py",
-            "config/economy_params.yaml",
-            "modules/common/config_manager/api.py"
+            "config/economy_params.yaml"
         ],
-        "output_path": "gemini-output/spec/MISSION_labor_config_SPEC.md"
+        "output_path": "gemini-output/spec/MISSION_labor_config_FREEZE.md"
+    },
+    "phase41_labor_metadata_planning": {
+        "title": "Wave 2: Labor Metadata DTO Migration Planning",
+        "worker": "spec",
+        "instruction": "Design LaborMatchDTO to replace Order.metadata/brand_info usage in LaborMarket. Specify the changes needed in LaborMarket.place_order and the overall matching engine.",
+        "context_files": [
+            "modules/labor/api.py",
+            "modules/labor/system.py",
+            "modules/market/api.py"
+        ],
+        "output_path": "gemini-output/spec/MISSION_labor_metadata_SPEC.md"
+    },
+    "phase41_test_dto_hygiene_planning": {
+        "title": "Wave 2: DTO Test Hygiene Planning",
+        "worker": "spec",
+        "instruction": "Analyze tests using MagicMock for DTOs (e.g., test_firm_brain_scan.py). Propose a plan to use concrete DTOs or strictly spec'd mocks to improve test stability and detect schema drifts.",
+        "context_files": [
+            "modules/finance/api.py",
+            "modules/firm/api.py",
+            "tests/unit/test_firm_brain_scan.py"
+        ],
+        "output_path": "gemini-output/spec/MISSION_test_dto_hygiene_SPEC.md"
     }
 }
