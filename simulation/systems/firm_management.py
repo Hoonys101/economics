@@ -100,9 +100,9 @@ class FirmSystem:
         else:
              firm_decision_engine = AIDrivenFirmDecisionEngine(firm_ai, self.config, simulation.logger)
 
-        # 5. Create Firm (Initial Capital = 0.0, will transfer)
-        instance_class = ServiceFirm if is_service else Firm
-
+        # 5. Create Firm via Factory (Atomic Registration -> Account -> Transfer)
+        from modules.firm.services.firm_factory import FirmFactory
+        
         # Create Config DTO
         firm_config_dto = create_config_dto(self.config, FirmConfigDTO)
 
@@ -121,55 +121,25 @@ class FirmSystem:
 
         loan_market = simulation.markets.get("loan_market")
 
-        new_firm = instance_class(
+        # Atomic Creation & Injection
+        new_firm = FirmFactory.create_and_register_firm(
+            simulation=simulation,
+            instance_class=ServiceFirm if is_service else Firm,
             core_config=core_config,
-            engine=firm_decision_engine,
+            firm_config_dto=firm_config_dto,
             specialization=specialization,
             productivity_factor=random.uniform(8.0, 12.0),
-            config_dto=firm_config_dto,
             loan_market=loan_market,
             sector=sector,
+            founder=founder_household,
+            startup_cost=final_startup_cost
         )
-        
+
+        if not new_firm:
+            # FirmFactory handles logging and rollbacks
+            return None
+
         new_firm.founder_id = founder_household.id
-
-        # 6. Execute Financial Transfer (SettlementSystem)
-        # Check for settlement_system on simulation (via world_state usually)
-        settlement_system = getattr(simulation, "settlement_system", None)
-        if not settlement_system:
-            raise RuntimeError("SettlementSystem required for firm creation.")
-
-        # Inject SettlementSystem into new firm
-        new_firm.settlement_system = settlement_system
-
-        # CRITICAL VALIDATION (Tech Debt Fix: Null Seller ID)
-        if new_firm.id is None:
-            logger.critical(f"STARTUP_FATAL | New firm has NULL ID during creation! Aborting.")
-            return None
-
-        if not isinstance(founder_household, IAgent) or founder_household.id is None:
-            logger.critical(f"STARTUP_FATAL | Founder household has NULL ID! Aborting.")
-            return None
-
-        success = settlement_system.transfer(
-            founder_household,
-            new_firm,
-            int(final_startup_cost),
-            f"Startup Capital for Firm {new_firm.id}",
-            tick=simulation.time
-        )
-
-        if not success:
-            logger.warning(f"STARTUP_FAILED | Failed to transfer capital from {founder_household.id} to new firm {new_firm_id}. Aborting.")
-            return None
-
-        # 7. Add to Simulation
-        simulation.firms.append(new_firm)
-        simulation.agents[new_firm.id] = new_firm
-        simulation.ai_training_manager.agents.append(new_firm)
-
-        if simulation.stock_market:
-            new_firm.init_ipo(simulation.stock_market)
 
         logger.info(
             f"STARTUP | Household {founder_household.id} founded Firm {new_firm_id} "

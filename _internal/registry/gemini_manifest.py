@@ -24,5 +24,15 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "MISSION_harvest_optimizer_SPEC": {
+        "title": "Harvest Algorithm Optimization Spec",
+        "worker": "spec",
+        "instruction": "weighted_harvester.py의 성능 병목 지점(과도한 git subprocess 호출, 특히 파일별 git log 호출 및 순차 처리)을 분석하고, 이를 최적화하기 위한 기술 사양서(SPEC)를 작성하십시오. ls-tree와 한 번의 git log (branch level) 호출로 필요한 정보를 일괄 추출하는 방식이나, 병렬 처리를 통해 수확 속도를 10배 이상 향상시키는 방안을 제시하십시오.",
+        "context_files": [
+            "_internal/scripts/weighted_harvester.py",
+            "_internal/scripts/launcher.py",
+            "harvest-go.bat"
+        ],
+        "output_path": "gemini-output/spec/MISSION_harvest_optimizer_SPEC.md"
+    }
 }

@@ -181,7 +181,9 @@ class WorldState:
 
             assets_dict = holder.get_assets_by_currency()
             for cur, amount in assets_dict.items():
-                totals[cur] = totals.get(cur, 0) + int(amount)
+                # TD-ECON-M2-REGRESSION: Only positive balances count as money supply.
+                # Negative balances are liabilities (loans), handled separately.
+                totals[cur] = totals.get(cur, 0) + max(0, int(amount))
         return totals
 
     def calculate_total_money(self) -> Dict[CurrencyCode, int]:
@@ -191,40 +193,11 @@ class WorldState:
         (Currency in Circulation + Deposits).
         MIGRATION: Returns int (pennies).
         """
-        m2_totals = self.calculate_base_money()
-
-        # Adjust for Fractional Reserve Banking
-        # 1. Deduct Bank Reserves (Vault Cash) from M0 to get Currency in Circulation
-        # 2. Add Bank Deposits (Created Money)
-
-        # We need to identify Banks.
-        # Assuming currency_holders includes banks.
-        for holder in self.currency_holders:
-            is_bank = False
-            if hasattr(holder, '__class__') and holder.__class__.__name__ == "Bank":
-                is_bank = True
-            elif hasattr(holder, 'id') and str(holder.id).startswith("bank"): # Heuristic?
-                # Better to check class or interface if possible, or rely on explicit list
-                pass
-
-            # Explicit check for Bank class
-            if hasattr(holder, 'deposits') and hasattr(holder, 'wallet'):
-                 is_bank = True
-
-            if is_bank:
-                # 1. Deduct Reserves (Bank Wallets are not Circulation)
-                reserves = holder.get_assets_by_currency()
-                for cur, amount in reserves.items():
-                    m2_totals[cur] = m2_totals.get(cur, 0) - int(amount)
-
-                # 2. Add Deposits - REMOVED
-                # M2 = Currency + Deposits.
-                # In this simulation, Agent Wallets ARE Deposits (or Cash).
-                # calculate_base_money() already sums Agent Wallets.
-                # Adding Bank.get_total_deposits() double-counts the money supply.
-                # (Unless Agent Wallets were strictly Physical Cash and Deposits were invisible, which is not the case here).
-
-        return m2_totals
+        # In this simulation, Agent Wallets already represent their total liquidity (Cash + Deposits).
+        # Since calculate_base_money() now sums max(0, balance), it correctly captures M2.
+        # Deducting Bank Reserves would only be necessary if we were distinguishing physical cash from digital deposits
+        # and double-counting them. Here, we stay simplified: M2 = Sum of all non-CB positive balances.
+        return self.calculate_base_money()
 
     def get_total_system_money_for_diagnostics(self, target_currency: CurrencyCode = "USD") -> float:
         """

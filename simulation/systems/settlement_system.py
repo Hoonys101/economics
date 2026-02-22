@@ -480,10 +480,14 @@ class SettlementSystem(IMonetaryAuthority):
                  if self.panic_recorder:
                      self.panic_recorder.record_withdrawal(amount)
 
-             
              return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
+        elif result.status == 'FAILED':
+             # Validation failure (e.g., missing account or insufficient funds)
+             self.logger.warning(f"SETTLEMENT_V_FAIL | Transaction rejected: {result.message}")
+             return None
         else:
-             self.logger.error(f"SETTLEMENT_FAIL | Engine Error: {result.message}")
+             # CRITICAL_FAILURE (Execution or Rollback failure)
+             self.logger.error(f"SETTLEMENT_E_FAIL | Engine Error: {result.message}")
              return None
 
     def create_and_transfer(

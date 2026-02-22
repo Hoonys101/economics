@@ -27,8 +27,9 @@
 | **TD-ARCH-ORCH-HARD** | Architecture | **Orchestrator Fragility**: `TickOrchestrator` lacks hardening against missing DTO attributes in mocks. | **Medium**: Resilience. | **NEW (PH21)** |
 | **TD-ARCH-SETTLEMENT-BLOAT** | Architecture | **Settlement Overload**: `SettlementSystem` handles orchestration, ledgers, metrics, and indices. | **High**: Maintainability. | **RESOLVED (PH4.1)** |
 | **TD-CONFIG-HARDCODED-MAJORS** | Configuration | **Hardcoded Majors**: `MAJORS` list hardcoded in `labor/constants.py` instead of yaml. | **Low**: Flexibility. | **RESOLVED (PH4.1)** |
-| **TD-ECON-M2-REGRESSION** | Economic | **M2 Inversion Regression**: Money supply drops negative (e.g., -153M). | **CRITICAL**: Integrity. | **REGRESSION** |
-| **TD-FIN-SAGA-REGRESSION** | Finance | **Saga Drift Regression**: Sagas skipped due to missing participant IDs. | **High**: Protocol. | **REGRESSION** |
+| **TD-ECON-M2-REGRESSION** | Economic | **M2 Inversion Regression**: Money supply drops negative (e.g., -153M). | **CRITICAL**: Integrity. | **RE-CONFIRMED (PH21)** |
+| **TD-FIN-SAGA-REGRESSION** | Finance | **Saga Drift Regression**: Sagas skipped due to missing participant IDs. | **High**: Protocol. | **RE-CONFIRMED (PH21)** |
+| **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firm Bug**: Atomic startup failure where transactions precede registration. | **CRITICAL**: Integrity. | **NEW (PH21)** |
 | **TD-BANK-RESERVE-CRUNCH** | Finance | **Reserve Constraint**: Bank 2 lacks reserves (1M) to fund infrastructure bonds (8M+). | **Medium**: Logic. | **NEW** |
 | **TD-ECON-ZOMBIE-FIRM** | Economic | **Firm Extinction**: Rapid collapse of basic_food firms causing FIRE_SALE spam. | **High**: Balance. | **NEW** |
 | **TD-ARCH-SEO-LEGACY** | Firm | **Legacy SEO Gap**: `brain_scan` skips legacy decision logic unless mocked. | **Medium**: AI Integrity. | **NEW (PH4.1)** |
@@ -136,6 +137,13 @@
 
 ## Lifecycle & Configuration
 ---
+### ID: TD-LIFECYCLE-GHOST-FIRM
+- **Title**: Atomic Startup Failure (Ghost Firm Bug)
+- **Symptom**: `SETTLEMENT_FAIL` with "Destination account does not exist" for new firms.
+- **Risk**: Capital injections fail silently or corruptly, leaving firms in "Zombie" states or mismatched balances.
+- **Solution**: Implement `FirmFactory` to ensure Registration -> Bank Account Opening -> Injection sequence is atomic and blocking.
+- **Status**: NEW (Phase 21 Audit)
+
 ### ID: TD-CONFIG-HARDCODED-MAJORS
 - **Title**: Hardcoded Labor Majors
 - **Symptom**: `MAJORS` list is currently hardcoded in `modules/labor/constants.py`.

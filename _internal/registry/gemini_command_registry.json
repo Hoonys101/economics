@@ -2,5 +2,25 @@
   "_meta": {
     "version": "1.0"
   },
-  "missions": {}
+  "missions": {
+    "MISSION_harvest_optimizer_SPEC": {
+      "key": "MISSION_harvest_optimizer_SPEC",
+      "title": "Harvest Algorithm Optimization Spec",
+      "type": "gemini",
+      "instruction_raw": "weighted_harvester.py\uc758 \uc131\ub2a5 \ubcd1\ubaa9 \uc9c0\uc810(\uacfc\ub3c4\ud55c git subprocess \ud638\ucd9c, \ud2b9\ud788 \ud30c\uc77c\ubcc4 git log \ud638\ucd9c \ubc0f \uc21c\ucc28 \ucc98\ub9ac)\uc744 \ubd84\uc11d\ud558\uace0, \uc774\ub97c \ucd5c\uc801\ud654\ud558\uae30 \uc704\ud55c \uae30\uc220 \uc0ac\uc591\uc11c(SPEC)\ub97c \uc791\uc131\ud558\uc2ed\uc2dc\uc624. ls-tree\uc640 \ud55c \ubc88\uc758 git log (branch level) \ud638\ucd9c\ub85c \ud544\uc694\ud55c \uc815\ubcf4\ub97c \uc77c\uad04 \ucd94\ucd9c\ud558\ub294 \ubc29\uc2dd\uc774\ub098, \ubcd1\ub82c \ucc98\ub9ac\ub97c \ud1b5\ud574 \uc218\ud655 \uc18d\ub3c4\ub97c 10\ubc30 \uc774\uc0c1 \ud5a5\uc0c1\uc2dc\ud0a4\ub294 \ubc29\uc548\uc744 \uc81c\uc2dc\ud558\uc2ed\uc2dc\uc624.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "_internal/scripts/weighted_harvester.py",
+        "_internal/scripts/launcher.py",
+        "harvest-go.bat"
+      ],
+      "output_path": "gemini-output/spec/MISSION_harvest_optimizer_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    }
+  }
 }

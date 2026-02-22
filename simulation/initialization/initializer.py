@@ -123,9 +123,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         command_service = CommandService(registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry)
         sim = Simulation(config_manager=self.config_manager, config_module=self.config, logger=self.logger, repository=self.repository, registry=global_registry, settlement_system=settlement_system, agent_registry=agent_registry, command_service=command_service)
 
-        # Initialize Registry State ASAP so that subsequent initialization steps (like Bootstrapper)
-        # can use the Registry/SettlementSystem.
-        sim.agent_registry.set_state(sim.world_state)
+        # sim.agent_registry.set_state(sim.world_state) # DEFERRED to end of build_simulation
 
         sim._lock_file = lock_file
         sim.event_bus = EventBus()
@@ -391,6 +389,10 @@ class SimulationInitializer(SimulationInitializerInterface):
         
         if hasattr(sim.settlement_system, 'set_panic_recorder'):
              sim.settlement_system.set_panic_recorder(sim.world_state)
+
+        # TD-FIN-INVISIBLE-HAND: Ensure system agents are registered before Snapshot
+        self.logger.info("LATE_INITIALIZATION | Finalizing AgentRegistry state snapshot.")
+        sim.agent_registry.set_state(sim.world_state)
 
         self.logger.info(f'Simulation fully initialized with run_id: {sim.run_id}')
         return sim
