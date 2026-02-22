@@ -127,3 +127,21 @@ ai_housing:
 adaptive_policy:
   welfare_bounds: [0.1, 2.0]
   tax_bounds: [0.05, 0.6]
+
+# ----------------------------------------------------------------------
+# Labor Market Configuration (Phase 41)
+# ----------------------------------------------------------------------
+labor_market:
+  majors: ["GENERAL", "AGRICULTURE", "MANUFACTURING", "SERVICES", "TECHNOLOGY"]
+  compatibility:
+    PERFECT: 1.2
+    PARTIAL: 1.0
+    MISMATCH: 0.8
+    GENERAL_PENALTY: 1.0
+  sector_map:
+    FOOD: "AGRICULTURE"
+    GOODS: "MANUFACTURING"
+    SERVICE: "SERVICES"
+    MATERIAL: "MANUFACTURING"
+    LUXURY: "SERVICES"
+    TECH: "TECHNOLOGY"
