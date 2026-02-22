@@ -229,7 +229,8 @@ class HREngine(IHREngine, IHRDepartment):
             min_employees=getattr(config, 'firm_min_employees', 1),
             max_employees=getattr(config, 'firm_max_employees', 100),
             severance_pay_weeks=getattr(config, 'severance_pay_weeks', 2),
-            specialization=firm_state.production.specialization
+            specialization=firm_state.production.specialization,
+            major=getattr(firm_state.production, 'major', 'GENERAL') # Phase 4.1
         )
 
     def calculate_wage(self, employee: IEmployeeDataProvider, base_wage: int, config: FirmConfigDTO) -> int:

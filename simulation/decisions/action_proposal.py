@@ -52,7 +52,16 @@ class ActionProposalEngine:
                 if hasattr(agent, 'decision_engine') and hasattr(agent.decision_engine, 'context'):
                     pass
                 desired_wage = self.config_module.LABOR_MARKET_MIN_WAGE * random.uniform(0.9, 1.3)
-                orders.append(Order(agent_id=agent.id, side='SELL', item_id='labor', quantity=1, price_pennies=int(desired_wage * 100), price_limit=desired_wage, market_id='labor_market'))
+                orders.append(Order(
+                    agent_id=agent.id,
+                    side='SELL',
+                    item_id='labor',
+                    quantity=1,
+                    price_pennies=int(desired_wage * 100),
+                    price_limit=desired_wage,
+                    market_id='labor_market',
+                    metadata={'major': getattr(agent._econ_state, 'major', 'GENERAL')}
+                ))
             elif assets_val > 1:
                 if hasattr(self.config_module, 'get'):
                     available_goods = self.config_module.get('simulation.household_consumable_goods', ['basic_food', 'luxury_food'])
@@ -102,4 +111,13 @@ class ActionProposalEngine:
         강제 탐험을 위한 노동 판매 행동을 제안합니다.
         """
         desired_wage = self.config_module.LABOR_MARKET_MIN_WAGE * random.uniform(0.9, 1.3) * wage_factor
-        return Order(agent_id=household.id, side='SELL', item_id='labor', quantity=1, price_pennies=int(desired_wage * 100), price_limit=desired_wage, market_id='labor_market')
+        return Order(
+            agent_id=household.id,
+            side='SELL',
+            item_id='labor',
+            quantity=1,
+            price_pennies=int(desired_wage * 100),
+            price_limit=desired_wage,
+            market_id='labor_market',
+            metadata={'major': getattr(household._econ_state, 'major', 'GENERAL')}
+        )

@@ -162,6 +162,13 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         self.production_state.productivity_factor = productivity_factor
         self.production_state.production_target = self.config.firm_min_production_target
 
+        # Determine Major (Phase 4.1: Labor Majors Config Migration)
+        # Use getattr to safely access labor_market if config_dto is a mock without it
+        labor_market_config = getattr(self.config, 'labor_market', {})
+        if labor_market_config is None: labor_market_config = {}
+        sector_map = labor_market_config.get("sector_map", {})
+        self.major = sector_map.get(self.production_state.sector, "GENERAL")
+
         self.finance_state.total_shares = self.config.ipo_initial_shares
         self.finance_state.treasury_shares = self.config.ipo_initial_shares # Initially all treasury
         self.finance_state.dividend_rate = self.config.dividend_rate
@@ -912,7 +919,8 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             specialization=self.production_state.specialization,
             inventory=self.inventory_component.main_inventory.copy(),
             input_inventory=self.inventory_component.input_inventory.copy(),
-            inventory_quality=self.inventory_component.inventory_quality.copy()
+            inventory_quality=self.inventory_component.inventory_quality.copy(),
+            major=self.major # Phase 4.1: Major-Matching
         )
 
         # 4. Sales State
@@ -1057,7 +1065,8 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             specialization=self.production_state.specialization,
             inventory=self.inventory_component.main_inventory.copy(),
             input_inventory=self.inventory_component.input_inventory.copy(),
-            inventory_quality=self.inventory_component.inventory_quality.copy()
+            inventory_quality=self.inventory_component.inventory_quality.copy(),
+            major=self.major # Phase 4.1: Major-Matching
         )
 
         # 4. Sales State
@@ -1510,7 +1519,8 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             min_employees=getattr(self.config, 'firm_min_employees', 1),
             max_employees=getattr(self.config, 'firm_max_employees', 100),
             severance_pay_weeks=getattr(self.config, 'severance_pay_weeks', 2),
-            specialization=self.production_state.specialization
+            specialization=self.production_state.specialization,
+            major=self.major # Phase 4.1
         )
 
     def _generate_hr_orders(self, intent: HRIntentDTO, context: HRContextDTO) -> List[Order]:
@@ -1555,7 +1565,8 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
                 price_limit=float(offered_wage)/100.0,
                 market_id='labor',
                 metadata={
-                    'major': context.specialization,
+                    'major': context.major, # Phase 4.1: Use Major instead of Specialization
+                    'specialization': context.specialization, # Keep specialization for debugging/specific matching if needed
                     'required_education': 0 # Could be dynamic based on tech level
                 }
             ))

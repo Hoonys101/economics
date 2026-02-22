@@ -85,6 +85,9 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
     # Households start at 100
     START_ID_HOUSEHOLDS = 100
 
+    # Phase 4.1: Labor Majors
+    majors = config.LABOR_MARKET.get("majors", ["GENERAL"]) if hasattr(config, "LABOR_MARKET") else ["GENERAL"]
+
     for i in range(num_households):
         agent_id = START_ID_HOUSEHOLDS + i
         agent_id = START_ID_HOUSEHOLDS + i
@@ -182,6 +185,9 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             memory_interface=None
         )
 
+        # Assign a random major
+        major = random.choice(majors)
+
         household = Household(
             core_config=core_config,
             engine=household_decision_engine,
@@ -191,6 +197,7 @@ def create_simulation(overrides: Dict[str, Any] = None) -> Simulation:
             config_dto=hh_config_dto,
             risk_aversion=risk_aversion,
             initial_assets_record=initial_assets, # Record "birthright" for history
+            major=major
         )
 
         # Hydrate State

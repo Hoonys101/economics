@@ -13,11 +13,12 @@ class LaborMarket(ILaborMarket, IMarket):
     """
     Implementation of the Labor Market with Major-Matching logic.
     """
-    def __init__(self, market_id: str = "labor"):
+    def __init__(self, market_id: str = "labor", config_module: Any = None):
         self.id = market_id
         self._job_offers: List[JobOfferDTO] = []
         self._job_seekers: List[JobSeekerDTO] = []
         self._matched_transactions: List[Transaction] = []
+        self.config = config_module
 
         # IMarket compatibility
         self._buy_orders_cache: Dict[str, List[CanonicalOrderDTO]] = {}
@@ -88,21 +89,34 @@ class LaborMarket(ILaborMarket, IMarket):
                     if base_score < 1.0:
                         continue
 
-                    # 2. Major Matching
+                    # 2. Major Matching (Dynamic Config)
                     major_multiplier = 1.0
                     compatibility = "MISMATCH"
 
+                    # Default multipliers
+                    mult_perfect = 1.2
+                    mult_partial = 1.0
+                    mult_mismatch = 0.8
+                    mult_general = 1.0
+
+                    if self.config and hasattr(self.config, 'LABOR_MARKET'):
+                        compat_config = self.config.LABOR_MARKET.get('compatibility', {})
+                        mult_perfect = compat_config.get('PERFECT', mult_perfect)
+                        mult_partial = compat_config.get('PARTIAL', mult_partial)
+                        mult_mismatch = compat_config.get('MISMATCH', mult_mismatch)
+                        mult_general = compat_config.get('GENERAL_PENALTY', mult_general)
+
                     if offer.major == seeker.major:
-                        major_multiplier = 1.2
+                        major_multiplier = mult_perfect
                         compatibility = "PERFECT"
                     elif seeker.secondary_majors and offer.major in seeker.secondary_majors:
-                        major_multiplier = 1.1
+                        major_multiplier = mult_partial # Using Partial for secondary match
                         compatibility = "PARTIAL"
                     elif offer.major == "GENERAL" or seeker.major == "GENERAL":
-                        major_multiplier = 1.0
+                        major_multiplier = mult_general
                         compatibility = "PARTIAL"
                     else:
-                        major_multiplier = 0.8 # Penalty for mismatch
+                        major_multiplier = mult_mismatch
 
                     # 3. Education Matching
                     edu_multiplier = 1.0

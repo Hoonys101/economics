@@ -51,6 +51,7 @@ class ProductionStateDTO:
     inventory: Dict[str, Any]
     input_inventory: Dict[str, Any]
     inventory_quality: Dict[str, float]
+    major: str = "GENERAL" # Added for Major-Matching (Phase 4.1)
 
 @dataclass(frozen=True)
 class SalesStateDTO:
@@ -242,6 +243,9 @@ class HouseholdConfigDTO:
     debt_noise_factor: float
     panic_consumption_dampener: float
 
+    # Labor Market (Phase 4.1)
+    labor_market: Dict[str, Any] = field(default_factory=dict)
+
 @dataclass
 class FirmConfigDTO:
     """
@@ -323,6 +327,9 @@ class FirmConfigDTO:
     ai_epsilon_decay_params: Tuple[float, float, int]
     ai_reward_brand_value_multiplier: float
     space_utility_factor: float
+
+    # Labor Market (Phase 4.1)
+    labor_market: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class ServerConfigDTO:

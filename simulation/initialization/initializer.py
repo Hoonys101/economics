@@ -224,7 +224,7 @@ class SimulationInitializer(SimulationInitializerInterface):
                 hh._econ_state.residing_property_id = unit.id
                 hh._econ_state.is_homeless = False
         sim.markets: Dict[str, Market] = {good_name: OrderBookMarket(market_id=good_name, config_module=self.config) for good_name in self.config.GOODS}
-        sim.markets['labor'] = LaborMarket(market_id='labor')
+        sim.markets['labor'] = LaborMarket(market_id='labor', config_module=self.config)
         sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config)
         sim.markets['loan_market'] = LoanMarket(market_id='loan_market', bank=sim.bank, config_module=self.config)
         sim.markets['loan_market'].agents_ref = sim.agents

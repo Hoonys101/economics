@@ -52,12 +52,15 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
                 if best_ask is None or best_ask == 0:
                     best_ask = getattr(self.config_module, 'DEFAULT_FALLBACK_PRICE', 5.0)
                 if best_ask > 0:
-                    affordable_quantity = state.assets / best_ask
+                    current_assets = state.assets.get("USD", 0) if isinstance(state.assets, dict) else state.assets
+                    affordable_quantity = current_assets / best_ask
                     quantity_to_buy = min(needed_quantity, affordable_quantity, config.food_purchase_max_per_tick)
                     if quantity_to_buy > 0.1:
                         orders.append(Order(agent_id=state.id, side='BUY', item_id=food_item_id, quantity=quantity_to_buy, price_pennies=int(best_ask * 100), price_limit=best_ask, market_id=market_id))
                         self.logger.info(f'Household {state.id} buying {quantity_to_buy:.2f} {food_item_id} for survival at {best_ask:.2f}', extra={'tick': current_time, 'agent_id': state.id, 'tactic': chosen_tactic.name})
-        if not state.is_employed and state.assets < config.assets_threshold_for_other_actions:
+
+        assets_val = state.assets.get("USD", 0) if isinstance(state.assets, dict) else state.assets
+        if not state.is_employed and assets_val < config.assets_threshold_for_other_actions:
             if chosen_tactic == Tactic.NO_ACTION:
                 chosen_tactic = Tactic.PARTICIPATE_LABOR_MARKET
                 chosen_aggressiveness = Aggressiveness.NEUTRAL
@@ -73,7 +76,7 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
                 food_price = market_data.get('goods_market', {}).get('basic_food_avg_traded_price', 10.0)
             if food_price <= 0:
                 food_price = 10.0
-            survival_days = food_inventory + state.assets / food_price
+            survival_days = food_inventory + assets_val / food_price
             critical_turns = config.survival_critical_turns
             is_panic = False
             desired_wage = 0.0
@@ -93,6 +96,15 @@ class RuleBasedHouseholdDecisionEngine(BaseDecisionEngine):
             if not is_panic and effective_offer < wage_floor:
                 self.logger.info(f'RESERVATION_WAGE_PURE | Household {state.id} refused labor. Offer: {effective_offer:.2f} < Floor: {wage_floor:.2f}', extra={'tick': current_time, 'agent_id': state.id, 'tags': ['labor_refusal']})
             else:
-                orders.append(Order(agent_id=state.id, side='SELL', item_id='labor', quantity=1.0, price_pennies=int(desired_wage * 100), price_limit=desired_wage, market_id='labor'))
+                orders.append(Order(
+                    agent_id=state.id,
+                    side='SELL',
+                    item_id='labor',
+                    quantity=1.0,
+                    price_pennies=int(desired_wage * 100),
+                    price_limit=desired_wage,
+                    market_id='labor',
+                    metadata={'major': getattr(state, 'major', 'GENERAL')}
+                ))
                 self.logger.info(f'Household {state.id} offers labor at wage {desired_wage:.2f}', extra={'tick': current_time, 'agent_id': state.id, 'tactic': chosen_tactic.name})
         return DecisionOutputDTO(orders=orders, metadata=(chosen_tactic, chosen_aggressiveness))
