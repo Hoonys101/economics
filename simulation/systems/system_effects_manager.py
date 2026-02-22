@@ -1,4 +1,5 @@
 import logging
+import random
 from typing import Dict, Any, List, TYPE_CHECKING
 from simulation.dtos.api import SimulationState
 
@@ -73,7 +74,35 @@ class SystemEffectsManager:
         household = state.agents.get(target_id)
         if household:
             old_level = household._econ_state.education_level
-            household._econ_state.education_level = old_level + 1
+            new_level = old_level + 1
+            household._econ_state.education_level = new_level
+
+            # Phase 4.1: Blind Major Choice Logic
+            # Triggered when entering Higher Education (Level 1+)
+            # Only assign if currently GENERAL or None, to support Sunk Cost (no switching)
+            current_major = getattr(household._econ_state, "major", "GENERAL")
+            if new_level >= 1 and (current_major == "GENERAL" or current_major is None):
+                # Retrieve available majors from config or default
+                labor_config = getattr(self.config_module, "LABOR_MARKET", {})
+                # Handle both dict (if loaded as dict) and object (if loaded as config module)
+                if isinstance(labor_config, dict):
+                     available_majors = labor_config.get("majors", ["GENERAL"])
+                else:
+                     available_majors = getattr(labor_config, "majors", ["GENERAL"])
+
+                # Exclude GENERAL from specialized choice if possible
+                specialized_majors = [m for m in available_majors if m != "GENERAL"]
+
+                if specialized_majors:
+                    # Blind Choice: Random selection
+                    chosen_major = random.choice(specialized_majors)
+                    household._econ_state.major = chosen_major
+
+                    logger.info(
+                        f"MAJOR_CHOICE | Household {target_id} selected major: {chosen_major}",
+                        extra={"tick": state.time, "tags": ["education", "major_choice"]}
+                    )
+
             logger.info(
                 f"EDUCATION_UPGRADE | Household {target_id} promoted to Level {household._econ_state.education_level}.",
                 extra={"tick": state.time, "tags": ["system_effect", "education"]}
