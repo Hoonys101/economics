@@ -358,6 +358,14 @@ class DynamicPricingResultDTO:
 # ==============================================================================
 
 @runtime_checkable
+class IBrainScanReady(Protocol):
+    """
+    Protocol for agents that support Brain-Scan simulations (What-If analysis).
+    """
+    def brain_scan(self, context: FirmBrainScanContextDTO) -> FirmBrainScanResultDTO:
+        ...
+
+@runtime_checkable
 class IDepartmentEngine(Protocol):
     """
     Protocol for a stateless department engine.
@@ -572,6 +580,7 @@ __all__ = [
     'PricingResultDTO',
     'BrandMetricsDTO',
     'DynamicPricingResultDTO',
+    'IBrainScanReady',
     'BaseDepartmentContextDTO',
     'ProductionContextDTO',
     'ProductionIntentDTO',

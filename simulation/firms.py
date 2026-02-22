@@ -47,7 +47,8 @@ from modules.firm.api import (
     IInventoryComponent, IFinancialComponent,
     ISalesEngine, IBrandEngine, IFinanceEngine, IHREngine,
     ProductionContextDTO, HRContextDTO, SalesContextDTO,
-    ProductionIntentDTO, HRIntentDTO, SalesIntentDTO
+    ProductionIntentDTO, HRIntentDTO, SalesIntentDTO,
+    FirmBrainScanContextDTO, FirmBrainScanResultDTO, IBrainScanReady
 )
 from modules.firm.constants import (
     DEFAULT_MARKET_INSIGHT, DEFAULT_MARKETING_BUDGET_RATE, DEFAULT_LIQUIDATION_PRICE,
@@ -81,7 +82,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner, IFirmStateProvider, ISalesTracker):
+class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner, IFirmStateProvider, ISalesTracker, IBrainScanReady):
     """
     Firm Agent (Orchestrator).
     Manages state and delegates logic to stateless engines.
@@ -1253,6 +1254,102 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         )
         return external_orders, tactic
 
+    @override
+    def brain_scan(self, context: FirmBrainScanContextDTO) -> FirmBrainScanResultDTO:
+        """
+        Executes a hypothetical decision-making cycle without side effects.
+        Implements IBrainScanReady.
+        """
+        # 1. State Snapshot
+        base_snapshot = self.get_snapshot_dto()
+
+        # Apply Config Override if any
+        current_config = context.config_override if context.config_override else self.config
+        if context.config_override:
+             base_snapshot = replace(base_snapshot, config=context.config_override)
+
+        # Market Snapshot
+        current_market_snapshot = context.market_snapshot_override or MarketSnapshotDTO(tick=context.current_tick, market_signals={}, market_data={})
+
+        # Tick
+        current_tick = context.current_tick
+
+        # --- Finance Engine: Plan Budget ---
+        fin_input = FinanceDecisionInputDTO(
+            firm_snapshot=base_snapshot,
+            market_snapshot=current_market_snapshot,
+            config=current_config,
+            current_tick=current_tick,
+            credit_rating=0.0 # Placeholder
+        )
+        budget_plan = self.finance_engine.plan_budget(fin_input)
+
+        # --- HR Engine ---
+        labor_wage = DEFAULT_LABOR_WAGE
+        if current_market_snapshot.labor:
+            labor_wage = int(current_market_snapshot.labor.avg_wage * 100) if current_market_snapshot.labor.avg_wage > 0 else DEFAULT_LABOR_WAGE
+
+        target_headcount = self._calculate_target_headcount()
+
+        hr_context = self._build_hr_context(budget_plan, target_headcount, current_tick, labor_wage, current_market_snapshot)
+        if context.config_override:
+            hr_context = replace(hr_context,
+                min_employees=getattr(context.config_override, 'firm_min_employees', hr_context.min_employees),
+                max_employees=getattr(context.config_override, 'firm_max_employees', hr_context.max_employees),
+                severance_pay_weeks=getattr(context.config_override, 'severance_pay_weeks', hr_context.severance_pay_weeks)
+            )
+
+        hr_intent = self.hr_engine.decide_workforce(hr_context)
+
+        # --- Production Engine ---
+        productivity_multiplier = 1.0
+        prod_context = self._build_production_context(productivity_multiplier, current_market_snapshot)
+
+        # Manually apply overrides to prod_context fields derived from config
+        if context.config_override:
+            item_config = context.config_override.goods.get(self.production_state.specialization, {})
+            prod_context = replace(prod_context,
+                labor_alpha=context.config_override.labor_alpha,
+                automation_labor_reduction=context.config_override.automation_labor_reduction,
+                labor_elasticity_min=context.config_override.labor_elasticity_min,
+                capital_depreciation_rate=context.config_override.capital_depreciation_rate,
+                input_goods=item_config.get("inputs", prod_context.input_goods),
+                quality_sensitivity=item_config.get("quality_sensitivity", prod_context.quality_sensitivity)
+            )
+
+        prod_intent = self.production_engine.decide_production(prod_context)
+
+        # --- Sales Engine ---
+        sales_context = self._build_sales_context(current_market_snapshot, current_tick)
+        if context.config_override:
+            sales_context = replace(sales_context,
+                sale_timeout_ticks=getattr(context.config_override, 'sale_timeout_ticks', sales_context.sale_timeout_ticks),
+                dynamic_price_reduction_factor=getattr(context.config_override, 'dynamic_price_reduction_factor', sales_context.dynamic_price_reduction_factor)
+            )
+
+        sales_intent = self.sales_engine.decide_pricing(sales_context)
+
+        # --- Legacy Decision Engine (Skipped for Brain Scan to avoid complexity unless mocked) ---
+        legacy_orders = []
+        if "decision_engine" in context.mock_responses:
+             legacy_orders = context.mock_responses["decision_engine"]
+
+        # Aggregate Results
+        payload = {
+            "budget_plan": budget_plan,
+            "hr_intent": hr_intent,
+            "production_intent": prod_intent,
+            "sales_intent": sales_intent,
+            "legacy_orders_simulated": legacy_orders
+        }
+
+        return FirmBrainScanResultDTO(
+            agent_id=context.agent_id,
+            tick=current_tick,
+            intent_type="FULL_SCAN",
+            intent_payload=payload
+        )
+
     def execute_internal_orders(self, orders: List[Order], fiscal_context: FiscalContext, current_time: int, market_context: Optional[MarketContextDTO] = None) -> None:
         """
         Orchestrates internal orders by delegating to specialized engines.
@@ -1350,7 +1447,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             brand_snapshot=brand_snapshot
         )
 
-    def _build_production_context(self, productivity_multiplier: float) -> ProductionContextDTO:
+    def _build_production_context(self, productivity_multiplier: float, market_snapshot: Optional[MarketSnapshotDTO] = None) -> ProductionContextDTO:
         # Calculate derived values
         num_employees = len(self.hr_state.employees)
 
@@ -1372,7 +1469,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             firm_id=AgentID(self.id),
             tick=0,
             budget_pennies=0,
-            market_snapshot=MarketSnapshotDTO(tick=0, market_signals={}, market_data={}),
+            market_snapshot=market_snapshot or MarketSnapshotDTO(tick=0, market_signals={}, market_data={}),
             available_cash_pennies=0,
             is_solvent=True,
 
@@ -1408,7 +1505,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         else: needed_labor = needed_production / productivity_factor
         return int(needed_labor)
 
-    def _build_hr_context(self, budget_plan: BudgetPlanDTO, target_headcount: int, current_tick: int, labor_wage: int) -> HRContextDTO:
+    def _build_hr_context(self, budget_plan: BudgetPlanDTO, target_headcount: int, current_tick: int, labor_wage: int, market_snapshot: Optional[MarketSnapshotDTO] = None) -> HRContextDTO:
         current_employees = [AgentID(e.id) for e in self.hr_state.employees]
         employee_wages = {AgentID(e.id): self.hr_state.employee_wages.get(e.id, 0) for e in self.hr_state.employees}
         employee_skills = {AgentID(e.id): getattr(e, "labor_skill", 1.0) for e in self.hr_state.employees}
@@ -1417,7 +1514,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             firm_id=AgentID(self.id),
             tick=current_tick,
             budget_pennies=budget_plan.labor_budget_pennies,
-            market_snapshot=MarketSnapshotDTO(tick=0, market_signals={}, market_data={}),
+            market_snapshot=market_snapshot or MarketSnapshotDTO(tick=0, market_signals={}, market_data={}),
             available_cash_pennies=0,
             is_solvent=True,
 
