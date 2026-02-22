@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "phase41_labor_metadata_impl": {
-      "key": "phase41_labor_metadata_impl",
-      "title": "Implement Labor Matching DTO Migration",
-      "type": "jules",
-      "instruction_raw": "Migrate LaborMarket to use LaborMatchDTO instead of raw Order.metadata. Update Firm and Household call sites.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_labor_metadata_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "phase41_test_dto_hygiene_impl": {
       "key": "phase41_test_dto_hygiene_impl",
       "title": "Implement DTO Test Hygiene",
