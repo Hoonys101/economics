@@ -273,7 +273,7 @@ def create_firm(
         config_dto=config_dto,
         initial_inventory=kwargs.get("initial_inventory"),
         loan_market=kwargs.get("loan_market"),
-        sector=kwargs.get("sector", "FOOD"),
+        sector=kwargs.get("sector", "FOOD_PROD"),
         personality=kwargs.get("personality")
     )
 

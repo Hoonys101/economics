@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Tuple, Protocol, runtime_checkable, Optional
 from modules.system.api import DEFAULT_CURRENCY
+from modules.common.enums import IndustryDomain
 
 # --- PROTOCOLS ---
 
@@ -51,7 +52,7 @@ class ProductionStateDTO:
     inventory: Dict[str, Any]
     input_inventory: Dict[str, Any]
     inventory_quality: Dict[str, float]
-    major: str = "GENERAL" # Added for Major-Matching (Phase 4.1)
+    major: IndustryDomain = IndustryDomain.GENERAL # Added for Major-Matching (Phase 4.1)
 
 @dataclass(frozen=True)
 class SalesStateDTO:

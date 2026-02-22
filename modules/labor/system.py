@@ -6,6 +6,7 @@ from modules.market.api import CanonicalOrderDTO, OrderTelemetrySchema
 from simulation.models import Transaction
 from simulation.interfaces.market_interface import IMarket
 from modules.simulation.api import AgentID
+from modules.common.enums import IndustryDomain
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ class LaborMarket(ILaborMarket, IMarket):
         sorted_offers = sorted(self._job_offers, key=lambda x: x.offer_wage, reverse=True)
 
         # Bucket seekers by Major for Performance Optimization (O(N*M) -> O(N*K) where K is subset)
-        seekers_by_major: Dict[str, List[JobSeekerDTO]] = {}
+        seekers_by_major: Dict[IndustryDomain, List[JobSeekerDTO]] = {}
         for seeker in self._job_seekers:
             major = seeker.major
             if major not in seekers_by_major:
@@ -54,8 +55,8 @@ class LaborMarket(ILaborMarket, IMarket):
             # Priority 3: All others (if desperate/allowed, but for perf we limit)
 
             search_buckets = [offer.major]
-            if "GENERAL" not in search_buckets:
-                search_buckets.append("GENERAL")
+            if IndustryDomain.GENERAL not in search_buckets:
+                search_buckets.append(IndustryDomain.GENERAL)
 
             # Add all other buckets for broader search if needed, but penalize?
             # For strict perf, we might only check primary buckets.
@@ -112,7 +113,7 @@ class LaborMarket(ILaborMarket, IMarket):
                     elif seeker.secondary_majors and offer.major in seeker.secondary_majors:
                         major_multiplier = mult_partial # Using Partial for secondary match
                         compatibility = "PARTIAL"
-                    elif offer.major == "GENERAL" or seeker.major == "GENERAL":
+                    elif offer.major == IndustryDomain.GENERAL or seeker.major == IndustryDomain.GENERAL:
                         major_multiplier = mult_general
                         compatibility = "PARTIAL"
                     else:
@@ -218,12 +219,18 @@ class LaborMarket(ILaborMarket, IMarket):
 
             # Convert to JobOffer
             metadata = order_dto.metadata or {}
+            major_str = metadata.get("major", "GENERAL")
+            try:
+                major_enum = IndustryDomain(major_str)
+            except ValueError:
+                major_enum = IndustryDomain.GENERAL
+
             offer = JobOfferDTO(
                 firm_id=AgentID(int(order_dto.agent_id)),
                 offer_wage=order_dto.price_pennies / 100.0,
                 required_education=metadata.get("required_education", 0),
                 quantity=order_dto.quantity,
-                major=metadata.get("major", "GENERAL")
+                major=major_enum
             )
             self.post_job_offer(offer)
 
@@ -233,12 +240,18 @@ class LaborMarket(ILaborMarket, IMarket):
 
             # Convert to JobSeeker
             metadata = order_dto.brand_info or {} # Household uses brand_info for metadata
+            major_str = metadata.get("major", "GENERAL")
+            try:
+                major_enum = IndustryDomain(major_str)
+            except ValueError:
+                major_enum = IndustryDomain.GENERAL
+
             seeker = JobSeekerDTO(
                 household_id=AgentID(int(order_dto.agent_id)),
                 reservation_wage=order_dto.price_pennies / 100.0,
                 education_level=metadata.get("education_level", 0),
                 quantity=order_dto.quantity,
-                major=metadata.get("major", "GENERAL")
+                major=major_enum
             )
             self.post_job_seeker(seeker)
 

@@ -6,6 +6,7 @@ from enum import Enum
 from modules.simulation.dtos.api import FirmConfigDTO, FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
 from modules.system.api import MarketSnapshotDTO, MarketContextDTO
 from modules.simulation.api import IInventoryHandler, AgentID
+from modules.common.enums import IndustryDomain
 from modules.finance.api import IFinancialAgent
 from simulation.models import Order, Transaction
 
@@ -170,7 +171,7 @@ class HRContextDTO(BaseDepartmentContextDTO):
     max_employees: int
     severance_pay_weeks: int
     specialization: str # Added for Major-Matching
-    major: str # Added for Major-Matching (Phase 4.1)
+    major: IndustryDomain # Added for Major-Matching (Phase 4.1)
 
     # Adaptive Learning / Bargaining Memory
     hires_prev_tick: int = 0

@@ -92,7 +92,7 @@ class TestSolvencyLogic:
         firm = Firm(
             core_config=core_config,
             engine=Mock(),
-            specialization="FOOD",
+            specialization="FOOD_PROD",
             productivity_factor=1.0,
             config_dto=config_dto
         )

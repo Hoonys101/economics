@@ -48,7 +48,7 @@ def verify_industrial_revolution():
     from simulation.decisions.standalone_rule_based_firm_engine import StandaloneRuleBasedFirmDecisionEngine
     import random
     
-    dummy_goods = [{"id": "basic_food", "sector": "FOOD"}]
+    dummy_goods = [{"id": "basic_food", "sector": "FOOD_PROD"}]
     initial_needs = {"survival": 50, "social": 10, "growth": 10, "survival_need": 50, "imitation_need": 0, "recognition_need": 0, "wealth_need": 0}
     
     households = [
@@ -75,7 +75,7 @@ def verify_industrial_revolution():
             decision_engine=StandaloneRuleBasedFirmDecisionEngine(Config, logger), 
             value_orientation="PROFIT", 
             config_module=Config, 
-            sector="FOOD", 
+            sector="FOOD_PROD",
             personality=Personality.BALANCED
         )
         for i in range(Config.NUM_FIRMS)
@@ -130,7 +130,7 @@ def verify_industrial_revolution():
          
     # C. Productivity Boost
     # Firm 0's actual output or effective TFP should be 3x base
-    mult = sim.technology_manager.get_productivity_multiplier(firms[0].id, "FOOD")
+    mult = sim.technology_manager.get_productivity_multiplier(firms[0].id, "FOOD_PROD")
     if mult == 3.0:
         logger.info(f"✅ Productivity Multiplier Verified: {mult}")
     else:

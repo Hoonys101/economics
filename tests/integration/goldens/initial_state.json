@@ -736,7 +736,7 @@
           "survival": 10
         },
         "is_luxury": false,
-        "sector": "FOOD"
+        "sector": "FOOD_PROD"
       },
       "clothing": {
         "production_cost": 5,
@@ -746,7 +746,7 @@
           "social": 8
         },
         "is_luxury": true,
-        "sector": "GOODS"
+        "sector": "MANUFACTURING"
       },
       "luxury_food": {
         "production_cost": 10,
@@ -756,7 +756,7 @@
           "social": 5
         },
         "is_luxury": true,
-        "sector": "FOOD"
+        "sector": "FOOD_PROD"
       },
       "education_service": {
         "production_cost": 20,
@@ -766,14 +766,14 @@
         },
         "is_service": true,
         "is_luxury": false,
-        "sector": "SERVICE"
+        "sector": "SERVICES"
       },
       "iron": {
         "production_cost": 2.0,
         "initial_price": 8.0,
         "utility_effects": {},
         "is_luxury": false,
-        "sector": "MATERIAL"
+        "sector": "RAW_MATERIALS"
       },
       "consumer_goods": {
         "production_cost": 5.0,
@@ -782,7 +782,7 @@
           "quality": 10
         },
         "is_luxury": true,
-        "sector": "GOODS",
+        "sector": "MANUFACTURING",
         "is_durable": true,
         "base_lifespan": 50,
         "quality_sensitivity": 0.5,
@@ -798,7 +798,7 @@
         },
         "is_luxury": true,
         "is_veblen": true,
-        "sector": "LUXURY"
+        "sector": "LUXURY_GOODS"
       }
     },
     "GOODS_INITIAL_PRICE": {

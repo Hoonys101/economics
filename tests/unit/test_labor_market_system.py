@@ -4,6 +4,7 @@ from modules.labor.system import LaborMarket
 from modules.labor.api import JobOfferDTO, JobSeekerDTO
 from modules.market.api import CanonicalOrderDTO
 from modules.simulation.api import AgentID
+from modules.common.enums import IndustryDomain
 
 class TestLaborMarketSystem:
     @pytest.fixture
@@ -16,7 +17,7 @@ class TestLaborMarketSystem:
             offer_wage=15.0,
             required_education=2,
             quantity=1.0,
-            major="TECH"
+            major=IndustryDomain.TECHNOLOGY
         )
         market.post_job_offer(offer)
         assert len(market._job_offers) == 1
@@ -28,7 +29,7 @@ class TestLaborMarketSystem:
             reservation_wage=12.0,
             education_level=3,
             quantity=1.0,
-            major="TECH"
+            major=IndustryDomain.TECHNOLOGY
         )
         market.post_job_seeker(seeker)
         assert len(market._job_seekers) == 1
@@ -39,13 +40,13 @@ class TestLaborMarketSystem:
             firm_id=AgentID(101),
             offer_wage=20.0,
             required_education=2,
-            major="TECH"
+            major=IndustryDomain.TECHNOLOGY
         )
         seeker = JobSeekerDTO(
             household_id=AgentID(201),
             reservation_wage=15.0,
             education_level=2,
-            major="TECH"
+            major=IndustryDomain.TECHNOLOGY
         )
         market.post_job_offer(offer)
         market.post_job_seeker(seeker)
@@ -68,13 +69,13 @@ class TestLaborMarketSystem:
             firm_id=AgentID(101),
             offer_wage=20.0,
             required_education=2,
-            major="TECH"
+            major=IndustryDomain.TECHNOLOGY
         )
         seeker = JobSeekerDTO(
             household_id=AgentID(201),
             reservation_wage=15.0,
             education_level=2,
-            major="FOOD"
+            major=IndustryDomain.FOOD_PROD
         )
         market.post_job_offer(offer)
         market.post_job_seeker(seeker)
@@ -92,13 +93,13 @@ class TestLaborMarketSystem:
             firm_id=AgentID(101),
             offer_wage=10.0,
             required_education=2,
-            major="TECH"
+            major=IndustryDomain.TECHNOLOGY
         )
         seeker = JobSeekerDTO(
             household_id=AgentID(201),
             reservation_wage=15.0,
             education_level=2,
-            major="TECH"
+            major=IndustryDomain.TECHNOLOGY
         )
         market.post_job_offer(offer)
         market.post_job_seeker(seeker)
@@ -115,7 +116,7 @@ class TestLaborMarketSystem:
             quantity=1.0,
             price_pennies=2000,
             market_id="labor",
-            metadata={"major": "TECH", "required_education": 2}
+            metadata={"major": "TECHNOLOGY", "required_education": 2}
         )
         sell_order = CanonicalOrderDTO(
             agent_id=201,
@@ -124,7 +125,7 @@ class TestLaborMarketSystem:
             quantity=1.0,
             price_pennies=1500,
             market_id="labor",
-            brand_info={"major": "TECH", "education_level": 2} # brand_info used by Household
+            brand_info={"major": "TECHNOLOGY", "education_level": 2} # brand_info used by Household
         )
 
         market.place_order(buy_order, 1)
@@ -168,9 +169,9 @@ class TestLaborMarketSystem:
         assert len(market._job_seekers) == 1
 
         # Verify defaults
-        assert market._job_offers[0].major == "GENERAL"
+        assert market._job_offers[0].major == IndustryDomain.GENERAL
         assert market._job_offers[0].required_education == 0
-        assert market._job_seekers[0].major == "GENERAL"
+        assert market._job_seekers[0].major == IndustryDomain.GENERAL
         assert market._job_seekers[0].education_level == 0
 
         txs = market.match_orders(1)

@@ -126,21 +126,21 @@ GOODS = {
         "initial_price": 500, # MIGRATION: Int pennies
         "utility_effects": {"survival": 10},
         "is_luxury": False,
-        "sector": "FOOD",
+        "sector": "FOOD_PROD",
     },
     "clothing": {
         "production_cost": 500, # MIGRATION: Int pennies
         "initial_price": 1500, # MIGRATION: Int pennies
         "utility_effects": {"survival": 2, "social": 8},
         "is_luxury": True,
-        "sector": "GOODS",
+        "sector": "MANUFACTURING",
     },
     "luxury_food": {
         "production_cost": 1000, # MIGRATION: Int pennies
         "initial_price": 3000, # MIGRATION: Int pennies
         "utility_effects": {"survival": 12, "social": 5},
         "is_luxury": True,
-        "sector": "FOOD",
+        "sector": "FOOD_PROD",
     },
     "education_service": {
         "production_cost": 2000, # MIGRATION: Int pennies
@@ -148,7 +148,7 @@ GOODS = {
         "utility_effects": {"improvement": 15},
         "is_service": True,
         "is_luxury": False,
-        "sector": "SERVICE",
+        "sector": "SERVICES",
     },
     # WO-030: Iron (Raw Material)
     "iron": {
@@ -156,7 +156,7 @@ GOODS = {
         "initial_price": 800, # MIGRATION: Int pennies
         "utility_effects": {},
         "is_luxury": False,
-        "sector": "MATERIAL",
+        "sector": "RAW_MATERIALS",
     },
     # WO-023: Consumer Goods (Industrial Product)
     "consumer_goods": {
@@ -164,7 +164,7 @@ GOODS = {
         "initial_price": 1500, # MIGRATION: Int pennies
         "utility_effects": {"quality": 10},
         "is_luxury": True, # Treated as luxury/higher tier need
-        "sector": "GOODS",
+        "sector": "MANUFACTURING",
         "is_durable": True,
         "base_lifespan": 50,  # Ticks
         "quality_sensitivity": 0.5,
@@ -176,7 +176,7 @@ GOODS = {
         "utility_effects": {"social": 50},
         "is_luxury": True,
         "is_veblen": True,  # 가격↑ → 수요↑
-        "sector": "LUXURY",
+        "sector": "LUXURY_GOODS",
     },
 }
 
