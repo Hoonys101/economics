@@ -81,6 +81,7 @@ class BudgetInputDTO:
     market_snapshot: MarketSnapshotDTO # For housing prices/rent
     config: HouseholdConfigDTO
     current_tick: int
+    agent_id: Optional[int] = None # Added for Wave 4.3 Identity
 
 @dataclass
 class ConsumptionInputDTO:

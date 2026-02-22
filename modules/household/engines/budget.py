@@ -37,7 +37,7 @@ class BudgetEngine(IBudgetEngine):
         new_econ_state = econ_state.copy()
         self._update_shadow_wage(new_econ_state, market_snapshot, config, current_tick)
         housing_action = self._plan_housing(new_econ_state, market_snapshot, current_tick)
-        budget_plan = self._create_budget_plan(new_econ_state, prioritized_needs, abstract_plan, market_snapshot, config)
+        budget_plan = self._create_budget_plan(new_econ_state, prioritized_needs, abstract_plan, market_snapshot, config, input_dto=input_dto)
         return BudgetOutputDTO(econ_state=new_econ_state, budget_plan=budget_plan, housing_action=housing_action)
 
     def _update_shadow_wage(self, state: EconStateDTO, market_snapshot: Any, config: Any, current_tick: int):
@@ -80,7 +80,7 @@ class BudgetEngine(IBudgetEngine):
                     return HousingActionDTO(action_type='STAY')
         return None
 
-    def _create_budget_plan(self, state: EconStateDTO, needs: List[PrioritizedNeed], abstract_plan: List[Any], market_snapshot: Any, config: Any=None) -> BudgetPlan:
+    def _create_budget_plan(self, state: EconStateDTO, needs: List[PrioritizedNeed], abstract_plan: List[Any], market_snapshot: Any, config: Any=None, input_dto: Any=None) -> BudgetPlan:
         total_cash = state.wallet.get_balance(DEFAULT_CURRENCY)
         allocations: Dict[str, int] = {}
         spent = 0
@@ -111,7 +111,12 @@ class BudgetEngine(IBudgetEngine):
                     spent += allocated_cash
 
                     qty = 1.0 # One treatment
-                    agent_id = getattr(state.wallet, 'owner_id', None)
+                    # Wave 4.3 Identity Fix: Use explicit agent_id from input_dto if available
+                    # Fallback to wallet owner only if not provided (legacy)
+                    agent_id = getattr(input_dto, 'agent_id', None)
+                    if not agent_id:
+                        agent_id = getattr(state.wallet, 'owner_id', None)
+
                     if agent_id:
                         # Price limit is what we are willing to pay per unit
                         price_limit = allocated_cash / 100.0

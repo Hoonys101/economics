@@ -659,7 +659,8 @@ class Household(
             abstract_plan=initial_orders,
             market_snapshot=market_snapshot,
             config=self.config,
-            current_tick=current_time
+            current_tick=current_time,
+            agent_id=self.id # Wave 4.3: Identity Pass-through
         )
         budget_output = self.budget_engine.allocate_budget(budget_input)
 
