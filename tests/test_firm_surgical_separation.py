@@ -4,7 +4,7 @@ from simulation.firms import Firm
 from modules.firm.api import (
     FinanceDecisionInputDTO, BudgetPlanDTO,
     HRDecisionInputDTO, HRDecisionOutputDTO,
-    FirmSnapshotDTO
+    FirmSnapshotDTO, HRIntentDTO, SalesIntentDTO
 )
 from simulation.models import Order
 from simulation.dtos import DecisionInputDTO
@@ -75,16 +75,27 @@ class TestFirmSurgicalSeparation:
         mock_budget.labor_budget_pennies = 10000
         mock_firm.finance_engine.plan_budget.return_value = mock_budget
 
-        mock_hr_result = MagicMock(spec=HRDecisionOutputDTO)
-        engine_order = Order(
-            agent_id=1, side="BUY", item_id="labor", quantity=1,
-            price_pennies=1000, market_id="labor",
-            price_limit=10.0
+        # Use real DTO to satisfy type checks in Firm
+        mock_hr_result = HRIntentDTO(
+            hiring_target=1,
+            wage_updates={},
+            fire_employee_ids=[]
         )
-        mock_hr_result.hiring_orders = [engine_order]
-        mock_firm.hr_engine.manage_workforce.return_value = mock_hr_result
 
-        # Configure Pricing Engine Mock (called in _calculate_invisible_hand_price)
+        # Explicitly ensure hr_engine is a fresh MagicMock
+        mock_firm.hr_engine = MagicMock()
+        # Use return_value to ensure return value is respected
+        mock_firm.hr_engine.decide_workforce.return_value = mock_hr_result
+
+        # Configure Sales Engine (Crucial: Must return a list for sales_orders)
+        mock_sales_result = MagicMock(spec=SalesIntentDTO)
+        mock_sales_result.sales_orders = []
+        mock_sales_result.price_adjustments = {}
+        mock_sales_result.marketing_spend_pennies = 0
+        mock_sales_result.new_marketing_budget_rate = 0.05
+        mock_firm.sales_engine.decide_pricing.return_value = mock_sales_result
+
+        # Configure Pricing Engine Mock
         mock_pricing_result = MagicMock()
         mock_pricing_result.new_price = 1000
         mock_pricing_result.shadow_price = 1000.0
@@ -93,24 +104,26 @@ class TestFirmSurgicalSeparation:
         mock_pricing_result.excess_demand_ratio = 0.0
         mock_firm.pricing_engine.calculate_price.return_value = mock_pricing_result
 
-        # Configure Sales Engine Mock (check_and_apply_dynamic_pricing)
-        # It must return DynamicPricingResultDTO with the passed orders
+        # Configure Sales Engine dynamic pricing check (side effect)
         def side_effect_dynamic_pricing(state, orders, *args, **kwargs):
             from modules.firm.api import DynamicPricingResultDTO
             return DynamicPricingResultDTO(orders=orders, price_updates={})
         mock_firm.sales_engine.check_and_apply_dynamic_pricing.side_effect = side_effect_dynamic_pricing
 
         # Setup Legacy Decision Engine Return
+        # Must be BUY for non-labor/non-internal to pass new filters (SalesEngine handles SELL)
         legacy_order_keep = Order(
-            agent_id=1, side="SELL", item_id="food", quantity=10,
-            price_pennies=2000, market_id="food",
-            price_limit=20.0
+            agent_id=1, side="BUY", item_id="wood", quantity=10,
+            price_pennies=500, market_id="wood",
+            price_limit=5.0
         )
         legacy_order_ignore = Order(
             agent_id=1, side="BUY", item_id="labor", quantity=5, # Should be filtered
             price_pennies=1000, market_id="labor",
             price_limit=10.0
         )
+
+        # Configure the DE that was injected in fixture
         mock_firm.decision_engine.make_decisions.return_value = ([legacy_order_keep, legacy_order_ignore], "TACTIC")
 
         # Act
@@ -123,22 +136,23 @@ class TestFirmSurgicalSeparation:
         assert call_args_fin.current_tick == 10
 
         # Assert: HR Engine called
-        assert mock_firm.hr_engine.manage_workforce.called
-        call_args_hr = mock_firm.hr_engine.manage_workforce.call_args[0][0]
-        assert isinstance(call_args_hr, HRDecisionInputDTO)
-        assert call_args_hr.budget_plan == mock_budget
-
-        # Assert: Orders Merged and Filtered
-        # external_orders should contain engine_order and legacy_order_keep, but NOT legacy_order_ignore
-        assert len(external_orders) == 2
-        assert engine_order in external_orders
-        assert legacy_order_keep in external_orders
-        assert legacy_order_ignore not in external_orders
+        assert mock_firm.hr_engine.decide_workforce.called
 
         # Assert: Internal execution called
         mock_firm.execute_internal_orders.assert_called_once()
         executed_orders = mock_firm.execute_internal_orders.call_args[0][0]
-        assert len(executed_orders) == 2 # Same list passed to internal executor (it filters internally if needed)
+        # Should be a list, not a Mock
+        assert isinstance(executed_orders, list)
+
+        # Assert: Orders Merged and Filtered
+        # external_orders should contain generated HR order and legacy_order_keep
+        assert len(external_orders) == 2
+        assert legacy_order_keep in external_orders
+        # Verify HR order presence
+        hr_orders = [o for o in external_orders if o.market_id == 'labor']
+        assert len(hr_orders) == 1
+        assert hr_orders[0].side == 'BUY'
+        assert legacy_order_ignore not in external_orders
 
     def test_state_persistence_across_ticks(self, mock_firm):
         """
@@ -149,20 +163,11 @@ class TestFirmSurgicalSeparation:
         mock_firm.hr_state.employees = []
         mock_firm.hr_state.employee_wages = {}
 
-        # 2. Simulate HR Engine returning a wage update (as if from firing or negotiation)
-        # Note: In the current refactor, HREngine returns orders (hire/fire) and wage updates.
-        # But 'finalize_firing' and 'hire' are executed by transaction handlers or internal execution.
-        # So we verify that IF an internal order is executed, state changes.
-
-        # Mock action executor to APPLY changes or we verify that Firm's logic applies them.
-        # Firm.make_decision calls execute_internal_orders.
-        # But for HR, hiring happens via Market (External). Firing is Internal.
-
         # Test Case: Firing
         fire_order = Order(
             agent_id=1, side="FIRE", item_id="internal", quantity=1,
             price_pennies=1000, market_id="internal", target_agent_id=101,
-            price_limit=10.0 # Added price_limit
+            price_limit=10.0
         )
 
         # Inject employee to fire
@@ -199,7 +204,3 @@ class TestFirmSurgicalSeparation:
 
         # 2. finalize_firing called
         mock_firm.hr_engine.finalize_firing.assert_called_with(mock_firm.hr_state, 101)
-
-        # Since finalize_firing is a mock in engines, the state won't change automatically
-        # unless we set side_effect.
-        # But this confirms the Orchestrator (ActionExecutor) correctly delegated the Persistence/State Update step.

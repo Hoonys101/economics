@@ -6,7 +6,7 @@ from simulation.systems.liquidation_manager import LiquidationManager
 from simulation.firms import Firm
 from simulation.core_agents import Household
 from simulation.dtos.api import SimulationState
-from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
+from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, AssetBuyoutResultDTO
 from modules.system.registry import AgentRegistry
 from modules.hr.service import HRService
 from modules.finance.service import TaxService
@@ -25,6 +25,13 @@ class TestMultiCurrencyLiquidation(unittest.TestCase):
         # Mock public manager
         self.mock_public_manager = MagicMock()
         self.mock_public_manager.managed_inventory = {}
+        self.mock_public_manager.execute_asset_buyout.return_value = AssetBuyoutResultDTO(
+            success=True,
+            total_paid_pennies=0,
+            transaction_id="default_tx",
+            items_acquired={},
+            buyer_id=999
+        )
 
         self.manager = LiquidationManager(
             self.mock_settlement,

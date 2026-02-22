@@ -248,6 +248,25 @@ class TestPhase29Depression(unittest.TestCase):
             f.get_balance.return_value = 5000.0
             f.get_all_balances.return_value = {DEFAULT_CURRENCY: 5000.0}
 
+            # Configure financial properties for FinanceSystem.evaluate_solvency
+            # And get_financial_snapshot for EconomicIndicatorTracker
+            f.configure_mock(
+                balance_pennies=500000,
+                capital_stock_pennies=0,
+                inventory_value_pennies=0,
+                total_debt_pennies=0,
+                retained_earnings_pennies=100000,
+                average_profit_pennies=10000,
+            )
+
+            f.get_financial_snapshot.return_value = {
+                "total_assets": 500000,
+                "working_capital": 500000,
+                "retained_earnings": 100000,
+                "average_profit": 10000,
+                "total_debt": 0
+            }
+
             # Phase 29 Refinement: Mock FinanceDepartment
             f.finance = MagicMock()
             f.finance_state = MagicMock()
@@ -265,15 +284,6 @@ class TestPhase29Depression(unittest.TestCase):
             f.finance.get_inventory_value.return_value = 0.0
             f.finance.check_cash_crunch.return_value = False
             f.get_sensory_snapshot.return_value = {"total_wealth": 5000.0, "approval_rating": 0.0, "is_active": True}
-
-            # Phase 29 Refinement: Mock get_financial_snapshot
-            f.get_financial_snapshot.return_value = {
-                "total_assets": 5500.0,
-                "working_capital": 5500.0,
-                "retained_earnings": 1000.0,
-                "average_profit": 100.0,
-                "total_debt": 0.0
-            }
 
         self.repository = MagicMock(spec=SimulationRepository)
         self.repository.runs = MagicMock()

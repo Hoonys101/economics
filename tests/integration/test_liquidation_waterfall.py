@@ -10,7 +10,7 @@ from simulation.dtos.api import SimulationState
 from modules.simulation.dtos.api import FirmConfigDTO
 from modules.simulation.api import LiquidationConfigDTO
 from modules.finance.api import EquityStake
-from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY
+from modules.system.api import IAssetRecoverySystem, DEFAULT_CURRENCY, AssetBuyoutResultDTO
 from modules.system.registry import AgentRegistry
 from modules.hr.service import HRService
 from modules.finance.service import TaxService
@@ -21,6 +21,14 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         self.mock_public_manager = MagicMock(spec=IAssetRecoverySystem)
         self.mock_public_manager.managed_inventory = {}
         self.mock_public_manager.id = 999
+        # Default mock return for asset buyout (Success but 0 paid if no inventory)
+        self.mock_public_manager.execute_asset_buyout.return_value = AssetBuyoutResultDTO(
+            success=True,
+            total_paid_pennies=0,
+            transaction_id="default_tx",
+            items_acquired={},
+            buyer_id=999
+        )
         self.mock_shareholder_registry = MagicMock()
         self.mock_settlement.transfer.return_value = True # Default success
 
@@ -276,6 +284,15 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
         self.mock_public_manager.managed_inventory = {"apples": 0.0}
         self.mock_public_manager.receive_liquidated_assets = MagicMock()
 
+        # Override buyout result for this test scenario
+        self.mock_public_manager.execute_asset_buyout.return_value = AssetBuyoutResultDTO(
+            success=True,
+            total_paid_pennies=80000, # 800.0 * 100
+            transaction_id="buyout_tx",
+            items_acquired={"apples": 100.0},
+            buyer_id=999
+        )
+
         # Employee Claim 500.0
         # 500 = Tenure * 2 * 7 * 100 => Tenure = 0.35 yrs
         ticks = 0.357 * 365
@@ -327,8 +344,10 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
 
         # 3. Verify Inventory Cleared
         self.assertEqual(self.firm.inventory, {})
-        # 4. Verify Public Manager received inventory via interface
-        self.mock_public_manager.receive_liquidated_assets.assert_called_with({"apples": 100.0})
+        # 4. Verify Public Manager execution
+        self.mock_public_manager.execute_asset_buyout.assert_called()
+        args, _ = self.mock_public_manager.execute_asset_buyout.call_args
+        self.assertEqual(args[0].inventory, {"apples": 100.0})
 
 if __name__ == '__main__':
     unittest.main()

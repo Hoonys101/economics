@@ -518,6 +518,14 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         return sum(self.finance_state.profit_history)
 
     @property
+    def average_profit_pennies(self) -> int:
+        """The average profit over the relevant history in pennies."""
+        history = self.finance_state.profit_history
+        if not history:
+            return 0
+        return int(sum(history) / len(history))
+
+    @property
     def inventory_last_sale_tick(self) -> Dict[str, int]:
         return self.sales_state.inventory_last_sale_tick
 
@@ -568,6 +576,28 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         return self.valuation
 
+    def get_financial_snapshot(self) -> Dict[str, Any]:
+        """
+        Returns a financial snapshot for reporting.
+        Implements expected interface for EconomicIndicatorTracker.
+        """
+        balances = self.financial_component.get_all_balances()
+        total_cash = sum(balances.values()) # Aggregated in pennies (simplified)
+
+        # Calculate Total Assets in Pennies
+        # Capital Stock Value (Estimate: 1 unit = 100 pennies)
+        capital_val = self.capital_stock_pennies * 100
+
+        total_assets = total_cash + self.inventory_value_pennies + capital_val
+
+        return {
+            "total_assets": total_assets,
+            "working_capital": total_cash - self.finance_state.total_debt_pennies, # Approx
+            "retained_earnings": self.retained_earnings_pennies,
+            "average_profit": self.average_profit_pennies,
+            "total_debt": self.finance_state.total_debt_pennies
+        }
+
     def calculate_valuation(self) -> int:
         """
         Calculates and updates firm valuation.
@@ -612,6 +642,17 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
     def reset_finance(self):
         """Resets finance counters for the next tick."""
         self.finance_state.reset_tick_counters(DEFAULT_CURRENCY)
+
+    def reset(self) -> None:
+        """
+        Resets the firm's state for the next simulation tick.
+        Clears temporary counters and prepares for new decisions.
+        """
+        self.reset_finance()
+        self.sales_volume_this_tick = 0.0
+        # Reset other per-tick states if necessary
+        # e.g., self.production_state.current_production is state, not counter
+        # self.inventory_component.reset_tick() # If it exists
 
     def init_ipo(self, stock_market: StockMarket):
         """Register firm in stock market order book."""

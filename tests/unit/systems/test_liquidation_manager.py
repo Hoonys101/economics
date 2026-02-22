@@ -6,7 +6,7 @@ from simulation.systems.liquidation_manager import LiquidationManager
 from modules.common.dtos import Claim
 from simulation.firms import Firm
 from simulation.dtos.api import SimulationState
-from modules.system.api import IAssetRecoverySystem, IAgentRegistry, DEFAULT_CURRENCY
+from modules.system.api import IAssetRecoverySystem, IAgentRegistry, DEFAULT_CURRENCY, AssetBuyoutResultDTO
 from modules.hr.api import IHRService
 from modules.finance.api import ITaxService, ILiquidatable
 from simulation.finance.api import ISettlementSystem
@@ -21,6 +21,13 @@ class TestLiquidationManager(unittest.TestCase):
         self.mock_shareholder = MagicMock(spec=IShareholderRegistry)
         self.mock_public = MagicMock(spec=IAssetRecoverySystem)
         self.mock_public.receive_liquidated_assets = MagicMock()
+        self.mock_public.execute_asset_buyout.return_value = AssetBuyoutResultDTO(
+            success=True,
+            total_paid_pennies=0,
+            transaction_id="default_tx",
+            items_acquired={},
+            buyer_id=999
+        )
 
         self.manager = LiquidationManager(
             self.mock_settlement,
@@ -128,6 +135,14 @@ class TestLiquidationManager(unittest.TestCase):
             market_prices={"apple": 500}
         )
 
+        self.mock_public.execute_asset_buyout.return_value = AssetBuyoutResultDTO(
+            success=True,
+            total_paid_pennies=4000, # 40.0 * 100
+            transaction_id="buyout_tx",
+            items_acquired={"apple": 10},
+            buyer_id=999
+        )
+
         self.mock_settlement.transfer.return_value = True
 
         self.manager.initiate_liquidation(self.firm, self.state)
@@ -143,7 +158,9 @@ class TestLiquidationManager(unittest.TestCase):
             currency=DEFAULT_CURRENCY
         )
 
-        # Also check receive_liquidated_assets
-        self.mock_public.receive_liquidated_assets.assert_called_with({"apple": 10})
+        # Also check execute_asset_buyout
+        self.mock_public.execute_asset_buyout.assert_called()
+        args, _ = self.mock_public.execute_asset_buyout.call_args
+        self.assertEqual(args[0].inventory, {"apple": 10})
         # Check inventory is cleared via clearing method
         self.firm.clear_inventory.assert_called_once()
