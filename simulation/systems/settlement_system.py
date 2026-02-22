@@ -348,7 +348,7 @@ class SettlementSystem(IMonetaryAuthority):
         Ensures both legs (A->B, B->A) succeed or neither occurs.
         """
         # 1. Validate Inputs
-        if match["amount_a_pennies"] <= 0 or match["amount_b_pennies"] <= 0:
+        if match.amount_a_pennies <= 0 or match.amount_b_pennies <= 0:
             self.logger.error(f"FX_SWAP_FAIL | Non-positive amounts: {match}")
             return None
 
@@ -357,39 +357,39 @@ class SettlementSystem(IMonetaryAuthority):
         party_b = None
 
         if self.agent_registry:
-            party_a = self.agent_registry.get_agent(match["party_a_id"])
-            party_b = self.agent_registry.get_agent(match["party_b_id"])
+            party_a = self.agent_registry.get_agent(match.party_a_id)
+            party_b = self.agent_registry.get_agent(match.party_b_id)
 
         if not party_a or not party_b:
-            self.logger.error(f"FX_SWAP_FAIL | Agents not found. A: {match['party_a_id']}, B: {match['party_b_id']}")
+            self.logger.error(f"FX_SWAP_FAIL | Agents not found. A: {match.party_a_id}, B: {match.party_b_id}")
             return None
 
         # 3. Seamless Funds Check (Pre-flight)
         # Note: This is an optimization. The engine will strictly enforce this, but we check early to avoid engine overhead.
-        if not self._prepare_seamless_funds(party_a, match["amount_a_pennies"], match["currency_a"]):
+        if not self._prepare_seamless_funds(party_a, match.amount_a_pennies, match.currency_a):
             return None
-        if not self._prepare_seamless_funds(party_b, match["amount_b_pennies"], match["currency_b"]):
+        if not self._prepare_seamless_funds(party_b, match.amount_b_pennies, match.currency_b):
             return None
 
         # 4. Construct Atomic Batch
         # Leg 1: A -> B (Currency A)
         tx1 = TransactionDTO(
-            transaction_id=f"swap_{match['match_tick']}_leg1",
+            transaction_id=f"swap_{match.match_tick}_leg1",
             source_account_id=str(party_a.id),
             destination_account_id=str(party_b.id),
-            amount=match["amount_a_pennies"],
-            currency=match["currency_a"],
-            description=f"FX Swap Leg 1: {match['amount_a_pennies']} {match['currency_a']}"
+            amount=match.amount_a_pennies,
+            currency=match.currency_a,
+            description=f"FX Swap Leg 1: {match.amount_a_pennies} {match.currency_a}"
         )
 
         # Leg 2: B -> A (Currency B)
         tx2 = TransactionDTO(
-            transaction_id=f"swap_{match['match_tick']}_leg2",
+            transaction_id=f"swap_{match.match_tick}_leg2",
             source_account_id=str(party_b.id),
             destination_account_id=str(party_a.id),
-            amount=match["amount_b_pennies"],
-            currency=match["currency_b"],
-            description=f"FX Swap Leg 2: {match['amount_b_pennies']} {match['currency_b']}"
+            amount=match.amount_b_pennies,
+            currency=match.currency_b,
+            description=f"FX Swap Leg 2: {match.amount_b_pennies} {match.currency_b}"
         )
 
         # 5. Execute Atomically
@@ -412,17 +412,17 @@ class SettlementSystem(IMonetaryAuthority):
         return Transaction(
             buyer_id=party_a.id,
             seller_id=party_b.id,
-            item_id=match["currency_a"],
-            quantity=match["amount_a_pennies"],
-            price=match["rate_a_to_b"], # Store rate as price
-            total_pennies=match["amount_a_pennies"],
+            item_id=match.currency_a,
+            quantity=match.amount_a_pennies,
+            price=match.rate_a_to_b, # Store rate as price
+            total_pennies=match.amount_a_pennies,
             market_id="fx_market",
             transaction_type="FX_SWAP",
-            time=match["match_tick"],
+            time=match.match_tick,
             metadata={
-                "swap_leg_2_amount": match["amount_b_pennies"],
-                "swap_leg_2_currency": match["currency_b"],
-                "rate": match["rate_a_to_b"]
+                "swap_leg_2_amount": match.amount_b_pennies,
+                "swap_leg_2_currency": match.currency_b,
+                "rate": match.rate_a_to_b
             }
         )
 

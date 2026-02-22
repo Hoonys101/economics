@@ -66,16 +66,16 @@ def test_execute_swap_success(settlement_system):
     registry.get_agent.side_effect = get_agent_side_effect
 
     # Define Match
-    match: FXMatchDTO = {
-        "party_a_id": 101,
-        "party_b_id": 102,
-        "amount_a_pennies": 500,
-        "currency_a": "USD",
-        "amount_b_pennies": 400,
-        "currency_b": "EUR",
-        "match_tick": 1,
-        "rate_a_to_b": 0.8
-    }
+    match = FXMatchDTO(
+        party_a_id=101,
+        party_b_id=102,
+        amount_a_pennies=500,
+        currency_a="USD",
+        amount_b_pennies=400,
+        currency_b="EUR",
+        match_tick=1,
+        rate_a_to_b=0.8
+    )
 
     # Execute
     tx = system.execute_swap(match)
@@ -103,16 +103,16 @@ def test_execute_swap_insufficient_funds_rollback(settlement_system):
 
     registry.get_agent.side_effect = get_agent_side_effect
 
-    match: FXMatchDTO = {
-        "party_a_id": 101,
-        "party_b_id": 102,
-        "amount_a_pennies": 500,
-        "currency_a": "USD",
-        "amount_b_pennies": 400, # Needs 400 EUR
-        "currency_b": "EUR",
-        "match_tick": 1,
-        "rate_a_to_b": 0.8
-    }
+    match = FXMatchDTO(
+        party_a_id=101,
+        party_b_id=102,
+        amount_a_pennies=500,
+        currency_a="USD",
+        amount_b_pennies=400, # Needs 400 EUR
+        currency_b="EUR",
+        match_tick=1,
+        rate_a_to_b=0.8
+    )
 
     # Execute
     tx = system.execute_swap(match)
@@ -136,16 +136,16 @@ def test_execute_swap_invalid_amounts(settlement_system):
 
     registry.get_agent.side_effect = get_agent_side_effect
 
-    match: FXMatchDTO = {
-        "party_a_id": 101,
-        "party_b_id": 102,
-        "amount_a_pennies": -500, # Negative
-        "currency_a": "USD",
-        "amount_b_pennies": 400,
-        "currency_b": "EUR",
-        "match_tick": 1,
-        "rate_a_to_b": 0.8
-    }
+    match = FXMatchDTO(
+        party_a_id=101,
+        party_b_id=102,
+        amount_a_pennies=-500, # Negative
+        currency_a="USD",
+        amount_b_pennies=400,
+        currency_b="EUR",
+        match_tick=1,
+        rate_a_to_b=0.8
+    )
 
     tx = system.execute_swap(match)
     assert tx is None
@@ -161,16 +161,16 @@ def test_execute_swap_missing_agent(settlement_system):
 
     registry.get_agent.side_effect = get_agent_side_effect
 
-    match: FXMatchDTO = {
-        "party_a_id": 101,
-        "party_b_id": 102,
-        "amount_a_pennies": 500,
-        "currency_a": "USD",
-        "amount_b_pennies": 400,
-        "currency_b": "EUR",
-        "match_tick": 1,
-        "rate_a_to_b": 0.8
-    }
+    match = FXMatchDTO(
+        party_a_id=101,
+        party_b_id=102,
+        amount_a_pennies=500,
+        currency_a="USD",
+        amount_b_pennies=400,
+        currency_b="EUR",
+        match_tick=1,
+        rate_a_to_b=0.8
+    )
 
     tx = system.execute_swap(match)
     assert tx is None

@@ -1,35 +1,28 @@
-from typing import TypedDict, List, Dict, Optional, Protocol, runtime_checkable
+from typing import TypedDict, List, Dict, Optional, Protocol, runtime_checkable, Any
 from dataclasses import dataclass, field
 
 from modules.simulation.api import AgentID
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 from simulation.models import Transaction
+from modules.finance.dtos import LoanApplicationDTO, LoanDTO, DepositDTO
 
 # =================================================================
 # 1. CORE STATE DTOs (The Financial Ledger)
 # =================================================================
 
 # Represents a single loan on the books
-@dataclass
-class LoanStateDTO:
-    loan_id: str
-    borrower_id: AgentID
-    lender_id: AgentID # e.g., Bank ID
-    principal_pennies: int
-    remaining_principal_pennies: int
-    interest_rate: float
-    origination_tick: int
-    due_tick: int
-    is_defaulted: bool = False
+# Mapped to LoanDTO for consistency, but with strict state requirements if needed.
+# For now, we alias it or inherit. Since LoanDTO has optional fields that are required here,
+# we might want to keep a strict version, but for DTO purity, let's try to use LoanDTO.
+# But LoanDTO has optional due_tick. LoanStateDTO requires it.
+# Let's keep LoanStateDTO as a specialized version or alias it if we accept Optionals.
+# To avoid breakage, let's Alias it but developers should populate all fields.
+LoanStateDTO = LoanDTO
 
 # Represents a single deposit account
-@dataclass
-class DepositStateDTO:
-    deposit_id: str
-    customer_id: AgentID
-    balance_pennies: int
-    interest_rate: float
-    currency: CurrencyCode = DEFAULT_CURRENCY
+# DepositDTO in dtos.py has owner_id. DepositStateDTO has customer_id.
+# We should probably update DepositStateDTO to use DepositDTO and alias/map fields.
+DepositStateDTO = DepositDTO
 
 # Represents a government bond
 @dataclass
@@ -77,15 +70,7 @@ class EngineOutputDTO:
     updated_ledger: FinancialLedgerDTO
     generated_transactions: List[Transaction] = field(default_factory=list)
 
-# Input for assessing a new loan application
-@dataclass
-class LoanApplicationDTO:
-    borrower_id: AgentID
-    lender_id: AgentID # Specific bank targeted
-    amount_pennies: int
-    # Borrower financial profile, credit score, etc.
-    # To be defined, but let's assume it's a dict for now
-    borrower_profile: Dict
+# LoanApplicationDTO is now imported from modules.finance.dtos
 
 # Decision from the risk assessment engine
 @dataclass

@@ -1,9 +1,13 @@
-from typing import TypedDict, Dict, Optional, List, TypeAlias, Literal
+from __future__ import annotations
+from typing import Dict, Optional, List, TypeAlias, Literal, Any
+from dataclasses import dataclass, field
 from modules.simulation.api import AgentID
 
 CurrencyCode: TypeAlias = str
+LoanStatus = Literal["PENDING", "ACTIVE", "PAID", "DEFAULTED"]
 
-class MoneyDTO(TypedDict):
+@dataclass
+class MoneyDTO:
     """
     Represents a monetary value with its associated currency.
     MIGRATION NOTE: Used to be float 'amount'. Now 'amount_pennies' (int).
@@ -11,46 +15,72 @@ class MoneyDTO(TypedDict):
     amount_pennies: int
     currency: CurrencyCode
 
-class MultiCurrencyWalletDTO(TypedDict):
+@dataclass
+class MultiCurrencyWalletDTO:
     """Represents a complete portfolio of assets, keyed by currency."""
     balances: Dict[CurrencyCode, int] # Pennies
 
-class InvestmentOrderDTO(TypedDict):
+@dataclass
+class InvestmentOrderDTO:
     """Defines an internal order for investment (e.g., R&D, Capex)."""
     order_type: str # e.g., "INVEST_RD", "INVEST_AUTOMATION"
     investment: MoneyDTO
-    target_agent_id: Optional[AgentID] # For M&A, etc.
+    target_agent_id: Optional[AgentID] = None # For M&A, etc.
 
 # --- Bank Decomposition DTOs (TD-274) ---
 
-LoanStatus = Literal["PENDING", "ACTIVE", "PAID", "DEFAULTED"]
-
-class LoanApplicationDTO(TypedDict):
-    applicant_id: AgentID
+@dataclass
+class LoanApplicationDTO:
+    """
+    Input for assessing a new loan application.
+    Unified DTO merging engine_api and legacy specs.
+    """
+    borrower_id: AgentID
     amount_pennies: int
-    purpose: str
-    term_months: int # Or ticks, depending on usage. Assuming ticks based on Bank code.
-    # Spec says term_months, but Bank code uses term_ticks. I'll stick to spec name but note usage.
 
-class LoanDTO(TypedDict):
+    # Optional fields
+    lender_id: Optional[AgentID] = None # Specific bank targeted
+    borrower_profile: Optional[Dict[str, Any]] = None # Financial profile
+
+    # Legacy/Spec fields
+    applicant_id: Optional[AgentID] = None # Deprecated, use borrower_id
+    purpose: Optional[str] = None
+    term_months: Optional[int] = None # Or ticks
+
+@dataclass
+class LoanDTO:
+    """
+    Represents a loan, either as state or data transfer.
+    Unified DTO merging LoanStateDTO and legacy LoanDTO.
+    """
     loan_id: str
     borrower_id: AgentID
     principal_pennies: int
-    interest_rate: float
-    term_months: int
     remaining_principal_pennies: int
-    status: LoanStatus
+    interest_rate: float
     origination_tick: int
-    due_tick: Optional[int]
 
-class DepositDTO(TypedDict):
+    # Unified fields
+    lender_id: Optional[AgentID] = None
+    due_tick: Optional[int] = None
+    term_months: Optional[int] = None
+    status: LoanStatus = "ACTIVE"
+    is_defaulted: bool = False
+
+@dataclass
+class DepositDTO:
+    """Represents a single deposit account."""
     owner_id: AgentID
     balance_pennies: int
     interest_rate: float
+    deposit_id: Optional[str] = None # Added for compatibility with DepositStateDTO
+    customer_id: Optional[AgentID] = None # Alias for owner_id if needed
+    currency: CurrencyCode = "USD" # Default currency
 
 # --- Phase 4.1: FX Barter DTOs ---
 
-class FXMatchDTO(TypedDict):
+@dataclass
+class FXMatchDTO:
     """
     Represents an atomic swap agreement between two parties.
     Used by the Matching Engine to instruct Settlement.
