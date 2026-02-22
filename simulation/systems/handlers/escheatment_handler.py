@@ -38,7 +38,14 @@ class EscheatmentHandler(ITransactionHandler):
         if balance <= 0:
             return True # No assets to transfer, consider success
 
-        gov = context.government
+        # Use seller (Government) if available, otherwise fallback to context
+        gov = seller if seller else context.government
+
+        if gov is None:
+            # Should not happen if TransactionProcessor did its job, but safe guard
+            logger.error(f"Escheatment failed: No Government agent found. Buyer: {buyer.id}")
+            return False
+
         credits = [(gov, balance, "escheatment")]
 
         success = context.settlement_system.settle_atomic(buyer, credits, context.time)
