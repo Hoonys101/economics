@@ -4,6 +4,7 @@ from simulation.systems.inheritance_manager import InheritanceManager
 from simulation.core_agents import Household
 from simulation.portfolio import Portfolio
 from simulation.models import Transaction
+from modules.system.api import DEFAULT_CURRENCY
 
 class TestInheritanceManager:
     @pytest.fixture
@@ -36,12 +37,19 @@ class TestInheritanceManager:
 
         return simulation
 
-    def create_household(self, id, assets=0.0):
+    def create_household(self, id, assets=0):
         h = MagicMock(spec=Household)
         h.id = id
         h._econ_state = MagicMock()
         h._bio_state = MagicMock()
-        h._econ_state.assets = assets
+
+        # Configure Wallet Mock (SSoT preference)
+        h.wallet = MagicMock()
+        h.wallet.get_balance.return_value = int(assets)
+
+        # Configure fallback assets dict just in case
+        h.assets = {DEFAULT_CURRENCY: int(assets)}
+
         h._econ_state.portfolio = Portfolio(id)
         h._econ_state.owned_properties = []
         h._bio_state.is_active = True
@@ -50,7 +58,8 @@ class TestInheritanceManager:
 
     def test_distribution_transaction_generation(self, setup_manager, mocks):
         """Test Case 1: Verify correct distribution transaction is generated for heirs."""
-        deceased = self.create_household(1, assets=10000.0)
+        # 10000.0 dollars -> 1,000,000 pennies
+        deceased = self.create_household(1, assets=1000000)
         deceased._econ_state.portfolio.add("FIRM_A", 100, 10.0)
 
         heir1 = self.create_household(2)
@@ -70,7 +79,8 @@ class TestInheritanceManager:
 
     def test_multiple_heirs_metadata(self, setup_manager, mocks):
         """Test Case 2: Verify metadata for multiple heirs."""
-        deceased = self.create_household(1, assets=100.00)
+        # 100.00 dollars -> 10,000 pennies
+        deceased = self.create_household(1, assets=10000)
 
         heir1 = self.create_household(2)
         heir2 = self.create_household(3)
@@ -86,7 +96,8 @@ class TestInheritanceManager:
 
     def test_escheatment_when_no_heirs(self, setup_manager, mocks):
         """Test Case 3: Verify escheatment transaction when no heirs exist."""
-        deceased = self.create_household(1, assets=1000.0)
+        # 1000.0 dollars -> 100,000 pennies
+        deceased = self.create_household(1, assets=100000)
         deceased._bio_state.children_ids = [] # No children
 
         txs = setup_manager.process_death(deceased, mocks.government, mocks)
@@ -99,7 +110,7 @@ class TestInheritanceManager:
 
     def test_zero_assets_distribution(self, setup_manager, mocks):
         """Test Case 4: Verify transaction even with zero assets (process usually runs)."""
-        deceased = self.create_household(1, assets=0.0)
+        deceased = self.create_household(1, assets=0)
         heir1 = self.create_household(2)
         deceased._bio_state.children_ids = [2]
         mocks.agents = {2: heir1}
@@ -116,7 +127,8 @@ class TestInheritanceManager:
         setup_manager.config_module.INHERITANCE_TAX_RATE = 0.5
         setup_manager.config_module.INHERITANCE_DEDUCTION = 0.0
 
-        deceased = self.create_household(1, assets=1000.0)
+        # 1000.0 dollars -> 100,000 pennies
+        deceased = self.create_household(1, assets=100000)
         heir1 = self.create_household(2)
         deceased._bio_state.children_ids = [2]
         mocks.agents = {2: heir1}
@@ -125,4 +137,7 @@ class TestInheritanceManager:
 
         tax_tx = next((t for t in txs if t.transaction_type == "tax"), None)
         assert tax_tx is not None
-        assert tax_tx.price == 500.0 # 50% of 1000
+        # Expected price is Dollars (legacy) = 50,000 pennies / 100 = 500.0
+        assert tax_tx.price == 500.0
+        # Also verify total_pennies
+        assert tax_tx.total_pennies == 50000

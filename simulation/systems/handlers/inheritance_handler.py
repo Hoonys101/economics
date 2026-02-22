@@ -25,14 +25,9 @@ class InheritanceHandler(ITransactionHandler):
 
         heir_ids = tx.metadata.get("heir_ids", []) if tx.metadata else []
 
-        # Assets are in pennies (integer)
-        assets_val = 0
-        if hasattr(deceased_agent, 'wallet'):
-            assets_val = deceased_agent.wallet.get_balance(DEFAULT_CURRENCY)
-        elif hasattr(deceased_agent, 'assets') and isinstance(deceased_agent.assets, dict):
-            assets_val = int(deceased_agent.assets.get(DEFAULT_CURRENCY, 0))
-        elif hasattr(deceased_agent, 'assets'):
-            assets_val = int(deceased_agent.assets)
+        # SSoT: Fetch balance directly from Settlement System
+        # This prevents leaks or overdrafts caused by stale agent state.
+        assets_val = context.settlement_system.get_balance(deceased_agent.id, DEFAULT_CURRENCY)
 
         if assets_val <= 0:
             context.logger.info(f"INHERITANCE_SKIP | Agent {deceased_agent.id} has no assets ({assets_val}).")

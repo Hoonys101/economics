@@ -32,23 +32,48 @@ class GoodsTransactionHandler(ITransactionHandler):
 
         credits: List[Tuple[Any, int, str]] = []
 
-        # 1a. Main Trade Credit (Seller)
-        credits.append((seller, trade_value, f"goods_trade:{tx.item_id}"))
+        # Calculate Adjustments
+        seller_net_proceeds = trade_value
+        buyer_total_cost = trade_value
 
-        # 1b. Tax Credits (Government)
-        # Initialize total_cost (from buyer perspective) with base trade value
-        total_cost = trade_value
+        gov_credits = []
 
         for intent in intents:
-            # Tax amounts are already rounded by TaxationSystem and are ints
             amount_int = int(intent.amount)
-            credits.append((context.government, amount_int, intent.reason))
+            if amount_int <= 0:
+                continue
 
+            # Add to Government Credit List
+            gov_credits.append((context.government, amount_int, intent.reason))
+
+            # Adjust Payer side
             if intent.payer_id == buyer.id:
-                total_cost += amount_int
+                # Sales Tax (Buyer pays on top)
+                buyer_total_cost += amount_int
+            elif intent.payer_id == seller.id:
+                # VAT / Withholding (Seller pays from proceeds)
+                seller_net_proceeds -= amount_int
+            else:
+                # Default to Buyer if unknown (safe fallback or log warning?)
+                # For now, we assume buyer pays extraneous taxes to avoid seller loss
+                logger.warning(f"Unknown payer_id {intent.payer_id} in tax intent. Defaulting to Buyer charge.")
+                buyer_total_cost += amount_int
 
-        # Total cost is already clean int sum
+        # Safety Check: Seller proceeds cannot be negative
+        if seller_net_proceeds < 0:
+             logger.error(f"Transaction aborted: Seller tax exceeds trade value. Net: {seller_net_proceeds}")
+             return False
 
+        # Construct Final Credits List
+        # 1. Seller Credit (Net)
+        if seller_net_proceeds > 0:
+            credits.append((seller, seller_net_proceeds, f"goods_trade:{tx.item_id}"))
+
+        # 2. Government Credits
+        credits.extend(gov_credits)
+
+        # Total Credits sum should equal Buyer's total debit (buyer_total_cost) if seller_net_proceeds calculation is consistent.
+        # Check: (Trade - SellerTax) + SellerTax + BuyerTax = Trade + BuyerTax = BuyerCost. Correct.
 
         # Solvency Check (Legacy compatibility)
         if isinstance(buyer, ISolvencyChecker):
@@ -64,7 +89,7 @@ class GoodsTransactionHandler(ITransactionHandler):
                 else:
                      check_val = int(current_assets)
 
-            if check_val < total_cost:
+            if check_val < buyer_total_cost:
                 buyer.check_solvency(context.government)
 
         # 2. Execute Settlement (Atomic)
@@ -85,7 +110,7 @@ class GoodsTransactionHandler(ITransactionHandler):
                 })
 
             # Update Inventories, Consumption, etc. (Migrated from TransactionProcessor & Registry)
-            self._apply_goods_effects(tx, buyer, seller, trade_value, total_cost, context)
+            self._apply_goods_effects(tx, buyer, seller, trade_value, buyer_total_cost, context)
 
         return settlement_success
 
