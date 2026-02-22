@@ -75,7 +75,10 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
             # 1. Reverse Settlement if needed
             if status == "TRANSFER_TITLE":
                  # If failed at TITLE transfer, funds were moved in ESCROW_LOCKED.
-                 self._reverse_settlement(saga)
+                 try:
+                     self._reverse_settlement(saga)
+                 except Exception as e:
+                     logger.critical(f"SAGA_REVERSAL_FAIL | Failed to reverse settlement for saga {saga.saga_id}. {e}")
 
             # 2. Cleanup Financials (Loan & Lien)
             if saga.mortgage_approval:
@@ -296,8 +299,12 @@ class HousingTransactionSagaHandler(IHousingTransactionSagaHandler):
         if seller_id == -1:
              seller = self.simulation.government
 
-        if not buyer or not seller:
-             logger.error("Cannot reverse settlement: agents missing")
+        if not buyer:
+             logger.critical(f"CRITICAL_INTEGRITY_FAILURE | Buyer {buyer_id} missing during settlement reversal for saga {saga.saga_id}. Funds may be leaked.")
+             return
+
+        if not seller:
+             logger.critical(f"CRITICAL_INTEGRITY_FAILURE | Seller {seller_id} missing during settlement reversal for saga {saga.saga_id}. Funds may be leaked.")
              return
 
         if not saga.mortgage_approval:
