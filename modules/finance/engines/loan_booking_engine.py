@@ -58,7 +58,8 @@ class LoanBookingEngine(ILoanBookingEngine):
         else:
             deposit = DepositStateDTO(
                 deposit_id=deposit_id,
-                customer_id=application.borrower_id,
+                owner_id=application.borrower_id, # Use owner_id as primary
+                customer_id=application.borrower_id, # Legacy/Alias
                 balance_pennies=application.amount_pennies,
                 interest_rate=0.0 # Default
             )

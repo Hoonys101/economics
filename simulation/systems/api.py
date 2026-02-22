@@ -29,6 +29,8 @@ if TYPE_CHECKING:
     from modules.government.taxation.system import TaxationSystem
     from logging import Logger
 
+# Import TransactionContext from DTO module
+from simulation.dtos.transactions import TransactionContext
 
 # ===================================================================
 # 1. 시스템 간 통신을 위한 DTO (Data Transfer Objects)
@@ -273,30 +275,6 @@ class ITransactionManager(SystemInterface, Protocol):
     Orchestrator for the transaction processing pipeline.
     """
     pass
-
-@dataclass(frozen=True)
-class TransactionContext:
-    """
-    Provides all necessary simulation state to a transaction handler.
-    This is an immutable snapshot of state for a single transaction,
-    ensuring that handlers have a consistent view of the world.
-    """
-    agents: Dict[int, Any]
-    inactive_agents: Dict[int, Any]
-    government: 'Government'
-    settlement_system: 'SettlementSystem'
-    taxation_system: 'TaxationSystem'
-    stock_market: Any
-    real_estate_units: List[Any]
-    market_data: Dict[str, Any]
-    config_module: Any
-    logger: 'Logger'
-    time: int
-    bank: Optional[Any] # Bank
-    central_bank: Optional[Any] # CentralBank
-    public_manager: Optional[Any] # PublicManager
-    transaction_queue: List['Transaction'] # For appending side-effect transactions (e.g. credit creation)
-    shareholder_registry: Optional['IShareholderRegistry'] = None # TD-275
 
 class ITransactionHandler(ABC):
     """
