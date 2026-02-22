@@ -17,10 +17,22 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "m2-audit-test-fix": {
-        "title": "Resolve M2 Audit Logic Test Failure",
-        "file": "gemini-output/spec/MISSION_m2-audit-test-fix_SPEC.md",
-        "instruction": "Implement the fix for the M2 audit test logic by correctly configuring the Bank mock to return balance_pennies.",
+    "phase41_wave3_domain_refactor": {
+        "title": "Wave 3.1: Industry Domain Mapping",
+        "file": "gemini-output/spec/MISSION_wave3_domain_refactor_SPEC.md",
+        "instruction": "Refactor Majors Enum to Industry Domains (FOOD_PROD, etc.) and align sectors 1:1. Replace string major with Enum in DTOs and Logic.",
+        "wait": False
+    },
+    "phase41_wave3_blind_choice": {
+        "title": "Wave 3.2: Blind Major Choice & Sunk Costs",
+        "file": "gemini-output/spec/MISSION_wave3_blind_choice_SPEC.md",
+        "instruction": "Implement Envy-driven major selection (100-tick lag) and Education Sunk Costs in pennies.",
+        "wait": False
+    },
+    "phase41_wave3_bargaining_engine": {
+        "title": "Wave 3.3: Search & Bargaining Market Engine",
+        "file": "gemini-output/spec/MISSION_wave3_bargaining_engine_SPEC.md",
+        "instruction": "Implement Nash Bargaining for LaborMarket and Firm Adaptive Learning (TD-Error).",
         "wait": False
     }
 }

@@ -17,6 +17,51 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "phase41_wave3_domain_refactor": {
+      "key": "phase41_wave3_domain_refactor",
+      "title": "Wave 3.1: Industry Domain Mapping",
+      "type": "jules",
+      "instruction_raw": "Refactor Majors Enum to Industry Domains (FOOD_PROD, etc.) and align sectors 1:1. Replace string major with Enum in DTOs and Logic.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_wave3_domain_refactor_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "phase41_wave3_blind_choice": {
+      "key": "phase41_wave3_blind_choice",
+      "title": "Wave 3.2: Blind Major Choice & Sunk Costs",
+      "type": "jules",
+      "instruction_raw": "Implement Envy-driven major selection (100-tick lag) and Education Sunk Costs in pennies.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_wave3_blind_choice_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "phase41_wave3_bargaining_engine": {
+      "key": "phase41_wave3_bargaining_engine",
+      "title": "Wave 3.3: Search & Bargaining Market Engine",
+      "type": "jules",
+      "instruction_raw": "Implement Nash Bargaining for LaborMarket and Firm Adaptive Learning (TD-Error).",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_wave3_bargaining_engine_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }
