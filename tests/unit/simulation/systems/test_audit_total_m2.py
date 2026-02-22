@@ -27,7 +27,8 @@ def test_audit_total_m2_logic():
     # M2 = (150 - 50) + 200 = 300.
     bank = MagicMock(spec=IBank)
     bank.id = 2
-    # IBank uses get_balance method
+    # Fix: Configure balance_pennies because SettlementSystem prefers it for IBank/IFinancialEntity
+    type(bank).balance_pennies = PropertyMock(return_value=50)
     bank.get_balance.return_value = 50
     bank.get_total_deposits.return_value = 200
 

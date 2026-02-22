@@ -459,7 +459,7 @@ class IBankService(Protocol):
     def repay_loan(self, loan_id: str, amount: int) -> int: ...
 
 @runtime_checkable
-class IBank(IBankService, IFinancialAgent, Protocol):
+class IBank(IBankService, IFinancialEntity, IFinancialAgent, Protocol):
     """
     Interface for commercial and central banks, providing core banking services.
     Designed to be used as a dependency for Household and Firm agents.
