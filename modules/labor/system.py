@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Dict, Any, Optional
 import logging
-from modules.labor.api import ILaborMarket, JobOfferDTO, JobSeekerDTO, LaborMarketMatchResultDTO
+from modules.labor.api import ILaborMarket, JobOfferDTO, JobSeekerDTO, LaborMarketMatchResultDTO, LaborMatchDTO
 from modules.market.api import CanonicalOrderDTO, OrderTelemetrySchema
 from simulation.models import Transaction
 from simulation.interfaces.market_interface import IMarket
@@ -206,12 +206,15 @@ class LaborMarket(ILaborMarket, IMarket):
 
             # Convert to JobOffer
             metadata = order_dto.metadata or {}
+            match_dto = LaborMatchDTO.from_metadata(metadata)
+
             offer = JobOfferDTO(
                 firm_id=AgentID(int(order_dto.agent_id)),
                 offer_wage=order_dto.price_pennies / 100.0,
-                required_education=metadata.get("required_education", 0),
+                required_education=match_dto.education_level,
                 quantity=order_dto.quantity,
-                major=metadata.get("major", "GENERAL")
+                major=match_dto.major,
+                min_match_score=match_dto.min_match_score
             )
             self.post_job_offer(offer)
 
@@ -221,12 +224,15 @@ class LaborMarket(ILaborMarket, IMarket):
 
             # Convert to JobSeeker
             metadata = order_dto.brand_info or {} # Household uses brand_info for metadata
+            match_dto = LaborMatchDTO.from_metadata(metadata)
+
             seeker = JobSeekerDTO(
                 household_id=AgentID(int(order_dto.agent_id)),
                 reservation_wage=order_dto.price_pennies / 100.0,
-                education_level=metadata.get("education_level", 0),
+                education_level=match_dto.education_level,
                 quantity=order_dto.quantity,
-                major=metadata.get("major", "GENERAL")
+                major=match_dto.major,
+                secondary_majors=match_dto.secondary_majors
             )
             self.post_job_seeker(seeker)
 
@@ -251,11 +257,7 @@ class LaborMarket(ILaborMarket, IMarket):
                 transaction_type="HIRE",
                 time=current_time,
                 total_pennies=int(res.matched_wage * 100),
-                metadata={
-                    "match_score": res.match_score,
-                    "major_compatibility": res.major_compatibility,
-                    "base_wage": res.base_wage
-                }
+                metadata=res.to_metadata()
             )
             transactions.append(tx)
 

@@ -15,6 +15,7 @@ from simulation.ai.enums import Personality
 from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY, CurrencyCode, MarketContextDTO, ICurrencyHolder
 from modules.simulation.api import AgentCoreConfigDTO, IDecisionEngine, AgentStateDTO, IOrchestratorAgent, IInventoryHandler, ISensoryDataProvider, AgentSensorySnapshotDTO, IConfigurable, LiquidationConfigDTO, InventorySlot, ItemDTO, InventorySlotDTO, AgentID
 from dataclasses import replace
+from modules.labor.api import LaborMatchDTO
 
 # Orchestrator-Engine Refactor
 from simulation.components.state.firm_state_models import HRState, FinanceState, ProductionState, SalesState
@@ -1556,6 +1557,19 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             wage_premium = max(0, min(profit_based_premium * sensitivity, max_premium))
             offered_wage = int(base_wage * (1 + wage_premium))
 
+            # Construct LaborMatchDTO for metadata
+            labor_match = LaborMatchDTO(
+                major=context.major,
+                education_level=0,  # Could be dynamic based on tech level
+                secondary_majors=[],
+                years_experience=0.0,
+                min_match_score=0.0
+            )
+
+            # Merge with existing metadata if needed (e.g. specialization for legacy debug)
+            metadata = labor_match.to_metadata()
+            metadata['specialization'] = context.specialization
+
             orders.append(Order(
                 agent_id=self.id,
                 side='BUY',
@@ -1564,11 +1578,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
                 price_pennies=offered_wage,
                 price_limit=float(offered_wage)/100.0,
                 market_id='labor',
-                metadata={
-                    'major': context.major, # Phase 4.1: Use Major instead of Specialization
-                    'specialization': context.specialization, # Keep specialization for debugging/specific matching if needed
-                    'required_education': 0 # Could be dynamic based on tech level
-                }
+                metadata=metadata
             ))
         return orders
 

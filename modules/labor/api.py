@@ -92,6 +92,15 @@ class LaborMarketMatchResultDTO:
     matched_wage: float # Adjusted for match quality
     match_score: float # 0.0 to 1.0
     major_compatibility: str # "PERFECT", "PARTIAL", "MISMATCH"
+
+    def to_metadata(self) -> Dict[str, Any]:
+        return {
+            "match_score": self.match_score,
+            "major_compatibility": self.major_compatibility,
+            "base_wage": self.base_wage,
+            "matched_wage": self.matched_wage,
+            "__type": "LaborMarketMatchResultDTO"
+        }
     
 @runtime_checkable
 class ILaborMarket(Protocol):

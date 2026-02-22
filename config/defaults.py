@@ -1035,3 +1035,24 @@ INSIGHT_THRESHOLD_SMA = 0.3         # Above this, agents see 3-tick SMA. Below, 
 PANIC_TRIGGER_THRESHOLD = 0.3       # Panic Index above this triggers defensive behavior (if insight low)
 DEBT_NOISE_FACTOR = 1.05            # Low insight agents overestimate debt burden by 5%
 PANIC_CONSUMPTION_DAMPENER = 0.25   # Low insight agents reduce consumption aggressiveness by this amount in panic
+
+# ----------------------------------------------------------------------
+# Labor Market Configuration (Phase 41)
+# ----------------------------------------------------------------------
+LABOR_MARKET = {
+  "majors": ["GENERAL", "AGRICULTURE", "MANUFACTURING", "SERVICES", "TECHNOLOGY"],
+  "compatibility": {
+    "PERFECT": 1.2,
+    "PARTIAL": 1.0,
+    "MISMATCH": 0.8,
+    "GENERAL_PENALTY": 1.0
+  },
+  "sector_map": {
+    "FOOD": "AGRICULTURE",
+    "GOODS": "MANUFACTURING",
+    "SERVICE": "SERVICES",
+    "MATERIAL": "MANUFACTURING",
+    "LUXURY": "SERVICES",
+    "TECH": "TECHNOLOGY"
+  }
+}

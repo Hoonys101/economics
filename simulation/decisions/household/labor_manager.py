@@ -3,6 +3,7 @@ import random
 from simulation.models import Order
 from simulation.decisions.household.api import LaborContext
 from modules.system.api import DEFAULT_CURRENCY
+from modules.labor.api import LaborMatchDTO
 
 class LaborManager:
     """
@@ -72,13 +73,22 @@ class LaborManager:
                 else:
                     agent_data = {}
 
-                brand_info = {
-                    'labor_skill': agent_data.get('labor_skill', 1.0),
-                    'education_level': agent_data.get('education_level', 0),
-                    'aptitude': agent_data.get('aptitude', 0.5),
-                    'market_insight': agent_data.get('market_insight', 0.5),
-                    'major': getattr(household, 'major', 'GENERAL')
-                }
+                # Construct LaborMatchDTO for brand_info
+                labor_match = LaborMatchDTO(
+                    major=getattr(household, 'major', 'GENERAL'),
+                    education_level=agent_data.get('education_level', 0),
+                    secondary_majors=[],
+                    years_experience=0.0,
+                    min_match_score=0.0
+                )
+                brand_info = labor_match.to_metadata()
+
+                # Merge legacy fields if needed by other components (e.g. Analytics, UI)
+                # But LaborMarket relies on DTO fields.
+                # We keep others for observability.
+                brand_info['labor_skill'] = agent_data.get('labor_skill', 1.0)
+                brand_info['aptitude'] = agent_data.get('aptitude', 0.5)
+                brand_info['market_insight'] = agent_data.get('market_insight', 0.5)
 
                 orders.append(Order(
                     agent_id=household.id,
