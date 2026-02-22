@@ -48,7 +48,39 @@ class HREngine(IHREngine, IHRDepartment):
         profit_based_premium = avg_profit / (base_wage * 10.0) if base_wage > 0 else 0.0
         wage_premium = max(0, min(profit_based_premium * sensitivity, max_premium))
 
-        target_wage = int(base_wage * (1 + wage_premium))
+        # Wave 3: Adaptive Learning (TD-Error from previous hiring attempt)
+        adaptive_premium = 0.0
+
+        target_hires = context.target_hires_prev_tick
+        actual_hires = context.hires_prev_tick
+        last_offer = context.wage_offer_prev_tick
+        hiring_deficit = 0
+
+        if target_hires > 0:
+            hiring_deficit = target_hires - actual_hires
+
+            if hiring_deficit > 0:
+                # Failed to hire enough -> Market is tight -> Increase wage
+                # TD-Error > 0
+                adaptive_premium = 0.1 * (hiring_deficit / target_hires) # Increase by up to 10%
+
+            elif hiring_deficit <= 0 and actual_hires > 0:
+                # Successfully hired all targets -> Maybe overpaying? -> Slight decrease or hold
+                # TD-Error <= 0
+                adaptive_premium = -0.01 # Decrease by 1% to test market
+
+        # Combine premiums
+        total_premium = wage_premium + adaptive_premium
+        total_premium = max(0, min(total_premium, max_premium)) # Clamp
+
+        # Base calculation on Market Avg OR Last Offer (if higher/relevant)
+        if last_offer > base_wage and hiring_deficit > 0:
+             # If we already offered above market and failed, base next offer on our last offer
+             anchor_wage = last_offer
+        else:
+             anchor_wage = base_wage
+
+        target_wage = int(anchor_wage * (1 + total_premium))
 
         # Wage Scaling: Update existing employees if underpaid
         current_wage_bill = 0
@@ -97,7 +129,8 @@ class HREngine(IHREngine, IHRDepartment):
         return HRIntentDTO(
             hiring_target=hiring_target,
             wage_updates=wage_updates,
-            fire_employee_ids=firing_ids
+            fire_employee_ids=firing_ids,
+            hiring_wage_offer=target_wage
         )
 
     def manage_workforce(self, input_dto: HRDecisionInputDTO) -> HRDecisionOutputDTO:
@@ -156,24 +189,8 @@ class HREngine(IHREngine, IHRDepartment):
 
         # Hiring Orders
         if intent.hiring_target > 0:
-            # Determine offered wage (target wage)
-            # We can infer it from intent.wage_updates if any, or recalculate
-            # But context.labor_market_avg_wage is available.
-            # Wait, decide_workforce calculated target_wage internally but didn't return it explicitly except in wage_updates.
-            # If no wage updates, we don't know the target wage?
-            # We should probably return target_wage in Intent or infer it.
-            # Re-calculating target wage here is redundant but safe.
-            # OR assume wage_updates contains the target wage.
-            # Let's recalculate for safety/simplicity as it's cheap.
-
-            base_wage = context.labor_market_avg_wage
-            sensitivity = 0.1
-            max_premium = 2.0
-            profit_history = context.profit_history
-            avg_profit = sum(profit_history) / len(profit_history) if profit_history else 0.0
-            profit_based_premium = avg_profit / (base_wage * 10.0) if base_wage > 0 else 0.0
-            wage_premium = max(0, min(profit_based_premium * sensitivity, max_premium))
-            offered_wage = int(base_wage * (1 + wage_premium))
+            # Use wage from intent (Adaptive Learning result)
+            offered_wage = intent.hiring_wage_offer
 
             orders.append(Order(
                 agent_id=firm_state.id,
@@ -230,7 +247,12 @@ class HREngine(IHREngine, IHRDepartment):
             max_employees=getattr(config, 'firm_max_employees', 100),
             severance_pay_weeks=getattr(config, 'severance_pay_weeks', 2),
             specialization=firm_state.production.specialization,
-            major=getattr(firm_state.production, 'major', 'GENERAL') # Phase 4.1
+            major=getattr(firm_state.production, 'major', 'GENERAL'), # Phase 4.1
+
+            # Adaptive Learning History
+            hires_prev_tick=firm_state.hr.hires_prev_tick,
+            target_hires_prev_tick=firm_state.hr.target_hires_prev_tick,
+            wage_offer_prev_tick=firm_state.hr.wage_offer_prev_tick
         )
 
     def calculate_wage(self, employee: IEmployeeDataProvider, base_wage: int, config: FirmConfigDTO) -> int:
@@ -423,7 +445,7 @@ class HREngine(IHREngine, IHRDepartment):
     def hire(self, hr_state: HRState, employee: IEmployeeDataProvider, wage: int, current_tick: int = 0):
         hr_state.employees.append(employee)
         hr_state.employee_wages[employee.id] = wage
-        hr_state.hires_last_tick += 1
+        hr_state.hires_this_tick += 1
         employee.employment_start_tick = current_tick
 
     def remove_employee(self, hr_state: HRState, employee: IEmployeeDataProvider):

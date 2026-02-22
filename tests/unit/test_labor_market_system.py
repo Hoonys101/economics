@@ -56,7 +56,7 @@ class TestLaborMarketSystem:
         match = results[0]
         assert match.employer_id == AgentID(101)
         assert match.employee_id == AgentID(201)
-        assert match.matched_wage == 20.0
+        assert match.matched_wage == 17.5 # Nash Bargaining: (20 + 15) / 2
         assert match.major_compatibility == "PERFECT"
 
         # Check queues cleared
@@ -138,7 +138,7 @@ class TestLaborMarketSystem:
         txs = market.match_orders(1)
         assert len(txs) == 1
         assert txs[0].transaction_type == "HIRE"
-        assert txs[0].total_pennies == 2000
+        assert txs[0].total_pennies == 1750 # Nash Bargaining: (2000 + 1500) / 2
 
     def test_place_order_backward_compatibility(self, market):
         # CanonicalOrderDTO without metadata (Legacy)
