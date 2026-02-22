@@ -69,21 +69,20 @@ Run this audit on the provided context files and output the result.'...
 📖 Attached context: simulation\systems\lifecycle\api.py
 📖 Attached context: simulation\systems\lifecycle\birth_system.py
 📖 Attached context: simulation\systems\lifecycle\death_system.py
+📖 Attached context: simulation\systems\lifecycle\marriage_system.py
 📖 Attached context: simulation\systems\lifecycle\__init__.py
 📖 Attached context: simulation\systems\tech\api.py
 ⚠️ Context file not found or is not a file: utils\simulation_builder.py
 📖 Attached context: design\1_governance\architecture\ARCH_SEQUENCING.md
 🚀 [GeminiWorker] Running task with manual: report.md
 
-✅ Report Saved: C:\coding\economics\reports\temp\report_20260220_192206_Domain_Auditor.md
+✅ Report Saved: C:\coding\economics\reports\temp\report_20260222_213715_Domain_Auditor.md
 ============================================================
-# Technical Audit Report: Systems, Persistence & LifeCycles
+# Technical Report: Systems & Infrastructure Audit
 
 ## Executive Summary
-The simulation infrastructure has successfully transitioned to a **Decomposed System Architecture**. The "Sacred Sequence" is enforced through stateless Phase DTOs and a centralized `SettlementSystem` using integer pennies. Critical lifecycle events (Birth/Death) are correctly sutured to the registry and financial systems, ensuring zero-sum integrity and preventing "phantom money" leaks.
+The simulation infrastructure has successfully transitioned from a monolithic architecture to a decoupled, service-oriented design. The core systems (Settlement, Lifecycle, Persistence) demonstrate strong adherence to the "Sacred Sequence" and the "Execute-Sync" loop. Financial integrity is robustly protected by integer-penny math and atomic settlement protocols, though minor legacy fallbacks in data aggregation persist.
 
-## Detailed Analysis
-
-### 
+-
 ...
 ============================================================

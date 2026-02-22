@@ -29,11 +29,16 @@ Run this audit on the provided context files and output the result.'...
 📖 Attached context: design\1_governance\architecture\ARCH_AGENTS.md
 🚀 [GeminiWorker] Running task with manual: report.md
 
-✅ Report Saved: C:\coding\economics\reports\temp\report_20260220_192012_Domain_Auditor.md
+✅ Report Saved: C:\coding\economics\reports\temp\report_20260222_213504_Domain_Auditor.md
 ============================================================
-# Technical Audit Report: Agent Orchestration & State Integrity
+# ⚖️ Domain Auditor: Agents & Populations
 
-## Executive Summary
-The `Firm` and `Household` agents have been successfully refactored into the **Stateless Engine & Orchestrator Pattern** as mandated by `ARCH_AGENTS.md`. Both agents now serve as state-holding orchestrators that delegate business logic to external engines using DTO snapshots. While `Household` demonstrates near-perfect adherence to pure functional state updates, `Firm` exhibits minor structural drift in its int
+## 🚥 Domain Grade: ⚠️ WARNING
+
+## ❌ Violations
+| File | Line | Violation | Severity |
+| :--- | :--- | :--- | :--- |
+| `core_agents.py` | `L445`, `L458` | **Interface Encapsulation**: `Household` directly mutates `_econ_state.inventory` instead of delegating to a standard `InventoryComponent`. | Medium |
+| `firms.py` | `L231-236` | **Component Bypass**: `load_state` directly clears internal `InventoryComponent` dictionaries (`main_inventory`) instead of 
 ...
 ============================================================

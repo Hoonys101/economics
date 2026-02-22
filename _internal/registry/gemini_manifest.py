@@ -25,18 +25,4 @@ from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
     # Add missions here
-    "forensics_regression_test_specs": {
-        "title": "[Forensics] Regression Test Specifications",
-        "worker": "spec",
-        "instruction": "Analyze the 1246+ remaining forensic events in 'reports/diagnostic_refined.md'. Categorize recurring failures (M2 Supply, Bond Issuance, Saga Skips, Missing Accounts). For each category, generate a detailed specification for a regression test file (pytest) that reproduces the failure state and validates the fix. Ensure coverage for multi-tick edge cases identified in the logs.",
-        "context_files": [
-            "reports/diagnostic_refined.md",
-            "simulation/systems/settlement_system.py",
-            "modules/finance/sagas/orchestrator.py",
-            "simulation/systems/handlers/escheatment_handler.py",
-            "simulation/initialization/initializer.py",
-            "simulation/engine.py"
-        ],
-        "output_path": "gemini-output/spec/MISSION_forensics_regression_tests_SPEC.md"
-    }
 }

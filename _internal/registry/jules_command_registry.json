@@ -3,14 +3,14 @@
     "version": "1.0"
   },
   "missions": {
-    "forensics_hardening_impl": {
-      "key": "forensics_hardening_impl",
-      "title": "[Forensics] Core Integrity Hardening (TDD)",
+    "forensics_hardening_phase2": {
+      "key": "forensics_hardening_phase2",
+      "title": "Forensics Logic Stabilization (Wave 6)",
       "type": "jules",
-      "instruction_raw": "Implement the hardening fixes specified in 'gemini-output/spec/MISSION_forensics_regression_tests_SPEC.md'. Focus on: 1. EscheatmentHandler safe metadata access. 2. Saga DTO validation and orchestrator rejection of incomplete sagas. 3. SettlementSystem dynamic agent resolution. 4. FinanceSystem liquidity checks for bond issuance. Ensure all tests in 'tests/forensics/' pass after implementation.",
+      "instruction_raw": "Fix core structural logic identified in implementation_plan_wave6.md. Target: Eliminate 'Destination account does not exist' for new firms, register education_spending, and prevent NULL seller IDs in Sagas.",
       "command": "create",
-      "file_path": "gemini-output/spec/MISSION_forensics_regression_tests_SPEC.md",
-      "wait": true,
+      "file_path": "C:/Users/Gram Pro/.gemini/antigravity/brain/967802e0-ce79-47d5-bd15-774145a9ebae/implementation_plan_wave6.md",
+      "wait": false,
       "session_id": null,
       "worker": null,
       "context_files": [],

@@ -39,6 +39,9 @@
 | **TD-WAVE3-DTO-SWAP** | DTO | **IndustryDomain Shift**: Replace `major` with `IndustryDomain` enum. | **Medium**: Structure. | **SPECCED** |
 | **TD-WAVE3-TALENT-VEIL** | Agent | **Hidden Talent**: `EconStateDTO` missing `hidden_talent`. | **High**: Intent. | **SPECCED** |
 | **TD-WAVE3-MATCH-REWRITE** | Market | **Bargaining vs OrderBook**: Existing LaborMarket assumes sorting. | **High**: Economy. | **SPECCED** |
+| **TD-FIN-INVISIBLE-HAND** | Finance | **Initialization Order**: CB/PublicManager registered after AgentRegistry snapshot. | **CRITICAL**: Runtime failure. | **NEW (AUDIT)** |
+| **TD-MARKET-FLOAT-TRUNC** | Market | **Wealth Destruction**: `MatchingEngine` truncates fractional pennies via `int()`. | **High**: Deflationary bias. | **NEW (AUDIT)** |
+| **TD-SYS-ANALYTICS-DIRECT** | Systems | **Stateless Bypass**: `AnalyticsSystem` calls agent methods instead of using DTO snapshots. | **Medium**: Pattern violation. | **NEW (AUDIT)** |
 
 ---
 

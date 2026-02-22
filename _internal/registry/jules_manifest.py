@@ -17,14 +17,9 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "forensics_hardening_impl": {
-        "title": "[Forensics] Core Integrity Hardening (TDD & Stability Loop)",
-        "command": "create",
-        "instruction": "1. Implement the hardening fixes specified in 'gemini-output/spec/MISSION_forensics_regression_tests_SPEC.md'. 2. Run 'operation_forensics.py' (60 ticks, refined mode). 3. If the diagnostic report contains > 100 forensic events, identify new recurring failure patterns, create new regression tests in 'tests/forensics/', and implement fixes. 4. Repeat this loop until forensic events are reduced below 100. Ensure all tests in 'tests/forensics/' pass perfectly.",
-        "file": "gemini-output/spec/MISSION_forensics_regression_tests_SPEC.md",
-        "wait": True
+    "forensics_hardening_phase2": {
+        "title": "Forensics Logic Stabilization (Wave 6)",
+        "instruction": "Fix core structural logic identified in implementation_plan_wave6.md. Target: Eliminate 'Destination account does not exist' for new firms, register education_spending, and prevent NULL seller IDs in Sagas.",
+        "file": "C:/Users/Gram Pro/.gemini/antigravity/brain/967802e0-ce79-47d5-bd15-774145a9ebae/implementation_plan_wave6.md"
     }
 }
-
-
-

@@ -1,83 +1,117 @@
-I will read `PROJECT_STATUS.md` and `HANDOVER.md` to understand the current project state and recent tasks. Then, I will list the files in `modules/` to get an overview of the architecture for the audit.
-I will check the git status and examine the test results to verify the current state of the project. Then, I will list the contents of the `design/drafts/` directory to identify any pending specifications.
-I will read `test_results.txt` to verify the test outcomes. I will then search for potential encapsulation violations in the codebase by looking for direct access to protected members like `_inventory` and `_cash`. Additionally, I will examine `modules/agent_framework/api.py` to review the `IAgent` interface definition.
-I will list the contents of the `design/3_work_artifacts/specs` directory to identify any pending specifications. After that, I will check the contents of `design/3_work_artifacts` to see if there are any other relevant files. Finally, I will generate the required response.
-I will list the contents of the `design/3_work_artifacts/drafts` directory to check for any draft specifications. Then, I will generate the final response, which will include the Project Watchtower Audit Report, Session Snapshot, Warm Boot, Routine Sync Proposal, and Handover Draft.
-# 🧠 Gemini CLI: Context Manager & Watchtower Report
+I will read the project status, recent diagnostic reports, and test results to understand the current state of the codebase and its recent issues.
+Then, I will explore the `modules` directory to perform a high-level audit of the Agents, Finance, Markets, and Systems domains, looking for architectural drifts or violations as described in the audit checklists.
+Finally, I will generate the "Project Watchtower Audit Report" aggregating these findings and updating the project status.
 
-## 1. 📍 Current Coordinates
-- **Phase**: `Phase 4.1: AI Logic & Simulation Re-architecture` (Active)
-- **Critical Alert**: **Phase 23 Regression Cleanup** is incomplete. 3 tests are failing.
-- **Work Order**: Fix `SagaOrchestrator` API mismatch in tests and integration logic.
-- **Target Files**: `tests/unit/orchestration/test_phase_housing_saga.py`, `tests/unit/systems/test_settlement_saga_integration.py`, `modules/finance/sagas/orchestrator.py`.
+I will locate the relevant files for verification by searching for `initializer`, `matching_engine`, `sales_engine`, and `analytics_system`.
+Then, I will read these files to confirm the reported issues: Central Bank registration in the initializer, float casts in the matching engine, state mutation in the sales engine, and the test failure in `test_config_hot_swap.py`.
+Finally, I will generate the "Project Watchtower Audit Report" based on these confirmed findings.
 
-## 2. 🕵️ Project Watchtower Audit Report
-**Aggregated Date**: 2026-02-20
-**Overall Status**: 🔴 **REGRESSION DETECTED** (920 Passing, 3 Failing)
+I will list the contents of `modules/firm` to check for a newer "SalesEngine".
+Then, I will read `simulation/initialization/initializer.py` to verify the Central Bank registration, `simulation/markets/matching_engine.py` to check for float casts, `simulation/components/engines/sales_engine.py` (or the newer version if found) to check for state mutation, `simulation/systems/analytics_system.py` to check for direct agent access, and `tests/integration/test_config_hot_swap.py` to diagnose the test failure.
+Finally, I will generate the "Project Watchtower Audit Report" based on the confirmed findings.
 
-### 🚨 Critical Findings (Architectural Drift)
-1.  **SagaOrchestrator API Mismatch (SYSTEMS Domain)**
-    *   **Issue**: `SagaOrchestrator.process_sagas()` was refactored to be argument-less (Dependency Injection), but `tests/unit/orchestration/test_phase_housing_saga.py` still calls it with `mock_state` and expects arguments.
-    *   **Impact**: `AssertionError: expected call not found`.
-    *   **Remediation**: Update test to mock `orchestrator.simulation_state` instead of passing it as an arg.
+I will list the contents of `modules/firm/engines` to see if a newer `sales_engine.py` exists there.
+If it does, I will read it to compare with the one I already checked.
+Then, I will generate the "Project Watchtower Audit Report" based on all confirmed findings, ensuring I reference the correct "live" code.
 
-2.  **Saga Integration Failure (FINANCE/SYSTEMS Domain)**
-    *   **Issue**: `test_process_sagas_integration_initiated_to_credit_check` and `test_process_sagas_integration_cancellation` are failing. Sagas are not transitioning or cancelling.
-    *   **Hypothesis**: The Dependency Injection of `SimulationState` into `SagaOrchestrator` might be incomplete or the internal `active_sagas` registry is not syncing with the test setup.
+I will generate the "Project Watchtower Audit Report" by aggregating the findings from my investigation into the Agents, Finance, Markets, and Systems domains.
+I will structure the report with an executive summary, detailed domain findings, and actionable recommendations, specifically highlighting the critical "Invisible Hand" bug in the initializer, float casts in the matching engine, and direct agent access in the analytics system.
+Finally, I will ensure the report provides a clear path forward for resolving these architectural drifts and technical debts.
 
-3.  **Purity Verification (AGENTS/FINANCE Domain)**
-    *   ✅ **Financial Purity**: No unauthorized direct access to `_cash` found in `modules/`. `SettlementSystem` SSoT is respected.
-    *   ✅ **Inventory Encapsulation**: `_inventory` access is restricted to `InventoryComponent` and legacy mixins (marked deprecated).
+I will generate the "Project Watchtower Audit Report" based on my findings, highlighting critical issues in the Agents, Finance, Markets, and Systems domains.
+Then, I will create a "Session Snapshot" summarizing the current project status, accomplishments, and blockers.
+Finally, I will provide a "Warm Boot Message" to give the next session's team a concise overview of the critical bugs and required actions.
 
-## 3. ✅ Accomplishments (Session Snapshot)
-*   **Audit Completed**: Scanned codebase for `_inventory` and `_cash` violations (Clean).
-*   **Status Verification**: Identified discrepancy between `PROJECT_STATUS.md` ("Phase 23 Completed") and actual `test_results.txt` (3 Failures).
-*   **Draft Discovery**: Located new draft spec `STRUCTURAL_INTEGRITY_CRYSTALLIZATION.md`.
+I will generate the "Project Watchtower Audit Report" detailing the critical findings in Agents, Finance, Markets, and Systems, including the "Invisible Hand" bug and unsafe float casting.
+Then, I will produce the "Session Snapshot" to summarize the current project status and blockers.
+Finally, I will create the "Warm Boot Message" to outline immediate actions required for the next session, such as fixing the `AgentRegistry` snapshot order and refactoring the `MatchingEngine`.
 
-## 4. 🚧 Blockers & Pending
-*   **Fix Test Regressions**: The `SagaOrchestrator` tests must be fixed before proceeding to Phase 4.1 execution.
-*   **Verify Drafts**: Review `STRUCTURAL_INTEGRITY_CRYSTALLIZATION.md` for conflicts with Phase 4.1 plans.
+# 🔭 Project Watchtower Audit Report
 
-## 5. 🧠 Warm Boot Message (Copy for Next Session)
-```text
-CURRENT_DATE: 2026-02-20
-STATUS: Phase 4.1 Active (AI Logic), but BLOCKED by Phase 23 Regressions.
-CRITICAL: 3 tests failed in `test_phase_housing_saga.py` and `test_settlement_saga_integration.py`.
-CAUSE: `SagaOrchestrator.process_sagas()` API change (no-arg) not reflected in tests.
-ACTION: Fix `test_phase_housing_saga.py` to remove arg from `process_sagas` call. Debug `SagaOrchestrator` DI in integration tests.
-CONTEXT: Financial/Inventory Purity is verifying GREEN. Focus solely on fixing the Orchestrator test suite.
-```
+**Date**: 2026-02-22
+**Auditor**: Lead Management Auditor (Gemini-CLI)
+**Status**: ⚠️ **AT RISK** (Critical Structural Misalignment Detected)
+
+## Executive Summary
+The simulation's integrity is compromised by a "Registry Gap" where key System Agents (Central Bank, PublicManager) are invisible to the Settlement System during initialization. This causes widespread `SETTLEMENT_FAIL` errors. Additionally, `MatchingEngine` uses unsafe integer casting which threatens Zero-Sum integrity over long run times.
+
+## 1. 🕵️ Agents Domain Audit
+**Auditor**: Agent Domain Auditor
+**Status**: ⚠️ **Concern**
+
+### Findings
+- **Analytics Bypass (TD-ARCH-ANALYTICS)**: `simulation/systems/analytics_system.py` directly accesses agent methods (`agent.get_assets_by_currency()`) instead of using `AgentStateDTO`. This violates the "Stateless Observer" pattern.
+- **Legacy Config Access**: `Household` config is accessed directly via `agent.config.HOURS_PER_TICK`.
+
+### Recommendations
+- Refactor `AnalyticsSystem` to exclusively consume `AgentSnapshotDTO`.
+- Migrate `HOURS_PER_TICK` to `HouseholdConfigDTO`.
+
+## 2. 💰 Finance Domain Audit
+**Auditor**: Financial Integrity Auditor
+**Status**: ❌ **CRITICAL FAILURE**
+
+### Findings
+- **The "Invisible Hand" Bug (CRITICAL)**: In `simulation/initialization/initializer.py`, `sim.agent_registry.set_state(sim.world_state)` (Line 132) snapshots the agent list *before* `sim.central_bank` (Line 166) and `sim.public_manager` (Line 207) are added to `sim.agents`.
+    - **Impact**: The `SettlementSystem` (which uses `AgentRegistry`) cannot see the Central Bank or Public Manager. All minting, OMOs, and liquidations fail validation.
+- **Broke Liquidator**: `PublicManager` lacks initial funding or overdraft capability, causing asset buyouts to fail.
+
+### Recommendations
+- **Immediate Fix**: Move `sim.agent_registry.set_state(sim.world_state)` to the *end* of `build_simulation()`, after all system agents are registered.
+- **Grant Overdraft**: Enable `allows_overdraft=True` for `PublicManager` in `FinancialEntityAdapter`.
+
+## 3. ⚖️ Markets Domain Audit
+**Auditor**: Market Domain Auditor
+**Status**: ⚠️ **Risk**
+
+### Findings
+- **Unsafe Float Casting (TD-MARKET-FLOAT-CAST)**: `simulation/markets/matching_engine.py` uses `int(price * qty)` for total price calculation. This truncates fractional pennies, leading to gradual deflation (wealth destruction).
+    - **Location**: Lines 98, 133, 196, 219, 275.
+
+### Recommendations
+- Replace `int()` casts with `modules.finance.utils.round_to_pennies()`.
+
+## 4. ⚙️ Systems Domain Audit
+**Auditor**: Systems & Infrastructure Auditor
+**Status**: ⚠️ **Drift**
+
+### Findings
+- **Configuration Drift**: `tests/integration/test_config_hot_swap.py` fails because `config.FORMULA_TECH_LEVEL` is 1.0 (Simulation Default) but the test expects 0.0 (Codebase Default).
+- **Schema Drift**: `diagnostic_findings.md` reports `total_pennies` column missing in `transactions` table.
+
+### Recommendations
+- Update `test_config_hot_swap.py` to match `simulation.yaml` defaults.
+- Run DB migration script to add `total_pennies` column.
 
 ---
 
-## 6. Routine Sync Proposal
-**Source**: `design/3_work_artifacts/drafts/`
+# 📸 Session Snapshot (2026-02-22)
 
-| File | Status | Action |
-| :--- | :--- | :--- |
-| `STRUCTURAL_INTEGRITY_CRYSTALLIZATION.md` | **New Draft** | **Review & Integrate**. Likely contains the "Architect Prime" directives mentioned in status. |
+### 📍 Current Coordinates
+- **Phase**: 4.1 (AI Logic & Simulation Re-architecture) -> **Phase 15 (Architectural Lockdown)**
+- **Focus**: Verifying Structural Integrity & Zero-Sum Compliance.
+- **Critical Files**: `initializer.py`, `matching_engine.py`, `analytics_system.py`.
+
+### ✅ Accomplishments
+- Verified **"Invisible Hand" Bug**: Confirmed `CentralBank` registration order issue in `initializer.py`.
+- Verified **Float Casting Risk**: Confirmed raw `int()` usage in `MatchingEngine`.
+- Verified **Analytics Bypass**: Confirmed direct agent method calls in `AnalyticsSystem`.
+
+### 🚧 Blockers & Pending
+- **CRITICAL FIX**: Move `agent_registry.set_state` call to end of `build_simulation`.
+- **Refactor**: Update `MatchingEngine` to use `round_to_pennies`.
+- **Refactor**: Update `AnalyticsSystem` to use DTOs.
+- **DB Migration**: Add `total_pennies` to `transactions` table.
 
 ---
 
-## 7. Handover Draft (`HANDOVER.md`)
+# 🧠 Warm Boot Message
 
-```markdown
-# HANDOVER: 2026-02-20 (Phase 23 Regression Alert)
+**Current State**: ⚠️ **CRITICAL ARCHITECTURAL GAP**
+**Primary Issue**: The `SettlementSystem` cannot see the **Central Bank** or **Public Manager** because `AgentRegistry` snapshots the agent list *before* they are added in `initializer.py`.
+**Secondary Issue**: `MatchingEngine` uses unsafe `int()` casts (wealth destruction risk).
 
-## 1. Executive Summary
-While `PROJECT_STATUS.md` marked Phase 23 as complete, a fresh audit (`test_results.txt`) reveals **3 critical failures** in the Saga Orchestration layer. The system is structurally sound (Financial/Inventory purity confirmed), but the test suite has desynchronized from the `SagaOrchestrator` API refactoring.
-
-## 2. Regression Details 🔴
-| Test Module | Failure | Root Cause |
-|:---|:---|:---|
-| `test_phase_housing_saga.py` | `AssertionError` | Test expects `process_sagas(state)`, code is `process_sagas()`. |
-| `test_settlement_saga_integration.py` | Saga stuck in `INITIATED` | Dependency Injection of `SettlementSystem` into Orchestrator likely failing in test harness. |
-
-## 3. Work Artifacts
-- **Draft Spec**: `design/3_work_artifacts/drafts/STRUCTURAL_INTEGRITY_CRYSTALLIZATION.md`
-
-## 4. Next Session Objectives
-1.  **Refactor Test**: Update `test_phase_housing_saga.py` to match new `SagaOrchestrator` signature.
-2.  **Debug Integration**: Fix `test_settlement_saga_integration.py` wiring.
-3.  **Verify**: Achieve actual 100% pass rate (923/923).
-```
+**Immediate Action Required**:
+1.  **Move** `sim.agent_registry.set_state(sim.world_state)` to the end of `SimulationInitializer.build_simulation()`.
+2.  **Refactor** `MatchingEngine` to use `round_to_pennies()`.
+3.  **Run** DB migration for `total_pennies`.
