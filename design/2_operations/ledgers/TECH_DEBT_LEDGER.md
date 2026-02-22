@@ -23,8 +23,8 @@
 | **TD-TEST-TAX-DEPR** | Testing | **Deprecated Tax API in Tests**: `test_transaction_handlers.py` still uses `collect_tax`. | **Medium**: Tech Debt. | Identified |
 | **TD-ECON-INSTABILITY-V2** | Economic | **Rapid Collapse**: Sudden Zombie/Fire Sale clusters despite high initial assets. | **High**: Logic Drift. | **IDENTIFIED** |
 | **TD-ARCH-ORCH-HARD** | Architecture | **Orchestrator Fragility**: `TickOrchestrator` lacks hardening against missing DTO attributes in mocks. | **Medium**: Resilience. | **NEW (PH21)** |
-| **TD-ARCH-SETTLEMENT-BLOAT** | Architecture | **Settlement Overload**: `SettlementSystem` handles orchestration, ledgers, metrics, and indices. | **High**: Maintainability. | **NEW (PH4.1)** |
-| **TD-CONFIG-HARDCODED-MAJORS** | Configuration | **Hardcoded Majors**: `MAJORS` list hardcoded in `labor/constants.py` instead of yaml. | **Low**: Flexibility. | **NEW (PH4.1)** |
+| **TD-ARCH-SETTLEMENT-BLOAT** | Architecture | **Settlement Overload**: `SettlementSystem` handles orchestration, ledgers, metrics, and indices. | **High**: Maintainability. | **RESOLVED (PH4.1)** |
+| **TD-CONFIG-HARDCODED-MAJORS** | Configuration | **Hardcoded Majors**: `MAJORS` list hardcoded in `labor/constants.py` instead of yaml. | **Low**: Flexibility. | **RESOLVED (PH4.1)** |
 | **TD-ECON-M2-REGRESSION** | Economic | **M2 Inversion Regression**: Money supply drops negative (e.g., -153M). | **CRITICAL**: Integrity. | **REGRESSION** |
 | **TD-FIN-SAGA-REGRESSION** | Finance | **Saga Drift Regression**: Sagas skipped due to missing participant IDs. | **High**: Protocol. | **REGRESSION** |
 | **TD-BANK-RESERVE-CRUNCH** | Finance | **Reserve Constraint**: Bank 2 lacks reserves (1M) to fund infrastructure bonds (8M+). | **Medium**: Logic. | **NEW** |
@@ -33,6 +33,7 @@
 | **TD-TEST-DTO-MOCK** | Testing | **DTO Hygiene**: `tests/test_firm_brain_scan.py` uses permissive `MagicMock` for DTOs. | **Low**: Stability. | **NEW (PH4.1)** |
 | **TD-LIFECYCLE-NAMING** | Lifecycle | **Variable Naming**: `capital_stock_pennies` multiplied by 100, implies units. | **Medium**: Inflation. | **NEW (PH4.1)** |
 | **TD-LABOR-METADATA** | Market | **Order Payload**: LaborMarket uses `Order.metadata` for Major matching instead of DTO. | **Low**: Typing. | **NEW (PH4.1)** |
+| **TD-FIN-MAGIC-BASE-RATE** | Finance | **Magic Number for Base Interest Rate**: `FinanceSystem.issue_treasury_bonds` uses hardcoded `0.03`. | **Low**: Configurability. | Identified |
 
 ---
 
@@ -43,7 +44,7 @@
 - **Symptom**: `SettlementSystem` handles transaction orchestration, ledger delegation, internal bank indexing (`_bank_depositors`), and metrics.
 - **Risk**: High coupling makes future FX/Market expansions (multi-hop swaps) difficult to test and maintain.
 - **Solution**: Extract `BankRegistry` and `MetricsRecording` into dedicated services. Keep `SettlementSystem` purely for orchestration.
-- **Status**: Identified (Phase 4.1)
+- **Status**: RESOLVED (Phase 4.1)
 
 ### ID: TD-ARCH-GOV-MISMATCH
 - **Title**: Singleton vs List Mismatch
@@ -80,6 +81,13 @@
 - **Symptom**: Bank rollback logic dependent on `hasattr` implementation details.
 - **Risk**: Abstraction Leak.
 - **Solution**: Move rollback logic to `TransactionProcessor` and use strict protocols.
+
+### ID: TD-FIN-MAGIC-BASE-RATE
+- **Title**: Magic Number for Base Interest Rate
+- **Symptom**: `FinanceSystem.issue_treasury_bonds` uses a hardcoded `0.03` fallback when no banks are available.
+- **Risk**: Lack of configurability and transparency.
+- **Solution**: Define a named constant in `modules.finance.constants`.
+- **Status**: Identified (Follow-up from BankRegistry Extraction)
 
 
 ## AI & Economic Simulation

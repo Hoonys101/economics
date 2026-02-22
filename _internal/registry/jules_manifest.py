@@ -30,7 +30,7 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "wait": False
     },
     "phase41_labor_metadata_impl": {
-        "title": "Implement Labor Metadata DTO Migration",
+        "title": "Implement Labor Matching DTO Migration",
         "file": "gemini-output/spec/MISSION_labor_metadata_SPEC.md",
         "instruction": "Migrate LaborMarket to use LaborMatchDTO instead of raw Order.metadata. Update Firm and Household call sites.",
         "wait": False

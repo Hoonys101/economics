@@ -35,7 +35,7 @@
     },
     "phase41_labor_metadata_impl": {
       "key": "phase41_labor_metadata_impl",
-      "title": "Implement Labor Metadata DTO Migration",
+      "title": "Implement Labor Matching DTO Migration",
       "type": "jules",
       "instruction_raw": "Migrate LaborMarket to use LaborMatchDTO instead of raw Order.metadata. Update Firm and Household call sites.",
       "command": "create",

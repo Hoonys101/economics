@@ -24,48 +24,5 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "phase41_bank_registry_planning": {
-        "title": "Wave 2: BankRegistry API/DTO Freeze",
-        "worker": "spec",
-        "instruction": "Define the IBankRegistry protocol and update ISettlementSystem to include it. Focus strictly on freezing the interface and DTOs to enable parallel implementation. Ensure backward compatibility.",
-        "context_files": [
-            "modules/finance/api.py",
-            "simulation/systems/settlement_system.py",
-            "simulation/bank.py"
-        ],
-        "output_path": "gemini-output/spec/MISSION_bank_registry_FREEZE.md"
-    },
-    "phase41_labor_config_planning": {
-        "title": "Wave 2: Labor Config API/DTO Freeze",
-        "worker": "spec",
-        "instruction": "Define LaborConfigDTO and specify how MAJORS will be loaded from economy_params.yaml. Freeze the interface between constants.py and the config system.",
-        "context_files": [
-            "modules/labor/api.py",
-            "modules/labor/constants.py",
-            "config/economy_params.yaml"
-        ],
-        "output_path": "gemini-output/spec/MISSION_labor_config_FREEZE.md"
-    },
-    "phase41_labor_metadata_planning": {
-        "title": "Wave 2: Labor Metadata DTO Migration Planning",
-        "worker": "spec",
-        "instruction": "Design LaborMatchDTO to replace Order.metadata/brand_info usage in LaborMarket. Specify the changes needed in LaborMarket.place_order and the overall matching engine.",
-        "context_files": [
-            "modules/labor/api.py",
-            "modules/labor/system.py",
-            "modules/market/api.py"
-        ],
-        "output_path": "gemini-output/spec/MISSION_labor_metadata_SPEC.md"
-    },
-    "phase41_test_dto_hygiene_planning": {
-        "title": "Wave 2: DTO Test Hygiene Planning",
-        "worker": "spec",
-        "instruction": "Analyze tests using MagicMock for DTOs (e.g., test_firm_brain_scan.py). Propose a plan to use concrete DTOs or strictly spec'd mocks to improve test stability and detect schema drifts.",
-        "context_files": [
-            "modules/finance/api.py",
-            "modules/firm/api.py",
-            "tests/unit/test_firm_brain_scan.py"
-        ],
-        "output_path": "gemini-output/spec/MISSION_test_dto_hygiene_SPEC.md"
-    }
+    # Add missions here
 }
