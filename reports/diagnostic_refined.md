@@ -2,7 +2,7 @@
 Critical events extracted for Gemini analysis.
 
 - **Tick ?** | **WARNING** | File locking (fcntl) is not supported on this platform. Concurrency safety is not guaranteed.
-- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'NoneType' object has no attribute 'get'
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
 - **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
 - **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
 - **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
@@ -17,1188 +17,1296 @@ Critical events extracted for Gemini analysis.
 - **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 50000000
 - **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 50000000 pennies for infrastructure.
 - **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'NoneType' object has no attribute 'get'
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49986460
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49986460 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_2_0, Status=FAILED, Message=Batch Validation Failed on atomic_2_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49967165
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49967165 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_3_0, Status=FAILED, Message=Batch Validation Failed on atomic_3_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49946622
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49946622 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_4_0, Status=FAILED, Message=Batch Validation Failed on atomic_4_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49910206
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49910206 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_5_0, Status=FAILED, Message=Batch Validation Failed on atomic_5_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49160338
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49160338 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_6_0, Status=FAILED, Message=Batch Validation Failed on atomic_6_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49121928
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49121928 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_7_0, Status=FAILED, Message=Batch Validation Failed on atomic_7_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49077957
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49077957 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_8_0, Status=FAILED, Message=Batch Validation Failed on atomic_8_0: Destination account does not exist: 100
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49988060
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49988060 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49969910
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49969910 pennies for infrastructure.
 - **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'NoneType' object has no attribute 'get'
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48977329
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48977329 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_9_0, Status=FAILED, Message=Batch Validation Failed on atomic_9_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48870822
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48870822 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_10_0, Status=FAILED, Message=Batch Validation Failed on atomic_10_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48810398
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48810398 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_11_0, Status=FAILED, Message=Batch Validation Failed on atomic_11_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48744337
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48744337 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_12_0, Status=FAILED, Message=Batch Validation Failed on atomic_12_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48673067
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48673067 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_13_0, Status=FAILED, Message=Batch Validation Failed on atomic_13_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48596678
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48596678 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_14_0, Status=FAILED, Message=Batch Validation Failed on atomic_14_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48514105
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48514105 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_15_0, Status=FAILED, Message=Batch Validation Failed on atomic_15_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48426896
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48426896 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_16_0, Status=FAILED, Message=Batch Validation Failed on atomic_16_0: Destination account does not exist: 100
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49948310
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49948310 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49912330
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49912330 pennies for infrastructure.
 - **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'NoneType' object has no attribute 'get'
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48332704
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48332704 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_17_0, Status=FAILED, Message=Batch Validation Failed on atomic_17_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48233374
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48233374 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_18_0, Status=FAILED, Message=Batch Validation Failed on atomic_18_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48128761
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48128761 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_19_0, Status=FAILED, Message=Batch Validation Failed on atomic_19_0: Destination account does not exist: 100
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48019149
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48019149 pennies for infrastructure.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_20_0, Status=FAILED, Message=Batch Validation Failed on atomic_20_0: Destination account does not exist: 100
-- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 121 closed down. Assets: 95124.08, Consecutive Loss Turns: 20
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49076515
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49076515 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48985102
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48985102 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48938660
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48938660 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48834468
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48834468 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48776616
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48776616 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48712604
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48712604 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48642865
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48642865 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48567385
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48567385 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48485952
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48485952 pennies for infrastructure.
+- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'NoneType' object has no attribute 'get'
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48398766
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48398766 pennies for infrastructure.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_15_0, Status=FAILED, Message=Batch Validation Failed on atomic_15_0: Destination account does not exist: 109
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48305999
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48305999 pennies for infrastructure.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_16_0, Status=FAILED, Message=Batch Validation Failed on atomic_16_0: Destination account does not exist: 109
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48207569
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48207569 pennies for infrastructure.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_17_0, Status=FAILED, Message=Batch Validation Failed on atomic_17_0: Destination account does not exist: 109
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48104200
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48104200 pennies for infrastructure.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_18_0, Status=FAILED, Message=Batch Validation Failed on atomic_18_0: Destination account does not exist: 109
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47994850
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47994850 pennies for infrastructure.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_19_0, Status=FAILED, Message=Batch Validation Failed on atomic_19_0: Destination account does not exist: 109
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47880683
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47880683 pennies for infrastructure.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_20_0, Status=FAILED, Message=Batch Validation Failed on atomic_20_0: Destination account does not exist: 109
+- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 121 closed down. Assets: 95348.56, Consecutive Loss Turns: 20
   - Details: agent_id=121
-- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 122 closed down. Assets: 95734.25, Consecutive Loss Turns: 20
+- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 122 closed down. Assets: 94867.21, Consecutive Loss Turns: 20
   - Details: agent_id=122
 - **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'NoneType' object has no attribute 'get'
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47904561
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47904561 pennies for infrastructure.
-- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21770925.00, Expected: 50165998.00, Delta: -28395073.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47856390
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47856390 pennies for infrastructure.
-- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21770925.00, Expected: 50165998.00, Delta: -28395073.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47760731
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47760731 pennies for infrastructure.
+- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21005884.00, Expected: 49763061.00, Delta: -28757177.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47709314
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47709314 pennies for infrastructure.
+- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21005884.00, Expected: 49763061.00, Delta: -28757177.0000
 - **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'NoneType' object has no attribute 'get'
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47804240
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47804240 pennies for infrastructure.
-- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21770925.00, Expected: 50165998.00, Delta: -28395073.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47750305
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47750305 pennies for infrastructure.
-- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21770925.00, Expected: 50165998.00, Delta: -28395073.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47693460
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47693460 pennies for infrastructure.
-- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21770925.00, Expected: 50165998.00, Delta: -28395073.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47634575
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47634575 pennies for infrastructure.
-- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21770925.00, Expected: 50165998.00, Delta: -28395073.0000
-- **Tick 27** | **WARNING** | FIRM_INACTIVE | Firm 120 closed down. Assets: 94245.45, Consecutive Loss Turns: 20
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47653823
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47653823 pennies for infrastructure.
+- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21005884.00, Expected: 49763061.00, Delta: -28757177.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47595537
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47595537 pennies for infrastructure.
+- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21005884.00, Expected: 49763061.00, Delta: -28757177.0000
+- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'NoneType' object has no attribute 'get'
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47532983
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47532983 pennies for infrastructure.
+- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21005884.00, Expected: 49763061.00, Delta: -28757177.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47467490
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47467490 pennies for infrastructure.
+- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21005884.00, Expected: 49763061.00, Delta: -28757177.0000
+- **Tick 27** | **WARNING** | FIRM_INACTIVE | Firm 120 closed down. Assets: 87771.63, Consecutive Loss Turns: 20
   - Details: agent_id=120
-- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'NoneType' object has no attribute 'get'
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47573426
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47573426 pennies for infrastructure.
-- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6343245.00, Expected: 50165998.00, Delta: -43822753.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47552398
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47552398 pennies for infrastructure.
-- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6343245.00, Expected: 50165998.00, Delta: -43822753.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47530051
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47530051 pennies for infrastructure.
-- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6343245.00, Expected: 50165998.00, Delta: -43822753.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47506757
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47506757 pennies for infrastructure.
-- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6343245.00, Expected: 50165998.00, Delta: -43822753.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47276958
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47276958 pennies for infrastructure.
-- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6343245.00, Expected: 50165998.00, Delta: -43822753.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47251676
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47251676 pennies for infrastructure.
-- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6343245.00, Expected: 50165998.00, Delta: -43822753.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47225542
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47225542 pennies for infrastructure.
-- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6343245.00, Expected: 50165998.00, Delta: -43822753.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47095595
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47095595 pennies for infrastructure.
-- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6343245.00, Expected: 50165998.00, Delta: -43822753.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47016076
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47016076 pennies for infrastructure.
-- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6343245.00, Expected: 50165998.00, Delta: -43822753.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46935809
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46935809 pennies for infrastructure.
-- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6343245.00, Expected: 50165998.00, Delta: -43822753.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46905257
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46905257 pennies for infrastructure.
-- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6343245.00, Expected: 50165998.00, Delta: -43822753.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46874793
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46874793 pennies for infrastructure.
-- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6343245.00, Expected: 50165998.00, Delta: -43822753.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46842746
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46842746 pennies for infrastructure.
-- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6343245.00, Expected: 50165998.00, Delta: -43822753.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46758221
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46758221 pennies for infrastructure.
-- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6343245.00, Expected: 50165998.00, Delta: -43822753.0000
-- **Tick 41** | **WARNING** | FIRM_INACTIVE | Firm 123 closed down. Assets: 57777.19, Consecutive Loss Turns: 20
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47400861
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47400861 pennies for infrastructure.
+- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47378197
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47378197 pennies for infrastructure.
+- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **ERROR** | Transaction Record: ID=cae2cc8c-9866-4824-bdb2-62b1b7961c14, Status=FAILED, Message=Destination account does not exist: 124
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47353522
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47353522 pennies for infrastructure.
+- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47327497
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47327497 pennies for infrastructure.
+- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 31** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
   - Details: agent_id=123
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46726410
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46726410 pennies for infrastructure.
-- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=67376656-d26b-4483-9acb-23a4fbeb7779, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46691165
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46691165 pennies for infrastructure.
-- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=3143312c-0a43-4a9e-b958-02f2b06fbb22, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
+- **Tick 31** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47042232
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47042232 pennies for infrastructure.
+- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **ERROR** | Transaction Record: ID=07eb7b9b-d129-4c90-9846-7980d806cbef, Status=FAILED, Message=Destination account does not exist: 124
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 32** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 32** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46962205
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46962205 pennies for infrastructure.
+- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 33** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 33** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46882171
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46882171 pennies for infrastructure.
+- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 34** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 34** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46851593
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46851593 pennies for infrastructure.
+- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 35** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 35** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46820634
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46820634 pennies for infrastructure.
+- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 36** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 36** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46736695
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46736695 pennies for infrastructure.
+- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **ERROR** | Transaction Record: ID=d6e735c6-83c9-4e42-93ca-c9b5433b131d, Status=FAILED, Message=Destination account does not exist: 124
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 37** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 37** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46703166
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46703166 pennies for infrastructure.
+- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 38** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 38** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46668373
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46668373 pennies for infrastructure.
+- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **ERROR** | Transaction Record: ID=f8631d42-1684-4bf2-95b2-0568e3fd182a, Status=FAILED, Message=Destination account does not exist: 124
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 39** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 39** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46581405
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46581405 pennies for infrastructure.
+- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **ERROR** | Transaction Record: ID=8a96e8be-97e9-42ac-bf9f-d0fdc6fba46b, Status=FAILED, Message=Destination account does not exist: 124
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 40** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 40** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46543225
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46543225 pennies for infrastructure.
+- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **ERROR** | Transaction Record: ID=e7fe7576-ac32-428c-955a-de4ceb819972, Status=FAILED, Message=Destination account does not exist: 124
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 41** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 41** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46506394
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46506394 pennies for infrastructure.
+- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 42** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 42** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46466338
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46466338 pennies for infrastructure.
+- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 43** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 43** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46427038
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46427038 pennies for infrastructure.
+- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 44** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 44** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46386822
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46386822 pennies for infrastructure.
+- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **ERROR** | Transaction Record: ID=993975d7-3e4e-43d7-9ff6-ef4a0be0a9af, Status=FAILED, Message=Destination account does not exist: 124
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 45** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 45** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46345175
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46345175 pennies for infrastructure.
+- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 46** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 46** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46250831
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46250831 pennies for infrastructure.
+- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 47** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 47** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46207354
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46207354 pennies for infrastructure.
+- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **ERROR** | Transaction Record: ID=9fff493c-c2a2-429f-b45a-8036209ef221, Status=FAILED, Message=Destination account does not exist: 124
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 48** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 48** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46162773
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46162773 pennies for infrastructure.
+- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 49** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 49** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46117831
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46117831 pennies for infrastructure.
+- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 50** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 50** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46073053
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46073053 pennies for infrastructure.
+- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **ERROR** | Transaction Record: ID=e74f3721-974d-4c2b-9ba9-a867bd19b4a7, Status=FAILED, Message=Destination account does not exist: 124
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
 - **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'NoneType' object has no attribute 'get'
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46707457
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46707457 pennies for infrastructure.
-- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=a73515da-5997-4913-93d4-289dcd93ac0a, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46723749
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46723749 pennies for infrastructure.
-- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46688503
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46688503 pennies for infrastructure.
-- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=7f080602-e8c5-4c99-93c6-bcf79df0d8a4, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'NoneType' object has no attribute 'get'
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46703144
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46703144 pennies for infrastructure.
-- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46717785
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46717785 pennies for infrastructure.
-- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46732426
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46732426 pennies for infrastructure.
-- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46747066
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46747066 pennies for infrastructure.
-- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46761706
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46761706 pennies for infrastructure.
-- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=1a8f6fc5-057c-4fb8-b0be-d095880e71f0, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46776346
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46776346 pennies for infrastructure.
-- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46790986
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46790986 pennies for infrastructure.
-- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46805625
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46805625 pennies for infrastructure.
-- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=bd8ae6d9-aff6-478d-97dd-c4e01cc370be, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46768726
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46768726 pennies for infrastructure.
-- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=e9feee12-0dca-4d78-b4f2-923aa5be9773, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'NoneType' object has no attribute 'get'
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46783365
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46783365 pennies for infrastructure.
-- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=b811c06b-0b6a-4ad5-a9fd-a4c862807769, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46746465
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46746465 pennies for infrastructure.
-- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=f2dc5f57-4a08-4ecf-a8f0-9f4a242e2698, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46761103
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46761103 pennies for infrastructure.
-- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=5f676999-3a85-44ec-b9f1-d2bd4c716226, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46724203
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46724203 pennies for infrastructure.
-- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=53299a3d-3c29-453f-ad3c-0ffc220b2a97, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46635765
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46635765 pennies for infrastructure.
-- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=859f0605-af67-4367-a835-7ec207b67faa, Status=FAILED, Message=Destination account does not exist: 120
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 120
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 117 to new firm 120. Aborting.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 339b092f-4d2e-4acc-ba05-a1eae998f99e missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5272e290-ff10-4bf6-8fca-ae23f74e3a8c missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 8b2287f4-0bf7-4d3f-b605-83a73f1a5a7f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 848d231a-33b2-4b1a-bb45-6d61c2aad7ce missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 021a946b-06a9-448e-b9e7-563326bc9b4d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga c943c786-c6a7-4fbb-8682-40c047ad2b79 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 5946e211-4623-49db-91e8-104354a496fb missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga fef930de-48ef-45a8-9a6c-4d649331e81f missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b299aad3-0261-4168-81f9-5ffc1968195a missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 76aa9d64-ba10-4699-8448-535c37bb4686 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1d32a065-f8b3-49fa-b4cf-a0945fe2ad1d missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d538d245-cfc2-46a4-8a7e-7f12b4e14eab missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 160d6a2b-7e44-4cf2-bb79-59451cabc146 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 04a960df-bf0e-4cec-80c6-003cc2bdbf81 missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bf3807c8-2820-4673-9c32-df7a50f18ccf missing participant IDs.
-- **Tick ?** | **WARNING** | SAGA_SKIP | Saga ff75e44c-de69-432a-8cdc-0c48dea7411f missing participant IDs.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46598864
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46598864 pennies for infrastructure.
-- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: -6427895.00, Expected: 50165998.00, Delta: -56593893.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 51** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 51** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45972950
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45972950 pennies for infrastructure.
+- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **ERROR** | Transaction Record: ID=b4ec6979-8614-4f98-a93e-adf8997ff629, Status=FAILED, Message=Destination account does not exist: 124
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 52** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 52** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45873868
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45873868 pennies for infrastructure.
+- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 53** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 53** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45826592
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45826592 pennies for infrastructure.
+- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **ERROR** | Transaction Record: ID=e9ca46b7-92ec-48f3-a109-4eccea393434, Status=FAILED, Message=Destination account does not exist: 124
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 54** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 54** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45777329
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45777329 pennies for infrastructure.
+- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **ERROR** | Transaction Record: ID=07c8a1cc-09f7-49dc-b6db-d2a5d6b63b8a, Status=FAILED, Message=Destination account does not exist: 124
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 55** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 55** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45727270
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45727270 pennies for infrastructure.
+- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 56** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 56** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45470368
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45470368 pennies for infrastructure.
+- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 57** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 57** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45367456
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45367456 pennies for infrastructure.
+- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 58** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 58** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45263958
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45263958 pennies for infrastructure.
+- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 59** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 59** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45210340
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45210340 pennies for infrastructure.
+- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000
+- **Tick ?** | **ERROR** | Transaction Record: ID=f16e8881-13d8-4fda-a996-393599629b31, Status=FAILED, Message=Destination account does not exist: 124
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 111 to new firm 124. Aborting.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9acd85f9-41af-4e35-b37e-5c89e46980f6 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 981ab99f-60e1-4069-89d0-83d75689c283 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 1f5071e2-9c87-4a30-86be-60584368c4c4 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 983f2504-6505-405b-a945-d1826e0d9d97 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 9a107ff6-b580-415b-9615-297ea4974c70 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7476b98a-fbf9-4b08-b033-f28f7d6ee956 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga d0fe804a-d79c-4f5e-95ee-84b63846d522 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 65c397dc-195f-4064-9506-419c6e7ecba5 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga adcb5eb2-f564-404d-aead-59c40b428f27 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 7c37dd82-6b38-408f-9939-4e4a77e38960 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 316b2b98-aded-42bb-8501-fb7a6bea7ca0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga b9367107-68d5-4db0-a7fb-2b78ec49b947 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga a51b7db3-f986-4feb-b6df-b0f1a9a78c73 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 3f5aed3a-ed61-4d2a-baa4-750d8e934dd9 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga 59e2a84d-a2ba-43f6-bc7c-32aed214c1b0 missing seller ID.
+- **Tick ?** | **WARNING** | SAGA_SKIP | Saga bb6ca227-68dc-4d9c-ba2a-d672bc533c86 missing seller ID.
+- **Tick 60** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick 60** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45106124
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45106124 pennies for infrastructure.
+- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 5718833.00, Expected: 49763061.00, Delta: -44044228.0000

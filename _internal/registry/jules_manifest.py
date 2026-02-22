@@ -17,41 +17,14 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "phase41_wave4_marriage": {
-        "title": "Wave 4.2: Marriage Market & Household Merger",
-        "file": "gemini-output/spec/MISSION_wave4-marriage-spec_SPEC.md",
-        "instruction": "Implement the Marriage Market matcher and Execution Service (Absorption Strategy). Ensure Zero-Sum asset/debt transfer and lifecycle cleanup (resignation, etc.).",
-        "wait": False
-    },
-    "phase41_wave4_health": {
-        "title": "Wave 4.3: Social Health & Medical System",
-        "file": "gemini-output/spec/MISSION_wave4-health-spec_SPEC.md",
-        "instruction": "Implement HealthDynamicsService, Medicine commodity consumption, and death triggers. Integrate with NeedsEngine for medicine prioritization.",
-        "wait": False
-    },
-    "phase41_wave4_politics": {
-        "title": "Wave 4.4: Political Orchestrator & Policy Voting",
-        "file": "gemini-output/spec/MISSION_wave4-politics-spec_SPEC.md",
-        "instruction": "Implement PoliticalOrchestrator (Median Voter + Lobbying Vector). Ensure Zero-Sum lobbying payments to Gov treasury and policy clamping logic.",
-        "wait": False
-    },
-    "phase41_wave5_escheatment_fix": {
-        "title": "Wave 5.1: Escheatment Handler NoneType Fix",
-        "file": "gemini-output/spec/MISSION_escheatment_fix_SPEC.md",
-        "instruction": "Fix the AttributeError in EscheatmentHandler by adding a None check for tx.metadata. Ensure zero-sum integrity during residual escheatment cleanup.",
-        "wait": False
-    },
-    "phase41_wave5_account_registry_fix": {
-        "title": "Wave 5.2: Account Registry & ID Hardening",
-        "file": "gemini-output/spec/MISSION_account_registry_fix_SPEC.md",
-        "instruction": "Implement monotonic ID counter and pre-registration hooks to prevent settlement race conditions during agent spawning/turnover.",
-        "wait": False
-    },
-    "phase41_wave5_saga_integrity_fix": {
-        "title": "Wave 5.3: Saga Participant Integrity Fix",
-        "file": "gemini-output/spec/MISSION_saga_integrity_fix_SPEC.md",
-        "instruction": "Harden SagaOrchestrator transition logic. Implement strict participant validation and robust DTO extraction for both dict and object types.",
-        "wait": False
+    "forensics_hardening_impl": {
+        "title": "[Forensics] Core Integrity Hardening (TDD & Stability Loop)",
+        "command": "create",
+        "instruction": "1. Implement the hardening fixes specified in 'gemini-output/spec/MISSION_forensics_regression_tests_SPEC.md'. 2. Run 'operation_forensics.py' (60 ticks, refined mode). 3. If the diagnostic report contains > 100 forensic events, identify new recurring failure patterns, create new regression tests in 'tests/forensics/', and implement fixes. 4. Repeat this loop until forensic events are reduced below 100. Ensure all tests in 'tests/forensics/' pass perfectly.",
+        "file": "gemini-output/spec/MISSION_forensics_regression_tests_SPEC.md",
+        "wait": True
     }
 }
+
+
 
