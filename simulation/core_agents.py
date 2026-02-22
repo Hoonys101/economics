@@ -412,6 +412,11 @@ class Household(
     def children_ids(self) -> List[int]:
         return self._bio_state.children_ids
 
+    def add_child(self, child_id: int) -> None:
+        """Adds a child to the household's bio state."""
+        if child_id not in self._bio_state.children_ids:
+            self._bio_state.children_ids.append(child_id)
+
     @property
     def social_status(self) -> float:
         return self._social_state.social_status
