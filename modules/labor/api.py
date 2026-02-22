@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import List, Optional, Protocol, runtime_checkable, Dict, Any
 from dataclasses import dataclass, field
 from modules.simulation.api import AgentID
+from modules.common.enums import IndustryDomain
 
 @dataclass(frozen=True)
 class LaborConfigDTO:
@@ -61,10 +62,13 @@ class JobOfferDTO:
     quantity: float = 1.0
     
     # Phase 4.1: Major-Matching Extensions
-    major: str = "GENERAL" # Domain specificity (e.g., "STEM", "ARTS", "MANUFACTURING")
+    major: IndustryDomain = IndustryDomain.GENERAL # Domain specificity (e.g., "STEM", "ARTS", "MANUFACTURING")
     
     # Matching Constraints (Optional)
     min_match_score: float = 0.0 # Minimum match multiplier to accept (0.0 - 1.0)
+    
+    # Wave 3: Hiring Preferences
+    min_experience: float = 0.0
 
 @dataclass(frozen=True)
 class JobSeekerDTO:
@@ -78,8 +82,11 @@ class JobSeekerDTO:
     quantity: float = 1.0
     
     # Phase 4.1: Major-Matching Extensions
-    major: str = "GENERAL" # Domain specificity (e.g., "STEM", "ARTS")
-    secondary_majors: List[str] = None # Optional
+    major: IndustryDomain = IndustryDomain.GENERAL # Domain specificity (e.g., "STEM", "ARTS")
+    secondary_majors: List[IndustryDomain] = field(default_factory=list) # Optional
+    
+    # Wave 3: Labor Supply Signals
+    experience: float = 0.0 # Years of experience in this major
 
 @dataclass(frozen=True)
 class LaborMarketMatchResultDTO:
@@ -92,6 +99,10 @@ class LaborMarketMatchResultDTO:
     matched_wage: float # Adjusted for match quality
     match_score: float # 0.0 to 1.0
     major_compatibility: str # "PERFECT", "PARTIAL", "MISMATCH"
+    
+    # Wave 3: Bargaining Context
+    surplus: float = 0.0          # (WTP - Reservation Wage)
+    bargaining_power: float = 0.5 # Worker's share of surplus (0.0 - 1.0)
     
 @runtime_checkable
 class ILaborMarket(Protocol):

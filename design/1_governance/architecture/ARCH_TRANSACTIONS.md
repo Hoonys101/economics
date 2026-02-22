@@ -74,11 +74,12 @@
 에이전트의 유동성 흐름을 극대화하기 위해 다음 결제 로직을 강제합니다.
 
 1.  **우선 순위**: 모든 거래 시 **현금(Cash)**을 사용합니다.
-2.  **No Reflexive Liquidity (Budget Constraint)**: `SettlementSystem`은 더 이상 부족분을 은행 예금에서 자동으로 인출하지 않습니다 (Legacy "Seamless" policy deprecated). 에이전트는 결제를 위해 충분한 현금을 스스로 확보해야 하며, 부족 시 `SETTLEMENT_FAIL`이 발생합니다.
-3.  **정산 일관성**:
+2.  **No Reflexive Liquidity (Budget Constraint)**: `SettlementSystem` strictly enforces `current_cash >= amount`. Automatic bank withdrawals are deprecated (LOD-121). 
+3.  **Liquidity Bridge (The Escape Valve)**: To prevent systemic paralysis, agents MUST maintain an internal "Liquidity Bridge" handler that periodically transfers bank deposits to cash (via `bank.withdraw`) *before* settlement. This shifts the complexity from the core engine back to the agent's financial management.
+4.  **정산 일관성**:
     -   구매자(Buyer)는 잔액 부족 시 결제에 실패하며, 이는 상위 모듈에서 `SolvencyException`으로 처리되어야 합니다.
     -   판매자(Seller)는 거래 대금을 현금으로 수취합니다.
-4.  **효과**: "예산 없이는 집행 없다"는 원칙을 강제하여, 경제 내의 실제 유동성 압박과 신용 주기를 정확히 시뮬레이션합니다.
+5.  **효과**: "예산 없이는 집행 없다"는 원칙을 강제하여, 경제 내의 실제 유동성 압박과 신용 주기를 정확히 시뮬레이션합니다.
 ## 8. 통화량 회계 (Money Supply Accounting - M2)
 
 시뮬레이션의 M2 통화량은 다음의 합으로 정의되며, 중복 합산을 엄격히 금지합니다.
@@ -89,7 +90,8 @@
 **중복 방지 원칙 (Avoiding Phantom Liquidity):**
 -   **대출 시**: 대출금은 현금으로 직접 지급되지 않고, 대출자의 **은행 예금** 계좌에 기입됩니다. 이때 M2는 예금 증가분만큼 상승하지만, 현금 유통량은 변하지 않습니다. (TD-178 해결)
 -   **정산 시**: `SettlementSystem`은 현금을 우선 차감하고 부족 시 예금을 인출합니다. 이때 자금의 성격이 '예금'에서 '현금'으로 변환되거나 타인의 '현금'으로 이전되므로, 전체 M2(`Cash + Deposits`)는 보존됩니다.
--   **계산 공식**: `Total Money (M2) = sum(Non-Bank Agents Cashes) + sum(Bank Deposits)`.
+-   **계산 공식**: `Total Money (M2) = sum(max(0, Agent Cashes)) + sum(Bank Deposits) + sum(min(0, Agent Cashes))`. 
+-   **부채 처리 (Liability Rule)**: 에이전트의 마이너스 잔액(Overdraft)은 M2에서 단순 차감되는 '음의 자산'이 아니라, 은행 예금과 상쇄되는 **'부채(Liability)'**로 취급되어야 합니다. M2 Audit 시 음수 잔액은 자산 합산에서 제외하고 부채 계정에 별도 합산하여 가시성을 확보합니다.
 
 ## 10. 다중 통화 및 환전 정합성 (Multi-Currency & FX Integrity)
 

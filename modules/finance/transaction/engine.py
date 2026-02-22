@@ -270,33 +270,46 @@ class LedgerEngine(ILedgerEngine):
     def process_batch(self, transactions: List[TransactionDTO]) -> List[TransactionResultDTO]:
         """
         Processes a batch of transactions atomically.
-        If any transaction fails, previous successful transactions in the batch are rolled back.
+        If any transaction fails (validation or execution), previous successful transactions are rolled back.
+        Re-validates sequentially to prevent race condition overdrafts.
         """
         results: List[TransactionResultDTO] = []
         successful_transactions: List[TransactionDTO] = []
 
-        # 1. Validation Phase (All must pass)
+        # Sequential Validation & Execution Phase
         for tx in transactions:
+            # 1. Just-In-Time Validation
             try:
                 self.validator.validate(tx)
             except Exception as e:
-                 # If one fails validation, fail all
-                 fail_msg = f"Batch Validation Failed on {tx.transaction_id}: {e}"
-                 failed_results = [
-                     TransactionResultDTO(
-                         transaction=t,
-                         status='FAILED',
-                         message=fail_msg,
-                         timestamp=self._get_timestamp()
-                     ) for t in transactions
-                 ]
-                 # Record all failures
-                 for fr in failed_results:
-                     self.ledger.record(fr)
-                 return failed_results
+                # Validation failed for THIS transaction. Init rollback.
+                fail_msg = f"Batch Validation Failed on {tx.transaction_id}: {e}"
+                
+                # Rollback successful ones (reverse order)
+                self._rollback_batch(successful_transactions)
 
-        # 2. Execution Phase
-        for tx in transactions:
+                # Format failing results for the entire batch
+                failed_results = []
+                for t in transactions:
+                    msg = fail_msg
+                    status = 'FAILED'
+                    if t == tx:
+                        status = 'FAILED' # Validation failed here
+                    elif t in successful_transactions:
+                         msg = f"Rolled back due to batch failure: {fail_msg}"
+                         
+                    failed_results.append(TransactionResultDTO(
+                         transaction=t,
+                         status=status,
+                         message=msg,
+                         timestamp=self._get_timestamp()
+                    ))
+                
+                for fr in failed_results:
+                     self.ledger.record(fr)
+                return failed_results
+
+            # 2. Immediate Execution
             try:
                 self.executor.execute(tx)
                 successful_transactions.append(tx)

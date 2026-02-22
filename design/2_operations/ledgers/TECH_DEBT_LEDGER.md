@@ -18,7 +18,9 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **TD-ARCH-GOV-MISMATCH** | Architecture | **Singleton vs List**: `WorldState` has `governments` (List) vs Singleton `government`. | **Medium**: Logic Drift. | Open |
 | **TD-INT-BANK-ROLLBACK** | Finance | **Rollback Coupling**: Bank rollback logic dependent on `hasattr` implementation. | **Low**: Leak. | Open |
-| **TD-SYS-ACCOUNTING-GAP** | Systems | **Accounting Accuracy**: `accounting.py` misses tracking buyer expenses. | **Medium**: Accuracy. | Open |
+| **TD-SYS-ACCOUNTING-GAP** | Systems | `accounting.py` misses tracking buyer expenses. | **Medium**: Accuracy. | Open |
+| **TD-ECON-M2-INV-BUG** | Economic | **M2 Audit Logic**: `audit_total_m2` naively sums negative balances. | **CRITICAL**: Integrity. | **RESOLVED** |
+| **TD-SYS-BATCH-RACE** | Finance | **Atomic Batch Race**: Multiple withdrawals in a batch bypass balance checks. | **High**: Soundness. | **RESOLVED** |
 | **TD-TEST-TX-MOCK-LAG** | Testing | **Transaction Test Lag**: `test_transaction_engine.py` mocks are out of sync. | **Low**: Flakiness. | Identified |
 | **TD-TEST-TAX-DEPR** | Testing | **Deprecated Tax API in Tests**: `test_transaction_handlers.py` still uses `collect_tax`. | **Medium**: Tech Debt. | Identified |
 | **TD-ECON-INSTABILITY-V2** | Economic | **Rapid Collapse**: Sudden Zombie/Fire Sale clusters despite high initial assets. | **High**: Logic Drift. | **IDENTIFIED** |
@@ -30,10 +32,13 @@
 | **TD-BANK-RESERVE-CRUNCH** | Finance | **Reserve Constraint**: Bank 2 lacks reserves (1M) to fund infrastructure bonds (8M+). | **Medium**: Logic. | **NEW** |
 | **TD-ECON-ZOMBIE-FIRM** | Economic | **Firm Extinction**: Rapid collapse of basic_food firms causing FIRE_SALE spam. | **High**: Balance. | **NEW** |
 | **TD-ARCH-SEO-LEGACY** | Firm | **Legacy SEO Gap**: `brain_scan` skips legacy decision logic unless mocked. | **Medium**: AI Integrity. | **NEW (PH4.1)** |
-| **TD-TEST-DTO-MOCK** | Testing | **DTO Hygiene**: `tests/test_firm_brain_scan.py` uses permissive `MagicMock` for DTOs. | **Low**: Stability. | **NEW (PH4.1)** |
+| **TD-TEST-DTO-MOCK** | Testing | **DTO Hygiene**: `tests/test_firm_brain_scan.py` uses permissive `MagicMock` for DTOs. | **Low**: Stability. | **RESOLVED (PH4.1)** |
 | **TD-LIFECYCLE-NAMING** | Lifecycle | **Variable Naming**: `capital_stock_pennies` multiplied by 100, implies units. | **Medium**: Inflation. | **NEW (PH4.1)** |
-| **TD-LABOR-METADATA** | Market | **Order Payload**: LaborMarket uses `Order.metadata` for Major matching instead of DTO. | **Low**: Typing. | **NEW (PH4.1)** |
-| **TD-FIN-MAGIC-BASE-RATE** | Finance | **Magic Number for Base Interest Rate**: `FinanceSystem.issue_treasury_bonds` uses hardcoded `0.03`. | **Low**: Configurability. | Identified |
+| **TD-LABOR-METADATA** | Market | LaborMarket uses `Order.metadata` for Major matching instead of DTO. | **Low**: Typing. | **NEW (PH4.1)** |
+| **TD-FIN-MAGIC-BASE-RATE** | Finance | `FinanceSystem.issue_treasury_bonds` uses hardcoded `0.03`. | **Low**: Config. | Identified |
+| **TD-WAVE3-DTO-SWAP** | DTO | **IndustryDomain Shift**: Replace `major` with `IndustryDomain` enum. | **Medium**: Structure. | **SPECCED** |
+| **TD-WAVE3-TALENT-VEIL** | Agent | **Hidden Talent**: `EconStateDTO` missing `hidden_talent`. | **High**: Intent. | **SPECCED** |
+| **TD-WAVE3-MATCH-REWRITE** | Market | **Bargaining vs OrderBook**: Existing LaborMarket assumes sorting. | **High**: Economy. | **SPECCED** |
 
 ---
 
@@ -133,7 +138,7 @@
 - **Symptom**: `MAJORS` list is currently hardcoded in `modules/labor/constants.py`.
 - **Risk**: Adding new sectors requires code changes rather than just adjusting `economy_params.yaml`.
 - **Solution**: Move `MAJORS` definitions to `economy_params.yaml` or a dedicated sector config file.
-- **Status**: Identified (Phase 4.1)
+- **Status**: RESOLVED (Phase 4.1)
 
 ---
 > [!NOTE]

@@ -19,6 +19,10 @@
     - **Layers**: Default -> YAML Override -> Environment Variables -> Runtime Injection.
     - **Validation**: 로딩 시점에 엄격한 타입 검사와 범위 체크 수행.
     - **Dependency**: `ConfigurationComponent`를 통해 ECS 구조 내에서 상태 의존성 없이 설정 주입.
+2.4 **Common Layer (Type Foundation)**:
+    - **Purpose**: To prevent circular dependencies between Domain Modules (e.g., Household vs Labor).
+    - **Content**: Stateless Enums, Global Constants, and shared Protocols that do not import from Domain Modules.
+    - **Standard**: All cross-domain Enums (e.g., `IndustryDomain`) MUST reside in `modules/common/`.
 
 ## 3. 인터페이스와 프로토콜 (API-Driven)
 

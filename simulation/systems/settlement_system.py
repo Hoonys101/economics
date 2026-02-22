@@ -625,6 +625,7 @@ class SettlementSystem(IMonetaryAuthority):
 
         agents = self.agent_registry.get_all_financial_agents()
         total_cash = 0
+        total_liabilities = 0
         bank_reserves = 0
         total_deposits = 0
 
@@ -646,24 +647,30 @@ class SettlementSystem(IMonetaryAuthority):
                  assets = agent.get_assets_by_currency()
                  current_balance = assets.get(DEFAULT_CURRENCY, 0)
 
-            total_cash += current_balance
+            if current_balance >= 0:
+                total_cash += current_balance
+            else:
+                total_liabilities += current_balance
 
             if isinstance(agent, IBank):
                 bank_reserves += current_balance
                 total_deposits += agent.get_total_deposits()
 
-        total_m2 = (total_cash - bank_reserves) + total_deposits
+        # M2 = Circulating Cash + Deposits + Liabilities
+        # Liabilities are negative, so adding them preserves the zero-sum ledger
+        total_m2 = (total_cash - bank_reserves) + total_deposits + total_liabilities
 
         if expected_total is not None:
             if total_m2 != expected_total:
                 self.logger.critical(
-                    f"AUDIT_INTEGRITY_FAILURE | M2 Mismatch! Expected: {expected_total}, Actual: {total_m2}, Diff: {total_m2 - expected_total}",
+                    f"AUDIT_INTEGRITY_FAILURE | M2 Mismatch! Expected: {expected_total}, Actual: {total_m2}, Diff: {total_m2 - expected_total} "
+                    f"(Cash: {total_cash}, Deposits: {total_deposits}, Liabilities: {total_liabilities})",
                     extra={"expected": expected_total, "actual": total_m2, "diff": total_m2 - expected_total}
                 )
                 return False
             else:
-                self.logger.info(f"AUDIT_PASS | M2 Verified: {total_m2}")
+                self.logger.info(f"AUDIT_PASS | M2 Verified: {total_m2} (Cash: {total_cash}, Liab: {total_liabilities})")
                 return True
         else:
-             self.logger.info(f"AUDIT_PASS | M2 Current: {total_m2} (No expectation set)")
+             self.logger.info(f"AUDIT_PASS | M2 Current: {total_m2} (Cash: {total_cash}, Liab: {total_liabilities}, No expectation set)")
              return True
