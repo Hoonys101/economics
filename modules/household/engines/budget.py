@@ -96,12 +96,13 @@ class BudgetEngine(IBudgetEngine):
                 m = goods_market.get(target_item)
 
                 # Default estimate (should be high)
-                price_estimate = 10000.0 # 100.00
+                price_estimate = 10000.0 # 100.00 (Pennies)
                 if m:
                     price_estimate = getattr(m, 'avg_price', price_estimate) or getattr(m, 'current_price', price_estimate)
 
                 # Inelastic: Spend up to total remaining cash to buy 1 unit
-                cost_pennies = int(price_estimate * 1.2 * 100) # 20% premium for urgency
+                # Review Fix: Removed * 100 multiplier as price_estimate is assumed to be in pennies
+                cost_pennies = int(price_estimate * 1.2) # 20% premium for urgency
 
                 allocated_cash = min(max(0, total_cash - spent), cost_pennies)
 

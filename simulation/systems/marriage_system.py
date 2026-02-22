@@ -29,6 +29,10 @@ class MarriageSystem:
         """
         Main execution loop for marriage matching.
         """
+        if not state.settlement_system:
+            self.logger.warning("MARRIAGE_SYSTEM | SettlementSystem missing. Skipping marriage execution.")
+            return
+
         # 1. Filter Eligible Singles
         eligible_singles = self._find_eligible_singles(state.households)
 
@@ -134,12 +138,15 @@ class MarriageSystem:
                      )
                  except AttributeError:
                      # Fallback: If transfer doesn't exist, we assume simple wallet move (less safe but functional)
-                     # In a real scenario, we'd ensure Interface compliance.
-                     # Here, since we are setting wallet reference next, the funds are effectively moved
-                     # IF we add them to the HOH wallet first.
-                     hoh.deposit(spouse_balance)
-                     spouse.withdraw(spouse_balance) # This might fail if wallet doesn't allow neg?
-                     pass
+                     # Review Fix: Reordered to withdraw first to prevent money creation if withdraw fails.
+                     try:
+                         spouse.withdraw(spouse_balance)
+                         hoh.deposit(spouse_balance)
+                     except Exception as e:
+                         self.logger.error(f"MARRIAGE_ERROR | Fallback transfer failed: {e}")
+                         # If withdraw succeeded but deposit failed (unlikely), we have money destruction.
+                         # In fallback mode, we accept this risk over money creation.
+                         pass
 
         # 3. Wallet Merge (Reference Copy)
         # This effectively makes them share the SAME bank account for future transactions.
