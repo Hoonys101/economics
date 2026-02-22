@@ -5,7 +5,7 @@ import logging
 from modules.finance.kernel.api import ISagaOrchestrator, IHousingTransactionSagaHandler, IMonetaryLedger
 from modules.finance.sagas.housing_api import HousingTransactionSagaStateDTO
 from modules.finance.saga_handler import HousingTransactionSagaHandler
-from modules.simulation.api import ISimulationState, IAgent, IGovernment
+from modules.simulation.api import ISimulationState, IAgent, IGovernment, HouseholdSnapshotDTO
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +13,7 @@ class SagaOrchestrator(ISagaOrchestrator):
     """
     Manages the lifecycle of long-running business transactions (Sagas).
     Extracts saga logic from SettlementSystem.
+    Strictly enforces HousingTransactionSagaStateDTO usage.
     """
 
     def __init__(self, monetary_ledger: Optional[IMonetaryLedger] = None):
@@ -31,20 +32,19 @@ class SagaOrchestrator(ISagaOrchestrator):
     def submit_saga(self, saga: HousingTransactionSagaStateDTO) -> bool:
         """
         Submits a new saga to be processed.
+        Strictly accepts HousingTransactionSagaStateDTO.
         """
         if not saga:
             return False
         
-        # Handle dict case for flexibility
-        if isinstance(saga, dict):
-            saga_id = saga.get('saga_id')
-        else:
-            saga_id = getattr(saga, 'saga_id', None)
-            
+        if not isinstance(saga, HousingTransactionSagaStateDTO):
+            logger.error(f"SAGA_SUBMIT_FAIL | Invalid saga type: {type(saga)}. Expected HousingTransactionSagaStateDTO.")
+            return False
+
+        saga_id = saga.saga_id
         if not saga_id:
             return False
 
-        # saga_id is already extracted safely above
         self.active_sagas[saga_id] = saga
         logger.info(
             f"SAGA_SUBMITTED | Saga {saga_id} submitted.",
@@ -70,86 +70,45 @@ class SagaOrchestrator(ISagaOrchestrator):
             handler.monetary_ledger = self.monetary_ledger
 
         # Iterate over copy to allow modification/deletion
-        for saga_id, saga_val in list(self.active_sagas.items()):
+        for saga_id, saga in list(self.active_sagas.items()):
             try:
-                # 1. DTO Conversion if needed (for dict-based test payloads)
-                saga: Any = saga_val
-                if isinstance(saga, dict):
-                    # Minimal conversion for compatibility with handler
-                    # Handler uses .status, .saga_id, .buyer_context, .seller_context
-                    
-                    # Convert contexts
-                    def make_ctx(cid):
-                        if cid is None: return None
-                        # Mock context that matches HouseholdSnapshotDTO property access
-                        from types import SimpleNamespace
-                        return SimpleNamespace(household_id=cid, id=cid)
+                # 1. Agent Liveness Check
+                # Extract IDs strictly from DTO
+                buyer_id_raw = saga.buyer_context.household_id
+                seller_id = saga.seller_context.id
+                status = saga.status
 
-                    # Update dict with what handler needs if missing
-                    if 'buyer_context' not in saga:
-                        saga['buyer_context'] = make_ctx(saga.get('buyer_id'))
-                    if 'seller_context' not in saga:
-                        saga['seller_context'] = make_ctx(saga.get('seller_id'))
-                    
-                    # Try to create DTO
-                    try:
-                        saga_obj = HousingTransactionSagaStateDTO(**saga)
-                        saga = saga_obj
-                    except Exception:
-                        # Fallback: keep as dict or SimpleNamespace
-                        pass
+                try:
+                    buyer_id = int(buyer_id_raw)
+                except (ValueError, TypeError):
+                    logger.error(f"SAGA_SKIP | Saga {saga_id} has invalid buyer ID: {buyer_id_raw}")
+                    continue
 
-                # 2. Agent Liveness Check
-                # Extract IDs safely
-                buyer_id = None
-                seller_id = None
-                status = "UNKNOWN"
-
-                if isinstance(saga, dict):
-                    buyer_id = saga.get('buyer_id')
-                    seller_id = saga.get('seller_id')
-                    status = saga.get('status', "UNKNOWN")
-                else:
-                    # DTO or SimpleNamespace
-                    try:
-                        buyer_id = int(saga.buyer_context.household_id)
-                        seller_id = saga.seller_context.id
-                        status = saga.status
-                    except (AttributeError, TypeError):
-                        buyer_id = getattr(saga, 'buyer_id', None)
-                        seller_id = getattr(saga, 'seller_id', None)
-                        status = getattr(saga, 'status', "UNKNOWN")
-
-                if buyer_id is None or seller_id is None:
-                    logger.warning(f"SAGA_SKIP | Saga {saga_id} missing participant IDs.")
+                if seller_id is None:
+                    logger.warning(f"SAGA_SKIP | Saga {saga_id} missing seller ID.")
                     continue
 
                 buyer = sim_state.agents.get(buyer_id)
                 seller = sim_state.agents.get(seller_id)
 
-                is_buyer_inactive = not buyer or not buyer.is_active
-                is_seller_inactive = not seller or not seller.is_active
+                is_buyer_inactive = not buyer or not getattr(buyer, 'is_active', False)
+                is_seller_inactive = not seller or not getattr(seller, 'is_active', False)
 
                 # Special handling for System/Government agents
                 if seller_id == -1:
                     is_seller_inactive = False
                 elif seller and isinstance(seller, IGovernment):
                     is_seller_inactive = False
+
                 # Fallback check for Government singleton via simulation state
                 if not seller and sim_state.government and hasattr(sim_state.government, 'id') and sim_state.government.id == seller_id:
                     is_seller_inactive = False
 
                 if is_buyer_inactive or is_seller_inactive:
-                    if isinstance(saga, dict):
-                        saga['status'] = "CANCELLED"
-                        if saga.get('logs') is None:
-                            saga['logs'] = []
-                        saga['logs'].append("Cancelled due to inactive participant.")
-                    else:
-                        saga.status = "CANCELLED"
-                        if not hasattr(saga, 'logs') or saga.logs is None:
-                            saga.logs = []
-                        saga.logs.append("Cancelled due to inactive participant.")
+                    saga.status = "CANCELLED"
+                    if not saga.logs:
+                        saga.logs = []
+                    saga.logs.append("Cancelled due to inactive participant.")
 
                     logger.warning(
                          f"SAGA_CANCELLED | Saga {saga_id} cancelled due to inactive participant. "
@@ -158,7 +117,6 @@ class SagaOrchestrator(ISagaOrchestrator):
                     )
 
                     # Attempt compensation if funds might be locked
-                    # Use status variable defined above
                     if status not in ["INITIATED", "STARTED", "PENDING_OFFER"]:
                          try:
                              handler.compensate_step(saga)
@@ -173,10 +131,7 @@ class SagaOrchestrator(ISagaOrchestrator):
                 self.active_sagas[saga_id] = updated_saga
 
                 # 3. Cleanup Terminal States
-                if isinstance(updated_saga, dict):
-                    status = updated_saga.get('status')
-                else:
-                    status = updated_saga.status
+                status = updated_saga.status
 
                 if status == "COMPLETED":
                     logger.info(f"SAGA_ARCHIVED | Saga {saga_id} completed successfully.")
@@ -207,17 +162,20 @@ class SagaOrchestrator(ISagaOrchestrator):
              return
 
         for saga_id, saga in list(self.active_sagas.items()):
-            buyer_id = int(saga.buyer_context.household_id)
-            seller_id = saga.seller_context.id
+            try:
+                buyer_id = int(saga.buyer_context.household_id)
+                seller_id = saga.seller_context.id
 
-            if buyer_id == agent_id or seller_id == agent_id:
-                logger.warning(f"SAGA_AGENT_DEATH | Triggering compensation for Saga {saga_id} due to agent {agent_id} death.")
-                try:
-                    updated_saga = handler.compensate_step(saga)
-                    if updated_saga.status == "FAILED_ROLLED_BACK":
-                        del self.active_sagas[saga_id]
-                except Exception as e:
-                    logger.critical(f"SAGA_AGENT_DEATH_FAIL | Failed to compensate saga {saga_id}. {e}")
+                if buyer_id == agent_id or seller_id == agent_id:
+                    logger.warning(f"SAGA_AGENT_DEATH | Triggering compensation for Saga {saga_id} due to agent {agent_id} death.")
+                    try:
+                        updated_saga = handler.compensate_step(saga)
+                        if updated_saga.status == "FAILED_ROLLED_BACK":
+                            del self.active_sagas[saga_id]
+                    except Exception as e:
+                        logger.critical(f"SAGA_AGENT_DEATH_FAIL | Failed to compensate saga {saga_id}. {e}")
+            except (ValueError, TypeError, AttributeError):
+                continue
 
     def get_active_sagas(self) -> Dict[UUID, HousingTransactionSagaStateDTO]:
         return self.active_sagas
