@@ -5,6 +5,7 @@ import logging
 from simulation.orchestration.api import IPhaseStrategy
 from simulation.dtos.api import SimulationState
 from simulation.markets.order_book_market import OrderBookMarket
+from modules.labor.api import ILaborMarket
 
 if TYPE_CHECKING:
     from simulation.world_state import WorldState
@@ -20,6 +21,11 @@ class Phase2_Matching(IPhaseStrategy):
         for market in state.markets.values():
             if isinstance(market, OrderBookMarket):
                 matched_txs.extend(market.match_orders(state.time))
+            elif isinstance(market, ILaborMarket):
+                # Major-Matching Protocol
+                if hasattr(market, 'match_orders'):
+                    # Use match_orders adapter to get Transactions
+                    matched_txs.extend(market.match_orders(state.time))
 
         if state.stock_market:
             stock_txs = state.stock_market.match_orders(state.time)

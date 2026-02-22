@@ -76,7 +76,8 @@ class LaborManager:
                     'labor_skill': agent_data.get('labor_skill', 1.0),
                     'education_level': agent_data.get('education_level', 0),
                     'aptitude': agent_data.get('aptitude', 0.5),
-                    'market_insight': agent_data.get('market_insight', 0.5)
+                    'market_insight': agent_data.get('market_insight', 0.5),
+                    'major': getattr(household, 'major', 'GENERAL')
                 }
 
                 orders.append(Order(

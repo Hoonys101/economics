@@ -34,7 +34,7 @@ def test_hr_engine_decoupled():
         firm_id=AgentID(1), tick=10, budget_pennies=100000, market_snapshot=MarketSnapshotDTO(10, {}, {}), available_cash_pennies=100000, is_solvent=True,
         current_employees=[AgentID(1)], current_headcount=1, employee_wages={AgentID(1): 1000}, employee_skills={AgentID(1): 1.0},
         target_workforce_count=5, labor_market_avg_wage=1000, marginal_labor_productivity=1.0, happiness_avg=1.0,
-        profit_history=[1000], min_employees=1, max_employees=100, severance_pay_weeks=2
+        profit_history=[1000], min_employees=1, max_employees=100, severance_pay_weeks=2, specialization="TECH"
     )
 
     intent = engine.decide_workforce(context)

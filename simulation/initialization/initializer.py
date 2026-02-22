@@ -70,6 +70,7 @@ from simulation.systems.sensory_system import SensorySystem
 from simulation.systems.settlement_system import SettlementSystem
 from simulation.systems.commerce_system import CommerceSystem
 from simulation.systems.labor_market_analyzer import LaborMarketAnalyzer
+from modules.labor.system import LaborMarket
 from modules.system.escrow_agent import EscrowAgent
 from modules.government.taxation.system import TaxationSystem
 from modules.analysis.crisis_monitor import CrisisMonitor
@@ -223,7 +224,7 @@ class SimulationInitializer(SimulationInitializerInterface):
                 hh._econ_state.residing_property_id = unit.id
                 hh._econ_state.is_homeless = False
         sim.markets: Dict[str, Market] = {good_name: OrderBookMarket(market_id=good_name, config_module=self.config) for good_name in self.config.GOODS}
-        sim.markets['labor'] = OrderBookMarket(market_id='labor', config_module=self.config)
+        sim.markets['labor'] = LaborMarket(market_id='labor')
         sim.markets['security_market'] = OrderBookMarket(market_id='security_market', config_module=self.config)
         sim.markets['loan_market'] = LoanMarket(market_id='loan_market', bank=sim.bank, config_module=self.config)
         sim.markets['loan_market'].agents_ref = sim.agents
@@ -315,6 +316,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.transaction_processor = TransactionProcessor(config_module=self.config)
         sim.transaction_processor.register_handler('goods', GoodsTransactionHandler())
         sim.transaction_processor.register_handler('labor', LaborTransactionHandler())
+        sim.transaction_processor.register_handler('HIRE', LaborTransactionHandler()) # Phase 4.1: Major-Matching
         sim.transaction_processor.register_handler('wage', LaborTransactionHandler())
         sim.transaction_processor.register_handler('research_labor', LaborTransactionHandler())
         sim.transaction_processor.register_handler('stock', StockTransactionHandler())

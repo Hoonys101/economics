@@ -22,6 +22,14 @@ class LaborTransactionHandler(ITransactionHandler):
             # SSoT: Use total_pennies directly (Strict Schema Enforced)
             trade_value = tx.total_pennies
 
+            # Special Handling for HIRE (Phase 4.1): No financial transfer, just state update
+            if tx.transaction_type == "HIRE":
+                # Extract mismatch penalty from metadata if available
+                # Logic: major_compatibility influences initial productivity or training cost?
+                # We will store a productivity modifier in the firm's HR state.
+                self._apply_labor_effects(tx, buyer, seller, 0, 0, context)
+                return True
+
             # 1. Prepare Settlement (Calculate tax intents)
             # Note: TransactionProcessor used market_data.get("goods_market")?
             # But TaxationSystem.calculate_tax_intents signature expects 'market_data'.
@@ -104,6 +112,7 @@ class LaborTransactionHandler(ITransactionHandler):
             seller.needs["labor_need"] = 0.0
 
             # Net Income Tracking
+            # For HIRE transactions, net_income passed is 0, so this adds 0 (Correct).
             if isinstance(seller, IIncomeTracker):
                 seller.add_labor_income(int(seller_net_income))
 
@@ -113,11 +122,34 @@ class LaborTransactionHandler(ITransactionHandler):
             # HR Update
             if seller not in buyer.hr_state.employees:
                 buyer.hr_engine.hire(buyer.hr_state, seller, trade_value, context.time)
+
+                # Phase 4.1: Apply Mismatch Penalty (Skill Modifier)
+                if tx.metadata:
+                    compatibility = tx.metadata.get("major_compatibility", "MISMATCH")
+                    modifier = 1.0
+                    if compatibility == "MISMATCH":
+                        modifier = 0.8
+                    elif compatibility == "PARTIAL":
+                        modifier = 0.9
+
+                    # Store modifier in employee data (HRState)
+                    # HREngine.hire adds to employees list, but we need to update employees_data dict
+                    if seller.id not in buyer.hr_state.employees_data:
+                        buyer.hr_state.employees_data[seller.id] = {}
+
+                    # Apply penalty to skill record directly in Firm's view (not Agent's true skill)
+                    # We can store 'skill_modifier' which ProductionEngine should use.
+                    # Or simpler: Pre-multiply the skill stored in employees_data.
+                    # However, employees_data entries usually mirror agent state.
+                    # Let's add a 'productivity_modifier' field.
+                    buyer.hr_state.employees_data[seller.id]["productivity_modifier"] = modifier
+
             else:
                  buyer.hr_state.employee_wages[seller.id] = trade_value
 
-            # Finance Update
-            buyer.finance_engine.record_expense(buyer.finance_state, int(buyer_total_cost), DEFAULT_CURRENCY)
+            # Finance Update (Skip if cost is 0, e.g. HIRE)
+            if buyer_total_cost > 0:
+                buyer.finance_engine.record_expense(buyer.finance_state, int(buyer_total_cost), DEFAULT_CURRENCY)
 
             # Research Labor Productivity Boost
             if tx.transaction_type == "research_labor" and isinstance(seller, Household):

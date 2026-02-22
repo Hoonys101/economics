@@ -5,6 +5,7 @@ from simulation.core_agents import Household, Talent, Skill, Personality
 from simulation.firms import Firm
 from simulation.ai_model import AIEngineRegistry
 from simulation.markets.order_book_market import OrderBookMarket
+from modules.labor.system import LaborMarket
 from simulation.loan_market import LoanMarket
 from simulation.bank import Bank
 from simulation.models import Transaction
@@ -352,7 +353,7 @@ class TestSimulation:
         assert "labor" in simulation_instance.markets
         assert "loan_market" in simulation_instance.markets
         assert isinstance(simulation_instance.markets["food"], OrderBookMarket)
-        assert isinstance(simulation_instance.markets["labor"], OrderBookMarket)
+        assert isinstance(simulation_instance.markets["labor"], LaborMarket)
         assert isinstance(simulation_instance.markets["loan_market"], LoanMarket)
 
         expected_agent_ids = (

@@ -10,6 +10,7 @@ from modules.simulation.api import AgentCoreConfigDTO, AgentStateDTO
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.ai.api import Personality
 from modules.household.api import HouseholdFactoryContext, IHouseholdFactory
+from modules.labor.constants import MAJORS
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,8 @@ class HouseholdFactory(IHouseholdFactory):
         personality: Optional[Personality] = None,
         talent: Optional[Talent] = None,
         decision_engine: Optional[Any] = None,
-        initial_needs: Optional[Dict[str, float]] = None
+        initial_needs: Optional[Dict[str, float]] = None,
+        major: Optional[str] = None
     ) -> Household:
         """
         Standard initialization for a Household agent.
@@ -72,6 +74,9 @@ class HouseholdFactory(IHouseholdFactory):
 
         # 4. Instantiate Household
         # Note: We pass markets and goods_data from context
+        if major is None:
+            major = random.choice(MAJORS)
+
         agent = Household(
             core_config=core_config,
             engine=decision_engine,
@@ -86,7 +91,8 @@ class HouseholdFactory(IHouseholdFactory):
             parent_id=parent_id,
             generation=generation,
             initial_assets_record=int(initial_assets),
-            demographic_manager=self.context.demographic_manager
+            demographic_manager=self.context.demographic_manager,
+            major=major
         )
 
         # 5. Hydrate State (Assets)
@@ -148,6 +154,9 @@ class HouseholdFactory(IHouseholdFactory):
         initial_needs = getattr(self.context.core_config_module, "NEWBORN_INITIAL_NEEDS", None)
 
         # 5. Create Agent with 0 assets (to be funded via transfer)
+        # Inherit major from parent? Or new? Let's say new generation explores.
+        # But for now, random via default logic in create_household.
+
         child = self.create_household(
             agent_id=new_id,
             initial_age=initial_age,

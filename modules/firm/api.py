@@ -163,6 +163,7 @@ class HRContextDTO(BaseDepartmentContextDTO):
     min_employees: int
     max_employees: int
     severance_pay_weeks: int
+    specialization: str # Added for Major-Matching
 
 @dataclass(frozen=True)
 class HRIntentDTO:

@@ -102,6 +102,7 @@ class Household(
         generation: Optional[int] = None,
         initial_assets_record: Optional[int] = None,  # MIGRATION: int pennies
         demographic_manager: Optional[Any] = None,
+        major: Optional[str] = None,
         **kwargs,
     ) -> None:
         self.config = config_dto
@@ -169,6 +170,7 @@ class Household(
             education_xp=0.0,
             education_level=0,
             market_insight=0.5, # Phase 4.1: Dynamic Cognitive Filter
+            major=major, # Phase 4.1: Major-Matching
             expected_wage_pennies=1000, # Default 10.00
             talent=talent,
             skills={},
@@ -890,6 +892,7 @@ class Household(
             "education_level": self._econ_state.education_level,
             "education_xp": self._econ_state.education_xp,
             "market_insight": self._econ_state.market_insight,
+            "major": self._econ_state.major,
             "aptitude": self._econ_state.aptitude
         }
 
@@ -923,7 +926,8 @@ class Household(
             id=self.id,
             bio_state=self._bio_state.copy(),
             econ_state=self._econ_state.copy(),
-            social_state=self._social_state.copy()
+            social_state=self._social_state.copy(),
+            major=self._econ_state.major
         )
 
     def create_state_dto(self) -> HouseholdStateDTO:
@@ -949,6 +953,8 @@ class Household(
             portfolio_holdings=self._econ_state.portfolio.to_legacy_dict(),
             risk_aversion=self.risk_aversion,
             agent_data=self.get_agent_data(),
+            market_insight=self._econ_state.market_insight,
+            major=self._econ_state.major,
             perceived_prices=self._econ_state.perceived_avg_prices,
             conformity=self._social_state.conformity,
             social_rank=self._social_state.social_rank,

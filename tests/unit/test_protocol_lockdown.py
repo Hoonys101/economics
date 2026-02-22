@@ -32,6 +32,9 @@ class MockSettlementSystem:
     def transfer(self, debit_agent, credit_agent, amount, memo, debit_context=None, credit_context=None, tick=0, currency="USD"):
         return None
 
+    def execute_swap(self, match):
+        return None
+
     def get_balance(self, agent_id, currency="USD"):
         return 100
 

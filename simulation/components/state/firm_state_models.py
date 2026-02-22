@@ -10,6 +10,7 @@ class HRState:
     """State for HR operations."""
     employees: List[IEmployeeDataProvider] = field(default_factory=list)
     employee_wages: Dict[int, int] = field(default_factory=dict) # MIGRATION: Wages in int pennies
+    employees_data: Dict[int, Dict[str, Any]] = field(default_factory=dict) # Metadata (e.g. productivity_modifier)
     unpaid_wages: Dict[int, List[Tuple[int, int]]] = field(default_factory=dict) # MIGRATION: Wages in int pennies
     hires_last_tick: int = 0
 
