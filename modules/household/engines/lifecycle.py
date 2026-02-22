@@ -55,7 +55,10 @@ class LifecycleEngine(ILifecycleEngine):
                 # MIGRATION: Do not set is_active=False here. Return flag so Household can notify Manager.
                 logger.info(f"BIO_DEATH | Agent {new_bio_state.id} died of natural causes at age {new_bio_state.age:.1f}")
 
-        # 3. Reproduction Decision
+        # 3. Health Shock Check (Wave 4.3)
+        self._check_health_shock(new_bio_state, config)
+
+        # 4. Reproduction Decision
         # Currently, LifecycleManager handles this externally via VectorizedHouseholdPlanner.
         # However, to support autonomy, we can include checks here.
         # For now, we return empty list unless we implement specific logic.
@@ -75,6 +78,35 @@ class LifecycleEngine(ILifecycleEngine):
             cloning_requests=cloning_requests,
             death_occurred=death_occurred
         )
+
+    def _check_health_shock(self, bio_state: BioStateDTO, config: Any) -> None:
+        """
+        Calculates probability of sickness and updates bio_state.
+        P(sickness) = Base + Age_Factor + Poverty_Factor
+        """
+        if not bio_state.is_active or bio_state.has_disease:
+            return
+
+        # Base probability (e.g., 0.1% per tick)
+        base_prob = getattr(config, "HEALTH_SHOCK_BASE_PROB", 0.001)
+
+        # Age Factor: Exponential increase after 50
+        age_factor = 0.0
+        if bio_state.age > 50:
+            age_factor = ((bio_state.age - 50) ** 2) * 0.0001
+
+        # Poverty Factor: Impact of cumulative hunger
+        poverty_factor = 0.0
+        if bio_state.survival_need_high_turns > 0:
+            # e.g., 1% per tick of high hunger
+            poverty_factor = bio_state.survival_need_high_turns * 0.01
+
+        total_prob = base_prob + age_factor + poverty_factor
+
+        if random.random() < total_prob:
+            bio_state.has_disease = True
+            bio_state.health_status = 0.5 # Degraded health
+            logger.info(f"HEALTH_SHOCK | Agent {bio_state.id} contracted disease. Prob: {total_prob:.4f}")
 
     def create_offspring_demographics(self, state: BioStateDTO, new_id: int, current_tick: int) -> Dict[str, Any]:
         """

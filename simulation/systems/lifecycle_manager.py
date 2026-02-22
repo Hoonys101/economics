@@ -27,6 +27,7 @@ from modules.finance.api import IShareholderRegistry
 from simulation.systems.lifecycle.aging_system import AgingSystem
 from simulation.systems.lifecycle.birth_system import BirthSystem
 from simulation.systems.lifecycle.death_system import DeathSystem
+from simulation.systems.marriage_system import MarriageSystem
 
 class AgentLifecycleManager(AgentLifecycleManagerInterface):
     """
@@ -88,6 +89,8 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
             logger
         )
 
+        self.marriage_system = MarriageSystem(config_module)
+
     def reset_agents_tick_state(self, state: SimulationState) -> None:
         """
         Calls the reset method on all active agents at the end of a tick.
@@ -125,7 +128,12 @@ class AgentLifecycleManager(AgentLifecycleManagerInterface):
         birth_txs = self.birth_system.execute(state)
         all_transactions.extend(birth_txs)
 
-        # 3. Death Phase
+        # 3. Marriage Phase (Wave 4.3)
+        # Execute before Death to ensure spouses are linked if one dies?
+        # Or after Birth?
+        self.marriage_system.execute(state)
+
+        # 4. Death Phase
         # DeathSystem returns transactions (inheritance, liquidation leftovers)
         death_txs = self.death_system.execute(state)
         all_transactions.extend(death_txs)

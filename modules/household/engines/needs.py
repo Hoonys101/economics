@@ -64,6 +64,16 @@ class NeedsEngine(INeedsEngine):
         # 4. Prioritize Needs
         prioritized_needs = self._prioritize_needs(new_bio_state.needs, social_state.desire_weights)
 
+        # Wave 4.3: Medical Need Injection
+        if new_bio_state.has_disease:
+            medical_need = PrioritizedNeed(
+                need_id="medical",
+                urgency=999.0, # Immediate priority above survival
+                deficit=100.0
+            )
+            # Insert at top
+            prioritized_needs.insert(0, medical_need)
+
         return NeedsOutputDTO(
             bio_state=new_bio_state,
             prioritized_needs=prioritized_needs

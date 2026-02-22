@@ -86,7 +86,46 @@ class BudgetEngine(IBudgetEngine):
         spent = 0
         final_orders: List[Order] = []
         for need in needs:
-            if need.need_id == 'survival':
+            if need.need_id == 'medical':
+                # Wave 4.3: Inelastic Medical Demand
+                # Check price or assume estimate
+                goods_market = getattr(market_snapshot, 'goods', {})
+                # Assuming 'goods_market' contains 'medical_service' or we need to look in 'services'
+                # Given existing code uses 'goods' for 'basic_food', we'll look there.
+                target_item = "medical_service"
+                m = goods_market.get(target_item)
+
+                # Default estimate (should be high)
+                price_estimate = 10000.0 # 100.00
+                if m:
+                    price_estimate = getattr(m, 'avg_price', price_estimate) or getattr(m, 'current_price', price_estimate)
+
+                # Inelastic: Spend up to total remaining cash to buy 1 unit
+                cost_pennies = int(price_estimate * 1.2 * 100) # 20% premium for urgency
+
+                allocated_cash = min(max(0, total_cash - spent), cost_pennies)
+
+                if allocated_cash > 0:
+                    allocations['medical'] = allocated_cash
+                    spent += allocated_cash
+
+                    qty = 1.0 # One treatment
+                    agent_id = getattr(state.wallet, 'owner_id', None)
+                    if agent_id:
+                        # Price limit is what we are willing to pay per unit
+                        price_limit = allocated_cash / 100.0
+                        order = Order(
+                            agent_id=agent_id,
+                            side='BUY',
+                            item_id=target_item,
+                            quantity=qty,
+                            price_pennies=allocated_cash,
+                            price_limit=price_limit,
+                            market_id='goods_market' # Assuming standard goods market handles services
+                        )
+                        final_orders.append(order)
+
+            elif need.need_id == 'survival':
                 food_price_float = config.default_food_price_estimate if config else DEFAULT_FOOD_PRICE_ESTIMATE
                 goods_market = getattr(market_snapshot, 'goods', {})
                 target_item = 'basic_food'
