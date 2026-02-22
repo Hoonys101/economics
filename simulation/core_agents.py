@@ -664,7 +664,8 @@ class Household(
             abstract_plan=initial_orders,
             market_snapshot=market_snapshot,
             config=self.config,
-            current_tick=current_time
+            current_tick=current_time,
+            agent_id=self.id # Wave 4.3: Identity Pass-through
         )
         budget_output = self.budget_engine.allocate_budget(budget_input)
 
@@ -695,6 +696,13 @@ class Household(
              self._social_state = consumption_output.social_state
 
         refined_orders = consumption_output.orders
+
+        # Wave 4.3: Health Shock Labor Penalty
+        # If agent is sick, they cannot work (Lost Labor).
+        # We filter out any generated labor SELL orders.
+        if self._bio_state.has_disease:
+            refined_orders = [o for o in refined_orders if not (o.side == "SELL" and o.item_id == "labor")]
+            # Also notify Demographics/Labor system if needed, or rely on delta below.
 
         # Labor Hour Tracking (Push Model)
         current_labor_hours = 0.0
@@ -1072,6 +1080,12 @@ class Household(
                 boost = getattr(self.config, "education_boost_amount", 0.05)
                 current_insight = self._econ_state.market_insight
                 self._econ_state.market_insight = min(1.0, current_insight + boost * to_remove)
+
+            # Wave 4.3: Health Recovery (Medical)
+            if item_id == "medical_service":
+                self._bio_state.has_disease = False
+                self._bio_state.health_status = 1.0
+                self.logger.info(f"HEALTH_CURED | Agent {self.id} cured of disease via medical service.")
 
     def record_consumption(self, amount: float, is_food: bool = False) -> None:
         """Records consumption statistics (called by Registry/Handlers)."""

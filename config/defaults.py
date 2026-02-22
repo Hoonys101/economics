@@ -150,6 +150,14 @@ GOODS = {
         "is_luxury": False,
         "sector": "SERVICES",
     },
+    "medical_service": {
+        "production_cost": 5000, # MIGRATION: Int pennies
+        "initial_price": 10000, # MIGRATION: Int pennies
+        "utility_effects": {"survival": 50}, # Strong survival effect
+        "is_service": True,
+        "is_luxury": False,
+        "sector": "SERVICES",
+    },
     # WO-030: Iron (Raw Material)
     "iron": {
         "production_cost": 200, # MIGRATION: Int pennies

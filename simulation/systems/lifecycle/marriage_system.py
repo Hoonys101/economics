@@ -71,8 +71,15 @@ class MarriageSystem:
 
         # Simple random matching with probability
         for i in range(limit):
+            m = singles_m[i]
+            f = singles_f[i]
+            
+            # Wave 4.3: Opposite sex check (Reproduction constraint)
+            if m.sex == f.sex:
+                continue
+
             if random.random() < self.marriage_chance:
-                matches.append((singles_m[i], singles_f[i]))
+                matches.append((m, f))
 
         transactions: List[Transaction] = []
 
@@ -161,13 +168,15 @@ class MarriageSystem:
         head.spouse_id = spouse.id
         spouse.spouse_id = head.id
 
+        # Wave 4.3: Shared Wallet Pattern
+        # Both agents now share the same financial instance for seamless zero-sum joint accounting.
+        # This occurs AFTER the initial asset transfer in step 1.
+        spouse._econ_state.wallet = head._econ_state.wallet
+
         # Mark Spouse as Inactive
         spouse.is_active = False
 
         # Move Spouse to Head's residence
-        # If spouse was renting, they effectively leave.
-        # If head is homeless, spouse becomes homeless (unless they brought a house, which we just transferred).
-        # If head has a home, spouse moves in.
         spouse.residing_property_id = head.residing_property_id
         spouse.is_homeless = head.is_homeless
 
