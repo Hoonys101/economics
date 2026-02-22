@@ -12,7 +12,7 @@ class TestPhase23Production:
         mock_config.labor_elasticity_min = 0.1
         mock_config.automation_labor_reduction = 0.0
         mock_config.capital_depreciation_rate = 0.0
-        mock_config.goods = {"food": {"sector": "FOOD"}}
+        mock_config.goods = {"food": {"sector": "FOOD_PROD"}}
         # Tech manager params
         mock_config.TECH_FERTILIZER_UNLOCK_TICK = 0
         mock_config.TECH_DIFFUSION_RATE = 0.0
@@ -42,7 +42,7 @@ class TestPhase23Production:
                 config_dto=config,
                 initial_inventory={},
                 loan_market=None,
-                sector="FOOD"
+                sector="FOOD_PROD"
             )
             # Setup State
             firm.production_state.capital_stock = 100.0

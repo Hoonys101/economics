@@ -33,7 +33,7 @@ def mock_firm():
         config_dto=config_dto,
         initial_inventory=None,
         loan_market=None,
-        sector="FOOD",
+        sector="FOOD_PROD",
         personality=None
     )
 

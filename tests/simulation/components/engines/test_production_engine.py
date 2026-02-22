@@ -4,6 +4,7 @@ from simulation.components.engines.production_engine import ProductionEngine
 from modules.firm.api import ProductionInputDTO, FirmSnapshotDTO
 from modules.simulation.dtos.api import ProductionStateDTO, HRStateDTO
 from modules.simulation.dtos.api import FirmConfigDTO
+from modules.common.enums import IndustryDomain
 
 @pytest.fixture
 def production_engine():
@@ -21,7 +22,7 @@ def firm_snapshot():
     config.labor_elasticity_min = 0.1
     config.capital_depreciation_rate = 0.1
     config.goods = {
-        "FOOD": {
+        "FOOD_PROD": {
             "quality_sensitivity": 0.5,
             "inputs": {"RAW_MAT": 2.0}
         }
@@ -35,7 +36,7 @@ def firm_snapshot():
     prod.production_target = 100.0
     prod.productivity_factor = 1.0
     prod.base_quality = 1.0
-    prod.specialization = "FOOD"
+    prod.specialization = "FOOD_PROD"
     prod.input_inventory = {"RAW_MAT": 1000.0}
     prod.inventory = {} # Finished goods inventory
     snapshot.production = prod

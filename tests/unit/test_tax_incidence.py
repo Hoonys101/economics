@@ -88,7 +88,7 @@ class TestTaxIncidence(unittest.TestCase):
             specialization="basic_food",
             productivity_factor=1.0,
             config_dto=create_firm_config_dto(),
-            sector="FOOD",
+            sector="FOOD_PROD",
             personality=Personality.BALANCED
         )
         if assets > 0:

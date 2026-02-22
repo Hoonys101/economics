@@ -66,7 +66,7 @@ class TechnologyManager:
         fertilizer = TechNode(
             id="TECH_AGRI_CHEM_01",
             name="Chemical Fertilizer (Haber-Bosch)",
-            sector="FOOD",
+            sector="FOOD_PROD",
             multiplier=tfp_mult,
             cost_threshold=cost_threshold,
             diffusion_rate=diff_rate

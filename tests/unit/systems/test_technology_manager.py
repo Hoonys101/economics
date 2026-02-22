@@ -157,12 +157,12 @@ class TestTechnologyManager:
         tech_id = "TECH_AGRI_CHEM_01"
         tech = manager.tech_tree[tech_id]
         tech.cost_threshold = 100.0
-        tech.sector = "FOOD"
+        tech.sector = "FOOD_PROD"
 
         # Setup Firms DTO
         firms = [
-            FirmTechInfoDTO(id=1, sector="FOOD", current_rd_investment=60.0),
-            FirmTechInfoDTO(id=2, sector="FOOD", current_rd_investment=60.0), # Total 120 > 100
+            FirmTechInfoDTO(id=1, sector="FOOD_PROD", current_rd_investment=60.0),
+            FirmTechInfoDTO(id=2, sector="FOOD_PROD", current_rd_investment=60.0), # Total 120 > 100
             FirmTechInfoDTO(id=3, sector="MANUFACTURING", current_rd_investment=0.0),
         ]
 
@@ -181,7 +181,7 @@ class TestTechnologyManager:
         tech.is_unlocked = True   # Force unlock
 
         firms = [
-            FirmTechInfoDTO(id=1, sector="FOOD", current_rd_investment=0.0),
+            FirmTechInfoDTO(id=1, sector="FOOD_PROD", current_rd_investment=0.0),
         ]
 
         manager.active_techs.append(tech_id) # Manually activate

@@ -43,7 +43,7 @@ class MockFirm(Firm):
         self.finance_state.expenses_this_tick = {"USD": 300}
         self.hr_state = MagicMock()
         self.hr_state.employees = [MagicMock(), MagicMock()]
-        self.sector = "FOOD"
+        self.sector = "FOOD_PROD"
         self.current_production = 50.0
 
 def create_mock_household(id):
@@ -131,7 +131,7 @@ def test_get_agent_detail_firm(agent_service, mock_simulation):
     result = agent_service.get_agent_detail(201)
     assert result is not None
     # assert result.id == 201 # Mocking artifact with AgentDetailDTO
-    assert result.sector == "FOOD"
+    assert result.sector == "FOOD_PROD"
     assert result.employees_count == 2
     assert result.production == 50.0
 

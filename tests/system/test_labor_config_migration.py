@@ -9,8 +9,9 @@ class TestLaborConfigMigration:
     @pytest.fixture(autouse=True)
     def setup_config(self):
         if not hasattr(config, "LABOR_MARKET"):
+            from modules.common.enums import IndustryDomain
             config.LABOR_MARKET = {
-                "majors": ["GENERAL", "AGRICULTURE", "MANUFACTURING", "SERVICES", "TECHNOLOGY"],
+                "majors": [d.value for d in IndustryDomain],
                 "compatibility": {
                     "PERFECT": 1.2,
                     "PARTIAL": 1.0,
@@ -18,12 +19,12 @@ class TestLaborConfigMigration:
                     "GENERAL_PENALTY": 1.0
                 },
                 "sector_map": {
-                    "FOOD": "AGRICULTURE",
-                    "GOODS": "MANUFACTURING",
-                    "SERVICE": "SERVICES",
-                    "MATERIAL": "MANUFACTURING",
-                    "LUXURY": "SERVICES",
-                    "TECH": "TECHNOLOGY"
+                    "FOOD_PROD": "FOOD_PROD",
+                    "MANUFACTURING": "MANUFACTURING",
+                    "SERVICES": "SERVICES",
+                    "RAW_MATERIALS": "RAW_MATERIALS",
+                    "LUXURY_GOODS": "LUXURY_GOODS",
+                    "TECHNOLOGY": "TECHNOLOGY"
                 }
             }
 
@@ -37,7 +38,9 @@ class TestLaborConfigMigration:
         for agent in sim.agents.values():
             if isinstance(agent, Household):
                 assert agent._econ_state.major is not None
-                assert agent._econ_state.major in valid_majors
+                # Check value if enum, or direct if string
+                val = agent._econ_state.major.value if hasattr(agent._econ_state.major, "value") else agent._econ_state.major
+                assert val in valid_majors
 
     def test_firm_majors_mapped(self):
         """Verify that firms have a major assigned based on their sector/specialization."""
@@ -52,8 +55,14 @@ class TestLaborConfigMigration:
                 assert agent.major is not None
 
                 # Verify mapping
-                expected_major = sector_map.get(agent.sector, "GENERAL")
-                assert agent.major == expected_major
+                # agent.major is Enum, agent.sector is String (from defaults)
+                # sector_map keys are strings, values are strings (majors)
+
+                expected_major_str = sector_map.get(agent.sector, "GENERAL")
+
+                # Compare Enum value to string
+                val = agent.major.value if hasattr(agent.major, "value") else agent.major
+                assert val == expected_major_str
 
     def test_labor_market_config_loaded(self):
         """Verify that LaborMarket has the configuration loaded."""

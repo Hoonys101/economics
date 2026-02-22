@@ -34,7 +34,7 @@ class TestFirmBookValue:
             specialization="test",
             productivity_factor=1.0,
             config_dto=mock_config,
-            sector="FOOD",
+            sector="FOOD_PROD",
             assets=0
         )
 
@@ -107,7 +107,7 @@ class TestFirmProduction:
             specialization="test",
             productivity_factor=1.0,
             config_dto=mock_config,
-            sector="FOOD",
+            sector="FOOD_PROD",
             assets=0
         )
         # Setup Production State
@@ -169,7 +169,7 @@ class TestFirmSales:
             productivity_factor=1.0,
             config_dto=mock_config,
             initial_inventory={"test": 100.0},
-            sector="FOOD",
+            sector="FOOD_PROD",
             assets=0
         )
         firm.sales_state.brand_awareness = 0.5

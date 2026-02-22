@@ -20,15 +20,15 @@ class LaborMatchDTO:
     """
     Standardized payload for Labor Market Order Metadata.
     """
-    major: str = "GENERAL"
+    major: IndustryDomain = IndustryDomain.GENERAL
     education_level: int = 0
-    secondary_majors: List[str] = field(default_factory=list)
+    secondary_majors: List[IndustryDomain] = field(default_factory=list)
     years_experience: float = 0.0
     min_match_score: float = 0.0
 
     def to_metadata(self) -> Dict[str, Any]:
         return {
-            "major": self.major,
+            "major": self.major.value if hasattr(self.major, "value") else self.major,
             "education_level": self.education_level,
             "secondary_majors": self.secondary_majors,
             "years_experience": self.years_experience,
@@ -42,8 +42,14 @@ class LaborMatchDTO:
         if edu_level is None:
             edu_level = metadata.get("required_education", 0)
 
+        major_str = metadata.get("major", "GENERAL")
+        try:
+            major = IndustryDomain(major_str)
+        except ValueError:
+            major = IndustryDomain.GENERAL
+
         return cls(
-            major=metadata.get("major", "GENERAL"),
+            major=major,
             education_level=int(edu_level),
             secondary_majors=metadata.get("secondary_majors", []),
             years_experience=float(metadata.get("years_experience", 0.0)),
