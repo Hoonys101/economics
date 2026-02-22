@@ -1,15 +1,15 @@
 from typing import Optional, Dict, Any, cast, TYPE_CHECKING, Tuple, List, Set
 import logging
 from uuid import UUID
-from collections import defaultdict
 
 from simulation.finance.api import ITransaction
 from modules.finance.api import (
     IFinancialAgent, IFinancialEntity, IBank, InsufficientFundsError,
     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID,
     IMonetaryAuthority, IEconomicMetricsService, IPanicRecorder, ICentralBank,
-    FXMatchDTO
+    FXMatchDTO, IAccountRegistry
 )
+from modules.finance.registry.account_registry import AccountRegistry
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry, ISystemFinancialAgent
 from modules.system.constants import ID_CENTRAL_BANK
 from modules.market.housing_planner_api import MortgageApplicationDTO
@@ -40,7 +40,8 @@ class SettlementSystem(IMonetaryAuthority):
         logger: Optional[logging.Logger] = None,
         bank: Optional[IBank] = None,
         metrics_service: Optional[IEconomicMetricsService] = None,
-        agent_registry: Optional[IAgentRegistry] = None
+        agent_registry: Optional[IAgentRegistry] = None,
+        account_registry: Optional[IAccountRegistry] = None
     ):
         self.logger = logger if logger else logging.getLogger(__name__)
         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
@@ -52,11 +53,8 @@ class SettlementSystem(IMonetaryAuthority):
         # Ledger Engine (Initialized lazily)
         self._transaction_engine: Optional[LedgerEngine] = None
 
-        # TD-INT-STRESS-SCALE: Reverse Index for Bank Accounts
-        # BankID -> Set[AgentID]
-        self._bank_depositors: Dict[int, Set[int]] = defaultdict(set)
-        # AgentID -> Set[BankID] (for fast removal)
-        self._agent_banks: Dict[int, Set[int]] = defaultdict(set)
+        # TD-INT-STRESS-SCALE: Account Registry for Bank Run Simulation
+        self.account_registry = account_registry or AccountRegistry()
 
     def set_panic_recorder(self, recorder: IPanicRecorder) -> None:
         self.panic_recorder = recorder
@@ -98,55 +96,38 @@ class SettlementSystem(IMonetaryAuthority):
 
         raise RuntimeError("Agent Registry not initialized in SettlementSystem and no context agents provided.")
 
-    def register_account(self, bank_id: int, agent_id: int) -> None:
+    def register_account(self, bank_id: AgentID, agent_id: AgentID) -> None:
         """
         Registers an account link between a bank and an agent.
         Used to maintain the reverse index for bank runs.
         """
-        self._bank_depositors[bank_id].add(agent_id)
-        self._agent_banks[agent_id].add(bank_id)
+        self.account_registry.register_account(bank_id, agent_id)
 
-    def deregister_account(self, bank_id: int, agent_id: int) -> None:
+    def deregister_account(self, bank_id: AgentID, agent_id: AgentID) -> None:
         """
         Removes an account link between a bank and an agent.
         """
-        if bank_id in self._bank_depositors:
-            self._bank_depositors[bank_id].discard(agent_id)
-            if not self._bank_depositors[bank_id]:
-                del self._bank_depositors[bank_id]
+        self.account_registry.deregister_account(bank_id, agent_id)
 
-        if agent_id in self._agent_banks:
-            self._agent_banks[agent_id].discard(bank_id)
-            if not self._agent_banks[agent_id]:
-                del self._agent_banks[agent_id]
-
-    def get_account_holders(self, bank_id: int) -> List[int]:
+    def get_account_holders(self, bank_id: AgentID) -> List[AgentID]:
         """
         Returns a list of all agents holding accounts at the specified bank.
         This provides O(1) access to depositors for bank run simulation.
         """
-        if bank_id in self._bank_depositors:
-            return list(self._bank_depositors[bank_id])
-        return []
+        return self.account_registry.get_account_holders(bank_id)
 
-    def get_agent_banks(self, agent_id: int) -> List[int]:
+    def get_agent_banks(self, agent_id: AgentID) -> List[AgentID]:
         """
         Returns a list of banks where the agent holds an account.
         """
-        if agent_id in self._agent_banks:
-            return list(self._agent_banks[agent_id])
-        return []
+        return self.account_registry.get_agent_banks(agent_id)
 
-    def remove_agent_from_all_accounts(self, agent_id: int) -> None:
+    def remove_agent_from_all_accounts(self, agent_id: AgentID) -> None:
         """
         Removes an agent from all bank account indices.
         Called upon agent liquidation/deletion.
         """
-        if agent_id in self._agent_banks:
-            # Copy to avoid modification during iteration
-            banks = list(self._agent_banks[agent_id])
-            for bank_id in banks:
-                self.deregister_account(bank_id, agent_id)
+        self.account_registry.remove_agent_from_all_accounts(agent_id)
 
     def get_balance(self, agent_id: AgentID, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         """

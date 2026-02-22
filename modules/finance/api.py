@@ -540,38 +540,38 @@ class IGovernmentFinance(IFinancialAgent, Protocol):
     sensory_data: Optional[GovernmentSensoryDTO]
 
 @runtime_checkable
-class IBankRegistry(Protocol):
+class IAccountRegistry(Protocol):
     """
     Module A: Interface for the Bank Account Directory Service.
     Decouples account lookup from transaction settlement.
     """
-    def register_account(self, bank_id: int, agent_id: int) -> None:
+    def register_account(self, bank_id: AgentID, agent_id: AgentID) -> None:
         """Registers an account link between a bank and an agent."""
         ...
 
-    def deregister_account(self, bank_id: int, agent_id: int) -> None:
+    def deregister_account(self, bank_id: AgentID, agent_id: AgentID) -> None:
         """Removes an account link between a bank and an agent."""
         ...
 
-    def get_account_holders(self, bank_id: int) -> List[int]:
+    def get_account_holders(self, bank_id: AgentID) -> List[AgentID]:
         """Returns a list of all agents holding accounts at the specified bank."""
         ...
 
-    def get_agent_banks(self, agent_id: int) -> List[int]:
+    def get_agent_banks(self, agent_id: AgentID) -> List[AgentID]:
         """Returns a list of banks where the agent holds an account."""
         ...
 
-    def remove_agent_from_all_accounts(self, agent_id: int) -> None:
+    def remove_agent_from_all_accounts(self, agent_id: AgentID) -> None:
         """Removes an agent from all bank account indices."""
         ...
 
 @runtime_checkable
-class ISettlementSystem(IBankRegistry, Protocol):
+class ISettlementSystem(IAccountRegistry, Protocol):
     """
     Interface for the centralized settlement system.
     Basic financial operations for Households and Firms.
-    Inherits IBankRegistry to maintain backward compatibility for account management
-    methods during the transition to a dedicated BankRegistry service.
+    Inherits IAccountRegistry to maintain backward compatibility for account management
+    methods during the transition to a dedicated AccountRegistry service.
     """
 
     def transfer(
