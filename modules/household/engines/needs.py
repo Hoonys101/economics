@@ -38,11 +38,23 @@ class NeedsEngine(INeedsEngine):
         # 2. Natural Growth (Decay) based on Config & Personality
         # Logic from SocialComponent.update_psychology
         base_growth = config.base_desire_growth
-        new_bio_state.needs["survival"] = new_bio_state.needs.get("survival", 0.0) + base_growth
+
+        # --- Household Merger Scaling ---
+        household_size = 1
+        if new_bio_state.spouse_id is not None:
+            household_size += 1
+        if new_bio_state.children_ids:
+            household_size += len(new_bio_state.children_ids)
+
+        # Scale Growth: Linear for survival, Sub-linear for others (Economies of Scale)
+        survival_scale = float(household_size)
+        other_scale = household_size ** 0.7
+
+        new_bio_state.needs["survival"] = new_bio_state.needs.get("survival", 0.0) + (base_growth * survival_scale)
 
         for k in ["asset", "social", "improvement", "quality"]:
             weight = social_state.desire_weights.get(k, 1.0)
-            new_bio_state.needs[k] = new_bio_state.needs.get(k, 0.0) + (base_growth * weight)
+            new_bio_state.needs[k] = new_bio_state.needs.get(k, 0.0) + (base_growth * weight * other_scale)
 
         # Cap Needs
         max_val = config.max_desire_value
