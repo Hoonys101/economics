@@ -34,5 +34,24 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "file": "gemini-output/spec/MISSION_wave4-politics-spec_SPEC.md",
         "instruction": "Implement PoliticalOrchestrator (Median Voter + Lobbying Vector). Ensure Zero-Sum lobbying payments to Gov treasury and policy clamping logic.",
         "wait": False
+    },
+    "phase41_wave5_escheatment_fix": {
+        "title": "Wave 5.1: Escheatment Handler NoneType Fix",
+        "file": "gemini-output/spec/MISSION_escheatment_fix_SPEC.md",
+        "instruction": "Fix the AttributeError in EscheatmentHandler by adding a None check for tx.metadata. Ensure zero-sum integrity during residual escheatment cleanup.",
+        "wait": False
+    },
+    "phase41_wave5_account_registry_fix": {
+        "title": "Wave 5.2: Account Registry & ID Hardening",
+        "file": "gemini-output/spec/MISSION_account_registry_fix_SPEC.md",
+        "instruction": "Implement monotonic ID counter and pre-registration hooks to prevent settlement race conditions during agent spawning/turnover.",
+        "wait": False
+    },
+    "phase41_wave5_saga_integrity_fix": {
+        "title": "Wave 5.3: Saga Participant Integrity Fix",
+        "file": "gemini-output/spec/MISSION_saga_integrity_fix_SPEC.md",
+        "instruction": "Harden SagaOrchestrator transition logic. Implement strict participant validation and robust DTO extraction for both dict and object types.",
+        "wait": False
     }
 }
+

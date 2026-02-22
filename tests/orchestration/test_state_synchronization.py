@@ -41,6 +41,7 @@ class TestStateSynchronization:
         ws.stock_market = MagicMock()
         ws.stock_tracker = MagicMock()
         ws.config_module = MagicMock()
+        ws.config_manager = MagicMock()
         ws.tracker = MagicMock()
         ws.logger = MagicMock()
         ws.ai_training_manager = MagicMock()

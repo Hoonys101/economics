@@ -43,6 +43,17 @@ class TestMarriageSystem(unittest.TestCase):
         agent_a.residing_property_id = 1
         agent_a.is_homeless = False
 
+        # Mock Internal States for Wave 4 logic
+        agent_a._econ_state = MagicMock()
+        agent_a._econ_state.wallet = MagicMock()
+        agent_a._bio_state = MagicMock()
+        agent_a._bio_state.is_active = True
+        agent_a._bio_state.gender = "M"
+        agent_a._bio_state.sex = "M"
+        agent_a._bio_state.children_ids = []
+        agent_a._bio_state.spouse_id = None
+
+
         # Configure owned_properties behavior as list
         # We need a real list to append/remove
         agent_a_props = [1]
@@ -64,6 +75,17 @@ class TestMarriageSystem(unittest.TestCase):
         agent_b.children_ids = [201]
         agent_b.residing_property_id = 2
         agent_b.is_homeless = False
+
+        # Mock Internal States
+        agent_b._econ_state = MagicMock()
+        agent_b._econ_state.wallet = MagicMock()
+        agent_b._bio_state = MagicMock()
+        agent_b._bio_state.is_active = True
+        agent_b._bio_state.gender = "F"
+        agent_b._bio_state.sex = "F"
+        agent_b._bio_state.children_ids = [201]
+        agent_b._bio_state.spouse_id = None
+
 
         # Mock Methods
         agent_a.add_item = MagicMock()

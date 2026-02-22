@@ -26,19 +26,11 @@ class TaylorRulePolicy(IGovernmentPolicy):
         # 2. Use smoothed inflation from DTO
         inflation = sensory_data.inflation_sma
 
-        # 3. Calculate GDP Gap & Update Government State
+        # 3. Calculate GDP Gap
         current_gdp = sensory_data.current_gdp
-        if government.potential_gdp == 0.0:
-            government.potential_gdp = current_gdp
-
         gdp_gap = 0.0
         if government.potential_gdp > 0:
             gdp_gap = (current_gdp - government.potential_gdp) / government.potential_gdp
-
-        # EMA Update for Potential
-        if government.potential_gdp != 0.0:
-            alpha = 0.01
-            government.potential_gdp = (alpha * current_gdp) + ((1-alpha) * government.potential_gdp)
 
         # 4. Update Fiscal Stance and Tax Rate
         if getattr(self.config, "AUTO_COUNTER_CYCLICAL_ENABLED", False):

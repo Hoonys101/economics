@@ -53,6 +53,7 @@ class TestTickNormalization:
 
         # Mocks needed for sim_state construction
         state.config_module = MagicMock()
+        state.config_manager = MagicMock()
         state.config_module.INFRASTRUCTURE_TFP_BOOST = 0.05
         state.config_module.IMITATION_LEARNING_INTERVAL = 100 # Avoid modulo error if any
 

@@ -126,14 +126,18 @@ class Household(
         age_range = getattr(self.config, 'initial_household_age_range', (20, 60))
         if not age_range: age_range = (20, 60)
 
+        # Initialize sex from gender for biological alignment (Wave 4)
+        initial_gender = gender if gender is not None else random.choice(["M", "F"])
+
         self._bio_state = BioStateDTO(
             id=core_config.id,
             age=initial_age if initial_age is not None else random.uniform(*age_range),
-            gender=gender if gender is not None else random.choice(["M", "F"]),
+            gender=initial_gender,
             generation=generation if generation is not None else 0,
             is_active=True,
             needs=core_config.initial_needs.copy(),
-            parent_id=parent_id
+            parent_id=parent_id,
+            sex=initial_gender # Birth biological sex aligns with gender
         )
 
         # 2. Econ State
@@ -399,6 +403,29 @@ class Household(
     @age.setter
     def age(self, value: float) -> None:
         self._bio_state.age = value
+
+    @property
+    def sex(self) -> str:
+        """Biological sex (M/F). Used for reproduction and matching (Wave 4)."""
+        return self._bio_state.sex
+
+    @property
+    def health_status(self) -> float:
+        """Normalized health (0.0 to 1.0). (Wave 4)"""
+        return self._bio_state.health_status
+
+    @health_status.setter
+    def health_status(self, value: float) -> None:
+        self._bio_state.health_status = value
+
+    @property
+    def has_disease(self) -> bool:
+        """Infection status requiring medical utility. (Wave 4)"""
+        return self._bio_state.has_disease
+
+    @has_disease.setter
+    def has_disease(self, value: bool) -> None:
+        self._bio_state.has_disease = value
 
     @property
     def spouse_id(self) -> Optional[int]:

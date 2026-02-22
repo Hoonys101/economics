@@ -24,5 +24,39 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "forensics_escheatment_analysis": {
+        "title": "[Forensics] Escheatment Handler NoneType Analysis",
+        "worker": "audit",
+        "instruction": "Analyze the 'NoneType' error in EscheatmentHandler. Identify why tx.metadata might be None and propose a hardening fix that ensures zero-sum integrity during agent liquidation.",
+        "context_files": [
+            "simulation/systems/handlers/escheatment_handler.py",
+            "simulation/systems/transaction_processor.py",
+            "reports/diagnostic_refined.md"
+        ],
+        "output_path": "gemini-output/spec/MISSION_escheatment_fix_SPEC.md"
+    },
+    "forensics_account_registry_analysis": {
+        "title": "[Forensics] Missing Account 100 Analysis",
+        "worker": "audit",
+        "instruction": "Investigate the 'Destination account does not exist: 100' errors in the forensics report. Determine if this is an initialization race condition or a hardcoded ID mismatch in stress tests. Propose a registry hardening plan.",
+        "context_files": [
+            "simulation/systems/settlement_system.py",
+            "simulation/initialization/initializer.py",
+            "modules/system/constants.py",
+            "reports/diagnostic_refined.md"
+        ],
+        "output_path": "gemini-output/spec/MISSION_account_registry_fix_SPEC.md"
+    },
+    "forensics_saga_integrity_analysis": {
+        "title": "[Forensics] Saga Participant Integrity Analysis",
+        "worker": "audit",
+        "instruction": "Analyze the 'SAGA_SKIP' warnings due to missing participant IDs. Audit the SagaOrchestrator and HousingSaga logic to ensure all transition states capture the required agent IDs correctly.",
+        "context_files": [
+            "modules/finance/sagas/orchestrator.py",
+            "simulation/orchestration/phases/housing_saga.py",
+            "reports/diagnostic_refined.md"
+        ],
+        "output_path": "gemini-output/spec/MISSION_saga_integrity_fix_SPEC.md"
+    }
 }
+

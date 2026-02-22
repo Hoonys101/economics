@@ -34,6 +34,7 @@ class TestLifecycleCycle:
         state.transaction_processor = MagicMock()
 
         state.config_module = MagicMock()
+        state.config_manager = MagicMock()
         state.logger = MagicMock()
         state.tracker = MagicMock()
         state.tracker.get_latest_indicators.return_value = {}

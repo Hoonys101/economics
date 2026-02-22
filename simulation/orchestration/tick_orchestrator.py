@@ -31,7 +31,9 @@ class TickOrchestrator:
         self.action_processor = action_processor
 
         # Initialize Politics System (Phase 4.4)
-        self.politics_system = PoliticsSystem(world_state.config_manager)
+        # Robust access for tests that might only provide config_module
+        config_src = getattr(world_state, 'config_manager', getattr(world_state, 'config_module', None))
+        self.politics_system = PoliticsSystem(config_src)
         world_state.politics_system = self.politics_system
 
         # Initialize phases with dependencies

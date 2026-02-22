@@ -73,12 +73,14 @@ class StockTrader:
             if price > 0:
                 quantity = investment_per_stock / price
                 if quantity >= 1.0:
+                    limit_price = price * 1.05
                     order = OrderDTO(
                         agent_id=household.id,
                         side="BUY",
                         item_id=f"stock_{firm_id}",
                         quantity=quantity,
-                        price_limit=price * 1.05,
+                        price_pennies=int(round(limit_price * 100)),
+                        price_limit=limit_price,
                         market_id="stock_market"
                     )
                     orders.append(order)
@@ -102,12 +104,14 @@ class StockTrader:
                 sell_value = min(amount_to_sell, value_of_holding)
                 sell_quantity = sell_value / price
                 if sell_quantity >= 1.0:
+                    limit_price = price * 0.95
                     order = OrderDTO(
                         agent_id=household.id,
                         side="SELL",
                         item_id=f"stock_{firm_id}",
                         quantity=sell_quantity,
-                        price_limit=price * 0.95,
+                        price_pennies=int(round(limit_price * 100)),
+                        price_limit=limit_price,
                         market_id="stock_market"
                     )
                     orders.append(order)
