@@ -14,7 +14,9 @@ class EscheatmentHandler(ITransactionHandler):
     """
 
     def handle(self, tx: Transaction, buyer: Any, seller: Any, context: TransactionContext) -> bool:
-        subtype = tx.metadata.get('subtype')
+        subtype = None
+        if tx.metadata:
+            subtype = tx.metadata.get('subtype')
 
         if subtype == 'ASSET_BUYOUT':
             # Phase A: PublicManager (Buyer) buys assets from Bankrupt Agent (Seller)

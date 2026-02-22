@@ -89,7 +89,13 @@ class TestHREngine:
 class TestSalesEngine:
     def test_post_ask(self):
         engine = SalesEngine()
-        state = SalesState()
+        state = SalesStateDTO(
+            inventory_last_sale_tick={},
+            price_history={},
+            brand_awareness=0.0,
+            perceived_quality=0.0,
+            marketing_budget=0
+        )
 
         # Update to use price_pennies
         context = SalesPostAskContextDTO(
@@ -115,8 +121,13 @@ class TestSalesEngine:
 
     def test_generate_marketing_transaction(self):
         engine = SalesEngine()
-        state = SalesState()
-        state.marketing_budget_pennies = 5000 # 5000 pennies = $50.00
+        state = SalesStateDTO(
+            inventory_last_sale_tick={},
+            price_history={},
+            brand_awareness=0.0,
+            perceived_quality=0.0,
+            marketing_budget=5000 # 5000 pennies = $50.00
+        )
 
         # Sufficient funds
         context = SalesMarketingContextDTO(

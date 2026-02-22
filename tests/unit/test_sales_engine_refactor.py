@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from simulation.components.engines.sales_engine import SalesEngine
 from simulation.components.state.firm_state_models import SalesState
+from modules.simulation.dtos.api import SalesStateDTO
 from simulation.dtos.sales_dtos import MarketingAdjustmentResultDTO
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
 
@@ -11,10 +12,14 @@ def sales_engine():
 
 @pytest.fixture
 def sales_state():
-    state = SalesState()
-    state.marketing_budget_pennies = 100 # Int Pennies
-    state.marketing_budget_rate = 0.1
-    return state
+    return SalesStateDTO(
+        inventory_last_sale_tick={},
+        price_history={},
+        brand_awareness=0.0,
+        perceived_quality=0.0,
+        marketing_budget=100, # Int Pennies
+        marketing_budget_rate=0.1
+    )
 
 @pytest.fixture
 def market_context():
@@ -39,7 +44,7 @@ def test_adjust_marketing_budget(sales_engine, sales_state, market_context):
     assert result.new_budget == 120
 
     # Verify NO side effects on state
-    assert sales_state.marketing_budget_pennies == 100 # Should remain unchanged, Orchestrator updates it
+    assert sales_state.marketing_budget == 100 # Should remain unchanged, Orchestrator updates it
 
 def test_adjust_marketing_budget_zero_revenue(sales_engine, sales_state, market_context):
     """Test budget adjustment with zero revenue."""
@@ -51,4 +56,4 @@ def test_adjust_marketing_budget_zero_revenue(sales_engine, sales_state, market_
     result = sales_engine.adjust_marketing_budget(sales_state, market_context, revenue_this_turn)
 
     assert result.new_budget == 80
-    assert sales_state.marketing_budget_pennies == 100
+    assert sales_state.marketing_budget == 100

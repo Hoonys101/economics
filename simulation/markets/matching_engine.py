@@ -110,7 +110,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
                     if b_wrapper.dto.price_pennies >= s_wrapper.dto.price_pennies:
                         trade_price_pennies = s_wrapper.dto.price_pennies
                         trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
-                        trade_total_pennies = int(trade_price_pennies * trade_qty)
+                        trade_total_pennies = int(round(trade_price_pennies * trade_qty))
                         effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
 
                         quality_val = 1.0
@@ -161,7 +161,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
                     trade_price_pennies = b_wrapper.dto.price_pennies # Labor uses Bid Price usually (Firm Offer)
 
                     trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
-                    trade_total_pennies = int(trade_price_pennies * trade_qty)
+                    trade_total_pennies = int(round(trade_price_pennies * trade_qty))
                     effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
 
                     quality_val = 1.0
@@ -244,7 +244,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
                     if b_wrapper.dto.price_pennies >= s_wrapper.dto.price_pennies:
                         trade_price_pennies = s_wrapper.dto.price_pennies
                         trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
-                        trade_total_pennies = int(trade_price_pennies * trade_qty)
+                        trade_total_pennies = int(round(trade_price_pennies * trade_qty))
                         effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
                         tx = Transaction(item_id=item_id, quantity=trade_qty, price=effective_price_dollars, total_pennies=trade_total_pennies, buyer_id=b_wrapper.dto.agent_id, seller_id=s_wrapper.dto.agent_id, market_id=market_id, transaction_type='labor' if 'labor' in market_id else 'housing' if 'housing' in market_id else 'goods', time=current_tick, quality=s_wrapper.dto.brand_info.get('quality', 1.0) if s_wrapper.dto.brand_info else 1.0)
                         transactions.append(tx)
@@ -276,7 +276,7 @@ class OrderBookMatchingEngine(IMatchingEngine):
                 else:
                     trade_price_pennies = (b_wrapper.dto.price_pennies + s_wrapper.dto.price_pennies) // 2
                 trade_qty = min(b_wrapper.remaining_qty, s_wrapper.remaining_qty)
-                trade_total_pennies = int(trade_price_pennies * trade_qty)
+                trade_total_pennies = int(round(trade_price_pennies * trade_qty))
                 effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
                 tx = Transaction(item_id=item_id, quantity=trade_qty, price=effective_price_dollars, total_pennies=trade_total_pennies, buyer_id=b_wrapper.dto.agent_id, seller_id=s_wrapper.dto.agent_id, market_id=market_id, transaction_type='labor' if 'labor' in market_id else 'housing' if 'housing' in market_id else 'goods', time=current_tick, quality=s_wrapper.dto.brand_info.get('quality', 1.0) if s_wrapper.dto.brand_info else 1.0)
                 transactions.append(tx)
@@ -356,7 +356,7 @@ class StockMatchingEngine(IMatchingEngine):
             if b_order.dto.price_pennies >= s_order.dto.price_pennies:
                 trade_price_pennies = (b_order.dto.price_pennies + s_order.dto.price_pennies) // 2
                 trade_qty = min(b_order.remaining_qty, s_order.remaining_qty)
-                trade_total_pennies = int(trade_price_pennies * trade_qty)
+                trade_total_pennies = int(round(trade_price_pennies * trade_qty))
                 effective_price_dollars = trade_total_pennies / trade_qty / 100.0 if trade_qty > 0 else 0.0
                 if b_order.dto.agent_id is None or s_order.dto.agent_id is None:
                     if b_order.dto.agent_id is None:

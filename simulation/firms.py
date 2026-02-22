@@ -836,7 +836,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
 
         context = self._build_sales_post_ask_context(item_id, price_pennies, quantity, market.id, current_tick)
         order = self.sales_engine.post_ask(
-            self.sales_state, context
+            self.get_snapshot_dto().sales, context
         )
         # Apply side-effects (Stateless Engine Orchestration)
         self.sales_state.last_prices[item_id] = price_pennies
@@ -861,7 +861,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
              total_revenue += float(amount) * rate
 
         result = self.sales_engine.adjust_marketing_budget(
-            self.sales_state,
+            self.get_snapshot_dto().sales,
             market_context,
             total_revenue,
             last_revenue=float(self.finance_state.last_revenue_pennies),
@@ -938,6 +938,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             brand_awareness=self.sales_state.brand_awareness,
             perceived_quality=self.sales_state.perceived_quality,
             marketing_budget=self.sales_state.marketing_budget_pennies, # MIGRATION: int pennies
+            marketing_budget_rate=self.sales_state.marketing_budget_rate,
             adstock=self.sales_state.adstock # Added for stateless BrandEngine
         )
         
@@ -1693,7 +1694,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         # Then generate transaction using the updated state
         marketing_context = self._build_sales_marketing_context(current_time, government)
         tx_marketing = self.sales_engine.generate_marketing_transaction(
-            self.sales_state, marketing_context
+            self.get_snapshot_dto().sales, marketing_context
         )
         if tx_marketing:
             transactions.append(tx_marketing)

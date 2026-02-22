@@ -5,9 +5,10 @@ import math
 from dataclasses import replace
 
 from simulation.models import Order, Transaction
-from simulation.components.state.firm_state_models import SalesState
+# Removed SalesState import as we use DTO
 from simulation.dtos.sales_dtos import SalesPostAskContextDTO, SalesMarketingContextDTO, MarketingAdjustmentResultDTO
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
+from modules.simulation.dtos.api import SalesStateDTO # Explicit import for type hinting
 from modules.firm.api import (
     ISalesEngine, ISalesDepartment, DynamicPricingResultDTO,
     SalesContextDTO, SalesIntentDTO, AgentID
@@ -129,7 +130,7 @@ class SalesEngine(ISalesEngine, ISalesDepartment):
             new_marketing_budget_rate=new_rate
         )
 
-    def post_ask(self, state: SalesState, context: SalesPostAskContextDTO) -> Order:
+    def post_ask(self, state: SalesStateDTO, context: SalesPostAskContextDTO) -> Order:
         """
         Posts an ask order to the market.
         Validates quantity against inventory.
@@ -138,7 +139,7 @@ class SalesEngine(ISalesEngine, ISalesDepartment):
         # Mutation removed for statelessness. Orchestrator must update last_prices.
         return Order(agent_id=context.firm_id, side='SELL', item_id=context.item_id, quantity=actual_quantity, price_pennies=context.price_pennies, price_limit=context.price_pennies / 100.0, market_id=context.market_id, brand_info=context.brand_snapshot, currency=DEFAULT_CURRENCY)
 
-    def adjust_marketing_budget(self, state: SalesState, market_context: MarketContextDTO, revenue_this_turn: int, last_revenue: int=0, last_marketing_spend: int=0) -> MarketingAdjustmentResultDTO:
+    def adjust_marketing_budget(self, state: SalesStateDTO, market_context: MarketContextDTO, revenue_this_turn: int, last_revenue: int=0, last_marketing_spend: int=0) -> MarketingAdjustmentResultDTO:
         """
         Adjusts marketing budget based on ROI or simple heuristic.
         Returns the calculated new budget in a DTO (pennies).
@@ -152,20 +153,22 @@ class SalesEngine(ISalesEngine, ISalesDepartment):
             elif roi < 0.8:
                 new_rate *= 0.9
         target_budget = revenue_this_turn * new_rate
-        current_budget = float(state.marketing_budget_pennies)
+        # Use DTO field `marketing_budget` (int pennies)
+        current_budget = float(state.marketing_budget)
         new_budget = current_budget * 0.8 + target_budget * 0.2
         return MarketingAdjustmentResultDTO(new_budget=int(new_budget), new_marketing_rate=new_rate)
 
-    def generate_marketing_transaction(self, state: SalesState, context: SalesMarketingContextDTO) -> Optional[Transaction]:
+    def generate_marketing_transaction(self, state: SalesStateDTO, context: SalesMarketingContextDTO) -> Optional[Transaction]:
         """
         Generates marketing spend transaction.
         """
-        budget = state.marketing_budget_pennies
+        # Use DTO field `marketing_budget` (int pennies)
+        budget = state.marketing_budget
         if budget > 0 and context.wallet_balance >= budget and context.government_id:
             return Transaction(buyer_id=context.firm_id, seller_id=context.government_id, item_id='marketing', quantity=1.0, price=budget / 100.0, market_id='system', transaction_type='marketing', time=context.current_time, currency=DEFAULT_CURRENCY, total_pennies=budget)
         return None
 
-    def check_and_apply_dynamic_pricing(self, state: SalesState, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> DynamicPricingResultDTO:
+    def check_and_apply_dynamic_pricing(self, state: SalesStateDTO, orders: List[Order], current_time: int, config: Optional[FirmConfigDTO]=None, unit_cost_estimator: Optional[Any]=None) -> DynamicPricingResultDTO:
         """
         Overrides prices in orders if dynamic pricing logic dictates.
         WO-157: Applies dynamic pricing discounts to stale inventory.
@@ -188,6 +191,7 @@ class SalesEngine(ISalesEngine, ISalesDepartment):
             side = getattr(order, 'side', getattr(order, 'order_type', None))
             if side == 'SELL':
                 item_id = order.item_id
+                # Use DTO field `inventory_last_sale_tick`
                 last_sale = state.inventory_last_sale_tick.get(item_id, 0)
                 if current_time - last_sale > sale_timeout:
                     # Original price is float price_limit or price

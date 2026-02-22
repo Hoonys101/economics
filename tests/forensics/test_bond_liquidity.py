@@ -37,7 +37,11 @@ def test_bond_issuance_checks_liquidity():
     
     # 2. Setup Poor Bank in Registry
     bank_state = finance_system.bank_registry.get_bank(bank.id)
-    bank_state.reserves[DEFAULT_CURRENCY] = 1000 # Only 1000 pennies
+    # Ensure reserves is a Mock that behaves like a dict for .get()
+    bank_state.reserves = MagicMock()
+    bank_state.reserves.get.side_effect = lambda k, d=0: 1000 if k == DEFAULT_CURRENCY else d
+    # Also support direct access for other potential checks
+    bank_state.reserves.__getitem__.side_effect = lambda k: 1000 if k == DEFAULT_CURRENCY else 0
     
     # 3. Attempt Large Issuance (50M) via Commercial Bank (Buyer)
     # The default behavior in system.py:350 sets buyer_agent = self.bank if QE not triggered

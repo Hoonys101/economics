@@ -45,6 +45,15 @@ class SagaOrchestrator(ISagaOrchestrator):
         if not saga_id:
             return False
 
+        # Validate Critical IDs
+        if not saga.buyer_context.household_id:
+            logger.error(f"SAGA_SUBMIT_FAIL | Saga {saga_id} missing buyer ID.")
+            return False
+
+        if saga.seller_context.id is None:
+            logger.error(f"SAGA_SUBMIT_FAIL | Saga {saga_id} missing seller ID.")
+            return False
+
         self.active_sagas[saga_id] = saga
         logger.info(
             f"SAGA_SUBMITTED | Saga {saga_id} submitted.",
