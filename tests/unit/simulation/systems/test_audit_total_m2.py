@@ -49,4 +49,5 @@ def test_audit_total_m2_logic():
             print(f"All logs: {ss.logger.mock_calls}")
 
     assert result
-    ss.logger.info.assert_called_with("AUDIT_PASS | M2 Verified: 300")
+    # Expected: Cash 150, Liab: 0
+    ss.logger.info.assert_called_with("AUDIT_PASS | M2 Verified: 300 (Cash: 150, Liab: 0)")

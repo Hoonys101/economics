@@ -20,6 +20,8 @@ Start here to understand the project.
 - **[Platform Architecture](1_governance/platform_architecture.md)**: System design and core graphs.
 - **[Project Structure](1_governance/project_structure.md)**: Folder layout and key modules.
 - **[Protocols](1_governance/protocols/)**: Engineering standards and tooling rules.
+- **[Conceptual Roadmap](CONCEPTUAL_ROADMAP.md)**: 🗺️ **Long-term vision (Waves 3-5).**
+- **[Blueprints](blueprints/)**: Detailed architectural specs for future waves.
 
 ---
 

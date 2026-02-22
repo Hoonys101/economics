@@ -17,28 +17,10 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "phase41_bank_registry_impl": {
-        "title": "Implement BankRegistry Service Extraction",
-        "file": "gemini-output/spec/MISSION_bank_registry_FREEZE.md",
-        "instruction": "Extract bank account indexing from SettlementSystem into BankRegistry. Refactor SettlementSystem to use IBankRegistry. Update tests.",
-        "wait": False
-    },
-    "phase41_labor_config_impl": {
-        "title": "Implement Labor Config Externalization",
-        "file": "gemini-output/spec/MISSION_labor_config_FREEZE.md",
-        "instruction": "Externalize labor majors to economy_params.yaml. Update constants.py and LaborMarket.configure. Ensure backward compatibility.",
-        "wait": False
-    },
-    "phase41_labor_metadata_impl": {
-        "title": "Implement Labor Matching DTO Migration",
-        "file": "gemini-output/spec/MISSION_labor_metadata_SPEC.md",
-        "instruction": "Migrate LaborMarket to use LaborMatchDTO instead of raw Order.metadata. Update Firm and Household call sites.",
-        "wait": False
-    },
-    "phase41_test_dto_hygiene_impl": {
-        "title": "Implement DTO Test Hygiene",
-        "file": "gemini-output/spec/MISSION_test_dto_hygiene_SPEC.md",
-        "instruction": "Create FirmFactory in tests/factories/ and refactor test_firm_brain_scan.py to eliminate permissive MagicMocks for DTOs.",
+    "m2-audit-test-fix": {
+        "title": "Resolve M2 Audit Logic Test Failure",
+        "file": "gemini-output/spec/MISSION_m2-audit-test-fix_SPEC.md",
+        "instruction": "Implement the fix for the M2 audit test logic by correctly configuring the Bank mock to return balance_pennies.",
         "wait": False
     }
 }

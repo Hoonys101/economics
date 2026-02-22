@@ -22,8 +22,9 @@ I will update the `ARCH_AGENTS.md` file to accurately document the stateful comp
 - **역할**: 현재 시장 상황(`MarketSnapshotDTO`)을 보고 "공격적 투자", "보수적 소비" 등 **추상적 전략 방향(Aggressiveness Vector)**을 결정합니다.
 - **인지적 특성 (Cognitive Attributes)**:
   - `market_insight`: 에이전트의 실시간 시장 정보 해석 능력. 높을수록 노이즈 없는 최신 데이터를 보며, 낮을수록 지연(Lag) 및 왜곡(Noise)된 정보를 바탕으로 판단합니다. (Continuous Decay 적용).
-  - `education_level`: 노동 시장(Labor Market)에서 자신의 생산성을 증명하는 '신호(Signal)'로 작용하며, 지능(Insight) 습득의 보정치로 사용됩니다.
-  - `major (전공/분야)`: **[Architect Final Answer]** 노동자의 전문 분야를 나타내며, 기업의 `required_major`와 매칭되어 생산성 붕괴를 막는 **자연스러운 안전망(Domain Matcher)** 역할을 수행합니다.
+  - `education_level`: 노동 시장(Labor Market)에서 자신의 생산성을 증명하는 '신호(Signal)'로 작용합니다. 대졸(College) 신호는 정보가 부족한 기업에게 생산성을 '과대평가(Halo Effect)'하게 유도하는 매치메이커 역할을 합니다.
+  - `major (Industry Domain)`: 에이전트가 공부한 전문 도메인. 노동 시장에서는 전공과 직종의 일치 여부가 생산성에 결정적 영향을 주지만, 에이전트는 이를 무시하고 질투(Envy)에 기반해 선택합니다.
+  - `hidden_talent`: **[Wave 3 Pillar]** 에이전트 자신도 모르는 근원적 재능. 오직 실제 생산성 산정 시에만 엔진 수준에서 참조되며, 에이전트의 의사결정에는 직접 사용되지 않습니다 (Veil of Ignorance).
 - **학습**: 각 틱의 결과에 따라 근원적 가치관을 보상값(Reward)으로 활용하여 전략을 고도화(TD-Error)합니다.
 
 ### 3.2 수량화 및 검증 (Rule-base Domain)

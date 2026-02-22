@@ -3,13 +3,13 @@
     "version": "1.0"
   },
   "missions": {
-    "phase41_test_dto_hygiene_impl": {
-      "key": "phase41_test_dto_hygiene_impl",
-      "title": "Implement DTO Test Hygiene",
+    "m2-audit-test-fix": {
+      "key": "m2-audit-test-fix",
+      "title": "Resolve M2 Audit Logic Test Failure",
       "type": "jules",
-      "instruction_raw": "Create FirmFactory in tests/factories/ and refactor test_firm_brain_scan.py to eliminate permissive MagicMocks for DTOs.",
+      "instruction_raw": "Implement the fix for the M2 audit test logic by correctly configuring the Bank mock to return balance_pennies.",
       "command": "create",
-      "file_path": "gemini-output/spec/MISSION_test_dto_hygiene_SPEC.md",
+      "file_path": "gemini-output/spec/MISSION_m2-audit-test-fix_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,

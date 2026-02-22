@@ -36,16 +36,17 @@
 - **Panic Mechanism**:
   - Low-insight agents are susceptible to `market_panic_index`, freezing investment and reducing consumption during systemic crises.
 
-### 3.5. Labor Market: Signaling Game & Information Asymmetry (Phase 4.1)
-- **Concept**: The labor matching engine no longer uses perfect information (Price-Time priority). It is now modeled as an **Akerlof 'Market for Lemons'** signaling game.
-- **Job Seeker (Household)**: 
-  - Cannot directly expose their true `labor_skill` (productivity). They use `education_level` as an observable signal to set their reservation wage.
-- **Employer (Firm)**:
-  - Evaluates candidates based on `Expected Utility = Perception(Education) / Wage`.
-  - **The Perceptual Filter**: A Firm's `market_insight` determines the accuracy of its perception. 
-    - **High-Insight Firms (Smart Money)**: Accurately estimate true productivity from the education signal.
-    - **Low-Insight Firms (Laggards)**: Add high noise to their estimation, often mispricing candidates and accidentally hiring lower-skilled workers ("Lemons") because they appear numerically cheaper.
-- **Architectural Implementation**: The evaluation logic resides inside the `AIDrivenFirmEngine`, which generates the `JobOfferDTO` based on its noisy perception, ensuring the core matching interface remains structurally agnostic to the AI logic.
+### 3.5. Heterogeneous Market: Signaling, Envy, and Bargaining (Wave 3)
+- **Concept**: The market assumes full heterogeneity. Matching is no longer an Order Book sort but a **Search & Bargaining** process.
+- **Agent Choice (The Envy Model)**: 
+  - Agents select majors/domains based on **100-Tick Lagged SMA Wages**. This creates "Cobweb Cycles" (Hog Cycles) where sectors alternate between labor shortages and education bubbles.
+- **The Halo Effect (Employer Perception)**:
+  - Employers estimate productivity based on signals. 
+  - **Low-Insight Firms**: Fall for the "College Halo," doubling expected productivity in their WTP calculations, leading to overspending and eventual bankruptcy.
+- **Nash Bargaining Solution**:
+  - Matches are resolved via Nash Bargaining. The final wage is dictated by the surplus between `Firm_WTP` and `Agent_Reservation_Wage` (driven by Sunk Costs).
+- **Adaptive Firm Learning**:
+  - Firms calculate **TD-Error** ($Expected - Realized$) at the factory floor. High error directly boosts `market_insight`, representing the organization "learning" to see through signals.
 
 ### 3.1. Real-Time Decision Making (Agent Execution)
 - 각 에이전트는 매 틱마다 `HouseholdAI`를 통해 자신의 현재 상태와 시장 정보를 `DecisionContext`로 조합합니다.
