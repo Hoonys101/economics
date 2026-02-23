@@ -17,12 +17,12 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "MISSION_liquidation_wave1_shared_kernel": {
+    "MISSION_impl_liquidation_wave1": {
         "title": "Wave 1: Shared Financial Kernel & Cycle Breaker",
         "instruction": "Implement modules/common/financial, migrate Claim/MoneyDTO (Int Pennies), and resolve Finance <-> HR circular dependency as per SPEC.",
         "file": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave1_SPEC.md"
     },
-    "MISSION_liquidation_wave1_5_stability": {
+    "MISSION_impl_liquidation_wave1_5": {
         "title": "Wave 1.5: Initialization & Concurrency Stabilizer",
         "instruction": "Fix SimulationInitializer order, register Agent 0, and implement cross-platform file locking as per Wave 1.5 SPEC.",
         "file": "gemini-output/spec/MISSION_liquidation_wave1_5_SPEC.md"
