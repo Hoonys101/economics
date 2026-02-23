@@ -15,6 +15,8 @@ class TestMonetaryLedgerExpansion(unittest.TestCase):
         tx.price = 5000
         tx.quantity = 1
         tx.currency = DEFAULT_CURRENCY
+        tx.buyer_id = "some_buyer"
+        tx.seller_id = "some_seller"
 
         self.ledger.process_transactions([tx])
 
@@ -27,6 +29,8 @@ class TestMonetaryLedgerExpansion(unittest.TestCase):
         tx.price = 10000
         tx.quantity = 1
         tx.currency = DEFAULT_CURRENCY
+        tx.buyer_id = "4" # ID_PUBLIC_MANAGER
+        tx.seller_id = "some_seller"
 
         self.ledger.process_transactions([tx])
 
@@ -39,6 +43,8 @@ class TestMonetaryLedgerExpansion(unittest.TestCase):
         tx.price = 100
         tx.quantity = 1
         tx.currency = DEFAULT_CURRENCY
+        tx.buyer_id = "some_buyer"
+        tx.seller_id = "some_seller"
 
         self.ledger.process_transactions([tx])
 

@@ -206,7 +206,12 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Now that System Agents (Gov, Bank, CB) are in sim.agents, we link the registry.
         sim.agent_registry.set_state(sim.world_state)
 
-        sim.central_bank_system = CentralBankSystem(central_bank_agent=sim.central_bank, settlement_system=sim.settlement_system, logger=self.logger)
+        sim.central_bank_system = CentralBankSystem(
+            central_bank_agent=sim.central_bank,
+            settlement_system=sim.settlement_system,
+            transactions=sim.world_state.transactions, # WO-WAVE5-MONETARY-FIX: Inject global transaction ledger
+            logger=self.logger
+        )
         # Wire Settlement System to LLR (Wave 5 Stabilization)
         sim.settlement_system.set_monetary_authority(sim.central_bank_system)
 

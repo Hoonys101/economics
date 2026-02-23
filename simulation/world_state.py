@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from simulation.dtos.scenario import StressScenarioConfig
     from modules.government.politics_system import PoliticsSystem
 from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, CurrencyCode, IGlobalRegistry, IAgentRegistry # Added for Phase 33
-from modules.system.constants import ID_CENTRAL_BANK
+from modules.system.constants import ID_CENTRAL_BANK, ID_PUBLIC_MANAGER, ID_SYSTEM
 from modules.finance.kernel.api import ISagaOrchestrator, IMonetaryLedger
 from modules.finance.api import IShareholderRegistry
 from modules.simulation.api import AgentID
@@ -190,7 +190,10 @@ class WorldState:
             # Exclude CentralBank (Source) and Commercial Bank (Reserves) from M2 summation.
             # M2 is money in the hands of the public (Households, Firms, Gov).
                 if hasattr(holder, 'id'):
-                    if holder.id == ID_CENTRAL_BANK:
+                    # WO-WAVE5-MONETARY-FIX: Harmonize M2 Perimeter
+                    # Exclude System Sinks (Central Bank, Public Manager, System)
+                    holder_id_str = str(holder.id)
+                    if holder_id_str == str(ID_CENTRAL_BANK) or holder_id_str == str(ID_PUBLIC_MANAGER) or holder_id_str == str(ID_SYSTEM):
                         continue
                     
                     # Note: We include the Bank in the audit to track Bank Reserves (M0).

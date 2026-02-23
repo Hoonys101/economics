@@ -79,6 +79,13 @@ class MonetaryLedger:
 
             elif is_contraction:
                 amount = tx.price * tx.quantity
+
+                # WO-WAVE5-MONETARY-FIX: Support for Split Repayment (Principal vs Interest)
+                if tx.transaction_type == "bond_repayment" and tx.metadata:
+                    repayment_details = tx.metadata.get("repayment_details")
+                    if repayment_details and "principal" in repayment_details:
+                        amount = float(repayment_details["principal"])
+
                 if cur not in self.credit_delta_this_tick: self.credit_delta_this_tick[cur] = 0.0
                 if cur not in self.total_money_destroyed: self.total_money_destroyed[cur] = 0.0
 

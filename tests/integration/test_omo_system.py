@@ -94,6 +94,7 @@ def omo_setup():
     cb_system = CentralBankSystem(
         central_bank_agent=cb_agent,
         settlement_system=settlement,
+        transactions=[],
         security_market_id="security_market",
         logger=logger
     )

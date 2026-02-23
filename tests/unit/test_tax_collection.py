@@ -62,8 +62,13 @@ class MockSettlementSystem:
         if debit_agent.get_balance(currency) >= amount:
             debit_agent._withdraw(amount, currency)
             credit_agent._deposit(amount, currency)
-            return True
-        return False
+            # Create Mock Transaction
+            tx = MagicMock()
+            tx.transaction_type = "tax" if "tax" in memo else "transfer"
+            tx.amount = amount
+            tx.memo = memo
+            return tx
+        return None
 
     def get_balance(self, agent_id, currency=DEFAULT_CURRENCY):
         return 0 # Not used in these specific tests as assertions check objects directly
@@ -93,9 +98,10 @@ def test_atomic_wealth_tax_collection_success():
     assert gov.total_collected_tax[DEFAULT_CURRENCY] == 20
     assert gov.tax_revenue["wealth_tax"] == 20
 
-    # Check transactions: NO transaction objects for tax should be returned
+    # Check transactions: Transaction object for tax should be returned
     tax_txs = [t for t in txs if t.transaction_type == "tax"]
-    assert len(tax_txs) == 0
+    assert len(tax_txs) == 1
+    assert tax_txs[0].amount == 20
 
 def test_atomic_wealth_tax_collection_insufficient_funds():
     config = MockConfig()
@@ -109,7 +115,7 @@ def test_atomic_wealth_tax_collection_insufficient_funds():
     household = MockAgent(id="HH1", assets=200000)
 
     # Override settlement to always fail
-    settlement.transfer = MagicMock(return_value=False)
+    settlement.transfer = MagicMock(return_value=None)
 
     market_data = {"goods_market": {"basic_food_current_sell_price": 10.0}}
 

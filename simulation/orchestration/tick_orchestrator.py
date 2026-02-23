@@ -6,8 +6,7 @@ from simulation.dtos.api import SimulationState, GovernmentSensoryDTO
 from simulation.orchestration.phases import (
     Phase0_PreSequence, Phase_Production, Phase1_Decision, Phase2_Matching,
     Phase3_Transaction, Phase_Bankruptcy, Phase_HousingSaga, Phase_Consumption, Phase5_PostSequence,
-    Phase_BankAndDebt, Phase_FirmProductionAndSalaries, Phase_GovernmentPrograms, Phase_TaxationIntents,
-    Phase_MonetaryProcessing
+    Phase_BankAndDebt, Phase_FirmProductionAndSalaries, Phase_GovernmentPrograms, Phase_TaxationIntents
 )
 from simulation.orchestration.phases.intercept import Phase0_Intercept
 from simulation.orchestration.phases.system_commands import Phase_SystemCommands
@@ -54,7 +53,6 @@ class TickOrchestrator:
             Phase_FirmProductionAndSalaries(world_state),
             Phase_GovernmentPrograms(world_state),
             Phase_TaxationIntents(world_state),
-            # Phase_MonetaryProcessing removed: Merged into Phase3_Transaction for integrity
             Phase3_Transaction(world_state),         # Transaction Processing & Cleanup
 
             Phase_Consumption(world_state),          # Late Lifecycle (Consumption Finalization)

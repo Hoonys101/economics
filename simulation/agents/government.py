@@ -543,10 +543,9 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
         return self.welfare_manager.get_survival_cost(snapshot)
 
     def run_welfare_check(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int) -> List[Transaction]:
-        self.execute_social_policy(agents, market_data, current_tick)
-        return []
+        return self.execute_social_policy(agents, market_data, current_tick)
 
-    def execute_social_policy(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int) -> None:
+    def execute_social_policy(self, agents: List[Any], market_data: Dict[str, Any], current_tick: int) -> List[Transaction]:
         """
         Orchestrates Tax Collection and Welfare Distribution using Execution Engine.
         """
@@ -576,6 +575,8 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             if current_balance < total_welfare_needed:
                 self._issue_deficit_bonds(total_welfare_needed - current_balance, current_tick)
 
+        transactions: List[Transaction] = []
+
         # Execute Transfers
         for req in result.payment_requests:
             payer = req.payer
@@ -593,9 +594,10 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
                 payee = self
 
             if self.settlement_system:
-                success = self.settlement_system.transfer(payer, payee, int(req.amount), req.memo, currency=req.currency)
+                tx = self.settlement_system.transfer(payer, payee, int(req.amount), req.memo, currency=req.currency)
 
-                if success:
+                if tx:
+                    transactions.append(tx)
                     if payee == self: # Tax
                          self.record_revenue(TaxCollectionResult(
                              success=True,
@@ -605,6 +607,7 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
                              payee_id=self.id,
                              error_message=None
                          ))
+        return transactions
 
     def invest_infrastructure(self, current_tick: int, households: List[Any] = None) -> List[Transaction]:
         return self.infrastructure_manager.invest_infrastructure(current_tick, households)

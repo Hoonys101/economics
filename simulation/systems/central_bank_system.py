@@ -13,9 +13,10 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
     Also handles Open Market Operations (OMO).
     """
 
-    def __init__(self, central_bank_agent: Any, settlement_system: SettlementSystem, security_market_id: str='security_market', logger: Optional[logging.Logger]=None):
+    def __init__(self, central_bank_agent: Any, settlement_system: SettlementSystem, transactions: List[Any], security_market_id: str='security_market', logger: Optional[logging.Logger]=None):
         self.central_bank = central_bank_agent
         self.settlement = settlement_system
+        self.transactions = transactions
         self.security_market_id = security_market_id
         self.logger = logger if logger else logging.getLogger(__name__)
         self._id = central_bank_agent.id if hasattr(central_bank_agent, 'id') else -2
@@ -56,27 +57,35 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
         Creates money (by withdrawing from Central Bank which can go negative)
         and transfers it to the target agent.
         """
-        success = self.settlement.transfer(debit_agent=self.central_bank, credit_agent=target_agent, amount=amount, memo=f'MINT:{memo}')
-        if success:
+        tx = self.settlement.transfer(debit_agent=self.central_bank, credit_agent=target_agent, amount=amount, memo=f'MINT:{memo}')
+        if tx:
+            # Capture the transaction for the global ledger
+            self.transactions.append(tx)
+
             if hasattr(target_agent, 'total_money_issued'):
                 target_agent.total_money_issued += amount
 
             self.logger.info(f'MINT_SUCCESS | Minted {amount:.2f} to {target_agent.id}. Memo: {memo}', extra={'agent_id': target_agent.id, 'amount': amount, 'memo': memo})
+            return True
         else:
             self.logger.error(f'MINT_FAIL | Failed to mint {amount:.2f} to {target_agent.id}. Memo: {memo}', extra={'agent_id': target_agent.id, 'amount': amount, 'memo': memo})
-        return success
+            return False
 
     def transfer_and_burn(self, source_agent: Any, amount: float, memo: str) -> bool:
         """
         Transfers money from the source agent to the Central Bank and 'burns' it
         (effectively removing it from circulation by crediting the CB).
         """
-        success = self.settlement.transfer(debit_agent=source_agent, credit_agent=self.central_bank, amount=amount, memo=f'BURN:{memo}')
-        if success:
+        tx = self.settlement.transfer(debit_agent=source_agent, credit_agent=self.central_bank, amount=amount, memo=f'BURN:{memo}')
+        if tx:
+            # Capture the transaction for the global ledger
+            self.transactions.append(tx)
+
             self.logger.info(f'BURN_SUCCESS | Burned {amount:.2f} from {source_agent.id}. Memo: {memo}', extra={'agent_id': source_agent.id, 'amount': amount, 'memo': memo})
+            return True
         else:
             self.logger.error(f'BURN_FAIL | Failed to burn {amount:.2f} from {source_agent.id}. Memo: {memo}', extra={'agent_id': source_agent.id, 'amount': amount, 'memo': memo})
-        return success
+            return False
 
     def check_and_provide_liquidity(self, bank_agent: Any, amount_needed: int) -> bool:
         """
