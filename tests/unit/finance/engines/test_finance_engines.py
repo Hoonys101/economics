@@ -79,7 +79,16 @@ def test_liquidation_engine_liquidate(empty_ledger):
     # Setup Firm Loan
     bank = empty_ledger.banks["BANK1"]
     # 1000.00 loan -> 100000 pennies
-    loan = LoanStateDTO("L1", "FIRM1", "BANK1", 100000, 100000, 0.05, 0, 10)
+    loan = LoanStateDTO(
+        loan_id="L1",
+        borrower_id="FIRM1",
+        lender_id="BANK1",
+        principal_pennies=100000,
+        remaining_principal_pennies=100000,
+        interest_rate=0.05,
+        origination_tick=0,
+        term_months=10
+    )
     bank.loans["L1"] = loan
     # Balance the ledger: Loan created from Reserves (Asset swap logic, effectively)
     # Assets: Reserves (900000) + Loan (100000) = 1000000
@@ -118,11 +127,28 @@ def test_liquidation_engine_liquidate(empty_ledger):
 def test_debt_servicing_engine(empty_ledger):
     bank = empty_ledger.banks["BANK1"]
     # Loan
-    loan = LoanStateDTO("L1", "FIRM1", "BANK1", 100000, 100000, 0.05, 0, 10) # 5% annual
+    loan = LoanStateDTO(
+        loan_id="L1",
+        borrower_id="FIRM1",
+        lender_id="BANK1",
+        principal_pennies=100000,
+        remaining_principal_pennies=100000,
+        interest_rate=0.05,
+        origination_tick=0,
+        term_months=10,
+        due_tick=300
+    )
     bank.loans["L1"] = loan
     # Deposit (for payment)
     dep_id = "DEP_FIRM1_BANK1"
-    deposit = DepositStateDTO(dep_id, "FIRM1", 10000, 0.0, DEFAULT_CURRENCY) # 100.00
+    deposit = DepositStateDTO(
+        owner_id="FIRM1",
+        balance_pennies=10000,
+        interest_rate=0.0,
+        deposit_id=dep_id,
+        customer_id="FIRM1",
+        currency=DEFAULT_CURRENCY
+    )
     bank.deposits[dep_id] = deposit
 
     # Balance the ledger manually
@@ -176,7 +202,17 @@ def test_zero_sum_verifier(empty_ledger):
 
     # Invalid State (Loan > Principal)
     empty_ledger.banks["BANK1"].reserves[DEFAULT_CURRENCY] = 1000000 # Reset
-    loan = LoanStateDTO("L1", "FIRM1", "BANK1", 100000, 110000, 0.05, 0, 10) # Remaining > Principal
+    loan = LoanStateDTO(
+        loan_id="L1",
+        borrower_id="FIRM1",
+        lender_id="BANK1",
+        principal_pennies=100000,
+        remaining_principal_pennies=110000,
+        interest_rate=0.05,
+        origination_tick=0,
+        term_months=10,
+        due_tick=300
+    ) # Remaining > Principal
     empty_ledger.banks["BANK1"].loans["L1"] = loan
     # This check (Remaining > Principal) is domain logic, not accounting identity.
     # ZeroSumVerifier checks Assets = Liabilities + Equity.

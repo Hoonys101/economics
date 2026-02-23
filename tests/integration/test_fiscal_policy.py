@@ -163,7 +163,7 @@ def test_calculate_income_tax_uses_current_rate(government, mock_config):
     # Manually overwrite the policy to be a flat tax policy (5%)
     from modules.government.dtos import FiscalPolicyDTO, TaxBracketDTO
     flat_bracket = TaxBracketDTO(threshold=0, rate=0.05)
-    government.fiscal_policy = FiscalPolicyDTO(tax_brackets=[flat_bracket])
+    government.fiscal_policy = FiscalPolicyDTO(tax_brackets=[flat_bracket], income_tax_rate=0.05, corporate_tax_rate=0.2)
 
     income = 100.0
     # survival_cost is irrelevant for flat tax bracket starting at 0

@@ -468,6 +468,9 @@ class TestSimulation:
         self, simulation_instance, mock_households, mock_firms
     ):
         buyer_firm = mock_firms[0]
+        # Inject additional capital to buyer firm to ensure solvency for transaction
+        buyer_firm._deposit(10000, DEFAULT_CURRENCY)
+
         seller_hh = mock_households[0]
         initial_buyer_assets = buyer_firm.get_balance(DEFAULT_CURRENCY)
         initial_seller_assets = seller_hh.get_balance(DEFAULT_CURRENCY)
@@ -515,6 +518,9 @@ class TestSimulation:
         self, simulation_instance, mock_households, mock_firms
     ):
         buyer_firm = mock_firms[0]
+        # Inject additional capital to buyer firm to ensure solvency for transaction
+        buyer_firm._deposit(10000, DEFAULT_CURRENCY)
+
         seller_hh = mock_households[0]
         initial_productivity_factor = buyer_firm.productivity_factor
 

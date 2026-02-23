@@ -207,6 +207,181 @@ class IFinanceDepartment(Protocol):
         """Pays a one-time tax of a specific currency."""
         ...
 
+@dataclass
+class BondDTO:
+    """Data Transfer Object for government bonds."""
+    id: str
+    issuer: str
+    face_value: int
+    yield_rate: float
+    maturity_date: int
+
+@dataclass(frozen=True)
+class BailoutCovenant:
+    """
+    Restrictions applied to a bailout loan.
+    """
+    dividends_allowed: bool = False
+    executive_bonus_allowed: bool = False
+    min_employment_level: Optional[int] = None
+
+@dataclass
+class BailoutLoanDTO:
+    """Data Transfer Object for corporate bailout loans."""
+    firm_id: AgentID
+    amount: int
+    interest_rate: float
+    covenants: BailoutCovenant
+
+@dataclass(frozen=True)
+class GrantBailoutCommand:
+    """
+    Command to grant a bailout loan to a distressed entity.
+    """
+    firm_id: AgentID
+    amount: float
+    interest_rate: float
+    covenants: BailoutCovenant
+
+@dataclass(frozen=True)
+class SettlementOrder:
+    """A command to execute a monetary transfer via the SettlementSystem."""
+    sender_id: AgentID
+    receiver_id: AgentID
+    amount_pennies: int
+    currency: CurrencyCode
+    memo: str
+    transaction_type: str # e.g., 'WAGE', 'TAX', 'PURCHASE', 'ASSET_ENDOWMENT'
+
+# --- Portfolio DTOs (TD-160) ---
+
+@dataclass(frozen=True)
+class PortfolioAsset:
+    """Represents a single type of asset holding."""
+    asset_type: str  # e.g., 'stock', 'bond'
+    asset_id: str    # e.g., 'FIRM_1', 'GOV_BOND_10Y'
+    quantity: float
+
+@dataclass(frozen=True)
+class PortfolioDTO:
+    """A comprehensive, serializable representation of an agent's portfolio."""
+    assets: List[PortfolioAsset]
+
+@dataclass(frozen=True)
+class TaxCollectionResult:
+    """
+    Represents the verified outcome of a tax collection attempt.
+    """
+    success: bool
+    amount_collected: int
+    tax_type: str
+    payer_id: AgentID
+    payee_id: AgentID
+    error_message: Optional[str]
+
+@dataclass(frozen=True)
+class LoanInfoDTO:
+    """
+    Data Transfer Object for Loan Information.
+    Strictly used for passing loan data across boundaries.
+    """
+    loan_id: str
+    borrower_id: int  # AgentID
+    original_amount: float
+    outstanding_balance: float
+    interest_rate: float
+    origination_tick: int
+    due_tick: int
+    lender_id: Optional[int] = None
+    term_ticks: Optional[int] = None
+    status: str = "ACTIVE"
+
+@dataclass(frozen=True)
+class DebtStatusDTO:
+    """Module A: Hardened financial debt representation (Pennies only)."""
+    borrower_id: AgentID
+    total_outstanding_pennies: int
+    loans: List[LoanInfoDTO]
+    is_insolvent: bool
+    next_payment_pennies: int
+    next_payment_tick: int
+
+class InsufficientFundsError(Exception):
+    """
+    Custom exception to be raised when an operation cannot be completed due to lack of funds.
+    """
+    def __init__(self, message: str, required: Optional[MoneyDTO] = None, available: Optional[MoneyDTO] = None):
+        self.required = required
+        self.available = available
+        if required and available:
+             msg = f"{message} Required: {required.amount_pennies} pennies {required.currency}, Available: {available.amount_pennies} pennies {available.currency}"
+        else:
+             msg = message
+        super().__init__(msg)
+
+class LoanNotFoundError(Exception):
+    """Raised when a specified loan is not found."""
+    pass
+
+class LoanRepaymentError(Exception):
+    """Raised when there is an issue with loan repayment."""
+    pass
+
+class LoanRollbackError(Exception):
+    """Raised when a loan cancellation fails to reverse the associated deposit."""
+    pass
+
+@dataclass(frozen=True)
+class BorrowerProfileDTO:
+    """
+    Profile of a borrower for credit assessment.
+    Updated: Added borrower_id to resolve TD-DTO-DESYNC-2026.
+    """
+    borrower_id: AgentID  # Added to resolve signature desync
+    gross_income: float
+    existing_debt_payments: float
+    collateral_value: float
+    credit_score: Optional[float] = None
+    employment_status: str = "UNKNOWN"
+    preferred_lender_id: Optional[int] = None
+
+@dataclass(frozen=True)
+class CreditAssessmentResultDTO:
+    """
+    The result of a credit check from the CreditScoringService.
+    """
+    is_approved: bool
+    max_loan_amount: int
+    reason: Optional[str] # Reason for denial
+
+# --- Lien and Encumbrance DTOs ---
+
+@dataclass(frozen=True)
+class LienDTO:
+    """
+    Represents a financial claim (lien) against a real estate property.
+    This is the canonical data structure for all property-secured debt.
+    """
+    loan_id: str
+    lienholder_id: AgentID  # The ID of the agent/entity holding the lien (e.g., the bank)
+    principal_remaining: int
+    lien_type: Literal["MORTGAGE", "TAX_LIEN", "JUDGEMENT_LIEN"]
+
+@dataclass(frozen=True)
+class MortgageApplicationDTO:
+    """
+    Application data for a mortgage.
+    TypedDict allows for flexible input construction before strict validation.
+    """
+    applicant_id: int
+    requested_principal: float
+    purpose: str
+    property_id: int
+    property_value: float
+    applicant_monthly_income: float
+    existing_monthly_debt_payments: float
+    loan_term: int
+
 @runtime_checkable
 class ICreditScoringService(Protocol):
     """

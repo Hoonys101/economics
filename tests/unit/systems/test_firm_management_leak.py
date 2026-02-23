@@ -22,6 +22,7 @@ class TestFirmManagementLeak(unittest.TestCase):
         self.mock_config.PROFIT_HISTORY_TICKS = 10
         self.mock_config.INVENTORY_HOLDING_COST_RATE = 0.01
         self.mock_config.STARTUP_CAPITAL_MULTIPLIER = 1.5
+        self.mock_config.FIRM_DECISION_ENGINE = "AI_DRIVEN"
 
         self.firm_system = FirmSystem(self.mock_config)
 
@@ -33,8 +34,13 @@ class TestFirmManagementLeak(unittest.TestCase):
         self.mock_simulation.stock_market = MagicMock()
         self.mock_simulation.ai_training_manager = MagicMock()
         self.mock_simulation.logger = MagicMock()
+
+        # Explicitly setup settlement_system mock
         self.mock_simulation.settlement_system = MagicMock()
         self.mock_simulation.settlement_system.transfer.return_value = True
+
+        # Mock bank to ensure FirmFactory logic passes checks
+        self.mock_simulation.bank = MagicMock()
 
     def test_spawn_firm_leak_detection(self):
         """
@@ -70,11 +76,16 @@ class TestFirmManagementLeak(unittest.TestCase):
             expected_cost = 1500.0
 
             self.mock_simulation.settlement_system.transfer.assert_called_once()
-            args = self.mock_simulation.settlement_system.transfer.call_args[0]
-            # args: (founder, new_firm, amount, memo)
-            self.assertEqual(args[0], household)
-            # args[1] is the new firm instance (mock_firm_instance)
-            self.assertEqual(args[2], expected_cost)
+
+            # Check kwargs since FirmFactory uses named arguments
+            call_args = self.mock_simulation.settlement_system.transfer.call_args
+            # transfer signature: (debit_agent, credit_agent, amount, ...)
+            # If called as transfer(debit_agent=..., credit_agent=...) then args is empty
+
+            # Since FirmFactory calls: transfer(debit_agent=founder, credit_agent=new_firm, amount=...)
+            kwargs = call_args[1]
+            self.assertEqual(kwargs['debit_agent'], household)
+            self.assertEqual(kwargs['amount'], int(expected_cost))
 
             # 5. Check Firm Initial Capital passed to constructor
             # Should be None (not passed, so starts with 0)
@@ -83,11 +94,6 @@ class TestFirmManagementLeak(unittest.TestCase):
             self.assertIsNone(firm_initial_capital)
 
             # 6. Check that direct _sub_assets was NOT called on household (since transfer handles it)
-            # Wait, SettlementSystem.transfer calls withdraw/deposit.
-            # My mock SettlementSystem.transfer does nothing but return True.
-            # So household._sub_assets should NOT be called directly by spawn_firm.
-            # And firm._add_assets should NOT be called directly.
-
             household._sub_assets.assert_not_called()
             mock_firm_instance._add_assets.assert_not_called()
 

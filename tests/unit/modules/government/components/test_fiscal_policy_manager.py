@@ -73,7 +73,7 @@ class TestFiscalPolicyManager:
             TaxBracketDTO(threshold=10, rate=0.10),
             TaxBracketDTO(threshold=30, rate=0.20)
         ]
-        policy = FiscalPolicyDTO(tax_brackets=brackets)
+        policy = FiscalPolicyDTO(tax_brackets=brackets, income_tax_rate=0.1, corporate_tax_rate=0.2)
 
         # Test Case 1: Income below first threshold (5) -> Wait, threshold 0.
         # 5 > 0. Taxable 5. Rate 0. Tax 0.
@@ -106,6 +106,6 @@ class TestFiscalPolicyManager:
         assert manager.calculate_tax_liability(policy, 40) == 4
 
     def test_calculate_tax_liability_zero_or_negative(self, manager):
-        policy = FiscalPolicyDTO(tax_brackets=[])
+        policy = FiscalPolicyDTO(tax_brackets=[], income_tax_rate=0.1, corporate_tax_rate=0.2)
         assert manager.calculate_tax_liability(policy, 0) == 0
         assert manager.calculate_tax_liability(policy, -100) == 0

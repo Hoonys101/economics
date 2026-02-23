@@ -29,6 +29,7 @@ class TestBankRegistry:
     def test_get_deposit(self):
         registry = BankRegistry()
         deposit = DepositStateDTO(
+            owner_id=2, # Added owner_id
             deposit_id="DEP_1_1",
             customer_id=2,
             balance_pennies=1000,

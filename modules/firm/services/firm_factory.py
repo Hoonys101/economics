@@ -35,6 +35,10 @@ class FirmFactory:
         4. Transfer initial funds if provided in kwargs['initial_capital'].
         """
         try:
+            # Extract Factory-specific kwargs that shouldn't go to Firm constructor
+            founder = kwargs.pop("founder", None)
+            startup_cost = kwargs.pop("startup_cost", None)
+
             # 1. Instantiate
             new_firm = instance_class(
                 core_config=core_config,
@@ -49,7 +53,8 @@ class FirmFactory:
             # 2. Registration (CRITICAL: Must happen before Transfer)
             # Add to main registries so SettlementSystem can find it
             simulation.agents[new_firm.id] = new_firm
-            if hasattr(simulation, "firms") and instance_class.__name__ == "Firm":
+            # Use getattr for safety with Mocks
+            if hasattr(simulation, "firms") and getattr(instance_class, "__name__", "") == "Firm":
                  simulation.firms.append(new_firm)
             
             if hasattr(simulation, "ai_training_manager"):
@@ -62,8 +67,6 @@ class FirmFactory:
                 simulation.settlement_system.register_account(simulation.bank.id, new_firm.id)
 
             # 4. Initial Capital Injection (if requested)
-            founder = kwargs.get("founder")
-            startup_cost = kwargs.get("startup_cost")
             if founder and startup_cost:
                 success = simulation.settlement_system.transfer(
                     debit_agent=founder,

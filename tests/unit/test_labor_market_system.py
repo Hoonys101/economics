@@ -83,7 +83,7 @@ class TestLaborMarketSystem:
         results = market.match_market(current_tick=1)
 
         # Should match but with lower priority/score if no better option
-        # Multiplier 0.8. Base 20/15 = 1.33. Final = 1.33 * 0.8 = 1.06 > 1.0. Match.
+        # Multiplier 0.8. Base 2000/1500 = 1.33. Final = 1.33 * 0.8 = 1.06 > 1.0. Match.
         assert len(results) == 1
         match = results[0]
         assert match.major_compatibility == "MISMATCH"
