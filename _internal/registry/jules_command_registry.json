@@ -288,7 +288,7 @@
       "key": "MISSION_test_stabilization",
       "title": "Final Test Suite Stabilization (Post-Merge)",
       "type": "jules",
-      "instruction_raw": "Run `pytest tests/` and fix all remaining test failures (ImportErrors, DTO signature mismatches) until the suite passes 100%.",
+      "instruction_raw": "Run `pytest -rfE --tb=line --no-header tests/` and fix all remaining test failures (ImportErrors, DTO signature mismatches) incrementally until the suite passes 100%.",
       "command": "create",
       "file_path": "c:/coding/economics/gemini-output/spec/MISSION_test_stabilization_SPEC.md",
       "wait": false,
