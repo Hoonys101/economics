@@ -5,7 +5,13 @@ from enum import Enum
 import abc
 from abc import ABC, abstractmethod
 from uuid import UUID
-from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO, LoanApplicationDTO, LoanDTO, DepositDTO, FXMatchDTO
+from modules.finance.dtos import (
+    MoneyDTO, MultiCurrencyWalletDTO, LoanApplicationDTO, LoanDTO, DepositDTO, FXMatchDTO,
+    BondDTO, BailoutCovenant, BailoutLoanDTO, GrantBailoutCommand, SettlementOrder,
+    PortfolioAsset, PortfolioDTO, TaxCollectionResult, DebtStatusDTO,
+    BorrowerProfileDTO, CreditAssessmentResultDTO, LienDTO, MortgageApplicationDTO,
+    EquityStake
+)
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY, CurrencyCode
 from modules.simulation.api import AgentID, AnyAgentID
 
@@ -31,6 +37,39 @@ if TYPE_CHECKING:
 # Forward reference for type hinting
 class Firm: pass
 class Household: pass # Assuming Household agent also interacts with the bank
+
+class InsufficientFundsError(Exception):
+    """
+    Custom exception to be raised when an operation cannot be completed due to lack of funds.
+    """
+    def __init__(self, message: str, required: Optional[MoneyDTO] = None, available: Optional[MoneyDTO] = None):
+        self.required = required
+        self.available = available
+        if required and available:
+             msg = f"{message} Required: {required.amount_pennies} pennies {required.currency}, Available: {available.amount_pennies} pennies {available.currency}"
+        else:
+             msg = message
+        super().__init__(msg)
+
+class LoanNotFoundError(Exception):
+    """Raised when a specified loan is not found."""
+    pass
+
+class LoanRepaymentError(Exception):
+    """Raised when there is an issue with loan repayment."""
+    pass
+
+class LoanRollbackError(Exception):
+    """Raised when a loan cancellation fails to reverse the associated deposit."""
+    pass
+
+@dataclass(frozen=True)
+class LiquidationContext:
+    """Context object to supply necessary services for claim calculation."""
+    current_tick: int
+    hr_service: Optional[IHRService] = None
+    tax_service: Optional[Union[ITaxService, Any]] = None
+    shareholder_registry: Optional[IShareholderRegistry] = None
 
 @runtime_checkable
 class IConfig(Protocol):
@@ -168,181 +207,6 @@ class IFinanceDepartment(Protocol):
         """Pays a one-time tax of a specific currency."""
         ...
 
-@dataclass
-class BondDTO:
-    """Data Transfer Object for government bonds."""
-    id: str
-    issuer: str
-    face_value: int
-    yield_rate: float
-    maturity_date: int
-
-@dataclass(frozen=True)
-class BailoutCovenant:
-    """
-    Restrictions applied to a bailout loan.
-    """
-    dividends_allowed: bool = False
-    executive_bonus_allowed: bool = False
-    min_employment_level: Optional[int] = None
-
-@dataclass
-class BailoutLoanDTO:
-    """Data Transfer Object for corporate bailout loans."""
-    firm_id: AgentID
-    amount: int
-    interest_rate: float
-    covenants: BailoutCovenant
-
-@dataclass(frozen=True)
-class GrantBailoutCommand:
-    """
-    Command to grant a bailout loan to a distressed entity.
-    """
-    firm_id: AgentID
-    amount: float
-    interest_rate: float
-    covenants: BailoutCovenant
-
-@dataclass(frozen=True)
-class SettlementOrder:
-    """A command to execute a monetary transfer via the SettlementSystem."""
-    sender_id: AgentID
-    receiver_id: AgentID
-    amount_pennies: int
-    currency: CurrencyCode
-    memo: str
-    transaction_type: str # e.g., 'WAGE', 'TAX', 'PURCHASE', 'ASSET_ENDOWMENT'
-
-# --- Portfolio DTOs (TD-160) ---
-
-@dataclass(frozen=True)
-class PortfolioAsset:
-    """Represents a single type of asset holding."""
-    asset_type: str  # e.g., 'stock', 'bond'
-    asset_id: str    # e.g., 'FIRM_1', 'GOV_BOND_10Y'
-    quantity: float
-
-@dataclass(frozen=True)
-class PortfolioDTO:
-    """A comprehensive, serializable representation of an agent's portfolio."""
-    assets: List[PortfolioAsset]
-
-@dataclass(frozen=True)
-class TaxCollectionResult:
-    """
-    Represents the verified outcome of a tax collection attempt.
-    """
-    success: bool
-    amount_collected: int
-    tax_type: str
-    payer_id: AgentID
-    payee_id: AgentID
-    error_message: Optional[str]
-
-@dataclass(frozen=True)
-class LoanInfoDTO:
-    """
-    Data Transfer Object for Loan Information.
-    Strictly used for passing loan data across boundaries.
-    """
-    loan_id: str
-    borrower_id: int  # AgentID
-    original_amount: float
-    outstanding_balance: float
-    interest_rate: float
-    origination_tick: int
-    due_tick: int
-    lender_id: Optional[int] = None
-    term_ticks: Optional[int] = None
-    status: str = "ACTIVE"
-
-@dataclass(frozen=True)
-class DebtStatusDTO:
-    """Module A: Hardened financial debt representation (Pennies only)."""
-    borrower_id: AgentID
-    total_outstanding_pennies: int
-    loans: List[LoanInfoDTO]
-    is_insolvent: bool
-    next_payment_pennies: int
-    next_payment_tick: int
-
-class InsufficientFundsError(Exception):
-    """
-    Custom exception to be raised when an operation cannot be completed due to lack of funds.
-    """
-    def __init__(self, message: str, required: Optional[MoneyDTO] = None, available: Optional[MoneyDTO] = None):
-        self.required = required
-        self.available = available
-        if required and available:
-             msg = f"{message} Required: {required['amount_pennies']} pennies {required['currency']}, Available: {available['amount_pennies']} pennies {available['currency']}"
-        else:
-             msg = message
-        super().__init__(msg)
-
-class LoanNotFoundError(Exception):
-    """Raised when a specified loan is not found."""
-    pass
-
-class LoanRepaymentError(Exception):
-    """Raised when there is an issue with loan repayment."""
-    pass
-
-class LoanRollbackError(Exception):
-    """Raised when a loan cancellation fails to reverse the associated deposit."""
-    pass
-
-@dataclass(frozen=True)
-class BorrowerProfileDTO:
-    """
-    Profile of a borrower for credit assessment.
-    Updated: Added borrower_id to resolve TD-DTO-DESYNC-2026.
-    """
-    borrower_id: AgentID  # Added to resolve signature desync
-    gross_income: float
-    existing_debt_payments: float
-    collateral_value: float
-    credit_score: Optional[float] = None
-    employment_status: str = "UNKNOWN"
-    preferred_lender_id: Optional[int] = None
-
-@dataclass(frozen=True)
-class CreditAssessmentResultDTO:
-    """
-    The result of a credit check from the CreditScoringService.
-    """
-    is_approved: bool
-    max_loan_amount: int
-    reason: Optional[str] # Reason for denial
-
-# --- Lien and Encumbrance DTOs ---
-
-@dataclass(frozen=True)
-class LienDTO:
-    """
-    Represents a financial claim (lien) against a real estate property.
-    This is the canonical data structure for all property-secured debt.
-    """
-    loan_id: str
-    lienholder_id: AgentID  # The ID of the agent/entity holding the lien (e.g., the bank)
-    principal_remaining: int
-    lien_type: Literal["MORTGAGE", "TAX_LIEN", "JUDGEMENT_LIEN"]
-
-@dataclass(frozen=True)
-class MortgageApplicationDTO:
-    """
-    Application data for a mortgage.
-    TypedDict allows for flexible input construction before strict validation.
-    """
-    applicant_id: int
-    requested_principal: float
-    purpose: str
-    property_id: int
-    property_value: float
-    applicant_monthly_income: float
-    existing_monthly_debt_payments: float
-    loan_term: int
-
 @runtime_checkable
 class ICreditScoringService(Protocol):
     """
@@ -362,20 +226,6 @@ class ICreditScoringService(Protocol):
             A DTO indicating approval status and other relevant details.
         """
         ...
-
-@dataclass(frozen=True)
-class EquityStake:
-    """Represents a shareholder's stake for Tier 5 distribution."""
-    shareholder_id: AgentID
-    ratio: float # Proportional ownership, e.g., 0.1 for 10%
-
-@dataclass(frozen=True)
-class LiquidationContext:
-    """Context object to supply necessary services for claim calculation."""
-    current_tick: int
-    hr_service: Optional[IHRService] = None
-    tax_service: Optional[Union[ITaxService, Any]] = None # Use Union[ITaxService, Any] to avoid forward ref issue if ITaxService not defined yet or use string
-    shareholder_registry: Optional[IShareholderRegistry] = None
 
 @runtime_checkable
 class ILiquidatable(Protocol):
@@ -414,10 +264,10 @@ class IFinancialAgent(Protocol):
     """
     id: AgentID
 
-    def get_liquid_assets(self, currency: CurrencyCode = "USD") -> float:
+    def get_liquid_assets(self, currency: CurrencyCode = "USD") -> int:
         ...
 
-    def get_total_debt(self) -> float:
+    def get_total_debt(self) -> int:
         ...
 
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
@@ -452,9 +302,9 @@ class IBankService(Protocol):
     """
     def get_interest_rate(self) -> float: ...
 
-    def grant_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: int) -> Optional[Tuple[LoanInfoDTO, Any]]: ...
+    def grant_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: int) -> Optional[Tuple[LoanDTO, Any]]: ...
 
-    def stage_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: Optional[int], borrower_profile: Optional[BorrowerProfileDTO]) -> Optional[LoanInfoDTO]: ...
+    def stage_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: Optional[int], borrower_profile: Optional[BorrowerProfileDTO]) -> Optional[LoanDTO]: ...
 
     def repay_loan(self, loan_id: str, amount: int) -> int: ...
 
@@ -706,7 +556,7 @@ class IFinanceSystem(Protocol):
         amount: int,
         borrower_profile: BorrowerProfileDTO,
         current_tick: int
-    ) -> Tuple[Optional[LoanInfoDTO], List["Transaction"]]:
+    ) -> Tuple[Optional[LoanDTO], List["Transaction"]]:
         """Orchestrates the loan application process."""
         ...
 
@@ -714,7 +564,7 @@ class IFinanceSystem(Protocol):
         """Query the ledger for deposit balance."""
         ...
 
-    def get_customer_debt_status(self, bank_id: AgentID, customer_id: AgentID) -> List[LoanInfoDTO]:
+    def get_customer_debt_status(self, bank_id: AgentID, customer_id: AgentID) -> List[LoanDTO]:
         """Query the ledger for loans."""
         ...
 

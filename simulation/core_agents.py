@@ -836,15 +836,15 @@ class Household(
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         return self._econ_state.wallet.get_balance(currency)
 
-    def get_liquid_assets(self, currency: CurrencyCode = "USD") -> float:
-        """Returns liquid assets as float (legacy compatibility)."""
-        return float(self.get_balance(currency))
+    def get_liquid_assets(self, currency: CurrencyCode = "USD") -> int:
+        """Returns liquid assets in pennies (int)."""
+        return self.get_balance(currency)
 
-    def get_total_debt(self) -> float:
-        """Returns total debt as float (legacy compatibility)."""
+    def get_total_debt(self) -> int:
+        """Returns total debt in pennies (int)."""
         # Household doesn't traditionally have debt in the same way Firms do here,
         # but we provide the method for protocol compliance.
-        return 0.0
+        return 0
 
     @override
     def get_all_balances(self) -> Dict[CurrencyCode, int]:

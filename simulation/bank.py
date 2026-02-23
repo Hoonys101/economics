@@ -4,7 +4,7 @@ import math
 from modules.common.config_manager.api import ConfigManager
 from modules.finance.api import (
     IBank,
-    LoanInfoDTO,
+    LoanDTO,
     DebtStatusDTO,
     BorrowerProfileDTO,
     IFinancialEntity,
@@ -118,11 +118,11 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     def total_wealth(self) -> int:
         return sum(self._wallet.get_all_balances().values())
 
-    def get_liquid_assets(self, currency: CurrencyCode = "USD") -> float:
-        return float(self.get_balance(currency))
+    def get_liquid_assets(self, currency: CurrencyCode = "USD") -> int:
+        return self.get_balance(currency)
 
-    def get_total_debt(self) -> float:
-        return 0.0 # Banks usually have liabilities (deposits), not debt in this context
+    def get_total_debt(self) -> int:
+        return 0 # Banks usually have liabilities (deposits), not debt in this context
 
     # --- ICurrencyHolder Implementation ---
 
@@ -149,7 +149,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
     # --- IBank Implementation ---
 
-    def grant_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanInfoDTO, Transaction]]:
+    def grant_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanDTO, Transaction]]:
         # Resolve borrower object vs ID
         borrower_obj = None
         borrower_agent_id = borrower_id
@@ -173,18 +173,18 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         elif isinstance(borrower_profile, dict):
             # Convert dict to BorrowerProfileDTO
             # Helper to safely extract int fields
-            def safe_float(val):
+            def safe_int(val):
                 try:
-                    return float(val) if val is not None else 0.0
+                    return int(val) if val is not None else 0
                 except (ValueError, TypeError):
-                    return 0.0
+                    return 0
 
             # MIGRATION: Updated to new BorrowerProfileDTO signature
             profile = BorrowerProfileDTO(
-                borrower_id=borrower_agent_id,
-                gross_income=safe_float(borrower_profile.get('gross_income', 0)),
-                existing_debt_payments=safe_float(borrower_profile.get('existing_debt_payments', 0)),
-                collateral_value=safe_float(borrower_profile.get('collateral_value', 0)),
+                borrower_id=AgentID(int(borrower_agent_id)), # Ensure AgentID
+                gross_income=safe_int(borrower_profile.get('gross_income', 0)),
+                existing_debt_payments=safe_int(borrower_profile.get('existing_debt_payments', 0)),
+                collateral_value=safe_int(borrower_profile.get('collateral_value', 0)),
                 credit_score=borrower_profile.get('credit_score'),
                 employment_status=borrower_profile.get('employment_status', "UNKNOWN"),
                 preferred_lender_id=borrower_profile.get('preferred_lender_id')
@@ -192,10 +192,10 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         else:
             # Fallback: create empty/default DTO
             profile = BorrowerProfileDTO(
-                borrower_id=borrower_agent_id,
-                gross_income=0.0,
-                existing_debt_payments=0.0,
-                collateral_value=0.0,
+                borrower_id=AgentID(int(borrower_agent_id)),
+                gross_income=0,
+                existing_debt_payments=0,
+                collateral_value=0,
                 employment_status="UNKNOWN"
             )
 
@@ -212,7 +212,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
         # Strict DTO enforcement: loan_dto must be an object (dataclass)
         if isinstance(loan_dto, dict):
-             logger.error("FinanceSystem returned a dict instead of LoanInfoDTO! This violates DTO purity.")
+             logger.error("FinanceSystem returned a dict instead of LoanDTO! This violates DTO purity.")
              return None
 
         # Extract credit creation tx and EXECUTE settlement
@@ -240,7 +240,7 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
 
         return loan_dto, credit_tx
 
-    def stage_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanInfoDTO]:
+    def stage_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[LoanDTO]:
         # Implementation of stage_loan (without booking) is harder with pure stateless engines
         # skipping strictly "staging" or implementing as a Dry Run.
         # For now, return None or Mock it.
@@ -278,17 +278,21 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
         if self.finance_system and hasattr(self.finance_system, 'get_customer_debt_status'):
              loans = self.finance_system.get_customer_debt_status(self.id, borrower_id)
              # UPDATED: Use outstanding_balance (float) per new DTO spec
-             total_debt = int(sum(l.outstanding_balance for l in loans))
+             total_debt = int(sum(l.outstanding_balance for l in loans) * 100) # Convert back to pennies for total? No, outstanding_balance is float.
+             # Wait, total_outstanding_pennies should be int.
+             # loans has remaining_principal_pennies.
+             total_debt_pennies = sum(l.remaining_principal_pennies for l in loans)
+
              return DebtStatusDTO(
-                 borrower_id=int(borrower_id),
-                 total_outstanding_pennies=total_debt,
+                 borrower_id=AgentID(int(borrower_id)),
+                 total_outstanding_pennies=total_debt_pennies,
                  loans=loans,
                  is_insolvent=False,
                  next_payment_pennies=0,
                  next_payment_tick=0
              )
         return DebtStatusDTO(
-            borrower_id=int(borrower_id),
+            borrower_id=AgentID(int(borrower_id)),
             total_outstanding_pennies=0,
             loans=[],
             is_insolvent=False,
@@ -345,7 +349,14 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
                  bank_state = self.finance_system.ledger.banks[self.id]
                  from modules.finance.engine_api import DepositStateDTO
                  if dep_id not in bank_state.deposits:
-                     bank_state.deposits[dep_id] = DepositStateDTO(dep_id, depositor_id, 0, 0.0, currency)
+                     # Correct instantiation for DepositDTO
+                     bank_state.deposits[dep_id] = DepositStateDTO(
+                         owner_id=depositor_id,
+                         balance_pennies=0,
+                         interest_rate=0.0,
+                         deposit_id=dep_id,
+                         currency=currency
+                     )
                      # TD-INT-STRESS-SCALE: Sync SettlementSystem Reverse Index
                      if self.settlement_system:
                          self.settlement_system.register_account(self.id, depositor_id)
