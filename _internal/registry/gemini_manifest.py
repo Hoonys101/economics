@@ -24,109 +24,50 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "MISSION_harvest_optimizer_SPEC": {
-        "title": "Harvest Algorithm Optimization Spec",
+    "MISSION_global_tech_debt_liquidation_plan": {
+        "title": "Global Technical Debt Liquidation & API/DTO Standardization Plan",
         "worker": "spec",
-        "instruction": "weighted_harvester.py의 성능 병목 지점(과도한 git subprocess 호출, 특히 파일별 git log 호출 및 순차 처리)을 분석하고, 이를 최적화하기 위한 기술 사양서(SPEC)를 작성하십시오. ls-tree와 한 번의 git log (branch level) 호출로 필요한 정보를 일괄 추출하는 방식이나, 병렬 처리를 통해 수확 속도를 10배 이상 향상시키는 방안을 제시하십시오.",
-        "context_files": [
-            "_internal/scripts/weighted_harvester.py",
-            "_internal/scripts/launcher.py",
-            "harvest-go.bat"
-        ],
-        "output_path": "gemini-output/spec/MISSION_harvest_optimizer_SPEC.md"
-    },
-    "MISSION_tech_debt_clearance_spec": {
-        "title": "Technical Debt Liquidation & API/DTO Realignment Plan",
-        "worker": "spec",
-        "instruction": "기술부채 장부(TECH_DEBT_LEDGER.md)와 진단 보고서(diagnostic_refined.md)를 분석하여 모듈간 결합도를 낮추고 데이터 정합성을 확보하기 위한 전면적인 청산 계획을 수립하십시오. 특히 M2 반전(TD-ECON-M2-REGRESSION)과 초기화 순서(TD-FIN-INVISIBLE-HAND)를 최우선으로 다루며, 모든 모듈의 DTO/API 표준화 방안을 포함한 'Wave' 기반의 구현 전략(SPEC)을 생성하십시오.",
+        "instruction": "기술부채 장부(TECH_DEBT_LEDGER.md)와 핵심 모듈의 DTO/API 정의를 분석하여 시스템 전반의 'DTO 하드닝 및 부채 청산 마스터 플랜'을 수립하십시오.\n\n1. **모듈별 API/DTO 표준 확립**: Finance, Firm, Household, Government, Labor 각 모듈의 최종 @dataclass 구조를 먼저 정의하십시오. 모든 금융 필드에 Penny Standard(int)를 적용하고, 상호 참조를 최소화하는 인터페이스 규약을 수립하십시오.\n2. **청산 시퀀스 설계**: 기술부채 장부의 우선순위에 따라, 데이터 무결성을 보장하며 순차적으로 기능을 구현/수정할 수 있는 'Wave' 기반 실행 계획을 작성하십시오.\n3. **검증 가이드**: 각 단계별로 Zero-Sum Integrity와 SSoT(Single Source of Truth)가 유지되는지 확인할 수 있는 구체적인 검증 지표를 포함하십시오.\n\n결과물은 Jules가 각 모듈별 상세 작업을 수행할 때 가이드로 사용할 수 있는 수준의 마스터 스펙이어야 합니다.",
         "context_files": [
             "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
-            "reports/diagnostic_refined.md",
+            "modules/finance/api.py",
             "modules/finance/dtos.py",
-            "simulation/dtos/api.py",
-            "simulation/initialization/initializer.py"
-        ],
-        "output_path": "gemini-output/spec/MISSION_tech_debt_clearance_spec_SPEC.md"
-    },
-    "MISSION_finance_api_dto_spec": {
-        "title": "Finance Module API & DTO Realignment",
-        "worker": "spec",
-        "instruction": "Finance 모듈의 DTO(`modules/finance/dtos.py`)를 전수 조사하여 TypedDict로 된 유산을 @dataclass로 전환하고, SettlementSystem과의 인터페이스 정합성을 분석하십시오. M2 역전 방지 및 통화 무결성을 보장하기 위한 API 명세를 작성하십시오.",
-        "context_files": ["modules/finance/dtos.py", "modules/finance/api.py", "simulation/systems/settlement_system.py"],
-        "output_path": "gemini-output/spec/MISSION_finance_api_dto_SPEC.md"
-    },
-    "MISSION_firm_api_dto_spec": {
-        "title": "Firm Module API & DTO Realignment",
-        "worker": "spec",
-        "instruction": "Firm 모듈의 내부 DTO와 외부 노출 API의 불일치를 분석하십시오. 특히 FirmStateDTO와 FirmConfigDTO가 모든 시스템 엔진에서 일관되게 사용되도록 정렬 계획을 수립하십시오.",
-        "context_files": ["modules/firm/api.py", "modules/simulation/dtos/api.py", "simulation/firms.py"],
-        "output_path": "gemini-output/spec/MISSION_firm_api_dto_SPEC.md"
-    },
-    "MISSION_household_api_dto_spec": {
-        "title": "Household Module API & DTO Realignment",
-        "worker": "spec",
-        "instruction": "Household의 자산 및 소비 정보가 DTO를 통해 안전하게 전달되도록 구조를 설계하십시오. 직접적인 속성 접근을 지양하고 Snapshot 기반의 데이터 통신 스펙을 정의하십시오.",
-        "context_files": ["modules/household/api.py", "simulation/core_agents.py"],
-        "output_path": "gemini-output/spec/MISSION_household_api_dto_SPEC.md"
-    },
-    "MISSION_government_api_dto_spec": {
-        "title": "Government Module API & DTO Realignment",
-        "worker": "spec",
-        "instruction": "정부 정책 DTO(GovernmentPolicyDTO)와 하위 시스템(Tax, Treasury) 간의 API 연계를 최적화하십시오. 법인세 정합성 수정 사항을 반영한 통합 API 명세를 작성하십시오.",
-        "context_files": ["modules/government/api.py", "modules/government/dtos.py", "modules/government/taxation/system.py"],
-        "output_path": "gemini-output/spec/MISSION_government_api_dto_SPEC.md"
-    },
-    "MISSION_labor_api_dto_spec": {
-        "title": "Labor Module API & DTO Realignment",
-        "worker": "spec",
-        "instruction": "LaborMarket의 매칭 데이터와 Order DTO 간의 결합도를 낮추고, 가독성 높은 인터페이스를 설계하십시오. Major 매칭 로직의 DTO 전환 계획을 포함하십시오.",
-        "context_files": ["modules/labor/api.py", "simulation/systems/labor_market.py"],
-        "output_path": "gemini-output/spec/MISSION_labor_api_dto_SPEC.md"
-    },
-    "MISSION_reference_injection_optimization_spec": {
-        "title": "Reference Document Injection Optimization Spec",
-        "worker": "spec",
-        "instruction": "조사된 고정 참조 문서(universal_contracts, domain_map, manual_links)들이 Gemini 미션의 성능(정확도, 컨텍스트 적중률)을 높이는지 분석하십시오. 현재의 하드코딩된 매핑 방식을 개선하여, 작업의 맥락에 따라 더 유연하고 효율적으로 참조 문서를 주입할 수 있는 동적 주입 시스템(Dynamic Context Injector) 설계안을 제시하십시오. RAG(Retrieval-Augmented Generation) 요소를 도입하거나, 파일 간의 의존성 그래프를 활용하는 방안을 검토하십시오.",
-        "context_files": [
-            "_internal/scripts/core/context.py",
-            "_internal/scripts/commands/gemini.py",
-            "_internal/manuals/spec.md",
-            "_internal/manuals/reviewer.md"
-        ],
-        "output_path": "gemini-output/spec/MISSION_reference_injection_optimization_SPEC.md"
-    },
-    "MISSION_fixed_command_registry_spec": {
-        "title": "Fixed Command Registry Separation Spec",
-        "worker": "spec",
-        "instruction": "launcher.py 내의 dispatch 테이블에 혼재된 고정 명령들(git-review, merge, harvest, sync, reset 등)을 gemini-go와 분리하기 위한 fixed_command_registry 설계 사양서를 작성하십시오. 사용자가 gemini-go를 사용할 때 고정 명령들과의 이름 충돌이나 번잡함을 피할 수 있도록 구조를 개선하십시오. 명령어의 성격(Dynamic Mission vs Fixed System Tool)에 따른 명확한 레이어 분리 및 관리 방안을 제시하십시오.",
-        "context_files": [
-            "_internal/scripts/launcher.py",
-            "_internal/scripts/commands/sys_cmds.py",
-            "_internal/scripts/commands/git.py"
-        ],
-        "output_path": "gemini-output/spec/MISSION_fixed_command_registry_SPEC.md"
-    },
-    "MISSION_government_dto_hygiene_spec": {
-        "title": "Government DTO Hygiene & Circular Dependency Fix",
-        "worker": "spec",
-        "instruction": "modules/government/dtos.py 파일에서 발생한 중복 필드 정의(income_tax_rate, corporate_tax_rate)를 제거하고, simulation/dtos/api.py와 modules/government/dtos.py에 이중으로 정의되어 순환 참조 위험을 일으키는 GovernmentSensoryDTO를 modules/government/dtos.py로 단일화하기 위한 상세 기술 사양서(SPEC)를 작성하십시오. 이 과정에서 MyPy 에러와 런타임 Import 에러를 완전히 해결하는 것을 목표로 합니다.",
-        "context_files": [
+            "modules/firm/api.py",
+            "modules/household/api.py",
+            "modules/government/api.py",
             "modules/government/dtos.py",
-            "simulation/dtos/api.py",
-            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+            "modules/labor/api.py",
+            "simulation/dtos/api.py"
         ],
-        "output_path": "gemini-output/spec/MISSION_government_dto_hygiene_SPEC.md"
+        "output_path": "gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md"
     },
-    "MISSION_jules_audit": {
-        "title": "Audit Jules Interactive Orchestration",
-        "instruction": "Analyze all files related to Jules execution (launchers, workers, registry) to find mismatching dictionary/DTO patterns and propose robust hardening measures.",
+    "MISSION_liquidation_wave1_shared_kernel": {
+        "title": "Wave 1: Shared Financial Kernel Implementation Spec",
         "worker": "spec",
-        "file": "c:/coding/economics/gemini-output/spec/MISSION_jules_audit_SPEC.md"
+        "instruction": "GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md를 바탕으로 `modules/common/financial` 패키지를 생성하고, `Claim`, `MoneyDTO`, `IFinancialEntity`를 이관하기 위한 상세 구현 스펙을 작성하십시오. 특히 Finance와 HR 간의 순환 참조를 제거하는 구체적인 리팩토링 경로를 명시하십시오.",
+        "context_files": ["gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md", "modules/finance/api.py", "modules/hr/api.py"],
+        "output_path": "gemini-output/spec/MISSION_liquidation_wave1_SPEC.md"
     },
-    "MISSION_stub_injection": {
-        "title": "Design Stub Injection Strategy",
-        "instruction": "Design a strategy to use .pyi stubs for context minimization in LLM operations, prioritizing interface over implementation.",
+    "MISSION_liquidation_wave2_finance_core": {
+        "title": "Wave 2: Finance Core Penny Standard Spec",
         "worker": "spec",
-        "file": "c:/coding/economics/gemini-output/spec/MISSION_stub_injection_SPEC.md"
-    }
+        "instruction": "Finance 모듈의 Ledger와 SettlementSystem을 Penny Standard(int)로 하드닝하기 위한 상세 스펙을 작성하십시오. Transaction 모델의 `total_pennies` 강제화, SettlementSystem의 제로섬 검증(Zero-Sum Integrity) 로직, 그리고 Bank 서비스의 대출 원장 전환 계획을 포함하십시오.",
+        "context_files": ["gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md", "modules/finance/dtos.py", "simulation/systems/settlement_system.py", "simulation/bank.py"],
+        "output_path": "gemini-output/spec/MISSION_liquidation_wave2_SPEC.md"
+    },
+    "MISSION_liquidation_wave3_agent_state": {
+        "title": "Wave 3: Agent State (Firm/Household/Labor) Penny Sync Spec",
+        "worker": "spec",
+        "instruction": "Firm, Household, Labor 각 모듈의 상태 DTO와 엔진(FinanceEngine, BudgetEngine, MatchingEngine)을 Penny Standard로 동기화하기 위한 통합 스펙을 작성하십시오. 모든 금액 필드를 `_pennies`로 변경하고 정수 연산을 보장해야 합니다.",
+        "context_files": ["gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md", "simulation/dtos/api.py", "modules/firm/api.py", "modules/household/api.py", "modules/labor/api.py"],
+        "output_path": "gemini-output/spec/MISSION_liquidation_wave3_SPEC.md"
+    },
+    "MISSION_liquidation_wave4_government": {
+        "title": "Wave 4: Government Policy & Fiscal Engine Separation Spec",
+        "worker": "spec",
+        "instruction": "정부의 정책 결정(Decision)과 실행(Fiscal Execution)을 분리하기 위한 SRP 리팩토링 스펙을 작성하십시오. `FiscalCommandDTO` 도입과 FiscalEngine의 명령어 기반 실행 구조를 설계하십시오.",
+        "context_files": ["gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md", "modules/government/api.py", "modules/government/dtos.py"],
+        "output_path": "gemini-output/spec/MISSION_liquidation_wave4_SPEC.md"
+    },
+    # Add missions here
 }
