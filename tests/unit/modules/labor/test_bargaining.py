@@ -4,6 +4,7 @@ from modules.labor.system import LaborMarket
 from modules.labor.api import JobOfferDTO, JobSeekerDTO
 from simulation.components.engines.hr_engine import HREngine
 from modules.firm.api import HRContextDTO, AgentID, MarketSnapshotDTO
+from modules.common.enums import IndustryDomain
 
 class TestBargainingAndAdaptiveLearning(unittest.TestCase):
 
@@ -12,23 +13,23 @@ class TestBargainingAndAdaptiveLearning(unittest.TestCase):
         market = LaborMarket()
 
         # WTP (Firm) = 2000 (20.00), WTA (Worker) = 1000 (10.00)
-        # Surplus = 10.00
-        # Split = 0.5 (Default) -> Price = 10.00 + 5.00 = 15.00
+        # Surplus = 1000 pennies
+        # Split = 0.5 (Default) -> Price = 1000 + 500 = 1500
 
         offer = JobOfferDTO(
             firm_id=AgentID(1),
-            offer_wage=20.00,
+            offer_wage_pennies=2000,
             required_education=0,
             quantity=1.0,
-            major="GENERAL"
+            major=IndustryDomain.GENERAL
         )
 
         seeker = JobSeekerDTO(
             household_id=AgentID(101),
-            reservation_wage=10.00,
+            reservation_wage_pennies=1000,
             education_level=0,
             quantity=1.0,
-            major="GENERAL"
+            major=IndustryDomain.GENERAL
         )
 
         market.post_job_offer(offer)
@@ -41,9 +42,9 @@ class TestBargainingAndAdaptiveLearning(unittest.TestCase):
 
         self.assertEqual(match.employer_id, 1)
         self.assertEqual(match.employee_id, 101)
-        self.assertAlmostEqual(match.base_wage, 20.00)
-        self.assertAlmostEqual(match.matched_wage, 15.00) # (10 + 20) / 2
-        self.assertAlmostEqual(match.surplus, 10.00)
+        self.assertEqual(match.base_wage_pennies, 2000)
+        self.assertEqual(match.matched_wage_pennies, 1500) # (1000 + 2000) / 2
+        self.assertEqual(match.surplus_pennies, 1000)
         self.assertAlmostEqual(match.bargaining_power, 0.5)
 
     def test_firm_adaptive_learning_wage_increase(self):

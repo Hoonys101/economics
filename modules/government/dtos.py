@@ -33,9 +33,10 @@ class TaxBracketDTO:
 @dataclass(frozen=True)
 class FiscalPolicyDTO:
     """Snapshot of the current fiscal policy."""
+    income_tax_rate: float
+    corporate_tax_rate: float
     tax_brackets: List[TaxBracketDTO] = field(default_factory=list)
-    income_tax_rate: float = 0.1
-    corporate_tax_rate: float = 0.2
+    welfare_budget_multiplier: float = 1.0
     vat_rate: float = 0.0
 
 @dataclass(frozen=True)
@@ -201,6 +202,7 @@ class BondRepaymentDetailsDTO:
 
 # endregion
 
+@dataclass
 @dataclass
 class GovernmentSensoryDTO:
     """
