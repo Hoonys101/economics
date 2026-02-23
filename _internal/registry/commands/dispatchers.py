@@ -73,7 +73,7 @@ class GeminiDispatcher(ICommand):
         )
         
         injection_result = injector.analyze_context(req)
-        final_context = list(set(existing_context + [node.file_path for node in injection_result.nodes]))
+        final_context = [node.file_path for node in injection_result.nodes]
 
         cmd = [sys.executable, str(ctx.base_dir / "_internal" / "scripts" / "gemini_worker.py"), mission.worker, instruction]
         if final_context:
@@ -128,6 +128,36 @@ class JulesDispatcher(ICommand):
             print(msg)
             return CommandResult(success=False, message=msg)
 
+        # --- UPS-6.0: Stub-First Context Injection ---
+        from _internal.scripts.core.context_injector.service import ContextInjectorService
+        from modules.tools.context_injector.api import InjectionRequestDTO
+
+        injector = ContextInjectorService()
+        existing_context = mission.context_files or []
+        
+        # If the mission points to a file that contains instructions/spec, include it
+        targets = list(existing_context)
+        if mission.file_path:
+            targets.append(mission.file_path)
+
+        req = InjectionRequestDTO(
+            target_files=targets,
+            include_tests=True,
+            include_docs=True,
+            max_dependency_depth=1
+        )
+        
+        injection_result = injector.analyze_context(req)
+        final_context = [node.file_path for node in injection_result.nodes]
+        
+        # We need to communicate to jules_bridge that these files should be attached.
+        # jules_bridge currently doesn't take a context list explicitly in its CLI args,
+        # but Jules automatically picks up files if they are in the prompt or spec.
+        # However, for the Bridge, we logic-inject it.
+        
+        # Temporary: Update mission in-memory with injected context if bridge supports it, 
+        # or handle via temporary mission file.
+        
         command = mission.command or "create"
         cmd = [sys.executable, str(ctx.base_dir / "_internal" / "scripts" / "jules_bridge.py"), command]
 
@@ -155,6 +185,9 @@ class JulesDispatcher(ICommand):
         if mission.wait:
             cmd.append("--wait")
         
+        if final_context:
+            cmd.extend(["-c"] + final_context)
+
         output_log = ctx.base_dir / "communications" / "jules_logs" / "last_run.md"
         output_log.parent.mkdir(parents=True, exist_ok=True)
         

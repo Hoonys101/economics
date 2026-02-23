@@ -46,5 +46,10 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "title": "Labor Module API & DTO Realignment",
         "instruction": "Decouple MatchingEngine from agent attributes. Standardize JobOffer/JobSeeker DTOs. Implement bargaining via snapshots.",
         "file": "c:/coding/economics/gemini-output/spec/MISSION_labor_api_dto_SPEC.md"
+    },
+    "MISSION_test_stabilization": {
+        "title": "Final Test Suite Stabilization (Post-Merge)",
+        "instruction": "Run `pytest -rfE --tb=line --no-header tests/` and fix all remaining test failures (ImportErrors, DTO signature mismatches) incrementally until the suite passes 100%.",
+        "file": "c:/coding/economics/gemini-output/spec/MISSION_test_stabilization_SPEC.md"
     }
 }

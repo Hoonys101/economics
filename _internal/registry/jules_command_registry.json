@@ -264,6 +264,70 @@
       "output_path": "gemini-output/spec/MISSION_fixed_command_registry_SPEC.md",
       "model": null,
       "audit_requirements": null
+    },
+    "MISSION_government_dto_hygiene_spec": {
+      "key": "MISSION_government_dto_hygiene_spec",
+      "title": "Government DTO Hygiene & Circular Dependency Fix",
+      "type": "gemini",
+      "instruction_raw": "modules/government/dtos.py \ud30c\uc77c\uc5d0\uc11c \ubc1c\uc0dd\ud55c \uc911\ubcf5 \ud544\ub4dc \uc815\uc758(income_tax_rate, corporate_tax_rate)\ub97c \uc81c\uac70\ud558\uace0, simulation/dtos/api.py\uc640 modules/government/dtos.py\uc5d0 \uc774\uc911\uc73c\ub85c \uc815\uc758\ub418\uc5b4 \uc21c\ud658 \ucc38\uc870 \uc704\ud5d8\uc744 \uc77c\uc73c\ud0a4\ub294 GovernmentSensoryDTO\ub97c modules/government/dtos.py\ub85c \ub2e8\uc77c\ud654\ud558\uae30 \uc704\ud55c \uc0c1\uc138 \uae30\uc220 \uc0ac\uc591\uc11c(SPEC)\ub97c \uc791\uc131\ud558\uc2ed\uc2dc\uc624. \uc774 \uacfc\uc815\uc5d0\uc11c MyPy \uc5d0\ub7ec\uc640 \ub7f0\ud0c0\uc784 Import \uc5d0\ub7ec\ub97c \uc644\uc804\ud788 \ud574\uacb0\ud558\ub294 \uac83\uc744 \ubaa9\ud45c\ub85c \ud569\ub2c8\ub2e4.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "modules/government/dtos.py",
+        "simulation/dtos/api.py",
+        "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+      ],
+      "output_path": "gemini-output/spec/MISSION_government_dto_hygiene_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "MISSION_test_stabilization": {
+      "key": "MISSION_test_stabilization",
+      "title": "Final Test Suite Stabilization (Post-Merge)",
+      "type": "jules",
+      "instruction_raw": "Run `pytest tests/` and fix all remaining test failures (ImportErrors, DTO signature mismatches) until the suite passes 100%.",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_test_stabilization_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "MISSION_jules_audit": {
+      "key": "MISSION_jules_audit",
+      "title": "Audit Jules Interactive Orchestration",
+      "type": "gemini",
+      "instruction_raw": "Analyze all files related to Jules execution (launchers, workers, registry) to find mismatching dictionary/DTO patterns and propose robust hardening measures.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "MISSION_stub_injection": {
+      "key": "MISSION_stub_injection",
+      "title": "Design Stub Injection Strategy",
+      "type": "gemini",
+      "instruction_raw": "Design a strategy to use .pyi stubs for context minimization in LLM operations, prioritizing interface over implementation.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }

@@ -283,6 +283,51 @@
       "output_path": "gemini-output/spec/MISSION_government_dto_hygiene_SPEC.md",
       "model": null,
       "audit_requirements": null
+    },
+    "MISSION_test_stabilization": {
+      "key": "MISSION_test_stabilization",
+      "title": "Final Test Suite Stabilization (Post-Merge)",
+      "type": "jules",
+      "instruction_raw": "Run `pytest tests/` and fix all remaining test failures (ImportErrors, DTO signature mismatches) until the suite passes 100%.",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_test_stabilization_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "MISSION_stub_injection": {
+      "key": "MISSION_stub_injection",
+      "title": "Design Stub Injection Strategy",
+      "type": "gemini",
+      "instruction_raw": "Design a strategy to use .pyi stubs for context minimization in LLM operations, prioritizing interface over implementation.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "MISSION_jules_audit": {
+      "key": "MISSION_jules_audit",
+      "title": "Audit Jules Interactive Orchestration",
+      "type": "gemini",
+      "instruction_raw": "Analyze all files related to Jules execution (launchers, workers, registry) to find mismatching dictionary/DTO patterns and propose robust hardening measures.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }

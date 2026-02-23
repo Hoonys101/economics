@@ -23,6 +23,8 @@ class ContextNodeDTO:
     tier: ContextTier
     description: str = ""
     source_node: Optional[str] = None # The file that triggered this inclusion (e.g., importer)
+    is_stub: bool = False
+    original_path: Optional[str] = None
 
 @dataclass
 class InjectionRequestDTO:

@@ -116,5 +116,17 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
             "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
         ],
         "output_path": "gemini-output/spec/MISSION_government_dto_hygiene_SPEC.md"
+    },
+    "MISSION_jules_audit": {
+        "title": "Audit Jules Interactive Orchestration",
+        "instruction": "Analyze all files related to Jules execution (launchers, workers, registry) to find mismatching dictionary/DTO patterns and propose robust hardening measures.",
+        "worker": "spec",
+        "file": "c:/coding/economics/gemini-output/spec/MISSION_jules_audit_SPEC.md"
+    },
+    "MISSION_stub_injection": {
+        "title": "Design Stub Injection Strategy",
+        "instruction": "Design a strategy to use .pyi stubs for context minimization in LLM operations, prioritizing interface over implementation.",
+        "worker": "spec",
+        "file": "c:/coding/economics/gemini-output/spec/MISSION_stub_injection_SPEC.md"
     }
 }
