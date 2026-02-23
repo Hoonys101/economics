@@ -464,6 +464,8 @@ class SettlementSystem(IMonetaryAuthority):
     ) -> Optional[ITransaction]:
         """
         Executes an atomic transfer using TransactionEngine.
+        Returns the created Transaction object (or None on failure) to support the
+        Transaction Injection Pattern used by System Agents (e.g., CentralBank).
         """
         if isinstance(amount, float):
              raise FloatIncursionError(f"Settlement integrity violation: amount must be int, got float: {amount}.")
