@@ -78,4 +78,5 @@ class TestTransactionIntegrity:
         assert tx is not None
         assert getattr(tx, 'total_pennies', 0) == 100
         assert tx.quantity == 1.0
+
         assert tx.price == 1.0
