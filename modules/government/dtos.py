@@ -1,4 +1,5 @@
 from __future__ import annotations
+# Verified for Wave 5 Government AI - Includes GovernmentSensoryDTO and GovernmentStateDTO
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any, Union, Protocol, runtime_checkable, TYPE_CHECKING
 from simulation.ai.enums import PolicyActionTag
