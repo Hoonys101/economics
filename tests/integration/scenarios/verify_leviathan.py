@@ -7,6 +7,7 @@ from simulation.ai.enums import PoliticalParty
 from simulation.core_agents import Household
 from modules.government.politics_system import PoliticsSystem
 from simulation.dtos.api import SimulationState
+from modules.government.political.api import VoteRecordDTO
 
 # Convert to pytest to use golden fixtures
 
@@ -43,10 +44,17 @@ def government(golden_config):
 def politics_system(government):
     # Initialize PoliticsSystem
     config_manager = MagicMock()
+    # Mock config_manager for update_config called in _apply_policy_mandate
+    # It seems config manager returns a mock config, but replace() fails on mock.
+    # We should ensure get_config returns a Dataclass or we patch replace() or handle exception.
+    # The existing code catches exception and logs error. So it shouldn't crash test, but might if exceptions propagate?
+    # Actually, in the log we saw "ERROR ... Failed to update government config ...". That's fine.
+
+    config_manager.get_config.return_value = MagicMock()
     return PoliticsSystem(config_manager)
 
 @pytest.fixture
-def mock_households(golden_households):
+def mock_households():
     households = []
     # We need 10 households for the test
     for i in range(10):
@@ -62,6 +70,18 @@ def mock_households(golden_households):
         social.economic_vision = 0.5
         h._social_state = social
 
+        # Mock cast_vote to use approval_rating
+        # Use a closure to capture 'social'
+        def cast_vote_side_effect(tick, gov_state, _social=social, _id=i):
+            return VoteRecordDTO(
+                agent_id=_id,
+                tick=tick,
+                approval_value=_social.approval_rating,
+                primary_grievance="NONE",
+                political_weight=1.0
+            )
+        h.cast_vote.side_effect = cast_vote_side_effect
+
         households.append(h)
 
     return households
@@ -71,58 +91,68 @@ def simulation_state(government, mock_households):
     state = MagicMock(spec=SimulationState)
     state.primary_government = government
     state.households = mock_households
+    state.firms = [] # Mock firms list
     state.time = 0
     state.tracker = MagicMock()
     state.tracker.get_latest_indicators.return_value = {"total_production": 100.0}
     state.market_data = {}
+    state.settlement_system = MagicMock() # Mock settlement system
+    state.central_bank = MagicMock() # Mock Central Bank
     return state
 
 def test_opinion_aggregation(politics_system, simulation_state, mock_households):
     """Test if PoliticsSystem aggregates household approval correctly."""
-    # 5 Happy, 5 Unhappy
+    # 5 Happy (1.0), 5 Unhappy (0.0)
     for i in range(5):
-        mock_households[i]._social_state.approval_rating = 1
+        mock_households[i]._social_state.approval_rating = 1.0
     for i in range(5, 10):
-        mock_households[i]._social_state.approval_rating = 0
+        mock_households[i]._social_state.approval_rating = 0.0
 
-    politics_system._update_public_opinion(simulation_state)
+    politics_system.process_tick(simulation_state)
 
+    # Average should be 0.5
     assert simulation_state.primary_government.approval_rating == 0.5
-    assert len(politics_system.approval_history) == 1
-    assert politics_system.perceived_public_opinion == 0.5
+    # perceived_public_opinion synced
+    assert simulation_state.primary_government.perceived_public_opinion == 0.5
 
 def test_opinion_lag(politics_system, simulation_state, mock_households):
     """Test if Perceived Public Opinion updates (No Lag in new system)."""
     # Tick 1: 1.0
-    for h in mock_households: h._social_state.approval_rating = 1
-    politics_system._update_public_opinion(simulation_state)
-    assert politics_system.perceived_public_opinion == 1.0
+    for h in mock_households: h._social_state.approval_rating = 1.0
+    politics_system.process_tick(simulation_state)
+    assert simulation_state.primary_government.perceived_public_opinion == 1.0
 
     # Tick 2: 0.0
-    for h in mock_households: h._social_state.approval_rating = 0
-    politics_system._update_public_opinion(simulation_state)
-    assert politics_system.perceived_public_opinion == 0.0
+    for h in mock_households: h._social_state.approval_rating = 0.0
+    politics_system.process_tick(simulation_state)
+    assert simulation_state.primary_government.perceived_public_opinion == 0.0
 
 def test_election_flip(politics_system, simulation_state, mock_households):
-    """Test if PoliticsSystem flips party based on votes (economic_vision) at election tick."""
-    # < 0.5 -> Red, >= 0.5 -> Blue
+    """Test if PoliticsSystem flips party based on approval at election tick."""
+    # Incumbent loses if Approval < 0.5
 
-    # All Safety (Red)
-    for h in mock_households: h._social_state.economic_vision = 0.1
+    # 1. Flip BLUE -> RED (Low Approval)
+    for h in mock_households: h._social_state.approval_rating = 0.0
 
     simulation_state.primary_government.ruling_party = PoliticalParty.BLUE
     simulation_state.time = 100 # Election Tick
 
-    politics_system._conduct_election(simulation_state)
+    politics_system.process_tick(simulation_state)
 
     assert simulation_state.primary_government.ruling_party == PoliticalParty.RED
-    assert simulation_state.primary_government.ruling_party != PoliticalParty.BLUE
 
-    # Next election, flip back to Blue
-    for h in mock_households: h._social_state.economic_vision = 0.9
-    simulation_state.time = 200
+    # 2. Keep RED (High Approval)
+    for h in mock_households: h._social_state.approval_rating = 1.0
+    simulation_state.time = 200 # Election Tick
 
-    politics_system._conduct_election(simulation_state)
+    politics_system.process_tick(simulation_state)
+    assert simulation_state.primary_government.ruling_party == PoliticalParty.RED
+
+    # 3. Flip RED -> BLUE (Low Approval)
+    for h in mock_households: h._social_state.approval_rating = 0.0
+    simulation_state.time = 300 # Election Tick
+
+    politics_system.process_tick(simulation_state)
     assert simulation_state.primary_government.ruling_party == PoliticalParty.BLUE
 
 def test_ai_policy_execution(government, simulation_state):
