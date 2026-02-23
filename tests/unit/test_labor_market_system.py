@@ -14,7 +14,7 @@ class TestLaborMarketSystem:
     def test_post_job_offer(self, market):
         offer = JobOfferDTO(
             firm_id=AgentID(101),
-            offer_wage=15.0,
+            offer_wage_pennies=1500,
             required_education=2,
             quantity=1.0,
             major=IndustryDomain.TECHNOLOGY
@@ -26,7 +26,7 @@ class TestLaborMarketSystem:
     def test_post_job_seeker(self, market):
         seeker = JobSeekerDTO(
             household_id=AgentID(201),
-            reservation_wage=12.0,
+            reservation_wage_pennies=1200,
             education_level=3,
             quantity=1.0,
             major=IndustryDomain.TECHNOLOGY
@@ -38,13 +38,13 @@ class TestLaborMarketSystem:
     def test_match_market_perfect_match(self, market):
         offer = JobOfferDTO(
             firm_id=AgentID(101),
-            offer_wage=20.0,
+            offer_wage_pennies=2000,
             required_education=2,
             major=IndustryDomain.TECHNOLOGY
         )
         seeker = JobSeekerDTO(
             household_id=AgentID(201),
-            reservation_wage=15.0,
+            reservation_wage_pennies=1500,
             education_level=2,
             major=IndustryDomain.TECHNOLOGY
         )
@@ -57,7 +57,7 @@ class TestLaborMarketSystem:
         match = results[0]
         assert match.employer_id == AgentID(101)
         assert match.employee_id == AgentID(201)
-        assert match.matched_wage == 17.5 # Nash Bargaining: (20 + 15) / 2
+        assert match.matched_wage_pennies == 1750 # Nash Bargaining: (2000 + 1500) / 2
         assert match.major_compatibility == "PERFECT"
 
         # Check queues cleared
@@ -67,13 +67,13 @@ class TestLaborMarketSystem:
     def test_match_market_mismatch_major(self, market):
         offer = JobOfferDTO(
             firm_id=AgentID(101),
-            offer_wage=20.0,
+            offer_wage_pennies=2000,
             required_education=2,
             major=IndustryDomain.TECHNOLOGY
         )
         seeker = JobSeekerDTO(
             household_id=AgentID(201),
-            reservation_wage=15.0,
+            reservation_wage_pennies=1500,
             education_level=2,
             major=IndustryDomain.FOOD_PROD
         )
@@ -83,7 +83,7 @@ class TestLaborMarketSystem:
         results = market.match_market(current_tick=1)
 
         # Should match but with lower priority/score if no better option
-        # Multiplier 0.8. Base 20/15 = 1.33. Final = 1.33 * 0.8 = 1.06 > 1.0. Match.
+        # Multiplier 0.8. Base 2000/1500 = 1.33. Final = 1.33 * 0.8 = 1.06 > 1.0. Match.
         assert len(results) == 1
         match = results[0]
         assert match.major_compatibility == "MISMATCH"
@@ -91,13 +91,13 @@ class TestLaborMarketSystem:
     def test_match_market_wage_too_low(self, market):
         offer = JobOfferDTO(
             firm_id=AgentID(101),
-            offer_wage=10.0,
+            offer_wage_pennies=1000,
             required_education=2,
             major=IndustryDomain.TECHNOLOGY
         )
         seeker = JobSeekerDTO(
             household_id=AgentID(201),
-            reservation_wage=15.0,
+            reservation_wage_pennies=1500,
             education_level=2,
             major=IndustryDomain.TECHNOLOGY
         )
@@ -133,8 +133,8 @@ class TestLaborMarketSystem:
 
         assert len(market._job_offers) == 1
         assert len(market._job_seekers) == 1
-        assert market._job_offers[0].offer_wage == 20.0
-        assert market._job_seekers[0].reservation_wage == 15.0
+        assert market._job_offers[0].offer_wage_pennies == 2000
+        assert market._job_seekers[0].reservation_wage_pennies == 1500
 
         txs = market.match_orders(1)
         assert len(txs) == 1

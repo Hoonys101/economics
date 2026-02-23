@@ -93,7 +93,12 @@ def test_withdraw_for_customer(bank, mock_finance_system):
     # Setup Deposit in Ledger
     customer_id = 2
     dep_id = f"DEP_{customer_id}_{bank.id}"
-    deposit = DepositStateDTO(dep_id, customer_id, 50000, 0.0) # 500.00
+    deposit = DepositStateDTO(
+        owner_id=customer_id,
+        deposit_id=dep_id,
+        balance_pennies=50000,
+        interest_rate=0.0
+    )
     mock_finance_system.ledger.banks[bank.id].deposits[dep_id] = deposit
 
     # Act

@@ -28,12 +28,12 @@ class DecisionUnit(IDecisionUnit):
         """
         new_state = state.copy()
         refined_orders = list(initial_orders)
-        market_snapshot = context['market_snapshot']
-        current_time = context['current_time']
-        config = context['config']
-        stress_scenario_config = context['stress_scenario_config']
-        household_state = context['household_state']
-        housing_system = context.get('housing_system')
+        market_snapshot = context.market_snapshot
+        current_time = context.current_time
+        config = context.config
+        stress_scenario_config = context.stress_scenario_config
+        household_state = context.household_state
+        housing_system = context.housing_system
         if household_state.econ_state.is_homeless or current_time % 30 == 0:
             request = HousingDecisionRequestDTO(household_state=household_state, housing_market_snapshot=market_snapshot.housing, outstanding_debt_payments=0.0)
             decision = self.housing_planner.evaluate_housing_options(request)

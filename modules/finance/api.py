@@ -275,7 +275,7 @@ class InsufficientFundsError(Exception):
         self.required = required
         self.available = available
         if required and available:
-             msg = f"{message} Required: {required['amount_pennies']} pennies {required['currency']}, Available: {available['amount_pennies']} pennies {available['currency']}"
+             msg = f"{message} Required: {required.amount_pennies} pennies {required.currency}, Available: {available.amount_pennies} pennies {available.currency}"
         else:
              msg = message
         super().__init__(msg)

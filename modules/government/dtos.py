@@ -29,6 +29,14 @@ class TaxBracketDTO:
     floor: int = 0
     ceiling: Optional[int] = None
 
+@dataclass
+class FiscalPolicyDTO:
+    """Defines the government's fiscal stance including tax rates and brackets."""
+    tax_brackets: List[TaxBracketDTO]
+    income_tax_rate: float
+    corporate_tax_rate: float
+    vat_rate: float = 0.0
+
 @dataclass(frozen=True)
 class GovernmentPolicyDTO:
     """
@@ -66,14 +74,13 @@ class GovernmentStateDTO:
     total_debt: int # MIGRATION: pennies
     income_tax_rate: float
     corporate_tax_rate: float
-    income_tax_rate: float
-    corporate_tax_rate: float
-    policy: GovernmentPolicyDTO
+    fiscal_policy: FiscalPolicyDTO
     ruling_party: Any # e.g., PoliticalParty Enum
     approval_rating: float
     policy_lockouts: Dict[Any, int] = field(default_factory=dict) # <PolicyActionTag, locked_until_tick>
     sensory_data: Optional['GovernmentSensoryDTO'] = None # Forward reference
     gdp_history: List[float] = field(default_factory=list)
+    welfare_budget_multiplier: float = 1.0
     potential_gdp: float = 0.0
     fiscal_stance: float = 0.0
 

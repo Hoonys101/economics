@@ -45,7 +45,7 @@ class TestGovernmentFiscalIntegration:
         # Government.make_policy_decision orchestrates fiscal_engine and tax_service
 
         gov.tax_service.fiscal_policy_manager = MagicMock()
-        expected_policy = FiscalPolicyDTO(tax_brackets=[])
+        expected_policy = FiscalPolicyDTO(tax_brackets=[], income_tax_rate=0.1, corporate_tax_rate=0.2)
         gov.tax_service.fiscal_policy_manager.determine_fiscal_stance.return_value = expected_policy
 
         # Setup market data

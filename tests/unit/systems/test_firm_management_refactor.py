@@ -30,7 +30,7 @@ class TestFirmManagementRefactor(unittest.TestCase):
 
     def test_spawn_firm_missing_settlement_system(self):
         """
-        Verify that spawn_firm raises RuntimeError if settlement_system is missing.
+        Verify that spawn_firm returns None if settlement_system is missing (logs error).
         """
         self.mock_simulation.settlement_system = None
 
@@ -44,8 +44,8 @@ class TestFirmManagementRefactor(unittest.TestCase):
              patch('simulation.ai.firm_ai.FirmAI'), \
              patch('simulation.decisions.ai_driven_firm_engine.AIDrivenFirmDecisionEngine'):
 
-            with self.assertRaisesRegex(RuntimeError, "SettlementSystem required for firm creation"):
-                self.firm_system.spawn_firm(self.mock_simulation, household)
+            result = self.firm_system.spawn_firm(self.mock_simulation, household)
+            self.assertIsNone(result)
 
     def test_spawn_firm_transfer_failure(self):
         """

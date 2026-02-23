@@ -17,7 +17,7 @@ class TestBargainingAndAdaptiveLearning(unittest.TestCase):
 
         offer = JobOfferDTO(
             firm_id=AgentID(1),
-            offer_wage=20.00,
+            offer_wage_pennies=2000,
             required_education=0,
             quantity=1.0,
             major="GENERAL"
@@ -25,7 +25,7 @@ class TestBargainingAndAdaptiveLearning(unittest.TestCase):
 
         seeker = JobSeekerDTO(
             household_id=AgentID(101),
-            reservation_wage=10.00,
+            reservation_wage_pennies=1000,
             education_level=0,
             quantity=1.0,
             major="GENERAL"
@@ -41,10 +41,10 @@ class TestBargainingAndAdaptiveLearning(unittest.TestCase):
 
         self.assertEqual(match.employer_id, 1)
         self.assertEqual(match.employee_id, 101)
-        self.assertAlmostEqual(match.base_wage, 20.00)
-        self.assertAlmostEqual(match.matched_wage, 15.00) # (10 + 20) / 2
-        self.assertAlmostEqual(match.surplus, 10.00)
-        self.assertAlmostEqual(match.bargaining_power, 0.5)
+        self.assertEqual(match.base_wage_pennies, 2000)
+        self.assertEqual(match.matched_wage_pennies, 1500) # (1000 + 2000) / 2
+        self.assertEqual(match.surplus_pennies, 1000)
+        self.assertEqual(match.bargaining_power, 0.5)
 
     def test_firm_adaptive_learning_wage_increase(self):
         # Scenario: Firm failed to hire in previous tick
