@@ -63,7 +63,7 @@ class JobOfferDTO:
     Updated for Phase 4.1: Major-Matching.
     """
     firm_id: AgentID
-    offer_wage: float # Currently float for compatibility, will migrate to int pennies in Phase 4.2
+    offer_wage_pennies: int
     required_education: int = 0
     quantity: float = 1.0
     
@@ -83,7 +83,7 @@ class JobSeekerDTO:
     Updated for Phase 4.1: Major-Matching.
     """
     household_id: AgentID
-    reservation_wage: float
+    reservation_wage_pennies: int
     education_level: int
     quantity: float = 1.0
     
@@ -101,13 +101,13 @@ class LaborMarketMatchResultDTO:
     """
     employer_id: AgentID
     employee_id: AgentID
-    base_wage: float
-    matched_wage: float # Adjusted for match quality
+    base_wage_pennies: int
+    matched_wage_pennies: int # Adjusted for match quality
     match_score: float # 0.0 to 1.0
     major_compatibility: str # "PERFECT", "PARTIAL", "MISMATCH"
     
     # Wave 3: Bargaining Context
-    surplus: float = 0.0          # (WTP - Reservation Wage)
+    surplus_pennies: int = 0          # (WTP - Reservation Wage)
     bargaining_power: float = 0.5 # Worker's share of surplus (0.0 - 1.0)
     
 @runtime_checkable

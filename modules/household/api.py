@@ -202,13 +202,14 @@ class ICrisisEngine(Protocol):
 
 # --- Deprecated / Legacy Support ---
 # OrchestrationContextDTO is kept if needed for transition, but Engines use specific inputs.
-class OrchestrationContextDTO(TypedDict):
+@dataclass(frozen=True)
+class OrchestrationContextDTO:
     market_snapshot: MarketSnapshotDTO
     current_time: int
-    stress_scenario_config: Optional[StressScenarioConfig]
     config: HouseholdConfigDTO
     household_state: HouseholdSnapshotDTO
-    housing_system: Optional[Any]
+    stress_scenario_config: Optional[StressScenarioConfig] = None
+    housing_system: Optional[Any] = None
 
 class IConsumptionManager(Protocol):
     """

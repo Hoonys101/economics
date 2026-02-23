@@ -130,7 +130,8 @@ class AIDecisionData:
     predicted_reward: Optional[float] = None
     actual_reward: Optional[float] = None
 
-class GoodsDTO(TypedDict, total=False):
+@dataclass(frozen=True)
+class GoodsDTO:
     id: str
     name: str
     category: str
@@ -144,7 +145,8 @@ class GoodsDTO(TypedDict, total=False):
     satiety: float
     decay_rate: float
 
-class MarketHistoryDTO(TypedDict, total=False):
+@dataclass(frozen=True)
+class MarketHistoryDTO:
     avg_price: float
     trade_volume: float
     best_ask: int

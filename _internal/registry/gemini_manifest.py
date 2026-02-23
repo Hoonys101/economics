@@ -34,5 +34,53 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
             "harvest-go.bat"
         ],
         "output_path": "gemini-output/spec/MISSION_harvest_optimizer_SPEC.md"
+    },
+    "MISSION_tech_debt_clearance_spec": {
+        "title": "Technical Debt Liquidation & API/DTO Realignment Plan",
+        "worker": "spec",
+        "instruction": "기술부채 장부(TECH_DEBT_LEDGER.md)와 진단 보고서(diagnostic_refined.md)를 분석하여 모듈간 결합도를 낮추고 데이터 정합성을 확보하기 위한 전면적인 청산 계획을 수립하십시오. 특히 M2 반전(TD-ECON-M2-REGRESSION)과 초기화 순서(TD-FIN-INVISIBLE-HAND)를 최우선으로 다루며, 모든 모듈의 DTO/API 표준화 방안을 포함한 'Wave' 기반의 구현 전략(SPEC)을 생성하십시오.",
+        "context_files": [
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md",
+            "reports/diagnostic_refined.md",
+            "modules/finance/dtos.py",
+            "simulation/dtos/api.py",
+            "simulation/initialization/initializer.py"
+        ],
+        "output_path": "gemini-output/spec/MISSION_tech_debt_clearance_spec_SPEC.md"
+    },
+    "MISSION_finance_api_dto_spec": {
+        "title": "Finance Module API & DTO Realignment",
+        "worker": "spec",
+        "instruction": "Finance 모듈의 DTO(`modules/finance/dtos.py`)를 전수 조사하여 TypedDict로 된 유산을 @dataclass로 전환하고, SettlementSystem과의 인터페이스 정합성을 분석하십시오. M2 역전 방지 및 통화 무결성을 보장하기 위한 API 명세를 작성하십시오.",
+        "context_files": ["modules/finance/dtos.py", "modules/finance/api.py", "simulation/systems/settlement_system.py"],
+        "output_path": "gemini-output/spec/MISSION_finance_api_dto_SPEC.md"
+    },
+    "MISSION_firm_api_dto_spec": {
+        "title": "Firm Module API & DTO Realignment",
+        "worker": "spec",
+        "instruction": "Firm 모듈의 내부 DTO와 외부 노출 API의 불일치를 분석하십시오. 특히 FirmStateDTO와 FirmConfigDTO가 모든 시스템 엔진에서 일관되게 사용되도록 정렬 계획을 수립하십시오.",
+        "context_files": ["modules/firm/api.py", "modules/simulation/dtos/api.py", "simulation/firms.py"],
+        "output_path": "gemini-output/spec/MISSION_firm_api_dto_SPEC.md"
+    },
+    "MISSION_household_api_dto_spec": {
+        "title": "Household Module API & DTO Realignment",
+        "worker": "spec",
+        "instruction": "Household의 자산 및 소비 정보가 DTO를 통해 안전하게 전달되도록 구조를 설계하십시오. 직접적인 속성 접근을 지양하고 Snapshot 기반의 데이터 통신 스펙을 정의하십시오.",
+        "context_files": ["modules/household/api.py", "simulation/core_agents.py"],
+        "output_path": "gemini-output/spec/MISSION_household_api_dto_SPEC.md"
+    },
+    "MISSION_government_api_dto_spec": {
+        "title": "Government Module API & DTO Realignment",
+        "worker": "spec",
+        "instruction": "정부 정책 DTO(GovernmentPolicyDTO)와 하위 시스템(Tax, Treasury) 간의 API 연계를 최적화하십시오. 법인세 정합성 수정 사항을 반영한 통합 API 명세를 작성하십시오.",
+        "context_files": ["modules/government/api.py", "modules/government/dtos.py", "modules/government/taxation/system.py"],
+        "output_path": "gemini-output/spec/MISSION_government_api_dto_SPEC.md"
+    },
+    "MISSION_labor_api_dto_spec": {
+        "title": "Labor Module API & DTO Realignment",
+        "worker": "spec",
+        "instruction": "LaborMarket의 매칭 데이터와 Order DTO 간의 결합도를 낮추고, 가독성 높은 인터페이스를 설계하십시오. Major 매칭 로직의 DTO 전환 계획을 포함하십시오.",
+        "context_files": ["modules/labor/api.py", "simulation/systems/labor_market.py"],
+        "output_path": "gemini-output/spec/MISSION_labor_api_dto_SPEC.md"
     }
 }

@@ -167,37 +167,43 @@ class WorldState:
     def calculate_base_money(self) -> Dict[CurrencyCode, int]:
         """
         Calculates M0 (Base Money) for each currency.
-        M0 = Sum of assets held by all agents EXCEPT Central Bank.
-        (Central Bank assets represented as negative would cancel out creation).
+        M0 = Bank Reserves (Liquidity held at CB).
+        In this simulation, Bank.wallet is its Reserve account.
         MIGRATION: Returns int (pennies).
         """
         totals: Dict[CurrencyCode, int] = {}
-        for holder in self.currency_holders:
-            # Exclude CentralBank from M0 summation (Source of Money)
-            if hasattr(holder, 'id') and holder.id == ID_CENTRAL_BANK:
-                continue
-            if hasattr(holder, '__class__') and holder.__class__.__name__ == "CentralBank":
-                continue
-
-            assets_dict = holder.get_assets_by_currency()
+        if self.bank:
+            assets_dict = self.bank.get_assets_by_currency()
             for cur, amount in assets_dict.items():
-                # TD-ECON-M2-REGRESSION: Only positive balances count as money supply.
-                # Negative balances are liabilities (loans), handled separately.
                 totals[cur] = totals.get(cur, 0) + max(0, int(amount))
         return totals
 
     def calculate_total_money(self) -> Dict[CurrencyCode, int]:
         """
         Calculates M2 (Total Money Supply).
-        M2 = M0 - Bank Reserves + Bank Deposits.
-        (Currency in Circulation + Deposits).
+        M2 = Currency in Circulation + Deposits.
+        In this simulation, Non-Bank Agent Wallets represent their liquidity.
         MIGRATION: Returns int (pennies).
         """
-        # In this simulation, Agent Wallets already represent their total liquidity (Cash + Deposits).
-        # Since calculate_base_money() now sums max(0, balance), it correctly captures M2.
-        # Deducting Bank Reserves would only be necessary if we were distinguishing physical cash from digital deposits
-        # and double-counting them. Here, we stay simplified: M2 = Sum of all non-CB positive balances.
-        return self.calculate_base_money()
+        totals: Dict[CurrencyCode, int] = {}
+        for holder in self.currency_holders:
+            # Exclude CentralBank (Source) and Commercial Bank (Reserves) from M2 summation.
+            # M2 is money in the hands of the public (Households, Firms, Gov).
+            if hasattr(holder, 'id'):
+                if holder.id == ID_CENTRAL_BANK:
+                    continue
+                if self.bank and holder.id == self.bank.id:
+                    continue
+            
+            # Additional check by class name for safety
+            class_name = holder.__class__.__name__
+            if class_name in ["CentralBank", "Bank"]:
+                continue
+
+            assets_dict = holder.get_assets_by_currency()
+            for cur, amount in assets_dict.items():
+                totals[cur] = totals.get(cur, 0) + max(0, int(amount))
+        return totals
 
     def get_total_system_money_for_diagnostics(self, target_currency: CurrencyCode = "USD") -> float:
         """

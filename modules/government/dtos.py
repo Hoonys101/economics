@@ -29,28 +29,26 @@ class TaxBracketDTO:
     floor: int = 0
     ceiling: Optional[int] = None
 
-@dataclass
-class TaxPolicyDTO:
-    """Detailed tax policy configuration."""
-    income_tax_brackets: List[Dict[str, int]]  # Pennies (TD-278)
-    corporate_tax_rate: float
-    vat_rate: float = 0.0
-
-@dataclass
-class FiscalPolicyDTO:
-    """State of the current fiscal policy."""
+@dataclass(frozen=True)
+class GovernmentPolicyDTO:
+    """
+    Unified Policy Snapshot for the Government.
+    Consolidates Fiscal and Monetary stances for atomic state transfer.
+    """
+    # Fiscal Policy
     tax_brackets: List[TaxBracketDTO] = field(default_factory=list)
     corporate_tax_rate: float = 0.2
     income_tax_rate: float = 0.1
-
-    # Deprecated: alias for backward compatibility
-    @property
-    def progressive_tax_brackets(self) -> List[TaxBracketDTO]:
-        return self.tax_brackets
-
-    @progressive_tax_brackets.setter
-    def progressive_tax_brackets(self, value: List[TaxBracketDTO]):
-        self.tax_brackets = value
+    vat_rate: float = 0.0
+    
+    # Monetary Policy (Snapshot)
+    target_interest_rate: float = 0.05
+    inflation_target: float = 0.02
+    unemployment_target: float = 0.05
+    
+    # Welfare & Bailout
+    welfare_budget_multiplier: float = 1.0
+    bailout_threshold_solvency: float = 0.1
 
 @dataclass
 class MonetaryPolicyDTO:
@@ -68,14 +66,14 @@ class GovernmentStateDTO:
     total_debt: int # MIGRATION: pennies
     income_tax_rate: float
     corporate_tax_rate: float
-    fiscal_policy: 'FiscalPolicyDTO'
+    income_tax_rate: float
+    corporate_tax_rate: float
+    policy: GovernmentPolicyDTO
     ruling_party: Any # e.g., PoliticalParty Enum
     approval_rating: float
     policy_lockouts: Dict[Any, int] = field(default_factory=dict) # <PolicyActionTag, locked_until_tick>
     sensory_data: Optional['GovernmentSensoryDTO'] = None # Forward reference
     gdp_history: List[float] = field(default_factory=list)
-    welfare_budget_multiplier: float = 1.0
-    monetary_policy: Optional[MonetaryPolicyDTO] = None
     potential_gdp: float = 0.0
     fiscal_stance: float = 0.0
 

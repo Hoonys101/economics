@@ -468,70 +468,16 @@ class EconomicIndicatorTracker:
     def calculate_monetary_aggregates(self, world_state: 'WorldState') -> Dict[str, float]:
         """
         TD-015: Calculates M0, M1, M2 money supply aggregates.
-        Returns a dictionary with 'm0', 'm1', 'm2'.
+        Delegates to WorldState for precise Penny Standard calculation.
         """
-        # Components of Money Supply
-        currency_in_circulation = 0.0
-        bank_reserves = 0.0
-
-        # 1. Households
-        for h in world_state.households:
-            if h._bio_state.is_active:
-                currency_in_circulation += self._calculate_total_wallet_value(h._econ_state.assets)
-
-        # 2. Firms
-        for f in world_state.firms:
-            if getattr(f, "is_active", False):
-                if hasattr(f, "get_all_balances"):
-                    currency_in_circulation += self._calculate_total_wallet_value(f.get_all_balances())
-                elif hasattr(f, "assets"):
-                    if isinstance(f.assets, dict):
-                        currency_in_circulation += self._calculate_total_wallet_value(f.assets)
-                    else:
-                        currency_in_circulation += f.assets
-
-        # 3. Government Assets
-        if world_state.government:
-             if hasattr(world_state.government, "get_all_balances"):
-                 currency_in_circulation += self._calculate_total_wallet_value(world_state.government.get_all_balances())
-             elif hasattr(world_state.government, "assets"):
-                 if isinstance(world_state.government.assets, dict):
-                     currency_in_circulation += self._calculate_total_wallet_value(world_state.government.assets)
-                 else:
-                     currency_in_circulation += world_state.government.assets
-
-        # 4. Bank Reserves (Vault Cash)
-        if world_state.bank:
-           if hasattr(world_state.bank, "get_all_balances"):
-                bank_reserves += self._calculate_total_wallet_value(world_state.bank.get_all_balances())
-           elif hasattr(world_state.bank, "assets"):
-               if isinstance(world_state.bank.assets, dict):
-                    bank_reserves += self._calculate_total_wallet_value(world_state.bank.assets)
-               else:
-                    bank_reserves += world_state.bank.assets
-
-        # M0: Monetary Base = Currency in Circulation + Bank Reserves
-        m0 = currency_in_circulation + bank_reserves
-
-        # M2: Broad Money (M0 - Bank Reserves + Deposits)
-        # Effectively: Currency in Circulation + Deposits
-        total_deposits = 0.0
-        if world_state.bank and hasattr(world_state.bank, "deposits"):
-            for deposit in world_state.bank.deposits.values():
-                 val = deposit.amount
-                 # Check currency conversion if needed
-                 if hasattr(deposit, "currency") and deposit.currency != DEFAULT_CURRENCY:
-                      val = self.exchange_engine.convert(val, deposit.currency, DEFAULT_CURRENCY)
-                 total_deposits += val
-
-        # TD-252: Strict Formula
-        m2 = (m0 - bank_reserves) + total_deposits
-
-        # M1: Narrow Money (M0 + Demand Deposits)
-        # Since currently all deposits are liquid, M1 is effectively M2.
-        m1 = m2
-
-        return {"m0": m0, "m1": m1, "m2": m2}
+        m0_pennies = world_state.calculate_base_money().get(DEFAULT_CURRENCY, 0)
+        m2_pennies = world_state.calculate_total_money().get(DEFAULT_CURRENCY, 0)
+        
+        return {
+            "m0": float(m0_pennies) / 100.0,
+            "m1": float(m2_pennies) / 100.0,
+            "m2": float(m2_pennies) / 100.0
+        }
 
     def get_m2_money_supply(self, world_state: 'WorldState') -> float:
         """

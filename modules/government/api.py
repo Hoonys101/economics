@@ -32,37 +32,38 @@ class ITaxableHousehold(IFinancialEntity, IAgent, Protocol):
     is_employed: bool
     needs: Any
 
-class BondRepaymentDetailsDTO(TypedDict):
+@dataclass(frozen=True)
+class BondRepaymentDetailsDTO:
     """
     A structured object carrying the details of a bond repayment.
     This DTO is expected to be present in the 'metadata' field of a 'bond_repayment' Transaction.
 
     Attributes:
-        principal: The portion of the payment that constitutes principal repayment.
-                   This amount is subject to monetary destruction if paid to the Central Bank.
-        interest: The portion of the payment that constitutes an interest payment.
-                  This is treated as a standard transfer and is not destroyed.
+        principal_pennies: The portion of the payment that constitutes principal repayment.
+                           This amount is subject to monetary destruction if paid to the Central Bank.
+        interest_pennies: The portion of the payment that constitutes an interest payment.
+                          This is treated as a standard transfer and is not destroyed.
         bond_id: A unique identifier for the bond being serviced.
     """
-    principal: float
-    interest: float
+    principal_pennies: int
+    interest_pennies: int
     bond_id: str
 
 class IFiscalPolicyManager(Protocol):
     """Interface for managing the government's fiscal policy."""
 
-    def determine_fiscal_stance(self, market_snapshot: "MarketSnapshotDTO") -> FiscalPolicyDTO:
+    def determine_fiscal_stance(self, market_snapshot: "MarketSnapshotDTO") -> GovernmentPolicyDTO:
         """Adjusts tax brackets based on economic conditions."""
         ...
 
-    def calculate_tax_liability(self, policy: FiscalPolicyDTO, income: float) -> float:
+    def calculate_tax_liability(self, policy: GovernmentPolicyDTO, income: float) -> float:
         """Calculates the tax owed based on a progressive bracket system."""
         ...
 
 class IMonetaryPolicyManager(Protocol):
     """Interface for managing the government's monetary policy (Central Bank)."""
 
-    def determine_monetary_stance(self, market_snapshot: "MacroEconomicSnapshotDTO") -> MonetaryPolicyDTO:
+    def determine_monetary_stance(self, market_snapshot: "MacroEconomicSnapshotDTO") -> GovernmentPolicyDTO:
         """Adjusts the target interest rate based on a Taylor-like rule."""
         ...
 
@@ -71,11 +72,11 @@ class ITaxService(Protocol):
     A stateless service responsible for all tax calculations and for generating
     tax collection requests.
     """
-    def determine_fiscal_stance(self, snapshot: MarketSnapshotDTO) -> FiscalPolicyDTO:
+    def determine_fiscal_stance(self, snapshot: MarketSnapshotDTO) -> GovernmentPolicyDTO:
         """Determines the current fiscal policy based on market conditions."""
         ...
 
-    def calculate_tax_liability(self, policy: FiscalPolicyDTO, income: float) -> float:
+    def calculate_tax_liability(self, policy: GovernmentPolicyDTO, income: float) -> float:
         """Calculates the tax amount for a given income and fiscal policy."""
         ...
 

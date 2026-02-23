@@ -2,424 +2,119 @@
 Critical events extracted for Gemini analysis.
 
 - **Tick ?** | **WARNING** | File locking (fcntl) is not supported on this platform. Concurrency safety is not guaranteed.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 50000000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 50000000 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 30614d7c-ed9e-49c8-8c03-24daa9d1eb37 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 6467562d-9c56-4407-bf81-4357c022bac5 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 4de6f21c-3163-436b-a19d-949acde58343 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 0be10e44-6ca3-410a-8276-b594dc20e640 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga b37a87ed-ed0d-42a6-adc7-02d8f03aa7a2 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga b26b46c0-4d45-48ac-b108-67681b57e474 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 33b86154-61da-4bf9-bfef-0dc991e42389 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 0f2e23a1-6449-4be5-ab93-d0b1bbf63afe missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga cb1f19b5-fd4d-4c06-9fe5-7537a12779a4 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga aa9e0214-904c-482b-8161-76b4669841e1 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 75a74e31-411c-4c92-94fd-86c78f543d1b missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga d86c6dd7-b007-4298-977f-bd61a82ed8f5 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 2efd1333-d9ff-4376-b325-4258596980bf missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 168dbe75-db18-49eb-b5b3-dd2614f4bc93 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 2cdd730b-8ee8-4859-893a-51812dde4eff missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 8e2bfe56-97eb-4251-8f1f-8025a366be97 missing seller ID.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49988060
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49988060 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49161870
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49161870 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 45024.
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49140260
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49140260 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 106 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49104011
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49104011 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48169622
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48169622 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47420420
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47420420 pennies for infrastructure.
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47372930
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47372930 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 113 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47319829
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47319829 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47260760
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47260760 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47195855
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47195855 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47125781
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47125781 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47049144
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47049144 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46967888
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46967888 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46880275
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46880275 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46787396
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46787396 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46688693
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46688693 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46584716
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46584716 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46474642
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46474642 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46359455
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46359455 pennies for infrastructure.
-- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 120 closed down. Assets: 95351.84, Consecutive Loss Turns: 20
+- **Tick ?** | **ERROR** | Transaction Record: ID=e32e4655-9438-4261-9dd6-3aaa94aa10fa, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=753aa015-e360-47f3-a4dd-7d8a790ba9c6, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=88cf56f7-2391-48c4-982e-0685b7996d0d, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=1e1d4619-3ff5-473c-ae42-fe7c140d1d9e, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=7333864e-cab6-4ca8-ad4d-99f3b6483003, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=95dac2a2-687b-4cb2-8adc-9fab007de6dc, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=9dbfedea-eac7-4532-819a-ac56238bd7e1, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=ec104d87-2076-492b-aa68-65770e41aa3f, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=fa3bb158-5a4c-4418-aa0c-4d0bd5cfb16c, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=e01e00b4-ab9f-4eb2-a456-59518f99b12c, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=58ae3e1f-2d35-4410-800f-b273b76f8ea2, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=ef1b0cf6-a8c0-4aab-a670-f2ca1d3b4913, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=1f1e82b6-bad9-4d94-9b64-728d1c5cf3e5, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=e112b52b-49c9-414e-9182-c513dded9ffb, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=40a0ed93-15fd-4429-844e-7c995a7b1d35, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=e630bfd2-6f68-4112-b78f-0afdbcc56a7c, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=b9beaa95-7ff9-40e8-872c-07b083f74f84, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=52254993-5adb-43b6-9bd9-4b223903c5ad, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=f939102b-ddd1-43e6-a03c-3b6124f54c6c, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=ef85730c-736b-4e7e-ab29-8dc6750880d4, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=9e495973-1454-4f9b-b0dc-54d41725de0f, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=7218cece-c64f-4580-b3c2-0a16d51fb518, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=0ec7d262-a0a8-4fe6-9a56-7040917bed01, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=54d56424-e5e9-485e-b38f-ee3a36e9ad91, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=dc565c99-6bab-48fe-9456-9d87cb3ce40b, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=00e8ace0-8819-41eb-9e58-dd1021f8a8e4, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=f6dae064-07ce-42f5-b39d-68cba417a2d5, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=de3ae749-fb1c-4b8a-b83d-e5cd484d3a7b, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **ERROR** | Transaction Record: ID=0da0d08e-55cf-4976-a777-2756e0218d2f, Status=FAILED, Message=Source account does not exist: 0
+- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 102.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 102.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 117.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 117.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 112.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 112.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 109.
+- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 109.
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 102. Recorded as unpaid wage.
   - Details: agent_id=120
-- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 121 closed down. Assets: 94154.28, Consecutive Loss Turns: 20
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 102. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 105. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 105. Recorded as unpaid wage.
+  - Details: agent_id=120
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 117. Recorded as unpaid wage.
   - Details: agent_id=121
-- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 122 closed down. Assets: 93974.81, Consecutive Loss Turns: 20
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 117. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 100. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 100. Recorded as unpaid wage.
+  - Details: agent_id=121
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 112. Recorded as unpaid wage.
   - Details: agent_id=122
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46243284
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46243284 pennies for infrastructure.
-- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46234039
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46234039 pennies for infrastructure.
-- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46223869
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46223869 pennies for infrastructure.
-- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45390820
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45390820 pennies for infrastructure.
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45377341
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45377341 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 101 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45363741
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45363741 pennies for infrastructure.
-- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45348167
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45348167 pennies for infrastructure.
-- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45331817
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45331817 pennies for infrastructure.
-- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45314107
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45314107 pennies for infrastructure.
-- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=4222c023-bc9f-48c9-851c-295369502470, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45295236
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45295236 pennies for infrastructure.
-- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=281ecb4e-81f7-47a9-922e-ab7cb38a7273, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44549462
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44549462 pennies for infrastructure.
-- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 32** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 112. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 111. Recorded as unpaid wage.
+  - Details: agent_id=122
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 109. Recorded as unpaid wage.
   - Details: agent_id=123
-- **Tick 32** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 109. Recorded as unpaid wage.
   - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44527001
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44527001 pennies for infrastructure.
-- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 33** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 110. Recorded as unpaid wage.
   - Details: agent_id=123
-- **Tick 33** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
+- **Tick 1** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 110. Recorded as unpaid wage.
   - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44502592
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44502592 pennies for infrastructure.
-- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=f314e62e-3372-4495-b3e1-09b479d893c6, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick 34** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 34** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44477920
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44477920 pennies for infrastructure.
-- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 35** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 35** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44454224
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44454224 pennies for infrastructure.
-- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=eb1e39a3-3e8f-4d24-b6d1-2c4a7f7e3464, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick 36** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 36** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43502990
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43502990 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 21528, Req: 51773.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 23427, Req: 43304.
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=371bc270-04c5-4253-8d6b-da05b0afff63, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick 37** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 37** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43515501
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43515501 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 112 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 23184, Req: 51773.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17310, Req: 44579.
-- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 38** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 38** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42874904
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42874904 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24840, Req: 51773.
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 39** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 39** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42842689
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42842689 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 109 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26496, Req: 51773.
-- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=ec6da98e-bf16-4840-ba2f-1092ac0079a9, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick 40** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 40** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42809513
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42809513 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 28152, Req: 51773.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33406, Req: 47750.
-- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=18fa6e58-d12f-43e2-b483-f4110b30d243, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick 41** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 41** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42822530
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42822530 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29808, Req: 51773.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 27794, Req: 48985.
-- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=574dff01-d44e-4b29-a066-cdff566df1ec, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick 42** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 42** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42401383
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42401383 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31464, Req: 51773.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 22170, Req: 50210.
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 43** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 43** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42413357
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42413357 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 114 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33120, Req: 51773.
-- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 44** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 44** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42373901
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42373901 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 34776, Req: 51773.
-- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 45** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 45** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42333653
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42333653 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36432, Req: 51773.
-- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 46** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 46** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42291659
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42291659 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38088, Req: 51773.
-- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 47** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 47** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42248985
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42248985 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 39744, Req: 51773.
-- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 48** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 48** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42205702
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42205702 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41400, Req: 51773.
-- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 49** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 49** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42161081
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42161081 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43056, Req: 51773.
-- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick ?** | **ERROR** | Transaction Record: ID=255b15e0-287f-4605-8dfd-2285bd45e475, Status=FAILED, Message=Destination account does not exist: 124
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Engine Error: Destination account does not exist: 124
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick ?** | **WARNING** | STARTUP_FAILED | Failed to transfer capital from 100 to new firm 124. Aborting.
-- **Tick 50** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 50** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41387877
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41387877 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44712, Req: 51773.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3883, Req: 57747.
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 51** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 51** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 29956604
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 29956604 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 102 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46368, Req: 51773.
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 52** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 52** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 29914277
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 29914277 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 117 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 48024, Req: 51773.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 15680, Req: 59660.
-- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 53** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 53** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 29925837
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 29925837 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 49680, Req: 51773.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 10680, Req: 60775.
-- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 54** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 54** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 29936652
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 29936652 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46721, Req: 51773.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51336, Req: 51773.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4935, Req: 61880.
-- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 55** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 55** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 29948277
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 29948277 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 48377, Req: 51773.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 62975.
-- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 56** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 56** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 29705972
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 29705972 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 50033, Req: 51773.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 64060.
-- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 57** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 57** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 29722532
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 29722532 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51689, Req: 51773.
-- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 58** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 58** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 29673957
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 29673957 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38877, Req: 65701.
-- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 59** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 59** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 29633744
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 29633744 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33877, Req: 66756.
-- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
-- **Tick 60** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 60** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 29644264
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 29644264 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 18216, Req: 51773.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 27837, Req: 67801.
-- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 6626054.00, Expected: 50051012.00, Delta: -43424958.0000
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 0 < 50000000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 50000000 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2785.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2785.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2785.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2785.
