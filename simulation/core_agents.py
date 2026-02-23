@@ -60,6 +60,7 @@ from modules.household.mixins._state_access import HouseholdStateAccessMixin
 # Protocols
 from modules.hr.api import IEmployeeDataProvider
 from simulation.dtos.household_state_container import HouseholdStateContainer
+from modules.government.political.api import IVoter, VoteRecordDTO
 
 if TYPE_CHECKING:
     from simulation.loan_market import LoanMarket
@@ -78,7 +79,8 @@ class Household(
     IInventoryHandler,
     ISensoryDataProvider,
     IInvestor,
-    HouseholdStateAccessMixin
+    HouseholdStateAccessMixin,
+    IVoter
 ):
     """
     Household Agent (Orchestrator).
@@ -1196,4 +1198,37 @@ class Household(
         self.logger.debug(
             f"TICK_RESET | Agent {self.id} tick state has been reset.",
             extra={"agent_id": self.id, "tags": ["lifecycle", "reset"]}
+        )
+
+    # --- IVoter Implementation ---
+    def cast_vote(self, current_tick: int, government_state: Any) -> VoteRecordDTO:
+        # 1. Calculate Utility Gap / Approval
+        # We use approval_rating from SocialState which tracks satisfaction
+        approval_value = self._social_state.approval_rating
+
+        # 2. Identify Grievance
+        primary_grievance = "NONE"
+        if approval_value < 0.4:
+            # Check financial stress
+            liquid_assets = self.get_liquid_assets()
+            if liquid_assets < 1000: # Poverty line in pennies
+                 primary_grievance = "POVERTY"
+            # Check Tax (if gov state available)
+            elif hasattr(government_state, 'income_tax_rate') and government_state.income_tax_rate > 0.2:
+                 primary_grievance = "HIGH_TAX"
+            # Check Inflation (heuristic)
+            elif self._econ_state.expected_inflation.get("CPI", 0.0) > 0.05:
+                 primary_grievance = "INFLATION"
+
+        # 3. Calculate Weight (Plutocracy Factor)
+        # Base 1.0. Multiplied by Social Status (0-1 approx) and Wealth (log).
+        wealth_factor = math.log(max(1.0, self.get_liquid_assets() + 1.0), 10)
+        weight = 1.0 * (1.0 + self._social_state.social_status) * wealth_factor
+
+        return VoteRecordDTO(
+            agent_id=self.id,
+            tick=current_tick,
+            approval_value=approval_value,
+            primary_grievance=primary_grievance,
+            political_weight=weight
         )

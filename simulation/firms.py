@@ -53,6 +53,7 @@ from modules.firm.api import (
     FirmBrainScanContextDTO, FirmBrainScanResultDTO, IBrainScanReady,
     ObligationDTO, PaymentPriority, IBudgetGatekeeper, IBankruptcyHandler
 )
+from modules.government.political.api import ILobbyist, LobbyingEffortDTO, PaymentRequestDTO
 from modules.firm.constants import (
     DEFAULT_MARKET_INSIGHT, DEFAULT_MARKETING_BUDGET_RATE, DEFAULT_LIQUIDATION_PRICE,
     INSIGHT_DECAY_RATE, INSIGHT_BOOST_FACTOR, INSIGHT_ERROR_THRESHOLD,
@@ -86,7 +87,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner, IFirmStateProvider, ISalesTracker, IBrainScanReady):
+class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrchestratorAgent, ICreditFrozen, IInventoryHandler, ICurrencyHolder, ISensoryDataProvider, IConfigurable, IPropertyOwner, IFirmStateProvider, ISalesTracker, IBrainScanReady, ILobbyist):
     """
     Firm Agent (Orchestrator).
     Manages state and delegates logic to stateless engines.
@@ -1768,3 +1769,52 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         self.sales_state.perceived_quality = brand_metrics.perceived_quality
 
         return transactions
+
+    # --- ILobbyist Implementation ---
+    def formulate_lobbying_effort(self, current_tick: int, government_state: Any) -> Optional[Tuple[LobbyingEffortDTO, PaymentRequestDTO]]:
+        # 1. Check Pain Points (e.g. Tax Burden)
+        # Using simplified heuristic: if corporate tax rate > 0.25, we lobby to lower it.
+
+        target_policy = None
+        desired_shift = 0.0
+
+        corp_tax_rate = 0.2
+        if hasattr(government_state, 'corporate_tax_rate'):
+             corp_tax_rate = government_state.corporate_tax_rate
+
+        if corp_tax_rate > 0.25:
+             target_policy = "CORPORATE_TAX"
+             desired_shift = -0.05 # Lobby for 5% cut
+
+        # 2. Check Budget
+        # Willing to spend 5% of retained earnings/cash on lobbying if liquid.
+        liquid = self.get_liquid_assets()
+        budget = int(liquid * 0.05)
+        cost_per_point = 10000 # 10000 pennies = 100 credits.
+
+        if target_policy and budget > cost_per_point:
+            investment = min(budget, cost_per_point * 10) # Cap investment
+
+            effort = LobbyingEffortDTO(
+                firm_id=self.id,
+                tick=current_tick,
+                target_policy=target_policy,
+                desired_shift=desired_shift,
+                investment_pennies=investment
+            )
+
+            # Using gov_id if available, otherwise string constant which SettlementSystem usually handles if mapped
+            payee_id = "GOVERNMENT_TREASURY"
+            if hasattr(government_state, 'id'):
+                payee_id = government_state.id
+
+            payment = PaymentRequestDTO(
+                payer=self.id,
+                payee=payee_id,
+                amount=investment,
+                currency=DEFAULT_CURRENCY,
+                memo=f"LOBBYING_{target_policy}"
+            )
+            return effort, payment
+
+        return None

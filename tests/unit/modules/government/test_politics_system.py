@@ -4,6 +4,7 @@ from modules.government.politics_system import PoliticsSystem
 from modules.common.config.api import IConfigManager, GovernmentConfigDTO
 from simulation.ai.enums import PoliticalParty
 from simulation.dtos.api import SimulationState
+from modules.government.political.api import VoteRecordDTO, IVoter
 
 def test_process_tick_election_trigger():
     # Arrange
@@ -49,24 +50,22 @@ def test_process_tick_election_trigger():
     state.central_bank = Mock() # Required for make_policy_decision
 
     # Mock Households
-    # 2 Households, both vote RED (economic_vision < 0.5)
-    h1 = Mock()
-    h1._bio_state.is_active = True
-    h1._social_state.approval_rating = 0
-    h1._social_state.economic_vision = 0.2
+    # 2 Households, both vote Disapprove (0.0) to trigger regime change
+    # Must specify spec=IVoter for isinstance check
+    h1 = Mock(spec=IVoter)
+    h1.cast_vote.return_value = VoteRecordDTO(agent_id=1, tick=100, approval_value=0.0, primary_grievance="NONE", political_weight=1.0)
 
-    h2 = Mock()
-    h2._bio_state.is_active = True
-    h2._social_state.approval_rating = 0
-    h2._social_state.economic_vision = 0.2
+    h2 = Mock(spec=IVoter)
+    h2.cast_vote.return_value = VoteRecordDTO(agent_id=2, tick=100, approval_value=0.0, primary_grievance="NONE", political_weight=1.0)
 
     state.households = [h1, h2]
+    state.firms = [] # Ensure firms list exists for lobbying scan
 
     # Act
     politics.process_tick(state)
 
     # Assert
-    # 1. Election happened, Red Won
+    # 1. Election happened, Red Won (because BLUE incumbent lost approval < 0.5)
     assert gov.ruling_party == PoliticalParty.RED
 
     # 2. Policy Mandate Applied (Red = High Tax)
@@ -97,6 +96,7 @@ def test_process_tick_no_election():
 
     state.primary_government = Mock()
     state.households = []
+    state.firms = [] # Ensure firms list exists
     state.central_bank = Mock() # Required for make_policy_decision
 
     # Act
