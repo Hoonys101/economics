@@ -40,12 +40,13 @@ class FinanceSystem(IFinanceSystem):
     MIGRATION: Uses integer pennies.
     """
 
-    def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Optional[IMonetaryAuthority] = None, bank_registry: Optional[IBankRegistry] = None):
+    def __init__(self, government: IGovernmentFinance, central_bank: 'CentralBank', bank: IBank, config_module: IConfig, settlement_system: Optional[IMonetaryAuthority] = None, bank_registry: Optional[IBankRegistry] = None, monetary_authority: Optional[Any] = None):
         self.government = government
         self.central_bank = central_bank
         self.bank = bank
         self.config_module = config_module
         self.settlement_system = settlement_system
+        self.monetary_authority = monetary_authority
 
         self.fiscal_monitor = FiscalMonitor()
 
@@ -352,6 +353,20 @@ class FinanceSystem(IFinanceSystem):
             bank_state = self.bank_registry.get_bank(buyer_id)
             if bank_state:
                 bank_reserves = bank_state.reserves.get(DEFAULT_CURRENCY, 0)
+
+            # LLR Intervention Logic
+            if bank_reserves < amount and self.monetary_authority:
+                if hasattr(self.monetary_authority, 'check_and_provide_liquidity'):
+                     # Request Liquidity
+                     self.monetary_authority.check_and_provide_liquidity(self.bank, amount)
+
+                     # Re-sync Ledger to reflect new reserves
+                     self._sync_ledger_balances()
+
+                     # Re-check Reserves
+                     bank_state = self.bank_registry.get_bank(buyer_id)
+                     if bank_state:
+                         bank_reserves = bank_state.reserves.get(DEFAULT_CURRENCY, 0)
 
             if bank_reserves < amount:
                  logger.warning(f"BOND_ISSUANCE_SKIPPED | Bank {buyer_id} insufficient reserves: {bank_reserves} < {amount}")

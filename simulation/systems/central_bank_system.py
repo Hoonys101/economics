@@ -76,3 +76,28 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
         else:
             self.logger.error(f'BURN_FAIL | Failed to burn {amount:.2f} from {source_agent.id}. Memo: {memo}', extra={'agent_id': source_agent.id, 'amount': amount, 'memo': memo})
         return success
+
+    def check_and_provide_liquidity(self, bank_agent: Any, amount_needed: int) -> bool:
+        """
+        Checks if the bank has sufficient liquidity for a critical transaction.
+        If not, provides emergency liquidity via minting (Lender of Last Resort).
+        """
+        # 1. Check current balance
+        if not hasattr(bank_agent, 'get_balance'):
+            return False
+
+        # Use DEFAULT_CURRENCY from imports
+        from modules.system.api import DEFAULT_CURRENCY
+        current_balance = bank_agent.get_balance(DEFAULT_CURRENCY)
+
+        # 2. Determine Threshold (e.g. 110% of needed amount to avoid edge cases)
+        threshold = int(amount_needed * 1.1)
+
+        if current_balance < threshold:
+            shortfall = threshold - current_balance
+            if shortfall > 0:
+                self.logger.info(f"LLR_TRIGGERED | Bank {bank_agent.id} low liquidity: {current_balance} < {threshold}. Injecting {shortfall}.")
+                # 3. Mint and Transfer
+                return self.mint_and_transfer(bank_agent, shortfall, "LLR_LIQUIDITY_INJECTION")
+
+        return False

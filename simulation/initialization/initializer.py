@@ -206,7 +206,8 @@ class SimulationInitializer(SimulationInitializerInterface):
         # Now that System Agents (Gov, Bank, CB) are in sim.agents, we link the registry.
         sim.agent_registry.set_state(sim.world_state)
 
-        sim.finance_system = FinanceSystem(government=sim.government, central_bank=sim.central_bank, bank=sim.bank, config_module=self.config_manager, settlement_system=sim.settlement_system)
+        sim.central_bank_system = CentralBankSystem(central_bank_agent=sim.central_bank, settlement_system=sim.settlement_system, logger=self.logger)
+        sim.finance_system = FinanceSystem(government=sim.government, central_bank=sim.central_bank, bank=sim.bank, config_module=self.config_manager, settlement_system=sim.settlement_system, monetary_authority=sim.central_bank_system)
         sim.government.finance_system = sim.finance_system
         sim.bank.set_finance_system(sim.finance_system)
         sim.real_estate_units: List[RealEstateUnit] = [RealEstateUnit(id=i, estimated_value=self.config.INITIAL_PROPERTY_VALUE, rent_price=self.config.INITIAL_RENT_PRICE) for i in range(self.config.NUM_HOUSING_UNITS)]
@@ -300,7 +301,6 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.housing_service.set_real_estate_units(sim.real_estate_units)
         sim.registry = Registry(housing_service=sim.housing_service, logger=self.logger)
         sim.accounting_system = AccountingSystem(logger=self.logger)
-        sim.central_bank_system = CentralBankSystem(central_bank_agent=sim.central_bank, settlement_system=sim.settlement_system, logger=self.logger)
 
         sim.escrow_agent = EscrowAgent(id=ID_ESCROW)
         sim.agents[sim.escrow_agent.id] = sim.escrow_agent
@@ -348,6 +348,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.transaction_processor.register_handler('infrastructure_spending', spending_handler)
         sim.transaction_processor.register_handler('welfare', spending_handler)
         sim.transaction_processor.register_handler('marketing', spending_handler)
+        sim.transaction_processor.register_handler('education_spending', spending_handler)
         sim.transaction_processor.register_handler('emergency_buy', EmergencyTransactionHandler())
         sim.transaction_processor.register_public_manager_handler(PublicManagerTransactionHandler())
         sim.lifecycle_manager = AgentLifecycleManager(config_module=self.config, demographic_manager=sim.demographic_manager, inheritance_manager=sim.inheritance_manager, firm_system=sim.firm_system, settlement_system=sim.settlement_system, public_manager=sim.public_manager, logger=self.logger, shareholder_registry=sim.shareholder_registry, household_factory=household_factory)

@@ -199,9 +199,13 @@ class TransactionProcessor(SystemInterface):
 
             # Inactive Agent Guard
             # Skip transaction if an agent is inactive, unless it's a special type (Escheatment/Liquidation)
-            allowed_inactive_types = ["escheatment", "liquidation", "asset_buyout", "asset_transfer"]
+            allowed_inactive_types = ["escheatment", "liquidation", "asset_buyout", "asset_transfer", "education_spending"]
             if (is_buyer_inactive or is_seller_inactive) and tx.transaction_type not in allowed_inactive_types:
-                state.logger.warning(
+                log_level = logging.WARNING
+                if tx.transaction_type in ["dividend", "interest_payment"]:
+                     log_level = logging.INFO
+
+                state.logger.log(log_level,
                     f"Transaction Skipped: Inactive Agent involved. "
                     f"Buyer: {tx.buyer_id} (Inactive={is_buyer_inactive}), "
                     f"Seller: {tx.seller_id} (Inactive={is_seller_inactive}) "
