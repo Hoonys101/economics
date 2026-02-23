@@ -1,33 +1,22 @@
 # Refined Diagnostic Logs
 Critical events extracted for Gemini analysis.
 
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 50000000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 50000000 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 446b0e56-46ee-4ed4-8f10-1ed52ab9e8eb missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 11fac7db-69bf-44a6-8596-a52e855029ab missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 21e73f29-02fe-44b0-9f84-2c8a4ee481d8 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 4aca59c5-f8cd-49b0-b6c9-d01742d8f22a missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 2995d0d3-7698-4d24-b9a8-07d70b4fe11a missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga bfbf213c-ae7e-46e8-ade1-dc6174d7d047 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 55fef93a-940d-4016-81a2-79de22b5423c missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga c1fce4f6-67c5-4d6d-9d76-930044362aa6 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 274e27fc-8369-4dc8-af43-50a2bbb5b3de missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 77625097-f9fe-4746-8c29-f26c81570c9d missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 3ead0f5d-2abc-4dd4-b0f2-cbf578b0682b missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 6ced9094-3c3b-4587-8235-8f71cd95a756 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga ddfc726c-2ac3-47d1-8440-d7963c7457f8 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 1e533e22-f5fc-4a72-968f-c5aa504c68d0 missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga dfff0eac-2ea7-4f95-a1c9-943e781ff1ca missing seller ID.
-- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 3a7cdddf-9e82-418d-9717-839608a89277 missing seller ID.
+- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'dict' object has no attribute 'success'
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49096695
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49096695 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 986bc992-a2da-4baa-8a0c-babddfd38ccc missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 875fd497-cf98-478f-9c3b-5ef189569454 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga a6fdee71-4d2c-42e9-8cf3-35746c4f64a9 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 7ec3e458-1515-40cc-b3f8-23d1ea20b017 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 1d59b1bb-8e3e-49da-9acf-537e4c4f2d20 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 148b57fd-655c-404c-ade6-5589a80fd8ff missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 71f414db-9169-4cf8-8afa-73613dfb92ee missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga e9b37bab-57ee-4f0c-bbf2-394b0034570d missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 0886e5f5-44dc-495f-a572-847a21b12bf2 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 416a68aa-b668-43cc-8e07-3379e00dacc7 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga dc1a3768-eecc-4561-aec0-9c37f36ca542 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga be76b4db-c729-40a1-b01f-22296f6a4612 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga e1d880f4-2729-4be7-9b16-27aa3dd9818e missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 253b8f2e-7ad9-4e57-a6bb-cf7f3323bc35 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga a4ffce1f-c05e-43e9-b9d1-f27b382758b4 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 649c55cb-ac2d-4bf5-9590-28757dd4f279 missing seller ID.
