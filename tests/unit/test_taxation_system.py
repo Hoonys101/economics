@@ -22,16 +22,16 @@ def test_generate_corporate_tax_intents():
     firm1 = MagicMock()
     firm1.is_active = True
     firm1.id = 1
-    # Profit = 1000 - 500 = 500
-    firm1.finance.revenue_this_turn = 1000.0
-    firm1.finance.cost_this_turn = 500.0
+    # Profit = 1000 - 500 = 500 dollars = 50000 pennies
+    firm1.finance.revenue_this_turn = 100000
+    firm1.finance.cost_this_turn = 50000
 
     firm2 = MagicMock()
     firm2.is_active = True
     firm2.id = 2
     # Profit = 200 - 300 = -100 (Loss)
-    firm2.finance.revenue_this_turn = 200.0
-    firm2.finance.cost_this_turn = 300.0
+    firm2.finance.revenue_this_turn = 20000
+    firm2.finance.cost_this_turn = 30000
 
     firms = [firm1, firm2]
 
@@ -42,7 +42,9 @@ def test_generate_corporate_tax_intents():
     tx = intents[0]
     assert tx.buyer_id == 1
     assert tx.item_id == "corporate_tax"
-    assert tx.price == 125.0 # 500 * 0.25
+    # Tax = 50000 * 0.25 = 12500 pennies = 125.00 dollars
+    # Transaction.price is float dollars
+    assert tx.price == 125.0
     assert tx.time == 100 # Verify tick is passed correctly
 
 def test_generate_corporate_tax_intents_missing_config():

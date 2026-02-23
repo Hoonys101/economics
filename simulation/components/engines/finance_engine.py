@@ -7,7 +7,10 @@ from modules.finance.api import InsufficientFundsError, IShareholderRegistry
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY
 from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
 from simulation.dtos.context_dtos import FinancialTransactionContext
-from modules.firm.api import FinanceDecisionInputDTO, BudgetPlanDTO, IFinanceEngine
+from modules.firm.api import (
+    FinanceDecisionInputDTO, BudgetPlanDTO, IFinanceEngine,
+    ObligationDTO, PaymentPriority, TaxIntentDTO
+)
 
 if TYPE_CHECKING:
     from modules.simulation.dtos.api import FirmConfigDTO
@@ -128,6 +131,224 @@ class FinanceEngine(IFinanceEngine):
             debt_repayment_pennies=debt_repayment,
             is_solvent=balance > 0 # Simple solvency check
         )
+
+    def calculate_financial_obligations(
+        self,
+        state: FinanceState,
+        firm_id: int,
+        config: FirmConfigDTO,
+        context: FinancialTransactionContext,
+        inventory_value: int
+    ) -> List[ObligationDTO]:
+        """
+        Calculates all financial obligations (Tax, Fees, Debt, Dividends).
+        Pure function.
+        """
+        obligations: List[ObligationDTO] = []
+        gov_id = context.government_id
+        if gov_id is None:
+            return []
+
+        # 1. Holding Cost (Essential OPEX)
+        holding_cost_pennies = int(inventory_value * config.inventory_holding_cost_rate)
+        if holding_cost_pennies > 0:
+            obligations.append(ObligationDTO(
+                amount_pennies=holding_cost_pennies,
+                currency=DEFAULT_CURRENCY,
+                priority=PaymentPriority.ESSENTIAL_OPEX,
+                recipient_id=gov_id,
+                description="Inventory Holding Cost",
+                metadata={'type': 'holding_cost'}
+            ))
+
+        # 2. Maintenance Fee (Tax/Essential)
+        fee_pennies = config.firm_maintenance_fee
+        if fee_pennies > 0:
+            obligations.append(ObligationDTO(
+                amount_pennies=fee_pennies,
+                currency=DEFAULT_CURRENCY,
+                priority=PaymentPriority.TAX, # Or Essential OPEX? Usually fees are mandatory like tax.
+                recipient_id=gov_id,
+                description="Firm Maintenance Fee",
+                metadata={'type': 'maintenance_fee'}
+            ))
+
+        # 3. Bailout Repayment (Secured Debt)
+        usd_profit = state.current_profit.get(DEFAULT_CURRENCY, 0)
+        if state.has_bailout_loan and usd_profit > 0:
+            repayment = int(usd_profit * config.bailout_repayment_ratio)
+            if repayment > 0:
+                obligations.append(ObligationDTO(
+                    amount_pennies=repayment,
+                    currency=DEFAULT_CURRENCY,
+                    priority=PaymentPriority.SECURED_DEBT,
+                    recipient_id=gov_id,
+                    description="Bailout Repayment",
+                    metadata={'type': 'bailout_repayment'}
+                ))
+
+        # 4. Dividends (Dividend)
+        # Calculate distributable profit
+        # Note: Dividend is calculated per currency profit.
+        # But we need to know who the shareholders are.
+        # This creates MANY obligations if many shareholders.
+        # We can create one "Dividend Block" obligation if Gatekeeper supports it, but it doesn't.
+        # So we iterate shareholders here?
+        # Or we create an obligation to "Shareholder Registry" which then distributes?
+        # Gatekeeper works on amount.
+        # Let's iterate currencies first.
+        shareholders = context.shareholder_registry.get_shareholders_of_firm(firm_id) if context.shareholder_registry else []
+
+        for cur, profit in state.current_profit.items():
+            distributable = max(0, int(profit * state.dividend_rate))
+            if distributable > 0 and state.total_shares > 0 and shareholders:
+                # We can bundle dividend by currency and check affordablity, then distribute in apply.
+                # This avoids creating 1000 obligations.
+                # But if we pay partial? Gatekeeper is binary.
+                # So we create one obligation per currency for "Total Dividend".
+                # Metadata will hold distribution details or we recalc in apply.
+                # Recalc in apply is safer.
+                obligations.append(ObligationDTO(
+                    amount_pennies=distributable,
+                    currency=cur,
+                    priority=PaymentPriority.DIVIDEND,
+                    recipient_id=firm_id, # Self as distributor? Or generic?
+                    description=f"Dividend Payout ({cur})",
+                    metadata={'type': 'dividend', 'currency': cur, 'total_distributable': distributable}
+                ))
+
+        return obligations
+
+    def apply_financials(
+        self,
+        state: FinanceState,
+        firm_id: int,
+        approved_obligations: List[ObligationDTO],
+        context: FinancialTransactionContext,
+        current_time: int
+    ) -> List[Transaction]:
+        """
+        Executes approved financial obligations.
+        """
+        transactions = []
+        exchange_rates = context.market_context.exchange_rates or {}
+
+        def convert(amt: int, cur: str) -> int:
+            if cur == DEFAULT_CURRENCY: return amt
+            rate = exchange_rates.get(cur, 1.0)
+            return int(amt * rate)
+
+        # Track what happened for state updates
+        dividends_paid = {cur: 0 for cur in state.current_profit}
+        bailout_repaid = 0
+
+        for ob in approved_obligations:
+            otype = ob.metadata.get('type')
+
+            if otype == 'holding_cost':
+                transactions.append(Transaction(
+                    buyer_id=firm_id,
+                    seller_id=ob.recipient_id,
+                    item_id="holding_cost",
+                    quantity=1.0,
+                    price=ob.amount_pennies / 100.0,
+                    market_id="system",
+                    transaction_type="holding_cost",
+                    time=current_time,
+                    currency=ob.currency,
+                    total_pennies=ob.amount_pennies
+                ))
+
+            elif otype == 'maintenance_fee':
+                transactions.append(Transaction(
+                    buyer_id=firm_id,
+                    seller_id=ob.recipient_id,
+                    item_id="firm_maintenance",
+                    quantity=1.0,
+                    price=ob.amount_pennies / 100.0,
+                    market_id="system",
+                    transaction_type="tax",
+                    time=current_time,
+                    currency=ob.currency,
+                    total_pennies=ob.amount_pennies
+                ))
+
+            elif otype == 'bailout_repayment':
+                transactions.append(Transaction(
+                    buyer_id=firm_id,
+                    seller_id=ob.recipient_id,
+                    item_id="bailout_repayment",
+                    quantity=1.0,
+                    price=ob.amount_pennies / 100.0,
+                    market_id="system",
+                    transaction_type="repayment",
+                    time=current_time,
+                    currency=ob.currency,
+                    total_pennies=ob.amount_pennies
+                ))
+                bailout_repaid += ob.amount_pennies
+
+            elif otype == 'dividend':
+                # Distribute to shareholders
+                distributable = ob.amount_pennies
+                cur = ob.currency
+                shareholders = context.shareholder_registry.get_shareholders_of_firm(firm_id)
+
+                paid_total = 0
+                for shareholder in shareholders:
+                    shares = shareholder['quantity']
+                    agent_id = shareholder['agent_id']
+                    if agent_id == firm_id: continue
+
+                    if shares > 0:
+                        amount = int(distributable * (shares / state.total_shares))
+                        if amount > 0:
+                            transactions.append(Transaction(
+                                buyer_id=firm_id,
+                                seller_id=agent_id,
+                                item_id="dividend",
+                                quantity=1.0,
+                                price=amount / 100.0,
+                                market_id="financial",
+                                transaction_type="dividend",
+                                time=current_time,
+                                currency=cur,
+                                total_pennies=amount
+                            ))
+                            paid_total += amount
+
+                dividends_paid[cur] += paid_total
+
+        # Update State
+        # 1. Bailout
+        if bailout_repaid > 0:
+            state.total_debt_pennies -= bailout_repaid
+            state.current_profit[DEFAULT_CURRENCY] -= bailout_repaid
+            if state.total_debt_pennies <= 0:
+                state.has_bailout_loan = False
+
+        # 2. Dividends
+        state.dividends_paid_last_tick_pennies = 0
+        for cur, amount in dividends_paid.items():
+            state.dividends_paid_last_tick_pennies += convert(amount, cur)
+
+        # 3. Update Profit History and Reset
+        total_profit_primary = 0
+        for cur, profit in state.current_profit.items():
+            total_profit_primary += convert(profit, cur)
+        state.profit_history.append(total_profit_primary)
+
+        total_revenue_primary = 0
+        for cur, amount in state.revenue_this_turn.items():
+            total_revenue_primary += convert(amount, cur)
+        state.last_revenue_pennies = total_revenue_primary
+
+        for cur in list(state.current_profit.keys()):
+             state.current_profit[cur] = 0
+             state.revenue_this_turn[cur] = 0
+             state.cost_this_turn[cur] = 0
+
+        return transactions
 
     def generate_financial_transactions(
         self,

@@ -65,7 +65,7 @@ def test_debt_ceiling_enforcement(government):
     # Ensure wallet is empty to trigger bond issuance logic
     current_balance = government.wallet.get_balance("USD")
     if current_balance > 0:
-        government.wallet.subtract(current_balance, "USD")
+        government.wallet.subtract(int(current_balance), "USD") # FIX: int cast
 
     government._assets = 0.0
     government.total_debt = 0.0
@@ -118,14 +118,17 @@ def test_debt_ceiling_enforcement(government):
     government.fiscal_bond_service.issue_bonds.side_effect = issue_bonds_side_effect
 
     # 1. Spend within limit
-    amount = 500.0
-    txs = government.provide_household_support(agent, amount, current_tick=1)
+    amount = 500 # FIX: int
+    txs = government.provide_household_support(agent, float(amount), current_tick=1)
     paid = sum(tx.price for tx in txs)
+    # tx.price might be float dollars if total_pennies is used, or just price.
+    # Government usually creates tx with price=amount if float.
+    # Let's verify what `paid` is.
     assert paid == 500.0
 
     # Simulate execution (deduct spent amount)
     government._assets -= paid
-    government.wallet.subtract(paid, "USD")
+    government.wallet.subtract(int(paid), "USD") # FIX: int cast
     government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
 
     # After spending 500, assets should be 0, and total_debt (which is -assets if no cash)
@@ -134,14 +137,14 @@ def test_debt_ceiling_enforcement(government):
     assert government.wallet.get_balance("USD") == 0.0
 
     # 2. Spend more
-    amount = 1500.0
-    txs = government.provide_household_support(agent, amount, current_tick=2)
+    amount = 1500 # FIX: int
+    txs = government.provide_household_support(agent, float(amount), current_tick=2)
     paid = sum(tx.price for tx in txs)
     assert paid == 1500.0
 
     # Simulate execution
     government._assets -= paid
-    government.wallet.subtract(paid, "USD")
+    government.wallet.subtract(int(paid), "USD") # FIX: int cast
     government.settlement_system.get_balance.return_value = government.wallet.get_balance("USD")
 
     assert government.wallet.get_balance("USD") == 0.0
@@ -153,8 +156,8 @@ def test_debt_ceiling_enforcement(government):
     fail_bond = BondDTO(id="FAIL", issuer=str(government.id), face_value=0, maturity_date=0, yield_rate=0.0)
     government.fiscal_bond_service.issue_bonds.return_value = BondIssuanceResultDTO(fail_payment, fail_bond)
 
-    amount = 100.0
-    txs = government.provide_household_support(agent, amount, current_tick=3)
+    amount = 100 # FIX: int
+    txs = government.provide_household_support(agent, float(amount), current_tick=3)
     paid = sum(tx.price for tx in txs)
     assert paid == 0.0
 

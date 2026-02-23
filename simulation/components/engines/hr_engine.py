@@ -9,7 +9,7 @@ from simulation.dtos.hr_dtos import HRPayrollContextDTO, HRPayrollResultDTO, Emp
 from modules.firm.api import (
     HRDecisionInputDTO, HRDecisionOutputDTO, IHREngine,
     HRContextDTO, HRIntentDTO, IHRDepartment, AgentID,
-    MarketSnapshotDTO
+    MarketSnapshotDTO, PayrollIntentDTO, ObligationDTO, PaymentPriority
 )
 
 if TYPE_CHECKING:
@@ -267,6 +267,126 @@ class HREngine(IHREngine, IHRDepartment):
         halo_modifier = 1.0 + (education_level * config.halo_effect)
 
         return int(base_wage * actual_skill * halo_modifier)
+
+    def calculate_payroll_obligations(
+        self,
+        hr_state: HRState,
+        context: HRPayrollContextDTO,
+        config: FirmConfigDTO
+    ) -> PayrollIntentDTO:
+        """
+        Calculates all payroll obligations (Wages, Taxes, Severance) without applying them.
+        Returns a PayrollIntentDTO containing a list of ObligationDTOs.
+        """
+        wage_obligations: List[ObligationDTO] = []
+        severance_obligations: List[ObligationDTO] = []
+        total_wages = 0
+        total_severance = 0
+
+        firm_id = context.firm_id
+        current_time = context.current_time
+
+        # Calculate survival cost for tax logic
+        survival_cost = 1000 # Default fallback (10.00)
+        if context.tax_policy:
+            survival_cost = context.tax_policy.survival_cost
+
+        for employee in list(hr_state.employees):
+            # Validate employee
+            if employee.employer_id != firm_id or not employee.is_employed:
+                continue
+
+            base_wage = hr_state.employee_wages.get(employee.id, context.labor_market_min_wage)
+            wage = self.calculate_wage(employee, base_wage, config)
+
+            # Calculate Tax
+            income_tax = 0
+            if context.tax_policy:
+                income_tax = int(wage * context.tax_policy.income_tax_rate) if wage > survival_cost else 0
+
+            net_wage = wage - income_tax
+
+            # 1. Net Wage Obligation
+            if net_wage > 0:
+                wage_obligations.append(ObligationDTO(
+                    amount_pennies=net_wage,
+                    currency=DEFAULT_CURRENCY,
+                    priority=PaymentPriority.WAGE,
+                    recipient_id=employee.id,
+                    description=f"Wage for {employee.id}",
+                    metadata={'type': 'wage', 'employee_id': employee.id}
+                ))
+                total_wages += net_wage
+
+            # 2. Income Tax Obligation (Withholding)
+            if income_tax > 0 and context.tax_policy:
+                wage_obligations.append(ObligationDTO(
+                    amount_pennies=income_tax,
+                    currency=DEFAULT_CURRENCY,
+                    priority=PaymentPriority.TAX, # Tax is higher priority than Wage? Or same? Spec says Tax=1, Wage=2.
+                    recipient_id=context.tax_policy.government_agent_id,
+                    description=f"Income Tax for {employee.id}",
+                    metadata={'type': 'income_tax', 'employee_id': employee.id}
+                ))
+                total_wages += income_tax
+
+        return PayrollIntentDTO(
+            wage_obligations=wage_obligations,
+            severance_obligations=severance_obligations, # Populated if we handled firing here, but currently firing is separate?
+            total_wages_pennies=total_wages,
+            total_severance_pennies=total_severance
+        )
+
+    def apply_payroll(
+        self,
+        hr_state: HRState,
+        context: HRPayrollContextDTO,
+        approved_obligations: List[ObligationDTO]
+    ) -> HRPayrollResultDTO:
+        """
+        Executes approved payroll obligations.
+        Generates transactions and updates employee state.
+        """
+        transactions: List[Transaction] = []
+        employee_updates: List[EmployeeUpdateDTO] = []
+        current_time = context.current_time
+        firm_id = context.firm_id
+
+        for ob in approved_obligations:
+            if ob.metadata.get('type') == 'wage':
+                # Generate Transaction
+                transactions.append(Transaction(
+                    buyer_id=firm_id,
+                    seller_id=ob.recipient_id,
+                    item_id="labor_wage",
+                    quantity=1.0,
+                    price=ob.amount_pennies / 100.0,
+                    market_id="labor",
+                    transaction_type="wage",
+                    time=current_time,
+                    currency=ob.currency,
+                    total_pennies=ob.amount_pennies
+                ))
+                # Update Employee
+                emp_id = ob.metadata.get('employee_id')
+                if emp_id:
+                    employee_updates.append(EmployeeUpdateDTO(employee_id=emp_id, net_income=ob.amount_pennies))
+
+            elif ob.metadata.get('type') == 'income_tax':
+                transactions.append(Transaction(
+                    buyer_id=firm_id,
+                    seller_id=ob.recipient_id,
+                    item_id="income_tax",
+                    quantity=1.0,
+                    price=ob.amount_pennies / 100.0,
+                    market_id="system",
+                    transaction_type="tax",
+                    time=current_time,
+                    currency=ob.currency,
+                    total_pennies=ob.amount_pennies
+                ))
+
+        return HRPayrollResultDTO(transactions=transactions, employee_updates=employee_updates)
 
     def process_payroll(
         self,

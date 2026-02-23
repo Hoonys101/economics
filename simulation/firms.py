@@ -28,6 +28,8 @@ from modules.firm.engines.brand_engine import BrandEngine
 from modules.firm.engines.pricing_engine import PricingEngine
 from modules.firm.orchestrators.firm_action_executor import FirmActionExecutor
 from simulation.components.engines.real_estate_component import RealEstateUtilizationComponent
+from modules.firm.components.budget_gatekeeper import BudgetGatekeeper
+from modules.firm.components.bankruptcy_handler import BankruptcyHandler
 
 from simulation.dtos.context_dtos import PayrollProcessingContext, FinancialTransactionContext, SalesContext
 from simulation.dtos.hr_dtos import HRPayrollContextDTO, TaxPolicyDTO
@@ -48,7 +50,8 @@ from modules.firm.api import (
     ISalesEngine, IBrandEngine, IFinanceEngine, IHREngine,
     ProductionContextDTO, HRContextDTO, SalesContextDTO,
     ProductionIntentDTO, HRIntentDTO, SalesIntentDTO,
-    FirmBrainScanContextDTO, FirmBrainScanResultDTO, IBrainScanReady
+    FirmBrainScanContextDTO, FirmBrainScanResultDTO, IBrainScanReady,
+    ObligationDTO, PaymentPriority, IBudgetGatekeeper, IBankruptcyHandler
 )
 from modules.firm.constants import (
     DEFAULT_MARKET_INSIGHT, DEFAULT_MARKETING_BUDGET_RATE, DEFAULT_LIQUIDATION_PRICE,
@@ -156,6 +159,8 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         if not isinstance(self.pricing_engine, IPricingEngine): raise TypeError("pricing_engine violation")
 
         self.action_executor = FirmActionExecutor()
+        self.budget_gatekeeper: IBudgetGatekeeper = BudgetGatekeeper()
+        self.bankruptcy_handler: IBankruptcyHandler = BankruptcyHandler()
 
         # Initialize core attributes in State
         self.production_state.specialization = specialization
@@ -1638,43 +1643,34 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         )
 
     def generate_transactions(self, government: Optional[Any], market_data: Dict[str, Any], shareholder_registry: IShareholderRegistry, current_time: int, market_context: MarketContextDTO) -> List[Transaction]:
+        """
+        Wave 3 Implementation: Intent -> Gatekeeper -> Execution Pipeline.
+        """
         transactions = []
         gov_id = government.id if government else None
+
+        # 1. GATHER INTENT (Obligations)
+        all_obligations: List[ObligationDTO] = []
+
+        # 1.1 Payroll Obligations
+        payroll_context = self._build_payroll_context(current_time, government, market_context)
+        payroll_intent = self.hr_engine.calculate_payroll_obligations(
+            self.hr_state, payroll_context, self.config
+        )
+        all_obligations.extend(payroll_intent.wage_obligations)
+        all_obligations.extend(payroll_intent.severance_obligations)
+
+        # 1.2 Financial Obligations (Tax, Fees, Debt, Dividends)
+        # Calculate inventory value
+        inventory_value = 0
+        for item, qty in self.get_all_items().items():
+            price = self.last_prices.get(item, DEFAULT_PRICE)
+            inventory_value += int(qty * price)
 
         # Extract dynamic tax rates from MarketContext
         fiscal_policy = market_context.fiscal_policy
         corporate_tax_rate = fiscal_policy.corporate_tax_rate if fiscal_policy else DEFAULT_CORPORATE_TAX_RATE
-
         tax_rates = {"income_tax": corporate_tax_rate}
-
-        # 1. Payroll
-        payroll_context = self._build_payroll_context(current_time, government, market_context)
-        payroll_result = self.hr_engine.process_payroll(
-            self.hr_state, payroll_context, self.config
-        )
-        transactions.extend(payroll_result.transactions)
-
-        # Apply employee updates
-        for update in payroll_result.employee_updates:
-            # Find the actual agent instance in our state list
-            employee = next((e for e in self.hr_state.employees if e.id == update.employee_id), None)
-            if not employee: continue
-
-            # Apply income update
-            if update.net_income > 0:
-                employee.labor_income_this_tick = (employee.labor_income_this_tick or 0) + int(update.net_income)
-
-            # Apply firing
-            if update.fire_employee:
-                employee.quit()
-                self.hr_engine.finalize_firing(self.hr_state, update.employee_id)
-
-        # 2. Finance
-        # Calculate inventory value for holding cost
-        inventory_value = 0
-        for item, qty in self.get_all_items().items():
-            price = self.last_prices.get(item, DEFAULT_PRICE) # Default 10.00 pennies
-            inventory_value += int(qty * price)
 
         fin_ctx = FinancialTransactionContext(
             government_id=gov_id,
@@ -1683,33 +1679,90 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
             shareholder_registry=shareholder_registry
         )
 
-        tx_finance = self.finance_engine.generate_financial_transactions(
-            self.finance_state, self.id, self.financial_component.get_all_balances(), self.config, current_time, fin_ctx, inventory_value
+        finance_obligations = self.finance_engine.calculate_financial_obligations(
+            self.finance_state, self.id, self.config, fin_ctx, inventory_value
         )
-        transactions.extend(tx_finance)
+        all_obligations.extend(finance_obligations)
 
-        # 3. Marketing
-        # Use marketing budget set during make_decision
-        # No need to call adjust_marketing_budget again!
+        # 1.3 Marketing Obligation (From State)
+        marketing_budget = self.sales_state.marketing_budget_pennies
+        if marketing_budget > 0 and gov_id:
+             all_obligations.append(ObligationDTO(
+                 amount_pennies=marketing_budget,
+                 currency=DEFAULT_CURRENCY,
+                 priority=PaymentPriority.MARKETING,
+                 recipient_id=gov_id,
+                 description="Marketing Spend",
+                 metadata={'type': 'marketing'}
+             ))
 
-        # Then generate transaction using the updated state
-        marketing_context = self._build_sales_marketing_context(current_time, government)
-        tx_marketing = self.sales_engine.generate_marketing_transaction(
-            self.get_snapshot_dto().sales, marketing_context
+        # 2. BUDGET GATEKEEPER
+        allocation = self.budget_gatekeeper.allocate_budget(
+            self.financial_component.get_all_balances(),
+            all_obligations
         )
-        if tx_marketing:
-            transactions.append(tx_marketing)
 
-        # Brand Update
-        # Using stateless engine, applying result
+        # 3. INSOLVENCY CHECK
+        if allocation.is_insolvent:
+            self.bankruptcy_handler.trigger_liquidation(self, allocation.insolvency_reason or "Unknown Insolvency")
+            # If liquidated, we should probably stop and return empty or liquidation artifacts?
+            # Usually simulation handles cleanup. We return empty transactions list here to stop flow.
+            return []
+
+        # 4. EXECUTION (Approved Obligations)
+
+        # 4.1 Apply Payroll
+        payroll_result = self.hr_engine.apply_payroll(
+            self.hr_state, payroll_context, allocation.approved_obligations
+        )
+        transactions.extend(payroll_result.transactions)
+
+        # Apply employee updates
+        for update in payroll_result.employee_updates:
+            employee = next((e for e in self.hr_state.employees if e.id == update.employee_id), None)
+            if not employee: continue
+            if update.net_income > 0:
+                employee.labor_income_this_tick = (employee.labor_income_this_tick or 0) + int(update.net_income)
+
+        # 4.2 Apply Financials
+        finance_txs = self.finance_engine.apply_financials(
+            self.finance_state, self.id, allocation.approved_obligations, fin_ctx, current_time
+        )
+        transactions.extend(finance_txs)
+
+        # 4.3 Apply Marketing
+        # We need to find the approved marketing obligation
+        marketing_approved = False
+        for ob in allocation.approved_obligations:
+            if ob.metadata.get('type') == 'marketing':
+                transactions.append(Transaction(
+                    buyer_id=self.id,
+                    seller_id=gov_id,
+                    item_id='marketing',
+                    quantity=1.0,
+                    price=ob.amount_pennies / 100.0,
+                    market_id='system',
+                    transaction_type='marketing',
+                    time=current_time,
+                    currency=DEFAULT_CURRENCY,
+                    total_pennies=ob.amount_pennies
+                ))
+                marketing_approved = True
+                break
+
+        # Brand Update (State update)
+        # Only if marketing was approved (or if 0 spend is valid for decay)
+        # BrandEngine updates even with 0 spend (decay).
+        # But we need to pass actual spend.
+        actual_spend = float(marketing_budget) if marketing_approved else 0.0
+
         brand_metrics = self.brand_engine.update(
-            self.get_snapshot_dto().sales, # Pass DTO for purity
+            self.get_snapshot_dto().sales,
             self.config,
-            float(self.sales_state.marketing_budget_pennies),
+            actual_spend,
             self.productivity_factor / PRODUCTIVITY_DIVIDER,
             self.id
         )
-        # Apply State
         self.sales_state.adstock = brand_metrics.adstock
         self.sales_state.brand_awareness = brand_metrics.brand_awareness
         self.sales_state.perceived_quality = brand_metrics.perceived_quality

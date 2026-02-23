@@ -5,6 +5,7 @@ from modules.finance.transaction.api import ITransactionExecutor, ITransactionVa
 
 class MockFinancialEntity:
     """Correct implementation of IFinancialEntity"""
+    id = 1 # Added id
     @property
     def balance_pennies(self) -> int:
         return 100
@@ -37,6 +38,9 @@ class MockSettlementSystem:
 
     def get_balance(self, agent_id, currency="USD"):
         return 100
+
+    def audit_total_m2(self, expected_total=None): # Added missing method
+        return True
 
     def get_account_holders(self, bank_id):
         return []

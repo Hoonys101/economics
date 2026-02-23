@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import Protocol, Any, Optional, Dict, List, Literal, runtime_checkable
+from typing import Protocol, Any, Optional, Dict, List, Literal, runtime_checkable, Union
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import Enum, IntEnum, auto
 
 from modules.simulation.dtos.api import FirmConfigDTO, FinanceStateDTO, ProductionStateDTO, SalesStateDTO, HRStateDTO
-from modules.system.api import MarketSnapshotDTO, MarketContextDTO
+from modules.system.api import MarketSnapshotDTO, MarketContextDTO, CurrencyCode
 from modules.simulation.api import IInventoryHandler, AgentID
 from modules.common.enums import IndustryDomain
 from modules.finance.api import IFinancialAgent
@@ -52,6 +52,46 @@ class FirmStrategy(Enum):
     PROFIT_MAXIMIZATION = "PROFIT_MAXIMIZATION"
     MARKET_SHARE = "MARKET_SHARE"
     SURVIVAL = "SURVIVAL"
+
+class PaymentPriority(IntEnum):
+    """
+    Strict priority hierarchy for firm obligations.
+    Lower value = Higher priority (Must pay first).
+    """
+    TAX = 1
+    WAGE = 2          # Includes Severance
+    SECURED_DEBT = 3  # Loan Interest/Principal
+    ESSENTIAL_OPEX = 4 # Rent, Maintenance
+    UNSECURED_DEBT = 5
+    INVENTORY_PURCHASE = 6
+    MARKETING = 7
+    DIVIDEND = 8
+    DISCRETIONARY = 9
+
+@dataclass(frozen=True)
+class ObligationDTO:
+    """
+    Represents a potential financial outflow that needs prioritization.
+    """
+    amount_pennies: int
+    currency: CurrencyCode
+    priority: PaymentPriority
+    recipient_id: AgentID
+    description: str
+    transaction_id: Optional[str] = None # For tracking specific engine intents
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass(frozen=True)
+class BudgetAllocationDTO:
+    """
+    Result of the Budget Gatekeeper's prioritization.
+    """
+    approved_obligations: List[ObligationDTO]
+    rejected_obligations: List[ObligationDTO]
+    total_approved_amount_pennies: int
+    remaining_liquidity_pennies: int
+    is_insolvent: bool # True if mandatory obligations (Tax/Wage) could not be met
+    insolvency_reason: Optional[str] = None
 
 @dataclass(frozen=True)
 class FirmSnapshotDTO:
@@ -214,6 +254,26 @@ class SalesIntentDTO:
     sales_orders: List[Dict[str, Any]] # List of sell orders (or Orders directly if cleaner)
     marketing_spend_pennies: int = 0
     new_marketing_budget_rate: float = 0.0
+
+# --- Engine Inputs/Outputs (Intent) ---
+
+@dataclass(frozen=True)
+class PayrollIntentDTO:
+    """
+    Output of HREngine.calculate_payroll_obligations.
+    """
+    wage_obligations: List[ObligationDTO]
+    severance_obligations: List[ObligationDTO]
+    total_wages_pennies: int
+    total_severance_pennies: int
+
+@dataclass(frozen=True)
+class TaxIntentDTO:
+    """
+    Output of FinanceEngine.calculate_tax_obligations.
+    """
+    tax_obligations: List[ObligationDTO]
+    total_tax_pennies: int
 
 # --- Finance Engine DTOs ---
 
@@ -532,6 +592,43 @@ class IBrandEngine(Protocol):
         """Calculates updated brand metrics based on marketing spend and quality."""
         ...
 
+# --- New Protocols for Wave 3 ---
+
+@runtime_checkable
+class IBudgetGatekeeper(Protocol):
+    """
+    Service responsible for enforcing liquidity constraints and payment priorities.
+    """
+    def allocate_budget(
+        self,
+        liquid_assets: Dict[CurrencyCode, int],
+        obligations: List[ObligationDTO]
+    ) -> BudgetAllocationDTO:
+        """
+        Filters obligations based on available liquidity and priority.
+        Returns the approved allocation and insolvency status.
+        """
+        ...
+
+@runtime_checkable
+class IBankruptcyHandler(Protocol):
+    """
+    Protocol for gracefully handling firm failure.
+    """
+    def trigger_liquidation(self, firm: Any, reason: str) -> None:
+        """
+        Initiates the liquidation process for a zombie/insolvent firm.
+        """
+        ...
+
+@runtime_checkable
+class IFirmActionExecutor(Protocol):
+    """
+    Executes internal orders (Command Bus).
+    """
+    def execute(self, firm: Any, orders: List[Any], fiscal_context: Any, current_time: int, market_context: Any) -> None:
+        ...
+
 # ==============================================================================
 # 4. COMPONENT PROTOCOLS (NEW)
 # ==============================================================================
@@ -582,6 +679,9 @@ __all__ = [
     'ICollateralizableAsset',
     'FirmSnapshotDTO',
     'FirmStrategy',
+    'PaymentPriority',
+    'ObligationDTO',
+    'BudgetAllocationDTO',
     'FirmBrainScanContextDTO',
     'FirmBrainScanResultDTO',
     'FinanceDecisionInputDTO',
@@ -609,6 +709,8 @@ __all__ = [
     'HRIntentDTO',
     'SalesContextDTO',
     'SalesIntentDTO',
+    'PayrollIntentDTO',
+    'TaxIntentDTO',
     'IFinanceEngine',
     'IHREngine',
     'IProductionEngine',
@@ -617,6 +719,9 @@ __all__ = [
     'IRDEngine',
     'ISalesEngine',
     'IBrandEngine',
+    'IBudgetGatekeeper',
+    'IBankruptcyHandler',
+    'IFirmActionExecutor',
     'IDepartmentEngine',
     'IProductionDepartment',
     'IHRDepartment',
