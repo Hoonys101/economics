@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import Mock
 from simulation.models import Transaction
 from simulation.agents.government import Government
+from modules.finance.api import TaxCollectionResult
 
 def test_tax_collection_and_bailouts(government):
     """
@@ -11,13 +12,14 @@ def test_tax_collection_and_bailouts(government):
     initial_gov_assets = government.total_wealth
 
     # 1. Manual Tax Collection Test (Simulate via revenue recording)
-    government.record_revenue({
-        "success": True,
-        "amount_collected": 100,
-        "tax_type": "test_tax",
-        "payer_id": 1,
-        "payee_id": government.id
-    })
+    government.record_revenue(TaxCollectionResult(
+        success=True,
+        amount_collected=100,
+        tax_type="test_tax",
+        payer_id=1,
+        payee_id=government.id,
+        error_message=None
+    ))
 
     # 2. Bailout Test (now a loan, returns transactions)
     mock_firm = Mock()

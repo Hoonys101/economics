@@ -59,21 +59,22 @@ class GeminiDispatcher(ICommand):
             }
             output_path = mapping.get(mission.worker)
 
-        from _internal.scripts.core.context_injector.service import ContextInjectorService
-        from modules.tools.context_injector.api import InjectionRequestDTO
+        # from _internal.scripts.core.context_injector.service import ContextInjectorService
+        # from modules.tools.context_injector.api import InjectionRequestDTO
         
-        injector = ContextInjectorService()
+        # injector = ContextInjectorService()
         existing_context = mission.context_files or []
         
-        req = InjectionRequestDTO(
-            target_files=existing_context,
-            include_tests=True,
-            include_docs=True,
-            max_dependency_depth=1
-        )
+        # req = InjectionRequestDTO(
+        #     target_files=existing_context,
+        #     include_tests=True,
+        #     include_docs=True,
+        #     max_dependency_depth=1
+        # )
         
-        injection_result = injector.analyze_context(req)
-        final_context = [node.file_path for node in injection_result.nodes]
+        # injection_result = injector.analyze_context(req)
+        # final_context = [node.file_path for node in injection_result.nodes]
+        final_context = existing_context or []
 
         cmd = [sys.executable, str(ctx.base_dir / "_internal" / "scripts" / "gemini_worker.py"), mission.worker, instruction]
         if final_context:
@@ -129,10 +130,10 @@ class JulesDispatcher(ICommand):
             return CommandResult(success=False, message=msg)
 
         # --- UPS-6.0: Stub-First Context Injection ---
-        from _internal.scripts.core.context_injector.service import ContextInjectorService
-        from modules.tools.context_injector.api import InjectionRequestDTO
+        # from _internal.scripts.core.context_injector.service import ContextInjectorService
+        # from modules.tools.context_injector.api import InjectionRequestDTO
 
-        injector = ContextInjectorService()
+        # injector = ContextInjectorService()
         existing_context = mission.context_files or []
         
         # If the mission points to a file that contains instructions/spec, include it
@@ -140,15 +141,16 @@ class JulesDispatcher(ICommand):
         if mission.file_path:
             targets.append(mission.file_path)
 
-        req = InjectionRequestDTO(
-            target_files=targets,
-            include_tests=True,
-            include_docs=True,
-            max_dependency_depth=1
-        )
+        # req = InjectionRequestDTO(
+        #     target_files=targets,
+        #     include_tests=True,
+        #     include_docs=True,
+        #     max_dependency_depth=1
+        # )
         
-        injection_result = injector.analyze_context(req)
-        final_context = [node.file_path for node in injection_result.nodes]
+        # injection_result = injector.analyze_context(req)
+        # final_context = [node.file_path for node in injection_result.nodes]
+        final_context = targets
         
         # We need to communicate to jules_bridge that these files should be attached.
         # jules_bridge currently doesn't take a context list explicitly in its CLI args,

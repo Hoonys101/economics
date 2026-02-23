@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Any
 from modules.finance.system import FinanceSystem
 from modules.finance.api import (
     IConfig, IBank, IGovernmentFinance, IFinancialFirm, IFinancialAgent,
-    BondDTO, LoanInfoDTO, GrantBailoutCommand, BailoutCovenant
+    BondDTO, LoanDTO, GrantBailoutCommand, BailoutCovenant
 )
 from modules.simulation.api import AgentID
 from simulation.dtos.api import GovernmentSensoryDTO
@@ -45,8 +45,8 @@ class MockBank(IBank):
     @property
     def total_wealth(self) -> int: return 1000000000
 
-    def grant_loan(self, *args, **kwargs) -> Optional[LoanInfoDTO]: return None
-    def stage_loan(self, *args, **kwargs) -> Optional[LoanInfoDTO]: return None
+    def grant_loan(self, *args, **kwargs) -> Optional[LoanDTO]: return None
+    def stage_loan(self, *args, **kwargs) -> Optional[LoanDTO]: return None
     def repay_loan(self, loan_id: str, amount: int) -> int: return amount
     def get_customer_balance(self, *args, **kwargs) -> int: return 0
     def get_debt_status(self, *args, **kwargs) -> Any: return None

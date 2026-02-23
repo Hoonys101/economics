@@ -5,8 +5,8 @@ import logging
 from typing import List
 from _internal.registry.api import ICommand, CommandContext, CommandResult
 from _internal.scripts.core.commands import run_command
-from _internal.scripts.core.context_injector.service import ContextInjectorService
-from modules.tools.context_injector.api import InjectionRequestDTO
+# from _internal.scripts.core.context_injector.service import ContextInjectorService
+# from modules.tools.context_injector.api import InjectionRequestDTO
 
 logger = logging.getLogger(__name__)
 
@@ -52,15 +52,16 @@ class GitReviewCommand(ICommand):
         diff_status = subprocess.run(diff_status_cmd, cwd=base_dir, capture_output=True, text=True, encoding='utf-8')
         changed_files = diff_status.stdout.splitlines()
         
-        injector = ContextInjectorService()
-        injection_result = injector.analyze_context(InjectionRequestDTO(
-            target_files=changed_files,
-            include_tests=True,
-            include_docs=True,
-            max_dependency_depth=1
-        ))
+        # injector = ContextInjectorService()
+        # injection_result = injector.analyze_context(InjectionRequestDTO(
+        #     target_files=changed_files,
+        #     include_tests=True,
+        #     include_docs=True,
+        #     max_dependency_depth=1
+        # ))
         
-        final_context = [node.file_path for node in injection_result.nodes]
+        # final_context = [node.file_path for node in injection_result.nodes]
+        final_context = changed_files
 
         review_output = base_dir / "gemini-output" / "review" / f"pr_review_{short_name}.md"
         

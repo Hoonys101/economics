@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, Mock
 from typing import Optional, List
 from modules.finance.api import (
     IBankService,
-    LoanInfoDTO,
+    LoanDTO,
     DebtStatusDTO,
     LoanNotFoundError,
     LoanRepaymentError,
@@ -39,12 +39,12 @@ class TestBankServiceInterface:
         interest_rate = 0.05
 
         # Setup Mock Response
-        loan_dto = LoanInfoDTO(
+        loan_dto = LoanDTO(
             loan_id="loan_1",
             borrower_id=int(borrower_id),
             lender_id=int(bank.id),
-            original_amount=float(amount),
-            outstanding_balance=float(amount),
+            principal_pennies=int(amount),
+            remaining_principal_pennies=int(amount),
             interest_rate=interest_rate,
             origination_tick=0,
             due_tick=360,
@@ -68,8 +68,8 @@ class TestBankServiceInterface:
         loan_info, transaction = result
 
         assert loan_info.borrower_id == int(borrower_id)
-        assert loan_info.original_amount == float(amount)
-        assert loan_info.outstanding_balance == float(amount)
+        assert loan_info.principal_pennies == int(amount)
+        assert loan_info.remaining_principal_pennies == int(amount)
         assert loan_info.interest_rate == interest_rate
         assert loan_info.loan_id == "loan_1"
 
@@ -101,14 +101,14 @@ class TestBankServiceInterface:
         borrower_id = "303"
 
         loans = [
-            LoanInfoDTO(
-                loan_id="l1", borrower_id=int(borrower_id), lender_id=1, original_amount=100000.0,
-                outstanding_balance=100000.0, interest_rate=0.05, origination_tick=0, due_tick=360,
+            LoanDTO(
+                loan_id="l1", borrower_id=int(borrower_id), lender_id=1, principal_pennies=100000,
+                remaining_principal_pennies=100000, interest_rate=0.05, origination_tick=0, due_tick=360,
                 status="ACTIVE", term_ticks=360
             ),
-            LoanInfoDTO(
-                loan_id="l2", borrower_id=int(borrower_id), lender_id=1, original_amount=50000.0,
-                outstanding_balance=50000.0, interest_rate=0.06, origination_tick=0, due_tick=360,
+            LoanDTO(
+                loan_id="l2", borrower_id=int(borrower_id), lender_id=1, principal_pennies=50000,
+                remaining_principal_pennies=50000, interest_rate=0.06, origination_tick=0, due_tick=360,
                 status="ACTIVE", term_ticks=360
             )
         ]

@@ -5,7 +5,7 @@ from typing import Any
 from simulation.loan_market import LoanMarket
 from simulation.bank import Bank
 from modules.finance.api import MortgageApplicationDTO
-from modules.finance.api import LoanInfoDTO
+from modules.finance.api import LoanDTO
 
 class TestLoanMarketMortgage:
     @pytest.fixture
@@ -39,12 +39,12 @@ class TestLoanMarketMortgage:
     def test_evaluate_mortgage_success(self, loan_market):
         app = MortgageApplicationDTO(
             applicant_id=1,
-            requested_principal=80000.0,
+            requested_principal=8000000, # 80k pennies
             purpose="MORTGAGE",
             property_id=100,
-            property_value=100000.0,
-            applicant_monthly_income=5000.0, # 60k annual
-            existing_monthly_debt_payments=0.0,
+            property_value=10000000, # 100k pennies
+            applicant_monthly_income=500000, # 5k pennies
+            existing_monthly_debt_payments=0,
             loan_term=360
         )
         assert loan_market.evaluate_mortgage_application(app) is True
@@ -52,12 +52,12 @@ class TestLoanMarketMortgage:
     def test_evaluate_mortgage_fail_ltv(self, loan_market):
         app = MortgageApplicationDTO(
             applicant_id=1,
-            requested_principal=90000.0, # 90% LTV
+            requested_principal=9000000, # 90k pennies
             purpose="MORTGAGE",
             property_id=100,
-            property_value=100000.0,
-            applicant_monthly_income=20000.0, # High income, so DTI is fine
-            existing_monthly_debt_payments=0.0,
+            property_value=10000000,
+            applicant_monthly_income=2000000,
+            existing_monthly_debt_payments=0,
             loan_term=360
         )
         assert loan_market.evaluate_mortgage_application(app) is False
@@ -66,12 +66,12 @@ class TestLoanMarketMortgage:
         # DTI limit 0.43
         app = MortgageApplicationDTO(
             applicant_id=1,
-            requested_principal=100000.0,
+            requested_principal=10000000,
             purpose="MORTGAGE",
             property_id=100,
-            property_value=200000.0, # LTV 50% OK
-            applicant_monthly_income=1000.0,
-            existing_monthly_debt_payments=0.0,
+            property_value=20000000,
+            applicant_monthly_income=100000,
+            existing_monthly_debt_payments=0,
             loan_term=360
         )
         assert loan_market.evaluate_mortgage_application(app) is False
@@ -79,12 +79,12 @@ class TestLoanMarketMortgage:
     def test_evaluate_mortgage_fail_dti_with_existing_debt(self, loan_market):
         app = MortgageApplicationDTO(
             applicant_id=1,
-            requested_principal=50000.0,
+            requested_principal=5000000,
             purpose="MORTGAGE",
             property_id=100,
-            property_value=200000.0,
-            applicant_monthly_income=1000.0,
-            existing_monthly_debt_payments=200.0, # Explicit existing debt
+            property_value=20000000,
+            applicant_monthly_income=100000,
+            existing_monthly_debt_payments=20000, # Explicit existing debt
             loan_term=360
         )
         assert loan_market.evaluate_mortgage_application(app) is False
@@ -92,20 +92,20 @@ class TestLoanMarketMortgage:
     def test_stage_mortgage_success(self, loan_market, mock_bank):
         app = MortgageApplicationDTO(
             applicant_id=1,
-            requested_principal=80000.0,
+            requested_principal=8000000,
             purpose="MORTGAGE",
             property_id=100,
-            property_value=100000.0,
-            applicant_monthly_income=5000.0,
-            existing_monthly_debt_payments=0.0,
+            property_value=10000000,
+            applicant_monthly_income=500000,
+            existing_monthly_debt_payments=0,
             loan_term=360
         )
 
-        mock_bank.stage_loan.return_value = LoanInfoDTO(
+        mock_bank.stage_loan.return_value = LoanDTO(
             loan_id="loan_123",
             borrower_id=1,
-            original_amount=80000.0,
-            outstanding_balance=80000.0,
+            principal_pennies=8000000,
+            remaining_principal_pennies=8000000,
             interest_rate=0.05,
             origination_tick=0,
             due_tick=360,
@@ -117,12 +117,14 @@ class TestLoanMarketMortgage:
         # Mock the loan existing in the bank for convert_staged_to_loan
         mock_loan = MagicMock()
         mock_loan.borrower_id = 1
-        mock_loan.principal = 80000.0
-        mock_loan.remaining_balance = 80000.0
-        mock_loan.annual_interest_rate = 0.05
+        mock_loan.principal_pennies = 8000000
+        mock_loan.remaining_principal_pennies = 8000000
+        mock_loan.interest_rate = 0.05
         mock_loan.origination_tick = 0
         mock_loan.start_tick = 0
         mock_loan.term_ticks = 360
+        # For DTO conversion, we need these attributes to be accessible
+        mock_loan.due_tick = 360
 
         mock_bank.loans = {"loan_123": mock_loan}
         mock_bank.id = 999
@@ -130,18 +132,18 @@ class TestLoanMarketMortgage:
         result = loan_market.stage_mortgage(app)
         assert result is not None
         assert result.loan_id == "loan_123"
-        assert isinstance(result, LoanInfoDTO)
+        assert isinstance(result, LoanDTO)
         mock_bank.stage_loan.assert_called_once()
 
     def test_stage_mortgage_fail_eval(self, loan_market, mock_bank):
         app = MortgageApplicationDTO(
             applicant_id=1,
-            requested_principal=90000.0, # LTV Fail
+            requested_principal=9000000, # LTV Fail
             purpose="MORTGAGE",
             property_id=100,
-            property_value=100000.0,
-            applicant_monthly_income=5000.0,
-            existing_monthly_debt_payments=0.0,
+            property_value=10000000,
+            applicant_monthly_income=500000,
+            existing_monthly_debt_payments=0,
             loan_term=360
         )
 
@@ -159,6 +161,7 @@ class TestLoanMarketMortgage:
         mock_loan.origination_tick = 0
         mock_loan.start_tick = 0
         mock_loan.term_ticks = 360
+        mock_loan.due_tick = 360
 
         mock_bank.loans = {
             "loan_999": mock_loan
@@ -169,7 +172,7 @@ class TestLoanMarketMortgage:
         result = loan_market.convert_staged_to_loan("loan_999")
 
         # Verify
-        assert isinstance(result, LoanInfoDTO)
+        assert isinstance(result, LoanDTO)
         assert result.loan_id == "loan_999"
         assert result.original_amount == 100.0
         assert result.outstanding_balance == 100.0

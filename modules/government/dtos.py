@@ -30,23 +30,6 @@ class TaxBracketDTO:
     floor: int = 0
     ceiling: Optional[int] = None
 
-@dataclass
-class FiscalPolicyDTO:
-    """Defines the government's fiscal stance including tax rates and brackets."""
-    tax_brackets: List[TaxBracketDTO]
-    income_tax_rate: float
-    corporate_tax_rate: float
-    vat_rate: float = 0.0
-
-@dataclass(frozen=True)
-class FiscalPolicyDTO:
-    """Snapshot of the current fiscal policy."""
-    income_tax_rate: float
-    corporate_tax_rate: float
-    tax_brackets: List[TaxBracketDTO] = field(default_factory=list)
-    welfare_budget_multiplier: float = 1.0
-    vat_rate: float = 0.0
-
 @dataclass(frozen=True)
 class GovernmentPolicyDTO:
     """
@@ -68,6 +51,9 @@ class GovernmentPolicyDTO:
     welfare_budget_multiplier: float = 1.0
     bailout_threshold_solvency: float = 0.1
 
+# Alias for backward compatibility
+FiscalPolicyDTO = GovernmentPolicyDTO
+
 @dataclass
 class MonetaryPolicyDTO:
     """State of the current monetary policy."""
@@ -86,15 +72,15 @@ class GovernmentStateDTO:
     corporate_tax_rate: float
     # Removed duplicate fields
     policy: GovernmentPolicyDTO
-    fiscal_policy: Optional[FiscalPolicyDTO] # Explicit fiscal policy
     approval_rating: float
+    fiscal_policy: Optional[FiscalPolicyDTO] = None # Explicit fiscal policy
     policy_lockouts: Dict[Any, int] = field(default_factory=dict) # <PolicyActionTag, locked_until_tick>
     sensory_data: Optional[GovernmentSensoryDTO] = None
     gdp_history: List[float] = field(default_factory=list)
     welfare_budget_multiplier: float = 1.0
     potential_gdp: float = 0.0
     fiscal_stance: float = 0.0
-    welfare_budget_multiplier: float = 1.0
+    ruling_party: Optional[Any] = None
 
 @dataclass
 class PolicyDecisionDTO:
@@ -208,12 +194,8 @@ class BondRepaymentDetailsDTO:
     interest_pennies: int
     bond_id: str
 
-# Alias for backward compatibility
-FiscalPolicyDTO = GovernmentPolicyDTO
-
 # endregion
 
-@dataclass
 @dataclass
 class GovernmentSensoryDTO:
     """

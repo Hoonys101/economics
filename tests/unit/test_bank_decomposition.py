@@ -5,7 +5,7 @@ from modules.common.config_manager.api import ConfigManager
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.models import Transaction
 from modules.finance.system import FinanceSystem
-from modules.finance.api import LoanInfoDTO, BorrowerProfileDTO
+from modules.finance.api import LoanDTO, BorrowerProfileDTO
 import config
 
 if not hasattr(config, 'TICKS_PER_YEAR'):
@@ -57,16 +57,17 @@ class TestBankDecomposition(unittest.TestCase):
         borrower_id = 101
 
         # Mock finance_system response
-        # Create a real LoanInfoDTO or a mock with attributes
-        mock_dto = LoanInfoDTO(
+        # Create a real LoanDTO or a mock with attributes
+        mock_dto = LoanDTO(
             loan_id="loan_1",
             borrower_id=borrower_id,
-            original_amount=float(amount),
-            outstanding_balance=float(amount),
+            principal_pennies=int(amount),
+            remaining_principal_pennies=int(amount),
             interest_rate=interest_rate,
             origination_tick=0,
             due_tick=100,
-            status="ACTIVE"
+            status="ACTIVE",
+            lender_id=1
         )
         mock_tx = MagicMock()
         mock_tx.transaction_type = "credit_creation"
@@ -80,7 +81,7 @@ class TestBankDecomposition(unittest.TestCase):
         self.assertIsNotNone(dto)
         # MIGRATION: Bank now returns objects (SimpleNamespace or DTO), not dicts
         self.assertEqual(dto.borrower_id, borrower_id)
-        self.assertEqual(dto.original_amount, float(amount))
+        self.assertEqual(dto.principal_pennies, int(amount))
 
         # Verify delegation
         # Expect a BorrowerProfileDTO object now, not a dict

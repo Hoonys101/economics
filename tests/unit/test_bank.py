@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from simulation.bank import Bank
-from modules.finance.api import IFinanceSystem, LoanInfoDTO, ISettlementSystem
+from modules.finance.api import IFinanceSystem, LoanDTO, ISettlementSystem
 from modules.simulation.api import AgentID
 from modules.finance.engine_api import FinancialLedgerDTO, BankStateDTO, DepositStateDTO
 from modules.system.api import DEFAULT_CURRENCY
@@ -71,8 +71,8 @@ def test_bank_withdraw_delegation(bank, mock_finance_system):
 
 def test_grant_loan_delegation(bank, mock_finance_system):
     # Setup Mock Return
-    mock_loan = LoanInfoDTO(
-        loan_id="L1", borrower_id=2, original_amount=10000, outstanding_balance=10000,
+    mock_loan = LoanDTO(
+        loan_id="L1", borrower_id=2, principal_pennies=10000, remaining_principal_pennies=10000,
         interest_rate=0.05, origination_tick=0, due_tick=10
     )
     mock_tx = Transaction(buyer_id=1, seller_id=2, item_id="L1", quantity=10000, price=1.0, market_id="m", transaction_type="credit_creation", time=0, total_pennies=1000000)
@@ -123,8 +123,8 @@ def test_run_tick_delegates_to_service_debt(bank, mock_finance_system):
 
 def test_grant_loan_with_object_calls_transfer(bank, mock_finance_system, mock_settlement_system):
     # Setup Mock Return
-    mock_loan = LoanInfoDTO(
-        loan_id="L1", borrower_id=2, original_amount=10000, outstanding_balance=10000,
+    mock_loan = LoanDTO(
+        loan_id="L1", borrower_id=2, principal_pennies=10000, remaining_principal_pennies=10000,
         interest_rate=0.05, origination_tick=0, due_tick=10
     )
     mock_tx = MagicMock(spec=Transaction)
@@ -147,8 +147,8 @@ def test_grant_loan_with_object_calls_transfer(bank, mock_finance_system, mock_s
 
 def test_grant_loan_with_id_skips_transfer(bank, mock_finance_system, mock_settlement_system):
     # Setup Mock Return
-    mock_loan = LoanInfoDTO(
-        loan_id="L1", borrower_id=2, original_amount=10000, outstanding_balance=10000,
+    mock_loan = LoanDTO(
+        loan_id="L1", borrower_id=2, principal_pennies=10000, remaining_principal_pennies=10000,
         interest_rate=0.05, origination_tick=0, due_tick=10
     )
     mock_tx = MagicMock(spec=Transaction)

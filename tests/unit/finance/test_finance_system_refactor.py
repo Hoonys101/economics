@@ -136,5 +136,5 @@ def test_grant_bailout_loan_deprecated(mock_dependencies):
     # So it should return a loan.
     assert loan is not None
     # Use dot notation as strictly typed
-    assert loan.original_amount == 500000.0
+    assert loan.principal_pennies == 500000
     assert len(txs) > 0
