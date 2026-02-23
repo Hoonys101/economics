@@ -27,5 +27,10 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "instruction": "Fix SimulationInitializer order, register Agent 0, and implement cross-platform file locking as per Wave 1.5 SPEC.",
         "file": "gemini-output/spec/MISSION_liquidation_wave1_5_SPEC.md"
     },
+    "MISSION_impl_liquidation_wave2": {
+        "title": "Wave 2: Finance Core Penny Standard & Reserve Sync",
+        "instruction": "Harden Finance API/DTO to Penny Standard (Int) and implement Reserve Synchronization as per SPEC.",
+        "file": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave2_SPEC.md"
+    },
     # Add missions here
 }

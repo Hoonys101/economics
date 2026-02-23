@@ -61,7 +61,9 @@ class GitReviewCommand(ICommand):
         # ))
         
         # final_context = [node.file_path for node in injection_result.nodes]
-        final_context = changed_files
+        # Only include files that exist in the local FS for standalone context.
+        # New files are already covered by the diff file.
+        final_context = [f for f in changed_files if (base_dir / f).is_file()]
 
         review_output = base_dir / "gemini-output" / "review" / f"pr_review_{short_name}.md"
         

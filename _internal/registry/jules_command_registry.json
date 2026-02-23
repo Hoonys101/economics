@@ -3,20 +3,13 @@
     "version": "1.0"
   },
   "missions": {
-    "MISSION_impl_liquidation_wave1": {
-      "key": "MISSION_impl_liquidation_wave1",
+    "MISSION_impl_liquidation_wave1_shared_kernel": {
+      "key": "MISSION_impl_liquidation_wave1_shared_kernel",
       "title": "Wave 1: Shared Financial Kernel & Cycle Breaker",
       "type": "jules",
       "instruction_raw": "Implement modules/common/financial, migrate Claim/MoneyDTO (Int Pennies), and resolve Finance <-> HR circular dependency as per SPEC.",
       "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave1_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave1_SPEC.md"
     },
     "MISSION_impl_liquidation_wave1_5": {
       "key": "MISSION_impl_liquidation_wave1_5",
@@ -25,6 +18,21 @@
       "instruction_raw": "Fix SimulationInitializer order, register Agent 0, and implement cross-platform file locking as per Wave 1.5 SPEC.",
       "command": "create",
       "file_path": "gemini-output/spec/MISSION_liquidation_wave1_5_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "MISSION_impl_liquidation_wave2": {
+      "key": "MISSION_impl_liquidation_wave2",
+      "title": "Wave 2: Finance Core Penny Standard & Reserve Sync",
+      "type": "jules",
+      "instruction_raw": "Harden Finance API/DTO to Penny Standard (Int) and implement Reserve Synchronization as per SPEC.",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave2_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,
@@ -153,6 +161,21 @@
         "modules/government/dtos.py"
       ],
       "output_path": "gemini-output/spec/MISSION_liquidation_wave4_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "MISSION_impl_liquidation_wave1": {
+      "key": "MISSION_impl_liquidation_wave1",
+      "title": "Wave 1: Shared Financial Kernel & Cycle Breaker",
+      "type": "jules",
+      "instruction_raw": "Implement modules/common/financial, migrate Claim/MoneyDTO (Int Pennies), and resolve Finance <-> HR circular dependency as per SPEC.",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave1_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
       "model": null,
       "audit_requirements": null
     }
