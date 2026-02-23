@@ -50,15 +50,16 @@ class PublicManagerTransactionHandler(ITransactionHandler):
 
             if success:
                  # Record Revenue
+                 from modules.finance.dtos import TaxCollectionResult
                  for intent in intents:
-                    context.government.record_revenue({
-                         "success": True,
-                         "amount_collected": intent.amount,
-                         "tax_type": intent.reason,
-                         "payer_id": intent.payer_id,
-                         "payee_id": intent.payee_id,
-                         "error_message": None
-                    })
+                    context.government.record_revenue(TaxCollectionResult(
+                         success=True,
+                         amount_collected=intent.amount,
+                         tax_type=intent.reason,
+                         payer_id=intent.payer_id,
+                         payee_id=intent.payee_id,
+                         error_message=None
+                    ))
         else:
              # Legacy/Non-taxable (e.g. assets)
              success = context.settlement_system.transfer(

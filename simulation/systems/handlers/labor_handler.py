@@ -72,15 +72,16 @@ class LaborTransactionHandler(ITransactionHandler):
             # 3. Apply Side-Effects
             if settlement_success:
                 # Record Revenue for Tax Purposes
+                from modules.finance.dtos import TaxCollectionResult
                 for intent in intents:
-                    context.government.record_revenue({
-                         "success": True,
-                         "amount_collected": intent.amount,
-                         "tax_type": intent.reason,
-                         "payer_id": intent.payer_id,
-                         "payee_id": intent.payee_id,
-                         "error_message": None
-                    })
+                    context.government.record_revenue(TaxCollectionResult(
+                         success=True,
+                         amount_collected=intent.amount,
+                         tax_type=intent.reason,
+                         payer_id=intent.payer_id,
+                         payee_id=intent.payee_id,
+                         error_message=None
+                    ))
 
                 self._apply_labor_effects(tx, buyer, seller, seller_net_amount, buyer_total_cost, context)
 

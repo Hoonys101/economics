@@ -53,14 +53,15 @@ class FinancialTransactionHandler(ITransactionHandler):
             if success:
                  # Gov record_revenue is complex (takes dict), not IRevenueTracker (takes int)
                  # Keeping as is for Gov
-                 gov.record_revenue({
-                         "success": True,
-                         "amount_collected": int(trade_value),
-                         "tax_type": tx.item_id,
-                         "payer_id": buyer.id,
-                         "payee_id": gov.id,
-                         "error_message": None
-                     })
+                 from modules.finance.dtos import TaxCollectionResult
+                 gov.record_revenue(TaxCollectionResult(
+                         success=True,
+                         amount_collected=int(trade_value),
+                         tax_type=tx.item_id,
+                         payer_id=buyer.id,
+                         payee_id=gov.id,
+                         error_message=None
+                     ))
 
                  # WO-116 Fix: Ensure Firms record tax as expense for accounting integrity
                  if isinstance(buyer, IExpenseTracker):

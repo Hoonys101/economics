@@ -1,0 +1,375 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-8.4.1, pluggy-1.6.0
+rootdir: C:\coding\economics
+configfile: pytest.ini
+plugins: anyio-4.12.0, asyncio-1.3.0, cov-7.0.0, mock-3.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 10 items
+
+tests/system/test_engine.py::TestSimulation::test_simulation_initialization 
+------------------------------- live log setup --------------------------------
+INFO     simulation.agents.central_bank:central_bank.py:54 CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+INFO     simulation.bank:bank.py:70 Bank 2 initialized (Stateless Proxy).
+INFO     simulation.agents.government:government.py:165 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+INFO     simulation.loan_market:loan_market.py:35 LoanMarket loan_market initialized with bank service: 2
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 101 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 102 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:113 BOOTSTRAPPER | Injected resources into 0 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 2 workers to Firm 101
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 0 workers to Firm 102
+INFO     simulation.systems.bootstrapper:bootstrapper.py:57 BOOTSTRAPPER | Total force-assigned workers: 2
+INFO     simulation.ai.ai_training_manager:ai_training_manager.py:20 AITrainingManager initialized.
+PASSED                                                                   [ 10%]
+tests/system/test_engine.py::TestSimulation::test_prepare_market_data_basic 
+------------------------------- live log setup --------------------------------
+INFO     simulation.agents.central_bank:central_bank.py:54 CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+INFO     simulation.bank:bank.py:70 Bank 2 initialized (Stateless Proxy).
+INFO     simulation.agents.government:government.py:165 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+INFO     simulation.loan_market:loan_market.py:35 LoanMarket loan_market initialized with bank service: 2
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 101 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 102 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:113 BOOTSTRAPPER | Injected resources into 0 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 2 workers to Firm 101
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 0 workers to Firm 102
+INFO     simulation.systems.bootstrapper:bootstrapper.py:57 BOOTSTRAPPER | Total force-assigned workers: 2
+INFO     simulation.ai.ai_training_manager:ai_training_manager.py:20 AITrainingManager initialized.
+PASSED                                                                   [ 20%]
+tests/system/test_engine.py::TestSimulation::test_prepare_market_data_no_goods_market 
+------------------------------- live log setup --------------------------------
+INFO     simulation.agents.central_bank:central_bank.py:54 CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+INFO     simulation.bank:bank.py:70 Bank 2 initialized (Stateless Proxy).
+INFO     simulation.agents.government:government.py:165 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+INFO     simulation.loan_market:loan_market.py:35 LoanMarket loan_market initialized with bank service: 2
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 101 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 102 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:113 BOOTSTRAPPER | Injected resources into 0 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 2 workers to Firm 101
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 0 workers to Firm 102
+INFO     simulation.systems.bootstrapper:bootstrapper.py:57 BOOTSTRAPPER | Total force-assigned workers: 2
+INFO     simulation.ai.ai_training_manager:ai_training_manager.py:20 AITrainingManager initialized.
+PASSED                                                                   [ 30%]
+tests/system/test_engine.py::TestSimulation::test_prepare_market_data_with_best_ask 
+------------------------------- live log setup --------------------------------
+INFO     simulation.agents.central_bank:central_bank.py:54 CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+INFO     simulation.bank:bank.py:70 Bank 2 initialized (Stateless Proxy).
+INFO     simulation.agents.government:government.py:165 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+INFO     simulation.loan_market:loan_market.py:35 LoanMarket loan_market initialized with bank service: 2
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 101 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 102 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:113 BOOTSTRAPPER | Injected resources into 0 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 2 workers to Firm 101
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 0 workers to Firm 102
+INFO     simulation.systems.bootstrapper:bootstrapper.py:57 BOOTSTRAPPER | Total force-assigned workers: 2
+INFO     simulation.ai.ai_training_manager:ai_training_manager.py:20 AITrainingManager initialized.
+PASSED                                                                   [ 40%]
+tests/system/test_engine.py::TestSimulation::test_process_transactions_goods_trade 
+------------------------------- live log setup --------------------------------
+INFO     simulation.agents.central_bank:central_bank.py:54 CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+INFO     simulation.bank:bank.py:70 Bank 2 initialized (Stateless Proxy).
+INFO     simulation.agents.government:government.py:165 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+INFO     simulation.loan_market:loan_market.py:35 LoanMarket loan_market initialized with bank service: 2
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 101 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 102 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:113 BOOTSTRAPPER | Injected resources into 0 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 2 workers to Firm 101
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 0 workers to Firm 102
+INFO     simulation.systems.bootstrapper:bootstrapper.py:57 BOOTSTRAPPER | Total force-assigned workers: 2
+INFO     simulation.ai.ai_training_manager:ai_training_manager.py:20 AITrainingManager initialized.
+FAILED                                                                   [ 50%]
+tests/system/test_engine.py::TestSimulation::test_process_transactions_labor_trade 
+------------------------------- live log setup --------------------------------
+INFO     simulation.agents.central_bank:central_bank.py:54 CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+INFO     simulation.bank:bank.py:70 Bank 2 initialized (Stateless Proxy).
+INFO     simulation.agents.government:government.py:165 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+INFO     simulation.loan_market:loan_market.py:35 LoanMarket loan_market initialized with bank service: 2
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 101 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 102 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:113 BOOTSTRAPPER | Injected resources into 0 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 2 workers to Firm 101
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 0 workers to Firm 102
+INFO     simulation.systems.bootstrapper:bootstrapper.py:57 BOOTSTRAPPER | Total force-assigned workers: 2
+INFO     simulation.ai.ai_training_manager:ai_training_manager.py:20 AITrainingManager initialized.
+FAILED                                                                   [ 60%]
+tests/system/test_engine.py::TestSimulation::test_process_transactions_research_labor_trade 
+------------------------------- live log setup --------------------------------
+INFO     simulation.agents.central_bank:central_bank.py:54 CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+INFO     simulation.bank:bank.py:70 Bank 2 initialized (Stateless Proxy).
+INFO     simulation.agents.government:government.py:165 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+INFO     simulation.loan_market:loan_market.py:35 LoanMarket loan_market initialized with bank service: 2
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 101 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 102 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:113 BOOTSTRAPPER | Injected resources into 0 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 2 workers to Firm 101
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 0 workers to Firm 102
+INFO     simulation.systems.bootstrapper:bootstrapper.py:57 BOOTSTRAPPER | Total force-assigned workers: 2
+INFO     simulation.ai.ai_training_manager:ai_training_manager.py:20 AITrainingManager initialized.
+FAILED                                                                   [ 70%]
+tests/system/test_engine.py::TestSimulation::test_process_transactions_invalid_agents 
+------------------------------- live log setup --------------------------------
+INFO     simulation.agents.central_bank:central_bank.py:54 CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+INFO     simulation.bank:bank.py:70 Bank 2 initialized (Stateless Proxy).
+INFO     simulation.agents.government:government.py:165 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+INFO     simulation.loan_market:loan_market.py:35 LoanMarket loan_market initialized with bank service: 2
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 101 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 102 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:113 BOOTSTRAPPER | Injected resources into 0 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 2 workers to Firm 101
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 0 workers to Firm 102
+INFO     simulation.systems.bootstrapper:bootstrapper.py:57 BOOTSTRAPPER | Total force-assigned workers: 2
+INFO     simulation.ai.ai_training_manager:ai_training_manager.py:20 AITrainingManager initialized.
+PASSED                                                                   [ 80%]
+tests/system/test_engine.py::test_handle_agent_lifecycle_removes_inactive_agents 
+------------------------------- live log setup --------------------------------
+INFO     simulation.agents.central_bank:central_bank.py:54 CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+INFO     simulation.bank:bank.py:70 Bank 2 initialized (Stateless Proxy).
+INFO     simulation.agents.government:government.py:165 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+INFO     simulation.loan_market:loan_market.py:35 LoanMarket loan_market initialized with bank service: 2
+INFO     simulation.systems.bootstrapper:bootstrapper.py:97 BOOTSTRAPPER | Injected 50.0 units to Firm 101
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9999000 capital to Firm 101 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:97 BOOTSTRAPPER | Injected 50.0 units to Firm 102
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9999500 capital to Firm 102 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:113 BOOTSTRAPPER | Injected resources into 0 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:57 BOOTSTRAPPER | Total force-assigned workers: 0
+INFO     simulation.ai.ai_training_manager:ai_training_manager.py:20 AITrainingManager initialized.
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.liquidation_handlers:liquidation_handlers.py:85 LIQUIDATION_ASSET_SALE | Agent 102 sold inventory to PublicManager for 25000.
+INFO     simulation.systems.liquidation_manager:liquidation_manager.py:80 LIQUIDATION_START | Agent 102 starting liquidation. Assets: 25500.00, Total Claims: 0.00
+PASSED                                                                   [ 90%]
+tests/system/test_engine.py::test_death_system_executes_asset_buyout 
+------------------------------- live log setup --------------------------------
+INFO     simulation.agents.central_bank:central_bank.py:54 CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+INFO     simulation.bank:bank.py:70 Bank 2 initialized (Stateless Proxy).
+INFO     simulation.agents.government:government.py:165 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+INFO     simulation.loan_market:loan_market.py:35 LoanMarket loan_market initialized with bank service: 2
+INFO     simulation.systems.bootstrapper:bootstrapper.py:97 BOOTSTRAPPER | Injected 50.0 units to Firm 101
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9999000 capital to Firm 101 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:97 BOOTSTRAPPER | Injected 50.0 units to Firm 102
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9999500 capital to Firm 102 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:113 BOOTSTRAPPER | Injected resources into 0 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:57 BOOTSTRAPPER | Total force-assigned workers: 0
+INFO     simulation.ai.ai_training_manager:ai_training_manager.py:20 AITrainingManager initialized.
+-------------------------------- live log call --------------------------------
+INFO     simulation.systems.liquidation_handlers:liquidation_handlers.py:85 LIQUIDATION_ASSET_SALE | Agent 102 sold inventory to PublicManager for 25000.
+INFO     simulation.systems.liquidation_manager:liquidation_manager.py:80 LIQUIDATION_START | Agent 102 starting liquidation. Assets: 25500.00, Total Claims: 0.00
+PASSED                                                                   [100%]
+
+================================== FAILURES ===================================
+____________ TestSimulation.test_process_transactions_goods_trade _____________
+
+self = <tests.system.test_engine.TestSimulation object at 0x000001C9336DDFD0>
+simulation_instance = <simulation.engine.Simulation object at 0x000001C934997E10>
+mock_households = [<simulation.core_agents.Household object at 0x000001C9339742D0>, <simulation.core_agents.Household object at 0x000001C933841810>]
+mock_firms = [<simulation.firms.Firm object at 0x000001C933843ED0>, <simulation.firms.Firm object at 0x000001C9338439D0>]
+
+    def test_process_transactions_goods_trade(
+        self, simulation_instance, mock_households, mock_firms
+    ):
+        buyer_hh = mock_households[0]
+        seller_firm = mock_firms[0]
+        initial_buyer_assets = buyer_hh.get_balance(DEFAULT_CURRENCY)
+        initial_seller_assets = seller_firm.get_balance(DEFAULT_CURRENCY)
+        initial_seller_inventory = seller_firm.get_quantity("basic_food")
+        initial_buyer_inventory = buyer_hh.inventory.get("basic_food", 0)
+    
+        tx = Mock(spec=Transaction)
+        tx.buyer_id = buyer_hh.id
+        tx.seller_id = seller_firm.id
+        tx.item_id = "basic_food"
+        tx.quantity = 5.0
+        tx.price = 10.0
+        tx.total_pennies = 50
+        tx.quality = 1.0 # Ensure quality is a float
+        tx.transaction_type = "goods"
+        tx.metadata = {}
+    
+        simulation_instance._process_transactions([tx])
+    
+        # Assets include tax considerations
+        trade_value = tx.quantity * tx.price
+        from modules.finance.utils.currency_math import round_to_pennies
+        tax = round_to_pennies(trade_value * simulation_instance.config_module.SALES_TAX_RATE)
+        assert buyer_hh.get_balance(DEFAULT_CURRENCY) == initial_buyer_assets - (trade_value + tax)
+        assert seller_firm.get_balance(DEFAULT_CURRENCY) == initial_seller_assets + trade_value
+>       assert (
+            seller_firm.get_quantity("basic_food")
+            == initial_seller_inventory - tx.quantity
+        )
+E       AssertionError: assert 50.0 == (50.0 - 5.0)
+E        +  where 50.0 = get_quantity('basic_food')
+E        +    where get_quantity = <simulation.firms.Firm object at 0x000001C933843ED0>.get_quantity
+E        +  and   5.0 = <Mock spec='Transaction' id='1963683573984'>.quantity
+
+tests\system\test_engine.py:456: AssertionError
+----------------------------- Captured log setup ------------------------------
+INFO     simulation.agents.central_bank:central_bank.py:54 CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+INFO     simulation.bank:bank.py:70 Bank 2 initialized (Stateless Proxy).
+INFO     simulation.agents.government:government.py:165 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+INFO     simulation.loan_market:loan_market.py:35 LoanMarket loan_market initialized with bank service: 2
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 101 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 102 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:113 BOOTSTRAPPER | Injected resources into 0 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 2 workers to Firm 101
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 0 workers to Firm 102
+INFO     simulation.systems.bootstrapper:bootstrapper.py:57 BOOTSTRAPPER | Total force-assigned workers: 2
+INFO     simulation.ai.ai_training_manager:ai_training_manager.py:20 AITrainingManager initialized.
+____________ TestSimulation.test_process_transactions_labor_trade _____________
+
+self = <tests.system.test_engine.TestSimulation object at 0x000001C9336A9040>
+simulation_instance = <simulation.engine.Simulation object at 0x000001C934C48B90>
+mock_households = [<simulation.core_agents.Household object at 0x000001C933729F90>, <simulation.core_agents.Household object at 0x000001C934A24F50>]
+mock_firms = [<simulation.firms.Firm object at 0x000001C934A25310>, <simulation.firms.Firm object at 0x000001C934A256D0>]
+
+    def test_process_transactions_labor_trade(
+        self, simulation_instance, mock_households, mock_firms
+    ):
+        buyer_firm = mock_firms[0]
+        seller_hh = mock_households[0]
+        initial_buyer_assets = buyer_firm.get_balance(DEFAULT_CURRENCY)
+        initial_seller_assets = seller_hh.get_balance(DEFAULT_CURRENCY)
+    
+        seller_hh.is_employed = False
+        buyer_firm.hr_state.employees = []
+    
+        # Trade value is 20.0 dollars = 2000 pennies
+        trade_value_pennies = 2000
+    
+        tx = Transaction(
+            buyer_id=buyer_firm.id,
+            seller_id=seller_hh.id,
+            item_id="labor",
+            quantity=1.0,
+            price=20.0,
+            total_pennies=trade_value_pennies,
+            market_id="labor",
+            transaction_type="labor",
+            time=simulation_instance.time,
+            metadata={}
+        )
+    
+        simulation_instance._process_transactions([tx])
+    
+        # Assets include tax considerations
+        # Note: Government uses FiscalPolicyManager which applies Progressive Tax Brackets defined in config.
+        # However, in this test environment with mocked config, the effective tax calculation yields 2 pennies.
+        # (Likely due to FLAT tax mode interaction or survival threshold offset).
+        tax_pennies = 2
+    
+        assert buyer_firm.get_balance(DEFAULT_CURRENCY) == initial_buyer_assets - trade_value_pennies
+        # Household net income: 2000 - tax (e.g. 125)
+        # We allow small delta if taxes are float-based but here they should be integer now.
+        assert seller_hh.get_balance(DEFAULT_CURRENCY) == initial_seller_assets + (trade_value_pennies - tax_pennies)
+>       assert seller_hh.is_employed is True
+E       assert False is True
+E        +  where False = <simulation.core_agents.Household object at 0x000001C933729F90>.is_employed
+
+tests\system\test_engine.py:506: AssertionError
+----------------------------- Captured log setup ------------------------------
+INFO     simulation.agents.central_bank:central_bank.py:54 CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+INFO     simulation.bank:bank.py:70 Bank 2 initialized (Stateless Proxy).
+INFO     simulation.agents.government:government.py:165 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+INFO     simulation.loan_market:loan_market.py:35 LoanMarket loan_market initialized with bank service: 2
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 101 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 102 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:113 BOOTSTRAPPER | Injected resources into 0 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 2 workers to Firm 101
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 0 workers to Firm 102
+INFO     simulation.systems.bootstrapper:bootstrapper.py:57 BOOTSTRAPPER | Total force-assigned workers: 2
+INFO     simulation.ai.ai_training_manager:ai_training_manager.py:20 AITrainingManager initialized.
+---------------------------- Captured stdout call -----------------------------
+DEBUG_LABOR_HANDLER | Handling labor for 101 -> 201
+DEBUG_LABOR_HANDLER | ERROR: 'dict' object has no attribute 'success'
+---------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):
+  File "C:\coding\economics\simulation\systems\handlers\labor_handler.py", line 76, in handle
+    context.government.record_revenue({
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+         "success": True,
+         ^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+         "error_message": None
+         ^^^^^^^^^^^^^^^^^^^^^
+    })
+    ^^
+  File "C:\coding\economics\simulation\agents\government.py", line 230, in record_revenue
+    self.tax_service.record_revenue(result)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\coding\economics\modules\government\tax\service.py", line 126, in record_revenue
+    if not result.success or result.amount_collected <= 0:
+           ^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'success'
+________ TestSimulation.test_process_transactions_research_labor_trade ________
+
+self = <tests.system.test_engine.TestSimulation object at 0x000001C9336A8F30>
+simulation_instance = <simulation.engine.Simulation object at 0x000001C934A369C0>
+mock_households = [<simulation.core_agents.Household object at 0x000001C934A26850>, <simulation.core_agents.Household object at 0x000001C934A26C10>]
+mock_firms = [<simulation.firms.Firm object at 0x000001C934A26FD0>, <simulation.firms.Firm object at 0x000001C934A27250>]
+
+    def test_process_transactions_research_labor_trade(
+        self, simulation_instance, mock_households, mock_firms
+    ):
+        buyer_firm = mock_firms[0]
+        seller_hh = mock_households[0]
+        initial_productivity_factor = buyer_firm.productivity_factor
+    
+        seller_hh.skills = {"research": Mock(spec=Skill, value=5.0)}
+        trade_value_pennies = 3000
+    
+        tx = Transaction(
+            buyer_id=buyer_firm.id,
+            seller_id=seller_hh.id,
+            item_id="research_labor",
+            quantity=1.0,
+            price=30.0,
+            total_pennies=trade_value_pennies,
+            market_id="research_labor",
+            transaction_type="research_labor",
+            time=simulation_instance.time,
+            metadata={}
+        )
+    
+        simulation_instance._process_transactions([tx])
+    
+>       assert seller_hh.is_employed is True
+E       assert False is True
+E        +  where False = <simulation.core_agents.Household object at 0x000001C934A26850>.is_employed
+
+tests\system\test_engine.py:539: AssertionError
+----------------------------- Captured log setup ------------------------------
+INFO     simulation.agents.central_bank:central_bank.py:54 CENTRAL_BANK_INIT | Rate: 5.00%, Target Infl: 2.00%
+INFO     simulation.bank:bank.py:70 Bank 2 initialized (Stateless Proxy).
+INFO     simulation.agents.government:government.py:165 Government 1 initialized with assets: defaultdict(<class 'int'>, {'USD': 0})
+INFO     simulation.loan_market:loan_market.py:35 LoanMarket loan_market initialized with bank service: 2
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 101 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:107 BOOTSTRAPPER | Injected 9990000 capital to Firm 102 via Settlement.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:113 BOOTSTRAPPER | Injected resources into 0 firms.
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 2 workers to Firm 101
+INFO     simulation.systems.bootstrapper:bootstrapper.py:55 BOOTSTRAPPER | Force-assigned 0 workers to Firm 102
+INFO     simulation.systems.bootstrapper:bootstrapper.py:57 BOOTSTRAPPER | Total force-assigned workers: 2
+INFO     simulation.ai.ai_training_manager:ai_training_manager.py:20 AITrainingManager initialized.
+---------------------------- Captured stdout call -----------------------------
+DEBUG_LABOR_HANDLER | Handling research_labor for 101 -> 201
+DEBUG_LABOR_HANDLER | ERROR: 'dict' object has no attribute 'success'
+---------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):
+  File "C:\coding\economics\simulation\systems\handlers\labor_handler.py", line 76, in handle
+    context.government.record_revenue({
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+         "success": True,
+         ^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+         "error_message": None
+         ^^^^^^^^^^^^^^^^^^^^^
+    })
+    ^^
+  File "C:\coding\economics\simulation\agents\government.py", line 230, in record_revenue
+    self.tax_service.record_revenue(result)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "C:\coding\economics\modules\government\tax\service.py", line 126, in record_revenue
+    if not result.success or result.amount_collected <= 0:
+           ^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute 'success'
+=========================== short test summary info ===========================
+FAILED tests/system/test_engine.py::TestSimulation::test_process_transactions_goods_trade
+FAILED tests/system/test_engine.py::TestSimulation::test_process_transactions_labor_trade
+FAILED tests/system/test_engine.py::TestSimulation::test_process_transactions_research_labor_trade
+========================= 3 failed, 7 passed in 2.10s =========================

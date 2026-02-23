@@ -74,15 +74,16 @@ class GoodsTransactionHandler(ITransactionHandler):
         # 3. Apply Side-Effects (Only on success)
         if settlement_success:
             # Record Revenue for Tax Purposes (Government)
+            from modules.finance.dtos import TaxCollectionResult
             for intent in intents:
-                context.government.record_revenue({
-                     "success": True,
-                     "amount_collected": intent.amount,
-                     "tax_type": intent.reason,
-                     "payer_id": intent.payer_id,
-                     "payee_id": intent.payee_id,
-                     "error_message": None
-                })
+                context.government.record_revenue(TaxCollectionResult(
+                     success=True,
+                     amount_collected=intent.amount,
+                     tax_type=intent.reason,
+                     payer_id=intent.payer_id,
+                     payee_id=intent.payee_id,
+                     error_message=None
+                ))
 
             # Update Inventories, Consumption, etc. (Migrated from TransactionProcessor & Registry)
             self._apply_goods_effects(tx, buyer, seller, trade_value, total_cost, context)
