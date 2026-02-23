@@ -24,6 +24,10 @@ from modules.finance.transaction.api import (
 )
 from modules.system.api import CurrencyCode
 
+class SkipTransactionError(TransactionError):
+    """Raised when a transaction should be skipped rather than failed (e.g. inactive agent)."""
+    pass
+
 # ==============================================================================
 # DEFAULT IMPLEMENTATIONS
 # ==============================================================================
@@ -42,10 +46,10 @@ class TransactionValidator(ITransactionValidator):
 
         # Account Existence Checks
         if not self.account_accessor.exists(transaction.source_account_id):
-            raise InvalidAccountError(f"Source account does not exist: {transaction.source_account_id}")
+            raise SkipTransactionError(f"Source account does not exist (Skipping): {transaction.source_account_id}")
 
         if not self.account_accessor.exists(transaction.destination_account_id):
-            raise InvalidAccountError(f"Destination account does not exist: {transaction.destination_account_id}")
+            raise SkipTransactionError(f"Destination account does not exist (Skipping): {transaction.destination_account_id}")
 
         # Check sufficient funds
         try:
@@ -213,6 +217,15 @@ class LedgerEngine(ILedgerEngine):
         # 2. Validation Stage
         try:
             self.validator.validate(transaction_dto)
+        except SkipTransactionError as e:
+            skipped_result = TransactionResultDTO(
+                transaction=transaction_dto,
+                status='SKIPPED',
+                message=str(e),
+                timestamp=self._get_timestamp()
+            )
+            self.ledger.record(skipped_result)
+            return skipped_result
         except ValidationError as e:
             failed_result = TransactionResultDTO(
                 transaction=transaction_dto,
@@ -281,6 +294,16 @@ class LedgerEngine(ILedgerEngine):
             # 1. Just-In-Time Validation
             try:
                 self.validator.validate(tx)
+            except SkipTransactionError as e:
+                # Log warning and record as SKIPPED, but continue batch.
+                self.logger.warning(f"Batch Transaction Skipped: {tx.transaction_id} - {e}")
+                results.append(TransactionResultDTO(
+                    transaction=tx,
+                    status='SKIPPED',
+                    message=str(e),
+                    timestamp=self._get_timestamp()
+                ))
+                continue
             except Exception as e:
                 # Validation failed for THIS transaction. Init rollback.
                 fail_msg = f"Batch Validation Failed on {tx.transaction_id}: {e}"

@@ -127,6 +127,7 @@ class FirmSystem:
             instance_class=ServiceFirm if is_service else Firm,
             core_config=core_config,
             firm_config_dto=firm_config_dto,
+            engine=firm_decision_engine,
             specialization=specialization,
             productivity_factor=random.uniform(8.0, 12.0),
             loan_market=loan_market,

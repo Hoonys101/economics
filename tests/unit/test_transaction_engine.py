@@ -17,7 +17,8 @@ from modules.finance.transaction.engine import (
     TransactionValidator,
     TransactionExecutor,
     LedgerEngine,
-    TransactionEngine
+    TransactionEngine,
+    SkipTransactionError
 )
 from modules.finance.api import TransactionType, ITransactionHandler
 from modules.finance.transaction.adapter import RegistryAccountAccessor
@@ -103,7 +104,7 @@ def test_validator_invalid_account():
         description="test"
     )
 
-    with pytest.raises(InvalidAccountError):
+    with pytest.raises(SkipTransactionError):
         validator.validate(dto)
 
 

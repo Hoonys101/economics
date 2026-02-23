@@ -8,6 +8,7 @@ from modules.government.political.api import (
     LobbyingEffortDTO,
     PoliticalClimateDTO
 )
+from modules.system.constants import ID_PUBLIC_MANAGER, ID_GOVERNMENT
 
 class PoliticalOrchestrator(IPoliticalOrchestrator):
     """
@@ -78,3 +79,20 @@ class PoliticalOrchestrator(IPoliticalOrchestrator):
         """Clears votes and lobbying efforts for the next accumulation cycle."""
         self._vote_buffer.clear()
         self._lobbying_buffer.clear()
+
+    def validate_transfer_targets(self, payer_id: Any, payee_id: Any) -> bool:
+        """
+        Validates the participants of a political transfer (e.g. Lobbying).
+        Ensures the payee is a valid government entity (ID_PUBLIC_MANAGER or ID_GOVERNMENT).
+        """
+        valid_payees = [ID_PUBLIC_MANAGER, ID_GOVERNMENT, "GOVERNMENT_TREASURY", 1]
+
+        if payee_id not in valid_payees:
+            # Check if it matches ID_PUBLIC_MANAGER int/str
+            try:
+                if int(payee_id) in [ID_PUBLIC_MANAGER, ID_GOVERNMENT]:
+                    return True
+            except (ValueError, TypeError):
+                pass
+            return False
+        return True

@@ -6,7 +6,8 @@ from modules.finance.transaction.engine import (
     LedgerEngine,
     TransactionValidator,
     TransactionExecutor,
-    SimpleTransactionLedger
+    SimpleTransactionLedger,
+    SkipTransactionError
 )
 from modules.finance.transaction.api import (
     TransactionDTO,
@@ -74,7 +75,7 @@ def test_validator_account_not_exists(validator, mock_accessor):
     tx = TransactionDTO("tx1", "A", "B", 100, DEFAULT_CURRENCY, "test")
     mock_accessor.exists.side_effect = [True, False] # B doesn't exist
 
-    with pytest.raises(InvalidAccountError):
+    with pytest.raises(SkipTransactionError):
         validator.validate(tx)
 
 def test_validator_insufficient_funds(validator, mock_accessor):

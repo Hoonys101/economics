@@ -13,6 +13,7 @@ from modules.finance.api import (
 )
 from modules.common.interfaces import IPropertyOwner, IResident
 from modules.system.api import DEFAULT_CURRENCY
+from modules.system.constants import ID_PUBLIC_MANAGER
 
 if TYPE_CHECKING:
     from simulation.engine import Simulation
@@ -276,6 +277,8 @@ class HousingSystem:
         unit = next((u for u in units if u.id == prop_id), None)
         if unit:
             seller_id = unit.owner_id
+            if seller_id is None:
+                seller_id = ID_PUBLIC_MANAGER
 
         housing_config = getattr(self.config, 'housing', {})
         if isinstance(housing_config, dict):

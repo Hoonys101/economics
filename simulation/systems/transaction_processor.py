@@ -186,12 +186,34 @@ class TransactionProcessor(SystemInterface):
             # Note: We resolve them outside try-except because if this fails,
             # something is structurally wrong with the simulation state (missing agent).
             # However, for robustness, we could wrap this too. But usually we want to crash early on corrupted state.
-            buyer = context.agents.get(tx.buyer_id) or context.inactive_agents.get(
-                tx.buyer_id
-            )
-            seller = context.agents.get(tx.seller_id) or context.inactive_agents.get(
-                tx.seller_id
-            )
+            buyer = context.agents.get(tx.buyer_id)
+            is_buyer_inactive = False
+            if not buyer:
+                buyer = context.inactive_agents.get(tx.buyer_id)
+                if buyer: is_buyer_inactive = True
+
+            seller = context.agents.get(tx.seller_id)
+            is_seller_inactive = False
+            if not seller:
+                seller = context.inactive_agents.get(tx.seller_id)
+                if seller: is_seller_inactive = True
+
+            # Inactive Agent Guard
+            # Skip transaction if an agent is inactive, unless it's a special type (Escheatment/Liquidation)
+            allowed_inactive_types = ["escheatment", "liquidation", "asset_buyout", "asset_transfer"]
+            if (is_buyer_inactive or is_seller_inactive) and tx.transaction_type not in allowed_inactive_types:
+                state.logger.warning(
+                    f"Transaction Skipped: Inactive Agent involved. "
+                    f"Buyer: {tx.buyer_id} (Inactive={is_buyer_inactive}), "
+                    f"Seller: {tx.seller_id} (Inactive={is_seller_inactive}) "
+                    f"for Transaction: {tx.transaction_type}"
+                )
+                results.append(
+                    SettlementResultDTO(
+                        original_transaction=tx, success=False, amount_settled=0.0
+                    )
+                )
+                continue
 
             # Agent Existential Guard
             if buyer is None or seller is None:

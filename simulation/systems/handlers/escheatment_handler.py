@@ -3,6 +3,7 @@ import logging
 from simulation.systems.api import ITransactionHandler, TransactionContext
 from simulation.models import Transaction
 from modules.system.api import DEFAULT_CURRENCY
+from modules.finance.dtos import TaxCollectionResult
 
 logger = logging.getLogger(__name__)
 
@@ -50,16 +51,27 @@ class EscheatmentHandler(ITransactionHandler):
 
         credits = [(gov, balance, "escheatment")]
 
-        success = context.settlement_system.settle_atomic(buyer, credits, context.time)
+        # Resurrection Hack: Ensure buyer is in context agents so SettlementSystem can find it
+        # even if it was removed from registry.
+        original_buyer_ref = context.agents.get(buyer.id)
+        if not original_buyer_ref:
+            context.agents[buyer.id] = buyer
+
+        try:
+            success = context.settlement_system.settle_atomic(buyer, credits, context.time)
+        finally:
+            # Clean up if we injected it
+            if not original_buyer_ref and buyer.id in context.agents:
+                del context.agents[buyer.id]
 
         if success:
-              gov.record_revenue({
-                     "success": True,
-                     "amount_collected": balance,
-                     "tax_type": "escheatment",
-                     "payer_id": buyer.id,
-                     "payee_id": gov.id,
-                     "error_message": None
-                 })
+            gov.record_revenue(TaxCollectionResult(
+                success=True,
+                amount_collected=balance,
+                tax_type="escheatment",
+                payer_id=buyer.id,
+                payee_id=gov.id,
+                error_message=None
+            ))
 
         return success
