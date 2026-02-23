@@ -1,136 +1,125 @@
-
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from simulation.ai.government_ai import GovernmentAI
+from modules.government.ai.api import AIConfigDTO
+from modules.government.dtos import GovernmentStateDTO, GovernmentPolicyDTO, GovernmentSensoryDTO
 
 class TestGovernmentAILogic(unittest.TestCase):
     def setUp(self):
         self.mock_agent = MagicMock()
-        self.mock_config = MagicMock()
-        self.mock_agent.sensory_data = MagicMock()
-
-        # Configure Config
-        self.mock_config.TARGET_INFLATION_RATE = 0.02
-        self.mock_config.TARGET_UNEMPLOYMENT_RATE = 0.04
-        self.mock_config.AI_EPSILON = 0.1
-        self.mock_config.RL_DISCOUNT_FACTOR = 0.95
-        self.mock_config.RL_LEARNING_RATE = 0.1
-
-        # Configure Agent defaults
         self.mock_agent.id = "gov_test"
-        self.mock_agent._assets = -600.0 # Debt Ratio 0.6 (Ideal)
-        self.mock_agent.total_wealth = -600.0 # Explicitly set total_wealth
 
-        self.ai = GovernmentAI(self.mock_agent, self.mock_config)
+        # AI Config
+        self.config = AIConfigDTO(
+            alpha=0.1,
+            gamma=0.95,
+            epsilon=0.1,
+            w_approval=0.7,
+            w_stability=0.2,
+            w_lobbying=0.1,
+            lobbying_threshold_high_tax=0.25,
+            lobbying_threshold_high_unemployment=0.05
+        )
+
+        self.ai = GovernmentAI(self.mock_agent, self.config)
+
+    def _create_state_dto(self, inflation=0.02, unemployment=0.04, gdp_growth=0.0,
+                          current_gdp=1000.0, total_debt=60000, approval=0.5,
+                          corp_tax=0.2):
+        """Helper to create DTO"""
+        sensory = MagicMock(spec=GovernmentSensoryDTO)
+        sensory.inflation_sma = inflation
+        sensory.unemployment_sma = unemployment
+        sensory.gdp_growth_sma = gdp_growth
+        sensory.current_gdp = current_gdp
+        sensory.approval_sma = approval
+
+        # total_debt in pennies. 60000 = $600.
+
+        return GovernmentStateDTO(
+            tick=1,
+            assets={},
+            total_debt=total_debt,
+            income_tax_rate=0.2,
+            corporate_tax_rate=corp_tax,
+            policy=GovernmentPolicyDTO(),
+            approval_rating=approval,
+            sensory_data=sensory
+        )
 
     def test_get_state_ideal(self):
-        """Test State Discretization for Ideal Conditions"""
-        # Setup Sensory DTO for Ideal conditions
-        self.mock_agent.sensory_data.inflation_sma = 0.02
-        self.mock_agent.sensory_data.unemployment_sma = 0.04
-        self.mock_agent.sensory_data.gdp_growth_sma = 0.0
-        self.mock_agent.sensory_data.current_gdp = 1000.0
+        """Test State Discretization for Ideal Conditions (6-tuple)"""
+        # Inf=0.02 (Target) -> 1
+        # Unemp=0.04 (Target) -> 1
+        # GDP=0.0 (Stagnant/Normal) -> 1
+        # Debt=$600/$1000=0.6 -> Safe (1)
+        # Approval=0.5 -> Safe (1)
+        # Lobbying: Unemp=0.04(<0.05), Tax=0.2(<0.25) -> Neutral (0)
 
-        # Inflation: 0.02 (Target 0.02) -> Gap 0.0 -> Ideal (1)
-        # Unemp: 0.04 (Target 0.04) -> Gap 0.0 -> Ideal (1)
-        # GDP Growth: 0.0 -> Ideal (1)
-        # Debt: 600/1000 = 0.6 -> Gap 0.0 -> Ideal (1)
-
-        expected_state = (1, 1, 1, 1)
-        state = self.ai._get_state()
+        dto = self._create_state_dto()
+        expected_state = (1, 1, 1, 1, 1, 0)
+        state = self.ai._get_state(dto)
         self.assertEqual(state, expected_state)
 
-    def test_get_state_high_inflation_low_unemp(self):
-        """Test Discretization for High Inflation, Low Unemployment"""
-        # Setup Sensory DTO
-        self.mock_agent.sensory_data.inflation_sma = 0.05
-        self.mock_agent.sensory_data.unemployment_sma = 0.02
-        self.mock_agent.sensory_data.gdp_growth_sma = 0.05
-        self.mock_agent.sensory_data.current_gdp = 1050.0
+    def test_lobbying_logic(self):
+        # 1. Corp Pressure (High Tax)
+        dto_corp = self._create_state_dto(corp_tax=0.30)
+        state_corp = self.ai._get_state(dto_corp)
+        self.assertEqual(state_corp[5], 1) # Lobbying=1 (Corp)
 
-        # Debt: 600/1050 = 0.57 -> Gap -0.03 -> Ideal (within +/- 0.05)
+        # 2. Labor Pressure (High Unemployment)
+        dto_labor = self._create_state_dto(unemployment=0.10)
+        state_labor = self.ai._get_state(dto_labor)
+        self.assertEqual(state_labor[5], 2) # Lobbying=2 (Labor)
 
-        # Inf: 0.05 - 0.02 = 0.03 > 0.01 -> High (2)
-        # Unemp: 0.02 - 0.04 = -0.02 < -0.01 -> Low (0)
-        # GDP Growth: 0.05 > 0.005 -> High (2)
-        # Debt: Ideal (1)
+        # 3. Priority (Both High) -> Labor wins (Unemployment is crisis)
+        dto_both = self._create_state_dto(corp_tax=0.30, unemployment=0.10)
+        state_both = self.ai._get_state(dto_both)
+        self.assertEqual(state_both[5], 2)
 
-        expected_state = (2, 0, 2, 1)
-        state = self.ai._get_state()
-        self.assertEqual(state, expected_state)
-
-    def test_get_state_debt_crisis(self):
-        """Test Debt Crisis State"""
-        # Setup Sensory DTO for Ideal conditions (only testing debt)
-        self.mock_agent.sensory_data.inflation_sma = 0.02
-        self.mock_agent.sensory_data.unemployment_sma = 0.04
-        self.mock_agent.sensory_data.gdp_growth_sma = 0.0
-        self.mock_agent.sensory_data.current_gdp = 1000.0
-        self.mock_agent._assets = -1000.0 # Debt 1000
-        self.mock_agent.total_wealth = -1000.0
-
-        # Debt Ratio: 1000/1000 = 1.0 -> Gap 0.4 > 0.05 -> High (2)
-
-        expected_state = (1, 1, 1, 2)
-        state = self.ai._get_state()
-        self.assertEqual(state, expected_state)
-
-    def test_calculate_reward(self):
+    def test_populist_reward(self):
         """Test Reward Function Calculation"""
-        # Scenario: High Inflation (0.05), Ideal Unemp (0.04), Ideal Debt (0.6)
-        self.mock_agent.sensory_data.inflation_sma = 0.05
-        self.mock_agent.sensory_data.unemployment_sma = 0.04
-        self.mock_agent.sensory_data.current_gdp = 1000.0
-        self.mock_agent._assets = -600.0
-        self.mock_agent.total_wealth = -600.0
+        # Scenario:
+        # Approval = 0.4 (Low) -> R_app = (0.4-0.5)*100 = -10.
+        # Stability: Inf=0.02(Ideal), Unemp=0.04(Ideal) -> R_stab = 0.
+        # Lobbying: Neutral.
 
-        # Inf Gap: 0.03 -> Sq: 0.0009
-        # Unemp Gap: 0.0 -> Sq: 0.0
-        # Debt Gap: 0.0 -> Sq: 0.0
+        # Total = 0.7 * (-10) + 0.2 * 0 = -7.0
 
-        # Loss = 0.5 * 0.0009 = 0.00045
-        # Reward = -0.00045 * 100 = -0.045
+        dto = self._create_state_dto(approval=0.4)
+        reward = self.ai.calculate_reward(dto)
+        self.assertAlmostEqual(reward, -7.0)
 
-        reward = self.ai.calculate_reward()
-        self.assertAlmostEqual(reward, -0.045, places=5)
+        # Scenario: Crisis but Popular
+        # Approval = 0.8 -> R_app = 30.
+        # Stability: Inf=0.05 (+0.03), Unemp=0.04.
+        # R_stab = - ((0.03^2 + 0) * 50) = - (0.0009 * 50) = -0.045.
 
-    def test_learning_flow(self):
-        """Test Q-Table Update Sequence"""
-        # Setup Sensory DTO for Ideal conditions
-        self.mock_agent.sensory_data.inflation_sma = 0.02
-        self.mock_agent.sensory_data.unemployment_sma = 0.04
-        self.mock_agent.sensory_data.gdp_growth_sma = 0.0
-        self.mock_agent.sensory_data.current_gdp = 1000.0
+        # Total = 0.7 * 30 + 0.2 * (-0.045) = 21 - 0.009 = 20.991
 
-        # Step 1: Decide Policy
-        action = self.ai.decide_policy(current_tick=1)
+        dto_populist = self._create_state_dto(approval=0.8, inflation=0.05)
+        reward_pop = self.ai.calculate_reward(dto_populist)
+        self.assertAlmostEqual(reward_pop, 20.991)
 
-        self.assertIsNotNone(self.ai.last_state)
-        self.assertIsNotNone(self.ai.last_action_idx)
-        previous_state = self.ai.last_state
-        previous_action = self.ai.last_action_idx
+    def test_lobbying_bonus(self):
+        # Setup previous state: Lobbying = Corp (1)
+        self.ai.last_state = (1, 1, 1, 1, 1, 1)
+        # Setup previous action: Fiscal Ease (3)
+        self.ai.last_action_idx = self.ai.ACTION_FISCAL_EASE
 
-        initial_q = self.ai.q_table.get_q_value(previous_state, previous_action)
-        self.assertEqual(initial_q, 0.0)
+        # Current state doesn't matter for lobbying bonus part,
+        # but needed for base reward.
+        # Let's make base reward 0 (Ideal state).
+        dto = self._create_state_dto() # Approval 0.5 -> R_app 0. Stability 0.
 
-        # Step 2: Update Learning (simulate outcome)
-        # Under ideal conditions, reward should be 0.
-        dummy_reward = -999.0 # This should be ignored by the learning function
-        self.ai.update_learning_with_state(dummy_reward, current_tick=2)
+        # Reward = 0 + 0 + 0.1 * 10 = 1.0
+        reward = self.ai.calculate_reward(dto)
+        self.assertAlmostEqual(reward, 1.0)
 
-        # Q-Value should not change as reward is 0
-        updated_q = self.ai.q_table.get_q_value(previous_state, previous_action)
-        self.assertAlmostEqual(updated_q, 0.0)
-
-        # Test with Bad Condition to ensure learning happens
-        # High Inflation -> Reward -0.045
-        self.mock_agent.sensory_data.inflation_sma = 0.05
-        self.ai.update_learning_with_state(dummy_reward, current_tick=3)
-
-        # Previous Q was 0.0.
-        # New = 0.0 + 0.1 * (-0.045 + 0.95*0.0 - 0.0) = -0.0045
-        updated_q_2 = self.ai.q_table.get_q_value(previous_state, previous_action)
-        self.assertAlmostEqual(updated_q_2, -0.0045, places=6)
+        # Test No Bonus (Action Mismatch)
+        self.ai.last_action_idx = self.ai.ACTION_HAWKISH
+        reward_no_bonus = self.ai.calculate_reward(dto)
+        self.assertAlmostEqual(reward_no_bonus, 0.0)
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,6 +1,8 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from simulation.interfaces.policy_interface import IGovernmentPolicy
 from simulation.ai.enums import PoliticalParty
+from modules.government.ai.api import AIConfigDTO
+from modules.government.dtos import GovernmentStateDTO, GovernmentPolicyDTO
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,8 +16,20 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
     
     def __init__(self, government: Any, config_module: Any):
         self.config = config_module
+
+        # Initialize AI Config
+        ai_config = AIConfigDTO(
+            alpha=getattr(config_module, "RL_LEARNING_RATE", 0.1),
+            gamma=getattr(config_module, "RL_DISCOUNT_FACTOR", 0.95),
+            epsilon=getattr(config_module, "AI_EPSILON", 0.1),
+            enable_reflex_override=getattr(config_module, "ENABLE_REFLEX_OVERRIDE", False),
+            w_approval=getattr(config_module, "AI_W_APPROVAL", 0.7),
+            w_stability=getattr(config_module, "AI_W_STABILITY", 0.2),
+            w_lobbying=getattr(config_module, "AI_W_LOBBYING", 0.1)
+        )
+
         from simulation.ai.government_ai import GovernmentAI
-        self.ai = GovernmentAI(government, config_module)
+        self.ai = GovernmentAI(government, ai_config)
         self.last_action_tick = -999
 
     def decide(self, government: Any, sensory_data: "GovernmentStateDTO", current_tick: int, central_bank: "CentralBank") -> Dict[str, Any]:
@@ -29,26 +43,59 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
         if current_tick > 0 and current_tick % action_interval != 0:
             return {"policy_type": "AI_ADAPTIVE", "status": "COOLDOWN"}
 
+        # Construct GovernmentStateDTO for the AI
+
+        # Determine Total Debt with Fallback
+        total_debt = getattr(government, 'total_debt', None)
+        if total_debt is None:
+            # Fallback for mock agents or legacy models without total_debt attribute
+            # Calculate from total_wealth (if negative)
+            total_wealth = getattr(government, 'total_wealth', getattr(government, 'assets', 0))
+            if isinstance(total_wealth, dict):
+                 total_wealth = sum(total_wealth.values())
+            total_debt = max(0, -total_wealth)
+
+        policy_dto = getattr(government, 'policy', None)
+        # Fallback if policy is missing (e.g. mock)
+        if not policy_dto:
+             policy_dto = GovernmentPolicyDTO()
+
+        state_dto = GovernmentStateDTO(
+            tick=current_tick,
+            assets=getattr(government, 'assets', {}),
+            total_debt=total_debt,
+            income_tax_rate=getattr(government, 'income_tax_rate', 0.2),
+            corporate_tax_rate=getattr(government, 'corporate_tax_rate', 0.2),
+            policy=policy_dto,
+            approval_rating=getattr(government, 'approval_rating', 0.5),
+            sensory_data=getattr(government, 'sensory_data', None),
+            ruling_party=getattr(government, 'ruling_party', None),
+            welfare_budget_multiplier=getattr(government, 'welfare_budget_multiplier', 1.0),
+            # Optional fields with safe defaults
+            fiscal_policy=getattr(government, 'fiscal_policy', None),
+            policy_lockouts=getattr(government, 'policy_lockouts', {}),
+            gdp_history=getattr(government, 'gdp_history', []),
+            potential_gdp=getattr(government, 'potential_gdp', 0.0),
+            fiscal_stance=getattr(government, 'fiscal_stance', 0.0)
+        )
+
         # 1. Observe and Decide (Brain)
-        # Note: The AI's internal state representation is now directly tied to the
-        # government agent's `sensory_data` attribute, which is updated by the engine.
-        action = self.ai.decide_policy(current_tick)
+        action = self.ai.decide_policy(current_tick, state_dto)
         self.last_action_tick = current_tick
 
         # --- [REFLEX OVERRIDE] ---
-        # As per WO-067, a high inflation scenario must trigger an immediate hawkish response.
-        # This overrides the learned Q-table behavior in critical situations to act as a safety backstop.
-        current_state = self.ai._get_state()
-        inflation_state = current_state[0]  # s_inf is the first element
-
-        if inflation_state == 2:  # State 2 means "High Inflation"
-            if action != self.ai.ACTION_HAWKISH:
-                logger.warning(
-                    f"REFLEX_OVERRIDE | High inflation detected (State={inflation_state}). "
-                    f"Overriding AI action {action} with HAWKISH ({self.ai.ACTION_HAWKISH}).",
-                    extra={"tick": current_tick}
-                )
-                action = self.ai.ACTION_HAWKISH
+        # As per Wave 5, this is now Configurable.
+        # We check the AI's internal state (last_state) for Inflation (Index 0).
+        if self.ai.config.enable_reflex_override:
+            # Check if last state was High Inflation (2)
+            if self.ai.last_state and self.ai.last_state[0] == 2:
+                if action != self.ai.ACTION_HAWKISH:
+                    logger.warning(
+                        f"REFLEX_OVERRIDE | High inflation detected. "
+                        f"Overriding AI action {action} with HAWKISH ({self.ai.ACTION_HAWKISH}).",
+                        extra={"tick": current_tick}
+                    )
+                    action = self.ai.ACTION_HAWKISH
         # --- [END REFLEX OVERRIDE] ---
 
         # 2. Execution (Actuator)
@@ -127,9 +174,8 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
         self._log_changes(government, old_values, central_bank, old_rate, action, current_tick)
 
         # 6. Reward & Learning
-        # The real reward calculation now happens inside the AI module using the sensory data.
-        # This call just triggers the Q-table update. The passed reward value is ignored.
-        self.ai.update_learning_with_state(reward=0.0, current_tick=current_tick)
+        # Triggers the Q-table update using the DTO.
+        self.ai.update_learning(current_tick, state_dto)
 
         return {
             "policy_type": "AI_ADAPTIVE",

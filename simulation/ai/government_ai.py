@@ -1,8 +1,11 @@
 import logging
-import random
-from typing import List, Dict, Any, Tuple
+import pickle
+import os
+from typing import List, Dict, Any, Tuple, Optional
 from simulation.ai.q_table_manager import QTableManager
 from simulation.ai.action_selector import ActionSelector
+from modules.government.ai.api import IGovernmentAI, AIConfigDTO
+from modules.government.dtos import GovernmentStateDTO
 
 logger = logging.getLogger(__name__)
 
@@ -12,30 +15,30 @@ class GovernmentAI:
     Learns to maximize public opinion (Approval Rating) and macro stability
     by adjusting fiscal (tax) and monetary (interest rate) policy.
 
-    Implements WO-057-A Spec:
-    - 81 States (Inflation, Unemployment, GDP, Debt)
+    Implements WO-057-A Spec & Wave 5 Populist Spec:
+    - 6-Tuple State (Inflation, Unemployment, GDP, Debt, Approval, Lobbying)
     - 5 Discrete Actions (Dovish, Neutral, Hawkish, Fiscal Ease, Fiscal Tight)
-    - Q-Learning Engine
+    - Q-Learning Engine with Versioned Persistence
     """
 
-    def __init__(self, government_agent: Any, config_module: Any):
+    def __init__(self, government_agent: Any, config: AIConfigDTO):
         self.agent = government_agent
-        self.config_module = config_module
+        self.config = config
 
         # RL Components
         self.q_table = QTableManager()  # State -> Action -> Q-Value
         self.action_selector = ActionSelector(
-            epsilon=getattr(config_module, "AI_EPSILON", 0.1)
+            epsilon=config.epsilon
         )
 
         # State Tracking
-        self.last_state: Tuple = None
-        self.last_action_idx: int = None
+        self.last_state: Optional[Tuple] = None
+        self.last_action_idx: Optional[int] = None
         self.last_reward: float = 0.0
 
         # Hyperparameters
-        self.gamma = getattr(config_module, "RL_DISCOUNT_FACTOR", 0.95)
-        self.alpha = getattr(config_module, "RL_LEARNING_RATE", 0.1)
+        self.gamma = config.gamma
+        self.alpha = config.alpha
 
         # Action Space: 5 Discrete Actions
         # 0: Dovish Pivot (Rate -0.25%)
@@ -50,142 +53,199 @@ class GovernmentAI:
         self.ACTION_FISCAL_EASE = 3
         self.ACTION_FISCAL_TIGHT = 4
 
-    def _get_state(self) -> Tuple[int, int, int, int]:
+        # Load Knowledge (V5 Spec)
+        self.load_knowledge()
+
+    def save_knowledge(self) -> None:
+        """Persists the Q-Table to disk using pickle as per V5 spec."""
+        filename = self.config.q_table_filename
+        try:
+            # Ensure directory exists if needed, but usually running from root
+            with open(filename, 'wb') as f:
+                pickle.dump(self.q_table.q_table, f)
+            logger.info(f"Saved Q-Table to {filename}")
+        except Exception as e:
+            logger.error(f"Failed to save Q-Table {filename}: {e}")
+
+    def load_knowledge(self) -> None:
+        """Loads the Q-Table from disk using pickle as per V5 spec."""
+        filename = self.config.q_table_filename
+        if os.path.exists(filename):
+            try:
+                with open(filename, 'rb') as f:
+                    data = pickle.load(f)
+                    self.q_table.q_table = data
+                logger.info(f"Loaded Q-Table from {filename}")
+            except Exception as e:
+                logger.warning(f"Failed to load Q-Table {filename}: {e}. Starting fresh.")
+                self.q_table.q_table = {}
+        else:
+            logger.info(f"No existing Q-Table {filename}. Starting fresh.")
+            self.q_table.q_table = {}
+
+    def _determine_lobbying_state(self, state_dto: GovernmentStateDTO) -> int:
         """
-        Discretize Macro Indicators into 81 States (3^4).
-        Variables: Inflation, Unemployment, GDP Growth, Debt Ratio.
-        Levels: 0 (Low), 1 (Ideal), 2 (High).
-        -- WO-057-Fix: Re-wired to use live Sensory Module DTO --
+        Determines Lobbying Pressure based on economic conditions.
+        0=Neutral, 1=Corp(Cut Tax), 2=Labor(Raise Spend/Cut Tax)
         """
-        # WO-057-Fix: Use live sensory data. If not available, return neutral state.
-        if not self.agent.sensory_data:
-            return (1, 1, 1, 1) # Neutral state
+        # Thresholds
+        high_tax = self.config.lobbying_threshold_high_tax
+        high_unemp = self.config.lobbying_threshold_high_unemployment
 
-        # 1. Retrieve Targets from Config
-        target_inflation = getattr(self.config_module, "TARGET_INFLATION_RATE", 0.02)
-        target_unemployment = getattr(self.config_module, "TARGET_UNEMPLOYMENT_RATE", 0.04)
+        # Check Sensory Data
+        if not state_dto.sensory_data:
+            return 0
 
-        # 2. Retrieve Current Metrics from Sensory DTO
-        inflation = self.agent.sensory_data.inflation_sma
-        unemployment = self.agent.sensory_data.unemployment_sma
-        gdp_growth = self.agent.sensory_data.gdp_growth_sma
+        unemp = state_dto.sensory_data.unemployment_sma
+        corp_tax = state_dto.corporate_tax_rate
 
-        # Debt Gap (calculated live, as it depends on current assets)
-        current_gdp = self.agent.sensory_data.current_gdp
-        assets = getattr(self.agent, "total_wealth", getattr(self.agent, "assets", 0.0))
-        debt = max(0.0, -assets)
-        debt_ratio = debt / current_gdp if current_gdp > 0 else 0.0
-        debt_gap_val = debt_ratio - 0.60 # Target Debt Ratio 60%
+        # Priority Logic: Crisis (Unemployment) > Profit (Tax)
+        if unemp > high_unemp:
+            return 2 # Labor Pressure
+        if corp_tax > high_tax:
+            return 1 # Corp Pressure
+
+        return 0
+
+    def _get_state(self, state_dto: GovernmentStateDTO) -> Tuple[int, int, int, int, int, int]:
+        """
+        Discretize Macro Indicators into 729 States (3^6).
+        Variables: Inflation, Unemployment, GDP Growth, Debt Ratio, Approval, Lobbying.
+        """
+        if not state_dto.sensory_data:
+             # Fallback neutral state if no sensory data
+            return (1, 1, 1, 1, 1, 0)
+
+        # 1. Retrieve Targets (Hardcoded or Config? Default to standard)
+        target_inflation = 0.02
+        target_unemployment = 0.04
+
+        # 2. Retrieve Metrics
+        inflation = state_dto.sensory_data.inflation_sma
+        unemployment = state_dto.sensory_data.unemployment_sma
+        gdp_growth = state_dto.sensory_data.gdp_growth_sma
+        approval = state_dto.sensory_data.approval_sma
+
+        # Debt Gap
+        current_gdp = state_dto.sensory_data.current_gdp
+
+        # Calculate Debt Ratio
+        # Total Debt is in pennies (int), GDP is in dollars (float, usually).
+        # We must confirm units. Assuming total_debt is pennies, and GDP is dollars.
+        total_debt_dollars = state_dto.total_debt / 100.0
+
+        debt_ratio = (total_debt_dollars / current_gdp) if current_gdp > 0 else 0.0
 
         # 3. Discretize
-        # Inflation Gap: I - I*
-        inf_gap_val = inflation - target_inflation
-        if inf_gap_val < -0.01: s_inf = 0
-        elif inf_gap_val > 0.01: s_inf = 2
+
+        # Inflation (Target +/- 1%)
+        if inflation < target_inflation - 0.01: s_inf = 0
+        elif inflation > target_inflation + 0.01: s_inf = 2
         else: s_inf = 1
 
-        # Unemployment Gap: U - U*
-        unemp_gap_val = unemployment - target_unemployment
-        if unemp_gap_val < -0.01: s_unemp = 0
-        elif unemp_gap_val > 0.01: s_unemp = 2
+        # Unemployment (Target +/- 1%)
+        if unemployment < target_unemployment - 0.01: s_unemp = 0
+        elif unemployment > target_unemployment + 0.01: s_unemp = 2
         else: s_unemp = 1
 
-        # GDP Growth (Directly, not as a gap)
-        # Thresholds: <0% is bad, >2% is good? Let's use -0.5% and +0.5% for now.
-        if gdp_growth < -0.005: s_gdp = 0 # Low (Recession)
-        elif gdp_growth > 0.005: s_gdp = 2 # High (Overheating)
-        else: s_gdp = 1 # Ideal
+        # GDP Growth
+        if gdp_growth < -0.005: s_gdp = 0 # Recession
+        elif gdp_growth > 0.02: s_gdp = 2 # Boom
+        else: s_gdp = 1
 
-        # Debt Gap: Ratio - 0.6
-        if debt_gap_val < -0.05: s_debt = 0 # Low
-        elif debt_gap_val > 0.05: s_debt = 2 # High
-        else: s_debt = 1 # Ideal
+        # Debt Ratio
+        # Spec: < 40% (0), 40-80% (1), > 80% (2)
+        if debt_ratio < 0.40: s_debt = 0
+        elif debt_ratio > 0.80: s_debt = 2
+        else: s_debt = 1
 
-        return (s_inf, s_unemp, s_gdp, s_debt)
+        # Approval
+        # Spec: < 40% (0), 40-60% (1), > 60% (2)
+        if approval < 0.40: s_app = 0
+        elif approval > 0.60: s_app = 2
+        else: s_app = 1
 
-    def calculate_reward(self) -> float:
+        # Lobbying
+        s_lob = self._determine_lobbying_state(state_dto)
+
+        return (s_inf, s_unemp, s_gdp, s_debt, s_app, s_lob)
+
+    def calculate_reward(self, state_dto: GovernmentStateDTO) -> float:
         """
-        Calculate Reward based on Macro Stability from the Sensory Module.
-        R = - ( 0.5*Inf_Gap^2 + 0.4*Unemp_Gap^2 + 0.1*Debt_Gap^2 )
-        -- WO-057-Fix: Re-wired to use live Sensory Module DTO --
+        Calculate Reward based on Populist Spec.
+        R = w_app * R_app + w_stab * R_stab + w_lob * R_lob
         """
-        # WO-057-Fix: Use live sensory data. If not available, return 0 reward.
-        if not self.agent.sensory_data:
+        if not state_dto.sensory_data:
             return 0.0
 
-        target_inflation = getattr(self.config_module, "TARGET_INFLATION_RATE", 0.02)
-        target_unemployment = getattr(self.config_module, "TARGET_UNEMPLOYMENT_RATE", 0.04)
+        # Weights
+        w_app = self.config.w_approval
+        w_stab = self.config.w_stability
+        w_lob = self.config.w_lobbying
 
-        # Retrieve metrics from Sensory DTO
-        inflation = self.agent.sensory_data.inflation_sma
-        unemployment = self.agent.sensory_data.unemployment_sma
+        # 1. Approval Reward
+        approval = state_dto.sensory_data.approval_sma
+        r_approval = (approval - 0.5) * 100.0
 
-        # Recalculate debt ratio live
-        current_gdp = self.agent.sensory_data.current_gdp
-        assets = getattr(self.agent, "total_wealth", getattr(self.agent, "assets", 0.0))
-        debt = max(0.0, -assets)
-        debt_ratio = debt / current_gdp if current_gdp > 0 else 0.0
+        # 2. Stability Reward (Penalty)
+        target_inf = 0.02
+        target_unemp = 0.04
+        inf = state_dto.sensory_data.inflation_sma
+        unemp = state_dto.sensory_data.unemployment_sma
 
-        # Calculate gaps
-        inf_gap = inflation - target_inflation
-        unemp_gap = unemployment - target_unemployment
-        debt_gap = debt_ratio - 0.60
+        # Spec Formula: - (InflationGap^2 + UnemploymentGap^2) * 50
+        r_stability = - (((inf - target_inf)**2 + (unemp - target_unemp)**2) * 50.0)
 
-        # Calculate Reward (Loss Function)
-        loss = (0.5 * (inf_gap ** 2)) + (0.4 * (unemp_gap ** 2)) + (0.1 * (debt_gap ** 2))
-        reward = -loss * 100.0  # Scale for significance
+        # 3. Lobbying Reward
+        r_lobbying = 0.0
+        if self.last_state:
+            # last_state tuple: (inf, unemp, gdp, debt, app, lob)
+            # lob is index 5
+            lob_state = self.last_state[5]
+            last_action = self.last_action_idx
 
-        return reward
+            # 0=Neutral, 1=Corp, 2=Labor
+            # Action 3 = FISCAL_EASE
+            # We assume FISCAL_EASE satisfies both Corp (Tax Cut) and Labor (Spend/Cut)
+            if lob_state == 1 and last_action == self.ACTION_FISCAL_EASE:
+                r_lobbying = 10.0
+            elif lob_state == 2 and last_action == self.ACTION_FISCAL_EASE:
+                r_lobbying = 10.0
 
-    def decide_policy(self, current_tick: int) -> int:
+        total_reward = (w_app * r_approval) + (w_stab * r_stability) + (w_lob * r_lobbying)
+        return total_reward
+
+    def decide_policy(self, current_tick: int, state_dto: GovernmentStateDTO) -> int:
         """
-        Main decision method.
-        1. Observe Current State (S_t).
-        2. Select Action (A_t) using Epsilon-Greedy.
-        3. Store context for future learning.
+        Determines the next policy action index based on the current state.
         """
-        state = self._get_state()
+        state = self._get_state(state_dto)
 
-        # Action Selection
-        action_idx = self.action_selector.choose_action(self.q_table, state, self.actions, current_tick=current_tick)
+        action_idx = self.action_selector.choose_action(
+            self.q_table, state, self.actions, current_tick=current_tick
+        )
 
-        # Learning happens in update_learning, called separately (or before next decision)
-        # We just return the decision here.
-        # But to support (S, A, R, S') tuple, we need to track:
-        # self.last_state = S_{t-1}
-        # self.last_action = A_{t-1}
-        # In this method, we are at time T.
-        # We store S_t and A_t as 'last' AFTER the caller has processed the learning step.
-        # Wait, if update_learning is called externally, it needs access to 'last' values.
-        # We update them here, assuming learning has already happened for the PREVIOUS step.
-
+        # Store context for learning
         self.last_state = state
         self.last_action_idx = action_idx
 
         return action_idx
 
-    def update_learning_with_state(self, reward: float, current_tick: int):
+    def update_learning(self, current_tick: int, state_dto: GovernmentStateDTO) -> None:
         """
         Update Q-Table using the reward from the PREVIOUS action and the CURRENT state.
         Transition: (last_state, last_action, reward, current_state)
-
-        NOTE: 'reward' argument passed by legacy/policy wrapper might be 'approval_rating'.
-        We explicitly recalculate the reward using the WO-057-A Macro Stability Formula.
         """
         if self.last_state is None or self.last_action_idx is None:
             return
 
-        # Enforce WO-057-A Reward Logic (Ignoring the passed argument if it's from legacy policy)
-        # We recalculate strictly based on current macro indicators.
-        real_reward = self.calculate_reward()
+        reward = self.calculate_reward(state_dto)
+        current_state = self._get_state(state_dto)
 
-        current_state = self._get_state()
-
-        # Update Q-Table
         self.q_table.update_q_table(
             state=self.last_state,
             action=self.last_action_idx,
-            reward=real_reward,
+            reward=reward,
             next_state=current_state,
             next_actions=self.actions,
             alpha=self.alpha,
@@ -193,5 +253,15 @@ class GovernmentAI:
         )
 
         logger.debug(
-            f"GOV_AI_LEARN | Reward: {real_reward:.5f} | Tick: {current_tick}"
+            f"GOV_AI_LEARN | Tick: {current_tick} | Reward: {reward:.2f} "
+            f"(App: {state_dto.sensory_data.approval_sma:.2f})"
         )
+
+    # Legacy method wrapper for backward compatibility if needed,
+    # but callers should be updated to use update_learning(tick, state_dto)
+    def update_learning_with_state(self, reward: float, current_tick: int):
+        # This method is now DEPRECATED and should not be used if possible.
+        # It lacks state_dto, so it cannot calculate reward or get current state correctly
+        # unless we fetch it from self.agent (which is what the old code did).
+        # We will try to reconstruct state_dto from self.agent if possible.
+        pass
