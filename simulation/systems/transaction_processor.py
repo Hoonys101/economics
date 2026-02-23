@@ -48,7 +48,6 @@ class TransactionProcessor(SystemInterface):
         is_pm_seller = (
             tx.seller_id == ID_PUBLIC_MANAGER
             or tx.seller_id == "PUBLIC_MANAGER"
-            or tx.seller_id == 999999
             or tx.seller_id == -1
         )
         is_systemic = tx.transaction_type in [

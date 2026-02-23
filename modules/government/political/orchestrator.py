@@ -85,7 +85,7 @@ class PoliticalOrchestrator(IPoliticalOrchestrator):
         Validates the participants of a political transfer (e.g. Lobbying).
         Ensures the payee is a valid government entity (ID_PUBLIC_MANAGER or ID_GOVERNMENT).
         """
-        valid_payees = [ID_PUBLIC_MANAGER, ID_GOVERNMENT, "GOVERNMENT_TREASURY", 1]
+        valid_payees = [ID_PUBLIC_MANAGER, ID_GOVERNMENT, "GOVERNMENT_TREASURY"]
 
         if payee_id not in valid_payees:
             # Check if it matches ID_PUBLIC_MANAGER int/str
