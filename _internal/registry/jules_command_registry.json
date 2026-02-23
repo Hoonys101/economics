@@ -18,21 +18,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "MISSION_firm_api_dto": {
-      "key": "MISSION_firm_api_dto",
-      "title": "Firm Module API & DTO Realignment",
-      "type": "jules",
-      "instruction_raw": "Align FirmStateDTO/FirmConfigDTO. Add inventory/liability fields. Hardcode FirmFactory usage for atomicity.",
-      "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_firm_api_dto_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "MISSION_household_api_dto": {
       "key": "MISSION_household_api_dto",
       "title": "Household Module API & DTO Realignment",
