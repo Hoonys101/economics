@@ -193,7 +193,7 @@ def test_transfer_success(settlement_system):
     tx = settlement_system.transfer(sender, receiver, 20, "Test Transfer", tick=10)
 
     assert tx is not None
-    assert tx.quantity == 20
+    assert tx.total_pennies == 20
     assert settlement_system.get_balance(sender.id) == 80
     assert settlement_system.get_balance(receiver.id) == 70
     assert tx.time == 10

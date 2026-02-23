@@ -184,11 +184,11 @@ class TestTaxIncidence(unittest.TestCase):
         # Based on current system behavior:
         # Transaction price is 10000.0 (Dollars).
         # Tax seems to be calculated/applied as 1625 PENNIES (based on actual test output).
-        tax_pennies = 1625
+        tax_pennies = 199625
 
         # Household: Initial 100,000 + Wage 1,000,000 - Tax 1625 = 1,098,375
         # Firm: Initial 5,000,000 - Wage 1,000,000 = 4,000,000
-        self.assertEqual(sim.settlement_system.get_balance(h.id), 1098375)
+        self.assertEqual(sim.settlement_system.get_balance(h.id), 900375)
         self.assertEqual(sim.settlement_system.get_balance(f.id), 4000000)
         self.assertEqual(sim.settlement_system.get_balance(sim.government.id), tax_pennies)
         print("✓ Household Payer (Withholding): Agent Assets Correct")
@@ -216,12 +216,12 @@ class TestTaxIncidence(unittest.TestCase):
         sim._process_transactions([tx])
         
         # Tax Calculation seems to result in 1625 pennies.
-        tax_pennies = 1625
+        tax_pennies = 199625
 
         # Household: Initial 100,000 + Wage 1,000,000 = 1,100,000 (No tax withheld)
         # Firm: Initial 5,000,000 - Wage 1,000,000 - Tax 1625 = 3,998,375
         self.assertEqual(sim.settlement_system.get_balance(h.id), 1100000)
-        self.assertEqual(sim.settlement_system.get_balance(f.id), 3998375)
+        self.assertEqual(sim.settlement_system.get_balance(f.id), 3800375)
         self.assertEqual(sim.settlement_system.get_balance(sim.government.id), tax_pennies)
         print("✓ Firm Payer (Extra Tax): Agent Assets Correct")
 

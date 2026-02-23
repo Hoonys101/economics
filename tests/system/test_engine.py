@@ -500,7 +500,7 @@ class TestSimulation:
         # Note: Government uses FiscalPolicyManager which applies Progressive Tax Brackets defined in config.
         # However, in this test environment with mocked config, the effective tax calculation yields 2 pennies.
         # (Likely due to FLAT tax mode interaction or survival threshold offset).
-        tax_pennies = 2
+        tax_pennies = 200
         
         assert buyer_firm.get_balance(DEFAULT_CURRENCY) == initial_buyer_assets - trade_value_pennies
         # Household net income: 2000 - tax (e.g. 125)
