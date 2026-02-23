@@ -2,10 +2,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Optional, TYPE_CHECKING, Protocol
 
-from modules.finance.api import IFinancialAgent
+from modules.common.financial.api import IFinancialAgent
 
 if TYPE_CHECKING:
-    from modules.common.dtos import Claim
+    from modules.common.financial.dtos import Claim
     from simulation.firms import Firm
 
 class IHRService(ABC):

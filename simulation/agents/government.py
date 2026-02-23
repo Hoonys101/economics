@@ -15,7 +15,8 @@ from modules.common.utils.shadow_logger import log_shadow
 from simulation.models import Transaction
 from simulation.systems.ministry_of_education import MinistryOfEducation
 from simulation.portfolio import Portfolio
-from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset, IFinancialAgent
+from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset
+from modules.common.financial.api import IFinancialAgent
 from modules.government.dtos import (
     FiscalPolicyDTO,
     GovernmentPolicyDTO,
@@ -667,6 +668,16 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
 
     def get_balance(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
         return self.wallet.get_balance(currency)
+
+    @property
+    def balance_pennies(self) -> int:
+        return self.wallet.get_balance(DEFAULT_CURRENCY)
+
+    def deposit(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._deposit(amount_pennies, currency)
+
+    def withdraw(self, amount_pennies: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._withdraw(amount_pennies, currency)
 
     # --- IFinancialAgent Implementation ---
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:

@@ -4,7 +4,7 @@ from simulation.systems.settlement_system import SettlementSystem
 from modules.finance.api import IFinancialAgent, IFinancialEntity
 from modules.system.api import DEFAULT_CURRENCY, ISystemFinancialAgent
 
-class MockNormalAgent(IFinancialEntity, IFinancialAgent):
+class MockNormalAgent(IFinancialAgent):
     def __init__(self, id, balance):
         self.id = id
         self._balance_pennies = balance

@@ -101,6 +101,7 @@ class TestSSoTCompliance:
 
         # Case 2: Agent implements IFinancialAgent (get_balance())
         financial_agent = MagicMock(spec=IFinancialAgent)
+        financial_agent.balance_pennies = 67890
         financial_agent.get_balance.return_value = 67890
         settlement.agent_registry.get_agent.return_value = financial_agent
 

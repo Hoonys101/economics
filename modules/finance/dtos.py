@@ -2,18 +2,10 @@ from __future__ import annotations
 from typing import Dict, Optional, List, TypeAlias, Literal, Any, Union
 from dataclasses import dataclass, field
 from modules.simulation.api import AgentID
+from modules.common.financial.dtos import MoneyDTO
 
 CurrencyCode: TypeAlias = str
 LoanStatus = Literal["PENDING", "ACTIVE", "PAID", "DEFAULTED"]
-
-@dataclass
-class MoneyDTO:
-    """
-    Represents a monetary value with its associated currency.
-    MIGRATION NOTE: Used to be float 'amount'. Now 'amount_pennies' (int).
-    """
-    amount_pennies: int
-    currency: CurrencyCode
 
 @dataclass
 class MultiCurrencyWalletDTO:

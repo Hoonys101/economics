@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, Mock
 from typing import List
 
 from simulation.systems.liquidation_manager import LiquidationManager
-from modules.common.dtos import Claim
+from modules.common.financial.dtos import Claim
 from simulation.firms import Firm
 from simulation.core_agents import Household
 from simulation.dtos.api import SimulationState
@@ -86,7 +86,7 @@ class TestLiquidationWaterfallIntegration(unittest.TestCase):
                 bank_id = "bank"
                 if self.firm.decision_engine and self.firm.decision_engine.loan_market and self.firm.decision_engine.loan_market.bank:
                     bank_id = self.firm.decision_engine.loan_market.bank.id
-                claims.append(Claim(creditor_id=bank_id, amount=self.firm.total_debt, tier=2, description="Secured Loan"))
+                claims.append(Claim(creditor_id=bank_id, amount_pennies=int(self.firm.total_debt), tier=2, description="Secured Loan"))
             return claims
 
         self.firm.get_all_claims.side_effect = get_all_claims_side_effect

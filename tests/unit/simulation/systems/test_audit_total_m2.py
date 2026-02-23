@@ -14,6 +14,7 @@ def test_audit_total_m2_logic():
     hh = MagicMock(spec=IFinancialAgent)
     hh.id = 1
     hh.get_balance.return_value = 100
+    type(hh).balance_pennies = PropertyMock(return_value=100)
 
     # 2. Central Bank (Should be Excluded) -> IFinancialEntity
     cb = MagicMock(spec=IFinancialEntity)
@@ -29,6 +30,7 @@ def test_audit_total_m2_logic():
     bank.id = 2
     # IBank uses get_balance method
     bank.get_balance.return_value = 50
+    type(bank).balance_pennies = PropertyMock(return_value=50)
     bank.get_total_deposits.return_value = 200
 
     ss.agent_registry.get_all_financial_agents.return_value = [hh, cb, bank]

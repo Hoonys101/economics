@@ -48,6 +48,16 @@ class MockAgent(IFinancialAgent, IPortfolioHandler, IHeirProvider):
     def assets(self):
         return self._assets
 
+    @property
+    def balance_pennies(self) -> int:
+        return self._assets
+
+    def withdraw(self, amount, currency=DEFAULT_CURRENCY):
+        self._withdraw(amount, currency)
+
+    def deposit(self, amount, currency=DEFAULT_CURRENCY):
+        self._deposit(amount, currency)
+
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY):
         if currency != DEFAULT_CURRENCY:
              raise ValueError(f"MockAgent only supports {DEFAULT_CURRENCY}")
@@ -108,6 +118,16 @@ class MockBank(IBank):
         self.id = 999
         self.accounts = {}
         self.own_assets = 10000
+
+    @property
+    def balance_pennies(self) -> int:
+        return self.own_assets
+
+    def deposit(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
+        self._deposit(amount, currency)
+
+    def withdraw(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:
+        self._withdraw(amount, currency)
 
     # IFinancialAgent impl
     def _deposit(self, amount: int, currency: str = DEFAULT_CURRENCY) -> None:

@@ -45,7 +45,7 @@ class TestLiquidationServices(unittest.TestCase):
 
         self.assertEqual(len(claims), 1)
         self.assertEqual(claims[0].creditor_id, 101)
-        self.assertEqual(claims[0].amount, 500.0)
+        self.assertEqual(claims[0].amount_pennies, 500)
         self.assertEqual(claims[0].tier, 1)
 
     def test_hr_service_severance(self):
@@ -69,7 +69,7 @@ class TestLiquidationServices(unittest.TestCase):
 
         self.assertEqual(len(claims), 1)
         self.assertEqual(claims[0].creditor_id, 101)
-        self.assertAlmostEqual(claims[0].amount, 2807.69, delta=1.0)
+        self.assertAlmostEqual(claims[0].amount_pennies, 2807, delta=1.0)
 
     def test_tax_service(self):
         self.firm.finance_state.current_profit = 1000.0
@@ -83,5 +83,5 @@ class TestLiquidationServices(unittest.TestCase):
 
         self.assertEqual(len(claims), 1)
         self.assertEqual(claims[0].creditor_id, "gov_real_id")
-        self.assertEqual(claims[0].amount, 200.0) # 20% of 1000
+        self.assertEqual(claims[0].amount_pennies, 200) # 20% of 1000
         self.assertEqual(claims[0].tier, 3)

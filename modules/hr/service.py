@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, TYPE_CHECKING
 from modules.hr.api import IHRService
-from modules.common.dtos import Claim
+from modules.common.financial.dtos import Claim
 
 if TYPE_CHECKING:
     from simulation.firms import Firm
@@ -21,7 +21,7 @@ class HRService(IHRService):
                 if total_unpaid > 0:
                     claims.append(Claim(
                         creditor_id=employee_id,
-                        amount=total_unpaid,
+                        amount_pennies=int(total_unpaid),
                         tier=1,
                         description="Unpaid Wages"
                     ))
@@ -51,7 +51,7 @@ class HRService(IHRService):
                 if severance_amount > 0:
                     claims.append(Claim(
                         creditor_id=employee.id,
-                        amount=severance_amount,
+                        amount_pennies=int(severance_amount),
                         tier=1,
                         description=f"Severance ({effective_tenure:.2f} yr)"
                     ))

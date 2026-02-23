@@ -30,10 +30,16 @@ class MockAgent:
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         self.balance_pennies += amount
 
+    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._deposit(amount, currency)
+
     def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         if self.balance_pennies < amount:
             raise Exception("Insufficient funds")
         self.balance_pennies -= amount
+
+    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._withdraw(amount, currency)
 
     def get_total_debt(self) -> float: return 0.0
     def get_liquid_assets(self, currency="USD") -> float: return float(self.balance_pennies)

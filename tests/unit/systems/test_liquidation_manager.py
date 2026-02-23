@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, call
 from typing import List
 
 from simulation.systems.liquidation_manager import LiquidationManager
-from modules.common.dtos import Claim
+from modules.common.financial.dtos import Claim
 from simulation.firms import Firm
 from simulation.dtos.api import SimulationState
 from modules.system.api import IAssetRecoverySystem, IAgentRegistry, DEFAULT_CURRENCY, AssetBuyoutResultDTO
@@ -71,8 +71,8 @@ class TestLiquidationManager(unittest.TestCase):
 
     def test_initiate_liquidation_orchestration(self):
         # Setup Claims returned by services
-        claim_hr = Claim(creditor_id=101, amount=100.0, tier=1, description="Wage")
-        claim_tax = Claim(creditor_id="gov", amount=50.0, tier=3, description="Tax")
+        claim_hr = Claim(creditor_id=101, amount_pennies=100, tier=1, description="Wage")
+        claim_tax = Claim(creditor_id="gov", amount_pennies=50, tier=3, description="Tax")
 
         # Mock Registry resolution
         agent_101 = MagicMock()
@@ -114,7 +114,7 @@ class TestLiquidationManager(unittest.TestCase):
         self.mock_registry.get_agent.return_value = bank_agent
         
         # Mock Bank Claim via Protocol
-        bank_claim = Claim(creditor_id="bank_1", amount=500.0, tier=2, description="Secured Loan")
+        bank_claim = Claim(creditor_id="bank_1", amount_pennies=500, tier=2, description="Secured Loan")
         self.firm.get_all_claims.return_value = [bank_claim]
 
         self.manager.initiate_liquidation(self.firm, self.state)

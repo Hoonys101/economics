@@ -61,10 +61,11 @@ from modules.agent_framework.components.inventory_component import InventoryComp
 from modules.agent_framework.components.financial_component import FinancialComponent
 
 from modules.common.utils.shadow_logger import log_shadow
-from modules.finance.api import InsufficientFundsError, IFinancialFirm, IFinancialAgent, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake, IBank, ISalesTracker
+from modules.finance.api import InsufficientFundsError, IFinancialFirm, ICreditFrozen, ILiquidatable, LiquidationContext, EquityStake, IBank, ISalesTracker
+from modules.common.financial.api import IFinancialAgent
 from modules.common.interfaces import IPropertyOwner
-from modules.common.dtos import Claim
-from modules.finance.dtos import MoneyDTO, MultiCurrencyWalletDTO
+from modules.common.financial.dtos import Claim, MoneyDTO
+from modules.finance.dtos import MultiCurrencyWalletDTO
 from modules.finance.wallet.wallet import Wallet
 from modules.inventory.manager import InventoryManager
 from simulation.systems.api import ILearningAgent, LearningUpdateContext
@@ -729,7 +730,7 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         if total_debt > 0:
             all_claims.append(Claim(
                 creditor_id=bank_agent_id,
-                amount=total_debt,
+                amount_pennies=int(total_debt),
                 tier=2,
                 description="Secured Loan"
             ))

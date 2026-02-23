@@ -24,6 +24,8 @@ class MockGovernment:
     def total_wealth(self): return self._assets
     @property
     def assets(self): return self.total_wealth # Alias for tests
+    @property
+    def balance_pennies(self): return self._assets
     def get_balance(self, currency=DEFAULT_CURRENCY): return self._assets
     def get_liquid_assets(self, currency=DEFAULT_CURRENCY): return float(self._assets)
     @property
@@ -34,7 +36,9 @@ class MockGovernment:
     def get_debt_to_gdp_ratio(self):
         return 0.5
     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self._assets += amount
+    def deposit(self, amount, currency=DEFAULT_CURRENCY): self._deposit(amount, currency)
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self._assets -= amount
+    def withdraw(self, amount, currency=DEFAULT_CURRENCY): self._withdraw(amount, currency)
     def get_all_balances(self): return {DEFAULT_CURRENCY: self._assets}
 
 class MockCentralBank:
@@ -45,6 +49,8 @@ class MockCentralBank:
     def total_wealth(self): return self._assets
     @property
     def assets(self): return self.total_wealth # Alias for tests
+    @property
+    def balance_pennies(self): return self.assets['cash']
     def get_balance(self, currency=DEFAULT_CURRENCY): return self.assets['cash']
     def get_liquid_assets(self, currency=DEFAULT_CURRENCY): return float(self.assets['cash'])
     def get_total_debt(self): return 0.0
@@ -53,7 +59,9 @@ class MockCentralBank:
     def add_bond_to_portfolio(self, bond):
         self.assets["bonds"].append(bond)
     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self.assets['cash'] += amount
+    def deposit(self, amount, currency=DEFAULT_CURRENCY): self._deposit(amount, currency)
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self.assets['cash'] -= amount
+    def withdraw(self, amount, currency=DEFAULT_CURRENCY): self._withdraw(amount, currency)
     def get_all_balances(self): return {DEFAULT_CURRENCY: self.assets['cash']}
 
 class MockBank:
@@ -69,11 +77,15 @@ class MockBank:
     def total_wealth(self): return self._assets
     @property
     def assets(self): return self.total_wealth # Alias for tests
+    @property
+    def balance_pennies(self): return self._assets
     def get_balance(self, currency=DEFAULT_CURRENCY): return self._assets
     def get_liquid_assets(self, currency=DEFAULT_CURRENCY): return float(self._assets)
     def get_total_debt(self): return 0.0
     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self._assets += amount
+    def deposit(self, amount, currency=DEFAULT_CURRENCY): self._deposit(amount, currency)
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self._assets -= amount
+    def withdraw(self, amount, currency=DEFAULT_CURRENCY): self._withdraw(amount, currency)
     def get_all_balances(self): return {DEFAULT_CURRENCY: self._assets}
 
 class MockFirm:
@@ -88,11 +100,15 @@ class MockFirm:
     def total_wealth(self): return self.cash_reserve
     @property
     def assets(self): return self.total_wealth # Alias for tests
+    @property
+    def balance_pennies(self): return self.cash_reserve
     def get_balance(self, currency=DEFAULT_CURRENCY): return self.cash_reserve
     def get_liquid_assets(self, currency=DEFAULT_CURRENCY): return float(self.cash_reserve)
     def get_total_debt(self): return 0.0
     def _deposit(self, amount, currency=DEFAULT_CURRENCY): self.cash_reserve += amount
+    def deposit(self, amount, currency=DEFAULT_CURRENCY): self._deposit(amount, currency)
     def _withdraw(self, amount, currency=DEFAULT_CURRENCY): self.cash_reserve -= amount
+    def withdraw(self, amount, currency=DEFAULT_CURRENCY): self._withdraw(amount, currency)
     def get_all_balances(self): return {DEFAULT_CURRENCY: self.cash_reserve}
 
 class MockConfig:

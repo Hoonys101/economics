@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, TYPE_CHECKING, Optional, Any, Dict
 import logging
-from modules.common.dtos import Claim
+from modules.common.financial.dtos import Claim
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode
 from simulation.systems.liquidation_handlers import InventoryLiquidationHandler, ILiquidationHandler
 from modules.finance.api import ILiquidatable, LiquidationContext
@@ -63,7 +63,7 @@ class LiquidationManager:
         all_assets_dict = agent.liquidate_assets(state.time)
 
         # TD-033: Handle Multi-Currency
-        available_cash = all_assets_dict.get(DEFAULT_CURRENCY, 0.0)
+        available_cash = all_assets_dict.get(DEFAULT_CURRENCY, 0)
         other_assets = {k: v for k, v in all_assets_dict.items() if k != DEFAULT_CURRENCY and v > 0}
 
         # 2. Build Liquidation Context
@@ -78,7 +78,7 @@ class LiquidationManager:
         all_claims = agent.get_all_claims(context)
 
         logger.info(
-            f"LIQUIDATION_START | Agent {agent.id} starting liquidation. Assets: {available_cash:.2f}, Total Claims: {sum(c.amount for c in all_claims):.2f}",
+            f"LIQUIDATION_START | Agent {agent.id} starting liquidation. Assets: {available_cash}, Total Claims: {sum(c.amount_pennies for c in all_claims)}",
             extra={"tick": current_tick, "agent_id": agent.id, "tags": ["liquidation", "waterfall"]}
         )
 
@@ -111,23 +111,23 @@ class LiquidationManager:
                 continue
 
             tier_claims = claims_by_tier[tier]
-            total_tier_claim = sum(c.amount for c in tier_claims)
+            total_tier_claim = sum(c.amount_pennies for c in tier_claims)
 
             if remaining_cash <= 0:
-                logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} reached with 0 cash. Claims unpaid: {total_tier_claim:.2f}")
+                logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} reached with 0 cash. Claims unpaid: {total_tier_claim}")
                 break
 
             if remaining_cash >= total_tier_claim:
                 # Pay all fully
                 for claim in tier_claims:
-                    self._pay_claim(agent, claim, claim.amount)
+                    self._pay_claim(agent, claim, claim.amount_pennies)
                 remaining_cash -= total_tier_claim
-                logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} fully paid. Remaining cash: {remaining_cash:.2f}")
+                logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} fully paid. Remaining cash: {remaining_cash}")
             else:
                 # Pay pro-rata
                 factor = remaining_cash / total_tier_claim
                 for claim in tier_claims:
-                    payment = claim.amount * factor
+                    payment = int(claim.amount_pennies * factor)
                     self._pay_claim(agent, claim, payment, partial=True)
                 remaining_cash = 0.0
                 logger.info(f"LIQUIDATION_WATERFALL | Tier {tier} partially paid (Factor: {factor:.2f}). Cash exhausted.")
@@ -163,9 +163,9 @@ class LiquidationManager:
 
                 logger.info(f"LIQUIDATION_WATERFALL | Tier 5 (Equity) distributed {total_distributed_cash:.2f} {DEFAULT_CURRENCY} and foreign assets: {total_distributed_foreign} to shareholders.")
 
-    def _pay_claim(self, agent: ILiquidatable, claim: Claim, amount: float, partial: bool = False):
+    def _pay_claim(self, agent: ILiquidatable, claim: Claim, amount_pennies: int, partial: bool = False):
         """Helper to execute transfer using AgentRegistry."""
-        if amount <= 0:
+        if amount_pennies <= 0:
             return
 
         creditor_id = claim.creditor_id
@@ -173,8 +173,6 @@ class LiquidationManager:
 
         if creditor:
             memo = f"Liquidation Payout: {claim.description}" + (" (Partial)" if partial else "")
-            # MIGRATION: Ensure amount is int pennies
-            amount_pennies = int(amount)
             success = self.settlement_system.transfer(agent, creditor, amount_pennies, memo, currency=DEFAULT_CURRENCY)
 
             if success:
@@ -183,6 +181,6 @@ class LiquidationManager:
                     creditor.receive_repayment(agent.id, amount_pennies)
 
             if not success:
-                 logger.error(f"LIQUIDATION_PAYMENT_FAIL | Failed to transfer {amount:.2f} to {creditor.id}")
+                 logger.error(f"LIQUIDATION_PAYMENT_FAIL | Failed to transfer {amount_pennies} to {creditor.id}")
         else:
             logger.warning(f"LIQUIDATION_PAYMENT_SKIP | Creditor {creditor_id} not found for claim {claim.description}")

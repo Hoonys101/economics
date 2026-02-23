@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 from .api import IWallet, WalletOpLogDTO, CurrencyCode, DEFAULT_CURRENCY
 from .audit import GLOBAL_WALLET_LOG
 from modules.finance.api import InsufficientFundsError
-from modules.finance.dtos import MoneyDTO
+from modules.common.financial.dtos import MoneyDTO
 
 class Wallet(IWallet):
     """

@@ -28,10 +28,16 @@ class MockAgent:
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         self.balance_pennies += amount
 
+    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._deposit(amount, currency)
+
     def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         if self.balance_pennies < amount:
             raise Exception("Insufficient funds") # SettlementSystem should check this first
         self.balance_pennies -= amount
+
+    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        self._withdraw(amount, currency)
 
     def get_total_debt(self) -> float:
         return 0.0
@@ -66,7 +72,13 @@ class MockCentralBank:
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         pass
 
+    def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        pass
+
     def _withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
+        pass
+
+    def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         pass
 
     def get_total_debt(self) -> float:

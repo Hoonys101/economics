@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 from typing import Dict, Any
 from modules.finance.api import IFinancialAgent, FXMatchDTO
 from simulation.systems.settlement_system import SettlementSystem
-from modules.system.api import IAgentRegistry
+from modules.system.api import IAgentRegistry, DEFAULT_CURRENCY
 
 # Mock Agent Class that implements IFinancialAgent and ITransactionParticipant
 class MockFinancialAgent:
@@ -23,6 +23,10 @@ class MockFinancialAgent:
         if current < amount and not self.allows_overdraft:
             raise Exception("Insufficient funds")
         self._balances[currency] = current - amount
+
+    @property
+    def balance_pennies(self) -> int:
+        return self._balances.get(DEFAULT_CURRENCY, 0)
 
     # Implement protocol requirements for IFinancialAgent
     def _deposit(self, amount: int, currency: str = "USD") -> None:

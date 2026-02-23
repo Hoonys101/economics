@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, TYPE_CHECKING
 from modules.finance.api import ITaxService
-from modules.common.dtos import Claim
+from modules.common.financial.dtos import Claim
 from modules.system.api import DEFAULT_CURRENCY
 
 if TYPE_CHECKING:
@@ -32,7 +32,7 @@ class TaxService(ITaxService):
 
             claims.append(Claim(
                 creditor_id=gov_id,
-                amount=tax_liability,
+                amount_pennies=int(tax_liability),
                 tier=3,
                 description="Corporate Tax"
             ))
