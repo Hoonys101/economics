@@ -41,6 +41,21 @@
       "model": null,
       "audit_requirements": null
     },
+    "MISSION_impl_liquidation_wave3": {
+      "key": "MISSION_impl_liquidation_wave3",
+      "title": "Wave 3: Agent State Penny Sync & Budget Gatekeeper",
+      "type": "jules",
+      "instruction_raw": "Synchronize Firm/Household/Labor states to Penny Standard and implement Budget Gatekeeper as per SPEC.",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave3_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
     "MISSION_global_tech_debt_liquidation_plan": {
       "key": "MISSION_global_tech_debt_liquidation_plan",
       "title": "Global Technical Debt Liquidation & API/DTO Standardization Plan",

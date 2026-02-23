@@ -87,26 +87,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "MISSION_spec_liquidation_wave3": {
-      "key": "MISSION_spec_liquidation_wave3",
-      "title": "Wave 3: Agent State Penny Sync & Budget Gatekeeper Spec",
-      "type": "gemini",
-      "instruction_raw": "Firm/Household/Labor\uc758 Penny Standard \ub3d9\uae30\ud654\uc640 DIAG_INSOLVENCY_SPEC.md\uc5d0\uc11c \uc81c\uc548\ub41c 'Budget Gatekeeper' \ub3c4\uc785 \uc0c1\uc138 \uc2a4\ud399\uc744 \uc791\uc131\ud558\uc2ed\uc2dc\uc624. \uae30\uc5c5\uc758 \uc784\uae08/\uc138\uae08 \uc6b0\uc120\uc21c\uc704(Prioritization)\ub97c \uac15\uc81c\ud558\uace0, \uc9c0\ubd88 \ubd88\ub2a5 \uc2dc \ud30c\uc0b0 \uc808\ucc28\ub85c \uc548\uc804\ud558\uac8c \uc720\ub3c4\ud558\ub294 \ub85c\uc9c1\uc744 \ud3ec\ud568\ud558\uc2ed\uc2dc\uc624.",
-      "command": null,
-      "file_path": null,
-      "wait": false,
-      "session_id": null,
-      "worker": "spec",
-      "context_files": [
-        "gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md",
-        "gemini-output/spec/DIAG_INSOLVENCY_SPEC.md",
-        "simulation/firms.py",
-        "simulation/orchestration/sequencer.py"
-      ],
-      "output_path": "gemini-output/spec/MISSION_liquidation_wave3_SPEC.md",
-      "model": null,
-      "audit_requirements": null
-    },
     "MISSION_spec_liquidation_wave4": {
       "key": "MISSION_spec_liquidation_wave4",
       "title": "Wave 4: Government Policy & Fiscal Engine Separation Spec",
@@ -163,6 +143,41 @@
       "instruction_raw": "Harden Finance API/DTO to Penny Standard (Int) and implement Reserve Synchronization as per SPEC.",
       "command": "create",
       "file_path": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave2_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "MISSION_spec_liquidation_wave3": {
+      "key": "MISSION_spec_liquidation_wave3",
+      "title": "Wave 3: Agent State Penny Sync & Budget Gatekeeper Spec",
+      "type": "gemini",
+      "instruction_raw": "Firm/Household/Labor\uc758 Penny Standard \ub3d9\uae30\ud654\uc640 DIAG_INSOLVENCY_SPEC.md\uc5d0\uc11c \uc81c\uc548\ub41c 'Budget Gatekeeper' \ub3c4\uc785 \uc0c1\uc138 \uc2a4\ud399\uc744 \uc791\uc131\ud558\uc2ed\uc2dc\uc624. \uae30\uc5c5\uc758 \uc784\uae08/\uc138\uae08 \uc6b0\uc120\uc21c\uc704(Prioritization)\ub97c \uac15\uc81c\ud558\uace0, \uc9c0\ubd88 \ubd88\ub2a5 \uc2dc \ud30c\uc0b0 \uc808\ucc28\ub85c \uc548\uc804\ud558\uac8c \uc720\ub3c4\ud558\ub294 \ub85c\uc9c1\uc744 \ud3ec\ud568\ud558\uc2ed\uc2dc\uc624.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "spec",
+      "context_files": [
+        "gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md",
+        "gemini-output/spec/DIAG_INSOLVENCY_SPEC.md",
+        "simulation/firms.py",
+        "simulation/orchestration/sequencer.py"
+      ],
+      "output_path": "gemini-output/spec/MISSION_liquidation_wave3_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "MISSION_impl_liquidation_wave3": {
+      "key": "MISSION_impl_liquidation_wave3",
+      "title": "Wave 3: Agent State Penny Sync & Budget Gatekeeper",
+      "type": "jules",
+      "instruction_raw": "Synchronize Firm/Household/Labor states to Penny Standard and implement Budget Gatekeeper as per SPEC.",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave3_SPEC.md",
       "wait": false,
       "session_id": null,
       "worker": null,

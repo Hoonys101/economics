@@ -32,5 +32,10 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "instruction": "Harden Finance API/DTO to Penny Standard (Int) and implement Reserve Synchronization as per SPEC.",
         "file": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave2_SPEC.md"
     },
+    "MISSION_impl_liquidation_wave3": {
+        "title": "Wave 3: Agent State Penny Sync & Budget Gatekeeper",
+        "instruction": "Synchronize Firm/Household/Labor states to Penny Standard and implement Budget Gatekeeper as per SPEC.",
+        "file": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave3_SPEC.md"
+    },
     # Add missions here
 }
