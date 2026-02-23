@@ -8,7 +8,7 @@ from modules.housing.dtos import MortgageApprovalDTO
 # Import from new API
 from modules.market.housing_planner_api import ILoanMarket
 from modules.finance.api import MortgageApplicationDTO
-from modules.finance.api import LoanInfoDTO
+from modules.finance.api import LoanDTO
 from modules.simulation.api import AgentID
 
 if TYPE_CHECKING:
@@ -50,6 +50,7 @@ class LoanMarket(Market, ILoanMarket):
         """
         # Canonical Keys from loan_api:
         # requested_principal, property_value, applicant_monthly_income, existing_monthly_debt_payments
+        # MIGRATION: All inputs are int pennies.
 
         principal = application.requested_principal
         prop_value = application.property_value
@@ -124,10 +125,10 @@ class LoanMarket(Market, ILoanMarket):
 
         return True
 
-    def apply_for_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanInfoDTO]:
+    def apply_for_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
         """
         Processes a mortgage application with regulatory checks.
-        Returns LoanInfoDTO if approved, None otherwise.
+        Returns LoanDTO if approved, None otherwise.
         """
         return self.stage_mortgage(application)
 
@@ -162,11 +163,11 @@ class LoanMarket(Market, ILoanMarket):
             return loan_info.loan_id
         return None
 
-    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanInfoDTO]:
+    def stage_mortgage(self, application: MortgageApplicationDTO) -> Optional[LoanDTO]:
         """
         Legacy/Compat method.
         Stages a mortgage (creates loan record) without disbursing funds.
-        Returns LoanInfoDTO if successful, None otherwise.
+        Returns LoanDTO if successful, None otherwise.
         """
         loan_id = self.stage_mortgage_application(application)
         if loan_id:
@@ -180,25 +181,30 @@ class LoanMarket(Market, ILoanMarket):
              return "APPROVED"
         return "REJECTED"
 
-    def convert_staged_to_loan(self, staged_loan_id: str) -> Optional[LoanInfoDTO]:
+    def convert_staged_to_loan(self, staged_loan_id: str) -> Optional[LoanDTO]:
         """
         Finalizes an approved application.
-        Returns LoanInfoDTO object.
+        Returns LoanDTO object.
         """
         if hasattr(self.bank, 'loans') and staged_loan_id in self.bank.loans:
              loan = self.bank.loans[staged_loan_id]
              # MIGRATION: Ensure DTO purity by returning object.
-             # loan is LoanStateDTO (pennies). LoanInfoDTO expects Dollars (float).
-             return LoanInfoDTO(
+             # loan is LoanStateDTO (which is LoanDTO) or similar struct with pennies.
+
+             # If LoanStateDTO is LoanDTO, we can just return it or copy it.
+             # If it's a different internal struct, we convert.
+             # Assuming LoanStateDTO has fields: principal_pennies, remaining_principal_pennies, etc.
+
+             return LoanDTO(
                  loan_id=staged_loan_id,
                  borrower_id=int(loan.borrower_id),
-                 original_amount=float(loan.principal_pennies) / 100.0,
-                 outstanding_balance=float(loan.remaining_principal_pennies) / 100.0,
+                 principal_pennies=int(loan.principal_pennies),
+                 remaining_principal_pennies=int(loan.remaining_principal_pennies),
                  interest_rate=float(loan.interest_rate),
                  origination_tick=int(loan.origination_tick),
-                 due_tick=int(loan.start_tick + loan.term_ticks),
+                 due_tick=int(loan.due_tick) if loan.due_tick is not None else None,
                  lender_id=int(self.bank.id) if hasattr(self.bank, 'id') else None,
-                 term_ticks=int(loan.term_ticks)
+                 term_ticks=int(loan.term_ticks) if hasattr(loan, 'term_ticks') else None
              )
         return None
 
@@ -245,15 +251,18 @@ class LoanMarket(Market, ILoanMarket):
                  loan_id_int = hash(loan_info.loan_id) % 10000000
 
              # Recalculate monthly payment for DTO
+             # Using floats for MortgageApprovalDTO (legacy compat)
+             principal_float = loan_info.original_amount # Property derived from pennies
+
              monthly_rate = interest_rate / 12.0
              if monthly_rate == 0:
-                 pmt = principal / loan_term
+                 pmt = principal_float / loan_term
              else:
-                 pmt = principal * (monthly_rate * (1 + monthly_rate)**loan_term) / ((1 + monthly_rate)**loan_term - 1)
+                 pmt = principal_float * (monthly_rate * (1 + monthly_rate)**loan_term) / ((1 + monthly_rate)**loan_term - 1)
 
              return MortgageApprovalDTO(
                  loan_id=loan_id_int,
-                 approved_principal=loan_info.original_amount,
+                 approved_principal=principal_float,
                  monthly_payment=pmt
              )
 
@@ -280,7 +289,8 @@ class LoanMarket(Market, ILoanMarket):
             # Direct loan request via Order (Legacy or different path)
             # Use grant_loan directly as this bypasses the detailed MortgageApplication DTO usually.
 
-            loan_amount = order.quantity
+            # Order.quantity is usually loan amount in Dollars. Convert to Pennies.
+            loan_amount_pennies = int(order.quantity * 100)
             interest_rate = order.price
 
             duration = getattr(self.config_module, "DEFAULT_LOAN_TERM_TICKS", 50)
@@ -292,7 +302,7 @@ class LoanMarket(Market, ILoanMarket):
 
             grant_result = self.bank.grant_loan(
                 borrower_id=AgentID(order.agent_id),
-                amount=loan_amount,
+                amount=loan_amount_pennies,
                 interest_rate=interest_rate,
                 due_tick=due_tick,
                 borrower_profile=borrower_profile
@@ -304,12 +314,12 @@ class LoanMarket(Market, ILoanMarket):
                     transactions.append(credit_tx)
 
                 logger.info(
-                    f"Loan granted to {order.agent_id} for {loan_amount:.2f}. Loan ID: {loan_info.loan_id}",
+                    f"Loan granted to {order.agent_id} for {order.quantity:.2f}. Loan ID: {loan_info.loan_id}",
                     extra={**log_extra, "loan_id": loan_info.loan_id},
                 )
             else:
                 logger.warning(
-                    f"Loan denied for {order.agent_id} for {loan_amount:.2f}.",
+                    f"Loan denied for {order.agent_id} for {order.quantity:.2f}.",
                     extra=log_extra,
                 )
 
@@ -358,7 +368,7 @@ class LoanMarket(Market, ILoanMarket):
                          total_pennies=amount_pennies)
                     )
                     logger.info(
-                        f"Deposit accepted from {order.agent_id} for {amount:.2f}. Deposit ID: {deposit_id}",
+                        f"Deposit accepted from {order.agent_id} for {order.quantity:.2f}. Deposit ID: {deposit_id}",
                         extra={**log_extra, "deposit_id": deposit_id},
                     )
                 else:
@@ -385,7 +395,7 @@ class LoanMarket(Market, ILoanMarket):
                          total_pennies=amount_pennies)
                     )
                     logger.info(
-                        f"Withdrawal accepted for {order.agent_id} for {amount:.2f}.",
+                        f"Withdrawal accepted for {order.agent_id} for {order.quantity:.2f}.",
                         extra=log_extra,
                     )
                 else:

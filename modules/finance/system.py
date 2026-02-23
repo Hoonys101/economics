@@ -3,7 +3,7 @@ import logging
 import uuid
 from modules.finance.api import (
     IFinanceSystem, BondDTO, BailoutLoanDTO, BailoutCovenant, IFinancialAgent, IFinancialFirm,
-    InsufficientFundsError, GrantBailoutCommand, BorrowerProfileDTO, LoanInfoDTO,
+    InsufficientFundsError, GrantBailoutCommand, BorrowerProfileDTO, LoanDTO,
     IConfig, IBank, IGovernmentFinance, IMonetaryAuthority, IBankRegistry
 )
 from modules.finance.domain import AltmanZScoreCalculator
@@ -104,7 +104,7 @@ class FinanceSystem(IFinanceSystem):
         amount: int,
         borrower_profile: Union[Dict, BorrowerProfileDTO],
         current_tick: int
-    ) -> Tuple[Optional[LoanInfoDTO], List[Transaction]]:
+    ) -> Tuple[Optional[LoanDTO], List[Transaction]]:
         """
         Orchestrates the loan application process using Risk and Booking engines.
         """
@@ -153,7 +153,7 @@ class FinanceSystem(IFinanceSystem):
             # Fallback/Error
             return None, result.generated_transactions
 
-        # Construct LoanInfoDTO for the caller
+        # Construct LoanDTO for the caller
         # lender_id was set in app_dto
         lender_id = app_dto.lender_id
         if not lender_id:
@@ -176,20 +176,8 @@ class FinanceSystem(IFinanceSystem):
              # since loan creation triggers deposit creation (credit money).
              self.settlement_system.register_account(lender_id, borrower_id)
 
-        info_dto = LoanInfoDTO(
-            loan_id=loan_state.loan_id,
-            borrower_id=int(loan_state.borrower_id),
-            lender_id=int(loan_state.lender_id) if loan_state.lender_id else None,
-            original_amount=float(loan_state.principal_pennies),
-            outstanding_balance=float(loan_state.remaining_principal_pennies),
-            interest_rate=loan_state.interest_rate,
-            origination_tick=loan_state.origination_tick,
-            due_tick=loan_state.due_tick,
-            term_ticks=loan_state.due_tick - loan_state.origination_tick,
-            status="ACTIVE"
-        )
-
-        return info_dto, result.generated_transactions
+        # loan_state is already LoanDTO (LoanStateDTO alias)
+        return loan_state, result.generated_transactions
 
     def get_customer_balance(self, bank_id: AgentID, customer_id: AgentID) -> int:
         """Query the ledger for deposit balance."""
@@ -199,25 +187,14 @@ class FinanceSystem(IFinanceSystem):
             return deposit.balance_pennies
         return 0
 
-    def get_customer_debt_status(self, bank_id: AgentID, customer_id: AgentID) -> List[LoanInfoDTO]:
+    def get_customer_debt_status(self, bank_id: AgentID, customer_id: AgentID) -> List[LoanDTO]:
         """Query the ledger for loans."""
         loans = []
         bank_state = self.bank_registry.get_bank(bank_id)
         if bank_state:
             for loan in bank_state.loans.values():
                 if loan.borrower_id == customer_id and loan.remaining_principal_pennies > 0:
-                    loans.append(LoanInfoDTO(
-                        loan_id=loan.loan_id,
-                        borrower_id=int(loan.borrower_id),
-                        lender_id=int(loan.lender_id) if loan.lender_id else None,
-                        original_amount=float(loan.principal_pennies),
-                        outstanding_balance=float(loan.remaining_principal_pennies),
-                        interest_rate=loan.interest_rate,
-                        origination_tick=loan.origination_tick,
-                        due_tick=loan.due_tick,
-                        term_ticks=loan.due_tick - loan.origination_tick,
-                        status="ACTIVE"
-                    ))
+                    loans.append(loan)
         return loans
 
     def close_deposit_account(self, bank_id: AgentID, agent_id: AgentID) -> int:
@@ -428,7 +405,7 @@ class FinanceSystem(IFinanceSystem):
             total_pennies=amount
         )
 
-        # Map to legacy BondDTO for return signature compatibility
+        # Map to BondDTO
         bond_dto = BondDTO(
             id=bond_id,
             issuer="GOVERNMENT",
@@ -444,7 +421,7 @@ class FinanceSystem(IFinanceSystem):
         bonds, txs = self.issue_treasury_bonds(amount_to_raise, current_tick)
         return (len(bonds) > 0, txs)
 
-    def grant_bailout_loan(self, firm: IFinancialFirm, amount: int, current_tick: int) -> Tuple[Optional[LoanInfoDTO], List[Transaction]]:
+    def grant_bailout_loan(self, firm: IFinancialFirm, amount: int, current_tick: int) -> Tuple[Optional[LoanDTO], List[Transaction]]:
         """
         Deprecated: Use request_bailout_loan.
         Provided for compatibility with legacy execution engines.
@@ -460,11 +437,12 @@ class FinanceSystem(IFinanceSystem):
 
         # 1. Create Loan Application
         # Deprecated flow: We construct a best-effort profile
+        # Use new BorrowerProfileDTO with int pennies
         borrower_profile = BorrowerProfileDTO(
             borrower_id=firm.id,
-            gross_income=0.0, # Unknown via IFinancialFirm
-            existing_debt_payments=0.0,
-            collateral_value=float(firm.capital_stock_units * 100),
+            gross_income=0, # Unknown via IFinancialFirm
+            existing_debt_payments=0,
+            collateral_value=int(firm.capital_stock_units * 100),
             credit_score=float(BAILOUT_CREDIT_SCORE),
             employment_status="FIRM",
             preferred_lender_id=self.bank.id
@@ -510,7 +488,7 @@ class FinanceSystem(IFinanceSystem):
 
         return GrantBailoutCommand(
             firm_id=firm.id,
-            amount=float(amount),
+            amount=int(amount),
             interest_rate=base_rate + penalty_premium,
             covenants=covenants
         )

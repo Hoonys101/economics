@@ -314,13 +314,13 @@ class Firm(ILearningAgent, IFinancialFirm, IFinancialAgent, ILiquidatable, IOrch
         """Returns the total wealth in default currency estimation."""
         return self.financial_component.total_wealth
 
-    def get_liquid_assets(self, currency: CurrencyCode = "USD") -> float:
-        """Returns liquid assets as float (legacy compatibility)."""
-        return float(self.get_balance(currency))
+    def get_liquid_assets(self, currency: CurrencyCode = "USD") -> int:
+        """Returns liquid assets in pennies (int)."""
+        return self.get_balance(currency)
 
-    def get_total_debt(self) -> float:
-        """Returns total debt as float (legacy compatibility)."""
-        return float(self.finance_state.total_debt_pennies)
+    def get_total_debt(self) -> int:
+        """Returns total debt in pennies (int)."""
+        return self.finance_state.total_debt_pennies
 
     def _deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Internal deposit implementation."""

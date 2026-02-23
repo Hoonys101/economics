@@ -30,6 +30,16 @@ class TaxBracketDTO:
     ceiling: Optional[int] = None
 
 @dataclass(frozen=True)
+class FiscalPolicyDTO:
+    """
+    Fiscal Policy Stance.
+    """
+    income_tax_rate: float
+    corporate_tax_rate: float
+    tax_brackets: List[TaxBracketDTO] = field(default_factory=list)
+    vat_rate: float = 0.0
+
+@dataclass(frozen=True)
 class GovernmentPolicyDTO:
     """
     Unified Policy Snapshot for the Government.
@@ -66,7 +76,9 @@ class GovernmentStateDTO:
     total_debt: int # MIGRATION: pennies
     income_tax_rate: float
     corporate_tax_rate: float
+    # Removed duplicate fields
     policy: GovernmentPolicyDTO
+    fiscal_policy: Optional[FiscalPolicyDTO] # Explicit fiscal policy
     ruling_party: Any # e.g., PoliticalParty Enum
     approval_rating: float
     policy_lockouts: Dict[Any, int] = field(default_factory=dict) # <PolicyActionTag, locked_until_tick>
@@ -74,6 +86,7 @@ class GovernmentStateDTO:
     gdp_history: List[float] = field(default_factory=list)
     potential_gdp: float = 0.0
     fiscal_stance: float = 0.0
+    welfare_budget_multiplier: float = 1.0
 
 @dataclass
 class PolicyDecisionDTO:

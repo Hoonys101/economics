@@ -675,6 +675,12 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
     def total_wealth(self) -> int:
         return self.wallet.get_balance(DEFAULT_CURRENCY)
 
+    def get_liquid_assets(self, currency: CurrencyCode = DEFAULT_CURRENCY) -> int:
+        return self.wallet.get_balance(currency)
+
+    def get_total_debt(self) -> int:
+        return self.total_debt
+
     def run_public_education(self, agents: List[Any], config_module: Any, current_tick: int) -> List[Transaction]:
         households = [a for a in agents if hasattr(a, '_econ_state')]
         return self.ministry_of_education.run_public_education(households, self, current_tick)
