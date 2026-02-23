@@ -9,7 +9,8 @@ from modules.finance.api import (
     BorrowerProfileDTO,
     IFinancialEntity,
     IFinancialAgent,
-    IFinanceSystem
+    IFinanceSystem,
+    FloatIncursionError
 )
 from modules.simulation.api import AgentID
 from modules.system.api import CurrencyCode, DEFAULT_CURRENCY, ICurrencyHolder
@@ -150,6 +151,11 @@ class Bank(IBank, ICurrencyHolder, IFinancialEntity):
     # --- IBank Implementation ---
 
     def grant_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: Optional[int] = None, borrower_profile: Optional[BorrowerProfileDTO] = None) -> Optional[Tuple[LoanDTO, Transaction]]:
+        if isinstance(amount, float):
+             raise FloatIncursionError(f"Bank.grant_loan requires integer amount (pennies). Got float: {amount}")
+        if not isinstance(amount, int):
+             raise TypeError(f"Bank.grant_loan requires integer amount (pennies). Got {type(amount)}: {amount}")
+
         # Resolve borrower object vs ID
         borrower_obj = None
         borrower_agent_id = borrower_id

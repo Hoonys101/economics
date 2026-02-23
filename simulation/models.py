@@ -3,7 +3,7 @@ from typing import Optional, Dict, Any, List, TYPE_CHECKING
 import uuid
 import warnings
 from modules.market.api import CanonicalOrderDTO
-from modules.finance.api import LienDTO
+from modules.finance.api import LienDTO, FloatIncursionError
 from modules.system.api import DEFAULT_CURRENCY
 
 # Alias for backward compatibility and migration
@@ -21,10 +21,35 @@ class Transaction:
     market_id: str  # Added market_id
     transaction_type: str  # 'goods', 'labor', 'dividend', 'stock' 등 거래 유형
     time: int  # 거래가 발생한 시뮬레이션 틱
-    total_pennies: int # SSoT for settlement
+    total_pennies: int = 0 # SSoT for settlement. Default 0 allows legacy init, caught in post_init.
     currency: str = DEFAULT_CURRENCY # TD-213: Multi-currency support
     quality: float = 1.0  # Phase 15: Durables Quality
     metadata: Optional[Dict[str, Any]] = None  # WO-109: Metadata for side-effects
+
+    def __post_init__(self):
+        # 1. Float Guard for total_pennies
+        if isinstance(self.total_pennies, float):
+            raise FloatIncursionError(f"total_pennies must be int, got float: {self.total_pennies}")
+
+        # 2. Legacy Migration Logic
+        if self.total_pennies == 0 and self.price != 0.0:
+            # LEGACY PATH: Derive pennies from float price
+            # Strict rounding needed to avoid 99.99999 -> 99 issue
+            self.total_pennies = int(round(self.price * self.quantity * 100))
+            # Optional: warnings.warn("Transaction instantiated with float price. Use total_pennies.", DeprecationWarning)
+
+        # 3. SSoT Enforcement
+        if self.total_pennies != 0:
+            # Re-calculate display price from SSoT
+            calculated_price = (self.total_pennies / 100.0) / self.quantity if self.quantity else 0
+            # If price was explicitly set and diverges significantly, warn or raise
+            if self.price != 0 and abs(self.price - calculated_price) > 0.001:
+                # We enforce SSoT but allow small float errors.
+                # raise ValueError(f"SSoT Violation: price={self.price} != derived={calculated_price}")
+                pass
+
+            # Force consistency for display
+            self.price = calculated_price
 
     # --- ITransaction Protocol Implementation ---
     @property

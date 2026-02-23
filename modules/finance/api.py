@@ -14,8 +14,58 @@ from modules.finance.dtos import (
 )
 from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY, CurrencyCode
 from modules.simulation.api import AgentID, AnyAgentID
-from modules.common.financial.api import IFinancialEntity, IFinancialAgent
+from modules.common.financial.api import IFinancialAgent
 from modules.common.financial.dtos import MoneyDTO, Claim
+
+# --- Core Types ---
+
+@runtime_checkable
+class IFinancialEntity(Protocol):
+    """
+    Standard interface for any entity capable of holding and transferring financial value.
+    Enforces strict integer arithmetic for all monetary operations.
+    """
+    id: AgentID
+
+    @property
+    def balance_pennies(self) -> int:
+        """Returns the balance in the default currency (pennies)."""
+        ...
+
+    def deposit(self, amount_pennies: int, currency: CurrencyCode = ...) -> None:
+        """
+        Deposits funds into the entity's wallet.
+        MUST raise TypeError if amount_pennies is float.
+        """
+        ...
+
+    def withdraw(self, amount_pennies: int, currency: CurrencyCode = ...) -> None:
+        """
+        Withdraws funds from the entity's wallet.
+        MUST raise TypeError if amount_pennies is float.
+        MUST raise InsufficientFundsError if balance is insufficient (unless overdraft allowed).
+        """
+        ...
+
+@dataclass(frozen=True)
+class SettlementVerificationDTO:
+    """
+    Result of a Zero-Sum integrity check after a batch settlement.
+    """
+    tick: int
+    total_debits: int
+    total_credits: int
+    delta: int
+    is_balanced: bool
+    transaction_ids: list[str]
+
+class FloatIncursionError(TypeError):
+    """Raised when a float is passed to a strict integer financial API."""
+    pass
+
+class ZeroSumViolationError(RuntimeError):
+    """Raised when a settlement operation fails to balance (Debits != Credits)."""
+    pass
 
 @runtime_checkable
 class ITransaction(Protocol):
@@ -391,16 +441,13 @@ class IAccountRegistry(Protocol):
 @runtime_checkable
 class ISettlementSystem(IAccountRegistry, Protocol):
     """
-    Interface for the centralized settlement system.
-    Basic financial operations for Households and Firms.
-    Inherits IAccountRegistry to maintain backward compatibility for account management
-    methods during the transition to a dedicated AccountRegistry service.
+    The transactional kernel for all financial operations.
+    Responsible for ATOMIC, ZERO-SUM transfers between entities.
     """
-
     def transfer(
         self,
-        debit_agent: IFinancialAgent,
-        credit_agent: IFinancialAgent,
+        debit_agent: IFinancialEntity,
+        credit_agent: IFinancialEntity,
         amount: int,
         memo: str,
         debit_context: Optional[Dict[str, Any]] = None,
@@ -408,9 +455,22 @@ class ISettlementSystem(IAccountRegistry, Protocol):
         tick: int = 0,
         currency: CurrencyCode = DEFAULT_CURRENCY
     ) -> Optional[ITransaction]:
-        """Executes an immediate, single transfer. Returns transaction or None."""
+        """
+        Executes an immediate, single transfer.
+        MUST enforce:
+        1. amount is int (no floats).
+        2. debit_agent has funds (or overdraft).
+        3. Zero-sum outcome (Debit - Credit == 0).
+        """
         ...
 
+    def audit_total_m2(self, expected_total: int | None = None) -> bool:
+        """
+        Audits the total M2 money supply in the system against registered CurrencyHolders.
+        """
+        ...
+
+    # Legacy support methods (retained for backward compatibility but may be deprecated)
     def execute_swap(self, match: FXMatchDTO) -> Optional[ITransaction]:
         """
         Phase 4.1: Executes an atomic currency swap (Barter FX).
@@ -428,10 +488,24 @@ class ISettlementSystem(IAccountRegistry, Protocol):
 @runtime_checkable
 class IMonetaryAuthority(ISettlementSystem, Protocol):
     """
-    Interface for monetary authority operations (Central Bank, Government, God Mode).
-    Extends ISettlementSystem with money creation/destruction capabilities.
+    Extended interface for authorized NON-ZERO-SUM operations.
+    Used by Central Bank and Government (Minting/Burning).
     """
+    def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = 'god_mode_injection') -> bool:
+        """
+        Creates new money (M2 Expansion).
+        Records creation event in MonetaryLedger.
+        """
+        ...
 
+    def transfer_and_destroy(self, source: IFinancialEntity, sink_authority: IFinancialEntity, amount: int, reason: str, tick: int, currency: CurrencyCode = ...) -> Any:
+        """
+        Destroys money (M2 Contraction).
+        Records destruction event in MonetaryLedger.
+        """
+        ...
+
+    # Legacy support methods
     def create_and_transfer(
         self,
         source_authority: IFinancialAgent,
@@ -442,29 +516,6 @@ class IMonetaryAuthority(ISettlementSystem, Protocol):
         currency: CurrencyCode = DEFAULT_CURRENCY
     ) -> Optional[ITransaction]:
         """Creates new money (or grants) and transfers it to an agent."""
-        ...
-
-    def transfer_and_destroy(
-        self,
-        source: IFinancialAgent,
-        sink_authority: IFinancialAgent,
-        amount: int,
-        reason: str,
-        tick: int,
-        currency: CurrencyCode = DEFAULT_CURRENCY
-    ) -> Optional[ITransaction]:
-        """Transfers money from an agent to an authority to be destroyed."""
-        ...
-
-    def mint_and_distribute(self, target_agent_id: int, amount: int, tick: int = 0, reason: str = "god_mode_injection") -> bool:
-        """Minting capability for God Mode."""
-        ...
-
-    def audit_total_m2(self, expected_total: Optional[int] = None) -> bool:
-        """
-        Audits the total M2 money supply in the system.
-        Returns True if the audit passes (or no expectation set), False otherwise.
-        """
         ...
 
     def record_liquidation(

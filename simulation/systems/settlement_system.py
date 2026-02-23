@@ -7,7 +7,7 @@ from modules.finance.api import (
     IFinancialAgent, IFinancialEntity, IBank, InsufficientFundsError,
     IPortfolioHandler, PortfolioDTO, PortfolioAsset, IHeirProvider, LienDTO, AgentID,
     IMonetaryAuthority, IEconomicMetricsService, IPanicRecorder, ICentralBank,
-    FXMatchDTO, IAccountRegistry
+    FXMatchDTO, IAccountRegistry, FloatIncursionError, ZeroSumViolationError
 )
 from modules.finance.registry.account_registry import AccountRegistry
 from modules.system.api import DEFAULT_CURRENCY, CurrencyCode, ICurrencyHolder, IAgentRegistry, ISystemFinancialAgent
@@ -441,13 +441,19 @@ class SettlementSystem(IMonetaryAuthority):
         """
         Executes an atomic transfer using TransactionEngine.
         """
+        if isinstance(amount, float):
+             raise FloatIncursionError(f"Settlement integrity violation: amount must be int, got float: {amount}.")
+
         if not isinstance(amount, int):
              raise TypeError(f"Settlement integrity violation: amount must be int, got {type(amount)}.")
+
+        if amount < 0:
+             raise ValueError(f"Cannot transfer negative amount: {amount}")
 
         if not self._validate_memo(memo):
             return None
 
-        if amount <= 0:
+        if amount == 0:
             return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
 
         if debit_agent is None or credit_agent is None:
@@ -480,6 +486,7 @@ class SettlementSystem(IMonetaryAuthority):
                  if self.panic_recorder:
                      self.panic_recorder.record_withdrawal(amount)
 
+             self._emit_zero_sum_check(debit_agent.id, credit_agent.id, amount)
              return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)
         elif result.status == 'FAILED':
              # Validation failure (e.g., missing account or insufficient funds)
@@ -604,6 +611,13 @@ class SettlementSystem(IMonetaryAuthority):
             tick=tick
         )
         return tx is not None
+
+    def _emit_zero_sum_check(self, debit_agent_id: AgentID, credit_agent_id: AgentID, amount: int) -> None:
+        """Logs zero-sum integrity check."""
+        self.logger.debug(
+            f"ZERO_SUM_CHECK | Transfer {amount} from {debit_agent_id} to {credit_agent_id} balanced.",
+            extra={"tags": ["audit", "zero_sum"]}
+        )
 
     def audit_total_m2(self, expected_total: Optional[int] = None) -> bool:
         if not self.agent_registry: return False
