@@ -119,7 +119,8 @@ class SagaOrchestrator(ISagaOrchestrator):
                         saga.logs = []
                     saga.logs.append("Cancelled due to inactive participant.")
 
-                    logger.warning(
+                    # Wave 5 Phase 3: Reduce log level to INFO for inactive agent events
+                    logger.info(
                          f"SAGA_CANCELLED | Saga {saga_id} cancelled due to inactive participant. "
                          f"Buyer Active: {not is_buyer_inactive}, Seller Active: {not is_seller_inactive}",
                          extra={"saga_id": str(saga_id)}

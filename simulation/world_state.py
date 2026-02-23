@@ -189,20 +189,30 @@ class WorldState:
         for holder in self.currency_holders:
             # Exclude CentralBank (Source) and Commercial Bank (Reserves) from M2 summation.
             # M2 is money in the hands of the public (Households, Firms, Gov).
-            if hasattr(holder, 'id'):
-                if holder.id == ID_CENTRAL_BANK:
-                    continue
-                if self.bank and holder.id == self.bank.id:
-                    continue
-            
-            # Additional check by class name for safety
-            class_name = holder.__class__.__name__
-            if class_name in ["CentralBank", "Bank"]:
-                continue
+            try:
+                if hasattr(holder, 'id'):
+                    if holder.id == ID_CENTRAL_BANK:
+                        continue
+                    # Wave 5: Include Bank Reserves in Total Money Calculation for Audit Parity
+                    # if self.bank and holder.id == self.bank.id:
+                    #     continue
 
-            assets_dict = holder.get_assets_by_currency()
-            for cur, amount in assets_dict.items():
-                totals[cur] = totals.get(cur, 0) + max(0, int(amount))
+                    # Dead Agent Hardening
+                    if hasattr(holder, 'is_active') and not holder.is_active:
+                        continue
+            
+                # Additional check by class name for safety
+                class_name = holder.__class__.__name__
+                if class_name == "CentralBank":
+                    continue
+                # Note: We include Bank to capture Reserves (M0) in the Total Money audit.
+
+                assets_dict = holder.get_assets_by_currency()
+                for cur, amount in assets_dict.items():
+                    totals[cur] = totals.get(cur, 0) + max(0, int(amount))
+            except Exception:
+                # Ignore errors from dead/disconnected agents
+                continue
         return totals
 
     def get_total_system_money_for_diagnostics(self, target_currency: CurrencyCode = "USD") -> float:

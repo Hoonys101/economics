@@ -60,6 +60,7 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
         if success:
             if hasattr(target_agent, 'total_money_issued'):
                 target_agent.total_money_issued += amount
+
             self.logger.info(f'MINT_SUCCESS | Minted {amount:.2f} to {target_agent.id}. Memo: {memo}', extra={'agent_id': target_agent.id, 'amount': amount, 'memo': memo})
         else:
             self.logger.error(f'MINT_FAIL | Failed to mint {amount:.2f} to {target_agent.id}. Memo: {memo}', extra={'agent_id': target_agent.id, 'amount': amount, 'memo': memo})

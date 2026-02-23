@@ -207,6 +207,9 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.agent_registry.set_state(sim.world_state)
 
         sim.central_bank_system = CentralBankSystem(central_bank_agent=sim.central_bank, settlement_system=sim.settlement_system, logger=self.logger)
+        # Wire Settlement System to LLR (Wave 5 Stabilization)
+        sim.settlement_system.set_monetary_authority(sim.central_bank_system)
+
         sim.finance_system = FinanceSystem(government=sim.government, central_bank=sim.central_bank, bank=sim.bank, config_module=self.config_manager, settlement_system=sim.settlement_system, monetary_authority=sim.central_bank_system)
         sim.government.finance_system = sim.finance_system
         sim.bank.set_finance_system(sim.finance_system)
