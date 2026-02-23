@@ -208,6 +208,9 @@ class BondRepaymentDetailsDTO:
     interest_pennies: int
     bond_id: str
 
+# Alias for backward compatibility
+FiscalPolicyDTO = GovernmentPolicyDTO
+
 # endregion
 
 @dataclass

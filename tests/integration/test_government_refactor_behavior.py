@@ -138,16 +138,18 @@ class TestGovernmentRefactor:
             }
         )
 
+        policy = MagicMock()
+        policy.welfare_budget_multiplier = 1.0
+
         state = GovernmentStateDTO(
             tick=1,
             assets={},
             total_debt=0,
             income_tax_rate=0.1,
             corporate_tax_rate=0.2,
-            fiscal_policy=MagicMock(),
+            policy=policy,
             ruling_party=MagicMock(),
             approval_rating=0.5,
-            welfare_budget_multiplier=1.0,
             potential_gdp=1000.0,
             policy_lockouts={},
             sensory_data=None,

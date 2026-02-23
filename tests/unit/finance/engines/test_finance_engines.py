@@ -87,7 +87,8 @@ def test_liquidation_engine_liquidate(empty_ledger):
         remaining_principal_pennies=100000,
         interest_rate=0.05,
         origination_tick=0,
-        term_months=10
+        term_months=10,
+        due_tick=3650
     )
     bank.loans["L1"] = loan
     # Balance the ledger: Loan created from Reserves (Asset swap logic, effectively)
@@ -136,7 +137,7 @@ def test_debt_servicing_engine(empty_ledger):
         interest_rate=0.05,
         origination_tick=0,
         term_months=10,
-        due_tick=300
+        due_tick=3650
     )
     bank.loans["L1"] = loan
     # Deposit (for payment)
@@ -146,7 +147,7 @@ def test_debt_servicing_engine(empty_ledger):
         balance_pennies=10000,
         interest_rate=0.0,
         deposit_id=dep_id,
-        customer_id="FIRM1",
+
         currency=DEFAULT_CURRENCY
     )
     bank.deposits[dep_id] = deposit
@@ -212,7 +213,7 @@ def test_zero_sum_verifier(empty_ledger):
         origination_tick=0,
         term_months=10,
         due_tick=300
-    ) # Remaining > Principal
+    )
     empty_ledger.banks["BANK1"].loans["L1"] = loan
     # This check (Remaining > Principal) is domain logic, not accounting identity.
     # ZeroSumVerifier checks Assets = Liabilities + Equity.

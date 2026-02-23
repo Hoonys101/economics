@@ -176,4 +176,10 @@ class HouseholdLifecycleMixin:
         self._econ_state.education_xp += xp
 
     def add_durable_asset(self, asset: Dict[str, Any]) -> None:
-        self._econ_state.durable_assets.append(asset)
+        from modules.household.dtos import DurableAssetDTO
+        dto = DurableAssetDTO(
+            item_id=asset['item_id'],
+            quality=asset['quality'],
+            remaining_life=asset['remaining_life']
+        )
+        self._econ_state.durable_assets.append(dto)

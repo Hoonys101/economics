@@ -9,13 +9,16 @@ from modules.housing.dtos import HousingDecisionRequestDTO
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.models import Order
 from modules.finance.utils.currency_math import round_to_pennies
+
 logger = logging.getLogger(__name__)
+
 SHADOW_WAGE_DECAY = 0.95
 SHADOW_WAGE_TARGET_WEIGHT = 0.05
 SHADOW_WAGE_UNEMPLOYED_DECAY = 0.02
 HOUSING_CHECK_FREQUENCY = 30
 DEFAULT_FOOD_PRICE_ESTIMATE = 10.0
-DEFAULT_SURVIVAL_BUDGET = 50.0
+DEFAULT_SURVIVAL_BUDGET_PENNIES = 5000 # 50.00
+MARKET_ID_GOODS = 'goods_market'
 
 class BudgetEngine(IBudgetEngine):
     """
@@ -34,19 +37,25 @@ class BudgetEngine(IBudgetEngine):
         market_snapshot = input_dto.market_snapshot
         config = input_dto.config
         current_tick = input_dto.current_tick
+
         new_econ_state = econ_state.copy()
+
         self._update_shadow_wage(new_econ_state, market_snapshot, config, current_tick)
         housing_action = self._plan_housing(new_econ_state, market_snapshot, current_tick)
         budget_plan = self._create_budget_plan(new_econ_state, prioritized_needs, abstract_plan, market_snapshot, config, input_dto=input_dto)
+
         return BudgetOutputDTO(econ_state=new_econ_state, budget_plan=budget_plan, housing_action=housing_action)
 
     def _update_shadow_wage(self, state: EconStateDTO, market_snapshot: Any, config: Any, current_tick: int):
         avg_market_wage_float = market_snapshot.labor.avg_wage if hasattr(market_snapshot, 'labor') else 0.0
         avg_market_wage = int(avg_market_wage_float * 100)
+
         if avg_market_wage > 0:
             state.market_wage_history.append(avg_market_wage)
+
         if state.shadow_reservation_wage_pennies <= 0:
             state.shadow_reservation_wage_pennies = state.current_wage_pennies if state.is_employed else state.expected_wage_pennies
+
         if state.is_employed:
             target = max(state.current_wage_pennies, state.shadow_reservation_wage_pennies)
             new_shadow = state.shadow_reservation_wage_pennies * SHADOW_WAGE_DECAY + target * SHADOW_WAGE_TARGET_WEIGHT
@@ -59,22 +68,33 @@ class BudgetEngine(IBudgetEngine):
 
     def _plan_housing(self, state: EconStateDTO, market_snapshot: Any, current_tick: int) -> Optional[HousingActionDTO]:
         if state.is_homeless or current_tick % HOUSING_CHECK_FREQUENCY == 0:
-
+            # Create a wrapper to mimic legacy structure if needed by HousingPlanner
+            # Assuming HousingDecisionRequestDTO expects an object with 'econ_state' attribute
             class StateWrapper:
-
                 def __init__(self, e_state):
                     self.econ_state = e_state
+
             wrapper = StateWrapper(state)
             housing_snap = market_snapshot.housing if hasattr(market_snapshot, 'housing') else None
+
             if housing_snap:
                 request = HousingDecisionRequestDTO(household_state=wrapper, housing_market_snapshot=housing_snap, outstanding_debt_payments=0.0)
                 decision = self.housing_planner.evaluate_housing_options(request)
+
                 if decision['decision_type'] == 'INITIATE_PURCHASE':
                     state.housing_target_mode = 'BUY'
-                    return HousingActionDTO(action_type='INITIATE_PURCHASE', property_id=str(decision['target_property_id']), offer_price=int(decision['offer_price']), down_payment_amount=int(decision.get('down_payment_amount', 0.0)))
+                    return HousingActionDTO(
+                        action_type='INITIATE_PURCHASE',
+                        property_id=str(decision['target_property_id']),
+                        offer_price=int(decision['offer_price']),
+                        down_payment_amount=int(decision.get('down_payment_amount', 0.0))
+                    )
                 elif decision['decision_type'] == 'MAKE_RENTAL_OFFER':
                     state.housing_target_mode = 'RENT'
-                    return HousingActionDTO(action_type='MAKE_RENTAL_OFFER', property_id=str(decision['target_property_id']))
+                    return HousingActionDTO(
+                        action_type='MAKE_RENTAL_OFFER',
+                        property_id=str(decision['target_property_id'])
+                    )
                 elif decision['decision_type'] == 'STAY':
                     state.housing_target_mode = 'STAY'
                     return HousingActionDTO(action_type='STAY')
@@ -85,79 +105,20 @@ class BudgetEngine(IBudgetEngine):
         allocations: Dict[str, int] = {}
         spent = 0
         final_orders: List[Order] = []
+
+        agent_id = getattr(input_dto, 'agent_id', None)
+        if not agent_id:
+            agent_id = getattr(state.wallet, 'owner_id', None)
+
+        goods_market = getattr(market_snapshot, 'goods', {})
+
         for need in needs:
             if need.need_id == 'medical':
-                # Wave 4.3: Inelastic Medical Demand
-                # Check price or assume estimate
-                goods_market = getattr(market_snapshot, 'goods', {})
-                # Assuming 'goods_market' contains 'medical_service' or we need to look in 'services'
-                # Given existing code uses 'goods' for 'basic_food', we'll look there.
-                target_item = "medical_service"
-                m = goods_market.get(target_item)
-
-                # Default estimate (should be high)
-                price_estimate = 10000.0 # 100.00 (Pennies)
-                if m:
-                    price_estimate = getattr(m, 'avg_price', price_estimate) or getattr(m, 'current_price', price_estimate)
-
-                # Inelastic: Spend up to total remaining cash to buy 1 unit
-                # Review Fix: Removed * 100 multiplier as price_estimate is assumed to be in pennies
-                cost_pennies = int(price_estimate * 1.2) # 20% premium for urgency
-
-                allocated_cash = min(max(0, total_cash - spent), cost_pennies)
-
-                if allocated_cash > 0:
-                    allocations['medical'] = allocated_cash
-                    spent += allocated_cash
-
-                    qty = 1.0 # One treatment
-                    # Wave 4.3 Identity Fix: Use explicit agent_id from input_dto if available
-                    # Fallback to wallet owner only if not provided (legacy)
-                    agent_id = getattr(input_dto, 'agent_id', None)
-                    if not agent_id:
-                        agent_id = getattr(state.wallet, 'owner_id', None)
-
-                    if agent_id:
-                        # Price limit is what we are willing to pay per unit
-                        price_limit = allocated_cash / 100.0
-                        order = Order(
-                            agent_id=agent_id,
-                            side='BUY',
-                            item_id=target_item,
-                            quantity=qty,
-                            price_pennies=allocated_cash,
-                            price_limit=price_limit,
-                            market_id='goods_market' # Assuming standard goods market handles services
-                        )
-                        final_orders.append(order)
+                 spent += self._handle_medical_need(allocations, final_orders, total_cash, spent, goods_market, agent_id)
 
             elif need.need_id == 'survival':
-                food_price_float = config.default_food_price_estimate if config else DEFAULT_FOOD_PRICE_ESTIMATE
-                goods_market = getattr(market_snapshot, 'goods', {})
-                target_item = 'basic_food'
-                m = goods_market.get('basic_food')
-                if not m:
-                    m = goods_market.get('food')
-                    target_item = 'food' if m else 'basic_food'
-                if m:
-                    food_price_float = getattr(m, 'avg_price', food_price_float) or getattr(m, 'current_price', food_price_float)
-                if config:
-                    amount_to_allocate_pennies = config.survival_budget_allocation
-                else:
-                    amount_to_allocate_pennies = int(DEFAULT_SURVIVAL_BUDGET * 100)
-                allocated_cash = 0
-                if total_cash - spent >= amount_to_allocate_pennies:
-                    allocated_cash = amount_to_allocate_pennies
-                else:
-                    allocated_cash = max(0, total_cash - spent)
-                allocations['food'] = allocated_cash
-                spent += allocated_cash
-                if allocated_cash > 0 and food_price_float > 0:
-                    qty = allocated_cash / 100.0 / food_price_float
-                    agent_id = getattr(state.wallet, 'owner_id', None)
-                    if agent_id:
-                        order = Order(agent_id=agent_id, side='BUY', item_id=target_item, quantity=qty, price_pennies=int(food_price_float * 1.1 * 100), price_limit=food_price_float * 1.1, market_id='goods_market')
-                        final_orders.append(order)
+                 spent += self._handle_survival_need(allocations, final_orders, total_cash, spent, goods_market, config, agent_id)
+
         for order in abstract_plan:
             if order.side == 'BUY':
                 cost_float = order.quantity * order.price_limit
@@ -169,4 +130,75 @@ class BudgetEngine(IBudgetEngine):
                     final_orders.append(order)
             elif order.side == 'SELL':
                 final_orders.append(order)
+
         return BudgetPlan(allocations=allocations, discretionary_spending=max(0, total_cash - spent), orders=final_orders)
+
+    def _handle_medical_need(self, allocations: Dict[str, int], final_orders: List[Order], total_cash: int, spent: int, goods_market: Any, agent_id: Optional[int]) -> int:
+        target_item = "medical_service"
+        m = goods_market.get(target_item)
+
+        # Default estimate (pennies)
+        price_estimate = 10000.0
+        if m:
+            price_estimate = getattr(m, 'avg_price', price_estimate) or getattr(m, 'current_price', price_estimate)
+
+        cost_pennies = int(price_estimate * 1.2) # 20% premium for urgency
+        allocated_cash = min(max(0, total_cash - spent), cost_pennies)
+
+        if allocated_cash > 0:
+            allocations['medical'] = allocated_cash
+            qty = 1.0
+
+            if agent_id:
+                price_limit = allocated_cash / 100.0
+                order = Order(
+                    agent_id=agent_id,
+                    side='BUY',
+                    item_id=target_item,
+                    quantity=qty,
+                    price_pennies=allocated_cash,
+                    price_limit=price_limit,
+                    market_id=MARKET_ID_GOODS
+                )
+                final_orders.append(order)
+            return allocated_cash
+        return 0
+
+    def _handle_survival_need(self, allocations: Dict[str, int], final_orders: List[Order], total_cash: int, spent: int, goods_market: Any, config: Any, agent_id: Optional[int]) -> int:
+        food_price_float = config.default_food_price_estimate if config else DEFAULT_FOOD_PRICE_ESTIMATE
+        target_item = 'basic_food'
+        m = goods_market.get('basic_food')
+        if not m:
+            m = goods_market.get('food')
+            target_item = 'food' if m else 'basic_food'
+
+        if m:
+            food_price_float = getattr(m, 'avg_price', food_price_float) or getattr(m, 'current_price', food_price_float)
+
+        if config:
+            amount_to_allocate_pennies = config.survival_budget_allocation
+        else:
+            amount_to_allocate_pennies = DEFAULT_SURVIVAL_BUDGET_PENNIES
+
+        allocated_cash = 0
+        if total_cash - spent >= amount_to_allocate_pennies:
+            allocated_cash = amount_to_allocate_pennies
+        else:
+            allocated_cash = max(0, total_cash - spent)
+
+        allocations['food'] = allocated_cash
+
+        if allocated_cash > 0 and food_price_float > 0:
+            qty = allocated_cash / 100.0 / food_price_float
+            if agent_id:
+                order = Order(
+                    agent_id=agent_id,
+                    side='BUY',
+                    item_id=target_item,
+                    quantity=qty,
+                    price_pennies=int(food_price_float * 1.1 * 100),
+                    price_limit=food_price_float * 1.1,
+                    market_id=MARKET_ID_GOODS
+                )
+                final_orders.append(order)
+        return allocated_cash

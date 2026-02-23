@@ -25,13 +25,13 @@ class NeedsEngine(INeedsEngine):
         # 1. Apply Durable Asset Utility (Depreciation handled in ConsumptionEngine)
         # We assume durable assets provide utility based on their CURRENT state (before decay at end of tick)
         for asset in econ_state.durable_assets:
-            item_id = asset["item_id"]
-            if asset["remaining_life"] > 0:
-                good_info = goods_data.get(item_id, {})
+            # DTO Realignment: Use dot notation for DurableAssetDTO
+            if asset.remaining_life > 0:
+                good_info = goods_data.get(asset.item_id, {})
                 utility_effects = good_info.get("utility_effects", {})
 
                 for need_type, base_utility in utility_effects.items():
-                    effective_utility = base_utility * asset["quality"]
+                    effective_utility = base_utility * asset.quality
                     if need_type in new_bio_state.needs:
                         new_bio_state.needs[need_type] = max(0.0, new_bio_state.needs[need_type] - effective_utility)
 

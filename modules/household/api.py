@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Protocol, List, Dict, Optional, Any, TypedDict, Tuple, Deque, DefaultDict, runtime_checkable
+from typing import Protocol, List, Dict, Optional, Any, Tuple, Deque, DefaultDict, runtime_checkable
 from dataclasses import dataclass, field
 from collections import deque
 
@@ -13,7 +13,7 @@ from modules.household.dtos import (
 )
 from modules.simulation.dtos.api import HouseholdConfigDTO
 from modules.system.api import MarketSnapshotDTO
-from simulation.dtos import StressScenarioConfig, LaborResult, ConsumptionResult
+from simulation.dtos import StressScenarioConfig, LaborResult, ConsumptionResult, LeisureEffectDTO
 
 # --- Engine DTOs ---
 

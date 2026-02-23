@@ -50,7 +50,7 @@ from modules.household.api import (
 from modules.household.dtos import (
     HouseholdStateDTO, EconContextDTO,
     BioStateDTO, EconStateDTO, SocialStateDTO,
-    HouseholdSnapshotDTO
+    HouseholdSnapshotDTO, DurableAssetDTO
 )
 from modules.analytics.dtos import AgentTickAnalyticsDTO
 from modules.household.services import HouseholdSnapshotAssembler
@@ -972,6 +972,15 @@ class Household(
 
     def create_state_dto(self) -> HouseholdStateDTO:
         """Legacy DTO creation."""
+        # Convert DurableAssetDTOs to dicts for legacy compatibility
+        durable_assets_legacy = []
+        for d in self._econ_state.durable_assets:
+            durable_assets_legacy.append({
+                'item_id': d.item_id,
+                'quality': d.quality,
+                'remaining_life': d.remaining_life
+            })
+
         # Map fields manually or use partial data
         return HouseholdStateDTO(
             id=self.id,
@@ -982,7 +991,7 @@ class Household(
             preference_social=self.preference_social,
             preference_growth=self.preference_growth,
             personality=self._social_state.personality,
-            durable_assets=self._econ_state.durable_assets,
+            durable_assets=durable_assets_legacy,
             expected_inflation=self._econ_state.expected_inflation,
             is_employed=self._econ_state.is_employed,
             current_wage_pennies=self._econ_state.current_wage_pennies,
@@ -1042,7 +1051,13 @@ class Household(
         self._econ_state.labor_skill = new_skill
 
     def add_durable_asset(self, asset: Dict[str, Any]) -> None:
-        self._econ_state.durable_assets.append(asset)
+        # Convert dictionary to DurableAssetDTO for internal storage
+        dto = DurableAssetDTO(
+            item_id=asset['item_id'],
+            quality=asset['quality'],
+            remaining_life=asset['remaining_life']
+        )
+        self._econ_state.durable_assets.append(dto)
 
     def update_perceived_prices(self, market_data: Dict[str, Any], stress_scenario_config: Optional[StressScenarioConfig] = None, current_tick: int = 0) -> None:
         """
@@ -1094,6 +1109,15 @@ class Household(
 
         if to_remove > 0:
             self.remove_item(item_id, to_remove)
+
+            # Check if this item is a durable asset and remove it if so
+            # This logic is imperfect as 'consume' implies using up, but for durables it might mean 'using'
+            # However, if 'consume' removes it, we should probably check durable assets too.
+            # But durable assets are separate list. remove_item handles inventory dict.
+            # If consumption removes from inventory, it doesn't touch durable_assets list unless explicit.
+            # Durable assets are usually added to list upon purchase and stay there until decay.
+            # 'Consume' here likely means 'eat' or 'use up single use'.
+            # So we don't touch durable assets list here.
 
             # Update Econ State
             # Note: We track quantity here. Utility is calculated elsewhere or implied.

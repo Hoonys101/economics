@@ -89,6 +89,15 @@ class HouseholdStateAccessMixin:
         monthly_income = calculate_monthly_income(self._econ_state.current_wage, ticks_per_year)
         monthly_debt_payments = self._calculate_monthly_debt_payments()
 
+        # Convert DurableAssetDTOs to dicts for legacy compatibility
+        durable_assets_legacy = []
+        for d in self._econ_state.durable_assets:
+            durable_assets_legacy.append({
+                'item_id': d.item_id,
+                'quality': d.quality,
+                'remaining_life': d.remaining_life
+            })
+
         return HouseholdStateDTO(
             id=self.id,
             assets=self._econ_state.assets,
@@ -98,7 +107,7 @@ class HouseholdStateAccessMixin:
             preference_social=self.preference_social,
             preference_growth=self.preference_growth,
             personality=self._social_state.personality,
-            durable_assets=[d.copy() for d in self._econ_state.durable_assets],
+            durable_assets=durable_assets_legacy,
             expected_inflation=self._econ_state.expected_inflation.copy(),
             is_employed=self._econ_state.is_employed,
             current_wage=self._econ_state.current_wage,

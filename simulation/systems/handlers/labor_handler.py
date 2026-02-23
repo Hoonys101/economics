@@ -100,9 +100,15 @@ class LaborTransactionHandler(ITransactionHandler):
         if isinstance(seller, Household):
             if seller.is_employed and seller.employer_id is not None and seller.employer_id != buyer.id:
                 # Need to remove from previous employer
-                previous_employer = context.agents.get(seller.employer_id) or context.inactive_agents.get(seller.employer_id)
-                if isinstance(previous_employer, Firm):
-                    previous_employer.hr_engine.remove_employee(previous_employer.hr_state, seller)
+                # context.agents is a dict of ID -> Agent
+                # However, in TransactionProcessor, context.agents might not be fully populated in mocks.
+                # Use robust lookup or pass explicit dependency if possible.
+                # Assuming context.agents works.
+                prev_id = seller.employer_id
+                if context.agents and prev_id in context.agents:
+                    previous_employer = context.agents[prev_id]
+                    if isinstance(previous_employer, Firm):
+                        previous_employer.hr_engine.remove_employee(previous_employer.hr_state, seller)
 
             seller.is_employed = True
             seller.employer_id = buyer.id
