@@ -5,12 +5,9 @@ import hashlib
 import json
 import os
 from collections import deque
-try:
-    import fcntl
-except ImportError:
-    fcntl = None
 if TYPE_CHECKING:
     from simulation.engine import Simulation
+from modules.platform.infrastructure.lock_manager import PlatformLockManager, LockAcquisitionError
 from modules.common.config_manager.api import ConfigManager
 from simulation.initialization.api import SimulationInitializerInterface
 from simulation.models import Order, RealEstateUnit
@@ -105,17 +102,14 @@ class SimulationInitializer(SimulationInitializerInterface):
         Simulation 인스턴스를 생성하고 모든 구성 요소를 조립합니다.
         (기존 Simulation.__init__ 로직을 이 곳으로 이동)
         """
-        lock_file = None
-        if fcntl:
-            lock_file = open('simulation.lock', 'w')
-            try:
-                fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                self.logger.info('Acquired exclusive lock on simulation.lock')
-            except IOError:
-                self.logger.error('Another simulation instance is already running (locked by simulation.lock).')
-                raise RuntimeError('Simulation is already running.')
-        else:
-            self.logger.warning('File locking (fcntl) is not supported on this platform. Concurrency safety is not guaranteed.')
+        # Cross-Platform Locking Mechanism (Wave 1.5)
+        lock_manager = PlatformLockManager('simulation.lock')
+        try:
+            lock_manager.acquire()
+        except LockAcquisitionError:
+            self.logger.error('Another simulation instance is already running (locked by simulation.lock).')
+            raise RuntimeError('Simulation is already running.')
+
         global_registry = GlobalRegistry()
         agent_registry = AgentRegistry()
         settlement_system = SettlementSystem(logger=self.logger, agent_registry=agent_registry)
@@ -125,7 +119,7 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         # sim.agent_registry.set_state(sim.world_state) # DEFERRED to end of build_simulation
 
-        sim._lock_file = lock_file
+        sim.lock_manager = lock_manager
         sim.event_bus = EventBus()
         sim.world_state.taxation_system = TaxationSystem(config_module=self.config)
         from modules.system.telemetry import TelemetryCollector
@@ -207,6 +201,11 @@ class SimulationInitializer(SimulationInitializerInterface):
              # Central Bank ID is handled internally by the class, but we register it here
              # to ensure it exists in the primary agent lookup table.
              sim.agents[ID_CENTRAL_BANK] = sim.central_bank
+
+        # TD-INIT-RACE: Registry must be linked BEFORE Bootstrapper runs.
+        # Now that System Agents (Gov, Bank, CB) are in sim.agents, we link the registry.
+        sim.agent_registry.set_state(sim.world_state)
+
         sim.finance_system = FinanceSystem(government=sim.government, central_bank=sim.central_bank, bank=sim.bank, config_module=self.config_manager, settlement_system=sim.settlement_system)
         sim.government.finance_system = sim.finance_system
         sim.bank.set_finance_system(sim.finance_system)
@@ -392,7 +391,7 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         # TD-FIN-INVISIBLE-HAND: Ensure system agents are registered before Snapshot
         self.logger.info("LATE_INITIALIZATION | Finalizing AgentRegistry state snapshot.")
-        sim.agent_registry.set_state(sim.world_state)
+        # sim.agent_registry.set_state(sim.world_state) # MOVED up before Bootstrapper
 
         self.logger.info(f'Simulation fully initialized with run_id: {sim.run_id}')
         return sim

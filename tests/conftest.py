@@ -46,10 +46,21 @@ from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
 from modules.finance.api import ISettlementSystem, IMonetaryAuthority
 
 @pytest.fixture(autouse=True)
+def mock_platform_lock_manager():
+    """Mocks PlatformLockManager to prevent file locking during tests."""
+    with patch('simulation.initialization.initializer.PlatformLockManager') as MockLockManager:
+        # Configure the mock to return a fake manager that does nothing
+        instance = MockLockManager.return_value
+        instance.acquire.return_value = None
+        instance.release.return_value = None
+        yield MockLockManager
+
+@pytest.fixture(autouse=True)
 def mock_fcntl():
     """Mocks fcntl to prevent file locking during tests."""
     # We patch the fcntl module used in initializer.py
     # If the system doesn't have fcntl, it might be None, so we patch carefully.
+    # Note: With mock_platform_lock_manager, this might be redundant but safe to keep for now.
     import simulation.initialization.initializer
     with patch('simulation.initialization.initializer.fcntl', create=True) as mock_fcntl:
         if mock_fcntl:

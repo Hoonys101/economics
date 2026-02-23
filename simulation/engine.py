@@ -96,7 +96,13 @@ class Simulation:
         self.world_state.logger.info("Simulation finalized and Repository connection closed.")
 
         # Release application-level lock if exists
-        if hasattr(self, "_lock_file") and self._lock_file:
+        if hasattr(self, "lock_manager") and self.lock_manager:
+            try:
+                self.lock_manager.release()
+                self.world_state.logger.info("Released simulation.lock via LockManager")
+            except Exception as e:
+                self.world_state.logger.error(f"Failed to release simulation.lock via LockManager: {e}")
+        elif hasattr(self, "_lock_file") and self._lock_file:
             try:
                 self._lock_file.close() # Closing the file releases the lock
                 self.world_state.logger.info("Released simulation.lock")
