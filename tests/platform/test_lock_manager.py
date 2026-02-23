@@ -12,7 +12,7 @@ class TestPlatformLockManager:
         self.lock_path = "test_simulation.lock"
 
     @patch('modules.platform.infrastructure.lock_manager.os.name', 'posix')
-    @patch('modules.platform.infrastructure.lock_manager.fcntl')
+    @patch('modules.platform.infrastructure.lock_manager.fcntl', create=True)
     def test_acquire_unix_success(self, mock_fcntl):
         mock_fcntl.LOCK_EX = 2
         mock_fcntl.LOCK_NB = 4
@@ -27,7 +27,7 @@ class TestPlatformLockManager:
             assert args[1] == (mock_fcntl.LOCK_EX | mock_fcntl.LOCK_NB)
 
     @patch('modules.platform.infrastructure.lock_manager.os.name', 'posix')
-    @patch('modules.platform.infrastructure.lock_manager.fcntl')
+    @patch('modules.platform.infrastructure.lock_manager.fcntl', create=True)
     def test_acquire_unix_fail(self, mock_fcntl):
         mock_fcntl.LOCK_EX = 2
         mock_fcntl.LOCK_NB = 4
@@ -73,7 +73,7 @@ class TestPlatformLockManager:
                 manager.acquire()
 
     @patch('modules.platform.infrastructure.lock_manager.os.name', 'posix')
-    @patch('modules.platform.infrastructure.lock_manager.fcntl')
+    @patch('modules.platform.infrastructure.lock_manager.fcntl', create=True)
     def test_release_unix(self, mock_fcntl):
         mock_fcntl.LOCK_EX = 2
         mock_fcntl.LOCK_NB = 4

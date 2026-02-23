@@ -1,105 +1,6 @@
 # Refined Diagnostic Logs
 Critical events extracted for Gemini analysis.
 
-- **Tick ?** | **WARNING** | File locking (fcntl) is not supported on this platform. Concurrency safety is not guaranteed.
-- **Tick ?** | **ERROR** | Transaction Record: ID=a208bb25-201b-454a-b453-35a19dd1dd5f, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=43226bf9-fe2e-42a6-a279-8d7eee251db0, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=ab9244a2-e4e1-4c59-a0b8-f8b35b246ac9, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=f26348ad-dc26-43ad-bdd2-2d53b47c83a7, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=3ba43aae-f40d-4834-8efa-3d9ddb829a2d, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=8dfed09b-8276-4e4b-b26b-c4311f8cd485, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=36cf1d9b-18e7-4aaf-ad03-7c0c53b61ab4, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=ac6392be-9c4d-448a-82ba-519187c47e6b, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=21535fd3-9f9d-40a0-b9f2-3905d2212aa8, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=1dac5b80-e3e8-4ef8-ade1-078c5c755c15, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=444f8a65-2885-45b9-bad8-9328efccd223, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=da5fe84c-0661-482c-94f4-0d30e79602f4, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=8385d528-15ac-48a9-a50b-6a41d3bde0a4, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=cd7f80e5-b3e5-4b79-9624-c409d5ded3cb, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=2a6c65de-c66a-4bb1-95bc-3b41ee90f046, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=019a333c-a615-4a0b-8159-2f42b05f0f4f, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=d11df308-f548-4039-8108-c572fe044bb9, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=558af6b3-6f63-4d7a-8094-27c049c13a96, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=5fbb353f-f7f3-44c5-aa2b-4d1337bd5b52, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=9b49eba0-946f-4a42-982a-ac6e5ef1237e, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=c77162aa-4ea4-429e-baa8-bda41cc16c6a, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=7c4ba6c7-2a18-4a2e-a683-e846fb624692, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=a87f6427-a417-4afc-8962-5a431cf594c9, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=5b138af8-6345-42a9-8d19-f855dc5dfa14, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=ceeb746a-876d-4cc0-b9c1-ffc1e4810c92, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=f4b73fcb-5daa-428f-a43e-b83180875c00, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=04b48aa0-2dd8-4064-ba96-b8f8fd29319e, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=1fb00ce0-052e-46fa-9821-7233d9b5977e, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **ERROR** | Transaction Record: ID=903d4faa-4f7c-418c-8f71-34b979685453, Status=FAILED, Message=Source account does not exist: 0
-- **Tick ?** | **WARNING** | SETTLEMENT_V_FAIL | Transaction rejected: Source account does not exist: 0
-- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 104.
-- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 120 cannot afford severance to fire 104.
-- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 100.
-- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 121 cannot afford severance to fire 100.
-- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 115.
-- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 122 cannot afford severance to fire 115.
-- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 113.
-- **Tick ?** | **WARNING** | INTERNAL_EXEC | Firm 123 cannot afford severance to fire 113.
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 104. Recorded as unpaid wage.
-  - Details: agent_id=120
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 104. Recorded as unpaid wage.
-  - Details: agent_id=120
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 114. Recorded as unpaid wage.
-  - Details: agent_id=120
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 120 cannot afford wage for Household 114. Recorded as unpaid wage.
-  - Details: agent_id=120
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=121
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 100. Recorded as unpaid wage.
-  - Details: agent_id=121
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 101. Recorded as unpaid wage.
-  - Details: agent_id=121
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 121 cannot afford wage for Household 101. Recorded as unpaid wage.
-  - Details: agent_id=121
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 115. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 115. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 105. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 122 cannot afford wage for Household 105. Recorded as unpaid wage.
-  - Details: agent_id=122
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 113. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 113. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 109. Recorded as unpaid wage.
-  - Details: agent_id=123
-- **Tick 1** | **WARNING** | ZOMBIE | Firm 123 cannot afford wage for Household 109. Recorded as unpaid wage.
-  - Details: agent_id=123
 - **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
 - **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
 - **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
@@ -111,9 +12,22 @@ Critical events extracted for Gemini analysis.
 - **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
 - **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
 - **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 0 < 50000000
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 50000000
 - **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 50000000 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2785.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2785.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2785.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 2785.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 446b0e56-46ee-4ed4-8f10-1ed52ab9e8eb missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 11fac7db-69bf-44a6-8596-a52e855029ab missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 21e73f29-02fe-44b0-9f84-2c8a4ee481d8 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 4aca59c5-f8cd-49b0-b6c9-d01742d8f22a missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 2995d0d3-7698-4d24-b9a8-07d70b4fe11a missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga bfbf213c-ae7e-46e8-ade1-dc6174d7d047 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 55fef93a-940d-4016-81a2-79de22b5423c missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga c1fce4f6-67c5-4d6d-9d76-930044362aa6 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 274e27fc-8369-4dc8-af43-50a2bbb5b3de missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 77625097-f9fe-4746-8c29-f26c81570c9d missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 3ead0f5d-2abc-4dd4-b0f2-cbf578b0682b missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 6ced9094-3c3b-4587-8235-8f71cd95a756 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga ddfc726c-2ac3-47d1-8440-d7963c7457f8 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 1e533e22-f5fc-4a72-968f-c5aa504c68d0 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga dfff0eac-2ea7-4f95-a1c9-943e781ff1ca missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 3a7cdddf-9e82-418d-9717-839608a89277 missing seller ID.

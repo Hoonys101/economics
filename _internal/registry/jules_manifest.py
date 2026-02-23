@@ -17,25 +17,20 @@
 from typing import Dict, Any
 
 JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
-    "MISSION_impl_liquidation_wave1": {
-        "title": "Wave 1: Shared Financial Kernel & Cycle Breaker",
-        "instruction": "Implement modules/common/financial, migrate Claim/MoneyDTO (Int Pennies), and resolve Finance <-> HR circular dependency as per SPEC.",
-        "file": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave1_SPEC.md"
+    "MISSION_impl_wave5_politics": {
+        "title": "Wave 5: Political Orchestration & Voting Infrastructure Implementation",
+        "instruction": "MISSION_W5_POLITICS_DETAIL.md를 바탕으로 정치 오케스트레이터 및 개별 투표 시스템을 구현하십시오.",
+        "file": "c:/coding/economics/gemini-output/spec/MISSION_W5_POLITICS_DETAIL.md"
     },
-    "MISSION_impl_liquidation_wave1_5": {
-        "title": "Wave 1.5: Initialization & Concurrency Stabilizer",
-        "instruction": "Fix SimulationInitializer order, register Agent 0, and implement cross-platform file locking as per Wave 1.5 SPEC.",
-        "file": "gemini-output/spec/MISSION_liquidation_wave1_5_SPEC.md"
+    "MISSION_impl_wave5_gov_ai": {
+        "title": "Wave 5: Populist Government AI & Reward Hardening Implementation",
+        "instruction": "MISSION_W5_GOV_AI_DETAIL.md를 바탕으로 정부 AI의 보상 함수 및 상태 공간 확장을 구현하십시오.",
+        "file": "c:/coding/economics/gemini-output/spec/MISSION_W5_GOV_AI_DETAIL.md"
     },
-    "MISSION_impl_liquidation_wave2": {
-        "title": "Wave 2: Finance Core Penny Standard & Reserve Sync",
-        "instruction": "Harden Finance API/DTO to Penny Standard (Int) and implement Reserve Synchronization as per SPEC.",
-        "file": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave2_SPEC.md"
-    },
-    "MISSION_impl_liquidation_wave3": {
-        "title": "Wave 3: Agent State Penny Sync & Budget Gatekeeper",
-        "instruction": "Synchronize Firm/Household/Labor states to Penny Standard and implement Budget Gatekeeper as per SPEC.",
-        "file": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave3_SPEC.md"
-    },
+    "MISSION_impl_wave5_monetary": {
+        "title": "Wave 5: Central Bank Multi-Rule Strategy Pattern Implementation",
+        "instruction": "MISSION_W5_MONETARY_DETAIL.md를 바탕으로 중앙은행의 전략 패턴 및 다중 준칙을 구현하십시오.",
+        "file": "c:/coding/economics/gemini-output/spec/MISSION_W5_MONETARY_DETAIL.md"
+    }
     # Add missions here
 }

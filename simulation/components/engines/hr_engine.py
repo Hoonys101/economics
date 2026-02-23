@@ -579,6 +579,8 @@ class HREngine(IHREngine, IHRDepartment):
         Creates a severance transaction to fire an employee.
         Does NOT execute transfer or remove employee.
         """
+        # Ensure severance_pay is integer pennies (FloatIncursion Fix)
+        severance_pay = int(severance_pay)
         employee = next((e for e in hr_state.employees if e.id == employee_id), None)
         if not employee:
             return None

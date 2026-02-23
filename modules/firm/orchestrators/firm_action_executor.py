@@ -138,7 +138,7 @@ class FirmActionExecutor:
 
             elif order.order_type == "FIRE":
                  tx = firm.hr_engine.create_fire_transaction(
-                    firm.hr_state, firm.id, firm.wallet.get_balance(DEFAULT_CURRENCY), order.target_agent_id, order.price, current_time
+                    firm.hr_state, firm.id, firm.wallet.get_balance(DEFAULT_CURRENCY), order.target_agent_id, order.price_pennies, current_time
                  )
                  if tx:
                     employee = next((e for e in firm.hr_state.employees if e.id == order.target_agent_id), None)
