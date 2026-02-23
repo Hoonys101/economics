@@ -239,9 +239,14 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
                 market_signals={},
                 market_data=market_data
             )
-            self.fiscal_policy = self.tax_service.determine_fiscal_stance(snapshot)
-            self.fiscal_policy.corporate_tax_rate = self.corporate_tax_rate
-            self.fiscal_policy.income_tax_rate = self.income_tax_rate
+            from dataclasses import replace
+            policy = self.tax_service.determine_fiscal_stance(snapshot)
+            self.fiscal_policy = replace(
+                policy,
+                corporate_tax_rate=self.corporate_tax_rate,
+                income_tax_rate=self.income_tax_rate,
+                welfare_budget_multiplier=self.welfare_budget_multiplier
+            )
 
         # 0.5. Execute Policy Engine (AI/Legacy)
         # Allows AI to override parameters before FiscalEngine calculation or as parallel decision.
@@ -712,13 +717,12 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             total_debt=self.total_debt,
             income_tax_rate=self.income_tax_rate,
             corporate_tax_rate=self.corporate_tax_rate,
-            fiscal_policy=self.fiscal_policy,
+            policy=self.fiscal_policy,
             ruling_party=self.ruling_party,
             approval_rating=self.approval_rating,
             policy_lockouts=self.policy_lockout_manager._lockouts,
             sensory_data=self.sensory_data,
             gdp_history=list(self.gdp_history),
-            welfare_budget_multiplier=self.welfare_budget_multiplier,
             potential_gdp=self.potential_gdp,
             fiscal_stance=self.fiscal_stance
         )

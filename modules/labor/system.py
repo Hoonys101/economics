@@ -35,7 +35,7 @@ class LaborMarket(ILaborMarket, IMarket):
         matches: List[LaborMarketMatchResultDTO] = []
 
         # Sort offers by wage descending (High paying jobs pick first)
-        sorted_offers = sorted(self._job_offers, key=lambda x: x.offer_wage, reverse=True)
+        sorted_offers = sorted(self._job_offers, key=lambda x: x.offer_wage_pennies, reverse=True)
 
         # Bucket seekers by Major for Performance Optimization (O(N*M) -> O(N*K) where K is subset)
         seekers_by_major: Dict[IndustryDomain, List[JobSeekerDTO]] = {}
@@ -81,10 +81,10 @@ class LaborMarket(ILaborMarket, IMarket):
                         continue
 
                     # 1. Base Score (Wage vs Reservation)
-                    if seeker.reservation_wage <= 0:
+                    if seeker.reservation_wage_pennies <= 0:
                         base_score = 1.0
                     else:
-                        base_score = offer.offer_wage / seeker.reservation_wage
+                        base_score = offer.offer_wage_pennies / seeker.reservation_wage_pennies
 
                     # Filter: Must meet reservation wage
                     if base_score < 1.0:
@@ -136,27 +136,27 @@ class LaborMarket(ILaborMarket, IMarket):
 
                         # Wave 3: Nash Bargaining
                         # Surplus = WTP (Offer) - WTA (Reservation)
-                        surplus = offer.offer_wage - seeker.reservation_wage
+                        surplus = offer.offer_wage_pennies - seeker.reservation_wage_pennies
                         bargaining_power = 0.5 # Default split
 
                         if surplus > 0:
-                            best_wage = seeker.reservation_wage + (surplus * bargaining_power)
+                            best_wage_pennies = seeker.reservation_wage_pennies + int(surplus * bargaining_power)
                         else:
-                            best_wage = offer.offer_wage # Fallback
+                            best_wage_pennies = offer.offer_wage_pennies # Fallback
 
                         best_compatibility = compatibility
 
             if best_candidate:
                 # Recalculate context for DTO
-                surplus = offer.offer_wage - best_candidate.reservation_wage
+                surplus = offer.offer_wage_pennies - best_candidate.reservation_wage_pennies
                 matches.append(LaborMarketMatchResultDTO(
                     employer_id=offer.firm_id,
                     employee_id=best_candidate.household_id,
-                    base_wage=offer.offer_wage,
-                    matched_wage=best_wage,
+                    base_wage_pennies=offer.offer_wage_pennies,
+                    matched_wage_pennies=best_wage_pennies,
                     match_score=best_score,
                     major_compatibility=best_compatibility,
-                    surplus=surplus,
+                    surplus_pennies=surplus,
                     bargaining_power=0.5
                 ))
                 matched_seeker_ids.add(best_candidate.household_id)
@@ -227,7 +227,7 @@ class LaborMarket(ILaborMarket, IMarket):
 
             offer = JobOfferDTO(
                 firm_id=AgentID(int(order_dto.agent_id)),
-                offer_wage=order_dto.price_pennies / 100.0,
+                offer_wage_pennies=order_dto.price_pennies,
                 required_education=metadata.get("required_education", 0),
                 quantity=order_dto.quantity,
                 major=major_enum
@@ -248,7 +248,7 @@ class LaborMarket(ILaborMarket, IMarket):
 
             seeker = JobSeekerDTO(
                 household_id=AgentID(int(order_dto.agent_id)),
-                reservation_wage=order_dto.price_pennies / 100.0,
+                reservation_wage_pennies=order_dto.price_pennies,
                 education_level=metadata.get("education_level", 0),
                 quantity=order_dto.quantity,
                 major=major_enum
@@ -271,16 +271,16 @@ class LaborMarket(ILaborMarket, IMarket):
                 seller_id=res.employee_id,
                 item_id="labor",
                 quantity=1.0,
-                price=res.matched_wage,
+                price=res.matched_wage_pennies / 100.0,
                 market_id=self.id,
                 transaction_type="HIRE",
                 time=current_time,
-                total_pennies=int(res.matched_wage * 100),
+                total_pennies=res.matched_wage_pennies,
                 metadata={
                     "match_score": res.match_score,
                     "major_compatibility": res.major_compatibility,
-                    "base_wage": res.base_wage,
-                    "surplus": res.surplus,
+                    "base_wage": res.base_wage_pennies / 100.0,
+                    "surplus": res.surplus_pennies / 100.0,
                     "bargaining_power": res.bargaining_power
                 }
             )

@@ -17,6 +17,16 @@ if TYPE_CHECKING:
     from simulation.dtos import LeisureType
 
 @dataclass
+class DurableAssetDTO:
+    """Represents a durable asset owned by the household."""
+    item_id: str
+    quality: float
+    remaining_life: int
+
+    def copy(self) -> "DurableAssetDTO":
+        return copy.copy(self)
+
+@dataclass
 class BioStateDTO:
     """Internal state for BioComponent."""
     id: int # Agent ID
@@ -57,7 +67,7 @@ class EconStateDTO:
     # assets: Dict[CurrencyCode, float] # DEPRECATED, access via wallet
     inventory: Dict[str, float]
     inventory_quality: Dict[str, float]
-    durable_assets: List[Dict[str, Any]]
+    durable_assets: List[DurableAssetDTO]
     portfolio: Portfolio # Treated as mutable component state, but we should copy it if needed
 
     # Labor
@@ -145,7 +155,7 @@ class EconStateDTO:
 
         new_state.inventory = self.inventory.copy()
         new_state.inventory_quality = self.inventory_quality.copy()
-        # Deep copy durable assets as they are dicts
+        # Deep copy durable assets
         new_state.durable_assets = [d.copy() for d in self.durable_assets]
 
         # Portfolio copy

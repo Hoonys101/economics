@@ -58,9 +58,10 @@ class ConsumptionEngine(IConsumptionEngine):
                             order.quantity *= multiplier
         new_durable_assets = []
         for asset in new_econ_state.durable_assets:
+            # DTO Realignment: Use dot notation for DurableAssetDTO
             new_asset = asset.copy()
-            new_asset['remaining_life'] -= 1
-            if new_asset['remaining_life'] > 0:
+            new_asset.remaining_life -= 1
+            if new_asset.remaining_life > 0:
                 new_durable_assets.append(new_asset)
         new_econ_state.durable_assets = new_durable_assets
         return ConsumptionOutputDTO(econ_state=new_econ_state, bio_state=new_bio_state, orders=orders, social_state=None)

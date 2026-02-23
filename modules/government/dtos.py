@@ -66,8 +66,6 @@ class GovernmentStateDTO:
     total_debt: int # MIGRATION: pennies
     income_tax_rate: float
     corporate_tax_rate: float
-    income_tax_rate: float
-    corporate_tax_rate: float
     policy: GovernmentPolicyDTO
     ruling_party: Any # e.g., PoliticalParty Enum
     approval_rating: float
@@ -171,5 +169,8 @@ class BailoutResultDTO:
     """
     loan_request: BailoutLoanDTO # The DTO defining the loan terms
     payment_request: PaymentRequestDTO # The initial transfer of funds
+
+# Alias for backward compatibility
+FiscalPolicyDTO = GovernmentPolicyDTO
 
 # endregion

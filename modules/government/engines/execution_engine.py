@@ -42,7 +42,7 @@ class PolicyExecutionEngine(IPolicyExecutionEngine):
 
             # AdaptiveGovBrain uses 'rate_delta' or 'multiplier_delta'
             if "multiplier_delta" in decision.parameters:
-                 new_mult = current_state.welfare_budget_multiplier + decision.parameters["multiplier_delta"]
+                 new_mult = current_state.policy.welfare_budget_multiplier + decision.parameters["multiplier_delta"]
                  result.state_updates["welfare_budget_multiplier"] = max(0.1, new_mult) # Clamp
 
             if "rate_delta" in decision.parameters:
@@ -97,7 +97,7 @@ class PolicyExecutionEngine(IPolicyExecutionEngine):
             snapshot,
             state.tick,
             state.gdp_history,
-            state.welfare_budget_multiplier
+            state.policy.welfare_budget_multiplier
         )
         result.payment_requests.extend(welfare_result.payment_requests)
 
