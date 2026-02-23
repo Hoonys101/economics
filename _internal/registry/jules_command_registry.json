@@ -17,6 +17,21 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "MISSION_wave5_runtime_stabilization": {
+      "key": "MISSION_wave5_runtime_stabilization",
+      "title": "Wave 5: Runtime Stabilization & Error Reduction Loop",
+      "type": "jules",
+      "instruction_raw": "MISSION_wave5_runtime_stabilization_SPEC.md\ub97c \ubc14\ud0d5\uc73c\ub85c \ub7f0\ud0c0\uc784 \uc624\ub958\ub97c 50\uac74 \ubbf8\ub9cc\uc73c\ub85c \uc904\uc774\uc2ed\uc2dc\uc624. 'fix -> forensics -> analyze' \ub8e8\ud504\ub97c \ubc18\ubcf5\ud558\uc2ed\uc2dc\uc624.",
+      "command": "create",
+      "file_path": "C:/Users/Gram Pro/.gemini/antigravity/brain/02d852f6-484c-4801-92c7-8fa036815a1b/implementation_plan_wave5_stabilization.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }

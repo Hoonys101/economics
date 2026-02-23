@@ -1,674 +1,367 @@
 # Refined Diagnostic Logs
 Critical events extracted for Gemini analysis.
 
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 50000000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 50000000 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 3bf33c32-7d48-4382-b728-c051e6be40e3 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga a6f8766e-7053-444d-8583-27310b79b326 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga dec3a999-f155-40c4-a6e5-aa4849b6b9d4 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 40cf4c95-253c-4fa9-b8ec-d25e34982652 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga a12d367b-0ad5-4d0e-9628-317befc4ddc8 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 91b4a92b-b42f-4008-ad0d-c9c2906e3385 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 7526ec96-8961-4d8a-ab1a-6d779329f67c missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga d16146d5-acea-4646-973d-e79652edea12 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga a504b1c5-7101-4952-84f0-035da10d5703 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 51f5f945-0919-44c9-a644-57b5adc22b5d missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga fd033b76-b6dd-4a75-867e-216af2d2988a missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 4ffb3a0e-36f9-4833-bed4-5987ab6f3db5 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga deb896e2-5b11-49c0-b333-5172a468855b missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 0f1d815d-4c5e-4747-af9b-a394f0c64090 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga 96c81438-bc82-44fc-b281-c76ef308fb98 missing seller ID.
+- **Tick ?** | **ERROR** | SAGA_SUBMIT_FAIL | Saga d715296e-a5c2-4298-b667-1557a7f3c322 missing seller ID.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49988060
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49988060 pennies for infrastructure.
 - **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'dict' object has no attribute 'success'
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 97, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 97, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 97, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 97, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 97, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 97, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 97, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 97, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 97, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 97, Req: 800.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 97, Req: 800.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49999903
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49999903 pennies for infrastructure.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49029695
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49029695 pennies for infrastructure.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_3_0, Status=FAILED, Message=Batch Validation Failed on atomic_3_0: Destination account does not exist: 115
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49010790
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49010790 pennies for infrastructure.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_4_0, Status=FAILED, Message=Batch Validation Failed on atomic_4_0: Destination account does not exist: 115
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48977221
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48977221 pennies for infrastructure.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_5_0, Status=FAILED, Message=Batch Validation Failed on atomic_5_0: Destination account does not exist: 115
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48273895
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48273895 pennies for infrastructure.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_6_0, Status=FAILED, Message=Batch Validation Failed on atomic_6_0: Destination account does not exist: 115
 - **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'dict' object has no attribute 'success'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49984664
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49984664 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49963334
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49963334 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49935834
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49935834 pennies for infrastructure.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49902204
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49902204 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6449, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6450, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4195, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6440, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6450, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4128, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6444, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6452, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4223, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4204, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6447, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6447, Req: 50000.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49862479
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49862479 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8049, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8050, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 5347, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8040, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8050, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 5221, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8044, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8052, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 5390, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 5383, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8047, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8047, Req: 50000.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47473070
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47473070 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8249, Req: 51720.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_7_0, Status=FAILED, Message=Batch Validation Failed on atomic_7_0: Destination account does not exist: 118
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_7_0, Status=FAILED, Message=Batch Validation Failed on atomic_7_0: Destination account does not exist: 115
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47431527
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47431527 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9903, Req: 51723.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_8_0, Status=FAILED, Message=Batch Validation Failed on atomic_8_0: Destination account does not exist: 118
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_8_0, Status=FAILED, Message=Batch Validation Failed on atomic_8_0: Destination account does not exist: 115
 - **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'dict' object has no attribute 'success'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49802052
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49802052 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9649, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9650, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1600, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9640, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9650, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6369, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9644, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9652, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6640, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6675, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1600, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9647, Req: 50000.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_7_0, Status=FAILED, Message=Batch Validation Failed on atomic_7_0: Destination account does not exist: 102
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46645187
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46645187 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11559, Req: 51726.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_9_0, Status=FAILED, Message=Batch Validation Failed on atomic_9_0: Destination account does not exist: 118
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_9_0, Status=FAILED, Message=Batch Validation Failed on atomic_9_0: Destination account does not exist: 115
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46592669
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46592669 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11146, Req: 51732.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_10_0, Status=FAILED, Message=Batch Validation Failed on atomic_10_0: Destination account does not exist: 118
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_10_0, Status=FAILED, Message=Batch Validation Failed on atomic_10_0: Destination account does not exist: 115
 - **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'dict' object has no attribute 'success'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49729340
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49729340 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11249, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11250, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1600, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11250, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 7588, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11244, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11200, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1600, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 7993, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8119, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3200, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11247, Req: 50000.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_8_0, Status=FAILED, Message=Batch Validation Failed on atomic_8_0: Destination account does not exist: 102
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49669940
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49669940 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 12849, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 12850, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 12850, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8896, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 12800, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 12844, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 12800, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3200, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9473, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9765, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4800, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 12847, Req: 50000.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_9_0, Status=FAILED, Message=Batch Validation Failed on atomic_9_0: Destination account does not exist: 102
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49604605
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49604605 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14449, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14450, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14450, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 10315, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14400, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14444, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14400, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4800, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11109, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11677, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6400, Req: 50000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14447, Req: 50000.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_10_0, Status=FAILED, Message=Batch Validation Failed on atomic_10_0: Destination account does not exist: 102
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49533755
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49533755 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16089, Req: 51260.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16090, Req: 51260.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16090, Req: 51260.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11870, Req: 51260.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16040, Req: 51260.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16084, Req: 51260.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14006, Req: 51260.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6440, Req: 51260.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 12937, Req: 51260.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 13940, Req: 51260.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8040, Req: 51260.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16087, Req: 51260.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_11_0, Status=FAILED, Message=Batch Validation Failed on atomic_11_0: Destination account does not exist: 102
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49457189
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49457189 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17740, Req: 51580.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17741, Req: 51580.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17741, Req: 51580.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 13598, Req: 51580.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 15632, Req: 51580.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17735, Req: 51580.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 15657, Req: 51580.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8091, Req: 51580.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 15000, Req: 51580.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16637, Req: 51580.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9691, Req: 51580.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17738, Req: 51580.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_12_0, Status=FAILED, Message=Batch Validation Failed on atomic_12_0: Destination account does not exist: 102
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49374893
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49374893 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19396, Req: 51738.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19397, Req: 51738.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19397, Req: 51738.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 15544, Req: 51738.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17288, Req: 51738.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19391, Req: 51738.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 15248, Req: 51738.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9747, Req: 51738.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17352, Req: 51738.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19873, Req: 51738.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11347, Req: 51738.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19394, Req: 51738.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_13_0, Status=FAILED, Message=Batch Validation Failed on atomic_13_0: Destination account does not exist: 102
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45784715
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45784715 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8665, Req: 51738.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_11_0, Status=FAILED, Message=Batch Validation Failed on atomic_11_0: Destination account does not exist: 118
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_11_0, Status=FAILED, Message=Batch Validation Failed on atomic_11_0: Destination account does not exist: 115
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45720506
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45720506 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 10321, Req: 51738.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_12_0, Status=FAILED, Message=Batch Validation Failed on atomic_12_0: Destination account does not exist: 118
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_12_0, Status=FAILED, Message=Batch Validation Failed on atomic_12_0: Destination account does not exist: 115
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45650622
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45650622 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11977, Req: 51739.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_13_0, Status=FAILED, Message=Batch Validation Failed on atomic_13_0: Destination account does not exist: 118
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_13_0, Status=FAILED, Message=Batch Validation Failed on atomic_13_0: Destination account does not exist: 115
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45575355
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45575355 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11564, Req: 51742.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_14_0, Status=FAILED, Message=Batch Validation Failed on atomic_14_0: Destination account does not exist: 118
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_14_0, Status=FAILED, Message=Batch Validation Failed on atomic_14_0: Destination account does not exist: 115
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45494942
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45494942 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 13220, Req: 51742.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_15_0, Status=FAILED, Message=Batch Validation Failed on atomic_15_0: Destination account does not exist: 118
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_15_0, Status=FAILED, Message=Batch Validation Failed on atomic_15_0: Destination account does not exist: 115
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45408301
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45408301 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 12807, Req: 51745.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_16_0, Status=FAILED, Message=Batch Validation Failed on atomic_16_0: Destination account does not exist: 118
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_16_0, Status=FAILED, Message=Batch Validation Failed on atomic_16_0: Destination account does not exist: 115
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45316548
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45316548 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14463, Req: 51745.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_17_0, Status=FAILED, Message=Batch Validation Failed on atomic_17_0: Destination account does not exist: 118
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_17_0, Status=FAILED, Message=Batch Validation Failed on atomic_17_0: Destination account does not exist: 115
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45219799
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45219799 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14050, Req: 51749.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_18_0, Status=FAILED, Message=Batch Validation Failed on atomic_18_0: Destination account does not exist: 118
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_18_0, Status=FAILED, Message=Batch Validation Failed on atomic_18_0: Destination account does not exist: 115
 - **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'dict' object has no attribute 'success'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49242097
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49242097 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 21055, Req: 51843.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 21056, Req: 51843.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 21056, Req: 51843.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17765, Req: 51843.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16878, Req: 51843.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 51843.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16907, Req: 51843.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11406, Req: 51843.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 20061, Req: 51843.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 51843.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 13006, Req: 51843.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 21053, Req: 51843.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_14_0, Status=FAILED, Message=Batch Validation Failed on atomic_14_0: Destination account does not exist: 102
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49146845
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49146845 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 22716, Req: 51916.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 22717, Req: 51916.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 22717, Req: 51916.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 20333, Req: 51916.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 18539, Req: 51916.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16497, Req: 51916.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 13067, Req: 51916.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 23212, Req: 51916.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4753, Req: 51916.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14667, Req: 51916.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 22714, Req: 51916.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_15_0, Status=FAILED, Message=Batch Validation Failed on atomic_15_0: Destination account does not exist: 102
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49046021
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49046021 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24378, Req: 51973.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24379, Req: 51973.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24379, Req: 51973.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 23341, Req: 51973.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 18128, Req: 51973.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 18159, Req: 51973.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14729, Req: 51973.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26914, Req: 51973.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 10570, Req: 51973.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16329, Req: 51973.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24376, Req: 51973.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_16_0, Status=FAILED, Message=Batch Validation Failed on atomic_16_0: Destination account does not exist: 102
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48939673
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48939673 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26042, Req: 52014.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26043, Req: 52014.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26043, Req: 52014.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26909, Req: 52014.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19792, Req: 52014.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17750, Req: 52014.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16393, Req: 52014.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31306, Req: 52014.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17817, Req: 52014.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17993, Req: 52014.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26040, Req: 52014.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_17_0, Status=FAILED, Message=Batch Validation Failed on atomic_17_0: Destination account does not exist: 102
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48827888
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48827888 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 27712, Req: 52210.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 27713, Req: 52210.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 27713, Req: 52210.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31195, Req: 52210.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19387, Req: 52210.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19420, Req: 52210.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 18063, Req: 52210.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26904, Req: 52210.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19663, Req: 52210.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 27710, Req: 52210.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_18_0, Status=FAILED, Message=Batch Validation Failed on atomic_18_0: Destination account does not exist: 102
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48710822
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48710822 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29382, Req: 52218.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29383, Req: 52218.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29383, Req: 52218.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36408, Req: 52218.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 21057, Req: 52218.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19012, Req: 52218.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19733, Req: 52218.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38371, Req: 52218.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 21333, Req: 52218.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29380, Req: 52218.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_19_0, Status=FAILED, Message=Batch Validation Failed on atomic_19_0: Destination account does not exist: 102
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48588131
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48588131 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31056, Req: 52325.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31057, Req: 52325.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31057, Req: 52325.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 20653, Req: 52325.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 20686, Req: 52325.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 21407, Req: 52325.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 23007, Req: 52325.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31054, Req: 52325.
-- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_20_0, Status=FAILED, Message=Batch Validation Failed on atomic_20_0: Destination account does not exist: 102
-- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 121 closed down. Assets: 94605.56, Consecutive Loss Turns: 20
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44384772
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44384772 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 15706, Req: 51749.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_19_0, Status=FAILED, Message=Batch Validation Failed on atomic_19_0: Destination account does not exist: 118
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_19_0, Status=FAILED, Message=Batch Validation Failed on atomic_19_0: Destination account does not exist: 115
+- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'dict' object has no attribute 'success'
+- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'dict' object has no attribute 'success'
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42652176
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42652176 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 15293, Req: 51754.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_20_0, Status=FAILED, Message=Batch Validation Failed on atomic_20_0: Destination account does not exist: 118
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_20_0, Status=FAILED, Message=Batch Validation Failed on atomic_20_0: Destination account does not exist: 115
+- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 121 closed down. Assets: 95557.64, Consecutive Loss Turns: 20
   - Details: agent_id=121
-- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 122 closed down. Assets: 95588.31, Consecutive Loss Turns: 20
+- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 122 closed down. Assets: 94866.81, Consecutive Loss Turns: 20
   - Details: agent_id=122
-- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 123 closed down. Assets: 95134.09, Consecutive Loss Turns: 20
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48464102
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48464102 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 32731, Req: 52350.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 32732, Req: 52350.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 22328, Req: 52350.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 20281, Req: 52350.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 23082, Req: 52350.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24682, Req: 52350.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 32729, Req: 52350.
-- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48444120
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48444120 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 34407, Req: 52368.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 21923, Req: 52368.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 21956, Req: 52368.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24757, Req: 52368.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26357, Req: 52368.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 34404, Req: 52368.
-- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48423351
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48423351 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36082, Req: 52369.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 23598, Req: 52369.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 21551, Req: 52369.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26432, Req: 52369.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 28032, Req: 52369.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36079, Req: 52369.
-- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48401264
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48401264 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 37757, Req: 52370.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 23193, Req: 52370.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 23226, Req: 52370.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 28107, Req: 52370.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29707, Req: 52370.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 37754, Req: 52370.
-- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48378188
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48378188 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 39432, Req: 52371.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24868, Req: 52371.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 22821, Req: 52371.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29782, Req: 52371.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31382, Req: 52371.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 39429, Req: 52371.
-- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48353821
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48353821 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 89, Req: 8900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41107, Req: 52372.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24463, Req: 52372.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24496, Req: 52372.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31457, Req: 52372.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33057, Req: 52372.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41104, Req: 52372.
-- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48328200
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48328200 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 99, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 42782, Req: 52372.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26138, Req: 52372.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24091, Req: 52372.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33132, Req: 52372.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 34732, Req: 52372.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 42779, Req: 52372.
-- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'dict' object has no attribute 'success'
-- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'dict' object has no attribute 'success'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48059050
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48059050 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 9900.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44457, Req: 52373.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 25733, Req: 52373.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 25766, Req: 52373.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 34807, Req: 52373.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36407, Req: 52373.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44454, Req: 52373.
-- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48029259
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48029259 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46132, Req: 52374.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 27408, Req: 52374.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 25361, Req: 52374.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36482, Req: 52374.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38082, Req: 52374.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46129, Req: 52374.
-- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'dict' object has no attribute 'success'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47933844
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47933844 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 47807, Req: 52375.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 27003, Req: 52375.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 27036, Req: 52375.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38157, Req: 52375.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 39757, Req: 52375.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1675, Req: 52375.
-- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47899943
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47899943 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 49484, Req: 52375.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 28680, Req: 52375.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26633, Req: 52375.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 39834, Req: 52375.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41434, Req: 52375.
-- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47864832
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47864832 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51161, Req: 52376.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 28277, Req: 52376.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 28310, Req: 52376.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41511, Req: 52376.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 94, Req: 9400.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43111, Req: 52376.
-- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47828526
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47828526 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29954, Req: 52377.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 27907, Req: 52377.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43188, Req: 52377.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44788, Req: 52377.
-- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47738658
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47738658 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 42249, Req: 52377.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29551, Req: 52377.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29584, Req: 52377.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44865, Req: 52377.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46465, Req: 52377.
-- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'dict' object has no attribute 'success'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47697760
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47697760 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43926, Req: 52378.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31228, Req: 52378.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29181, Req: 52378.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46542, Req: 52378.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 48142, Req: 52378.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 10060, Req: 52378.
-- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47605556
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47605556 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44563, Req: 52379.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 30825, Req: 52379.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 30858, Req: 52379.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 48219, Req: 52379.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 49819, Req: 52379.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11737, Req: 52379.
-- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick 37** | **WARNING** | SURVIVAL_OVERRIDE | Agent 114 critical need 80.58. Panic buying basic_food at 30.00
-  - Details: agent_id=114
-- **Tick 37** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 30.00 out of bounds [8.91, 12.06]
-  - Details: agent_id=114
-- **Tick 37** | **WARNING** | SURVIVAL_OVERRIDE | Agent 118 critical need 80.51. Panic buying basic_food at 30.00
-  - Details: agent_id=118
-- **Tick 37** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 30.00 out of bounds [8.91, 12.06]
-  - Details: agent_id=118
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47564585
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47564585 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44160, Req: 52380.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 32502, Req: 52380.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 30455, Req: 52380.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 49896, Req: 52380.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51496, Req: 52380.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 13414, Req: 52380.
-- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick 38** | **WARNING** | SURVIVAL_OVERRIDE | Agent 114 critical need 82.58. Panic buying basic_food at 30.00
-  - Details: agent_id=114
-- **Tick 38** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 30.00 out of bounds [8.91, 12.06]
-  - Details: agent_id=114
-- **Tick 38** | **WARNING** | SURVIVAL_OVERRIDE | Agent 118 critical need 82.51. Panic buying basic_food at 30.00
-  - Details: agent_id=118
-- **Tick 38** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 30.00 out of bounds [8.91, 12.06]
-  - Details: agent_id=118
-- **Tick ?** | **ERROR** | STARTUP_FATAL | Unexpected error during firm creation: Firm.__init__() missing 1 required positional argument: 'engine'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47470093
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47470093 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 45837, Req: 52382.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 32099, Req: 52382.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 32132, Req: 52382.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51573, Req: 52382.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 13011, Req: 52382.
-- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick 39** | **WARNING** | SURVIVAL_OVERRIDE | Agent 114 critical need 84.58. Panic buying basic_food at 30.00
-  - Details: agent_id=114
-- **Tick 39** | **WARNING** | CIRCUIT_BREAKER | Order rejected. Price 30.00 out of bounds [8.91, 12.06]
-  - Details: agent_id=114
-- **Tick 39** | **WARNING** | SURVIVAL_OVERRIDE | Agent 118 critical need 84.51. Panic buying basic_food at 30.00
-  - Details: agent_id=118
-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 120 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42486294
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42486294 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16949, Req: 51754.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_21_0, Status=FAILED, Message=Batch Validation Failed on atomic_21_0: Destination account does not exist: 115
+- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 30842182.00, Expected: 49884627.00, Delta: -19042445.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42440290
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42440290 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16536, Req: 51757.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_22_0, Status=FAILED, Message=Batch Validation Failed on atomic_22_0: Destination account does not exist: 115
+- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 30842182.00, Expected: 49884627.00, Delta: -19042445.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42391422
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42391422 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 18192, Req: 51757.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_23_0, Status=FAILED, Message=Batch Validation Failed on atomic_23_0: Destination account does not exist: 115
+- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 30842182.00, Expected: 49884627.00, Delta: -19042445.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42340393
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42340393 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17779, Req: 51763.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_24_0, Status=FAILED, Message=Batch Validation Failed on atomic_24_0: Destination account does not exist: 115
+- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 30842182.00, Expected: 49884627.00, Delta: -19042445.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42286792
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42286792 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19435, Req: 51764.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_25_0, Status=FAILED, Message=Batch Validation Failed on atomic_25_0: Destination account does not exist: 115
+- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 30842182.00, Expected: 49884627.00, Delta: -19042445.0000
+- **Tick 26** | **WARNING** | FIRM_INACTIVE | Firm 120 closed down. Assets: 87126.81, Consecutive Loss Turns: 20
   - Details: agent_id=120
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47374248
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47374248 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46473, Req: 52383.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33776, Req: 52383.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31727, Req: 52383.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14688, Req: 52383.
-- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick 40** | **WARNING** | SURVIVAL_OVERRIDE | Agent 114 critical need 86.58. Panic buying basic_food at 30.00
-  - Details: agent_id=114
-- **Tick ?** | **ERROR** | STARTUP_FATAL | Unexpected error during firm creation: Firm.__init__() missing 1 required positional argument: 'engine'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47335051
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47335051 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46068, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33371, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33404, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14283, Req: 52386.
-- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **ERROR** | STARTUP_FATAL | Unexpected error during firm creation: Firm.__init__() missing 1 required positional argument: 'engine'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47348237
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47348237 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 47745, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 35048, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 35081, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 15960, Req: 52386.
-- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **ERROR** | STARTUP_FATAL | Unexpected error during firm creation: Firm.__init__() missing 1 required positional argument: 'engine'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47361423
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47361423 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 49422, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36725, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36758, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17637, Req: 52386.
-- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **ERROR** | STARTUP_FATAL | Unexpected error during firm creation: Firm.__init__() missing 1 required positional argument: 'engine'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47374609
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47374609 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51099, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38402, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38435, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19314, Req: 52386.
-- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47387795
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47387795 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 40079, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 40112, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 20991, Req: 52386.
-- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **ERROR** | STARTUP_FATAL | Unexpected error during firm creation: Firm.__init__() missing 1 required positional argument: 'engine'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47348595
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47348595 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41756, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41789, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 22668, Req: 52386.
-- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **ERROR** | STARTUP_FATAL | Unexpected error during firm creation: Firm.__init__() missing 1 required positional argument: 'engine'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47361781
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47361781 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43433, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43466, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24345, Req: 52386.
-- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47374967
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47374967 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 45110, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 45143, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26022, Req: 52386.
-- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **ERROR** | STARTUP_FATAL | Unexpected error during firm creation: Firm.__init__() missing 1 required positional argument: 'engine'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47388153
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47388153 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46787, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46820, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 27699, Req: 52386.
-- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **ERROR** | STARTUP_FATAL | Unexpected error during firm creation: Firm.__init__() missing 1 required positional argument: 'engine'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47401339
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47401339 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 48464, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 48497, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29376, Req: 52386.
-- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47414525
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47414525 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 50141, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 50174, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31053, Req: 52386.
-- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47427711
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47427711 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51818, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51851, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 32730, Req: 52386.
-- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47440897
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47440897 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 34407, Req: 52386.
-- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47349311
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47349311 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36084, Req: 52386.
-- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **ERROR** | STARTUP_FATAL | Unexpected error during firm creation: Firm.__init__() missing 1 required positional argument: 'engine'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47362497
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47362497 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 37761, Req: 52386.
-- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47375684
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47375684 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 39438, Req: 52386.
-- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47388871
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47388871 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41115, Req: 52386.
-- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47402058
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47402058 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 42792, Req: 52386.
-- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **ERROR** | STARTUP_FATAL | Unexpected error during firm creation: Firm.__init__() missing 1 required positional argument: 'engine'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47415245
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47415245 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 40248, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44469, Req: 52386.
-- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **ERROR** | STARTUP_FATAL | Unexpected error during firm creation: Firm.__init__() missing 1 required positional argument: 'engine'
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47428432
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47428432 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41925, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46146, Req: 52386.
-- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47441619
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47441619 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 80, Req: 8000.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43602, Req: 52386.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 47823, Req: 52386.
-- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 11468186.00, Expected: 40000982.00, Delta: -28532796.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42232023
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42232023 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19022, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_26_0, Status=FAILED, Message=Batch Validation Failed on atomic_26_0: Destination account does not exist: 115
+- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42219738
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42219738 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 20678, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_27_0, Status=FAILED, Message=Batch Validation Failed on atomic_27_0: Destination account does not exist: 115
+- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'dict' object has no attribute 'success'
+- **Tick ?** | **ERROR** | Transaction Handler Failed for escheatment (ID: unknown): 'dict' object has no attribute 'success'
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40874117
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40874117 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 22334, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_28_0, Status=FAILED, Message=Batch Validation Failed on atomic_28_0: Destination account does not exist: 115
+- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40857756
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40857756 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 23990, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_29_0, Status=FAILED, Message=Batch Validation Failed on atomic_29_0: Destination account does not exist: 115
+- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40840962
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40840962 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 25646, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_30_0, Status=FAILED, Message=Batch Validation Failed on atomic_30_0: Destination account does not exist: 115
+- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40719617
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40719617 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 27302, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_31_0, Status=FAILED, Message=Batch Validation Failed on atomic_31_0: Destination account does not exist: 115
+- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40700808
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40700808 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 28958, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_32_0, Status=FAILED, Message=Batch Validation Failed on atomic_32_0: Destination account does not exist: 115
+- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40681014
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40681014 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 30614, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_33_0, Status=FAILED, Message=Batch Validation Failed on atomic_33_0: Destination account does not exist: 115
+- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40660250
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40660250 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 32270, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_34_0, Status=FAILED, Message=Batch Validation Failed on atomic_34_0: Destination account does not exist: 115
+- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40638872
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40638872 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33926, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_35_0, Status=FAILED, Message=Batch Validation Failed on atomic_35_0: Destination account does not exist: 115
+- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40615845
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40615845 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 35582, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29808, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_36_0, Status=FAILED, Message=Batch Validation Failed on atomic_36_0: Destination account does not exist: 115
+- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40592602
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40592602 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 37238, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31464, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_37_0, Status=FAILED, Message=Batch Validation Failed on atomic_37_0: Destination account does not exist: 115
+- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40568449
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40568449 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38894, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33120, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_38_0, Status=FAILED, Message=Batch Validation Failed on atomic_38_0: Destination account does not exist: 115
+- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40543396
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40543396 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 40550, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 34776, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_39_0, Status=FAILED, Message=Batch Validation Failed on atomic_39_0: Destination account does not exist: 115
+- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40517458
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40517458 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 42206, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36432, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46594, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_40_0, Status=FAILED, Message=Batch Validation Failed on atomic_40_0: Destination account does not exist: 115
+- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40490650
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40490650 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43862, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38088, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 48250, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_41_0, Status=FAILED, Message=Batch Validation Failed on atomic_41_0: Destination account does not exist: 115
+- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40462982
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40462982 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 45518, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 39744, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 49906, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_42_0, Status=FAILED, Message=Batch Validation Failed on atomic_42_0: Destination account does not exist: 115
+- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40434469
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40434469 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 39744, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 47174, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41400, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51562, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_43_0, Status=FAILED, Message=Batch Validation Failed on atomic_43_0: Destination account does not exist: 115
+- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40405126
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40405126 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41400, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 48830, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43056, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_44_0, Status=FAILED, Message=Batch Validation Failed on atomic_44_0: Destination account does not exist: 115
+- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40323611
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40323611 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43056, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 50486, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44712, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29808, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_45_0, Status=FAILED, Message=Batch Validation Failed on atomic_45_0: Destination account does not exist: 115
+- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40292193
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40292193 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44712, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46368, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31464, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_46_0, Status=FAILED, Message=Batch Validation Failed on atomic_46_0: Destination account does not exist: 115
+- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40209509
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40209509 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46368, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 48024, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33120, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_47_0, Status=FAILED, Message=Batch Validation Failed on atomic_47_0: Destination account does not exist: 115
+- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40176911
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40176911 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 48024, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 49680, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 34776, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_48_0, Status=FAILED, Message=Batch Validation Failed on atomic_48_0: Destination account does not exist: 115
+- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40144440
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40144440 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 49680, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51336, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36432, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36432, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_49_0, Status=FAILED, Message=Batch Validation Failed on atomic_49_0: Destination account does not exist: 115
+- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40111209
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40111209 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51336, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38088, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38088, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_50_0, Status=FAILED, Message=Batch Validation Failed on atomic_50_0: Destination account does not exist: 115
+- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40025460
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40025460 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 39744, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 39744, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_51_0, Status=FAILED, Message=Batch Validation Failed on atomic_51_0: Destination account does not exist: 115
+- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39938976
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39938976 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41400, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41400, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_52_0, Status=FAILED, Message=Batch Validation Failed on atomic_52_0: Destination account does not exist: 115
+- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39851767
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39851767 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43056, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43056, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_53_0, Status=FAILED, Message=Batch Validation Failed on atomic_53_0: Destination account does not exist: 115
+- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39816094
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39816094 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44712, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44712, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_54_0, Status=FAILED, Message=Batch Validation Failed on atomic_54_0: Destination account does not exist: 115
+- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39726942
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39726942 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46368, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46368, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_55_0, Status=FAILED, Message=Batch Validation Failed on atomic_55_0: Destination account does not exist: 115
+- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39586333
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39586333 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 48024, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 48024, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_56_0, Status=FAILED, Message=Batch Validation Failed on atomic_56_0: Destination account does not exist: 115
+- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39548580
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39548580 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 49680, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 49680, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_57_0, Status=FAILED, Message=Batch Validation Failed on atomic_57_0: Destination account does not exist: 115
+- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39510157
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39510157 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51336, Req: 51768.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51336, Req: 51768.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_58_0, Status=FAILED, Message=Batch Validation Failed on atomic_58_0: Destination account does not exist: 115
+- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39471074
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39471074 pennies for infrastructure.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_59_0, Status=FAILED, Message=Batch Validation Failed on atomic_59_0: Destination account does not exist: 115
+- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39327805
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39327805 pennies for infrastructure.
+- **Tick ?** | **ERROR** | Transaction Record: ID=atomic_60_0, Status=FAILED, Message=Batch Validation Failed on atomic_60_0: Destination account does not exist: 115
+- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 22129501.00, Expected: 49884627.00, Delta: -27755126.0000
