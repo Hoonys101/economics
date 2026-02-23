@@ -6,6 +6,7 @@ from .enums import Personality
 from .q_table_manager import QTableManager
 from simulation.schemas import FirmActionVector
 from modules.system.api import DEFAULT_CURRENCY
+from modules.finance.dtos import MultiCurrencyWalletDTO
 
 if TYPE_CHECKING:
     from simulation.ai_model import AIDecisionEngine
@@ -72,6 +73,8 @@ class FirmAI(BaseAIEngine):
                 cash = assets_raw["balances"].get(DEFAULT_CURRENCY, 0.0)
             else:
                 cash = assets_raw.get(DEFAULT_CURRENCY, 0.0)
+        elif isinstance(assets_raw, MultiCurrencyWalletDTO):
+            cash = assets_raw.balances.get(DEFAULT_CURRENCY, 0.0)
 
         cash_idx = self._discretize(cash, [100, 500, 1000, 5000, 10000])
 
@@ -201,6 +204,8 @@ class FirmAI(BaseAIEngine):
                 current_assets = current_assets_raw["balances"].get(DEFAULT_CURRENCY, 0.0)
             else:
                 current_assets = current_assets_raw.get(DEFAULT_CURRENCY, 0.0)
+        elif isinstance(current_assets_raw, MultiCurrencyWalletDTO):
+            current_assets = current_assets_raw.balances.get(DEFAULT_CURRENCY, 0.0)
 
         prev_assets_raw = prev_state.get("assets", 0.0)
         prev_assets = prev_assets_raw
@@ -209,6 +214,8 @@ class FirmAI(BaseAIEngine):
                 prev_assets = prev_assets_raw["balances"].get(DEFAULT_CURRENCY, 0.0)
             else:
                 prev_assets = prev_assets_raw.get(DEFAULT_CURRENCY, 0.0)
+        elif isinstance(prev_assets_raw, MultiCurrencyWalletDTO):
+            prev_assets = prev_assets_raw.balances.get(DEFAULT_CURRENCY, 0.0)
 
         delta_assets = current_assets - prev_assets
 

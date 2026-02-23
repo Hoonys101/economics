@@ -44,10 +44,14 @@ class PoliticalOrchestrator(IPoliticalOrchestrator):
 
         # 1. Process Votes
         for vote in self._vote_buffer:
-            total_weight += vote.political_weight
-            weighted_approval_sum += (vote.approval_value * vote.political_weight)
+            weight = vote.political_weight
+            if not isinstance(weight, (int, float)):
+                weight = 1.0 # Defensive fallback for tests/mocks
+
+            total_weight += weight
+            weighted_approval_sum += (vote.approval_value * weight)
             if vote.primary_grievance and vote.primary_grievance != "NONE":
-                weighted_grievance_counts[vote.primary_grievance] += vote.political_weight
+                weighted_grievance_counts[vote.primary_grievance] += weight
 
         overall_approval = weighted_approval_sum / total_weight if total_weight > 0 else 0.5
 

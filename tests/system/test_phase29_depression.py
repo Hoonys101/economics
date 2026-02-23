@@ -11,6 +11,7 @@ from simulation.firms import Firm
 from simulation.db.repository import SimulationRepository
 from simulation.ai_model import AIEngineRegistry
 from modules.system.api import DEFAULT_CURRENCY
+from modules.government.political.api import VoteRecordDTO
 import logging
 
 class TestPhase29Depression(unittest.TestCase):
@@ -208,6 +209,15 @@ class TestPhase29Depression(unittest.TestCase):
 
             p_children = PropertyMock(return_value=[])
             type(h).children_ids = p_children
+
+            # Fix for Wave 5 PoliticalOrchestrator Regression
+            h.cast_vote.return_value = VoteRecordDTO(
+                agent_id=h.id,
+                tick=0,
+                approval_value=0.5,
+                primary_grievance="NONE",
+                political_weight=1.0
+            )
 
         self.firms = [MagicMock(spec=Firm) for _ in range(5)]
         for i, f in enumerate(self.firms):
