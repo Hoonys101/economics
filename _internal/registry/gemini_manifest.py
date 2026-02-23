@@ -82,5 +82,28 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
         "instruction": "LaborMarket의 매칭 데이터와 Order DTO 간의 결합도를 낮추고, 가독성 높은 인터페이스를 설계하십시오. Major 매칭 로직의 DTO 전환 계획을 포함하십시오.",
         "context_files": ["modules/labor/api.py", "simulation/systems/labor_market.py"],
         "output_path": "gemini-output/spec/MISSION_labor_api_dto_SPEC.md"
+    },
+    "MISSION_reference_injection_optimization_spec": {
+        "title": "Reference Document Injection Optimization Spec",
+        "worker": "spec",
+        "instruction": "조사된 고정 참조 문서(universal_contracts, domain_map, manual_links)들이 Gemini 미션의 성능(정확도, 컨텍스트 적중률)을 높이는지 분석하십시오. 현재의 하드코딩된 매핑 방식을 개선하여, 작업의 맥락에 따라 더 유연하고 효율적으로 참조 문서를 주입할 수 있는 동적 주입 시스템(Dynamic Context Injector) 설계안을 제시하십시오. RAG(Retrieval-Augmented Generation) 요소를 도입하거나, 파일 간의 의존성 그래프를 활용하는 방안을 검토하십시오.",
+        "context_files": [
+            "_internal/scripts/core/context.py",
+            "_internal/scripts/commands/gemini.py",
+            "_internal/manuals/spec.md",
+            "_internal/manuals/reviewer.md"
+        ],
+        "output_path": "gemini-output/spec/MISSION_reference_injection_optimization_SPEC.md"
+    },
+    "MISSION_fixed_command_registry_spec": {
+        "title": "Fixed Command Registry Separation Spec",
+        "worker": "spec",
+        "instruction": "launcher.py 내의 dispatch 테이블에 혼재된 고정 명령들(git-review, merge, harvest, sync, reset 등)을 gemini-go와 분리하기 위한 fixed_command_registry 설계 사양서를 작성하십시오. 사용자가 gemini-go를 사용할 때 고정 명령들과의 이름 충돌이나 번잡함을 피할 수 있도록 구조를 개선하십시오. 명령어의 성격(Dynamic Mission vs Fixed System Tool)에 따른 명확한 레이어 분리 및 관리 방안을 제시하십시오.",
+        "context_files": [
+            "_internal/scripts/launcher.py",
+            "_internal/scripts/commands/sys_cmds.py",
+            "_internal/scripts/commands/git.py"
+        ],
+        "output_path": "gemini-output/spec/MISSION_fixed_command_registry_SPEC.md"
     }
 }
