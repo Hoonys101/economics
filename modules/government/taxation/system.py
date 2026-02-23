@@ -129,12 +129,19 @@ class TaxationSystem:
         Does NOT execute any transfer.
         """
         intents: List[TaxIntent] = []
-        trade_value = int(transaction.quantity * transaction.price)
+
+        # SSoT: Use total_pennies if available (corrects floating point drift & dollar/penny mismatch)
+        if hasattr(transaction, 'total_pennies') and transaction.total_pennies > 0:
+            trade_value = transaction.total_pennies
+        else:
+            # Fallback (Risk of dollar unit mismatch if price is float)
+            # Assuming price is dollars, we convert to pennies
+            trade_value = self._round_currency(transaction.quantity * transaction.price * 100)
 
         # 1. Sales Tax (Goods)
         if transaction.transaction_type == "goods":
             sales_tax_rate = getattr(self.config_module, "SALES_TAX_RATE", 0.05)
-            # Calculate raw then round
+            # Calculate raw then round. Trade value is pennies, rate is float (e.g. 0.05). Result is float pennies.
             tax_amount = self._round_currency(trade_value * sales_tax_rate)
 
             if tax_amount > 0:
