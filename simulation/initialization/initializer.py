@@ -321,6 +321,8 @@ class SimulationInitializer(SimulationInitializerInterface):
 
         sim.world_state.public_manager = sim.public_manager
         sim.transaction_processor = TransactionProcessor(config_module=self.config)
+        from simulation.systems.handlers.transfer_handler import DefaultTransferHandler
+        sim.transaction_processor.register_handler('transfer', DefaultTransferHandler())
         sim.transaction_processor.register_handler('goods', GoodsTransactionHandler())
         sim.transaction_processor.register_handler('labor', LaborTransactionHandler())
         sim.transaction_processor.register_handler('HIRE', LaborTransactionHandler()) # Phase 4.1: Major-Matching

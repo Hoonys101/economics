@@ -129,7 +129,7 @@ class TaxationSystem:
         Does NOT execute any transfer.
         """
         intents: List[TaxIntent] = []
-        trade_value = int(transaction.quantity * transaction.price)
+        trade_value = transaction.total_pennies
 
         # 1. Sales Tax (Goods)
         if transaction.transaction_type == "goods":

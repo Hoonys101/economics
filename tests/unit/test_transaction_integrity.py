@@ -77,9 +77,9 @@ class TestTransactionIntegrity:
 
         assert tx is not None
         assert getattr(tx, 'total_pennies', 0) == 100
-        assert tx.quantity == 100
-        # If amount is 100 pennies, and quantity is 100 (pennies?), then price per unit (penny) is 0.01 dollars
+        assert tx.quantity == 1.0
+        # If amount is 100 pennies, and quantity is 1.0, then price per unit is 1.00 dollar
         # total_pennies 100 = 1.00 dollar.
-        # quantity 100.
-        # price * quantity = 0.01 * 100 = 1.00. Correct.
-        assert tx.price == 0.01
+        # quantity 1.0.
+        # price * quantity = 1.00 * 1.0 = 1.00. Correct.
+        assert tx.price == 1.0
