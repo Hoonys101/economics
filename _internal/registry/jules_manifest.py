@@ -25,6 +25,11 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "title": "Wave 5: Runtime Stabilization & Error Reduction Phase 3",
         "instruction": "MISSION_wave5_runtime_stabilization_SPEC.md를 바탕으로 런타임 오류를 50건 미만으로 줄이십시오. 통화량 동기화 및 비활성 에이전트 처리가 핵심입니다.",
         "file": "c:/coding/economics/gemini-output/spec/MISSION_wave5_runtime_stabilization_SPEC.md"
-    }
+    },
+    "WO-WAVE5-MONETARY-FIX": {
+        "title": "Wave 5: Final Monetary Integrity & Audit Restoration",
+        "instruction": "MISSION_wave5_monetary_audit_SPEC.md의 분석 결과를 바탕으로 화폐 정합성(Accounting Integrity)을 복구하십시오.\n\n1. **Ghost Money 해결**: `central_bank_system.py`에서 OMO/LLR 등으로 발생하는 M0 발행/소각 트랜잭션을 명시적으로 `world_state.transactions`에 큐잉하여 `MonetaryLedger`가 이를 감지할 수 있게 하십시오.\n2. **ID Type Mismatch 해결**: `world_state.py`의 `calculate_total_money`에서 ID 비교 시 `str()`을 사용하여 정수/문자열 불일치로 인한 합산 누락을 방지하십시오.\n3. **M2 Perimeter 일치**: M2 합산 시 `ID_PUBLIC_MANAGER(4)`와 `ID_SYSTEM(5)`를 제외하여 `MonetaryLedger`의 시스템 에이전트 정의와 동기화하십시오.\n4. **중복 계산 제거**: `TickOrchestrator`에서 `Phase_MonetaryProcessing`을 제거하고, `Phase3_Transaction`에 통합된 로직만 사용하도록 정리하십시오.\n5. **Forensics 검증**: 수정 후 `python scripts/operation_forensics.py`를 실행하여 Tick 1의 102M 점프와 2.6B 누출이 0으로 수렴하는지 확인하십시오.",
+        "file": "c:/coding/economics/gemini-output/spec/MISSION_wave5_monetary_audit_SPEC.md"
+    },
     # Add missions here
 }

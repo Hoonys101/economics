@@ -270,8 +270,8 @@ class TickOrchestrator:
             msg = f"MONEY_SUPPLY_CHECK | Current: {current_money:.2f}, Expected: {expected_money:.2f}, Delta: {m2_leak_delta:.4f}"
             extra_data = {"tick": state.time, "current": current_money, "expected": expected_money, "delta": m2_leak_delta, "tags": ["money_supply"]}
 
-            # Wave 5 Phase 3: Use relative tolerance (5%) to account for M2/M0 drift
-            tolerance = max(100.0, expected_money * 0.05) # Min tolerance 1.00 USD
+            # Tight Tolerance: 0.1% to detect leaks early (Wave 5 Hardening)
+            tolerance = max(10.0, expected_money * 0.001) # Min 0.10 USD
             if abs(m2_leak_delta) > tolerance:
                  state.logger.warning(msg, extra=extra_data)
             else:

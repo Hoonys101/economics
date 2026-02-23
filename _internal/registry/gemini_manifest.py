@@ -24,5 +24,23 @@
 from typing import Dict, Any
 
 GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
-    # Add missions here
+    "WO-WAVE5-MONETARY-AUDIT": {
+        "title": "Wave 5 Monetary Audit & Leakage Diagnosis",
+        "worker": "audit",
+        "instruction": "Analyze the 2.6B penny leakage identified in reports/diagnostic_refined.md. Pinpoint why Expected money supply (authorized changes) diverges from Current wallet summation. Identify the root cause of the 102M jump in Tick 1. Verify if SettlementSystem, TickOrchestrator, or WorldState logic restoration introduced accounting gaps. Provide a fix specification for Jules.",
+        "context_files": [
+            "reports/diagnostic_refined.md",
+            "simulation/world_state.py",
+            "simulation/orchestration/tick_orchestrator.py",
+            "modules/government/components/monetary_ledger.py",
+            "simulation/systems/settlement_system.py",
+            "simulation/agents/government.py",
+            "simulation/systems/central_bank_system.py",
+            "simulation/orchestration/phases/monetary_processing.py",
+            "simulation/orchestration/phases/transaction.py",
+            "modules/system/constants.py",
+            "scripts/operation_forensics.py"
+        ],
+        "output_path": "gemini-output/spec/MISSION_wave5_monetary_audit_SPEC.md"
+    }
 }

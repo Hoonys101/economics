@@ -201,10 +201,7 @@ class TransactionProcessor(SystemInterface):
             # Skip transaction if an agent is inactive, unless it's a special type (Escheatment/Liquidation)
             allowed_inactive_types = ["escheatment", "liquidation", "asset_buyout", "asset_transfer", "education_spending"]
             if (is_buyer_inactive or is_seller_inactive) and tx.transaction_type not in allowed_inactive_types:
-                # Wave 5 Phase 3: Reduce noise for inactive agent events (Refined Events < 50 target)
-                log_level = logging.INFO
-
-                state.logger.log(log_level,
+                state.logger.warning(
                     f"Transaction Skipped: Inactive Agent involved. "
                     f"Buyer: {tx.buyer_id} (Inactive={is_buyer_inactive}), "
                     f"Seller: {tx.seller_id} (Inactive={is_seller_inactive}) "

@@ -360,10 +360,8 @@ class SettlementSystem(IMonetaryAuthority):
         if current_cash >= amount:
             return True
 
-        # Wave 5 Phase 3: Reduce log level to INFO for routine insufficiency (e.g. poverty)
-        # Rename to DECLINED to bypass forensic keyword filter for routine failures
-        self.logger.info(
-            f"SETTLEMENT_DECLINED | Insufficient funds. Cash: {current_cash}, Req: {amount}.",
+        self.logger.warning(
+            f"SETTLEMENT_FAIL | Insufficient funds. Cash: {current_cash}, Req: {amount}.",
             extra={"tags": ["insufficient_funds"]}
         )
         return False
@@ -511,53 +509,6 @@ class SettlementSystem(IMonetaryAuthority):
                      self.metrics_service.record_withdrawal(amount)
                  if self.panic_recorder:
                      self.panic_recorder.record_withdrawal(amount)
-
-             # QE / Money Supply Sync (Wave 5)
-             # Update Baseline if Central Bank is involved in direct transfer
-             if self.metrics_service and hasattr(self.metrics_service, 'baseline_money_supply'):
-                 is_debit_cb = (isinstance(debit_agent, ICentralBank) or debit_agent.id == ID_CENTRAL_BANK)
-                 is_credit_cb = (isinstance(credit_agent, ICentralBank) or credit_agent.id == ID_CENTRAL_BANK)
-
-                 if is_debit_cb:
-                     self.metrics_service.baseline_money_supply += amount
-                 elif is_credit_cb:
-                     self.metrics_service.baseline_money_supply -= amount
-
-                 # Public Manager / System Agent Deficit Handling
-                 # If PublicManager is involved, check if it created/destroyed money via overdraft (Soft Budget)
-                 if debit_agent.id == ID_PUBLIC_MANAGER or credit_agent.id == ID_PUBLIC_MANAGER:
-                     pm = debit_agent if debit_agent.id == ID_PUBLIC_MANAGER else credit_agent
-                     # We need the balance *after* the transfer (which is now)
-                     # But we need the *delta* of the deficit.
-                     # We know the transaction amount.
-
-                     current_balance = 0
-                     try:
-                         if isinstance(pm, IFinancialEntity):
-                             current_balance = pm.balance_pennies
-                         elif isinstance(pm, IFinancialAgent):
-                             current_balance = pm.get_balance(currency)
-                     except Exception as e:
-                         self.logger.error(f"PM_DEFICIT_CHECK_FAIL | Failed to get balance for {pm.id}: {e}")
-                         current_balance = 0
-
-                     if current_balance is None:
-                         current_balance = 0
-
-                     # Reconstruct previous balance
-                     # If debit (Source was PM): Prev = Cur + Amount
-                     # If credit (Dest was PM): Prev = Cur - Amount
-
-                     prev_balance = current_balance + amount if debit_agent.id == ID_PUBLIC_MANAGER else current_balance - amount
-
-                     deficit_before = max(0, -prev_balance)
-                     deficit_after = max(0, -current_balance)
-
-                     deficit_delta = deficit_after - deficit_before
-
-                     if deficit_delta != 0:
-                         self.metrics_service.baseline_money_supply += deficit_delta
-                         self.logger.info(f"MONEY_SUPPLY_SYNC | Adjusted baseline by {deficit_delta} due to PublicManager deficit change.")
 
              self._emit_zero_sum_check(debit_agent.id, credit_agent.id, amount)
              return self._create_transaction_record(debit_agent.id, credit_agent.id, amount, memo, tick)

@@ -32,6 +32,48 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "WO-WAVE5-MONETARY-AUDIT": {
+      "key": "WO-WAVE5-MONETARY-AUDIT",
+      "title": "Wave 5 Monetary Audit & Leakage Diagnosis",
+      "type": "gemini",
+      "instruction_raw": "Analyze the 2.6B penny leakage identified in reports/diagnostic_refined.md. Pinpoint why Expected money supply (authorized changes) diverges from Current wallet summation. Identify the root cause of the 102M jump in Tick 1. Verify if SettlementSystem, TickOrchestrator, or WorldState logic restoration introduced accounting gaps. Provide a fix specification for Jules.",
+      "command": null,
+      "file_path": null,
+      "wait": false,
+      "session_id": null,
+      "worker": "audit",
+      "context_files": [
+        "reports/diagnostic_refined.md",
+        "simulation/world_state.py",
+        "simulation/orchestration/tick_orchestrator.py",
+        "modules/government/components/monetary_ledger.py",
+        "simulation/systems/settlement_system.py",
+        "simulation/agents/government.py",
+        "simulation/systems/central_bank_system.py",
+        "simulation/orchestration/phases/monetary_processing.py",
+        "simulation/orchestration/phases/transaction.py",
+        "modules/system/constants.py",
+        "scripts/operation_forensics.py"
+      ],
+      "output_path": "gemini-output/spec/MISSION_wave5_monetary_audit_SPEC.md",
+      "model": null,
+      "audit_requirements": null
+    },
+    "WO-WAVE5-MONETARY-FIX": {
+      "key": "WO-WAVE5-MONETARY-FIX",
+      "title": "Wave 5: Final Monetary Integrity & Audit Restoration",
+      "type": "jules",
+      "instruction_raw": "MISSION_wave5_monetary_audit_SPEC.md\uc758 \ubd84\uc11d \uacb0\uacfc\ub97c \ubc14\ud0d5\uc73c\ub85c \ud654\ud3d0 \uc815\ud569\uc131(Accounting Integrity)\uc744 \ubcf5\uad6c\ud558\uc2ed\uc2dc\uc624.\n\n1. **Ghost Money \ud574\uacb0**: `central_bank_system.py`\uc5d0\uc11c OMO/LLR \ub4f1\uc73c\ub85c \ubc1c\uc0dd\ud558\ub294 M0 \ubc1c\ud589/\uc18c\uac01 \ud2b8\ub79c\uc7ad\uc158\uc744 \uba85\uc2dc\uc801\uc73c\ub85c `world_state.transactions`\uc5d0 \ud050\uc789\ud558\uc5ec `MonetaryLedger`\uac00 \uc774\ub97c \uac10\uc9c0\ud560 \uc218 \uc788\uac8c \ud558\uc2ed\uc2dc\uc624.\n2. **ID Type Mismatch \ud574\uacb0**: `world_state.py`\uc758 `calculate_total_money`\uc5d0\uc11c ID \ube44\uad50 \uc2dc `str()`\uc744 \uc0ac\uc6a9\ud558\uc5ec \uc815\uc218/\ubb38\uc790\uc5f4 \ubd88\uc77c\uce58\ub85c \uc778\ud55c \ud569\uc0b0 \ub204\ub77d\uc744 \ubc29\uc9c0\ud558\uc2ed\uc2dc\uc624.\n3. **M2 Perimeter \uc77c\uce58**: M2 \ud569\uc0b0 \uc2dc `ID_PUBLIC_MANAGER(4)`\uc640 `ID_SYSTEM(5)`\ub97c \uc81c\uc678\ud558\uc5ec `MonetaryLedger`\uc758 \uc2dc\uc2a4\ud15c \uc5d0\uc774\uc804\ud2b8 \uc815\uc758\uc640 \ub3d9\uae30\ud654\ud558\uc2ed\uc2dc\uc624.\n4. **\uc911\ubcf5 \uacc4\uc0b0 \uc81c\uac70**: `TickOrchestrator`\uc5d0\uc11c `Phase_MonetaryProcessing`\uc744 \uc81c\uac70\ud558\uace0, `Phase3_Transaction`\uc5d0 \ud1b5\ud569\ub41c \ub85c\uc9c1\ub9cc \uc0ac\uc6a9\ud558\ub3c4\ub85d \uc815\ub9ac\ud558\uc2ed\uc2dc\uc624.\n5. **Forensics \uac80\uc99d**: \uc218\uc815 \ud6c4 `python scripts/operation_forensics.py`\ub97c \uc2e4\ud589\ud558\uc5ec Tick 1\uc758 102M \uc810\ud504\uc640 2.6B \ub204\ucd9c\uc774 0\uc73c\ub85c \uc218\ub834\ud558\ub294\uc9c0 \ud655\uc778\ud558\uc2ed\uc2dc\uc624.",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_wave5_monetary_audit_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }
