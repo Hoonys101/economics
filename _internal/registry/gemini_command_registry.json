@@ -155,6 +155,21 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
+    },
+    "MISSION_impl_liquidation_wave2": {
+      "key": "MISSION_impl_liquidation_wave2",
+      "title": "Wave 2: Finance Core Penny Standard & Reserve Sync",
+      "type": "jules",
+      "instruction_raw": "Harden Finance API/DTO to Penny Standard (Int) and implement Reserve Synchronization as per SPEC.",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave2_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
     }
   }
 }
