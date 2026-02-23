@@ -6,6 +6,7 @@
 - **Component**: `modules/platform/infrastructure/lock_manager.py`
 - **Insight**: Segregated OS-specific locking logic (`fcntl` for Unix, `msvcrt` for Windows) into a `PlatformLockManager` implementing `ILockManager`. This removes the hard dependency on `fcntl` in the core initialization logic, enabling Windows compatibility.
 - **Decision**: The `LockManager` is instantiated early in `SimulationInitializer` and injected into the `Simulation` engine, ensuring the lock is held for the duration of the process and released upon finalization.
+- **Refinement**: Switched from `open(..., 'w')` to `open(..., 'a')` to ensure the lock file is not truncated if it contains content (like PID) in future iterations.
 
 ### 1.2. Initialization Order & Dependency Injection
 - **Issue**: The `SettlementSystem` (used by `Bootstrapper`) relies on `AgentRegistry` to resolve agent IDs. Previously, `AgentRegistry` was linked to `WorldState` *after* the bootstrap phase, causing `Bootstrapper` transactions to fail or operate on disconnected components.
@@ -16,7 +17,8 @@
 ### 2.1. Test Environment Locking Conflicts
 - **Symptom**: System integration tests (e.g., `test_engine.py`, `test_phase29_depression.py`) began failing with `RuntimeError: Simulation is already running`.
 - **Root Cause**: The new `PlatformLockManager` correctly acquired a file lock on `simulation.lock`. Since the test suite runs multiple simulations sequentially (or in parallel threads) within the same environment without always fully cleaning up file handles, subsequent tests failed to acquire the lock.
-- **Fix**: Implemented a global `autouse=True` fixture `mock_platform_lock_manager` in `tests/conftest.py`. This patches `simulation.initialization.initializer.PlatformLockManager` to return a dummy lock for all tests, simulating successful acquisition without touching the file system.
+- **Fix**: Implemented a global `autouse=True` fixture `mock_platform_lock_manager` in `tests/conftest.py`. This patches `PlatformLockManager.acquire` and `release` methods globally to do nothing during tests.
+- **Exception**: Unit tests for the lock manager itself (`tests/platform/test_lock_manager.py`) opt-out of this global mock using `@pytest.mark.no_lock_mock` to verify real locking logic (with internal OS mocks).
 
 ### 2.2. SimulationInitializer Unit Testing
 - **Challenge**: `SimulationInitializer` has extensive dependencies (40+ imports), making unit testing brittle.
@@ -38,10 +40,9 @@ tests/platform/test_lock_manager.py::TestPlatformLockManager::test_release_unix 
 tests/simulation/test_initializer.py::TestSimulationInitializer::test_registry_linked_before_bootstrap PASSED [100%]
 ```
 
-### 3.3. Full Regression Suite
-All 1000+ tests passed, verifying that the initialization reordering did not break existing functionality.
+### 3.3. Integration Verification
+Verified that high-level integration tests run without locking conflicts.
 ```text
 tests/system/test_phase29_depression.py::TestPhase29Depression::test_depression_scenario_triggers PASSED [100%]
-...
-======= 1012 passed, 11 skipped, 1 warning in 14.36s ========
+tests/integration/test_config_hot_swap.py::test_defaults_loaded PASSED [ 75%]
 ```

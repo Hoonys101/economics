@@ -46,14 +46,17 @@ from modules.system.api import MarketContextDTO, DEFAULT_CURRENCY
 from modules.finance.api import ISettlementSystem, IMonetaryAuthority
 
 @pytest.fixture(autouse=True)
-def mock_platform_lock_manager():
-    """Mocks PlatformLockManager to prevent file locking during tests."""
-    with patch('simulation.initialization.initializer.PlatformLockManager') as MockLockManager:
-        # Configure the mock to return a fake manager that does nothing
-        instance = MockLockManager.return_value
-        instance.acquire.return_value = None
-        instance.release.return_value = None
-        yield MockLockManager
+def mock_platform_lock_manager(request):
+    """Mocks PlatformLockManager methods globally to prevent file locking during tests."""
+    # Allow tests to opt-out of this mock (e.g., unit tests for the lock manager itself)
+    if request.node.get_closest_marker("no_lock_mock"):
+        yield
+        return
+
+    # Patch the methods on the class itself to handle all import variations
+    with patch('modules.platform.infrastructure.lock_manager.PlatformLockManager.acquire') as mock_acquire, \
+         patch('modules.platform.infrastructure.lock_manager.PlatformLockManager.release') as mock_release:
+        yield
 
 @pytest.fixture(autouse=True)
 def mock_fcntl():

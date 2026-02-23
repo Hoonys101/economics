@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch, mock_open
 
 from modules.platform.infrastructure.lock_manager import PlatformLockManager, LockAcquisitionError
 
+@pytest.mark.no_lock_mock
 class TestPlatformLockManager:
 
     def setup_method(self):

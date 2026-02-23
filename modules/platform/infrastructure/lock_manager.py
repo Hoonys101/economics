@@ -37,7 +37,8 @@ class PlatformLockManager(ILockManager):
             return # Already acquired
 
         try:
-            self._lock_file = open(self.lock_file_path, 'w')
+            # Use 'a' (append) to avoid truncating the file if it exists and has content (e.g. PID)
+            self._lock_file = open(self.lock_file_path, 'a')
         except IOError as e:
             raise LockAcquisitionError(f"Could not open lock file: {e}")
 
