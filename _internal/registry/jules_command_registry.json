@@ -3,6 +3,36 @@
     "version": "1.0"
   },
   "missions": {
+    "MISSION_liquidation_wave1_shared_kernel": {
+      "key": "MISSION_liquidation_wave1_shared_kernel",
+      "title": "Wave 1: Shared Financial Kernel & Cycle Breaker",
+      "type": "jules",
+      "instruction_raw": "Implement modules/common/financial, migrate Claim/MoneyDTO (Int Pennies), and resolve Finance <-> HR circular dependency as per SPEC.",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave1_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "MISSION_liquidation_wave1_5_stability": {
+      "key": "MISSION_liquidation_wave1_5_stability",
+      "title": "Wave 1.5: Initialization & Concurrency Stabilizer",
+      "type": "jules",
+      "instruction_raw": "Fix SimulationInitializer order, register Agent 0, and implement cross-platform file locking as per Wave 1.5 SPEC.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_liquidation_wave1_5_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
     "MISSION_global_tech_debt_liquidation_plan": {
       "key": "MISSION_global_tech_debt_liquidation_plan",
       "title": "Global Technical Debt Liquidation & API/DTO Standardization Plan",
@@ -28,26 +58,11 @@
       "model": null,
       "audit_requirements": null
     },
-    "MISSION_liquidation_wave1_shared_kernel": {
-      "key": "MISSION_liquidation_wave1_shared_kernel",
-      "title": "Wave 1: Shared Financial Kernel & Cycle Breaker",
-      "type": "jules",
-      "instruction_raw": "Implement modules/common/financial, migrate Claim/MoneyDTO (Int Pennies), and resolve Finance <-> HR circular dependency as per SPEC.",
-      "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave1_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "MISSION_liquidation_wave2_finance_core": {
       "key": "MISSION_liquidation_wave2_finance_core",
-      "title": "Wave 2: Finance Core Penny Standard Spec",
+      "title": "Wave 2: Finance Core Penny Standard & Reserve Sync Spec",
       "type": "gemini",
-      "instruction_raw": "Finance \ubaa8\ub4c8\uc758 Ledger\uc640 SettlementSystem\uc744 Penny Standard(int)\ub85c \ud558\ub4dc\ub2dd\ud558\uae30 \uc704\ud55c \uc0c1\uc138 \uc2a4\ud399\uc744 \uc791\uc131\ud558\uc2ed\uc2dc\uc624. Transaction \ubaa8\ub378\uc758 `total_pennies` \uac15\uc81c\ud654, SettlementSystem\uc758 \uc81c\ub85c\uc12c \uac80\uc99d(Zero-Sum Integrity) \ub85c\uc9c1, \uadf8\ub9ac\uace0 Bank \uc11c\ube44\uc2a4\uc758 \ub300\ucd9c \uc6d0\uc7a5 \uc804\ud658 \uacc4\ud68d\uc744 \ud3ec\ud568\ud558\uc2ed\uc2dc\uc624.",
+      "instruction_raw": "Finance \ubaa8\ub4c8\uc758 Penny Standard(int) \uc801\uc6a9 \ubc0f DIAG_MONETARY_SPEC.md\uc5d0\uc11c \uc81c\uc548\ub41c '\uc9c0\uae09\uc900\ube44\uae08 \ub3d9\uae30\ud654(Reserve Sync)' \uc0c1\uc138 \uc2a4\ud399\uc744 \uc791\uc131\ud558\uc2ed\uc2dc\uc624. SettlementSystem(\uc2e4\ubb3c \ud604\uae08)\uacfc FinanceSystem(\uc7a5\ubd80\uc0c1\uc758 \uc608\uae08)\uc744 \uc6d0\uc790\uc801\uc73c\ub85c \uc5f0\ub3d9\ud558\uc5ec \uc740\ud589\uc758 \uc9c0\uae09 \ubd88\ub2a5 \ubb38\uc81c\ub97c \ud574\uacb0\ud574\uc57c \ud569\ub2c8\ub2e4.",
       "command": null,
       "file_path": null,
       "wait": false,
@@ -55,8 +70,8 @@
       "worker": "spec",
       "context_files": [
         "gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md",
-        "modules/finance/dtos.py",
-        "simulation/systems/settlement_system.py",
+        "gemini-output/spec/DIAG_MONETARY_SPEC.md",
+        "modules/finance/api.py",
         "simulation/bank.py"
       ],
       "output_path": "gemini-output/spec/MISSION_liquidation_wave2_SPEC.md",
@@ -65,9 +80,9 @@
     },
     "MISSION_liquidation_wave3_agent_state": {
       "key": "MISSION_liquidation_wave3_agent_state",
-      "title": "Wave 3: Agent State (Firm/Household/Labor) Penny Sync Spec",
+      "title": "Wave 3: Agent State Penny Sync & Budget Gatekeeper Spec",
       "type": "gemini",
-      "instruction_raw": "Firm, Household, Labor \uac01 \ubaa8\ub4c8\uc758 \uc0c1\ud0dc DTO\uc640 \uc5d4\uc9c4(FinanceEngine, BudgetEngine, MatchingEngine)\uc744 Penny Standard\ub85c \ub3d9\uae30\ud654\ud558\uae30 \uc704\ud55c \ud1b5\ud569 \uc2a4\ud399\uc744 \uc791\uc131\ud558\uc2ed\uc2dc\uc624. \ubaa8\ub4e0 \uae08\uc561 \ud544\ub4dc\ub97c `_pennies`\ub85c \ubcc0\uacbd\ud558\uace0 \uc815\uc218 \uc5f0\uc0b0\uc744 \ubcf4\uc7a5\ud574\uc57c \ud569\ub2c8\ub2e4.",
+      "instruction_raw": "Firm/Household/Labor\uc758 Penny Standard \ub3d9\uae30\ud654\uc640 DIAG_INSOLVENCY_SPEC.md\uc5d0\uc11c \uc81c\uc548\ub41c 'Budget Gatekeeper' \ub3c4\uc785 \uc0c1\uc138 \uc2a4\ud399\uc744 \uc791\uc131\ud558\uc2ed\uc2dc\uc624. \uae30\uc5c5\uc758 \uc784\uae08/\uc138\uae08 \uc6b0\uc120\uc21c\uc704(Prioritization)\ub97c \uac15\uc81c\ud558\uace0, \uc9c0\ubd88 \ubd88\ub2a5 \uc2dc \ud30c\uc0b0 \uc808\ucc28\ub85c \uc548\uc804\ud558\uac8c \uc720\ub3c4\ud558\ub294 \ub85c\uc9c1\uc744 \ud3ec\ud568\ud558\uc2ed\uc2dc\uc624.",
       "command": null,
       "file_path": null,
       "wait": false,
@@ -75,10 +90,9 @@
       "worker": "spec",
       "context_files": [
         "gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md",
-        "simulation/dtos/api.py",
-        "modules/firm/api.py",
-        "modules/household/api.py",
-        "modules/labor/api.py"
+        "gemini-output/spec/DIAG_INSOLVENCY_SPEC.md",
+        "simulation/firms.py",
+        "simulation/orchestration/sequencer.py"
       ],
       "output_path": "gemini-output/spec/MISSION_liquidation_wave3_SPEC.md",
       "model": null,

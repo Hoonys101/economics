@@ -22,5 +22,10 @@ JULES_MISSIONS: Dict[str, Dict[str, Any]] = {
         "instruction": "Implement modules/common/financial, migrate Claim/MoneyDTO (Int Pennies), and resolve Finance <-> HR circular dependency as per SPEC.",
         "file": "c:/coding/economics/gemini-output/spec/MISSION_liquidation_wave1_SPEC.md"
     },
+    "MISSION_liquidation_wave1_5_stability": {
+        "title": "Wave 1.5: Initialization & Concurrency Stabilizer",
+        "instruction": "Fix SimulationInitializer order, register Agent 0, and implement cross-platform file locking as per Wave 1.5 SPEC.",
+        "file": "gemini-output/spec/MISSION_liquidation_wave1_5_SPEC.md"
+    },
     # Add missions here
 }

@@ -48,18 +48,40 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
         "context_files": ["gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md", "modules/finance/api.py", "modules/hr/api.py"],
         "output_path": "gemini-output/spec/MISSION_liquidation_wave1_SPEC.md"
     },
-    "MISSION_liquidation_wave2_finance_core": {
-        "title": "Wave 2: Finance Core Penny Standard Spec",
+    "MISSION_liquidation_wave1_5_stability": {
+        "title": "Wave 1.5: Initialization Order & Concurrency Stability Spec",
         "worker": "spec",
-        "instruction": "Finance 모듈의 Ledger와 SettlementSystem을 Penny Standard(int)로 하드닝하기 위한 상세 스펙을 작성하십시오. Transaction 모델의 `total_pennies` 강제화, SettlementSystem의 제로섬 검증(Zero-Sum Integrity) 로직, 그리고 Bank 서비스의 대출 원장 전환 계획을 포함하십시오.",
-        "context_files": ["gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md", "modules/finance/dtos.py", "simulation/systems/settlement_system.py", "simulation/bank.py"],
+        "instruction": "DIAG_ACCOUNT_ZERO_SPEC.md와 DIAG_CONCURRENCY_SPEC.md를 바탕으로, 시뮬레이션 초기화 순서(`SimulationInitializer`) 수정 및 Agent 0(정부) 등록 로직, 그리고 Windows 환경에서의 크로스 플랫폼 파일 락킹 전략을 수립하는 상세 스펙을 작성하십시오.",
+        "context_files": [
+            "gemini-output/spec/DIAG_ACCOUNT_ZERO_SPEC.md",
+            "gemini-output/spec/DIAG_CONCURRENCY_SPEC.md",
+            "simulation/initialization/initializer.py",
+            "simulation/systems/settlement_system.py"
+        ],
+        "output_path": "gemini-output/spec/MISSION_liquidation_wave1_5_SPEC.md"
+    },
+    "MISSION_liquidation_wave2_finance_core": {
+        "title": "Wave 2: Finance Core Penny Standard & Reserve Sync Spec",
+        "worker": "spec",
+        "instruction": "Finance 모듈의 Penny Standard(int) 적용 및 DIAG_MONETARY_SPEC.md에서 제안된 '지급준비금 동기화(Reserve Sync)' 상세 스펙을 작성하십시오. SettlementSystem(실물 현금)과 FinanceSystem(장부상의 예금)을 원자적으로 연동하여 은행의 지급 불능 문제를 해결해야 합니다.",
+        "context_files": [
+            "gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md",
+            "gemini-output/spec/DIAG_MONETARY_SPEC.md",
+            "modules/finance/api.py",
+            "simulation/bank.py"
+        ],
         "output_path": "gemini-output/spec/MISSION_liquidation_wave2_SPEC.md"
     },
     "MISSION_liquidation_wave3_agent_state": {
-        "title": "Wave 3: Agent State (Firm/Household/Labor) Penny Sync Spec",
+        "title": "Wave 3: Agent State Penny Sync & Budget Gatekeeper Spec",
         "worker": "spec",
-        "instruction": "Firm, Household, Labor 각 모듈의 상태 DTO와 엔진(FinanceEngine, BudgetEngine, MatchingEngine)을 Penny Standard로 동기화하기 위한 통합 스펙을 작성하십시오. 모든 금액 필드를 `_pennies`로 변경하고 정수 연산을 보장해야 합니다.",
-        "context_files": ["gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md", "simulation/dtos/api.py", "modules/firm/api.py", "modules/household/api.py", "modules/labor/api.py"],
+        "instruction": "Firm/Household/Labor의 Penny Standard 동기화와 DIAG_INSOLVENCY_SPEC.md에서 제안된 'Budget Gatekeeper' 도입 상세 스펙을 작성하십시오. 기업의 임금/세금 우선순위(Prioritization)를 강제하고, 지불 불능 시 파산 절차로 안전하게 유도하는 로직을 포함하십시오.",
+        "context_files": [
+            "gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md",
+            "gemini-output/spec/DIAG_INSOLVENCY_SPEC.md",
+            "simulation/firms.py",
+            "simulation/orchestration/sequencer.py"
+        ],
         "output_path": "gemini-output/spec/MISSION_liquidation_wave3_SPEC.md"
     },
     "MISSION_liquidation_wave4_government": {
@@ -68,6 +90,6 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
         "instruction": "정부의 정책 결정(Decision)과 실행(Fiscal Execution)을 분리하기 위한 SRP 리팩토링 스펙을 작성하십시오. `FiscalCommandDTO` 도입과 FiscalEngine의 명령어 기반 실행 구조를 설계하십시오.",
         "context_files": ["gemini-output/spec/GLOBAL_TECH_DEBT_LIQUIDATION_SPEC.md", "modules/government/api.py", "modules/government/dtos.py"],
         "output_path": "gemini-output/spec/MISSION_liquidation_wave4_SPEC.md"
-    },
+    }
     # Add missions here
 }
