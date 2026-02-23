@@ -11,7 +11,7 @@ from modules.government.dtos import (
     MacroEconomicSnapshotDTO,
     WelfareResultDTO,
     BailoutResultDTO,
-    TaxCollectionResultDTO,
+    TaxAssessmentResultDTO,
     FiscalContextDTO,
     BondIssueRequestDTO,
     BondIssuanceResultDTO,
@@ -32,23 +32,6 @@ class ITaxableHousehold(IFinancialEntity, IAgent, Protocol):
     is_employed: bool
     needs: Any
 
-@dataclass(frozen=True)
-class BondRepaymentDetailsDTO:
-    """
-    A structured object carrying the details of a bond repayment.
-    This DTO is expected to be present in the 'metadata' field of a 'bond_repayment' Transaction.
-
-    Attributes:
-        principal_pennies: The portion of the payment that constitutes principal repayment.
-                           This amount is subject to monetary destruction if paid to the Central Bank.
-        interest_pennies: The portion of the payment that constitutes an interest payment.
-                          This is treated as a standard transfer and is not destroyed.
-        bond_id: A unique identifier for the bond being serviced.
-    """
-    principal_pennies: int
-    interest_pennies: int
-    bond_id: str
-
 class IFiscalPolicyManager(Protocol):
     """Interface for managing the government's fiscal policy."""
 
@@ -56,8 +39,8 @@ class IFiscalPolicyManager(Protocol):
         """Adjusts tax brackets based on economic conditions."""
         ...
 
-    def calculate_tax_liability(self, policy: GovernmentPolicyDTO, income: float) -> float:
-        """Calculates the tax owed based on a progressive bracket system."""
+    def calculate_tax_liability(self, policy: GovernmentPolicyDTO, income: int) -> int:
+        """Calculates the tax owed based on a progressive bracket system (pennies)."""
         ...
 
 class IMonetaryPolicyManager(Protocol):
@@ -76,19 +59,19 @@ class ITaxService(Protocol):
         """Determines the current fiscal policy based on market conditions."""
         ...
 
-    def calculate_tax_liability(self, policy: GovernmentPolicyDTO, income: float) -> float:
-        """Calculates the tax amount for a given income and fiscal policy."""
+    def calculate_tax_liability(self, policy: GovernmentPolicyDTO, income: int) -> int:
+        """Calculates the tax amount for a given income and fiscal policy (pennies)."""
         ...
 
-    def calculate_corporate_tax(self, profit: float, rate: float) -> float:
-        """Calculates corporate tax based on profit and a flat rate."""
+    def calculate_corporate_tax(self, profit: int, rate: float) -> int:
+        """Calculates corporate tax based on profit and a flat rate (pennies)."""
         ...
 
-    def calculate_wealth_tax(self, net_worth: float) -> float:
-        """Calculates wealth tax amount (float) based on net worth."""
+    def calculate_wealth_tax(self, net_worth: int) -> int:
+        """Calculates wealth tax amount (pennies) based on net worth."""
         ...
 
-    def collect_wealth_tax(self, agents: List[IAgent]) -> TaxCollectionResultDTO:
+    def collect_wealth_tax(self, agents: List[IAgent]) -> TaxAssessmentResultDTO:
         """
         Calculates wealth tax for all eligible agents and returns a DTO
         containing payment requests for the government to execute.
@@ -99,24 +82,24 @@ class ITaxService(Protocol):
         """Updates internal ledgers based on a verified tax collection result."""
         ...
 
-    def get_revenue_this_tick(self) -> Dict[CurrencyCode, float]:
-        """Returns the total revenue collected in the current tick."""
+    def get_revenue_this_tick(self) -> Dict[CurrencyCode, int]:
+        """Returns the total revenue collected in the current tick (pennies)."""
         ...
 
     def get_revenue_breakdown_this_tick(self) -> Dict[str, float]:
         """Returns the breakdown of revenue by tax type for the current tick."""
         ...
 
-    def get_total_collected_this_tick(self) -> float:
-        """Returns the total amount collected this tick."""
+    def get_total_collected_this_tick(self) -> int:
+        """Returns the total amount collected this tick (pennies)."""
         ...
 
-    def get_tax_revenue(self) -> Dict[str, float]:
-        """Returns the all-time tax revenue breakdown."""
+    def get_tax_revenue(self) -> Dict[str, int]:
+        """Returns the all-time tax revenue breakdown (pennies)."""
         ...
 
-    def get_total_collected_tax(self) -> Dict[CurrencyCode, float]:
-        """Returns the all-time total collected tax by currency."""
+    def get_total_collected_tax(self) -> Dict[CurrencyCode, int]:
+        """Returns the all-time total collected tax by currency (pennies)."""
         ...
 
     def reset_tick_flow(self) -> None:
@@ -135,19 +118,19 @@ class IWelfareService(Protocol):
         """
         ...
 
-    def provide_firm_bailout(self, firm: IAgent, amount: float, current_tick: int, is_solvent: bool) -> Optional[BailoutResultDTO]:
+    def provide_firm_bailout(self, firm: IAgent, amount: int, current_tick: int, is_solvent: bool) -> Optional[BailoutResultDTO]:
         """
         Evaluates bailout eligibility and returns a DTO containing a loan request
         and a payment request. Returns None if not eligible.
         """
         ...
 
-    def get_survival_cost(self, market_data: MarketSnapshotDTO) -> float:
-        """Calculates current survival cost based on market prices."""
+    def get_survival_cost(self, market_data: MarketSnapshotDTO) -> int:
+        """Calculates current survival cost based on market prices (pennies)."""
         ...
 
-    def get_spending_this_tick(self) -> float:
-        """Returns total welfare spending for the current tick."""
+    def get_spending_this_tick(self) -> int:
+        """Returns total welfare spending for the current tick (pennies)."""
         ...
 
     def reset_tick_flow(self) -> None:

@@ -42,16 +42,16 @@ class PolicyExecutionEngine(IPolicyExecutionEngine):
 
             # AdaptiveGovBrain uses 'rate_delta' or 'multiplier_delta'
             if "multiplier_delta" in decision.parameters:
-                 new_mult = current_state.welfare_budget_multiplier + decision.parameters["multiplier_delta"]
+                 new_mult = current_state.policy.welfare_budget_multiplier + decision.parameters["multiplier_delta"]
                  result.state_updates["welfare_budget_multiplier"] = max(0.1, new_mult) # Clamp
 
             if "rate_delta" in decision.parameters:
                  action_type = decision.metadata.get("action_type", "")
                  if action_type == "ADJUST_CORP_TAX":
-                     new_rate = current_state.corporate_tax_rate + decision.parameters["rate_delta"]
+                     new_rate = current_state.policy.corporate_tax_rate + decision.parameters["rate_delta"]
                      result.state_updates["corporate_tax_rate"] = max(0.05, min(0.6, new_rate))
                  elif action_type == "ADJUST_INCOME_TAX":
-                     new_rate = current_state.income_tax_rate + decision.parameters["rate_delta"]
+                     new_rate = current_state.policy.income_tax_rate + decision.parameters["rate_delta"]
                      result.state_updates["income_tax_rate"] = max(0.05, min(0.6, new_rate))
 
         # 2. Execute Specific Logic based on Action Tag
@@ -85,7 +85,7 @@ class PolicyExecutionEngine(IPolicyExecutionEngine):
         )
 
         # 1. Wealth Tax Logic (TaxService)
-        # Note: TaxService.collect_wealth_tax returns TaxCollectionResultDTO with payment requests
+        # Note: TaxService.collect_wealth_tax returns TaxAssessmentResultDTO with payment requests
         tax_result = context.tax_service.collect_wealth_tax(agents)
         result.payment_requests.extend(tax_result.payment_requests)
 
@@ -97,7 +97,7 @@ class PolicyExecutionEngine(IPolicyExecutionEngine):
             snapshot,
             state.tick,
             state.gdp_history,
-            state.welfare_budget_multiplier
+            state.policy.welfare_budget_multiplier
         )
         result.payment_requests.extend(welfare_result.payment_requests)
 
