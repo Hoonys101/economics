@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any, Union, Protocol, runtime_checkable, TYPE_CHECKING
 from simulation.ai.enums import PolicyActionTag
@@ -184,3 +185,21 @@ class BailoutResultDTO:
     payment_request: PaymentRequestDTO # The initial transfer of funds
 
 # endregion
+
+@dataclass
+class GovernmentSensoryDTO:
+    """
+    WO-057-B: Sensory Module DTO.
+    Transfers 10-tick SMA macro data to the Government Agent.
+    """
+    tick: int
+    inflation_sma: float
+    unemployment_sma: float
+    gdp_growth_sma: float
+    wage_sma: float
+    approval_sma: float
+    current_gdp: float
+    # WO-057-A: Added for AdaptiveGovBrain
+    gini_index: float = 0.0
+    approval_low_asset: float = 0.5
+    approval_high_asset: float = 0.5
