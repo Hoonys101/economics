@@ -173,3 +173,14 @@ class BailoutResultDTO:
     payment_request: PaymentRequestDTO # The initial transfer of funds
 
 # endregion
+
+@dataclass
+class FiscalPolicyDTO:
+    """
+    Mutable configuration for fiscal policy.
+    Used by the Government agent to track current stance.
+    """
+    income_tax_rate: float
+    corporate_tax_rate: float
+    welfare_budget_multiplier: float = 1.0
+    tax_brackets: List[TaxBracketDTO] = field(default_factory=list)
