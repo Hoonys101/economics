@@ -79,7 +79,12 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
             fiscal_stance=getattr(government, 'fiscal_stance', 0.0)
         )
 
-        # 1. Observe and Decide (Brain)
+        # 1. Learn from the PAST (Reward for action at T-interval)
+        # This must happen BEFORE deciding the new action overwrites self.last_state
+        self.ai.update_learning(current_tick, state_dto)
+
+        # 2. Observe and Decide (Brain)
+        # This sets self.last_state = current_state
         action = self.ai.decide_policy(current_tick, state_dto)
         self.last_action_tick = current_tick
 
@@ -98,7 +103,7 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
                     action = self.ai.ACTION_HAWKISH
         # --- [END REFLEX OVERRIDE] ---
 
-        # 2. Execution (Actuator)
+        # 3. Execution (Actuator)
         # Store old values for logging baby steps
         old_values = {
             "income_tax": government.income_tax_rate,
@@ -115,7 +120,7 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
         RATE_STEP = steps[1]
         BUDGET_STEP = steps[2]
         
-        # 3. Translation Logic (Mapping Action -> Physical Change)
+        # 4. Translation Logic (Mapping Action -> Physical Change)
         if action == self.ai.ACTION_DOVISH:
             if central_bank:
                 central_bank.base_rate -= RATE_STEP
@@ -144,7 +149,7 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
                 government.corporate_tax_rate += TAX_STEP
                 government.firm_subsidy_budget_multiplier -= BUDGET_STEP
         
-        # 4. The Safety Valve (Clipping & Bounds)
+        # 5. The Safety Valve (Clipping & Bounds)
         # Interest Rate [0% ~ 20%]
         if central_bank:
             central_bank.base_rate = max(0.0, min(0.20, central_bank.base_rate))
@@ -170,12 +175,10 @@ class SmartLeviathanPolicy(IGovernmentPolicy):
         government.welfare_budget_multiplier = max(budget_min, min(budget_max, government.welfare_budget_multiplier))
         government.firm_subsidy_budget_multiplier = max(budget_min, min(budget_max, government.firm_subsidy_budget_multiplier))
 
-        # 5. Logging Baby Steps
+        # 6. Logging Baby Steps
         self._log_changes(government, old_values, central_bank, old_rate, action, current_tick)
 
-        # 6. Reward & Learning
-        # Triggers the Q-table update using the DTO.
-        self.ai.update_learning(current_tick, state_dto)
+        # Note: Learning step moved to top of loop to prevent self-loop bug.
 
         return {
             "policy_type": "AI_ADAPTIVE",
