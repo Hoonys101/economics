@@ -18,21 +18,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "MISSION_household_api_dto": {
-      "key": "MISSION_household_api_dto",
-      "title": "Household Module API & DTO Realignment",
-      "type": "jules",
-      "instruction_raw": "Implement Snapshot-based communication. Refactor consumption logic to return DTOs. Enforce assets_pennies SSoT.",
-      "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_household_api_dto_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "MISSION_labor_api_dto": {
       "key": "MISSION_labor_api_dto",
       "title": "Labor Module API & DTO Realignment",
