@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "MISSION_impl_wave5_gov_ai": {
-      "key": "MISSION_impl_wave5_gov_ai",
-      "title": "Wave 5: Populist Government AI & Reward Hardening Implementation",
-      "type": "jules",
-      "instruction_raw": "MISSION_W5_GOV_AI_DETAIL.md\ub97c \ubc14\ud0d5\uc73c\ub85c \uc815\ubd80 AI\uc758 \ubcf4\uc0c1 \ud568\uc218 \ubc0f \uc0c1\ud0dc \uacf5\uac04 \ud655\uc7a5\uc744 \uad6c\ud604\ud558\uc2ed\uc2dc\uc624.",
-      "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_W5_GOV_AI_DETAIL.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "MISSION_impl_wave5_monetary": {
       "key": "MISSION_impl_wave5_monetary",
       "title": "Wave 5: Central Bank Multi-Rule Strategy Pattern Implementation",
@@ -129,6 +114,21 @@
       "instruction_raw": "MISSION_W5_POLITICS_DETAIL.md\ub97c \ubc14\ud0d5\uc73c\ub85c \uc815\uce58 \uc624\ucf00\uc2a4\ud2b8\ub808\uc774\ud130 \ubc0f \uac1c\ubcc4 \ud22c\ud45c \uc2dc\uc2a4\ud15c\uc744 \uad6c\ud604\ud558\uc2ed\uc2dc\uc624.",
       "command": "create",
       "file_path": "c:/coding/economics/gemini-output/spec/MISSION_W5_POLITICS_DETAIL.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "MISSION_impl_wave5_gov_ai": {
+      "key": "MISSION_impl_wave5_gov_ai",
+      "title": "Wave 5: Populist Government AI & Reward Hardening Implementation",
+      "type": "jules",
+      "instruction_raw": "MISSION_W5_GOV_AI_DETAIL.md\ub97c \ubc14\ud0d5\uc73c\ub85c \uc815\ubd80 AI\uc758 \ubcf4\uc0c1 \ud568\uc218 \ubc0f \uc0c1\ud0dc \uacf5\uac04 \ud655\uc7a5\uc744 \uad6c\ud604\ud558\uc2ed\uc2dc\uc624.",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_W5_GOV_AI_DETAIL.md",
       "wait": false,
       "session_id": null,
       "worker": null,
