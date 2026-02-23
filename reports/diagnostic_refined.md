@@ -1,298 +1,369 @@
 # Refined Diagnostic Logs
 Critical events extracted for Gemini analysis.
 
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49177523
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49177523 pennies for infrastructure.
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga af594e61-b977-4b2c-b184-92ddc084e115 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 38a91511-2e09-4e51-9f5d-69a8af4d8dff cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 8a0b4729-1974-4182-a95c-b58818c597c8 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga bfdd137d-7124-420d-a1fb-6be63317e2ea cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 4c3a0b61-7515-4b3a-80f7-3a8134a9a6a2 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga c565ad10-9d4a-4fc1-9fe1-ded04d17e6cc cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 5ac65a7d-4698-4de8-83ba-e570fab15f6e cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 0c6d5303-cec0-4905-8e89-6945783b5b68 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 2a951d9e-412b-4402-8772-520c9ad7e28a cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 39ef5ec8-dcc1-4f82-8382-cc9d346cbb13 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 67612e1f-10a0-46d7-8007-f57dfd4490a9 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 7362f38e-8b90-49d4-afe4-d110caf45af9 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 1e42f38c-6f3b-400b-98bb-1005f968dd7e cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 383d9889-7a89-42ba-840a-3bced1a81f66 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 1adad349-dc82-400f-804d-462c296b26db cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga afd606a5-f79d-48cd-a7e3-e80a42e1d388 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49163983
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49163983 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 101 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48233366
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48233366 pennies for infrastructure.
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48210831
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48210831 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 100 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47147435
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47147435 pennies for infrastructure.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 105 (Inactive=True), Seller: 1 (Inactive=False) for Transaction: emergency_buy
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1650, Req: 51536.
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46492668
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46492668 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 105 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3303, Req: 51636.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46450462
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46450462 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4956, Req: 51636.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46402763
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46402763 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6609, Req: 51636.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46348565
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46348565 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8262, Req: 51636.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46289423
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46289423 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9915, Req: 51640.
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45378128
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45378128 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11568, Req: 51640.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45307098
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45307098 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 111 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 13221, Req: 51644.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44380491
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44380491 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14874, Req: 51644.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44296329
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44296329 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 114 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16527, Req: 51652.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44207046
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44207046 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 18180, Req: 51660.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44111540
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44111540 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19833, Req: 51660.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44010937
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44010937 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 21486, Req: 51668.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43904779
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43904779 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 23139, Req: 51668.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43793194
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43793194 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24792, Req: 51671.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43676016
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43676016 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26446, Req: 51679.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
-- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 121 closed down. Assets: 93976.42, Consecutive Loss Turns: 20
-  - Details: agent_id=121
-- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 122 closed down. Assets: 95111.04, Consecutive Loss Turns: 20
-  - Details: agent_id=122
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43557386
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43557386 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 28100, Req: 51679.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
-- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 31019858.00, Expected: 49928604.00, Delta: -18908746.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43507114
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43507114 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29754, Req: 51686.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
-- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 31019858.00, Expected: 49928604.00, Delta: -18908746.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43455735
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43455735 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31408, Req: 51689.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
-- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 31019858.00, Expected: 49928604.00, Delta: -18908746.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41493806
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41493806 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33062, Req: 51695.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 50000000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 50000000 pennies for infrastructure.
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 4255116a-4535-4844-9f6d-7360ebd5aba5 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 62d34e61-5bff-48d8-99a4-4b5de5d254d0 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 9c47b9c9-995b-45e4-af02-f64b26c4cab1 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 84907a9a-0f85-4236-a464-f9ed41185f89 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 7a3361f3-d55b-4180-9e64-bfa298e797e0 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga bcae289c-ee8d-427b-9afd-d339adad74fa cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 1a556b70-50ef-4d6a-a674-24387b2b4ff5 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 7be62b0c-37f9-4a5a-9a42-383a344f631a cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga c05baa52-aac7-4a67-bc2a-d2e5f959c30e cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 9eb2a9f7-7b8d-413c-b720-9a770db87640 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 0e9f2733-38e6-420a-867b-fa49976b022d cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 98ec49c3-44b3-4bf3-9aca-9b38c65c9db6 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 233b818a-f2bb-45bc-8df7-9e0fd357a967 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga cfaf2537-fa07-4929-b3ed-e3a026286b52 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga 1cc9a9e8-e190-40f5-bfdf-e5c41157fe01 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | SAGA_CANCELLED | Saga bc04de0b-f46f-4b7a-bc9d-b77b7b46afe5 cancelled due to inactive participant. Buyer Active: True, Seller Active: False
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 49988060
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 49988060 pennies for infrastructure.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 48933526
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 48933526 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 44623.
 - **Tick ?** | **WARNING** | No handler for tx type: education_spending
 - **Tick ?** | **WARNING** | No handler for tx type: education_spending
 - **Tick ?** | **WARNING** | No handler for tx type: education_spending
 - **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 31019858.00, Expected: 49928604.00, Delta: -18908746.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41434109
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41434109 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 108 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **WARNING** | get_balance: Agent 112 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 34716, Req: 51695.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 111 (Inactive=True) for Transaction: wage
-- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 31019858.00, Expected: 49928604.00, Delta: -18908746.0000
-- **Tick 26** | **WARNING** | FIRM_INACTIVE | Firm 120 closed down. Assets: 95018.04, Consecutive Loss Turns: 20
-  - Details: agent_id=120
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41371937
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41371937 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36370, Req: 51695.
-- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21518054.00, Expected: 49928604.00, Delta: -28410550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41348041
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41348041 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38024, Req: 51695.
-- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21518054.00, Expected: 49928604.00, Delta: -28410550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41323135
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41323135 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 39678, Req: 51695.
-- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21518054.00, Expected: 49928604.00, Delta: -28410550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41296306
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41296306 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41332, Req: 51695.
-- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21518054.00, Expected: 49928604.00, Delta: -28410550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41268810
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41268810 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 42986, Req: 51695.
-- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21518054.00, Expected: 49928604.00, Delta: -28410550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40930033
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40930033 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44640, Req: 51695.
-- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21518054.00, Expected: 49928604.00, Delta: -28410550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40899809
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40899809 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46294, Req: 51695.
-- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21518054.00, Expected: 49928604.00, Delta: -28410550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40868682
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40868682 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 47948, Req: 51695.
-- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 18523054.00, Expected: 49928604.00, Delta: -31405550.0000
-- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 123 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
-  - Details: agent_id=123
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40831310
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40831310 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 49602, Req: 51695.
-- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15533054.00, Expected: 49928604.00, Delta: -34395550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40834542
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40834542 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51256, Req: 51695.
-- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15543054.00, Expected: 49928604.00, Delta: -34385550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39973348
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39973348 pennies for infrastructure.
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15553054.00, Expected: 49928604.00, Delta: -34375550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39924885
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39924885 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 106 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15563054.00, Expected: 49928604.00, Delta: -34365550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39928117
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39928117 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24810, Req: 51695.
-- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15573054.00, Expected: 49928604.00, Delta: -34355550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39931349
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39931349 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26464, Req: 51695.
-- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15583054.00, Expected: 49928604.00, Delta: -34345550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39934581
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39934581 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 28118, Req: 51695.
-- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15593054.00, Expected: 49928604.00, Delta: -34335550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39937813
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39937813 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29772, Req: 51695.
-- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15603054.00, Expected: 49928604.00, Delta: -34325550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39941045
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39941045 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31426, Req: 51695.
-- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15613054.00, Expected: 49928604.00, Delta: -34315550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39944277
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39944277 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33080, Req: 51695.
-- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15623054.00, Expected: 49928604.00, Delta: -34305550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39254962
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39254962 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 34734, Req: 51695.
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15633054.00, Expected: 49928604.00, Delta: -34295550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39256540
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39256540 pennies for infrastructure.
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47929381
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47929381 pennies for infrastructure.
 - **Tick ?** | **WARNING** | get_balance: Agent 109 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36388, Req: 51695.
-- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15643054.00, Expected: 49928604.00, Delta: -34285550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39258118
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39258118 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38042, Req: 51695.
-- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15653054.00, Expected: 49928604.00, Delta: -34275550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39259696
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39259696 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 39696, Req: 51695.
-- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15663054.00, Expected: 49928604.00, Delta: -34265550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39261274
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39261274 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41350, Req: 51695.
-- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15673054.00, Expected: 49928604.00, Delta: -34255550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39262852
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39262852 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43004, Req: 51695.
-- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15683054.00, Expected: 49928604.00, Delta: -34245550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39212735
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39212735 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44658, Req: 51695.
-- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15693054.00, Expected: 49928604.00, Delta: -34235550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39214313
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39214313 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46312, Req: 51695.
-- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15703054.00, Expected: 49928604.00, Delta: -34225550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 38642553
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 38642553 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 47966, Req: 51695.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
 - **Tick ?** | **WARNING** | No handler for tx type: education_spending
 - **Tick ?** | **WARNING** | No handler for tx type: education_spending
-- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15713054.00, Expected: 49928604.00, Delta: -34215550.0000
-- **Tick 53** | **WARNING** | FIRM_INACTIVE | Firm 124 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
-  - Details: agent_id=124
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 38642477
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 38642477 pennies for infrastructure.
-- **Tick ?** | **WARNING** | get_balance: Agent 119 not found or Registry not linked or Agent not IFinancialAgent.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 49620, Req: 51695.
-- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15718054.00, Expected: 49928604.00, Delta: -34210550.0000
-- **Tick 54** | **WARNING** | FIRM_INACTIVE | Firm 125 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
-  - Details: agent_id=125
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 38647401
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 38647401 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51274, Req: 51695.
-- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15718054.00, Expected: 49928604.00, Delta: -34210550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 38657325
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 38657325 pennies for infrastructure.
-- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15718054.00, Expected: 49928604.00, Delta: -34210550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 38615554
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 38615554 pennies for infrastructure.
-- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15718054.00, Expected: 49928604.00, Delta: -34210550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 38625478
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 38625478 pennies for infrastructure.
-- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15718054.00, Expected: 49928604.00, Delta: -34210550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 38635402
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 38635402 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11578, Req: 51695.
-- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15718054.00, Expected: 49928604.00, Delta: -34210550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 38645326
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 38645326 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 13232, Req: 51695.
-- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15718054.00, Expected: 49928604.00, Delta: -34210550.0000
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 38655250
-- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 38655250 pennies for infrastructure.
-- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14886, Req: 51695.
-- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 15718054.00, Expected: 49928604.00, Delta: -34210550.0000
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47893073
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47893073 pennies for infrastructure.
+- **Tick ?** | **WARNING** | get_balance: Agent 101 not found or Registry not linked or Agent not IFinancialAgent.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47243210
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47243210 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4935, Req: 51400.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 47205297
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 47205297 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6583, Req: 51485.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46393464
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46393464 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8231, Req: 51492.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46342121
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46342121 pennies for infrastructure.
+- **Tick ?** | **WARNING** | get_balance: Agent 107 not found or Registry not linked or Agent not IFinancialAgent.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 46285527
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 46285527 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 6096, Req: 51505.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45461410
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45461410 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 7744, Req: 51505.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 45391798
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 45391798 pennies for infrastructure.
+- **Tick ?** | **WARNING** | get_balance: Agent 104 not found or Registry not linked or Agent not IFinancialAgent.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 9392, Req: 51511.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44523580
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44523580 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8977, Req: 51516.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44442332
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44442332 pennies for infrastructure.
+- **Tick ?** | **WARNING** | get_balance: Agent 117 not found or Registry not linked or Agent not IFinancialAgent.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 10625, Req: 51516.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44356029
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44356029 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 10210, Req: 51520.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44263786
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44263786 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 7734, Req: 51530.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44166775
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44166775 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 7319, Req: 51534.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 44063626
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 44063626 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 8969, Req: 51534.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43955915
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43955915 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 10619, Req: 51535.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43842609
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43842609 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 10204, Req: 51541.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 121 closed down. Assets: 93974.41, Consecutive Loss Turns: 20
+  - Details: agent_id=121
+- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 122 closed down. Assets: 95305.57, Consecutive Loss Turns: 20
+  - Details: agent_id=122
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43727613
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43727613 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11854, Req: 51541.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 31171743.00, Expected: 50099741.00, Delta: -18927998.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43681607
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43681607 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 11439, Req: 51545.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 31171743.00, Expected: 50099741.00, Delta: -18927998.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43633211
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43633211 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 13089, Req: 51547.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 31171743.00, Expected: 50099741.00, Delta: -18927998.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43582410
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43582410 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 12674, Req: 51551.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 31171743.00, Expected: 50099741.00, Delta: -18927998.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 43529690
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 43529690 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 14324, Req: 51551.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 31171743.00, Expected: 50099741.00, Delta: -18927998.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42624831
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42624831 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 13909, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 101 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 31171743.00, Expected: 50099741.00, Delta: -18927998.0000
+- **Tick 27** | **WARNING** | FIRM_INACTIVE | Firm 120 closed down. Assets: 96431.54, Consecutive Loss Turns: 20
+  - Details: agent_id=120
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42565703
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42565703 pennies for infrastructure.
+- **Tick ?** | **WARNING** | get_balance: Agent 102 not found or Registry not linked or Agent not IFinancialAgent.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 15559, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42545229
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42545229 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 17209, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42523600
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42523600 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 18859, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42501066
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42501066 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 20509, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42219163
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42219163 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 22159, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42142850
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42142850 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 23809, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42065452
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42065452 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 25459, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42038538
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42038538 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 27109, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 42010569
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 42010569 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 28759, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 16500, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41981565
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41981565 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 30409, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 18150, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41951541
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41951541 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 32059, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19800, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41168715
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41168715 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33709, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 21450, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 116 (Inactive=True), Seller: 1 (Inactive=False) for Transaction: emergency_buy
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick ?** | **WARNING** | No handler for tx type: education_spending
+- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41135328
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41135328 pennies for infrastructure.
+- **Tick ?** | **WARNING** | get_balance: Agent 116 not found or Registry not linked or Agent not IFinancialAgent.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 35359, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 23100, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41100379
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41100379 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 37009, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 24750, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41065253
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41065253 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 38659, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 26400, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 41028775
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 41028775 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 40309, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 28050, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40991774
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40991774 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41959, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 29700, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40953853
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40953853 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 43609, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31350, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40915662
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40915662 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 45259, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33000, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40875260
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40875260 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46909, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 34650, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40835304
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40835304 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 48559, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36300, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40794483
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40794483 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 50209, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 37950, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40752812
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40752812 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 39600, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40658752
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40658752 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 41250, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 19380, Req: 58970.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40563867
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40563867 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 42900, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40519951
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40519951 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 44550, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40474768
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40474768 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 46200, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40429262
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40429262 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 47850, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40382981
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40382981 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 49500, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40129719
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40129719 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 31350, Req: 51554.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 51150, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 40030593
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 40030593 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 33000, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39878695
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39878695 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 34650, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39778099
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39778099 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 36300, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_SKIPPED | Bank 2 insufficient reserves: 1000000 < 39728337
+- **Tick ?** | **WARNING** | BOND_ISSUANCE_FAILED | Failed to raise 39728337 pennies for infrastructure.
+- **Tick ?** | **ERROR** | SETTLEMENT_FAIL | Insufficient funds. Cash: 37950, Req: 51554.
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 117 (Inactive=True) for Transaction: wage
+- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 21528589.00, Expected: 50099741.00, Delta: -28571152.0000
