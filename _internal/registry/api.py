@@ -5,8 +5,9 @@ Defines the Gemini Mission Registry API and Decorators.
 Resolves TD-DX-AUTO-CRYSTAL by enabling auto-discovery of missions.
 """
 from __future__ import annotations
-from typing import Callable, Dict, List, Optional, TypedDict, Any, Protocol
+from typing import Callable, Dict, List, Optional, TypedDict, Any, Protocol, runtime_checkable
 from dataclasses import dataclass, field
+from pathlib import Path
 import pkgutil
 import importlib
 import inspect
@@ -117,9 +118,9 @@ class GeminiMissionRegistry:
         return None
 
     def to_manifest(self) -> Dict[str, Dict[str, Any]]:
-        manifest = {}
+        manifest: Dict[str, Dict[str, Any]] = {}
         for key, mission in self._missions.items():
-            manifest[key] = mission.definition # TypedDict is compatible with Dict
+            manifest[key] = mission.to_dict()
         return manifest
 
     def scan_packages(self, package_path: str) -> None:
@@ -199,3 +200,104 @@ def gemini_mission(
         mission_registry.register(key, definition, metadata)
         return func
     return decorator
+
+# --- Command Registry API ---
+
+@dataclass
+class CommandContext:
+    """
+    Context object passed to every command execution.
+    Encapsulates environment configuration and lazy service access.
+    """
+    base_dir: Path
+    # Paths to critical registry files
+    gemini_manifest_path: Path
+    jules_manifest_path: Path
+    gemini_registry_json: Path
+    jules_registry_json: Path
+    
+    # Raw arguments passed from CLI (excluding the command name itself)
+    raw_args: List[str] = field(default_factory=list)
+    
+    # Environment flags
+    is_interactive: bool = False
+    
+    # Service Provider (Lazy Access)
+    # Type is 'Any' to avoid circular imports with Service definitions, 
+    # but implementation should use a specific ServiceProvider class.
+    service_provider: Any = None 
+
+@dataclass
+class CommandResult:
+    """
+    Standardized return object for command execution.
+    """
+    success: bool
+    message: str
+    exit_code: int = 0
+    data: Optional[Dict[str, Any]] = None
+
+# --- Interfaces ---
+
+@runtime_checkable
+class ICommand(Protocol):
+    """
+    Interface for all executable commands (Fixed or Dynamic Dispatchers).
+    """
+    
+    @property
+    def name(self) -> str:
+        """The primary invocation name of the command (e.g., 'git-review')."""
+        ...
+        
+    @property
+    def description(self) -> str:
+        """Short description for help text."""
+        ...
+        
+    def execute(self, ctx: CommandContext) -> CommandResult:
+        """
+        Executes the command logic.
+        
+        Args:
+            ctx: The execution context containing paths and services.
+            
+        Returns:
+            CommandResult indicating success/failure.
+        """
+        ...
+
+@runtime_checkable
+class IFixedCommandRegistry(Protocol):
+    """
+    Interface for the immutable registry of system commands.
+    """
+    
+    def register(self, command: ICommand) -> None:
+        """Registers a command implementation."""
+        ...
+        
+    def get_command(self, name: str) -> Optional[ICommand]:
+        """Retrieves a command by name."""
+        ...
+        
+    def list_commands(self) -> List[str]:
+        """Lists all registered command names."""
+        ...
+        
+    def has_command(self, name: str) -> bool:
+        """Checks if a command exists."""
+        ...
+
+@runtime_checkable
+class IServiceProvider(Protocol):
+    """
+    Interface for providing services lazily.
+    """
+    def get_gemini_service(self) -> Any:
+        """Returns the Gemini MissionRegistryService, initializing it if necessary."""
+        ...
+        
+    def get_jules_service(self) -> Any:
+        """Returns the Jules MissionRegistryService, initializing it if necessary."""
+        ...

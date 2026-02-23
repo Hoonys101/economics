@@ -105,5 +105,16 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
             "_internal/scripts/commands/git.py"
         ],
         "output_path": "gemini-output/spec/MISSION_fixed_command_registry_SPEC.md"
+    },
+    "MISSION_government_dto_hygiene_spec": {
+        "title": "Government DTO Hygiene & Circular Dependency Fix",
+        "worker": "spec",
+        "instruction": "modules/government/dtos.py 파일에서 발생한 중복 필드 정의(income_tax_rate, corporate_tax_rate)를 제거하고, simulation/dtos/api.py와 modules/government/dtos.py에 이중으로 정의되어 순환 참조 위험을 일으키는 GovernmentSensoryDTO를 modules/government/dtos.py로 단일화하기 위한 상세 기술 사양서(SPEC)를 작성하십시오. 이 과정에서 MyPy 에러와 런타임 Import 에러를 완전히 해결하는 것을 목표로 합니다.",
+        "context_files": [
+            "modules/government/dtos.py",
+            "simulation/dtos/api.py",
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+        ],
+        "output_path": "gemini-output/spec/MISSION_government_dto_hygiene_SPEC.md"
     }
 }

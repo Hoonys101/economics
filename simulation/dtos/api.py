@@ -512,23 +512,7 @@ class LeisureEffectDTO:
     utility_gained: float       # 사회적 만족
     xp_gained: float           # 자녀 XP 증가 (Parenting) 또는 본인 생산성 (Self-Dev)
 
-@dataclass
-class GovernmentSensoryDTO:
-    """
-    WO-057-B: Sensory Module DTO.
-    Transfers 10-tick SMA macro data to the Government Agent.
-    """
-    tick: int
-    inflation_sma: float
-    unemployment_sma: float
-    gdp_growth_sma: float
-    wage_sma: float
-    approval_sma: float
-    current_gdp: float
-    # WO-057-A: Added for AdaptiveGovBrain
-    gini_index: float = 0.0
-    approval_low_asset: float = 0.5
-    approval_high_asset: float = 0.5
+from modules.government.dtos import GovernmentSensoryDTO
 
 @dataclass
 class MacroFinancialContext:

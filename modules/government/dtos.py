@@ -66,13 +66,11 @@ class GovernmentStateDTO:
     total_debt: int # MIGRATION: pennies
     income_tax_rate: float
     corporate_tax_rate: float
-    income_tax_rate: float
-    corporate_tax_rate: float
     policy: GovernmentPolicyDTO
     ruling_party: Any # e.g., PoliticalParty Enum
     approval_rating: float
     policy_lockouts: Dict[Any, int] = field(default_factory=dict) # <PolicyActionTag, locked_until_tick>
-    sensory_data: Optional['GovernmentSensoryDTO'] = None # Forward reference
+    sensory_data: Optional[GovernmentSensoryDTO] = None
     gdp_history: List[float] = field(default_factory=list)
     potential_gdp: float = 0.0
     fiscal_stance: float = 0.0

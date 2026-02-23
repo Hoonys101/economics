@@ -205,11 +205,11 @@ def mock_firms(mock_config_module, mock_logger):
         config_dto=create_firm_config_dto(),
         initial_inventory={"basic_food": 50},
     )
-    f1._deposit(1000, DEFAULT_CURRENCY)
     f1.is_active = True
     f1.total_shares = 1000.0
     f1.treasury_shares = 0.0
     f1.age = 25 # Set age for testing
+    f1._deposit(10000, DEFAULT_CURRENCY)
 
     f2_config = AgentCoreConfigDTO(
         id=102,
@@ -227,11 +227,8 @@ def mock_firms(mock_config_module, mock_logger):
         config_dto=create_firm_config_dto(),
         initial_inventory={"luxury_food": 60},
     )
-    f2._deposit(1200, DEFAULT_CURRENCY)
-    f2.is_active = False  # Inactive firm
-    f2.total_shares = 1000.0
-    f2.treasury_shares = 0.0
     f2.age = 25 # Set age for testing
+    f2._deposit(10000, DEFAULT_CURRENCY)
     return [f1, f2]
 
 
