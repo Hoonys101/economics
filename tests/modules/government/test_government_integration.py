@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from simulation.agents.government import Government
-from modules.government.dtos import WelfareResultDTO, PaymentRequestDTO, TaxCollectionResultDTO
+from modules.government.dtos import WelfareResultDTO, PaymentRequestDTO, TaxAssessmentResultDTO
 from modules.system.api import DEFAULT_CURRENCY
 from modules.government.constants import DEFAULT_TICKS_PER_YEAR
 from modules.government.api import ITaxableHousehold

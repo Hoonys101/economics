@@ -18,6 +18,7 @@ from simulation.portfolio import Portfolio
 from modules.finance.api import InsufficientFundsError, TaxCollectionResult, IPortfolioHandler, PortfolioDTO, PortfolioAsset, IFinancialAgent
 from modules.government.dtos import (
     FiscalPolicyDTO,
+    GovernmentPolicyDTO,
     PaymentRequestDTO,
     WelfareResultDTO,
     BailoutResultDTO,
@@ -25,7 +26,8 @@ from modules.government.dtos import (
     PolicyDecisionDTO,
     ExecutionResultDTO,
     FiscalContextDTO,
-    BondIssueRequestDTO
+    BondIssueRequestDTO,
+    TaxAssessmentResultDTO
 )
 from modules.government.api import (
     GovernmentExecutionContext,
@@ -239,9 +241,14 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
                 market_signals={},
                 market_data=market_data
             )
-            self.fiscal_policy = self.tax_service.determine_fiscal_stance(snapshot)
-            self.fiscal_policy.corporate_tax_rate = self.corporate_tax_rate
-            self.fiscal_policy.income_tax_rate = self.income_tax_rate
+            fiscal_policy = self.tax_service.determine_fiscal_stance(snapshot)
+            # Create NEW FiscalPolicyDTO with updated rates (since DTO is frozen)
+            self.fiscal_policy = FiscalPolicyDTO(
+                tax_brackets=fiscal_policy.tax_brackets,
+                income_tax_rate=self.income_tax_rate,
+                corporate_tax_rate=self.corporate_tax_rate,
+                vat_rate=fiscal_policy.vat_rate
+            )
 
         # 0.5. Execute Policy Engine (AI/Legacy)
         # Allows AI to override parameters before FiscalEngine calculation or as parallel decision.
@@ -589,14 +596,14 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
 
                 if success:
                     if payee == self: # Tax
-                         self.record_revenue({
-                             "success": True,
-                             "amount_collected": int(req.amount),
-                             "tax_type": "wealth_tax",
-                             "currency": req.currency,
-                             "payer_id": payer.id if hasattr(payer, 'id') else payer,
-                             "payee_id": self.id
-                         })
+                         self.record_revenue(TaxCollectionResult(
+                             success=True,
+                             amount_collected=int(req.amount),
+                             tax_type=req.memo if req.memo else "wealth_tax",
+                             payer_id=payer.id if hasattr(payer, 'id') else payer,
+                             payee_id=self.id,
+                             error_message=None
+                         ))
 
     def invest_infrastructure(self, current_tick: int, households: List[Any] = None) -> List[Transaction]:
         return self.infrastructure_manager.invest_infrastructure(current_tick, households)
@@ -706,19 +713,32 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
 
     # --- Helpers ---
     def _get_state_dto(self, tick: int) -> GovernmentStateDTO:
+        # Construct GovernmentPolicyDTO from fiscal_policy
+        policy_dto = GovernmentPolicyDTO(
+            tax_brackets=self.fiscal_policy.tax_brackets,
+            income_tax_rate=self.fiscal_policy.income_tax_rate,
+            corporate_tax_rate=self.fiscal_policy.corporate_tax_rate,
+            vat_rate=self.fiscal_policy.vat_rate,
+            # Monetary Policy (defaults or from elsewhere?)
+            target_interest_rate=0.05,
+            inflation_target=0.02,
+            unemployment_target=0.05,
+            welfare_budget_multiplier=self.welfare_budget_multiplier,
+            bailout_threshold_solvency=0.1
+        )
+
         return GovernmentStateDTO(
             tick=tick,
             assets=self.wallet.get_all_balances(),
             total_debt=self.total_debt,
             income_tax_rate=self.income_tax_rate,
             corporate_tax_rate=self.corporate_tax_rate,
-            fiscal_policy=self.fiscal_policy,
+            policy=policy_dto,
             ruling_party=self.ruling_party,
             approval_rating=self.approval_rating,
             policy_lockouts=self.policy_lockout_manager._lockouts,
             sensory_data=self.sensory_data,
             gdp_history=list(self.gdp_history),
-            welfare_budget_multiplier=self.welfare_budget_multiplier,
             potential_gdp=self.potential_gdp,
             fiscal_stance=self.fiscal_stance
         )

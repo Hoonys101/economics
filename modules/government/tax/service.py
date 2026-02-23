@@ -5,7 +5,7 @@ from modules.government.taxation.system import TaxationSystem
 from modules.government.components.fiscal_policy_manager import FiscalPolicyManager
 from modules.government.dtos import (
     FiscalPolicyDTO,
-    TaxCollectionResultDTO,
+    TaxAssessmentResultDTO,
     PaymentRequestDTO,
     IAgent
 )
@@ -84,7 +84,7 @@ class TaxService(ITaxService):
         tax_amount = round_to_pennies(taxable_wealth * wealth_tax_rate_tick)
         return int(max(0, min(tax_amount, net_worth)))
 
-    def collect_wealth_tax(self, agents: List[IAgent]) -> TaxCollectionResultDTO:
+    def collect_wealth_tax(self, agents: List[IAgent]) -> TaxAssessmentResultDTO:
         """
         Calculates wealth tax for all eligible agents and returns a DTO
         containing payment requests for the government to execute.
@@ -113,7 +113,7 @@ class TaxService(ITaxService):
                     ))
                     total_projected += tax_amount
 
-        return TaxCollectionResultDTO(
+        return TaxAssessmentResultDTO(
             payment_requests=requests,
             total_collected=int(total_projected),
             tax_type="wealth_tax"
@@ -123,13 +123,16 @@ class TaxService(ITaxService):
         """
         Updates internal ledgers based on a verified tax collection result.
         """
-        if not result['success'] or result['amount_collected'] <= 0:
+        if not result.success or result.amount_collected <= 0:
             return
 
-        amount = int(result['amount_collected'])
-        tax_type = result['tax_type']
+        amount = int(result.amount_collected)
+        tax_type = result.tax_type
 
-        cur = result.get('currency', DEFAULT_CURRENCY)
+        # TaxCollectionResult assumes default currency as per its definition in finance/api.py
+        # If multi-currency support is needed in TaxCollectionResult, it must be updated there first.
+        # For now, we assume DEFAULT_CURRENCY.
+        cur = DEFAULT_CURRENCY
 
         if cur not in self.total_collected_tax:
             self.total_collected_tax[cur] = 0

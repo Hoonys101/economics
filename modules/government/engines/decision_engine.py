@@ -95,7 +95,7 @@ class GovernmentDecisionEngine(IGovernmentDecisionEngine):
         # Counter-Cyclical Logic
         auto_cyclical = getattr(self.config, "AUTO_COUNTER_CYCLICAL_ENABLED", False)
 
-        new_income_tax_rate = state.income_tax_rate
+        new_income_tax_rate = state.policy.income_tax_rate
         action_tag = PolicyActionTag.GENERAL_ADMIN
         fiscal_stance = 0.0
 

@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from modules.government.tax.service import TaxService
-from modules.government.dtos import TaxCollectionResultDTO, PaymentRequestDTO
+from modules.government.dtos import TaxAssessmentResultDTO, PaymentRequestDTO
 from modules.system.api import DEFAULT_CURRENCY
 from simulation.factories.golden_agents import create_golden_agent
 
@@ -37,7 +37,7 @@ def test_collect_wealth_tax(tax_service, golden_agent):
     result = tax_service.collect_wealth_tax(agents)
 
     # Verification
-    assert isinstance(result, TaxCollectionResultDTO)
+    assert isinstance(result, TaxAssessmentResultDTO)
     assert len(result.payment_requests) == 1
     req = result.payment_requests[0]
     assert req.payer == golden_agent

@@ -30,6 +30,14 @@ class TaxBracketDTO:
     ceiling: Optional[int] = None
 
 @dataclass(frozen=True)
+class FiscalPolicyDTO:
+    """Snapshot of the current fiscal policy."""
+    tax_brackets: List[TaxBracketDTO] = field(default_factory=list)
+    income_tax_rate: float = 0.1
+    corporate_tax_rate: float = 0.2
+    vat_rate: float = 0.0
+
+@dataclass(frozen=True)
 class GovernmentPolicyDTO:
     """
     Unified Policy Snapshot for the Government.
@@ -64,8 +72,6 @@ class GovernmentStateDTO:
     tick: int
     assets: Dict[str, int] # MIGRATION: pennies
     total_debt: int # MIGRATION: pennies
-    income_tax_rate: float
-    corporate_tax_rate: float
     income_tax_rate: float
     corporate_tax_rate: float
     policy: GovernmentPolicyDTO
@@ -151,8 +157,8 @@ class BondIssuanceResultDTO:
     bond_dto: BondDTO
 
 @dataclass
-class TaxCollectionResultDTO:
-    """Result from a tax collection operation, containing payment requests."""
+class TaxAssessmentResultDTO:
+    """Result from a tax assessment operation, containing payment requests."""
     payment_requests: List[PaymentRequestDTO] = field(default_factory=list)
     total_collected: int = 0 # MIGRATION: pennies
     tax_type: str = ""
@@ -171,5 +177,22 @@ class BailoutResultDTO:
     """
     loan_request: BailoutLoanDTO # The DTO defining the loan terms
     payment_request: PaymentRequestDTO # The initial transfer of funds
+
+@dataclass(frozen=True)
+class BondRepaymentDetailsDTO:
+    """
+    A structured object carrying the details of a bond repayment.
+    This DTO is expected to be present in the 'metadata' field of a 'bond_repayment' Transaction.
+
+    Attributes:
+        principal_pennies: The portion of the payment that constitutes principal repayment.
+                           This amount is subject to monetary destruction if paid to the Central Bank.
+        interest_pennies: The portion of the payment that constitutes an interest payment.
+                          This is treated as a standard transfer and is not destroyed.
+        bond_id: A unique identifier for the bond being serviced.
+    """
+    principal_pennies: int
+    interest_pennies: int
+    bond_id: str
 
 # endregion
