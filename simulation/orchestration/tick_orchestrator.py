@@ -283,13 +283,18 @@ class TickOrchestrator:
 
             # Track Economics
             if state.tracker:
+                # Calculate Monetary Base (M0) for tracking
+                m0_dict = state.calculate_base_money()
+                m0_pennies = m0_dict.get(DEFAULT_CURRENCY, 0)
+
                 state.tracker.track(
                     time=state.time,
                     households=state.households,
                     firms=state.firms,
                     markets=state.markets,
                     money_supply=current_money,
-                    m2_leak=m2_leak_delta
+                    m2_leak=m2_leak_delta,
+                    monetary_base=float(m0_pennies)
                 )
 
         # Phase 4.1: Market Panic Index Calculation (Architect Directive)

@@ -35,6 +35,7 @@ class EconomicIndicatorTracker:
             "unemployment_rate": [],
             "avg_wage": [],
             "money_supply": [],
+            "monetary_base": [],
             "total_labor_income": [],
             "total_sales_volume": [],
             # TD-015: New Centralized Metrics
@@ -203,6 +204,7 @@ class EconomicIndicatorTracker:
         markets: Dict[str, Market],
         money_supply: float = 0.0,
         m2_leak: float = 0.0,
+        monetary_base: float = 0.0,
     ) -> None:
         """현재 시뮬레이션 틱의 경제 지표를 계산하고 기록합니다."""
         self.logger.debug(
@@ -213,6 +215,7 @@ class EconomicIndicatorTracker:
 
         # WO-043: Track Money Supply
         record["money_supply"] = money_supply
+        record["monetary_base"] = monetary_base
 
         # Perform calculations...
         # TD-213: Tracks all assets converted to DEFAULT_CURRENCY.

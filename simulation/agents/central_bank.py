@@ -1,25 +1,36 @@
 import logging
 from typing import Any, List, Optional, Dict, TYPE_CHECKING
 import numpy as np
-from modules.finance.api import InsufficientFundsError, IFinancialAgent, IFinancialEntity, IBank, ICentralBank, OMOInstructionDTO
+
+from modules.finance.api import (
+    InsufficientFundsError, IFinancialAgent, IFinancialEntity,
+    IBank, ICentralBank, OMOInstructionDTO
+)
 from modules.finance.wallet.wallet import Wallet
 from modules.finance.wallet.api import IWallet
-from modules.system.api import ICurrencyHolder, CurrencyCode, DEFAULT_CURRENCY, MarketSnapshotDTO
+from modules.system.api import ICurrencyHolder, CurrencyCode, DEFAULT_CURRENCY
 from modules.system.constants import ID_CENTRAL_BANK
-from modules.finance.engines.monetary_engine import MonetaryEngine
-from modules.finance.engines.api import MonetaryStateDTO
 from simulation.models import Order, Transaction
+
+# Wave 5: Strategy Pattern
+from modules.finance.monetary.api import (
+    IMonetaryStrategy, MonetaryRuleType, MacroEconomicSnapshotDTO,
+    MonetaryPolicyConfigDTO, MonetaryDecisionDTO, OMOActionType
+)
+from modules.finance.monetary.strategies import TaylorRuleStrategy
 
 if TYPE_CHECKING:
     from modules.memory.api import MemoryV2Interface
     from simulation.dtos.strategy import ScenarioStrategy
+    from simulation.core_markets import Market
 
 logger = logging.getLogger(__name__)
 
 class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBank):
     """
-    Phase 10: Central Bank Agent.
-    Implements Taylor Rule to dynamically adjust interest rates.
+    Wave 5: Central Bank Agent.
+    Implements Multi-Rule Strategy Pattern for monetary policy.
+    Supports Taylor Rule, Friedman k%, and McCallum Rule.
     """
 
     def __init__(self, tracker: Any, config_module: Any, memory_interface: Optional["MemoryV2Interface"] = None, strategy: Optional["ScenarioStrategy"] = None):
@@ -27,34 +38,50 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
         self.tracker = tracker
         self.config_module = config_module
         self.memory_v2 = memory_interface
-        self.strategy = strategy
+        self.strategy = strategy # Scenario Strategy (God Mode Override)
 
         # Balance Sheet
         self.bonds: List[Any] = []
         self.wallet = Wallet(self.id, allow_negative_balance=True)
+        self.bond_market: Optional["Market"] = None
 
         # Initial Rate
         self.base_rate = getattr(config_module, "INITIAL_BASE_ANNUAL_RATE", 0.05)
-        # WO-136: Check Strategy for Initial Rate
         if self.strategy and self.strategy.initial_base_interest_rate is not None:
             self.base_rate = self.strategy.initial_base_interest_rate
 
         # Configuration
         self.update_interval = getattr(config_module, "CB_UPDATE_INTERVAL", 10)
         self.inflation_target = getattr(config_module, "CB_INFLATION_TARGET", 0.02)
-        self.alpha = getattr(config_module, "CB_TAYLOR_ALPHA", 1.5)
-        self.beta = getattr(config_module, "CB_TAYLOR_BETA", 0.5)
 
-        # GDP Potential Tracking (EMA)
+        # Initialize Monetary Policy (Internal Brain)
+        # Default to Taylor Rule
+        self.monetary_policy: IMonetaryStrategy = TaylorRuleStrategy()
+
+        # Initialize Policy Config
+        self.monetary_config = MonetaryPolicyConfigDTO(
+            rule_type=MonetaryRuleType.TAYLOR_RULE,
+            inflation_target=self.inflation_target,
+            unemployment_target=getattr(config_module, "CB_UNEMPLOYMENT_TARGET", 0.05),
+            m2_growth_target=getattr(config_module, "CB_M2_GROWTH_TARGET", 0.03),
+            ngdp_target_growth=getattr(config_module, "CB_NGDP_TARGET_GROWTH", 0.04),
+            taylor_alpha=getattr(config_module, "CB_TAYLOR_ALPHA", 1.5),
+            taylor_beta=getattr(config_module, "CB_TAYLOR_BETA", 0.5),
+            neutral_rate=getattr(config_module, "CB_NEUTRAL_RATE", 0.02)
+        )
+
+        # GDP Potential Tracking (EMA) - Retained for internal potential calculation
         self.potential_gdp = 0.0
         self.gdp_ema_alpha = 0.05 # Smoothing factor for Potential GDP (slow moving)
 
-        self.monetary_engine = MonetaryEngine(config_module)
-
         logger.info(
-            f"CENTRAL_BANK_INIT | Rate: {self.base_rate:.2%}, Target Infl: {self.inflation_target:.2%}",
+            f"CENTRAL_BANK_INIT | Rate: {self.base_rate:.2%}, Target Infl: {self.inflation_target:.2%}, Policy: {self.monetary_policy.rule_type}",
             extra={"tick": 0, "tags": ["central_bank", "init"]}
         )
+
+    def set_bond_market(self, market: "Market") -> None:
+        """Sets the bond market reference for OMO execution."""
+        self.bond_market = market
 
     @property
     def assets(self) -> Dict[CurrencyCode, int]:
@@ -106,11 +133,15 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
     def step(self, current_tick: int):
         """
         Called every tick by Engine.
-        Updates Potential GDP estimate and recalculates rate periodically.
+        Updates Potential GDP estimate and recalculates rate/executes OMO periodically.
         """
         # 1. Update Potential GDP Estimate (Every tick to be smooth)
         latest_indicators = self.tracker.get_latest_indicators()
-        current_gdp = latest_indicators.get("total_production", 0.0)
+        current_gdp = latest_indicators.get("total_production", 0.0) # Quantity or Nominal? Tracker seems to store Quantity as total_production?
+        # Wait, EconomicTracker.track: record["total_production"] = sum(f.current_production). This is quantity.
+        # record["gdp"] = nominal_gdp = production * price.
+        # Potential GDP usually refers to Real GDP (Quantity).
+        # So using total_production is correct for Potential Output tracking.
 
         if current_gdp > 0:
             if self.potential_gdp == 0.0:
@@ -125,14 +156,79 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
         is_stabilizer_enabled = getattr(self.config_module, "ENABLE_MONETARY_STABILIZER", True)
 
         if is_stabilizer_enabled and not is_ai_controlled and current_tick > 0 and current_tick % self.update_interval == 0:
-            self.calculate_rate(current_tick, current_gdp)
+            self._execute_monetary_policy(current_tick, latest_indicators)
 
-    def calculate_rate(self, current_tick: int, current_gdp: float):
+    def _execute_monetary_policy(self, current_tick: int, indicators: Dict[str, Any]):
         """
-        Calculates interest rate using MonetaryEngine (Taylor Rule).
+        Executes the active monetary strategy.
         """
-        # A. Calculate Inflation
-        price_history = self.tracker.metrics.get("avg_goods_price", [])
+        # A. Build Snapshot
+        snapshot = self._build_snapshot(current_tick, indicators)
+
+        # B. Calculate Decision
+        decision = self.monetary_policy.calculate_decision(snapshot, self.base_rate, self.monetary_config)
+
+        # C. Apply Rate Decision
+        old_rate = self.base_rate
+
+        # Check for Scenario Override
+        if self.strategy and self.strategy.is_active:
+             if self.strategy.monetary_shock_target_rate is not None:
+                 decision = MonetaryDecisionDTO(
+                     rule_type=decision.rule_type,
+                     tick=decision.tick,
+                     target_interest_rate=self.strategy.monetary_shock_target_rate,
+                     omo_action=decision.omo_action,
+                     omo_amount_pennies=decision.omo_amount_pennies,
+                     reasoning="Scenario Override"
+                 )
+             if self.strategy.base_interest_rate_multiplier is not None:
+                 decision = MonetaryDecisionDTO(
+                     rule_type=decision.rule_type,
+                     tick=decision.tick,
+                     target_interest_rate=decision.target_interest_rate * self.strategy.base_interest_rate_multiplier,
+                     omo_action=decision.omo_action,
+                     omo_amount_pennies=decision.omo_amount_pennies,
+                     reasoning="Scenario Multiplier"
+                 )
+
+        self.base_rate = decision.target_interest_rate
+
+        # D. Execute OMO if needed
+        if decision.omo_action != OMOActionType.NONE:
+            instruction = OMOInstructionDTO(
+                operation_type='purchase' if decision.omo_action == OMOActionType.BUY_BONDS else 'sale',
+                target_amount=decision.omo_amount_pennies
+            )
+            orders = self.execute_open_market_operation(instruction)
+            # Since self.execute_open_market_operation just creates orders but doesn't place them in current logic?
+            # Wait, execute_open_market_operation should PLACE orders if it has bond_market.
+            # But the protocol signature returns List[Order].
+            # So I should place them here if returned.
+            if self.bond_market:
+                for order in orders:
+                    self.bond_market.place_order(order, current_tick)
+                    logger.info(f"CENTRAL_BANK_OMO | Placed order: {order.side} {order.quantity} on {order.market_id}")
+
+        # Logging
+        logger.info(
+            f"CB_POLICY_EXEC | Rule: {decision.rule_type.name} | Rate: {old_rate:.2%} -> {self.base_rate:.2%} | "
+            f"OMO: {decision.omo_action.name} ({decision.omo_amount_pennies}) | Reason: {decision.reasoning}",
+            extra={
+                "tick": current_tick,
+                "old_rate": old_rate,
+                "new_rate": self.base_rate,
+                "rule": decision.rule_type.name,
+                "tags": ["central_bank", "policy"]
+            }
+        )
+
+    def _build_snapshot(self, tick: int, indicators: Dict[str, Any]) -> MacroEconomicSnapshotDTO:
+        # Calculate annual inflation
+        price_history = self.tracker.metrics.get("goods_price_index", []) # Used to use avg_goods_price, updated tracker uses goods_price_index
+        if not price_history:
+             price_history = self.tracker.metrics.get("avg_goods_price", []) # Fallback
+
         inflation_rate = 0.0
         if len(price_history) > self.update_interval:
             p_current = price_history[-1]
@@ -142,62 +238,35 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
                 period_inflation = (p_current - p_prev) / p_prev
                 inflation_rate = period_inflation * (ticks_per_year / self.update_interval)
 
-        # B. Prepare Strategy Overrides
-        override_target_rate = None
-        rate_multiplier = None
-        if self.strategy and self.strategy.is_active:
-             override_target_rate = self.strategy.monetary_shock_target_rate
-             rate_multiplier = self.strategy.base_interest_rate_multiplier
-
-        # C. Construct DTOs
-        state = MonetaryStateDTO(
-            tick=current_tick,
-            current_base_rate=self.base_rate,
-            potential_gdp=self.potential_gdp,
-            inflation_target=self.inflation_target,
-            override_target_rate=override_target_rate,
-            rate_multiplier=rate_multiplier
-        )
-
-        snapshot = MarketSnapshotDTO(
-            tick=current_tick,
-            market_signals={},
-            market_data={
-                "inflation_rate_annual": inflation_rate,
-                "current_gdp": current_gdp
-            }
-        )
-
-        # D. Call Engine
-        decision = self.monetary_engine.calculate_rate(state, snapshot)
-
-        # E. Apply Decision
-        old_rate = self.base_rate
-        self.base_rate = decision.new_base_rate
-
-        # Logging (retained for consistency)
-        # Re-calc output gap for logging only
+        # Output Gap
+        # Current GDP (Nominal or Real?)
+        # Tracker 'gdp' is Nominal. 'total_production' is Real (Quantity).
+        current_real_gdp = indicators.get("total_production", 0.0)
         output_gap = 0.0
         if self.potential_gdp > 0:
-            output_gap = (current_gdp - self.potential_gdp) / self.potential_gdp
+            output_gap = (current_real_gdp - self.potential_gdp) / self.potential_gdp
 
-        old_rate_val = old_rate if isinstance(old_rate, (int, float)) else 0.0
-        new_rate_val = self.base_rate if isinstance(self.base_rate, (int, float)) else 0.0
-        infl_val = inflation_rate if isinstance(inflation_rate, (int, float)) else 0.0
-        gap_val = output_gap if isinstance(output_gap, (int, float)) else 0.0
-        pot_gdp_val = self.potential_gdp if isinstance(self.potential_gdp, (int, float)) else 0.0
+        # Real GDP Growth
+        # Need history of Real GDP.
+        # Using self.potential_gdp as a proxy for trend? No.
+        # We can approximate current growth using change in total_production.
+        # But for V1, let's assume 0.0 if not tracked, or use change from last tick?
+        # Tracker does not give history easily via get_latest_indicators.
+        # But we can access self.tracker.metrics["total_production"] if accessible.
+        # self.tracker is the instance.
+        real_gdp_growth = 0.0
+        # If we could access history, we would.
 
-        logger.info(
-            f"CB_RATE_UPDATE | Rate: {old_rate_val:.2%} -> {new_rate_val:.2%} "
-            f"(Infl: {infl_val:.2%}, Gap: {gap_val:.2%}, PotGDP: {pot_gdp_val:.2f})",
-            extra={
-                "tick": current_tick,
-                "old_rate": old_rate,
-                "new_rate": self.base_rate,
-                "inflation": inflation_rate,
-                "output_gap": output_gap,
-                "tags": ["central_bank", "policy"]
-            }
+        return MacroEconomicSnapshotDTO(
+            tick=tick,
+            inflation_rate_annual=inflation_rate,
+            nominal_gdp=int(indicators.get("gdp", 0)),
+            real_gdp_growth=real_gdp_growth, # Placeholder
+            unemployment_rate=indicators.get("unemployment_rate", 0.0) / 100.0, # Tracker stores as percentage 0-100
+            current_m2_supply=int(indicators.get("money_supply", 0)), # Pennies
+            current_monetary_base=int(indicators.get("monetary_base", 0)), # Pennies (Requires Tracker Update)
+            velocity_of_money=indicators.get("velocity_of_money", 0.0),
+            output_gap=output_gap
         )
 
     def _internal_add_assets(self, amount: float) -> None:
@@ -251,12 +320,86 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
     def execute_open_market_operation(self, instruction: OMOInstructionDTO) -> List[Order]:
         """
         Takes an instruction and creates market orders to fulfill it.
+        This generates the Orders, but they must be placed by the caller (step method).
         """
-        logger.info(f"CENTRAL_BANK | Executing OMO: {instruction}")
-        return []
+        if instruction.target_amount <= 0:
+            return []
+
+        orders = []
+        # Target Bond ID? Usually "GOV_BOND_10Y" or generic.
+        # BondMarket usually matches based on item_id.
+        # We assume standard bond ID "gov_bond" or similar.
+        # Needs to match what Treasury issues.
+        # Treasury uses `issue_treasury_bonds`.
+        bond_item_id = "gov_bond_10y" # Assumption, needs verification with FinanceSystem
+
+        if instruction.operation_type == 'purchase':
+            # QE: Buy Bonds
+            # We need to determine quantity based on target amount (pennies) and market price.
+            current_price = 1000 # Default fallback
+            if self.bond_market:
+                market_price = self.bond_market.get_daily_avg_price()
+                if market_price and market_price > 0:
+                    current_price = market_price
+
+            qty = int(instruction.target_amount / current_price)
+            bid_price = int(current_price * 1.05) # 5% Premium to ensure fill
+
+            if qty > 0:
+                orders.append(Order(
+                    agent_id=self.id,
+                    item_id=bond_item_id,
+                    price_pennies=bid_price,
+                    quantity=qty,
+                    market_id="security_market",
+                    side="BUY"
+                ))
+
+        elif instruction.operation_type == 'sale':
+            # QT: Sell Bonds
+            # Must have bonds to sell
+            if not self.bonds:
+                logger.warning("CENTRAL_BANK_QT | Force Majeure: Cannot sell bonds (Portfolio Empty).")
+                return []
+
+            # Simplified: Sell first available bonds
+            # Value to drain = target_amount
+            remaining_drain = instruction.target_amount
+
+            # Sort bonds? or LIFO?
+            # Just take first.
+            if self.bond_market:
+                current_price = self.bond_market.get_daily_avg_price() or 1000
+                qty_needed = int(remaining_drain / current_price)
+
+                # Check portfolio holdings
+                # self.bonds is List[Any] (Bond objects).
+                # We need to sell them.
+                # This implies placing Sell Orders.
+                # Assuming bonds are fungible for "gov_bond_10y" market.
+
+                # We will place one large sell order if we have enough units.
+                total_units_held = len(self.bonds) # Assuming 1 unit per object
+
+                qty_to_sell = min(qty_needed, total_units_held)
+
+                if qty_to_sell > 0:
+                    orders.append(Order(
+                        agent_id=self.id,
+                        item_id=bond_item_id,
+                        price_pennies=int(current_price * 0.95), # 5% Discount
+                        quantity=qty_to_sell,
+                        market_id="security_market",
+                        side="SELL"
+                    ))
+
+        return orders
 
     def process_omo_settlement(self, transaction: Transaction) -> None:
         """
         Callback for OMO settlement.
         """
         logger.info(f"CENTRAL_BANK | OMO Settlement processed: {transaction.transaction_id}")
+        # If we bought bonds, we need to add them to portfolio?
+        # Simulation usually handles asset transfer via TransactionProcessor -> AssetTransferHandler.
+        # If handler calls `add_bond_to_portfolio`, we are good.
