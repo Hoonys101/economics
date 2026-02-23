@@ -47,6 +47,7 @@ from simulation.systems.handlers.goods_handler import GoodsTransactionHandler
 from simulation.systems.handlers.labor_handler import LaborTransactionHandler
 from simulation.systems.handlers.stock_handler import StockTransactionHandler
 from simulation.systems.handlers.asset_transfer_handler import AssetTransferHandler
+from simulation.systems.handlers.transfer_handler import DefaultTransferHandler
 from modules.market.handlers.housing_transaction_handler import HousingTransactionHandler
 from modules.housing.service import HousingService
 from simulation.systems.handlers.inheritance_handler import InheritanceHandler
@@ -328,6 +329,7 @@ class SimulationInitializer(SimulationInitializerInterface):
         sim.transaction_processor.register_handler('research_labor', LaborTransactionHandler())
         sim.transaction_processor.register_handler('stock', StockTransactionHandler())
         sim.transaction_processor.register_handler('asset_transfer', AssetTransferHandler())
+        sim.transaction_processor.register_handler('transfer', DefaultTransferHandler())
         sim.transaction_processor.register_handler('housing', HousingTransactionHandler())
         monetary_handler = MonetaryTransactionHandler()
         sim.transaction_processor.register_handler('lender_of_last_resort', monetary_handler)
