@@ -27,9 +27,9 @@
 | **TD-ARCH-ORCH-HARD** | Architecture | **Orchestrator Fragility**: `TickOrchestrator` lacks hardening against missing DTO attributes in mocks. | **Medium**: Resilience. | **NEW (PH21)** |
 | **TD-ARCH-SETTLEMENT-BLOAT** | Architecture | **Settlement Overload**: `SettlementSystem` handles orchestration, ledgers, metrics, and indices. | **High**: Maintainability. | **RESOLVED (PH4.1)** |
 | **TD-CONFIG-HARDCODED-MAJORS** | Configuration | **Hardcoded Majors**: `MAJORS` list hardcoded in `labor/constants.py` instead of yaml. | **Low**: Flexibility. | **RESOLVED (PH4.1)** |
-| **TD-ECON-M2-REGRESSION** | Economic | **M2 Inversion Regression**: Money supply drops negative (e.g., -153M). | **CRITICAL**: Integrity. | **RE-CONFIRMED (PH21)** |
-| **TD-FIN-SAGA-REGRESSION** | Finance | **Saga Drift Regression**: Sagas skipped due to missing participant IDs. | **High**: Protocol. | **RE-CONFIRMED (PH21)** |
-| **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firm Bug**: Atomic startup failure where transactions precede registration. | **CRITICAL**: Integrity. | **NEW (PH21)** |
+| **TD-ECON-M2-REGRESSION** | Economic | **M2 Negative Inversion**: `calculate_total_money()` sums negative balances. | **CRITICAL**: Integrity. | **SPECCED (PH22)** |
+| **TD-FIN-SAGA-REGRESSION** | Finance | **Saga Drift**: Sagas skipped due to missing/dead participant IDs. | **High**: Protocol. | **SPECCED (PH22)** |
+| **TD-LIFECYCLE-GHOST-FIRM** | Lifecycle | **Ghost Firm Bug**: Transactions precede registration during startup. | **CRITICAL**: Integrity. | **SPECCED (PH22)** |
 | **TD-BANK-RESERVE-CRUNCH** | Finance | **Reserve Constraint**: Bank 2 lacks reserves (1M) to fund infrastructure bonds (8M+). | **Medium**: Logic. | **NEW** |
 | **TD-ECON-ZOMBIE-FIRM** | Economic | **Firm Extinction**: Rapid collapse of basic_food firms causing FIRE_SALE spam. | **High**: Balance. | **NEW** |
 | **TD-ARCH-SEO-LEGACY** | Firm | **Legacy SEO Gap**: `brain_scan` skips legacy decision logic unless mocked. | **Medium**: AI Integrity. | **NEW (PH4.1)** |
@@ -45,6 +45,7 @@
 | **TD-SYS-ANALYTICS-DIRECT** | Systems | **Stateless Bypass**: `AnalyticsSystem` calls agent methods instead of using DTO snapshots. | **Medium**: Pattern violation. | **NEW (AUDIT)** |
 | **TD-DX-CONTEXT-BLOAT** | DX / Infra | **Context Bloat**: `git-go` review injects full `.py` source files (~30 files) instead of lightweight `.pyi` stubs. | **Medium**: Token waste / Review quality. | **NEW** |
 | **TD-DX-RECORD-REVENUE-DICT** | DTO Hygiene | **Dict→DTO Migration**: `record_revenue` called with raw `dict` instead of `TaxCollectionResult` DTO. | **High**: Runtime crash. | **RESOLVED** |
+| **TD-SYS-TRANSFER-HANDLER-GAP** | Systems | **Handler Omission**: Simple "transfer" type transactions lack a handler in `TransactionProcessor`. | **CRITICAL**: Accounting Invisibility. | **NEW (WV5)** |
 
 ---
 
@@ -75,10 +76,10 @@
 
 ### ID: TD-FIN-SAGA-REGRESSION
 - **Title**: Saga Participant Drift (Regression)
-- **Symptom**: Massive spam of `SAGA_SKIP` logs with missing participant IDs.
-- **Risk**: Transactions, specially complex workflows, fail to complete, destroying protocol execution rates.
-- **Solution**: Revisit Saga definitions or the state injection in `TickOrchestrator` to ensure IDs are propagated correctly.
-- **Status**: REGRESSION (Phase 4.1 Diagnostics)
+- **Symptom**: Massive spam of `SAGA_SKIP` logs with missing participant IDs. Sagas persist references to dead/failed agents.
+- **Risk**: Transactions fail to complete; orphaned processes consume compute cycles.
+- **Solution**: Re-verify ID propagation in `TickOrchestrator`. Implement saga cleanup for dead participants.
+- **Status**: SPECCED (Phase 22)
 
 ### ID: TD-BANK-RESERVE-CRUNCH
 - **Title**: Bank Reserve Structural Constraint
@@ -107,8 +108,8 @@
 - **Title**: M2 Negative Inversion (Regression)
 - **Symptom**: Aggregate money supply goes negative (`Current: -153521427.00`).
 - **Risk**: Deflationary spiral, math errors in interest calculation.
-- **Solution**: The distinction between liquidity and liability added earlier was either reverted or bypassing standard accounting loops. Needs investigation.
-- **Status**: REGRESSION (Phase 4.1 Diagnostics)
+- **Solution**: Update `calculate_total_money()` to `Sum(max(0, balance_i))`. Track negative balances as `SystemDebt`, not M2 deduction.
+- **Status**: SPECCED (Phase 22)
 
 ### ID: TD-ECON-ZOMBIE-FIRM
 - **Title**: Rapid Extinction of basic_food Firms
@@ -141,10 +142,10 @@
 ---
 ### ID: TD-LIFECYCLE-GHOST-FIRM
 - **Title**: Atomic Startup Failure (Ghost Firm Bug)
-- **Symptom**: `SETTLEMENT_FAIL` with "Destination account does not exist" for new firms.
-- **Risk**: Capital injections fail silently or corruptly, leaving firms in "Zombie" states or mismatched balances.
+- **Symptom**: `SETTLEMENT_FAIL | Engine Error: Destination account does not exist: [IDs]`.
+- **Risk**: Capital injections fail silently, leaving firms in "Zombie" states. Investor funds may be debited without corresponding credit.
 - **Solution**: Implement `FirmFactory` to ensure Registration -> Bank Account Opening -> Injection sequence is atomic and blocking.
-- **Status**: NEW (Phase 21 Audit)
+- **Status**: SPECCED (Phase 22)
 
 ### ID: TD-CONFIG-HARDCODED-MAJORS
 - **Title**: Hardcoded Labor Majors
@@ -168,6 +169,13 @@
 - **Impact**: 컨텍스트 토큰 사용량 ~90% 감소 예상, 리뷰 정확도 향상.
 - **Priority**: Medium
 - **Status**: NEW
+
+### ID: TD-SYS-TRANSFER-HANDLER-GAP
+- **Title**: Generic Transfer Handler Omission
+- **Symptom**: `SettlementSystem._create_transaction_record` hardcodes `transaction_type="transfer"`. The `TransactionProcessor` lacks a handler for this type, causing P2P transfers to be silently skipped during ledger processing.
+- **Risk**: Absolute accounting failure for non-market transfers. The `MonetaryLedger` only sees transactions with specialized handlers (LLR, Tax, Goods), creating a massive "dark pool" of money movement.
+- **Solution**: Register a `DefaultTransferHandler` in `initializer.py` or update `SettlementSystem` to use specific types for all operations.
+- **Status**: NEW (Wave 5 Audit)
 
 ---
 > [!NOTE]

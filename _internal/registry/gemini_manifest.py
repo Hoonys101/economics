@@ -42,5 +42,22 @@ GEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {
             "scripts/operation_forensics.py"
         ],
         "output_path": "gemini-output/spec/MISSION_wave5_monetary_audit_SPEC.md"
+    },
+    "WO-WAVE6-RESTORATION-SPEC": {
+        "title": "Wave 6: Tooling Restoration & Domain Hardening Spec",
+        "worker": "spec",
+        "instruction": "Generate a comprehensive Integrated Mission Guide for Wave 6. Focus on: 1) Restoring 'ContextInjectorService' in 'dispatchers.py' using lazy imports to resolve circular dependencies. 2) Implementing a 'DefaultTransferHandler' for legacy 'transfer' type transactions to ensure ledger visibility (resolving TD-SYS-TRANSFER-HANDLER-GAP). 3) Auditing 'LaborTransactionHandler' and 'models.py' to enforce 'total_pennies' SSoT and resolve unit inconsistencies (dollars vs pennies). Reference 'QUICKSTART.md' for architectural standards.",
+        "context_files": [
+            "_internal/registry/commands/dispatchers.py",
+            "simulation/initialization/initializer.py",
+            "simulation/systems/transaction_processor.py",
+            "simulation/systems/handlers/labor_handler.py",
+            "simulation/models.py",
+            "simulation/systems/settlement_system.py",
+            "design/QUICKSTART.md",
+            "design/HANDOVER.md",
+            "design/2_operations/ledgers/TECH_DEBT_LEDGER.md"
+        ],
+        "output_path": "gemini-output/spec/MISSION_wave6_restoration_SPEC.md"
     }
 }

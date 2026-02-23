@@ -3,23 +3,29 @@
 **Phase**: Phase 4.1: AI Logic & Simulation Re-architecture
 
 ## 🏆 Session Achievements
-This session focused on the design and implementation of Phase 4.1 core directives.
-1. **API/DTO Design Complete**: Specs were generated and approved for Labor Matching, FX Barter, and Firm SEO Brain Scan.
-2. **Implementation (AG + Jules)**:
-   - **Multi-Currency Barter-FX**: Atomic swap functionality (`execute_swap`) implemented in the Settlement System with strict zero-sum adherence. Tests passed and PR merged.
-   - **Labor Market Major-Matching**: Generic labor order book replaced with bipartite `Major`-based matching. `HIRE` state transition added to bypass financial ledgers. Tests passed and PR merged.
-3. **Governance & Registry Cleanup**: Separated Gemini and Jules command registries.
-4. **Operation Forensics**: Ran the script to diagnose live code cleanliness and stability.
+This session focused on auditing and fixing the 2.6B penny monetary leakage.
+1. **Exhaustive M2 Audit (WO-WAVE5-MONETARY-AUDIT)**: Pinpointed the root causes of the 2.6B leakage using a 11-file context analysis.
+2. **Structural Accounting Fixes Merged**:
+   - **Transaction Injection**: `CentralBankSystem` now explicitly queues M0 expansion/contraction transactions (LLR, OMO) in the global ledger.
+   - **M2 Perimeter Harmonization**: Excluded `ID_PUBLIC_MANAGER(4)` and `ID_SYSTEM(5)` from the M2 wallet summation to align with the Audit Ledger. Robustified comparison using `str()`.
+   - **Orchestration Consolidation**: Removed redundant `Phase_MonetaryProcessing` to prevent double-counting.
+3. **PR Diff Clarity**: Updated `SettlementSystem.transfer` docstrings to satisfy reviewer concerns regarding return types.
 
 ## 🛑 Pending Work / Next Session (START HERE)
-*Review `reports/diagnostic_refined.md` to see the live logs for the issues below.*
+*Review `reports/diagnostic_refined.md` to see the persistent deltas.*
 
-**1. Address Critical Forensics Regressions!**
-The `operation_forensics.py` scan identified several critical regressions and scale issues that need immediate action:
-- **`TD-ECON-M2-REGRESSION`**: The negative money supply inversion bug is back (e.g., M2 hit -153M).
-- **`TD-FIN-SAGA-REGRESSION`**: Sagas are being skipped rapidly due to missing participant IDs again.
-- **`TD-BANK-RESERVE-CRUNCH`**: Banks possess only 1M reserve and are failing to fund infrastructure bonds (8M+), halting macro-policy execution.
-- **`TD-ECON-ZOMBIE-FIRM`**: Firms (e.g., Firm 121, 122) rapidly plunge into consecutive losses, FIRE_SALE spam, ZOMBIE worker retention, and ultimate death within 30 ticks.
+**1. Investigate Tick 1 Baseline Jump (104M)**
+Despite registering system agents as currency holders in the initializer, the 104M jump persists.
+- **Worry**: Is there a hidden "Genesis" injection in the `Bootstrapper` or `GodCommand` ingestion that occurs *after* the Tick 0 baseline is frozen but *before* Tick 1 concludes?
+- **Action**: Trace the exact balance of Government (ID 1) at Tick 0 vs Tick 1.
+
+**2. Delta Creep Analysis**
+The delta continues to grow exponentially after Tick 1.
+- **Worry**: Are there implicit "leakages" in social policy distributions or bank interest payments that bypass the `SettlementSystem.transfer` return capture?
+- **Action**: Check `Government.execute_social_policy` and `Bank` interest remittance consistency.
+
+**3. Pop Local Stash**
+A stash exists ("Pre-merge stash for monetary audit fixes") containing docstring updates that were bypassed during the git merge.
 
 ## 🗺️ Roadmap Status
 We are at the tail end of **Phase 4.1**. After merging the Firm SEO branch and addressing the Forensics Regressions above, Phase 4.1 will be fundamentally structurally complete, paving the way for testing dynamic Agent Insight/AI Modules.

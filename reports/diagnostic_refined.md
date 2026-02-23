@@ -1,224 +1,1447 @@
 # Refined Diagnostic Logs
 Critical events extracted for Gemini analysis.
 
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 153239406.00, Expected: 51257114.00, Delta: 101982292.0000
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 182139558.00, Expected: 51416589.76, Delta: 130722968.2400
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 250195266.00, Expected: 51756843.30, Delta: 198438422.7000
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 800, Req: 40069.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 866293, Req: 5000000.
-- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 250200266.00, Expected: 51756843.30, Delta: 198443422.7000
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 348446070.00, Expected: 52248047.32, Delta: 296198022.6800
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 575864, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 575864, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 575864, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 575864, Req: 5000000.
-- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 348451070.00, Expected: 52248047.32, Delta: 296203022.6800
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 447232224.00, Expected: 52741928.09, Delta: 394490295.9100
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 448257422.00, Expected: 52747029.08, Delta: 395510392.9200
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 547007862.00, Expected: 53240756.28, Delta: 493767105.7200
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 548003014.00, Expected: 53245707.04, Delta: 494757306.9600
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4694804, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4694804, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4694804, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4694804, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4694804, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4694804, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4694804, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4694804, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4694804, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4694804, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4694804, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4694804, Req: 5000000.
-- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 548008014.00, Expected: 53245707.04, Delta: 494762306.9600
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 638470200.00, Expected: 53697992.97, Delta: 584772207.0300
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 647678282.00, Expected: 53744008.38, Delta: 593934273.6200
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3622805, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3622805, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3622805, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3622805, Req: 5000000.
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3622805, Req: 5000000.
-- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 647683282.00, Expected: 53744008.38, Delta: 593939273.6200
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 740245514.00, Expected: 54206794.54, Delta: 686038719.4600
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 740250514.00, Expected: 54206794.54, Delta: 686043719.4600
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 0, Req: 800.
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 1** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 145001000.00, Expected: 41001000.00, Delta: 104000000.0000
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 2** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 145001000.00, Expected: 41001000.00, Delta: 104000000.0000
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 3** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 241948986.00, Expected: 41500714.93, Delta: 200448271.0700
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 4** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 241953986.00, Expected: 41500714.93, Delta: 200453271.0700
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 5** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 341838350.00, Expected: 42000111.75, Delta: 299838238.2500
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 6** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 341843350.00, Expected: 42000111.75, Delta: 299843238.2500
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 7** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 440125576.00, Expected: 42491497.88, Delta: 397634078.1200
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 8** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 441663780.00, Expected: 42499163.90, Delta: 399164616.1000
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 9** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 539915570.00, Expected: 42990397.85, Delta: 496925172.1500
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 3830945, Req: 5000000.
+- **Tick 10** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 539920570.00, Expected: 42990397.85, Delta: 496930172.1500
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 11** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 632119344.00, Expected: 43451366.72, Delta: 588667977.2800
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 12** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 639608764.00, Expected: 43488788.82, Delta: 596119975.1800
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 13** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 731776454.00, Expected: 43949602.27, Delta: 687826851.7300
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 14** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 739234452.00, Expected: 43986867.26, Delta: 695247584.7400
 - **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 121 (Inactive=False), Seller: 114 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 740255514.00, Expected: 54206794.54, Delta: 686048719.4600
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1508184, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1508184, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1508184, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1508184, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1508184, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1508184, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1508184, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1508184, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1508184, Req: 5000000.
+- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 1508184, Req: 5000000.
+- **Tick 15** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 739239452.00, Expected: 43986867.26, Delta: 695252584.7400
 - **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 121 (Inactive=False), Seller: 114 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 748567498.00, Expected: 54248329.46, Delta: 694319168.5400
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 16** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 836001016.00, Expected: 44470650.08, Delta: 791530365.9200
 - **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 121 (Inactive=False), Seller: 114 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 839796840.00, Expected: 54704451.17, Delta: 785092388.8300
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 17** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 838786546.00, Expected: 44484552.73, Delta: 794301993.2700
 - **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 121 (Inactive=False), Seller: 114 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 122 (Inactive=False), Seller: 106 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 848077670.00, Expected: 54745830.32, Delta: 793331839.6800
-- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 121 closed down. Assets: 95359.03, Consecutive Loss Turns: 20
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 18** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 935518832.00, Expected: 44968189.16, Delta: 890550642.8400
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 121 (Inactive=False), Seller: 114 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 19** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 938273040.00, Expected: 44981935.20, Delta: 893291104.8000
+- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 121 (Inactive=False), Seller: 114 (Inactive=True) for Transaction: wage
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 20** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1034974680.00, Expected: 45465418.40, Delta: 989509261.6000
+- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 121 closed down. Assets: 95291.94, Consecutive Loss Turns: 20
   - Details: agent_id=121
-- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 122 closed down. Assets: 95706.93, Consecutive Loss Turns: 20
+- **Tick 21** | **WARNING** | FIRM_INACTIVE | Firm 122 closed down. Assets: 94195.51, Consecutive Loss Turns: 20
   - Details: agent_id=122
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 917178240.00, Expected: 55201816.15, Delta: 861976423.8500
-- **Tick 22** | **WARNING** | FIRM_INACTIVE | Firm 124 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 21** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1013035935.00, Expected: 45465418.40, Delta: 967570516.6000
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1008550935.00, Expected: 45465418.40, Delta: 963085516.6000
+- **Tick 23** | **WARNING** | FIRM_INACTIVE | Firm 124 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
   - Details: agent_id=124
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 22** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 922568194.00, Expected: 55243715.92, Delta: 867324478.0800
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1010653700.00, Expected: 55699068.45, Delta: 954954631.5500
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1019117924.00, Expected: 55741314.57, Delta: 963376609.4300
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1110178220.00, Expected: 56196541.05, Delta: 1053981678.9500
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 120 (Inactive=False), Seller: 113 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1118618902.00, Expected: 56238669.46, Delta: 1062380232.5400
-- **Tick 27** | **WARNING** | FIRM_INACTIVE | Firm 120 closed down. Assets: 94920.33, Consecutive Loss Turns: 20
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 23** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1005565935.00, Expected: 45465418.40, Delta: 960100516.6000
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 24** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1005580935.00, Expected: 45465418.40, Delta: 960115516.6000
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 25** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1005595935.00, Expected: 45465418.40, Delta: 960130516.6000
+- **Tick 26** | **WARNING** | FIRM_INACTIVE | Firm 120 closed down. Assets: 95538.45, Consecutive Loss Turns: 20
   - Details: agent_id=120
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1197169053.00, Expected: 56693780.38, Delta: 1140475272.6200
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1205664087.00, Expected: 56736155.55, Delta: 1148927931.4500
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1296684339.00, Expected: 57191156.81, Delta: 1239493182.1900
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1305158483.00, Expected: 57233427.53, Delta: 1247925055.4700
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1396051699.00, Expected: 57687793.61, Delta: 1338363905.3900
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 4213196, Req: 5000000.
-- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1404402709.00, Expected: 57729448.66, Delta: 1346673260.3400
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1495481593.00, Expected: 58184743.08, Delta: 1437296849.9200
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1513807471.00, Expected: 58276272.47, Delta: 1455531198.5300
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1604866067.00, Expected: 58731465.45, Delta: 1546134601.5500
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1623062913.00, Expected: 58822349.68, Delta: 1564240563.3200
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1714203617.00, Expected: 59277953.20, Delta: 1654925663.8000
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1732273047.00, Expected: 59368200.35, Delta: 1672904846.6500
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1823493293.00, Expected: 59824201.58, Delta: 1763669091.4200
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1841540245.00, Expected: 59914336.34, Delta: 1781625908.6600
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 26** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 993062090.00, Expected: 45465418.40, Delta: 947596671.6000
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 27** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 993082090.00, Expected: 45465418.40, Delta: 947616671.6000
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 28** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1004374118.00, Expected: 45521778.54, Delta: 958852339.4600
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 29** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1092669846.00, Expected: 45963157.18, Delta: 1046706688.8200
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 30** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1103834690.00, Expected: 46018881.40, Delta: 1057815808.6000
+- **Tick ?** | **WARNING** | LIQUIDATION_TRIGGERED | Firm 123 is insolvent. Reason: Mandatory Obligations Rejected: Unpaid Wage
+  - Details: agent_id=123
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 31** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1190756465.00, Expected: 46459106.25, Delta: 1144297358.7500
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 32** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1199200261.00, Expected: 46516200.23, Delta: 1152684060.7700
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 33** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1287344043.00, Expected: 46956794.14, Delta: 1240387248.8600
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 34** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1298767927.00, Expected: 47013788.56, Delta: 1251754138.4400
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 35** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1298792927.00, Expected: 47013788.56, Delta: 1251779138.4400
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 36** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1298817927.00, Expected: 47013788.56, Delta: 1251804138.4400
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 37** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1298842927.00, Expected: 47013788.56, Delta: 1251829138.4400
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 38** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1298867927.00, Expected: 47013788.56, Delta: 1251854138.4400
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 39** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1369641399.00, Expected: 47367530.92, Delta: 1322273868.0800
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 40** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1398291865.00, Expected: 47510658.25, Delta: 1350781206.7500
 - **Tick 41** | **WARNING** | FIRM_INACTIVE | Firm 125 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
   - Details: agent_id=125
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1928238757.00, Expected: 60370228.90, Delta: 1867868528.1000
-- **Tick 42** | **WARNING** | FIRM_INACTIVE | Firm 126 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 41** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1476148365.00, Expected: 47914815.75, Delta: 1428233549.2500
+- **Tick 42** | **WARNING** | FIRM_INACTIVE | Firm 126 closed down. Assets: 44000.00, Consecutive Loss Turns: 20
   - Details: agent_id=126
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1943264359.00, Expected: 60460256.91, Delta: 1882804102.0900
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 42** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1501778135.00, Expected: 48057839.60, Delta: 1453720295.4000
 - **Tick 43** | **WARNING** | FIRM_INACTIVE | Firm 127 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
   - Details: agent_id=127
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2031438497.00, Expected: 60916027.60, Delta: 1970522469.4000
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2049443139.00, Expected: 61005950.81, Delta: 1988437188.1900
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2140594057.00, Expected: 61461605.40, Delta: 2079132451.6000
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2158472891.00, Expected: 61550899.57, Delta: 2096921991.4300
-- **Tick 47** | **WARNING** | FIRM_INACTIVE | Firm 128 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 43** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1578114543.00, Expected: 48461896.64, Delta: 1529652646.3600
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 44** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1606722425.00, Expected: 48604811.05, Delta: 1558117613.9500
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 45** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1687433233.00, Expected: 49008240.09, Delta: 1638424992.9100
+- **Tick 46** | **WARNING** | FIRM_INACTIVE | Firm 128 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
   - Details: agent_id=128
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2246703561.00, Expected: 62006952.92, Delta: 2184696608.0800
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2264354731.00, Expected: 62095108.77, Delta: 2202259622.2300
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2355770875.00, Expected: 62552089.49, Delta: 2293218785.5100
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2373398729.00, Expected: 62640128.76, Delta: 2310758600.2400
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2464791577.00, Expected: 63096993.00, Delta: 2401694584.0000
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2482396185.00, Expected: 63184916.04, Delta: 2419211268.9600
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2573766393.00, Expected: 63641667.08, Delta: 2510124725.9200
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2591243327.00, Expected: 63728951.75, Delta: 2527514375.2500
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2682594641.00, Expected: 64185608.32, Delta: 2618409032.6800
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 109 (Inactive=True), Seller: 1 (Inactive=False) for Transaction: emergency_buy
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2682614641.00, Expected: 64185608.32, Delta: 2618429032.6800
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2682634641.00, Expected: 64185608.32, Delta: 2618449032.6800
-- **Tick ?** | **WARNING** | SETTLEMENT_FAIL | Insufficient funds. Cash: 827, Req: 50692.
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2682654641.00, Expected: 64185608.32, Delta: 2618469032.6800
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2682674641.00, Expected: 64185608.32, Delta: 2618489032.6800
-- **Tick ?** | **WARNING** | Transaction Skipped: Inactive Agent involved. Buyer: 123 (Inactive=False), Seller: 115 (Inactive=True) for Transaction: wage
-- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2682694641.00, Expected: 64185608.32, Delta: 2618509032.6800
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 46** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1713020459.00, Expected: 49151051.22, Delta: 1663869407.7800
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 47** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1793813119.00, Expected: 49554889.52, Delta: 1744258229.4800
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 48** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1822378473.00, Expected: 49697591.29, Delta: 1772680881.7100
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 49** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1903149263.00, Expected: 50101320.24, Delta: 1853047942.7600
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 50** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 1931692761.00, Expected: 50243912.73, Delta: 1881448848.2700
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 51** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2012441687.00, Expected: 50647532.36, Delta: 1961794154.6400
+- **Tick 52** | **WARNING** | FIRM_INACTIVE | Firm 129 closed down. Assets: 29000.00, Consecutive Loss Turns: 20
+  - Details: agent_id=129
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 52** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2037964533.00, Expected: 50790021.59, Delta: 1987174511.4100
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 53** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2118691609.00, Expected: 51193531.97, Delta: 2067498077.0300
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 54** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2147192615.00, Expected: 51335912.00, Delta: 2095856703.0000
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 55** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2227794135.00, Expected: 51738794.60, Delta: 2176055340.4000
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 56** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2256065907.00, Expected: 51880028.46, Delta: 2204185878.5400
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 57** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2336956783.00, Expected: 52284357.84, Delta: 2284672425.1600
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 58** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2336981783.00, Expected: 52284357.84, Delta: 2284697425.1600
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 59** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2337006783.00, Expected: 52284357.84, Delta: 2284722425.1600
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick ?** | **WARNING** | No handler for tx type: transfer
+- **Tick 60** | **WARNING** | MONEY_SUPPLY_CHECK | Current: 2337031783.00, Expected: 52284357.84, Delta: 2284747425.1600

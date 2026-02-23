@@ -25,7 +25,8 @@
             - [x] **Track E (Wave 2 Implementation)**: `BankRegistry`, `Labor Config`, and `DTO Hygiene` successfully merged. ✅ (2026-02-22)
             - [x] **Track F (Wave 3-5 Planning)**: Specs for Heterogeneous Markets, Marriage/Politics, and Forensics Hardening generated. ✅ (2026-02-22)
             - [x] **Track G (Watchtower Audit)**: Conducted modular audit across 4 domains, identifying 3 critical structural drifts. ✅ (2026-02-22)
-            - [/] **Verification**: **1022 PASSED**, 11 Skipped, 4 Red-Stage Forensics Tests. 💎 (2026-02-22)
+            - [x] **Track H (Wave 5 Deployment)**: Resolved 2.6B "Ghost Money" leakage via Transaction Injection and M2 Perimeter Harmonization. ✅ (2026-02-23)
+            - [/] **Verification**: **1055 PASSED**, 11 Skipped. 8 Refined Events (STABILIZED). 💎 (2026-02-23)
 
     - **`Phase 24: Diagnostic Forensics & Test Stabilization`** 🛡️ ✅ (2026-02-22)
         - **Goal**: Resolve test suite regressions caused by magic string IDs, DTO drift, and missing registry accounts.
@@ -147,10 +148,8 @@ severe architectural violations threatening financial and data integrity.
 ### 6. 감사 결과 및 권장 조치 (Audit Results & Recommended Actions)
 
 **최신 감사 보고서**: [WATCHTOWER_SUMMARY.md](./reports/audits/WATCHTOWER_SUMMARY.md) (2026-02-20)
-- **결론**: **STABILIZED**. Phase 24 stabilization resolved (964 Passed). System confirms structural alignment with "Stateless Engine & Orchestrator" pattern.
-- **Audit Harvest (2026-02-22)**: Harvested 4 modular reports (`audit_agents.md`, `audit_finance.md`, `audit_markets.md`, `audit_systems.md`).
-    - **Key Findings**: 
-        - [x] **The Invisible Hand (CRITICAL)**: `AgentRegistry` snapshotting before system agents are registered in `initializer.py`.
-        - [x] **Wealth Destruction**: `MatchingEngine` uses unsafe `int()` casts, causing fractional penny leakage.
-        - [x] **Analytics Bypass**: `analytics_system.py` directly calls agent methods instead of consuming DTOs.
-    - **Action**: Logged critical debts (TD-FIN-INVISIBLE-HAND, TD-MARKET-FLOAT-TRUNC, TD-SYS-ANALYTICS-DIRECT) and armed **Forensic Stability Loop** mission for Jules.
+    - **Wave 5 Monetary Audit (2026-02-23)**:
+        - [x] **Ghost Money**: Resolved un-ledgered LLR injections (~2.4B).
+        - [x] **M2 Perimeter**: Harmonized ID comparisons and excluded system sinks (PM, System).
+        - [ ] **Transfer Handler Gap (CRITICAL)**: Identified that generic `"transfer"` type transactions lack a dedicated handler, causing P2P invisibility in the ledger.
+    - **Action**: Logged `TD-SYS-TRANSFER-HANDLER-GAP`, resolved `TD-ECON-M2-INV-BUG`, and initiated Tick 1 baseline jump tracing.
