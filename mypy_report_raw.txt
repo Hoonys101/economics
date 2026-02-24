@@ -1,0 +1,1126 @@
+simulation\utils\golden_loader.py:32:46: error: Incompatible default for argument "spec" (default has type "None", argument has type "type[Any]")  [assignment]
+simulation\utils\golden_loader.py:32:46: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+simulation\utils\golden_loader.py:32:46: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+modules\testing\mock_governance\core.py:55:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\system\crystallizer\engine.py:6:1: error: Library stubs not installed for "yaml"  [import-untyped]
+modules\system\crystallizer\engine.py:98:9: error: Need type annotation for "grouped" (hint: "grouped: dict[<type>, <type>] = ...")  [var-annotated]
+modules\system\event_bus\event_bus.py:12:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\platform\infrastructure\lock_manager.py:11:18: error: Incompatible types in assignment (expression has type "None", variable has type Module)  [assignment]
+modules\platform\infrastructure\lock_manager.py:16:17: error: Incompatible types in assignment (expression has type "None", variable has type Module)  [assignment]
+modules\platform\infrastructure\lock_manager.py:60:18: error: Item "None" of "TextIO | None" has no attribute "fileno"  [union-attr]
+modules\platform\infrastructure\lock_manager.py:74:13: error: Module has no attribute "flock"  [attr-defined]
+modules\platform\infrastructure\lock_manager.py:74:42: error: Module has no attribute "LOCK_EX"  [attr-defined]
+modules\platform\infrastructure\lock_manager.py:74:58: error: Module has no attribute "LOCK_NB"  [attr-defined]
+modules\platform\infrastructure\lock_manager.py:93:21: error: Module has no attribute "flock"  [attr-defined]
+modules\platform\infrastructure\lock_manager.py:93:50: error: Module has no attribute "LOCK_UN"  [attr-defined]
+modules\government\components\policy_lockout_manager.py:16:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\common\utils\logger.py:60:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\common\utils\logger.py:78:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\common\utils\logger.py:83:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\common\utils\logger.py:84:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\common\config_manager\impl.py:3:1: error: Library stubs not installed for "yaml"  [import-untyped]
+modules\common\config_manager\impl.py:3:1: note: Hint: "python3 -m pip install types-PyYAML"
+modules\common\config_manager\impl.py:3:1: note: (or run "mypy --install-types" to install all missing stub packages)
+modules\common\config_manager\impl.py:3:1: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+simulation\initialization\api.py:12:5: error: Missing return statement  [empty-body]
+simulation\ai\q_table_manager.py:17:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+simulation\ai\learning_tracker.py:100:27: error: Need type annotation for "per_agent_stats"  [var-annotated]
+simulation\ai\household_system2.py:94:13: error: Dict entry 2 has incompatible type "str": "dict[str, float]"; expected "str": "float"  [dict-item]
+simulation\ai\household_system2.py:129:53: error: Value of type "float" is not indexable  [index]
+modules\system\api.py:16:56: error: Name "IAgent" is not defined  [name-defined]
+simulation\db\run_repository.py:27:20: error: Incompatible return value type (got "int | None", expected "int")  [return-value]
+modules\system\server_bridge.py:16:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\system\server_bridge.py:18:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\system\services\schema_loader.py:1:1: error: Library stubs not installed for "yaml"  [import-untyped]
+modules\finance\central_bank\service.py:70:36: error: Argument "target_cash_amount" to "execute_market_purchase" of "ITreasuryService" has incompatible type "float"; expected "int"  [arg-type]
+modules\finance\central_bank\service.py:77:36: error: Argument "target_cash_amount" to "execute_market_sale" of "ITreasuryService" has incompatible type "float"; expected "int"  [arg-type]
+modules\system\server.py:30:9: error: Need type annotation for "connected_clients" (hint: "connected_clients: set[<type>] = ...")  [var-annotated]
+modules\system\server.py:31:34: error: Name "websockets.WebSocketServerProtocol" is not defined  [name-defined]
+simulation\policies\taylor_rule_policy.py:7:5: error: Module "simulation.dtos" has no attribute "GovernmentStateDTO"  [attr-defined]
+simulation\policies\taylor_rule_policy.py:21:5: error: Signature of "decide" incompatible with supertype "simulation.interfaces.policy_interface.IGovernmentPolicy"  [override]
+simulation\policies\taylor_rule_policy.py:21:5: note:      Superclass:
+simulation\policies\taylor_rule_policy.py:21:5: note:          def decide(self, government: Any, market_data: dict[str, Any], current_tick: int) -> dict[str, Any]
+simulation\policies\taylor_rule_policy.py:21:5: note:      Subclass:
+simulation\policies\taylor_rule_policy.py:21:5: note:          def decide(self, government: Any, sensory_data: Any, current_tick: int, central_bank: Any) -> dict[str, Any]
+simulation\metrics\stock_tracker.py:29:37: error: Need type annotation for "market_price_history"  [var-annotated]
+simulation\metrics\stock_tracker.py:206:26: error: Argument 1 to "sum" has incompatible type "list[dict[str, int]]"; expected "Iterable[bool]"  [arg-type]
+simulation\metrics\stock_tracker.py:207:25: error: Value of type variable "_NumberT" of "median" cannot be "dict[str, int]"  [type-var]
+simulation\metrics\stock_tracker.py:243:32: error: Unsupported operand types for - ("dict[str, int]" and "float")  [operator]
+simulation\metrics\stock_tracker.py:245:42: error: Incompatible types in assignment (expression has type "dict[str, int]", target has type "float")  [assignment]
+simulation\metrics\inequality_tracker.py:69:52: error: Argument "key" to "sorted" has incompatible type "Callable[[Household], dict[str, int]]"; expected "Callable[[Household], SupportsDunderLT[Any] | SupportsDunderGT[Any]]"  [arg-type]
+simulation\metrics\inequality_tracker.py:69:62: error: Incompatible return value type (got "dict[str, int]", expected "SupportsDunderLT[Any] | SupportsDunderGT[Any]")  [return-value]
+simulation\metrics\inequality_tracker.py:109:52: error: Argument "key" to "sorted" has incompatible type "Callable[[Household], dict[str, int]]"; expected "Callable[[Household], SupportsDunderLT[Any] | SupportsDunderGT[Any]]"  [arg-type]
+simulation\metrics\inequality_tracker.py:109:62: error: Incompatible return value type (got "dict[str, int]", expected "SupportsDunderLT[Any] | SupportsDunderGT[Any]")  [return-value]
+simulation\metrics\inequality_tracker.py:120:28: error: Generator has incompatible item type "dict[str, int]"; expected "bool"  [misc]
+simulation\metrics\inequality_tracker.py:125:28: error: Generator has incompatible item type "dict[str, int]"; expected "bool"  [misc]
+simulation\metrics\inequality_tracker.py:317:37: error: Unsupported operand types for + ("dict[str, int]" and "float")  [operator]
+simulation\metrics\inequality_tracker.py:326:27: error: Argument 1 to "sum" has incompatible type "list[dict[str, int]]"; expected "Iterable[bool]"  [arg-type]
+simulation\metrics\inequality_tracker.py:327:25: error: Value of type variable "_NumberT" of "median" cannot be "dict[str, int]"  [type-var]
+simulation\metrics\inequality_tracker.py:330:66: error: Argument 1 to "calculate_gini_coefficient" of "InequalityTracker" has incompatible type "list[dict[str, int]]"; expected "list[float]"  [arg-type]
+simulation\metrics\inequality_tracker.py:333:77: error: Argument 1 to "_calculate_top_percentile_share" of "InequalityTracker" has incompatible type "list[dict[str, int]]"; expected "list[float]"  [arg-type]
+simulation\metrics\inequality_tracker.py:334:83: error: Argument 1 to "_calculate_bottom_percentile_share" of "InequalityTracker" has incompatible type "list[dict[str, int]]"; expected "list[float]"  [arg-type]
+simulation\metrics\inequality_tracker.py:337:51: error: Unsupported operand types for / ("float" and "dict[str, int]")  [operator]
+simulation\metrics\inequality_tracker.py:337:68: error: Unsupported operand types for < ("int" and "dict[str, int]")  [operator]
+simulation\db\agent_repository.py:24:30: error: Incompatible types in assignment (expression has type "int", variable has type "dict[str, int]")  [assignment]
+simulation\db\agent_repository.py:67:34: error: Incompatible types in assignment (expression has type "int", variable has type "dict[str, int]")  [assignment]
+modules\inventory\manager.py:55:5: error: Signature of "get_quantity" incompatible with supertype "modules.simulation.api.IInventoryHandler"  [override]
+modules\inventory\manager.py:55:5: note:      Superclass:
+modules\inventory\manager.py:55:5: note:          def get_quantity(self, item_id: str, slot: InventorySlot = ...) -> float
+modules\inventory\manager.py:55:5: note:      Subclass:
+modules\inventory\manager.py:55:5: note:          def get_quantity(self, item_id: str) -> float
+modules\inventory\manager.py:58:5: error: Signature of "get_quality" incompatible with supertype "modules.simulation.api.IInventoryHandler"  [override]
+modules\inventory\manager.py:58:5: note:      Superclass:
+modules\inventory\manager.py:58:5: note:          def get_quality(self, item_id: str, slot: InventorySlot = ...) -> float
+modules\inventory\manager.py:58:5: note:      Subclass:
+modules\inventory\manager.py:58:5: note:          def get_quality(self, item_id: str) -> float
+modules\inventory\manager.py:61:5: error: Signature of "get_all_items" incompatible with supertype "modules.simulation.api.IInventoryHandler"  [override]
+modules\inventory\manager.py:61:5: note:      Superclass:
+modules\inventory\manager.py:61:5: note:          def get_all_items(self, slot: InventorySlot = ...) -> dict[str, float]
+modules\inventory\manager.py:61:5: note:      Subclass:
+modules\inventory\manager.py:61:5: note:          def get_all_items(self) -> dict[str, float]
+modules\inventory\manager.py:64:5: error: Signature of "clear_inventory" incompatible with supertype "modules.simulation.api.IInventoryHandler"  [override]
+modules\inventory\manager.py:64:5: note:      Superclass:
+modules\inventory\manager.py:64:5: note:          def clear_inventory(self, slot: InventorySlot = ...) -> None
+modules\inventory\manager.py:64:5: note:      Subclass:
+modules\inventory\manager.py:64:5: note:          def clear_inventory(self) -> None
+modules\firm\services\firm_factory.py:51:17: error: "Firm" has no attribute "settlement_system"  [attr-defined]
+simulation\systems\bootstrapper.py:53:21: error: "IHREngine" has no attribute "hire"  [attr-defined]
+simulation\orchestration\dashboard_service.py:48:28: error: Incompatible types in assignment (expression has type "float | None", variable has type "float")  [assignment]
+modules\hr\api.py:24:5: error: Incompatible types in assignment (expression has type "int", base class "IFinancialAgent" defined the type as "AgentID")  [assignment]
+modules\finance\api.py:244:1: error: Name "InsufficientFundsError" already defined on line 92  [no-redef]
+modules\finance\api.py:257:1: error: Name "LoanNotFoundError" already defined on line 105  [no-redef]
+modules\finance\api.py:261:1: error: Name "LoanRepaymentError" already defined on line 109  [no-redef]
+modules\finance\api.py:265:1: error: Name "LoanRollbackError" already defined on line 113  [no-redef]
+simulation\orchestration\phases\scenario_analysis.py:87:60: error: Argument 1 to "update" of "TelemetryExchange" has incompatible type "WatchtowerV2DTO"; expected "TelemetrySnapshotDTO | MarketSnapshotDTO"  [arg-type]
+modules\market\api.py:146:22: error: Argument "agent_id" to "CanonicalOrderDTO" has incompatible type "Any | None"; expected "int | str"  [arg-type]
+modules\market\api.py:147:18: error: Argument "side" to "CanonicalOrderDTO" has incompatible type "Any | None"; expected "str"  [arg-type]
+modules\market\api.py:148:21: error: Argument "item_id" to "CanonicalOrderDTO" has incompatible type "Any | None"; expected "str"  [arg-type]
+modules\market\api.py:149:22: error: Argument "quantity" to "CanonicalOrderDTO" has incompatible type "Any | None"; expected "float"  [arg-type]
+modules\government\proxy.py:18:5: error: Cannot override writeable attribute with read-only property  [override]
+modules\government\proxy.py:18:5: error: Signature of "id" incompatible with supertype "IFinancialAgent"  [override]
+modules\government\proxy.py:18:5: note:      Superclass:
+modules\government\proxy.py:18:5: note:          AgentID
+modules\government\proxy.py:18:5: note:      Subclass:
+modules\government\proxy.py:18:5: note:          int
+modules\finance\transaction\engine.py:148:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\finance\transaction\engine.py:223:24: error: Argument "status" to "TransactionResultDTO" has incompatible type "Literal['SKIPPED']"; expected "Literal['COMPLETED', 'FAILED', 'CRITICAL_FAILURE']"  [arg-type]
+modules\finance\transaction\engine.py:302:28: error: Argument "status" to "TransactionResultDTO" has incompatible type "Literal['SKIPPED']"; expected "Literal['COMPLETED', 'FAILED', 'CRITICAL_FAILURE']"  [arg-type]
+modules\finance\transaction\engine.py:326:33: error: Argument "status" to "TransactionResultDTO" has incompatible type "str"; expected "Literal['COMPLETED', 'FAILED', 'CRITICAL_FAILURE']"  [arg-type]
+modules\finance\transaction\engine.py:365:33: error: Argument "status" to "TransactionResultDTO" has incompatible type "str"; expected "Literal['COMPLETED', 'FAILED', 'CRITICAL_FAILURE']"  [arg-type]
+modules\finance\transaction\adapter.py:110:26: error: No overload variant of "get" of "dict" matches argument type "int"  [call-overload]
+modules\finance\transaction\adapter.py:110:26: note: Possible overload variants:
+modules\finance\transaction\adapter.py:110:26: note:     def get(self, str, None = ..., /) -> Any | None
+modules\finance\transaction\adapter.py:110:26: note:     def get(self, str, Any, /) -> Any
+modules\finance\transaction\adapter.py:110:26: note:     def [_T] get(self, str, _T, /) -> Any | _T
+modules\finance\sagas\housing_api.py:63:23: error: Incompatible types in assignment (expression has type "None", variable has type "list[str]")  [assignment]
+simulation\systems\ma_manager.py:19:110: error: Incompatible default for argument "settlement_system" (default has type "None", argument has type "IMonetaryAuthority")  [assignment]
+simulation\systems\ma_manager.py:19:110: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+simulation\systems\ma_manager.py:19:110: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+simulation\systems\ma_manager.py:33:39: error: Incompatible types in assignment (expression has type "None", variable has type "IMonetaryAuthority")  [assignment]
+simulation\systems\ma_manager.py:185:12: error: "Firm" has no attribute "founder_id"  [attr-defined]
+simulation\systems\ma_manager.py:186:52: error: "Firm" has no attribute "founder_id"  [attr-defined]
+simulation\systems\ma_manager.py:221:17: error: "IHREngine" has no attribute "remove_employee"  [attr-defined]
+simulation\systems\ma_manager.py:223:17: error: "IHREngine" has no attribute "hire"  [attr-defined]
+simulation\ai\service_firm_ai.py:88:38: error: "Firm" has no attribute "config_module"  [attr-defined]
+modules\system\services\command_service.py:112:32: error: Incompatible types in assignment (expression has type "SetBaseRatePayload", variable has type "SetTaxRatePayload")  [assignment]
+modules\system\services\command_service.py:113:28: error: Incompatible types in assignment (expression has type "SetInterestRateCommand", variable has type "SetTaxRateCommand")  [assignment]
+modules\system\services\command_service.py:285:31: error: Incompatible types in assignment (expression has type "str", variable has type "int")  [assignment]
+modules\system\services\command_service.py:296:19: error: "ISettlementSystem" has no attribute "mint_and_distribute"  [attr-defined]
+modules\system\services\command_service.py:334:53: error: Argument 1 to "delete_entry" of "IRestorableRegistry" has incompatible type "str | None"; expected "str"  [arg-type]
+modules\system\services\command_service.py:340:53: error: Argument 1 to "delete_entry" of "IRestorableRegistry" has incompatible type "str | None"; expected "str"  [arg-type]
+modules\system\services\command_service.py:341:54: error: Argument 1 to "restore_entry" of "IRestorableRegistry" has incompatible type "str | None"; expected "str"  [arg-type]
+modules\system\services\command_service.py:358:67: error: Argument 1 to "int" has incompatible type "int | str | None"; expected "str | Buffer | SupportsInt | SupportsIndex | SupportsTrunc"  [arg-type]
+modules\system\services\command_service.py:376:14: error: "ISettlementSystem" has no attribute "transfer_and_destroy"  [attr-defined]
+modules\system\services\command_service.py:445:27: error: "IAgentRegistry" has no attribute "get_all_agents"; maybe "get_agent"?  [attr-defined]
+modules\system\services\command_service.py:522:18: error: "IAgentRegistry" has no attribute "get_all_agents"; maybe "get_agent"?  [attr-defined]
+simulation\decisions\household\stock_trader.py:35:9: error: Need type annotation for "orders" (hint: "orders: list[<type>] = ...")  [var-annotated]
+modules\government\taxation\system.py:143:30: error: "IGovernment" has no attribute "id"  [attr-defined]
+modules\government\taxation\system.py:216:30: error: "IGovernment" has no attribute "id"  [attr-defined]
+modules\government\taxation\system.py:229:30: error: "IGovernment" has no attribute "id"  [attr-defined]
+modules\government\political\orchestrator.py:19:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\government\political\orchestrator.py:20:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\government\components\monetary_ledger.py:15:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\government\components\monetary_ledger.py:16:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\government\components\monetary_ledger.py:19:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\government\components\monetary_ledger.py:20:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\government\components\monetary_ledger.py:23:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\government\components\infrastructure_manager.py:17:80: error: Incompatible default for argument "households" (default has type "None", argument has type "list[Any]")  [assignment]
+modules\government\components\infrastructure_manager.py:17:80: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+modules\government\components\infrastructure_manager.py:17:80: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+modules\government\components\infrastructure_manager.py:43:37: error: "None" has no attribute "issue_treasury_bonds_synchronous"  [attr-defined]
+modules\government\components\infrastructure_manager.py:50:30: error: "None" has no attribute "issue_treasury_bonds"  [attr-defined]
+modules\finance\engine_api.py:60:95: error: Argument "government_id" to "TreasuryStateDTO" has incompatible type "str"; expected "AgentID"  [arg-type]
+simulation\world_state.py:148:33: error: Need type annotation for "inflation_buffer"  [var-annotated]
+simulation\world_state.py:149:36: error: Need type annotation for "unemployment_buffer"  [var-annotated]
+simulation\world_state.py:150:34: error: Need type annotation for "gdp_growth_buffer"  [var-annotated]
+simulation\world_state.py:151:28: error: Need type annotation for "wage_buffer"  [var-annotated]
+simulation\world_state.py:152:32: error: Need type annotation for "approval_buffer"  [var-annotated]
+simulation\portfolio.py:27:39: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+simulation\portfolio.py:33:35: error: Argument "acquisition_price" to "Share" has incompatible type "float"; expected "int"  [arg-type]
+simulation\markets\matching_engine.py:74:26: error: Invalid index type "int | str" for "dict[int, list[CanonicalOrderDTO]]"; expected type "int"  [index]
+simulation\markets\matching_engine.py:75:22: error: Invalid index type "int | str" for "dict[int, list[CanonicalOrderDTO]]"; expected type "int"  [index]
+simulation\markets\matching_engine.py:214:26: error: Invalid index type "int | str" for "dict[int, list[CanonicalOrderDTO]]"; expected type "int"  [index]
+simulation\markets\matching_engine.py:215:22: error: Invalid index type "int | str" for "dict[int, list[CanonicalOrderDTO]]"; expected type "int"  [index]
+simulation\ai\government_ai.py:257:21: error: Item "None" of "GovernmentSensoryDTO | None" has no attribute "approval_sma"  [union-attr]
+simulation\agents\central_bank.py:37:19: error: Incompatible types in assignment (expression has type "int", base class "IFinancialAgent" defined the type as "AgentID")  [assignment]
+simulation\agents\central_bank.py:274:25: error: Argument 1 to "add" of "Wallet" has incompatible type "float"; expected "int"  [arg-type]
+simulation\agents\central_bank.py:280:30: error: Argument 1 to "subtract" of "Wallet" has incompatible type "float"; expected "int"  [arg-type]
+simulation\agents\central_bank.py:303:5: error: Name "get_balance" already defined on line 95  [no-redef]
+simulation\agents\central_bank.py:306:5: error: Name "get_all_balances" already defined on line 98  [no-redef]
+simulation\agents\central_bank.py:313:5: error: Name "_deposit" already defined on line 105  [no-redef]
+simulation\agents\central_bank.py:316:5: error: Name "_withdraw" already defined on line 108  [no-redef]
+simulation\agents\central_bank.py:343:37: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+simulation\agents\central_bank.py:372:33: error: Incompatible types in assignment (expression has type "float | int", variable has type "int")  [assignment]
+simulation\agents\central_bank.py:402:64: error: "Transaction" has no attribute "transaction_id"; maybe "transaction_type"?  [attr-defined]
+modules\household\dtos.py:118:64: error: Argument 2 to "Talent" has incompatible type "float"; expected "dict[str, float]"  [arg-type]
+modules\household\dtos.py:118:69: error: Argument 3 to "Talent" has incompatible type "float"; expected "dict[str, list[str]]"  [arg-type]
+modules\household\dtos.py:178:9: error: Incompatible types in assignment (expression has type "str", variable has type "int")  [assignment]
+modules\household\dtos.py:178:9: error: Incompatible types in assignment (expression has type "deque[Any]", variable has type "Share")  [assignment]
+modules\household\dtos.py:179:37: error: Invalid index type "int" for "defaultdict[str, deque[Any]]"; expected type "str"  [index]
+modules\household\dtos.py:179:52: error: Argument 1 to "copy" has incompatible type "Share"; expected "deque[Any]"  [arg-type]
+modules\finance\engines\loan_booking_engine.py:30:26: error: Item "BorrowerProfileDTO" of "BorrowerProfileDTO | dict[str, Any] | None" has no attribute "get"  [union-attr]
+modules\finance\engines\loan_booking_engine.py:30:26: error: Item "None" of "BorrowerProfileDTO | dict[str, Any] | None" has no attribute "get"  [union-attr]
+modules\finance\engines\debt_servicing_engine.py:56:24: error: Unsupported operand types for >= ("int" and "None")  [operator]
+modules\finance\engines\debt_servicing_engine.py:56:24: note: Right operand is of type "int | None"
+simulation\bank.py:153:5: error: Signature of "grant_loan" incompatible with supertype "modules.finance.api.IBankService"  [override]
+simulation\bank.py:153:5: note:      Superclass:
+simulation\bank.py:153:5: note:          def grant_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: int) -> tuple[LoanDTO, Any] | None
+simulation\bank.py:153:5: note:      Subclass:
+simulation\bank.py:153:5: note:          def grant_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: int | None = ..., borrower_profile: BorrowerProfileDTO | None = ...) -> tuple[LoanDTO, Transaction] | None
+simulation\bank.py:239:22: error: Argument 2 to "transfer" of "ISettlementSystem" has incompatible type "AgentID"; expected "IFinancialEntity"  [arg-type]
+simulation\bank.py:247:16: error: Incompatible return value type (got "tuple[LoanDTO, Transaction | None]", expected "tuple[LoanDTO, Transaction] | None")  [return-value]
+simulation\bank.py:249:5: error: Signature of "stage_loan" incompatible with supertype "modules.finance.api.IBankService"  [override]
+simulation\bank.py:249:5: note:      Superclass:
+simulation\bank.py:249:5: note:          def stage_loan(self, borrower_id: int, amount: int, interest_rate: float, due_tick: int | None, borrower_profile: BorrowerProfileDTO | None) -> LoanDTO | None
+simulation\bank.py:249:5: note:      Subclass:
+simulation\bank.py:249:5: note:          def stage_loan(self, borrower_id: AgentID, amount: int, interest_rate: float, due_tick: int | None = ..., borrower_profile: BorrowerProfileDTO | None = ...) -> LoanDTO | None
+simulation\systems\api.py:58:34: error: Name "InequalityTracker" is not defined  [name-defined]
+simulation\policies\smart_leviathan_policy.py:35:5: error: Signature of "decide" incompatible with supertype "simulation.interfaces.policy_interface.IGovernmentPolicy"  [override]
+simulation\policies\smart_leviathan_policy.py:35:5: note:      Superclass:
+simulation\policies\smart_leviathan_policy.py:35:5: note:          def decide(self, government: Any, market_data: dict[str, Any], current_tick: int) -> dict[str, Any]
+simulation\policies\smart_leviathan_policy.py:35:5: note:      Subclass:
+simulation\policies\smart_leviathan_policy.py:35:5: note:          def decide(self, government: Any, sensory_data: GovernmentStateDTO, current_tick: int, central_bank: Any) -> dict[str, Any]
+simulation\policies\smart_leviathan_policy.py:35:108: error: Name "CentralBank" is not defined  [name-defined]
+simulation\markets\stock_market.py:54:51: error: Argument 1 to "register_shares" of "IShareholderRegistry" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\markets\stock_market.py:54:60: error: Argument 2 to "register_shares" of "IShareholderRegistry" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\markets\stock_market.py:133:5: error: Return type "None" of "place_order" incompatible with return type "list[Transaction]" in supertype "simulation.core_markets.Market"  [override]
+simulation\dtos\api.py:28:14: error: Name "UUID" is not defined  [name-defined]
+simulation\dtos\api.py:272:31: error: Incompatible types in assignment (expression has type "None", variable has type "list[Any]")  [assignment]
+simulation\dtos\api.py:273:35: error: Incompatible types in assignment (expression has type "None", variable has type "list[Any]")  [assignment]
+simulation\dtos\api.py:274:43: error: Incompatible types in assignment (expression has type "None", variable has type "list[dict[str, Any]]")  [assignment]
+simulation\dtos\api.py:275:43: error: Incompatible types in assignment (expression has type "None", variable has type "dict[AgentID, Any]")  [assignment]
+simulation\dtos\api.py:277:35: error: Incompatible types in assignment (expression has type "None", variable has type "list[Any]")  [assignment]
+simulation\dtos\api.py:294:43: error: Incompatible types in assignment (expression has type "None", variable has type "dict[AgentID, Any]")  [assignment]
+simulation\dtos\api.py:295:48: error: Incompatible types in assignment (expression has type "None", variable has type "dict[AgentID, Any]")  [assignment]
+simulation\dtos\api.py:296:55: error: Incompatible types in assignment (expression has type "None", variable has type "dict[AgentID, float]")  [assignment]
+simulation\dtos\api.py:302:55: error: Incompatible types in assignment (expression has type "None", variable has type "dict[AgentID, float]")  [assignment]
+simulation\components\engines\sales_engine.py:128:26: error: Argument "sales_orders" to "SalesIntentDTO" has incompatible type "list[CanonicalOrderDTO]"; expected "list[dict[str, Any]]"  [arg-type]
+simulation\components\engines\rd_engine.py:31:23: error: "int" has no attribute "get"  [attr-defined]
+simulation\components\engines\rd_engine.py:42:33: error: "int" has no attribute "values"  [attr-defined]
+simulation\components\engines\production_engine.py:148:34: error: Incompatible types in assignment (expression has type "int | None", variable has type "int")  [assignment]
+simulation\components\engines\production_engine.py:151:34: error: Incompatible types in assignment (expression has type "int | None", variable has type "int")  [assignment]
+simulation\components\engines\hr_engine.py:172:24: error: No overload variant of "get" of "dict" matches argument types "AgentID", "dict[Never, Never]"  [call-overload]
+simulation\components\engines\hr_engine.py:172:24: note: Possible overload variants:
+simulation\components\engines\hr_engine.py:172:24: note:     def get(self, str, None = ..., /) -> dict[str, Any] | None
+simulation\components\engines\hr_engine.py:172:24: note:     def get(self, str, dict[str, Any], /) -> dict[str, Any]
+simulation\components\engines\hr_engine.py:172:24: note:     def [_T] get(self, str, _T, /) -> dict[str, Any] | _T
+simulation\components\engines\hr_engine.py:211:24: error: Argument "firing_ids" to "HRDecisionOutputDTO" has incompatible type "list[AgentID]"; expected "list[int]"  [arg-type]
+simulation\components\engines\hr_engine.py:211:24: note: "list" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+simulation\components\engines\hr_engine.py:211:24: note: Consider using "Sequence" instead, which is covariant
+simulation\components\engines\hr_engine.py:221:38: error: Argument 1 to "AgentID" has incompatible type "str"; expected "int"  [arg-type]
+simulation\components\engines\hr_engine.py:224:35: error: Argument 1 to "AgentID" has incompatible type "str"; expected "int"  [arg-type]
+simulation\components\engines\hr_engine.py:225:36: error: Argument 1 to "AgentID" has incompatible type "str"; expected "int"  [arg-type]
+simulation\components\engines\hr_engine.py:250:59: error: Argument 3 to "getattr" has incompatible type "str"; expected "IndustryDomain"  [arg-type]
+simulation\components\engines\hr_engine.py:315:34: error: Argument "recipient_id" to "ObligationDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\components\engines\hr_engine.py:327:34: error: Argument "recipient_id" to "ObligationDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\components\engines\hr_engine.py:393:9: error: Argument 1 of "process_payroll" is incompatible with supertype "modules.firm.api.IHREngine"; supertype defines the argument type as "HRStateDTO"  [override]
+simulation\components\engines\hr_engine.py:393:9: note: This violates the Liskov substitution principle
+simulation\components\engines\hr_engine.py:393:9: note: See https://mypy.readthedocs.io/en/stable/common_issues.html#incompatible-overrides
+simulation\components\engines\finance_engine.py:33:19: error: "int" has no attribute "get"  [attr-defined]
+simulation\components\engines\finance_engine.py:159:30: error: Argument "recipient_id" to "ObligationDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\components\engines\finance_engine.py:171:30: error: Argument "recipient_id" to "ObligationDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\components\engines\finance_engine.py:185:34: error: Argument "recipient_id" to "ObligationDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\components\engines\finance_engine.py:215:34: error: Argument "recipient_id" to "ObligationDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\components\engines\finance_engine.py:355:9: error: Argument 1 of "generate_financial_transactions" is incompatible with supertype "modules.firm.api.IFinanceEngine"; supertype defines the argument type as "FinanceStateDTO"  [override]
+simulation\components\engines\finance_engine.py:355:9: note: This violates the Liskov substitution principle
+simulation\components\engines\finance_engine.py:355:9: note: See https://mypy.readthedocs.io/en/stable/common_issues.html#incompatible-overrides
+simulation\components\engines\finance_engine.py:541:9: error: Argument 1 of "calculate_valuation" is incompatible with supertype "modules.firm.api.IFinanceEngine"; supertype defines the argument type as "FinanceStateDTO"  [override]
+simulation\components\engines\finance_engine.py:541:9: note: This violates the Liskov substitution principle
+simulation\components\engines\finance_engine.py:541:9: note: See https://mypy.readthedocs.io/en/stable/common_issues.html#incompatible-overrides
+simulation\components\engines\finance_engine.py:546:9: error: Argument 6 of "calculate_valuation" is incompatible with supertype "modules.firm.api.IFinanceEngine"; supertype defines the argument type as "MarketContextDTO | None"  [override]
+simulation\components\engines\finance_engine.py:546:9: note: This violates the Liskov substitution principle
+simulation\components\engines\finance_engine.py:546:9: note: See https://mypy.readthedocs.io/en/stable/common_issues.html#incompatible-overrides
+simulation\components\engines\finance_engine.py:703:39: error: Argument 1 of "get_estimated_unit_cost" is incompatible with supertype "modules.firm.api.IFinanceEngine"; supertype defines the argument type as "FinanceStateDTO"  [override]
+simulation\components\engines\finance_engine.py:703:39: note: This violates the Liskov substitution principle
+simulation\components\engines\finance_engine.py:703:39: note: See https://mypy.readthedocs.io/en/stable/common_issues.html#incompatible-overrides
+simulation\components\engines\asset_management_engine.py:97:28: error: "int" has no attribute "copy"  [attr-defined]
+simulation\components\engines\asset_management_engine.py:114:40: error: Argument "capital_stock_to_write_off" to "LiquidationResultDTO" has incompatible type "float"; expected "int"  [arg-type]
+modules\government\api.py:26:1: error: Definition of "id" in base class "IFinancialEntity" is incompatible with definition in base class "IAgent"  [misc]
+modules\government\api.py:38:80: error: Name "GovernmentPolicyDTO" is not defined  [name-defined]
+modules\government\api.py:42:47: error: Name "GovernmentPolicyDTO" is not defined  [name-defined]
+modules\government\api.py:49:89: error: Name "GovernmentPolicyDTO" is not defined  [name-defined]
+modules\government\api.py:58:71: error: Name "GovernmentPolicyDTO" is not defined  [name-defined]
+modules\government\api.py:62:47: error: Name "GovernmentPolicyDTO" is not defined  [name-defined]
+modules\finance\system.py:43:70: error: Name "CentralBank" is not defined  [name-defined]
+modules\finance\system.py:234:31: error: Argument "key" to "sort" of "list" has incompatible type "Callable[[LoanDTO], int | None]"; expected "Callable[[LoanDTO], SupportsDunderLT[Any] | SupportsDunderGT[Any]]"  [arg-type]
+modules\finance\system.py:234:41: error: Incompatible return value type (got "int | None", expected "SupportsDunderLT[Any] | SupportsDunderGT[Any]")  [return-value]
+modules\finance\system.py:247:33: error: Argument 1 of "evaluate_solvency" is incompatible with supertype "modules.finance.api.IFinanceSystem"; supertype defines the argument type as "Firm"  [override]
+modules\finance\system.py:247:33: note: This violates the Liskov substitution principle
+modules\finance\system.py:247:33: note: See https://mypy.readthedocs.io/en/stable/common_issues.html#incompatible-overrides
+modules\finance\system.py:307:5: error: Return type "tuple[list[BondDTO], list[Transaction]]" of "issue_treasury_bonds" incompatible with return type "list[BondDTO]" in supertype "modules.finance.api.IFinanceSystem"  [override]
+modules\finance\system.py:480:36: error: Argument 1 of "request_bailout_loan" is incompatible with supertype "modules.finance.api.IFinanceSystem"; supertype defines the argument type as "Firm"  [override]
+modules\finance\system.py:480:36: note: This violates the Liskov substitution principle
+modules\finance\system.py:480:36: note: See https://mypy.readthedocs.io/en/stable/common_issues.html#incompatible-overrides
+simulation\systems\transaction_processor.py:32:61: error: Incompatible types in assignment (expression has type "None", variable has type "ITransactionHandler")  [assignment]
+simulation\systems\transaction_processor.py:59:40: error: Argument 1 to "get" of "dict" has incompatible type "int | str"; expected "int"  [arg-type]
+simulation\systems\transaction_processor.py:60:17: error: Argument 1 to "get" of "dict" has incompatible type "int | str"; expected "int"  [arg-type]
+simulation\systems\transaction_processor.py:78:40: error: Argument "amount_settled" to "SettlementResultDTO" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\transaction_processor.py:85:40: error: Argument "amount_settled" to "SettlementResultDTO" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\transaction_processor.py:89:5: error: Signature of "execute" incompatible with supertype "simulation.systems.api.SystemInterface"  [override]
+simulation\systems\transaction_processor.py:89:5: note:      Superclass:
+simulation\systems\transaction_processor.py:89:5: note:          def execute(self, state: SimulationState) -> None
+simulation\systems\transaction_processor.py:89:5: note:      Subclass:
+simulation\systems\transaction_processor.py:89:5: note:          def execute(self, state: SimulationState, transactions: Iterable[Transaction] | None = ...) -> list[SettlementResultDTO]
+simulation\systems\transaction_processor.py:128:20: error: Argument "agents" to "TransactionContext" has incompatible type "dict[AgentID, Any]"; expected "dict[int, Any]"  [arg-type]
+simulation\systems\transaction_processor.py:131:31: error: Argument "settlement_system" to "TransactionContext" has incompatible type "Any | None"; expected "SettlementSystem"  [arg-type]
+simulation\systems\transaction_processor.py:188:40: error: Argument 1 to "get" of "dict" has incompatible type "int | str | Any"; expected "int"  [arg-type]
+simulation\systems\transaction_processor.py:191:53: error: Argument 1 to "get" of "dict" has incompatible type "int | str | Any"; expected "int"  [arg-type]
+simulation\systems\transaction_processor.py:194:41: error: Argument 1 to "get" of "dict" has incompatible type "int | str | Any"; expected "int"  [arg-type]
+simulation\systems\transaction_processor.py:197:54: error: Argument 1 to "get" of "dict" has incompatible type "int | str | Any"; expected "int"  [arg-type]
+simulation\systems\transaction_processor.py:212:80: error: Argument "amount_settled" to "SettlementResultDTO" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\transaction_processor.py:225:80: error: Argument "amount_settled" to "SettlementResultDTO" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\transaction_processor.py:245:82: error: Argument "amount_settled" to "SettlementResultDTO" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\transaction_processor.py:258:80: error: Argument "amount_settled" to "SettlementResultDTO" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\perception_system.py:14:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+simulation\systems\perception_system.py:15:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+simulation\systems\perception_system.py:65:20: error: Incompatible return value type (got "MarketSnapshotDTO | None", expected "MarketSnapshotDTO")  [return-value]
+simulation\systems\perception_system.py:69:21: error: Incompatible return value type (got "MarketSnapshotDTO | None", expected "MarketSnapshotDTO")  [return-value]
+simulation\systems\event_system.py:53:45: error: Argument 1 to "float" has incompatible type "dict[str, int]"; expected "str | Buffer | SupportsFloat | SupportsIndex"  [arg-type]
+simulation\systems\event_system.py:67:29: error: "ISettlementSystem" has no attribute "create_and_transfer"  [attr-defined]
+simulation\systems\event_system.py:94:21: error: "ISettlementSystem" has no attribute "transfer_and_destroy"  [attr-defined]
+simulation\systems\event_system.py:109:20: error: "Firm" has no attribute "type"  [attr-defined]
+simulation\systems\event_system.py:110:76: error: "Firm" has no attribute "type"  [attr-defined]
+simulation\systems\event_system.py:112:113: error: "Firm" has no attribute "type"  [attr-defined]
+simulation\systems\commerce_system.py:176:16: error: Incompatible return value type (got "tuple[dict[AgentID, dict[str, float]], list[Transaction]]", expected "tuple[dict[int, dict[str, Any]], list[Transaction]]")  [return-value]
+simulation\orchestration\phases_recovery.py:62:35: error: Argument "best_bid" to "MarketSignalDTO" has incompatible type "float | None"; expected "int | None"  [arg-type]
+simulation\orchestration\phases_recovery.py:63:35: error: Argument "best_ask" to "MarketSignalDTO" has incompatible type "float | None"; expected "int | None"  [arg-type]
+simulation\orchestration\phases_recovery.py:64:44: error: Argument "last_traded_price" to "MarketSignalDTO" has incompatible type "float | None"; expected "int | None"  [arg-type]
+simulation\orchestration\factories.py:57:35: error: Argument "best_bid" to "MarketSignalDTO" has incompatible type "float | None"; expected "int | None"  [arg-type]
+simulation\orchestration\factories.py:58:35: error: Argument "best_ask" to "MarketSignalDTO" has incompatible type "float | None"; expected "int | None"  [arg-type]
+simulation\orchestration\factories.py:59:44: error: Argument "last_traded_price" to "MarketSignalDTO" has incompatible type "float | None"; expected "int | None"  [arg-type]
+simulation\orchestration\factories.py:216:21: error: Cannot instantiate abstract class "GovernmentFiscalProxy" with abstract attributes "balance_pennies", "deposit", "get_liquid_assets", "get_total_debt" and "withdraw"  [abstract]
+simulation\orchestration\factories.py:216:21: note: The following methods were marked implicitly abstract because they have empty function bodies: "deposit" and "withdraw". If they are not meant to be abstract, explicitly `return` or `return None`.
+simulation\orchestration\factories.py:246:25: error: Argument "goods_data" to "DecisionInputDTO" has incompatible type "dict[str, Any]"; expected "list[dict[str, Any]]"  [arg-type]
+simulation\orchestration\phases\intercept.py:77:23: error: Item "None" of "CommandService | None" has no attribute "execute_command_batch"  [union-attr]
+simulation\orchestration\phases\firm_operations.py:44:43: error: Argument "shareholder_registry" to "generate_transactions" of "Firm" has incompatible type "Any | None"; expected "IShareholderRegistry"  [arg-type]
+simulation\orchestration\phases\consumption.py:25:45: error: Missing key "sales_tax_rate" for TypedDict "CommerceContext"  [typeddict-item]
+simulation\orchestration\phases\consumption.py:38:35: error: Argument 2 to "finalize_consumption_and_leisure" of "CommerceSystem" has incompatible type "dict[AgentID, dict[str, Any]] | None"; expected "dict[int, dict[str, Any]]"  [arg-type]
+simulation\orchestration\phases\consumption.py:40:47: error: Incompatible types in assignment (expression has type "dict[int, float]", variable has type "dict[AgentID, float]")  [assignment]
+modules\household\mixins\_state_access.py:71:51: error: "EconStateDTO" has no attribute "current_wage"  [attr-defined]
+modules\household\mixins\_state_access.py:77:16: error: Unexpected keyword argument "monthly_income" for "assemble" of "HouseholdSnapshotAssembler"; did you mean "monthly_income_pennies"?  [call-arg]
+modules\household\services.py:13:6: note: "assemble" of "HouseholdSnapshotAssembler" defined here
+modules\household\mixins\_state_access.py:77:16: error: Unexpected keyword argument "monthly_debt_payments" for "assemble" of "HouseholdSnapshotAssembler"; did you mean "monthly_debt_payments_pennies"?  [call-arg]
+modules\household\mixins\_state_access.py:78:13: error: Argument 1 to "assemble" of "HouseholdSnapshotAssembler" has incompatible type "HouseholdStateAccessMixin"; expected "Household"  [arg-type]
+modules\household\mixins\_state_access.py:89:51: error: "EconStateDTO" has no attribute "current_wage"  [attr-defined]
+modules\household\mixins\_state_access.py:101:16: error: Unexpected keyword argument "current_wage" for "HouseholdStateDTO"  [call-arg]
+modules\household\mixins\_state_access.py:101:16: error: Unexpected keyword argument "monthly_income" for "HouseholdStateDTO"; did you mean "monthly_income_pennies"?  [call-arg]
+modules\household\mixins\_state_access.py:101:16: error: Unexpected keyword argument "monthly_debt_payments" for "HouseholdStateDTO"; did you mean "monthly_debt_payments_pennies"?  [call-arg]
+modules\household\mixins\_state_access.py:113:26: error: "EconStateDTO" has no attribute "current_wage"  [attr-defined]
+modules\household\mixins\_state_access.py:142:29: error: "EconStateDTO" has no attribute "current_wage"  [attr-defined]
+modules\household\mixins\_state_access.py:155:30: error: "EconStateDTO" has no attribute "expected_wage"; maybe "expected_wage_pennies"?  [attr-defined]
+modules\government\services\welfare_service.py:185:25: error: Argument "firm_id" to "BailoutLoanDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+modules\firm\orchestrators\firm_action_executor.py:45:28: error: Argument "market_context" to "FinancialTransactionContext" has incompatible type "MarketContextDTO | dict[Never, Never]"; expected "MarketContextDTO"  [arg-type]
+modules\firm\orchestrators\firm_action_executor.py:50:19: error: Value of type "MoneyDTO" is not indexable  [index]
+modules\firm\orchestrators\firm_action_executor.py:54:21: error: Value of type "MoneyDTO" is not indexable  [index]
+modules\firm\orchestrators\firm_action_executor.py:73:37: error: Argument "investment_type" to "AssetManagementInputDTO" has incompatible type "str"; expected "Literal['CAPEX', 'AUTOMATION']"  [arg-type]
+modules\firm\orchestrators\firm_action_executor.py:82:24: error: "Firm" has no attribute "settlement_system"  [attr-defined]
+modules\firm\orchestrators\firm_action_executor.py:104:20: error: "Firm" has no attribute "settlement_system"  [attr-defined]
+modules\firm\orchestrators\firm_action_executor.py:126:22: error: "IFinanceEngine" has no attribute "pay_ad_hoc_tax"  [attr-defined]
+modules\firm\orchestrators\firm_action_executor.py:130:24: error: "Firm" has no attribute "settlement_system"  [attr-defined]
+modules\firm\orchestrators\firm_action_executor.py:131:25: error: "IFinanceEngine" has no attribute "record_expense"  [attr-defined]
+modules\firm\orchestrators\firm_action_executor.py:140:23: error: "IHREngine" has no attribute "create_fire_transaction"  [attr-defined]
+modules\firm\orchestrators\firm_action_executor.py:145:37: error: "Firm" has no attribute "settlement_system"  [attr-defined]
+modules\firm\orchestrators\firm_action_executor.py:146:25: error: "IHREngine" has no attribute "finalize_firing"  [attr-defined]
+simulation\systems\settlement_system.py:94:32: error: Invalid index type "str" for "dict[AgentID, IAgent | IFinancialAgent]"; expected type "AgentID"  [index]
+simulation\systems\settlement_system.py:96:24: error: Incompatible types in assignment (expression has type "DictionaryAccountAccessor", variable has type "RegistryAccountAccessor")  [assignment]
+simulation\systems\settlement_system.py:96:50: error: Argument 1 to "DictionaryAccountAccessor" has incompatible type "dict[AgentID, IAgent | IFinancialAgent]"; expected "dict[str, Any]"  [arg-type]
+simulation\systems\settlement_system.py:352:17: error: "ICentralBank" has no attribute "check_and_provide_liquidity"  [attr-defined]
+simulation\systems\settlement_system.py:369:5: error: Return type "simulation.finance.api.ITransaction | None" of "execute_swap" incompatible with return type "modules.finance.api.ITransaction | None" in supertype "modules.finance.api.ISettlementSystem"  [override]
+simulation\systems\settlement_system.py:436:16: error: Incompatible return value type (got "Transaction", expected "ITransaction | None")  [return-value]
+simulation\systems\settlement_system.py:483:20: error: Incompatible return value type (got "Transaction | None", expected "ITransaction | None")  [return-value]
+simulation\systems\settlement_system.py:516:21: error: Incompatible return value type (got "Transaction | None", expected "ITransaction | None")  [return-value]
+simulation\systems\settlement_system.py:526:5: error: Return type "simulation.finance.api.ITransaction | None" of "create_and_transfer" incompatible with return type "modules.finance.api.ITransaction | None" in supertype "modules.finance.api.IMonetaryAuthority"  [override]
+simulation\systems\settlement_system.py:559:17: error: Item "None" of "Transaction | None" has no attribute "transaction_type"  [union-attr]
+simulation\systems\settlement_system.py:560:24: error: Incompatible return value type (got "Transaction | None", expected "ITransaction | None")  [return-value]
+simulation\systems\settlement_system.py:569:9: error: Argument 1 of "transfer_and_destroy" is incompatible with supertype "modules.finance.api.IMonetaryAuthority"; supertype defines the argument type as "IFinancialEntity"  [override]
+simulation\systems\settlement_system.py:569:9: note: This violates the Liskov substitution principle
+simulation\systems\settlement_system.py:569:9: note: See https://mypy.readthedocs.io/en/stable/common_issues.html#incompatible-overrides
+simulation\systems\settlement_system.py:570:9: error: Argument 2 of "transfer_and_destroy" is incompatible with supertype "modules.finance.api.IMonetaryAuthority"; supertype defines the argument type as "IFinancialEntity"  [override]
+simulation\systems\settlement_system.py:570:9: note: This violates the Liskov substitution principle
+simulation\systems\settlement_system.py:570:9: note: See https://mypy.readthedocs.io/en/stable/common_issues.html#incompatible-overrides
+simulation\systems\settlement_system.py:596:17: error: Item "None" of "Transaction | None" has no attribute "transaction_type"  [union-attr]
+simulation\systems\settlement_system.py:597:24: error: Incompatible return value type (got "Transaction | None", expected "ITransaction | None")  [return-value]
+simulation\systems\persistence_manager.py:41:51: error: Incompatible default for argument "market_history" (default has type "None", argument has type "list[MarketHistoryData]")  [assignment]
+simulation\systems\persistence_manager.py:41:51: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+simulation\systems\persistence_manager.py:41:51: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+simulation\systems\housing_system.py:77:40: error: Item "DataclassInstance" of "DataclassInstance | type[DataclassInstance]" has no attribute "lien_type"  [union-attr]
+simulation\systems\housing_system.py:77:40: error: Item "ABCMeta" of "DataclassInstance | type[DataclassInstance]" has no attribute "lien_type"  [union-attr]
+simulation\systems\housing_system.py:196:29: error: Item "DataclassInstance" of "DataclassInstance | type[DataclassInstance]" has no attribute "loans"  [union-attr]
+simulation\systems\housing_system.py:196:29: error: Item "ABCMeta" of "DataclassInstance | type[DataclassInstance]" has no attribute "loans"  [union-attr]
+simulation\systems\housing_system.py:204:35: error: Item "DataclassInstance" of "DataclassInstance | type[DataclassInstance]" has no attribute "outstanding_balance"  [union-attr]
+simulation\systems\housing_system.py:204:35: error: Item "ABCMeta" of "DataclassInstance | type[DataclassInstance]" has no attribute "outstanding_balance"  [union-attr]
+simulation\systems\housing_system.py:205:32: error: Item "DataclassInstance" of "DataclassInstance | type[DataclassInstance]" has no attribute "interest_rate"  [union-attr]
+simulation\systems\housing_system.py:205:32: error: Item "ABCMeta" of "DataclassInstance | type[DataclassInstance]" has no attribute "interest_rate"  [union-attr]
+simulation\systems\housing_system.py:231:28: error: "HousingDecisionDTO" has no attribute "down_payment_amount"  [attr-defined]
+simulation\systems\housing_system.py:290:26: error: Argument "applicant_id" to "MortgageApplicationDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\systems\housing_system.py:293:25: error: Argument "property_id" to "MortgageApplicationDTO" has incompatible type "int | None"; expected "int"  [arg-type]
+simulation\systems\housing_system.py:294:28: error: Argument "property_value" to "MortgageApplicationDTO" has incompatible type "float | None"; expected "int"  [arg-type]
+simulation\systems\housing_system.py:295:38: error: Argument "applicant_monthly_income" to "MortgageApplicationDTO" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\housing_system.py:296:44: error: Argument "existing_monthly_debt_payments" to "MortgageApplicationDTO" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\housing_system.py:311:25: error: Argument "property_id" to "HousingTransactionSagaStateDTO" has incompatible type "int | None"; expected "int"  [arg-type]
+simulation\systems\housing_system.py:312:25: error: Argument "offer_price" to "HousingTransactionSagaStateDTO" has incompatible type "float | None"; expected "float"  [arg-type]
+simulation\decisions\portfolio_manager.py:51:48: error: Incompatible default for argument "macro_context" (default has type "None", argument has type "MacroFinancialContext")  [assignment]
+simulation\decisions\portfolio_manager.py:51:48: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+simulation\decisions\portfolio_manager.py:51:48: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+simulation\db\repository.py:90:9: error: Missing positional arguments "total_pennies", "currency" in call to "TransactionData"  [call-arg]
+simulation\db\repository.py:93:22: error: Argument "buyer_id" to "TransactionData" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\db\repository.py:94:23: error: Argument "seller_id" to "TransactionData" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\db\repository.py:106:22: error: Argument "agent_id" to "AgentStateData" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\db\repository.py:108:20: error: Argument "assets" to "AgentStateData" has incompatible type "float"; expected "dict[str, int]"  [arg-type]
+simulation\db\repository.py:111:25: error: Argument "employer_id" to "AgentStateData" has incompatible type "int"; expected "AgentID | None"  [arg-type]
+simulation\db\repository.py:127:31: error: Argument "total_consumption" to "EconomicIndicatorData" has incompatible type "float"; expected "int | None"  [arg-type]
+simulation\db\repository.py:128:36: error: Argument "total_household_assets" to "EconomicIndicatorData" has incompatible type "float"; expected "int | None"  [arg-type]
+simulation\db\repository.py:129:31: error: Argument "total_firm_assets" to "EconomicIndicatorData" has incompatible type "float"; expected "int | None"  [arg-type]
+simulation\db\repository.py:130:36: error: Argument "total_food_consumption" to "EconomicIndicatorData" has incompatible type "float"; expected "int | None"  [arg-type]
+modules\market\housing_planner.py:25:5: error: Return type "HousingPurchaseDecisionDTO | HousingRentalDecisionDTO | HousingStayDecisionDTO" of "evaluate_housing_options" incompatible with return type "HousingDecisionDTO" in supertype "modules.housing.api.IHousingPlanner"  [override]
+modules\market\housing_planner.py:25:40: error: Argument 1 of "evaluate_housing_options" is incompatible with supertype "modules.housing.api.IHousingPlanner"; supertype defines the argument type as "HousingDecisionRequestDTO"  [override]
+modules\market\housing_planner.py:25:40: note: This violates the Liskov substitution principle
+modules\market\housing_planner.py:25:40: note: See https://mypy.readthedocs.io/en/stable/common_issues.html#incompatible-overrides
+modules\market\housing_planner.py:33:22: error: Incompatible types in assignment (expression has type "int | dict[str, int]", variable has type "dict[str, int]")  [assignment]
+modules\market\housing_planner.py:33:51: error: Argument 2 to "get" of "dict" has incompatible type "float"; expected "dict[str, int]"  [arg-type]
+modules\market\housing_planner.py:37:21: error: Unsupported operand types for / ("dict[str, int]" and "float")  [operator]
+modules\household\engines\consumption_engine.py:58:29: error: Property "quantity" defined in "CanonicalOrderDTO" is read-only  [misc]
+modules\household\engines\consumption_engine.py:96:52: error: Argument "leisure_type" to "LeisureEffectDTO" has incompatible type "str"; expected "Literal['PARENTING', 'SELF_DEV', 'ENTERTAINMENT', 'IDLE']"  [arg-type]
+modules\household\connectors\housing_connector.py:30:47: error: Argument 1 to "int" has incompatible type "str | None"; expected "str | Buffer | SupportsInt | SupportsIndex | SupportsTrunc"  [arg-type]
+simulation\loan_market.py:36:69: error: "IBankService" has no attribute "id"  [attr-defined]
+simulation\loan_market.py:40:29: error: "IBankService" has no attribute "id"  [attr-defined]
+simulation\loan_market.py:166:5: error: Return type "LoanDTO | None" of "stage_mortgage" incompatible with return type "dict[Any, Any] | None" in supertype "modules.market.housing_planner_api.ILoanMarket"  [override]
+simulation\loan_market.py:184:5: error: Return type "LoanDTO | None" of "convert_staged_to_loan" incompatible with return type "dict[Any, Any] | None" in supertype "modules.market.housing_planner_api.ILoanMarket"  [override]
+simulation\loan_market.py:200:30: error: Argument "borrower_id" to "LoanDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\loan_market.py:206:28: error: Argument "lender_id" to "LoanDTO" has incompatible type "int | None"; expected "AgentID | None"  [arg-type]
+simulation\loan_market.py:303:28: error: Unexpected keyword argument "borrower_profile" for "grant_loan" of "IBankService"  [call-arg]
+simulation\loan_market.py:304:37: error: Argument 1 to "AgentID" has incompatible type "int | str"; expected "int"  [arg-type]
+modules\finance\api.py:328:5: note: "grant_loan" of "IBankService" defined here
+simulation\loan_market.py:339:39: error: "IBankService" has no attribute "id"  [attr-defined]
+simulation\loan_market.py:364:39: error: "IBankService" has no attribute "id"  [attr-defined]
+simulation\loan_market.py:390:38: error: "IBankService" has no attribute "id"  [attr-defined]
+simulation\policies\adaptive_gov_policy.py:24:5: error: Signature of "decide" incompatible with supertype "simulation.interfaces.policy_interface.IGovernmentPolicy"  [override]
+simulation\policies\adaptive_gov_policy.py:24:5: note:      Superclass:
+simulation\policies\adaptive_gov_policy.py:24:5: note:          def decide(self, government: Any, market_data: dict[str, Any], current_tick: int) -> dict[str, Any]
+simulation\policies\adaptive_gov_policy.py:24:5: note:      Subclass:
+simulation\policies\adaptive_gov_policy.py:24:5: note:          def decide(self, government: Government, sensory_data: GovernmentSensoryDTO, current_tick: int, central_bank: CentralBank) -> dict[str, Any]
+simulation\decisions\rule_based_household_engine.py:30:36: error: Incompatible types in assignment (expression has type "HouseholdStateDTO | FirmStateDTO", variable has type "HouseholdStateDTO")  [assignment]
+simulation\decisions\rule_based_household_engine.py:31:38: error: Incompatible types in assignment (expression has type "HouseholdConfigDTO | FirmConfigDTO", variable has type "HouseholdConfigDTO")  [assignment]
+simulation\decisions\rule_based_household_engine.py:53:86: error: Argument 3 to "getattr" has incompatible type "float"; expected "int | None"  [arg-type]
+simulation\decisions\rule_based_household_engine.py:54:20: error: Unsupported operand types for < ("int" and "None")  [operator]
+simulation\decisions\rule_based_household_engine.py:54:20: note: Left operand is of type "int | None"
+simulation\decisions\rule_based_household_engine.py:56:43: error: Unsupported operand types for / ("int" and "None")  [operator]
+simulation\decisions\rule_based_household_engine.py:56:43: note: Right operand is of type "int | None"
+simulation\decisions\rule_based_household_engine.py:59:142: error: Unsupported operand types for * ("None" and "int")  [operator]
+simulation\decisions\rule_based_household_engine.py:59:142: note: Left operand is of type "int | None"
+simulation\decisions\rule_based_household_engine.py:59:171: error: Argument "price_limit" to "CanonicalOrderDTO" has incompatible type "int | None"; expected "float"  [arg-type]
+simulation\decisions\rule_based_household_engine.py:76:30: error: Item "MarketHistoryDTO" of "MarketHistoryDTO | dict[Never, Never]" has no attribute "get"  [union-attr]
+simulation\decisions\rule_based_household_engine.py:76:30: error: No overload variant of "get" of "dict" matches argument types "str", "float"  [call-overload]
+simulation\decisions\rule_based_household_engine.py:76:30: note: Possible overload variants:
+simulation\decisions\rule_based_household_engine.py:76:30: note:     def get(self, Never, None = ..., /) -> None
+simulation\decisions\rule_based_household_engine.py:76:30: note:     def get(self, Never, Never, /) -> Never
+simulation\decisions\rule_based_household_engine.py:76:30: note:     def [_T] get(self, Never, _T, /) -> _T
+simulation\decisions\rule_based_household_engine.py:88:37: error: Item "MarketHistoryDTO" of "MarketHistoryDTO | dict[Never, Never]" has no attribute "get"  [union-attr]
+simulation\decisions\rule_based_household_engine.py:88:37: error: No overload variant of "get" of "dict" matches argument types "str", "dict[Never, Never]"  [call-overload]
+simulation\decisions\rule_based_household_engine.py:88:37: note: Possible overload variants:
+simulation\decisions\rule_based_household_engine.py:88:37: note:     def get(self, Never, None = ..., /) -> None
+simulation\decisions\rule_based_household_engine.py:88:37: note:     def get(self, Never, Never, /) -> Never
+simulation\decisions\rule_based_household_engine.py:88:37: note:     def [_T] get(self, Never, _T, /) -> _T
+simulation\decisions\rule_based_household_engine.py:91:33: error: Item "MarketHistoryDTO" of "MarketHistoryDTO | dict[Never, Never]" has no attribute "get"  [union-attr]
+simulation\decisions\rule_based_household_engine.py:91:33: error: No overload variant of "get" of "dict" matches argument types "str", "dict[Never, Never]"  [call-overload]
+simulation\decisions\rule_based_household_engine.py:91:33: note: Possible overload variants:
+simulation\decisions\rule_based_household_engine.py:91:33: note:     def get(self, Never, None = ..., /) -> None
+simulation\decisions\rule_based_household_engine.py:91:33: note:     def get(self, Never, Never, /) -> Never
+simulation\decisions\rule_based_household_engine.py:91:33: note:     def [_T] get(self, Never, _T, /) -> _T
+simulation\decisions\rule_based_firm_engine.py:27:26: error: Item "HouseholdStateDTO" of "HouseholdStateDTO | FirmStateDTO" has no attribute "production"  [union-attr]
+simulation\decisions\rule_based_firm_engine.py:28:21: error: Item "HouseholdStateDTO" of "HouseholdStateDTO | FirmStateDTO" has no attribute "production"  [union-attr]
+simulation\decisions\rule_based_firm_engine.py:39:32: error: "MarketHistoryDTO" has no attribute "get"  [attr-defined]
+simulation\decisions\rule_based_firm_engine.py:43:47: error: Argument 1 to "_adjust_production" of "RuleBasedFirmDecisionEngine" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\rule_based_firm_engine.py:45:42: error: Argument 1 to "_adjust_wages" of "RuleBasedFirmDecisionEngine" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\rule_based_firm_engine.py:47:53: error: Argument 1 to "_calculate_needed_labor" of "RuleBasedFirmDecisionEngine" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\rule_based_firm_engine.py:48:33: error: Item "HouseholdStateDTO" of "HouseholdStateDTO | FirmStateDTO" has no attribute "hr"  [union-attr]
+simulation\decisions\rule_based_firm_engine.py:50:51: error: Argument 1 to "_fire_excess_labor" of "RuleBasedFirmDecisionEngine" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\rule_based_firm_engine.py:73:201: error: Argument "target_agent_id" to "CanonicalOrderDTO" has incompatible type "str"; expected "int | None"  [arg-type]
+simulation\decisions\household\labor_manager.py:45:36: error: Incompatible types in assignment (expression has type "int | dict[str, int]", variable has type "dict[str, int]")  [assignment]
+simulation\decisions\household\labor_manager.py:45:75: error: Argument 2 to "get" of "dict" has incompatible type "float"; expected "dict[str, int]"  [arg-type]
+simulation\decisions\household\consumption_manager.py:123:36: error: Incompatible types in assignment (expression has type "int | dict[str, int]", variable has type "dict[str, int]")  [assignment]
+simulation\decisions\household\consumption_manager.py:123:75: error: Argument 2 to "get" of "dict" has incompatible type "float"; expected "dict[str, int]"  [arg-type]
+simulation\decisions\household\consumption_manager.py:126:28: error: Unsupported operand types for * ("dict[str, int]" and "float")  [operator]
+simulation\decisions\household\consumption_manager.py:128:32: error: Unsupported operand types for * ("dict[str, int]" and "float")  [operator]
+simulation\decisions\household\asset_manager.py:117:307: error: Argument "macro_context" to "optimize_portfolio" of "PortfolioManager" has incompatible type "MacroFinancialContext | None"; expected "MacroFinancialContext"  [arg-type]
+simulation\decisions\household\asset_manager.py:168:346: error: Argument "macro_context" to "optimize_portfolio" of "PortfolioManager" has incompatible type "MacroFinancialContext | None"; expected "MacroFinancialContext"  [arg-type]
+simulation\decisions\firm\sales_manager.py:14:22: error: Value of type "GoodsDTO" is not indexable  [index]
+simulation\decisions\firm\sales_manager.py:15:39: error: Argument 1 to "_manage_pricing" of "SalesManager" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\firm\sales_manager.py:15:102: error: Argument 5 to "_manage_pricing" of "SalesManager" has incompatible type "HouseholdConfigDTO | FirmConfigDTO"; expected "FirmConfigDTO"  [arg-type]
+simulation\decisions\firm\sales_manager.py:22:9: error: Need type annotation for "orders" (hint: "orders: list[<type>] = ...")  [var-annotated]
+simulation\decisions\firm\production_strategy.py:15:22: error: Value of type "GoodsDTO" is not indexable  [index]
+simulation\decisions\firm\production_strategy.py:17:55: error: Argument 1 to "_manage_production_target" of "ProductionStrategy" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\firm\production_strategy.py:17:61: error: Argument 2 to "_manage_production_target" of "ProductionStrategy" has incompatible type "HouseholdConfigDTO | FirmConfigDTO"; expected "FirmConfigDTO"  [arg-type]
+simulation\decisions\firm\production_strategy.py:20:55: error: Argument 1 to "_manage_procurement" of "ProductionStrategy" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\firm\production_strategy.py:20:74: error: Argument 3 to "_manage_procurement" of "ProductionStrategy" has incompatible type "HouseholdConfigDTO | FirmConfigDTO"; expected "FirmConfigDTO"  [arg-type]
+simulation\decisions\firm\production_strategy.py:22:47: error: Argument 1 to "_manage_automation" of "ProductionStrategy" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\firm\production_strategy.py:22:109: error: Argument 5 to "_manage_automation" of "ProductionStrategy" has incompatible type "HouseholdConfigDTO | FirmConfigDTO"; expected "FirmConfigDTO"  [arg-type]
+simulation\decisions\firm\production_strategy.py:27:41: error: Argument 1 to "_manage_r_and_d" of "ProductionStrategy" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\firm\production_strategy.py:27:87: error: Argument 4 to "_manage_r_and_d" of "ProductionStrategy" has incompatible type "HouseholdConfigDTO | FirmConfigDTO"; expected "FirmConfigDTO"  [arg-type]
+simulation\decisions\firm\production_strategy.py:30:42: error: Argument 1 to "_manage_capex" of "ProductionStrategy" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\firm\production_strategy.py:30:94: error: Argument 4 to "_manage_capex" of "ProductionStrategy" has incompatible type "HouseholdConfigDTO | FirmConfigDTO"; expected "FirmConfigDTO"  [arg-type]
+simulation\decisions\firm\production_strategy.py:39:9: error: Need type annotation for "orders" (hint: "orders: list[<type>] = ...")  [var-annotated]
+simulation\decisions\firm\production_strategy.py:69:9: error: Need type annotation for "orders" (hint: "orders: list[<type>] = ...")  [var-annotated]
+simulation\decisions\firm\hr_strategy.py:15:38: error: Argument 1 to "_manage_hiring" of "HRStrategy" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\firm\hr_strategy.py:15:80: error: Argument 4 to "_manage_hiring" of "HRStrategy" has incompatible type "HouseholdConfigDTO | FirmConfigDTO"; expected "FirmConfigDTO"  [arg-type]
+simulation\decisions\firm\hr_strategy.py:59:209: error: Argument "target_agent_id" to "CanonicalOrderDTO" has incompatible type "str"; expected "int | None"  [arg-type]
+simulation\decisions\firm\financial_strategy.py:18:44: error: Argument 1 to "_manage_dividends" of "FinancialStrategy" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\firm\financial_strategy.py:18:75: error: Argument 3 to "_manage_dividends" of "FinancialStrategy" has incompatible type "HouseholdConfigDTO | FirmConfigDTO"; expected "FirmConfigDTO"  [arg-type]
+simulation\decisions\firm\financial_strategy.py:21:41: error: Argument 1 to "_manage_debt" of "FinancialStrategy" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\firm\financial_strategy.py:23:54: error: Argument 1 to "_attempt_secondary_offering" of "FinancialStrategy" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\firm\financial_strategy.py:23:69: error: Argument 3 to "_attempt_secondary_offering" of "FinancialStrategy" has incompatible type "HouseholdConfigDTO | FirmConfigDTO"; expected "FirmConfigDTO"  [arg-type]
+simulation\decisions\firm\financial_strategy.py:51:21: error: Item "MarketHistoryDTO" of "MarketHistoryDTO | dict[Never, Never]" has no attribute "get"  [union-attr]
+simulation\decisions\firm\financial_strategy.py:51:21: error: No overload variant of "get" of "dict" matches argument type "int"  [call-overload]
+simulation\decisions\firm\financial_strategy.py:51:21: note: Possible overload variants:
+simulation\decisions\firm\financial_strategy.py:51:21: note:     def get(self, Never, None = ..., /) -> None
+simulation\decisions\firm\financial_strategy.py:51:21: note:     def get(self, Never, Never, /) -> Never
+simulation\decisions\firm\financial_strategy.py:51:21: note:     def [_T] get(self, Never, _T, /) -> _T
+simulation\decisions\firm\financial_strategy.py:72:67: error: Argument "borrower_id" to "BorrowerProfileDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\decisions\firm\financial_strategy.py:72:126: error: Argument "existing_debt_payments" to "BorrowerProfileDTO" has incompatible type "float"; expected "int"  [arg-type]
+simulation\decisions\firm\financial_strategy.py:72:162: error: Argument "collateral_value" to "BorrowerProfileDTO" has incompatible type "float"; expected "int"  [arg-type]
+simulation\decisions\firm\financial_strategy.py:73:29: error: Item "HouseholdConfigDTO" of "HouseholdConfigDTO | FirmConfigDTO" has no attribute "initial_base_annual_rate"  [union-attr]
+simulation\decisions\firm\financial_strategy.py:76:55: error: Unsupported right operand type for in ("MarketHistoryDTO")  [operator]
+simulation\decisions\firm\financial_strategy.py:77:33: error: Value of type "MarketHistoryDTO" is not indexable  [index]
+simulation\decisions\firm\financial_strategy.py:80:26: error: Item "HouseholdConfigDTO" of "HouseholdConfigDTO | FirmConfigDTO" has no attribute "default_loan_spread"  [union-attr]
+modules\household\engines\budget.py:81:69: error: Incompatible types (expression has type "StateWrapper", TypedDict item "household_state" has type "HouseholdSnapshotDTO")  [typeddict-item]
+simulation\decisions\ai_driven_household_engine.py:56:40: error: Incompatible types in assignment (expression has type "HouseholdStateDTO | FirmStateDTO", variable has type "HouseholdStateDTO")  [assignment]
+simulation\decisions\ai_driven_household_engine.py:57:38: error: Incompatible types in assignment (expression has type "HouseholdConfigDTO | FirmConfigDTO", variable has type "HouseholdConfigDTO")  [assignment]
+simulation\agents\government.py:71:19: error: Incompatible types in assignment (expression has type "int", base class "IFinancialAgent" defined the type as "AgentID")  [assignment]
+simulation\agents\government.py:118:13: error: Attribute "policy_engine" already defined on line 116  [no-redef]
+simulation\agents\government.py:120:13: error: Attribute "policy_engine" already defined on line 116  [no-redef]
+simulation\agents\government.py:181:16: error: Incompatible return value type (got "dict[str, int]", expected "dict[str, float]")  [return-value]
+simulation\agents\government.py:181:16: note: "dict" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+simulation\agents\government.py:181:16: note: Consider using "Mapping" instead, which is covariant in the value type
+simulation\agents\government.py:185:16: error: Incompatible return value type (got "dict[str, int]", expected "dict[str, float]")  [return-value]
+simulation\agents\government.py:185:16: note: "dict" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+simulation\agents\government.py:185:16: note: Consider using "Mapping" instead, which is covariant in the value type
+simulation\agents\government.py:189:16: error: Incompatible return value type (got "dict[str, int]", expected "dict[str, float]")  [return-value]
+simulation\agents\government.py:189:16: note: "dict" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+simulation\agents\government.py:189:16: note: Consider using "Mapping" instead, which is covariant in the value type
+simulation\agents\government.py:211:77: error: Argument 2 to "calculate_tax_liability" of "ITaxService" has incompatible type "float"; expected "int"  [arg-type]
+simulation\agents\government.py:214:57: error: Argument 1 to "calculate_corporate_tax" of "ITaxService" has incompatible type "float"; expected "int"  [arg-type]
+simulation\agents\government.py:262:36: error: Too many arguments for "decide" of "IGovernmentPolicy"  [call-arg]
+simulation\agents\government.py:264:22: error: Argument 2 to "decide" of "IGovernmentPolicy" has incompatible type "GovernmentSensoryDTO | None"; expected "dict[str, Any]"  [arg-type]
+simulation\agents\government.py:270:36: error: Missing positional arguments "market_data", "current_tick" in call to "decide" of "IGovernmentPolicy"  [call-arg]
+simulation\agents\government.py:466:19: error: Item "None" of "ISettlementSystem | None" has no attribute "transfer"  [union-attr]
+simulation\agents\government.py:466:51: error: Argument 1 to "transfer" of "ISettlementSystem" has incompatible type "Government"; expected "IFinancialEntity"  [arg-type]
+simulation\agents\government.py:466:51: note: Following member(s) of "Government" have conflicts:
+simulation\agents\government.py:466:51: note:     id: expected "AgentID", got "int"
+simulation\agents\government.py:597:54: error: Argument 1 to "transfer" of "ISettlementSystem" has incompatible type "IAgent | int | str"; expected "IFinancialEntity"  [arg-type]
+simulation\agents\government.py:597:61: error: Argument 2 to "transfer" of "ISettlementSystem" has incompatible type "IAgent | int | str"; expected "IFinancialEntity"  [arg-type]
+simulation\agents\government.py:600:41: error: Argument 1 to "append" of "list" has incompatible type "ITransaction"; expected "Transaction"  [arg-type]
+simulation\agents\government.py:606:39: error: Argument "payer_id" to "TaxCollectionResult" has incompatible type "int | Any | str"; expected "AgentID"  [arg-type]
+simulation\agents\government.py:607:39: error: Argument "payee_id" to "TaxCollectionResult" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\agents\government.py:612:80: error: Incompatible default for argument "households" (default has type "None", argument has type "list[Any]")  [assignment]
+simulation\agents\government.py:612:80: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+simulation\agents\government.py:612:80: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+simulation\core_agents.py:180:19: error: Argument "major" to "EconStateDTO" has incompatible type "str | None"; expected "IndustryDomain | None"  [arg-type]
+simulation\core_agents.py:236:24: error: "None" object is not iterable  [misc]
+simulation\core_agents.py:236:64: error: No overload variant of "get" of "dict" matches argument types "None", "tuple[float, float]"  [call-overload]
+simulation\core_agents.py:236:64: note: Possible overload variants:
+simulation\core_agents.py:236:64: note:     def get(self, str, None = ..., /) -> Any | None
+simulation\core_agents.py:236:64: note:     def get(self, str, Any, /) -> Any
+simulation\core_agents.py:236:64: note:     def [_T] get(self, str, _T, /) -> Any | _T
+simulation\core_agents.py:305:9: error: "IDecisionEngine" has no attribute "loan_market"  [attr-defined]
+simulation\core_agents.py:306:9: error: "IDecisionEngine" has no attribute "logger"  [attr-defined]
+simulation\core_agents.py:356:20: error: Argument "assets" to "AgentStateDTO" has incompatible type "dict[str, int]"; expected "dict[str, float]"  [arg-type]
+simulation\core_agents.py:356:20: note: "dict" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+simulation\core_agents.py:356:20: note: Consider using "Mapping" instead, which is covariant in the value type
+simulation\core_agents.py:672:24: error: Argument "goods_data" to "DecisionContext" has incompatible type "list[dict[str, Any]]"; expected "list[GoodsDTO]"  [arg-type]
+simulation\core_agents.py:678:28: error: Argument "agent_registry" to "DecisionContext" has incompatible type "dict[str, int]"; expected "dict[str, AgentID]"  [arg-type]
+simulation\core_agents.py:682:27: error: "IDecisionEngine" has no attribute "make_decisions"; maybe "make_decision"?  [attr-defined]
+simulation\core_agents.py:759:5: error: Cannot override writeable attribute with read-only property  [override]
+simulation\core_agents.py:813:5: error: Method "assets" is marked as an override, but no base method was found with this name  [misc]
+simulation\core_agents.py:833:6: error: Name "balance_pennies" already defined on line 816  [no-redef]
+simulation\core_agents.py:871:5: error: Method "get_assets_by_currency" is marked as an override, but no base method was found with this name  [misc]
+simulation\core_agents.py:1005:32: error: Argument "portfolio_holdings" to "HouseholdStateDTO" has incompatible type "dict[int, float]"; expected "dict[int, Share]"  [arg-type]
+simulation\decisions\ai_driven_firm_engine.py:30:104: error: Name "DecisionOutputDTO" is not defined  [name-defined]
+simulation\decisions\ai_driven_firm_engine.py:40:61: error: Argument 1 to "realize_ceo_actions" of "CorporateManager" has incompatible type "HouseholdStateDTO | FirmStateDTO"; expected "FirmStateDTO"  [arg-type]
+simulation\decisions\ai_driven_firm_engine.py:52:65: error: Value of type "GoodsDTO" is not indexable  [index]
+simulation\decisions\ai_driven_firm_engine.py:53:25: error: "GoodsDTO" has no attribute "get"  [attr-defined]
+simulation\firms.py:129:36: error: Cannot instantiate abstract class "FinancialComponent" with abstract attribute "id"  [abstract]
+simulation\firms.py:198:9: error: "IDecisionEngine" has no attribute "loan_market"  [attr-defined]
+simulation\firms.py:254:20: error: Argument "assets" to "AgentStateDTO" has incompatible type "dict[str, int]"; expected "dict[str, float]"  [arg-type]
+simulation\firms.py:254:20: note: "dict" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+simulation\firms.py:254:20: note: Consider using "Mapping" instead, which is covariant in the value type
+simulation\firms.py:400:47: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+simulation\firms.py:460:16: error: Incompatible return value type (got "dict[str, int]", expected "dict[str, float]")  [return-value]
+simulation\firms.py:460:16: note: "dict" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+simulation\firms.py:460:16: note: Consider using "Mapping" instead, which is covariant in the value type
+simulation\firms.py:633:13: error: Argument 1 to "calculate_valuation" of "IFinanceEngine" has incompatible type "FinanceState"; expected "FinanceStateDTO"  [arg-type]
+simulation\firms.py:710:9: error: "IFinanceEngine" has no attribute "record_expense"  [attr-defined]
+simulation\firms.py:726:75: error: Argument 1 to "calculate_liquidation_tax_claims" of "ITaxService" has incompatible type "simulation.firms.Firm"; expected "modules.finance.api.Firm"  [arg-type]
+simulation\firms.py:733:12: error: "IDecisionEngine" has no attribute "loan_market"  [attr-defined]
+simulation\firms.py:734:29: error: "IDecisionEngine" has no attribute "loan_market"  [attr-defined]
+simulation\firms.py:761:40: error: Value of type "ShareholderData" is not indexable  [index]
+simulation\firms.py:859:75: error: Incompatible default for argument "market_context" (default has type "None", argument has type "MarketContextDTO")  [assignment]
+simulation\firms.py:859:75: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+simulation\firms.py:859:75: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+simulation\firms.py:873:13: error: Argument 3 to "adjust_marketing_budget" of "ISalesEngine" has incompatible type "float"; expected "int"  [arg-type]
+simulation\firms.py:874:26: error: Argument "last_revenue" to "adjust_marketing_budget" of "ISalesEngine" has incompatible type "float"; expected "int"  [arg-type]
+simulation\firms.py:875:34: error: Argument "last_marketing_spend" to "adjust_marketing_budget" of "ISalesEngine" has incompatible type "float"; expected "int"  [arg-type]
+simulation\firms.py:902:23: error: Argument "employees" to "HRStateDTO" has incompatible type "list[int]"; expected "list[str]"  [arg-type]
+simulation\firms.py:903:28: error: Argument "employees_data" to "HRStateDTO" has incompatible type "dict[int, dict[str, Any | float | int]]"; expected "dict[str, dict[str, Any]]"  [arg-type]
+simulation\firms.py:911:21: error: Argument "balance" to "FinanceStateDTO" has incompatible type "dict[str, int]"; expected "int"  [arg-type]
+simulation\firms.py:912:31: error: Argument "revenue_this_turn" to "FinanceStateDTO" has incompatible type "dict[str, int]"; expected "int"  [arg-type]
+simulation\firms.py:913:32: error: Argument "expenses_this_tick" to "FinanceStateDTO" has incompatible type "dict[str, int]"; expected "int"  [arg-type]
+simulation\firms.py:973:51: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+simulation\firms.py:1006:5: error: Method "get_agent_data" is marked as an override, but no base method was found with this name  [misc]
+simulation\firms.py:1052:23: error: Argument "employees" to "HRStateDTO" has incompatible type "list[int]"; expected "list[str]"  [arg-type]
+simulation\firms.py:1053:28: error: Argument "employees_data" to "HRStateDTO" has incompatible type "dict[int, dict[str, Any | float | int]]"; expected "dict[str, dict[str, Any]]"  [arg-type]
+simulation\firms.py:1133:18: error: "IDecisionEngine" has no attribute "loan_market"  [attr-defined]
+simulation\firms.py:1246:38: error: Argument 1 to "execute_internal_orders" of "Firm" has incompatible type "list[dict[str, Any] | CanonicalOrderDTO]"; expected "list[CanonicalOrderDTO]"  [arg-type]
+simulation\firms.py:1246:50: error: Argument 2 to "execute_internal_orders" of "Firm" has incompatible type "FiscalContext | None"; expected "FiscalContext"  [arg-type]
+simulation\firms.py:1249:53: error: Item "dict[str, Any]" of "dict[str, Any] | CanonicalOrderDTO" has no attribute "market_id"  [union-attr]
+simulation\firms.py:1273:16: error: Incompatible return value type (got "tuple[list[dict[str, Any] | CanonicalOrderDTO], str]", expected "tuple[list[CanonicalOrderDTO], Any]")  [return-value]
+simulation\firms.py:1383:27: error: Argument "current_price" to "PricingInputDTO" has incompatible type "float"; expected "int"  [arg-type]
+simulation\firms.py:1387:76: error: Argument 1 to "get_estimated_unit_cost" of "IFinanceEngine" has incompatible type "FinanceState"; expected "FinanceStateDTO"  [arg-type]
+simulation\firms.py:1423:27: error: Argument "survival_cost" to "TaxPolicyDTO" has incompatible type "float"; expected "int"  [arg-type]
+simulation\firms.py:1433:35: error: Argument "labor_market_min_wage" to "HRPayrollContextDTO" has incompatible type "float"; expected "int"  [arg-type]
+simulation\firms.py:1658:26: error: "IHREngine" has no attribute "calculate_payroll_obligations"  [attr-defined]
+simulation\firms.py:1683:31: error: "IFinanceEngine" has no attribute "calculate_financial_obligations"  [attr-defined]
+simulation\firms.py:1716:26: error: "IHREngine" has no attribute "apply_payroll"  [attr-defined]
+simulation\firms.py:1729:23: error: "IFinanceEngine" has no attribute "apply_financials"  [attr-defined]
+simulation\firms.py:1741:31: error: Argument "seller_id" to "Transaction" has incompatible type "Any | None"; expected "int | str"  [arg-type]
+simulation\systems\inheritance_manager.py:46:20: error: Incompatible types in assignment (expression has type "int | dict[str, int]", variable has type "dict[str, int]")  [assignment]
+simulation\systems\inheritance_manager.py:46:51: error: Argument 2 to "get" of "dict" has incompatible type "float"; expected "dict[str, int]"  [arg-type]
+simulation\systems\inheritance_manager.py:47:16: error: No overload variant of "round" matches argument types "dict[str, int]", "int"  [call-overload]
+simulation\systems\inheritance_manager.py:47:16: note: Possible overload variants:
+simulation\systems\inheritance_manager.py:47:16: note:     def [_T] round(number: _SupportsRound1[_T], ndigits: None = ...) -> _T
+simulation\systems\inheritance_manager.py:47:16: note:     def [_T] round(number: _SupportsRound2[_T], ndigits: SupportsIndex) -> _T
+simulation\systems\inheritance_manager.py:97:39: error: Item "None" of "Any | None" has no attribute "execute"  [union-attr]
+simulation\systems\inheritance_manager.py:136:31: error: Item "None" of "Any | None" has no attribute "execute"  [union-attr]
+simulation\systems\inheritance_manager.py:144:25: error: Unsupported target for indexed assignment ("dict[str, Any] | None")  [index]
+simulation\systems\inheritance_manager.py:172:31: error: Item "None" of "Any | None" has no attribute "execute"  [union-attr]
+simulation\systems\inheritance_manager.py:176:25: error: Unsupported target for indexed assignment ("dict[str, Any] | None")  [index]
+simulation\systems\inheritance_manager.py:204:23: error: Item "None" of "Any | None" has no attribute "execute"  [union-attr]
+simulation\systems\inheritance_manager.py:212:21: error: No overload variant of "get" of "dict" matches argument type "int"  [call-overload]
+simulation\systems\inheritance_manager.py:212:21: note: Possible overload variants:
+simulation\systems\inheritance_manager.py:212:21: note:     def get(self, AgentID, None = ..., /) -> Any | None
+simulation\systems\inheritance_manager.py:212:21: note:     def get(self, AgentID, Any, /) -> Any
+simulation\systems\inheritance_manager.py:212:21: note:     def [_T] get(self, AgentID, _T, /) -> Any | _T
+simulation\systems\inheritance_manager.py:233:27: error: Item "None" of "Any | None" has no attribute "execute"  [union-attr]
+simulation\systems\inheritance_manager.py:252:28: error: Item "None" of "Any | None" has no attribute "execute"  [union-attr]
+simulation\systems\inheritance_manager.py:254:22: error: Unsupported target for indexed assignment ("dict[str, Any] | None")  [index]
+simulation\systems\inheritance_manager.py:273:27: error: Item "None" of "Any | None" has no attribute "execute"  [union-attr]
+simulation\systems\inheritance_manager.py:295:27: error: Item "None" of "Any | None" has no attribute "execute"  [union-attr]
+simulation\systems\inheritance_manager.py:297:21: error: Unsupported target for indexed assignment ("dict[str, Any] | None")  [index]
+simulation\systems\immigration_manager.py:129:24: error: Argument "engine" to "Household" has incompatible type "AIDrivenHouseholdDecisionEngine"; expected "IDecisionEngine"  [arg-type]
+simulation\systems\immigration_manager.py:135:39: error: Argument "initial_assets_record" to "Household" has incompatible type "float"; expected "int | None"  [arg-type]
+simulation\systems\immigration_manager.py:152:22: error: "ISettlementSystem" has no attribute "create_and_transfer"  [attr-defined]
+simulation\factories\household_factory.py:60:16: error: Argument "id" to "AgentCoreConfigDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\factories\household_factory.py:82:20: error: Argument "engine" to "Household" has incompatible type "Any | None"; expected "IDecisionEngine"  [arg-type]
+simulation\factories\household_factory.py:117:9: error: "IDecisionEngine" has no attribute "markets"  [attr-defined]
+simulation\factories\household_factory.py:118:9: error: "IDecisionEngine" has no attribute "goods_data"  [attr-defined]
+simulation\factories\household_factory.py:333:36: error: Argument "ai_decision_engine" to "HouseholdAI" has incompatible type "Any | None"; expected "AIDecisionEngine"  [arg-type]
+simulation\factories\household_factory.py:341:13: error: "AIDrivenHouseholdDecisionEngine" has no attribute "loan_market"  [attr-defined]
+simulation\service_firms.py:51:5: error: Signature of "produce" incompatible with supertype "simulation.firms.Firm"  [override]
+simulation\service_firms.py:51:5: note:      Superclass:
+simulation\service_firms.py:51:5: note:          def produce(self, current_time: int, technology_manager: Any | None = ..., effects_queue: list[dict[str, Any]] | None = ...) -> None
+simulation\service_firms.py:51:5: note:      Subclass:
+simulation\service_firms.py:51:5: note:          def produce(self, current_time: int, technology_manager: Any | None = ...) -> None
+simulation\service_firms.py:96:28: error: "ServiceFirm" has no attribute "_inventory"  [attr-defined]
+simulation\service_firms.py:107:9: error: "ServiceFirm" has no attribute "_inventory"  [attr-defined]
+simulation\service_firms.py:143:9: error: Call to abstract method "update_needs" of "IOrchestratorAgent" with trivial body via super() is unsafe  [safe-super]
+simulation\service_firms.py:143:9: error: Too many arguments for "update_needs" of "IOrchestratorAgent"  [call-arg]
+simulation\action_processor.py:58:28: error: Argument "goods_data" to "SimulationState" has incompatible type "list[dict[str, Any]]"; expected "dict[str, Any]"  [arg-type]
+simulation\action_processor.py:71:33: error: Argument "inactive_agents" to "SimulationState" has incompatible type "dict[int, Any]"; expected "dict[AgentID, Any]"  [arg-type]
+simulation\systems\demographic_manager.py:33:45: error: Cannot determine type of "initialized"  [has-type]
+simulation\systems\demographic_manager.py:66:26: error: Incompatible types (expression has type "float", TypedDict item "count" has type "int")  [typeddict-item]
+simulation\systems\demographic_manager.py:71:26: error: Incompatible types (expression has type "float", TypedDict item "count" has type "int")  [typeddict-item]
+simulation\systems\demographic_manager.py:75:33: error: Incompatible types (expression has type "float", TypedDict item "total_population" has type "int")  [typeddict-item]
+simulation\systems\demographic_manager.py:76:34: error: Incompatible types (expression has type "float", TypedDict item "active_population" has type "int")  [typeddict-item]
+simulation\systems\demographic_manager.py:153:46: error: Missing positional argument "dto_class" in call to "create_config_dto"  [call-arg]
+simulation\systems\demographic_manager.py:166:25: error: Unexpected keyword argument "simulation" for "create_newborn" of "IHouseholdFactory"  [call-arg]
+modules\household\api.py:296:5: note: "create_newborn" of "IHouseholdFactory" defined here
+simulation\systems\analytics_system.py:59:41: error: Incompatible types in assignment (expression has type "int | None", variable has type "AgentID | None")  [assignment]
+simulation\systems\analytics_system.py:170:16: error: Incompatible return value type (got "tuple[list[AgentStateData], list[TransactionData], EconomicIndicatorData | None, list[MarketHistoryData]]", expected "tuple[list[AgentStateData], list[TransactionData], EconomicIndicatorData, list[MarketHistoryData]]")  [return-value]
+simulation\orchestration\utils.py:34:29: error: Item "DataclassInstance" of "DataclassInstance | type[DataclassInstance]" has no attribute "loans"  [union-attr]
+simulation\orchestration\utils.py:34:29: error: Item "ABCMeta" of "DataclassInstance | type[DataclassInstance]" has no attribute "loans"  [union-attr]
+simulation\orchestration\utils.py:40:43: error: Item "DataclassInstance" of "DataclassInstance | type[DataclassInstance]" has no attribute "outstanding_balance"  [union-attr]
+simulation\orchestration\utils.py:40:43: error: Item "ABCMeta" of "DataclassInstance | type[DataclassInstance]" has no attribute "outstanding_balance"  [union-attr]
+simulation\orchestration\utils.py:40:70: error: Item "DataclassInstance" of "DataclassInstance | type[DataclassInstance]" has no attribute "interest_rate"  [union-attr]
+simulation\orchestration\utils.py:40:70: error: Item "ABCMeta" of "DataclassInstance | type[DataclassInstance]" has no attribute "interest_rate"  [union-attr]
+simulation\orchestration\utils.py:48:46: error: Argument 1 to "asdict" has incompatible type "DataclassInstance | type[DataclassInstance]"; expected "DataclassInstance"  [arg-type]
+simulation\orchestration\utils.py:55:58: error: Item "DataclassInstance" of "DataclassInstance | type[DataclassInstance]" has no attribute "total_outstanding_pennies"  [union-attr]
+simulation\orchestration\utils.py:55:58: error: Item "ABCMeta" of "DataclassInstance | type[DataclassInstance]" has no attribute "total_outstanding_pennies"  [union-attr]
+simulation\metrics\economic_tracker.py:56:28: error: Need type annotation for "gdp_history"  [var-annotated]
+simulation\metrics\economic_tracker.py:57:28: error: Need type annotation for "cpi_history"  [var-annotated]
+simulation\metrics\economic_tracker.py:58:32: error: Need type annotation for "m2_leak_history"  [var-annotated]
+simulation\metrics\economic_tracker.py:145:102: error: Incompatible default for argument "markets" (default has type "None", argument has type "dict[str, Market]")  [assignment]
+simulation\metrics\economic_tracker.py:145:102: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+simulation\metrics\economic_tracker.py:145:102: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+simulation\metrics\economic_tracker.py:167:60: error: Argument 1 to "_calculate_total_wallet_value" of "EconomicIndicatorTracker" has incompatible type "dict[str, int]"; expected "dict[str, float]"  [arg-type]
+simulation\metrics\economic_tracker.py:167:60: note: "dict" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+simulation\metrics\economic_tracker.py:167:60: note: Consider using "Mapping" instead, which is covariant in the value type
+simulation\metrics\economic_tracker.py:223:13: error: Generator has incompatible item type "float"; expected "bool"  [misc]
+simulation\metrics\economic_tracker.py:223:48: error: Argument 1 to "_calculate_total_wallet_value" of "EconomicIndicatorTracker" has incompatible type "dict[str, int]"; expected "dict[str, float]"  [arg-type]
+simulation\metrics\economic_tracker.py:223:48: note: "dict" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+simulation\metrics\economic_tracker.py:223:48: note: Consider using "Mapping" instead, which is covariant in the value type
+simulation\metrics\economic_tracker.py:233:73: error: Argument 1 to "_calculate_total_wallet_value" of "EconomicIndicatorTracker" has incompatible type "dict[str, int]"; expected "dict[str, float]"  [arg-type]
+simulation\metrics\economic_tracker.py:233:73: note: "dict" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+simulation\metrics\economic_tracker.py:233:73: note: Consider using "Mapping" instead, which is covariant in the value type
+simulation\metrics\economic_tracker.py:246:41: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+simulation\metrics\economic_tracker.py:317:20: error: Unsupported operand types for < ("int" and "None")  [operator]
+simulation\metrics\economic_tracker.py:317:20: note: Left operand is of type "Any | None"
+simulation\metrics\economic_tracker.py:321:49: error: Argument 1 to "sum" has incompatible type "list[Any | None]"; expected "Iterable[bool]"  [arg-type]
+simulation\systems\firm_management.py:24:63: error: Name "ScenarioStrategy" is not defined  [name-defined]
+simulation\systems\firm_management.py:83:23: error: Incompatible types in assignment (expression has type "FirmAI", variable has type "ServiceFirmAI")  [assignment]
+simulation\systems\firm_management.py:101:37: error: Incompatible types in assignment (expression has type "AIDrivenFirmDecisionEngine", variable has type "RuleBasedFirmDecisionEngine")  [assignment]
+simulation\systems\firm_management.py:114:16: error: Argument "id" to "AgentCoreConfigDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\systems\firm_management.py:127:28: error: Only concrete class can be given where "type[Firm]" is expected  [type-abstract]
+simulation\systems\firm_management.py:143:9: error: "Firm" has no attribute "founder_id"  [attr-defined]
+simulation\orchestration\phases\pre_sequence.py:114:14: error: Name "context" already defined on line 49  [no-redef]
+simulation\orchestration\phases\pre_sequence.py:122:81: error: Argument 2 to "execute_scheduled_events" of "EventSystem" has incompatible type "SocialMobilityContext"; expected "EventContext"  [arg-type]
+simulation\orchestration\phases\pre_sequence.py:122:90: error: Argument 3 to "execute_scheduled_events" of "EventSystem" has incompatible type "ScenarioStrategy | None"; expected "ScenarioStrategy"  [arg-type]
+simulation\orchestration\phases\post_sequence.py:23:62: error: Argument 1 to "process_housing" of "HousingSystem" has incompatible type "SimulationState"; expected "Simulation"  [arg-type]
+simulation\orchestration\phases\post_sequence.py:24:69: error: Argument 1 to "apply_homeless_penalty" of "HousingSystem" has incompatible type "SimulationState"; expected "Simulation"  [arg-type]
+simulation\orchestration\phases\post_sequence.py:47:32: error: Item "None" of "Any | None" has no attribute "run_id"  [union-attr]
+simulation\orchestration\phases\post_sequence.py:80:32: error: Item "None" of "Any | None" has no attribute "run_id"  [union-attr]
+simulation\orchestration\phases\post_sequence.py:152:14: error: Item "None" of "Any | None" has no attribute "track_all_firms"  [union-attr]
+simulation\orchestration\phases\decision.py:45:17: error: "Firm" has no attribute "pre_state_snapshot"  [attr-defined]
+simulation\orchestration\phases\decision.py:48:17: error: "Household" has no attribute "pre_state_snapshot"; maybe "create_snapshot_dto"?  [attr-defined]
+simulation\orchestration\phases\decision.py:72:31: error: "tuple[list[CanonicalOrderDTO], Any]" has no attribute "orders"  [attr-defined]
+simulation\orchestration\phases\decision.py:106:36: error: "tuple[list[CanonicalOrderDTO], tuple[Tactic, Aggressiveness]]" has no attribute "orders"  [attr-defined]
+simulation\orchestration\phases\decision.py:107:28: error: "tuple[list[CanonicalOrderDTO], tuple[Tactic, Aggressiveness]]" has no attribute "metadata"  [attr-defined]
+simulation\orchestration\phases\decision.py:115:43: error: "tuple[Tactic, Aggressiveness]" has no attribute "work_aggressiveness"  [attr-defined]
+simulation\orchestration\phases\decision.py:138:57: error: Argument 1 to "spawn_firm" of "FirmSystem" has incompatible type "SimulationState"; expected "Simulation"  [arg-type]
+simulation\orchestration\phases\decision.py:167:88: error: Incompatible types (expression has type "dict[AgentID, Any]", TypedDict item "agents" has type "dict[int, Any]")  [typeddict-item]
+simulation\orchestration\phases\decision.py:167:122: error: Incompatible types (expression has type "VectorizedHouseholdPlanner | None", TypedDict item "breeding_planner" has type "VectorizedHouseholdPlanner")  [typeddict-item]
+simulation\orchestration\phases\decision.py:167:186: error: Incompatible types (expression has type "dict[AgentID, float]", TypedDict item "household_time_allocation" has type "dict[int, float]")  [typeddict-item]
+simulation\orchestration\phases\decision.py:170:41: error: Incompatible types in assignment (expression has type "dict[int, dict[str, Any]]", variable has type "dict[AgentID, dict[str, Any]] | None")  [assignment]
+simulation\orchestration\tick_orchestrator.py:35:47: error: Argument 1 to "PoliticsSystem" has incompatible type "Any | None"; expected "IConfigManager"  [arg-type]
+simulation\orchestration\tick_orchestrator.py:160:24: error: Argument "goods_data" to "SimulationState" has incompatible type "list[dict[str, Any]]"; expected "dict[str, Any]"  [arg-type]
+simulation\orchestration\tick_orchestrator.py:173:29: error: Argument "inactive_agents" to "SimulationState" has incompatible type "dict[int, Any]"; expected "dict[AgentID, Any]"  [arg-type]
+simulation\orchestration\tick_orchestrator.py:230:35: error: Argument 1 to "update" of "MutableMapping" has incompatible type "dict[AgentID, Any]"; expected "SupportsKeysAndGetItem[int, Any]"  [arg-type]
+simulation\orchestration\tick_orchestrator.py:254:26: error: Item "None" of "Government | None" has no attribute "get_assets_by_currency"  [union-attr]
+simulation\orchestration\tick_orchestrator.py:263:35: error: Item "None" of "Government | None" has no attribute "get_monetary_delta"  [union-attr]
+simulation\orchestration\tick_orchestrator.py:280:36: error: Item "None" of "Government | None" has no attribute "get_monetary_delta"  [union-attr]
+simulation\engine.py:35:19: error: Name "IGlobalRegistry" is not defined  [name-defined]
+simulation\engine.py:36:28: error: Name "ISettlementSystem" is not defined  [name-defined]
+simulation\engine.py:37:25: error: Name "IAgentRegistry" is not defined  [name-defined]
+simulation\engine.py:71:29: error: Incompatible types in assignment (expression has type "SimulationLogger", variable has type "None")  [assignment]
+simulation\engine.py:307:16: error: Incompatible return value type (got "dict[str, int]", expected "float")  [return-value]
+modules\testing\utils.py:16:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\testing\utils.py:100:13: error: Need type annotation for "missing_args" (hint: "missing_args: list[<type>] = ...")  [var-annotated]
+modules\system\registry.py:8:5: error: Module "simulation.agents" has no attribute "Agent"  [attr-defined]
+modules\system\registry.py:13:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\system\registry.py:78:5: error: Return type "bool" of "set" incompatible with return type "None" in supertype "modules.system.api.IConfigurationRegistry"  [override]
+modules\system\escrow_agent.py:16:5: error: Cannot override writeable attribute with read-only property  [override]
+modules\system\escrow_agent.py:16:5: error: Signature of "id" incompatible with supertype "IFinancialAgent"  [override]
+modules\system\escrow_agent.py:16:5: note:      Superclass:
+modules\system\escrow_agent.py:16:5: note:          AgentID
+modules\system\escrow_agent.py:16:5: note:      Subclass:
+modules\system\escrow_agent.py:16:5: note:          int
+modules\system\execution\public_manager.py:36:5: error: Cannot override writeable attribute with read-only property  [override]
+modules\system\execution\public_manager.py:36:5: error: Signature of "id" incompatible with supertype "IFinancialAgent"  [override]
+modules\system\execution\public_manager.py:36:5: note:      Superclass:
+modules\system\execution\public_manager.py:36:5: note:          AgentID
+modules\system\execution\public_manager.py:36:5: note:      Subclass:
+modules\system\execution\public_manager.py:36:5: note:          int
+modules\market\housing_purchase_api.py:5:1: error: Module "modules.finance.api" has no attribute "LoanInfoDTO"  [attr-defined]
+modules\labor\system.py:176:5: error: Cannot override writeable attribute with read-only property  [override]
+modules\labor\system.py:183:5: error: Cannot override writeable attribute with read-only property  [override]
+modules\labor\system.py:187:5: error: Cannot override writeable attribute with read-only property  [override]
+modules\hr\service.py:36:34: error: "IEmployeeDataProvider" has no attribute "_econ_state"  [attr-defined]
+modules\housing\service.py:75:29: error: Incompatible types in assignment (expression has type "dict[str, object]", variable has type "LienDTO")  [assignment]
+modules\housing\service.py:122:21: error: No overload variant of "get" of "dict" matches argument type "int | str"  [call-overload]
+modules\housing\service.py:122:21: note: Possible overload variants:
+modules\housing\service.py:122:21: note:     def get(self, AgentID, None = ..., /) -> Any | None
+modules\housing\service.py:122:21: note:     def get(self, AgentID, Any, /) -> Any
+modules\housing\service.py:122:21: note:     def [_T] get(self, AgentID, _T, /) -> Any | _T
+modules\housing\service.py:123:22: error: No overload variant of "get" of "dict" matches argument type "int | str"  [call-overload]
+modules\housing\service.py:123:22: note: Possible overload variants:
+modules\housing\service.py:123:22: note:     def get(self, AgentID, None = ..., /) -> Any | None
+modules\housing\service.py:123:22: note:     def get(self, AgentID, Any, /) -> Any
+modules\housing\service.py:123:22: note:     def [_T] get(self, AgentID, _T, /) -> Any | _T
+modules\housing\service.py:145:17: error: No overload variant of "get" of "dict" matches argument type "int | str"  [call-overload]
+modules\housing\service.py:145:17: note: Possible overload variants:
+modules\housing\service.py:145:17: note:     def get(self, AgentID, None = ..., /) -> Any | None
+modules\housing\service.py:145:17: note:     def get(self, AgentID, Any, /) -> Any
+modules\housing\service.py:145:17: note:     def [_T] get(self, AgentID, _T, /) -> Any | _T
+modules\housing\service.py:146:18: error: No overload variant of "get" of "dict" matches argument type "int | str"  [call-overload]
+modules\housing\service.py:146:18: note: Possible overload variants:
+modules\housing\service.py:146:18: note:     def get(self, AgentID, None = ..., /) -> Any | None
+modules\housing\service.py:146:18: note:     def get(self, AgentID, Any, /) -> Any
+modules\housing\service.py:146:18: note:     def [_T] get(self, AgentID, _T, /) -> Any | _T
+modules\housing\service.py:168:37: error: Incompatible types in assignment (expression has type "dict[str, object]", variable has type "LienDTO")  [assignment]
+modules\housing\service.py:195:44: error: "IResident" has no attribute "id"  [attr-defined]
+modules\housing\planner.py:5:1: error: Module "modules.market.housing_planner_api" has no attribute "HousingOfferRequestDTO"; maybe "HousingDecisionRequestDTO"?  [attr-defined]
+modules\household\social_component.py:5:1: error: Module "modules.household.api" has no attribute "ISocialComponent"  [attr-defined]
+modules\household\social_component.py:102:26: error: Argument "leisure_type" to "LeisureEffectDTO" has incompatible type "str"; expected "Literal['PARENTING', 'SELF_DEV', 'ENTERTAINMENT', 'IDLE']"  [arg-type]
+modules\household\social_component.py:168:13: error: "SocialStateDTO" has no attribute "survival_need_high_turns"  [attr-defined]
+modules\household\social_component.py:170:13: error: "SocialStateDTO" has no attribute "survival_need_high_turns"  [attr-defined]
+modules\household\social_component.py:172:12: error: "SocialStateDTO" has no attribute "survival_need_high_turns"  [attr-defined]
+modules\household\econ_component.py:47:18: error: "EconStateDTO" has no attribute "current_wage"  [attr-defined]
+modules\household\econ_component.py:142:25: error: "EconStateDTO" has no attribute "expected_wage"; maybe "expected_wage_pennies"?  [attr-defined]
+modules\household\decision_unit.py:40:106: error: Incompatible types (expression has type "HousingMarketSnapshotDTO | None", TypedDict item "housing_market_snapshot" has type "HousingMarketSnapshotDTO")  [typeddict-item]
+modules\household\decision_unit.py:53:27: error: Item "None" of "LaborMarketSnapshotDTO | None" has no attribute "avg_wage"  [union-attr]
+modules\household\decision_unit.py:89:29: error: Property "quantity" defined in "CanonicalOrderDTO" is read-only  [misc]
+modules\household\consumption_manager.py:50:53: error: Argument 1 to "append" of "list" has incompatible type "dict[str, Any]"; expected "DurableAssetDTO"  [arg-type]
+modules\household\bio_component.py:6:1: error: Module "modules.household.api" has no attribute "IBioComponent"; maybe "IEconComponent"?  [attr-defined]
+modules\household\mixins\_properties.py:27:16: error: Incompatible return value type (got "dict[str, int]", expected "dict[str, float]")  [return-value]
+modules\household\mixins\_properties.py:27:16: note: "dict" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+modules\household\mixins\_properties.py:27:16: note: Consider using "Mapping" instead, which is covariant in the value type
+modules\household\mixins\_properties.py:31:9: error: Property "assets" defined in "EconStateDTO" is read-only  [misc]
+modules\household\mixins\_properties.py:31:35: error: Incompatible types in assignment (expression has type "dict[str, float]", variable has type "dict[str, int]")  [assignment]
+modules\household\mixins\_properties.py:123:16: error: "EconStateDTO" has no attribute "current_wage"  [attr-defined]
+modules\household\mixins\_properties.py:127:9: error: "EconStateDTO" has no attribute "current_wage"  [attr-defined]
+modules\household\mixins\_properties.py:229:16: error: "EconStateDTO" has no attribute "labor_income_this_tick"; maybe "labor_income_this_tick_pennies"?  [attr-defined]
+modules\household\mixins\_properties.py:233:9: error: "EconStateDTO" has no attribute "labor_income_this_tick"; maybe "labor_income_this_tick_pennies"?  [attr-defined]
+modules\household\mixins\_financials.py:23:5: error: Method "_internal_add_assets" is marked as an override, but no base method was found with this name  [misc]
+modules\household\mixins\_financials.py:24:37: error: Argument 1 to "add" of "IWallet" has incompatible type "float"; expected "int"  [arg-type]
+modules\household\mixins\_financials.py:27:5: error: Method "_internal_sub_assets" is marked as an override, but no base method was found with this name  [misc]
+modules\household\mixins\_financials.py:28:42: error: Argument 1 to "subtract" of "IWallet" has incompatible type "float"; expected "int"  [arg-type]
+modules\household\mixins\_financials.py:31:5: error: Method "adjust_assets" is marked as an override, but no base method was found with this name  [misc]
+modules\household\mixins\_financials.py:36:41: error: Argument 1 to "add" of "IWallet" has incompatible type "float"; expected "int"  [arg-type]
+modules\household\mixins\_financials.py:38:46: error: Argument 1 to "subtract" of "IWallet" has incompatible type "float"; expected "int"  [arg-type]
+modules\household\mixins\_financials.py:60:13: error: "EconStateDTO" has no attribute "current_wage"  [attr-defined]
+modules\household\mixins\_financials.py:87:9: error: "EconStateDTO" has no attribute "labor_income_this_tick"; maybe "labor_income_this_tick_pennies"?  [attr-defined]
+modules\household\mixins\_financials.py:101:9: error: "EconStateDTO" has no attribute "labor_income_this_tick"; maybe "labor_income_this_tick_pennies"?  [attr-defined]
+modules\household\mixins\_financials.py:102:9: error: "EconStateDTO" has no attribute "capital_income_this_tick"; maybe "capital_income_this_tick_pennies"?  [attr-defined]
+modules\government\tax\tests\test_service.py:53:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\government\tax\tests\test_service.py:75:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\government\policies\api.py:5:1: error: Module "simulation.dtos" has no attribute "GovernmentStateDTO"  [attr-defined]
+modules\government\engines\decision_engine.py:60:72: error: Argument 2 to "propose_actions" of "AdaptiveGovBrain" has incompatible type "PoliticalParty | Any | None"; expected "PoliticalParty"  [arg-type]
+modules\governance\judicial\system.py:73:54: error: Argument 1 to "get_balance" of "ISettlementSystem" has incompatible type "int"; expected "AgentID"  [arg-type]
+modules\governance\judicial\system.py:99:61: error: Argument 1 to "get_balance" of "ISettlementSystem" has incompatible type "int"; expected "AgentID"  [arg-type]
+modules\governance\judicial\system.py:132:71: error: Argument 1 to "register_shares" of "IShareholderRegistry" has incompatible type "int"; expected "AgentID"  [arg-type]
+modules\governance\judicial\system.py:132:80: error: Argument 2 to "register_shares" of "IShareholderRegistry" has incompatible type "int"; expected "AgentID"  [arg-type]
+modules\governance\judicial\system.py:135:99: error: Argument 1 to "get_shareholders_of_firm" of "IShareholderRegistry" has incompatible type "int"; expected "AgentID"  [arg-type]
+modules\governance\judicial\system.py:138:36: error: Value of type "ShareholderData" is not indexable  [index]
+modules\governance\judicial\system.py:139:52: error: Value of type "ShareholderData" is not indexable  [index]
+modules\governance\judicial\system.py:142:71: error: Argument 1 to "register_shares" of "IShareholderRegistry" has incompatible type "int"; expected "AgentID"  [arg-type]
+modules\governance\judicial\system.py:142:80: error: Argument 2 to "register_shares" of "IShareholderRegistry" has incompatible type "int"; expected "AgentID"  [arg-type]
+modules\governance\judicial\system.py:160:63: error: Argument 1 to "get_balance" of "ISettlementSystem" has incompatible type "int"; expected "AgentID"  [arg-type]
+modules\governance\judicial\system.py:166:33: error: Argument "debit_agent" to "transfer" of "ISettlementSystem" has incompatible type "ILiquidatable"; expected "IFinancialEntity"  [arg-type]
+modules\finance\shareholder_registry.py:15:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\finance\shareholder_registry.py:38:13: error: List comprehension has incompatible type List[dict[str, float]]; expected List[ShareholderData]  [misc]
+modules\finance\service.py:15:48: error: Argument 1 of "calculate_liquidation_tax_claims" is incompatible with supertype "modules.finance.api.ITaxService"; supertype defines the argument type as "Firm"  [override]
+modules\finance\service.py:15:48: note: This violates the Liskov substitution principle
+modules\finance\service.py:15:48: note: See https://mypy.readthedocs.io/en/stable/common_issues.html#incompatible-overrides
+modules\finance\service.py:22:30: error: Incompatible types in assignment (expression has type "int | dict[str, int]", variable has type "dict[str, int]")  [assignment]
+modules\finance\service.py:22:71: error: Argument 2 to "get" of "dict" has incompatible type "float"; expected "dict[str, int]"  [arg-type]
+modules\finance\service.py:24:12: error: Unsupported operand types for < ("int" and "dict[str, int]")  [operator]
+modules\finance\service.py:25:29: error: Unsupported operand types for * ("dict[str, int]" and "float")  [operator]
+modules\finance\service.py:25:29: note: Right operand is of type "Any | float"
+modules\finance\saga_handler.py:96:21: error: Item "None" of "IMarket | None" has no attribute "void_staged_application"  [union-attr]
+modules\finance\saga_handler.py:101:21: error: Item "None" of "IMarket | None" has no attribute "void_staged_application"  [union-attr]
+modules\finance\saga_handler.py:139:26: error: Item "IMarket" of "IMarket | None" has no attribute "stage_mortgage_application"  [union-attr]
+modules\finance\saga_handler.py:139:26: error: Item "None" of "IMarket | None" has no attribute "stage_mortgage_application"  [union-attr]
+modules\finance\saga_handler.py:156:18: error: Item "IMarket" of "IMarket | None" has no attribute "check_staged_application_status"  [union-attr]
+modules\finance\saga_handler.py:156:18: error: Item "None" of "IMarket | None" has no attribute "check_staged_application_status"  [union-attr]
+modules\finance\saga_handler.py:176:21: error: Item "IMarket" of "IMarket | None" has no attribute "convert_staged_to_loan"  [union-attr]
+modules\finance\saga_handler.py:176:21: error: Item "None" of "IMarket | None" has no attribute "convert_staged_to_loan"  [union-attr]
+modules\finance\saga_handler.py:187:23: error: "IBankService" has no attribute "id"  [attr-defined]
+modules\finance\saga_handler.py:220:18: error: No overload variant of "get" of "dict" matches argument type "int | None"  [call-overload]
+modules\finance\saga_handler.py:220:18: note: Possible overload variants:
+modules\finance\saga_handler.py:220:18: note:     def get(self, AgentID, None = ..., /) -> IAgent | None
+modules\finance\saga_handler.py:220:18: note:     def get(self, AgentID, IAgent, /) -> IAgent
+modules\finance\saga_handler.py:220:18: note:     def [_T] get(self, AgentID, _T, /) -> IAgent | _T
+modules\finance\saga_handler.py:226:17: error: No overload variant of "get" of "dict" matches argument type "int"  [call-overload]
+modules\finance\saga_handler.py:226:17: note: Possible overload variants:
+modules\finance\saga_handler.py:226:17: note:     def get(self, AgentID, None = ..., /) -> IAgent | None
+modules\finance\saga_handler.py:226:17: note:     def get(self, AgentID, IAgent, /) -> IAgent
+modules\finance\saga_handler.py:226:17: note:     def [_T] get(self, AgentID, _T, /) -> IAgent | _T
+modules\finance\saga_handler.py:244:13: error: List item 0 has incompatible type "tuple[IBankService, Any, int]"; expected "tuple[IFinancialAgent, IFinancialAgent, int]"  [list-item]
+modules\finance\saga_handler.py:248:19: error: "ISettlementSystem" has no attribute "execute_multiparty_settlement"  [attr-defined]
+modules\finance\saga_handler.py:273:77: error: Argument 2 to "transfer_ownership" of "IHousingService" has incompatible type "int | None"; expected "int"  [arg-type]
+modules\finance\saga_handler.py:296:17: error: No overload variant of "get" of "dict" matches argument type "int"  [call-overload]
+modules\finance\saga_handler.py:296:17: note: Possible overload variants:
+modules\finance\saga_handler.py:296:17: note:     def get(self, AgentID, None = ..., /) -> IAgent | None
+modules\finance\saga_handler.py:296:17: note:     def get(self, AgentID, IAgent, /) -> IAgent
+modules\finance\saga_handler.py:296:17: note:     def [_T] get(self, AgentID, _T, /) -> IAgent | _T
+modules\finance\saga_handler.py:297:18: error: No overload variant of "get" of "dict" matches argument type "int | None"  [call-overload]
+modules\finance\saga_handler.py:297:18: note: Possible overload variants:
+modules\finance\saga_handler.py:297:18: note:     def get(self, AgentID, None = ..., /) -> IAgent | None
+modules\finance\saga_handler.py:297:18: note:     def get(self, AgentID, IAgent, /) -> IAgent
+modules\finance\saga_handler.py:297:18: note:     def [_T] get(self, AgentID, _T, /) -> IAgent | _T
+modules\finance\saga_handler.py:325:9: error: "ISettlementSystem" has no attribute "execute_multiparty_settlement"  [attr-defined]
+modules\finance\call_market\service.py:138:32: error: Argument "amount" to "transfer" of "ISettlementSystem" has incompatible type "float"; expected "int"  [arg-type]
+modules\finance\call_market\service.py:234:32: error: Argument "amount" to "transfer" of "ISettlementSystem" has incompatible type "float"; expected "int"  [arg-type]
+modules\analysis\storm_verifier.py:5:1: error: Module "modules.simulation.api" has no attribute "MarketSnapshotDTO"  [attr-defined]
+modules\analysis\storm_verifier.py:56:59: error: "IHousehold" has no attribute "_bio_state"  [attr-defined]
+modules\analysis\storm_verifier.py:93:21: error: Incompatible types (expression has type "float", TypedDict item "zlb_hit" has type "bool")  [typeddict-item]
+modules\analysis\storm_verifier.py:94:40: error: Incompatible types (expression has type "float", TypedDict item "deficit_spending_triggered" has type "bool")  [typeddict-item]
+modules\analysis\bubble_observatory.py:130:16: error: Incompatible return value type (got "dict[str, Any]", expected "HousingBubbleMetricsDTO")  [return-value]
+modules\analysis\bubble_observatory.py:187:27: error: Value of type "HousingBubbleMetricsDTO" is not indexable  [index]
+modules\analysis\detectors\solvency_detector.py:13:26: error: Incompatible types in assignment (expression has type "ISimulationState", variable has type "None")  [assignment]
+modules\analysis\detectors\solvency_detector.py:16:9: error: Need type annotation for "events" (hint: "events: list[<type>] = ...")  [var-annotated]
+modules\analysis\detectors\policy_effectiveness_detector.py:14:26: error: Incompatible types in assignment (expression has type "ISimulationState", variable has type "None")  [assignment]
+modules\analysis\detectors\policy_effectiveness_detector.py:15:26: error: Incompatible types in assignment (expression has type "SystemStateDTO", variable has type "None")  [assignment]
+modules\analysis\detectors\policy_effectiveness_detector.py:18:9: error: Need type annotation for "events" (hint: "events: list[<type>] = ...")  [var-annotated]
+modules\analysis\detectors\liquidity_crisis_detector.py:13:26: error: Incompatible types in assignment (expression has type "SystemStateDTO", variable has type "None")  [assignment]
+modules\analysis\detectors\liquidity_crisis_detector.py:16:9: error: Need type annotation for "events" (hint: "events: list[<type>] = ...")  [var-annotated]
+modules\analysis\detectors\economic_health_detector.py:15:26: error: Incompatible types in assignment (expression has type "ISimulationState", variable has type "None")  [assignment]
+modules\analysis\detectors\economic_health_detector.py:17:20: error: "ISimulationState" has no attribute "get_market_snapshot"  [attr-defined]
+modules\analysis\detectors\economic_health_detector.py:22:9: error: Need type annotation for "events" (hint: "events: list[<type>] = ...")  [var-annotated]
+modules\analysis\detectors\circuit_breaker_detector.py:13:26: error: Incompatible types in assignment (expression has type "SystemStateDTO", variable has type "None")  [assignment]
+modules\analysis\detectors\circuit_breaker_detector.py:16:9: error: Need type annotation for "events" (hint: "events: list[<type>] = ...")  [var-annotated]
+simulation\systems\tax_agency.py:98:34: error: Argument "amount_collected" to "TaxCollectionResult" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\tax_agency.py:100:26: error: Argument "payer_id" to "TaxCollectionResult" has incompatible type "Any | str"; expected "AgentID"  [arg-type]
+simulation\systems\tax_agency.py:101:26: error: Argument "payee_id" to "TaxCollectionResult" has incompatible type "Any | str"; expected "AgentID"  [arg-type]
+simulation\systems\tax_agency.py:109:34: error: Argument "amount_collected" to "TaxCollectionResult" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\tax_agency.py:111:26: error: Argument "payer_id" to "TaxCollectionResult" has incompatible type "Any | str"; expected "AgentID"  [arg-type]
+simulation\systems\tax_agency.py:112:26: error: Argument "payee_id" to "TaxCollectionResult" has incompatible type "Any | str"; expected "AgentID"  [arg-type]
+simulation\systems\tax_agency.py:132:34: error: Argument "amount_collected" to "TaxCollectionResult" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\tax_agency.py:134:26: error: Argument "payer_id" to "TaxCollectionResult" has incompatible type "Any | str"; expected "AgentID"  [arg-type]
+simulation\systems\tax_agency.py:135:26: error: Argument "payee_id" to "TaxCollectionResult" has incompatible type "Any | str"; expected "AgentID"  [arg-type]
+simulation\systems\tax_agency.py:153:30: error: Argument "amount_collected" to "TaxCollectionResult" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\tax_agency.py:155:22: error: Argument "payer_id" to "TaxCollectionResult" has incompatible type "Any | str"; expected "AgentID"  [arg-type]
+simulation\systems\tax_agency.py:156:22: error: Argument "payee_id" to "TaxCollectionResult" has incompatible type "Any | str"; expected "AgentID"  [arg-type]
+simulation\systems\registry.py:75:37: error: No overload variant of "get" of "dict" matches argument type "int"  [call-overload]
+simulation\systems\registry.py:75:37: note: Possible overload variants:
+simulation\systems\registry.py:75:37: note:     def get(self, AgentID, None = ..., /) -> Any | None
+simulation\systems\registry.py:75:37: note:     def get(self, AgentID, Any, /) -> Any
+simulation\systems\registry.py:75:37: note:     def [_T] get(self, AgentID, _T, /) -> Any | _T
+simulation\systems\registry.py:78:26: error: "IHREngine" has no attribute "remove_employee"  [attr-defined]
+simulation\systems\registry.py:84:35: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+simulation\systems\registry.py:90:21: error: "IHREngine" has no attribute "hire"  [attr-defined]
+simulation\systems\registry.py:92:64: error: Incompatible types in assignment (expression has type "float", target has type "int")  [assignment]
+simulation\systems\registry.py:103:34: error: "Household" has no attribute "skills"  [attr-defined]
+simulation\systems\registry.py:165:50: error: "IInvestor" has no attribute "id"  [attr-defined]
+simulation\systems\registry.py:169:49: error: "IInvestor" has no attribute "id"  [attr-defined]
+simulation\systems\liquidation_handlers.py:77:17: error: Argument 1 to "transfer" of "ISettlementSystem" has incompatible type "IAssetRecoverySystem"; expected "IFinancialEntity"  [arg-type]
+simulation\systems\liquidation_handlers.py:78:17: error: Argument 2 to "transfer" of "ISettlementSystem" has incompatible type "<subclass of "modules.finance.api.ILiquidatable", "modules.simulation.api.IInventoryHandler", and "modules.simulation.api.IConfigurable">"; expected "IFinancialEntity"  [arg-type]
+simulation\systems\central_bank_system.py:25:5: error: Cannot override writeable attribute with read-only property  [override]
+simulation\systems\central_bank_system.py:25:5: error: Signature of "id" incompatible with supertype "ICentralBank"  [override]
+simulation\systems\central_bank_system.py:25:5: note:      Superclass:
+simulation\systems\central_bank_system.py:25:5: note:          AgentID
+simulation\systems\central_bank_system.py:25:5: note:      Subclass:
+simulation\systems\central_bank_system.py:25:5: note:          int
+simulation\systems\central_bank_system.py:33:19: error: Value of type "OMOInstructionDTO" is not indexable  [index]
+simulation\systems\central_bank_system.py:34:18: error: Value of type "OMOInstructionDTO" is not indexable  [index]
+simulation\systems\accounting.py:30:39: error: Argument 1 to "record_revenue" of "Firm" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\accounting.py:42:21: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+simulation\systems\accounting.py:47:38: error: Argument 1 to "record_expense" of "Firm" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\accounting.py:49:39: error: Argument 1 to "record_expense" of "Firm" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\accounting.py:59:18: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+simulation\systems\lifecycle\marriage_system.py:114:9: error: Need type annotation for "transactions" (hint: "transactions: list[<type>] = ...")  [var-annotated]
+simulation\systems\handlers\public_manager_handler.py:39:84: error: Argument 4 to "calculate_tax_intents" of "TaxationSystem" has incompatible type "Government"; expected "IGovernment"  [arg-type]
+simulation\systems\handlers\public_manager_handler.py:39:84: note: Following member(s) of "Government" have conflicts:
+simulation\systems\handlers\public_manager_handler.py:39:84: note:     expenditure_this_tick: expected "float", got "dict[str, int]"
+simulation\systems\handlers\public_manager_handler.py:39:84: note:     revenue_this_tick: expected "float", got "dict[str, float]"
+simulation\systems\handlers\public_manager_handler.py:39:84: note:     <1 more conflict(s) not shown>
+simulation\systems\handlers\public_manager_handler.py:39:84: note: Protocol member IGovernment.revenue_this_tick expected settable variable, got read-only attribute
+simulation\systems\handlers\public_manager_handler.py:49:70: error: Argument 2 to "settle_atomic" of "SettlementSystem" has incompatible type "list[tuple[Any, float, str]]"; expected "list[tuple[IFinancialAgent, int, str]]"  [arg-type]
+simulation\systems\handlers\public_manager_handler.py:59:35: error: Argument "payer_id" to "TaxCollectionResult" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\systems\handlers\public_manager_handler.py:60:35: error: Argument "payee_id" to "TaxCollectionResult" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\systems\handlers\public_manager_handler.py:117:22: error: "Household" has no attribute "current_consumption"; maybe "record_consumption"?  [attr-defined]
+simulation\systems\handlers\public_manager_handler.py:119:26: error: "Household" has no attribute "current_food_consumption"; maybe "record_consumption"?  [attr-defined]
+simulation\systems\handlers\public_manager_handler.py:143:66: error: "IInvestor" has no attribute "id"  [attr-defined]
+simulation\systems\handlers\labor_handler.py:36:88: error: Argument 4 to "calculate_tax_intents" of "TaxationSystem" has incompatible type "Government"; expected "IGovernment"  [arg-type]
+simulation\systems\handlers\labor_handler.py:36:88: note: Following member(s) of "Government" have conflicts:
+simulation\systems\handlers\labor_handler.py:36:88: note:     expenditure_this_tick: expected "float", got "dict[str, int]"
+simulation\systems\handlers\labor_handler.py:36:88: note:     revenue_this_tick: expected "float", got "dict[str, float]"
+simulation\systems\handlers\labor_handler.py:36:88: note:     <1 more conflict(s) not shown>
+simulation\systems\handlers\labor_handler.py:36:88: note: Protocol member IGovernment.revenue_this_tick expected settable variable, got read-only attribute
+simulation\systems\handlers\labor_handler.py:81:35: error: Argument "payer_id" to "TaxCollectionResult" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\systems\handlers\labor_handler.py:82:35: error: Argument "payee_id" to "TaxCollectionResult" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\systems\handlers\labor_handler.py:111:25: error: "IHREngine" has no attribute "remove_employee"  [attr-defined]
+simulation\systems\handlers\labor_handler.py:118:13: error: "Household" has no attribute "current_wage_pennies"  [attr-defined]
+simulation\systems\handlers\labor_handler.py:131:17: error: "IHREngine" has no attribute "hire"  [attr-defined]
+simulation\systems\handlers\labor_handler.py:159:17: error: "IFinanceEngine" has no attribute "record_expense"  [attr-defined]
+simulation\systems\handlers\labor_handler.py:163:34: error: "Household" has no attribute "skills"  [attr-defined]
+simulation\systems\handlers\goods_handler.py:31:84: error: Argument 4 to "calculate_tax_intents" of "TaxationSystem" has incompatible type "Government"; expected "IGovernment"  [arg-type]
+simulation\systems\handlers\goods_handler.py:31:84: note: Following member(s) of "Government" have conflicts:
+simulation\systems\handlers\goods_handler.py:31:84: note:     expenditure_this_tick: expected "float", got "dict[str, int]"
+simulation\systems\handlers\goods_handler.py:31:84: note:     revenue_this_tick: expected "float", got "dict[str, float]"
+simulation\systems\handlers\goods_handler.py:31:84: note:     <1 more conflict(s) not shown>
+simulation\systems\handlers\goods_handler.py:31:84: note: Protocol member IGovernment.revenue_this_tick expected settable variable, got read-only attribute
+simulation\systems\handlers\goods_handler.py:60:34: error: "ISolvencyChecker" has no attribute "assets"  [attr-defined]
+simulation\systems\handlers\goods_handler.py:83:31: error: Argument "payer_id" to "TaxCollectionResult" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\systems\handlers\goods_handler.py:84:31: error: Argument "payee_id" to "TaxCollectionResult" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\systems\handlers\financial_handler.py:51:70: error: Argument 2 to "settle_atomic" of "SettlementSystem" has incompatible type "list[tuple[Government, int, str]]"; expected "list[tuple[IFinancialAgent, int, str]]"  [arg-type]
+simulation\systems\handlers\financial_handler.py:51:70: note: "list" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+simulation\systems\handlers\financial_handler.py:51:70: note: Consider using "Sequence" instead, which is covariant
+simulation\systems\handlers\financial_handler.py:62:35: error: Argument "payee_id" to "TaxCollectionResult" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\systems\handlers\escheatment_handler.py:73:26: error: Argument "payee_id" to "TaxCollectionResult" has incompatible type "Any | int"; expected "AgentID"  [arg-type]
+simulation\systems\handlers\emergency_handler.py:25:88: error: Argument 4 to "calculate_tax_intents" of "TaxationSystem" has incompatible type "Government"; expected "IGovernment"  [arg-type]
+simulation\systems\handlers\emergency_handler.py:25:88: note: Following member(s) of "Government" have conflicts:
+simulation\systems\handlers\emergency_handler.py:25:88: note:     expenditure_this_tick: expected "float", got "dict[str, int]"
+simulation\systems\handlers\emergency_handler.py:25:88: note:     revenue_this_tick: expected "float", got "dict[str, float]"
+simulation\systems\handlers\emergency_handler.py:25:88: note:     <1 more conflict(s) not shown>
+simulation\systems\handlers\emergency_handler.py:25:88: note: Protocol member IGovernment.revenue_this_tick expected settable variable, got read-only attribute
+simulation\systems\handlers\emergency_handler.py:44:55: error: Argument 1 to "record_revenue" of "Government" has incompatible type "dict[str, str | int | None]"; expected "TaxCollectionResult"  [arg-type]
+simulation\systems\handlers\asset_transfer_handler.py:84:58: error: "IInvestor" has no attribute "id"  [attr-defined]
+simulation\systems\handlers\asset_transfer_handler.py:86:57: error: "IInvestor" has no attribute "id"  [attr-defined]
+simulation\orchestration\agent_service.py:62:17: error: No overload variant of "get" of "dict" matches argument type "int"  [call-overload]
+simulation\orchestration\agent_service.py:62:17: note: Possible overload variants:
+simulation\orchestration\agent_service.py:62:17: note:     def get(self, AgentID, None = ..., /) -> Any | None
+simulation\orchestration\agent_service.py:62:17: note:     def get(self, AgentID, Any, /) -> Any
+simulation\orchestration\agent_service.py:62:17: note:     def [_T] get(self, AgentID, _T, /) -> Any | _T
+simulation\factories\golden_agents.py:16:19: error: Incompatible types in assignment (expression has type "int", base class "IFinancialAgent" defined the type as "AgentID")  [assignment]
+simulation\factories\golden_agents.py:35:6: error: Signature of "assets" incompatible with supertype "IMortgageBorrower"  [override]
+simulation\factories\golden_agents.py:35:6: note:      Superclass:
+simulation\factories\golden_agents.py:35:6: note:          dict[str, float]
+simulation\factories\golden_agents.py:35:6: note:      Subclass:
+simulation\factories\golden_agents.py:35:6: note:          dict[str, int]
+simulation\factories\golden_agents.py:85:13: error: Cannot instantiate abstract class "GoldenAgent" with abstract attributes "get_liquid_assets" and "get_total_debt"  [abstract]
+simulation\factories\firm_factory.py:51:16: error: Argument "id" to "AgentCoreConfigDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\factories\firm_factory.py:59:16: error: Cannot instantiate abstract class "Firm" with abstract attributes "add_property", "owned_properties", "remove_property", "update_learning" and "update_needs"  [abstract]
+simulation\factories\firm_factory.py:59:16: note: The following methods were marked implicitly abstract because they have empty function bodies: "add_property", "remove_property", "update_learning" and "update_needs". If they are not meant to be abstract, explicitly `return` or `return None`.
+simulation\factories\firm_factory.py:61:20: error: Argument "engine" to "Firm" has incompatible type "Any | None"; expected "IDecisionEngine"  [arg-type]
+simulation\factories\firm_factory.py:74:52: error: Argument 1 to "register_account" of "IAccountRegistry" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\factories\firm_factory.py:107:69: error: Argument "id" to "replace" of "AgentCoreConfigDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\factories\firm_factory.py:109:20: error: Cannot instantiate abstract class "Firm" with abstract attributes "add_property", "owned_properties", "remove_property", "update_learning" and "update_needs"  [abstract]
+simulation\factories\firm_factory.py:109:20: note: The following methods were marked implicitly abstract because they have empty function bodies: "add_property", "remove_property", "update_learning" and "update_needs". If they are not meant to be abstract, explicitly `return` or `return None`.
+simulation\factories\firm_factory.py:116:25: error: "IDecisionEngine" has no attribute "loan_market"  [attr-defined]
+simulation\factories\firm_factory.py:131:9: error: "Firm" has no attribute "_input_inventory_quality"  [attr-defined]
+simulation\factories\firm_factory.py:132:9: error: Property "inventory_quality" defined in "Firm" is read-only  [misc]
+simulation\factories\firm_factory.py:137:53: error: Argument 1 to "register_account" of "IAccountRegistry" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\factories\agent_factory.py:66:16: error: Argument "id" to "AgentCoreConfigDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\factories\agent_factory.py:84:20: error: Argument "engine" to "Household" has incompatible type "Any | None"; expected "IDecisionEngine"  [arg-type]
+simulation\factories\agent_factory.py:116:31: error: Incompatible types in assignment (expression has type "Any | float", variable has type "int")  [assignment]
+simulation\factories\agent_factory.py:215:36: error: Argument "ai_decision_engine" to "HouseholdAI" has incompatible type "Any | None"; expected "AIDecisionEngine"  [arg-type]
+simulation\factories\agent_factory.py:223:13: error: "AIDrivenHouseholdDecisionEngine" has no attribute "loan_market"  [attr-defined]
+simulation\components\psychology_component.py:57:27: error: "Household" has no attribute "durable_assets"  [attr-defined]
+simulation\components\psychology_component.py:61:17: error: "Household" has no attribute "durable_assets"  [attr-defined]
+simulation\components\leisure_manager.py:53:26: error: Argument "leisure_type" to "LeisureEffectDTO" has incompatible type "str"; expected "Literal['PARENTING', 'SELF_DEV', 'ENTERTAINMENT', 'IDLE']"  [arg-type]
+simulation\components\labor_manager.py:19:63: error: Function "builtins.any" is not valid as a type  [valid-type]
+simulation\components\labor_manager.py:19:63: note: Perhaps you meant "typing.Any" instead of "any"?
+simulation\components\economy_manager.py:18:63: error: Function "builtins.any" is not valid as a type  [valid-type]
+simulation\components\economy_manager.py:18:63: note: Perhaps you meant "typing.Any" instead of "any"?
+simulation\components\economy_manager.py:80:38: error: any? has no attribute "LEARNING_EFFICIENCY"  [attr-defined]
+simulation\components\economy_manager.py:85:21: error: "Household" has no attribute "perceived_avg_prices"  [attr-defined]
+simulation\components\economy_manager.py:88:13: error: "Household" has no attribute "current_consumption"; maybe "record_consumption"?  [attr-defined]
+simulation\components\economy_manager.py:92:17: error: "Household" has no attribute "current_food_consumption"; maybe "record_consumption"?  [attr-defined]
+simulation\components\economy_manager.py:137:21: error: "Household" has no attribute "perceived_avg_prices"  [attr-defined]
+modules\system\config_api.py:47:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\system\config_api.py:49:9: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+modules\market\handlers\housing_transaction_handler.py:112:32: error: Item "None" of "IBank | None" has no attribute "grant_loan"  [union-attr]
+modules\market\handlers\housing_transaction_handler.py:112:32: error: Unexpected keyword argument "borrower_profile" for "grant_loan" of "IBankService"  [call-arg]
+modules\finance\api.py:328:5: note: "grant_loan" of "IBankService" defined here
+modules\market\handlers\housing_transaction_handler.py:114:28: error: Argument "amount" to "grant_loan" of "IBankService" has incompatible type "float"; expected "int"  [arg-type]
+modules\market\handlers\housing_transaction_handler.py:127:27: error: Value of type "LoanDTO | Any" is not indexable  [index]
+modules\market\handlers\housing_transaction_handler.py:138:42: error: Item "None" of "IBank | None" has no attribute "withdraw_for_customer"  [union-attr]
+modules\market\handlers\housing_transaction_handler.py:138:87: error: Argument 2 to "withdraw_for_customer" of "IBank" has incompatible type "float"; expected "int"  [arg-type]
+modules\market\handlers\housing_transaction_handler.py:152:59: error: Argument 1 to "transfer" of "ISettlementSystem" has incompatible type "IBank | None"; expected "IFinancialEntity"  [arg-type]
+modules\market\handlers\housing_transaction_handler.py:152:87: error: Argument 3 to "transfer" of "ISettlementSystem" has incompatible type "float"; expected "int"  [arg-type]
+modules\market\handlers\housing_transaction_handler.py:167:70: error: Argument 2 to "transfer" of "ISettlementSystem" has incompatible type "IBank | None"; expected "IFinancialEntity"  [arg-type]
+modules\market\handlers\housing_transaction_handler.py:167:84: error: Argument 3 to "transfer" of "ISettlementSystem" has incompatible type "float"; expected "int"  [arg-type]
+modules\market\handlers\housing_transaction_handler.py:168:58: error: Argument 2 to "_terminate_loan_safely" of "HousingTransactionHandler" has incompatible type "Any | None"; expected "str"  [arg-type]
+modules\market\handlers\housing_transaction_handler.py:226:26: error: Argument "gross_income" to "BorrowerProfileDTO" has incompatible type "float"; expected "int"  [arg-type]
+modules\market\handlers\housing_transaction_handler.py:227:36: error: Argument "existing_debt_payments" to "BorrowerProfileDTO" has incompatible type "float"; expected "int"  [arg-type]
+modules\market\handlers\housing_transaction_handler.py:228:30: error: Argument "collateral_value" to "BorrowerProfileDTO" has incompatible type "float"; expected "int"  [arg-type]
+modules\market\handlers\housing_transaction_handler.py:234:27: error: "IBank" has no attribute "void_loan"  [attr-defined]
+modules\market\handlers\housing_transaction_handler.py:256:34: error: Incompatible types in assignment (expression has type "dict[str, object]", variable has type "LienDTO")  [assignment]
+modules\market\handlers\housing_transaction_handler.py:273:21: error: Property "residing_property_id" defined in "IHousingTransactionParticipant" is read-only  [misc]
+modules\market\handlers\housing_transaction_handler.py:274:21: error: Property "is_homeless" defined in "IHousingTransactionParticipant" is read-only  [misc]
+modules\household\mixins\_reproduction.py:41:5: error: Method "clone" is marked as an override, but no base method was found with this name  [misc]
+modules\household\mixins\_reproduction.py:63:16: error: Argument "id" to "AgentCoreConfigDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+modules\household\mixins\_reproduction.py:67:20: error: Argument "logger" to "AgentCoreConfigDTO" has incompatible type "None"; expected "Logger"  [arg-type]
+modules\household\mixins\_reproduction.py:73:20: error: Argument "engine" to "Household" has incompatible type "AIDrivenHouseholdDecisionEngine"; expected "IDecisionEngine"  [arg-type]
+modules\household\mixins\_reproduction.py:78:25: error: "BaseDecisionEngine" has no attribute "loan_market"  [attr-defined]
+modules\household\mixins\_reproduction.py:86:35: error: Argument "initial_assets_record" to "Household" has incompatible type "float"; expected "int | None"  [arg-type]
+modules\household\mixins\_reproduction.py:100:9: error: "EconStateDTO" has no attribute "expected_wage"; maybe "expected_wage_pennies"?  [attr-defined]
+modules\household\mixins\_reproduction.py:108:28: error: "BaseDecisionEngine" has no attribute "ai_engine"  [attr-defined]
+modules\household\mixins\_reproduction.py:112:19: error: "BaseDecisionEngine" has no attribute "ai_engine"  [attr-defined]
+modules\household\mixins\_reproduction.py:113:21: error: "BaseDecisionEngine" has no attribute "ai_engine"  [attr-defined]
+modules\household\mixins\_reproduction.py:114:24: error: "BaseDecisionEngine" has no attribute "ai_engine"  [attr-defined]
+modules\household\mixins\_reproduction.py:115:28: error: "BaseDecisionEngine" has no attribute "ai_engine"  [attr-defined]
+modules\household\mixins\_lifecycle.py:59:5: error: Method "update_needs" is marked as an override, but no base method was found with this name  [misc]
+modules\household\mixins\_lifecycle.py:79:13: error: Argument 4 to "update_psychology" of "SocialComponent" has incompatible type "list[DurableAssetDTO]"; expected "list[dict[str, Any]]"  [arg-type]
+modules\household\mixins\_lifecycle.py:86:43: error: Incompatible types in assignment (expression has type "list[dict[str, Any]]", variable has type "list[DurableAssetDTO]")  [assignment]
+modules\household\mixins\_lifecycle.py:110:13: error: Argument 3 to "update_opinion" of "PoliticalComponent" has incompatible type "Any | None"; expected "PoliticalParty"  [arg-type]
+modules\household\mixins\_lifecycle.py:133:5: error: Method "update_perceived_prices" is marked as an override, but no base method was found with this name  [misc]
+modules\household\mixins\_lifecycle.py:169:9: error: "BaseDecisionEngine" has no attribute "ai_engine"  [attr-defined]
+modules\finance\sagas\orchestrator.py:104:25: error: No overload variant of "get" of "dict" matches argument type "int"  [call-overload]
+modules\finance\sagas\orchestrator.py:104:25: note: Possible overload variants:
+modules\finance\sagas\orchestrator.py:104:25: note:     def get(self, AgentID, None = ..., /) -> IAgent | None
+modules\finance\sagas\orchestrator.py:104:25: note:     def get(self, AgentID, IAgent, /) -> IAgent
+modules\finance\sagas\orchestrator.py:104:25: note:     def [_T] get(self, AgentID, _T, /) -> IAgent | _T
+modules\finance\sagas\orchestrator.py:105:26: error: No overload variant of "get" of "dict" matches argument type "int"  [call-overload]
+modules\finance\sagas\orchestrator.py:105:26: note: Possible overload variants:
+modules\finance\sagas\orchestrator.py:105:26: note:     def get(self, AgentID, None = ..., /) -> IAgent | None
+modules\finance\sagas\orchestrator.py:105:26: note:     def get(self, AgentID, IAgent, /) -> IAgent
+modules\finance\sagas\orchestrator.py:105:26: note:     def [_T] get(self, AgentID, _T, /) -> IAgent | _T
+simulation\systems\liquidation_manager.py:86:74: error: Argument 5 to "execute_waterfall" of "LiquidationManager" has incompatible type "dict[str, int]"; expected "dict[str, float]"  [arg-type]
+simulation\systems\liquidation_manager.py:86:74: note: "dict" is invariant -- see https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+simulation\systems\liquidation_manager.py:86:74: note: Consider using "Mapping" instead, which is covariant in the value type
+simulation\systems\liquidation_manager.py:88:165: error: Incompatible default for argument "other_assets" (default has type "None", argument has type "dict[str, float]")  [assignment]
+simulation\systems\liquidation_manager.py:88:165: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+simulation\systems\liquidation_manager.py:88:165: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+simulation\systems\liquidation_manager.py:102:9: error: Need type annotation for "claims_by_tier" (hint: "claims_by_tier: dict[<type>, <type>] = ...")  [var-annotated]
+simulation\systems\liquidation_manager.py:144:17: error: Need type annotation for "total_distributed_foreign" (hint: "total_distributed_foreign: dict[<type>, <type>] = ...")  [var-annotated]
+simulation\systems\liquidation_manager.py:154:61: error: Argument 1 to "transfer" of "ISettlementSystem" has incompatible type "ILiquidatable"; expected "IFinancialEntity"  [arg-type]
+simulation\systems\liquidation_manager.py:154:81: error: Argument 3 to "transfer" of "ISettlementSystem" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\liquidation_manager.py:161:65: error: Argument 1 to "transfer" of "ISettlementSystem" has incompatible type "ILiquidatable"; expected "IFinancialEntity"  [arg-type]
+simulation\systems\liquidation_manager.py:161:85: error: Argument 3 to "transfer" of "ISettlementSystem" has incompatible type "float"; expected "int"  [arg-type]
+simulation\systems\liquidation_manager.py:176:55: error: Argument 1 to "transfer" of "ISettlementSystem" has incompatible type "ILiquidatable"; expected "IFinancialEntity"  [arg-type]
+simulation\systems\lifecycle\birth_system.py:59:49: error: Argument 1 to "check_entrepreneurship" of "FirmSystem" has incompatible type "SimulationState"; expected "Simulation"  [arg-type]
+simulation\systems\lifecycle\birth_system.py:143:13: error: "IDecisionEngine" has no attribute "markets"  [attr-defined]
+simulation\systems\lifecycle\birth_system.py:144:13: error: "IDecisionEngine" has no attribute "goods_data"  [attr-defined]
+simulation\systems\lifecycle\birth_system.py:152:13: error: "Household" has no attribute "settlement_system"  [attr-defined]
+simulation\systems\lifecycle\death_system.py:134:63: error: Argument 1 to "get_agent_banks" of "IAccountRegistry" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\systems\lifecycle\death_system.py:138:17: error: No overload variant of "get" of "dict" matches argument type "int"  [call-overload]
+simulation\systems\lifecycle\death_system.py:138:17: note: Possible overload variants:
+simulation\systems\lifecycle\death_system.py:138:17: note:     def get(self, AgentID, None = ..., /) -> Any | None
+simulation\systems\lifecycle\death_system.py:138:17: note:     def get(self, AgentID, Any, /) -> Any
+simulation\systems\lifecycle\death_system.py:138:17: note:     def [_T] get(self, AgentID, _T, /) -> Any | _T
+simulation\systems\lifecycle\death_system.py:178:42: error: Argument 1 to "cancel_orders" of "IMarket" has incompatible type "str | int"; expected "str"  [arg-type]
+simulation\systems\lifecycle\death_system.py:241:17: error: Argument 1 to "transfer" of "ISettlementSystem" has incompatible type "IAssetRecoverySystem"; expected "IFinancialEntity"  [arg-type]
+simulation\systems\lifecycle_manager.py:42:63: error: Incompatible default for argument "shareholder_registry" (default has type "None", argument has type "IShareholderRegistry")  [assignment]
+simulation\systems\lifecycle_manager.py:42:63: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+simulation\systems\lifecycle_manager.py:42:63: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+simulation\systems\lifecycle_manager.py:107:5: error: Return type "list[Transaction]" of "execute" incompatible with return type "None" in supertype "simulation.systems.api.SystemInterface"  [override]
+simulation\initialization\initializer.py:90:263: error: Name "Optional" is not defined  [name-defined]
+simulation\initialization\initializer.py:90:263: note: Did you forget to import it from "typing"? (Suggestion: "from typing import Optional")
+simulation\initialization\initializer.py:101:5: error: Return type "simulation.engine.Simulation" of "build_simulation" incompatible with return type "simulation.initialization.api.Simulation" in supertype "simulation.initialization.api.SimulationInitializerInterface"  [override]
+simulation\initialization\initializer.py:125:54: error: Argument 1 to "TelemetryCollector" has incompatible type "IGlobalRegistry | None"; expected "IGlobalRegistry"  [arg-type]
+simulation\initialization\initializer.py:126:9: error: "WorldState" has no attribute "telemetry_collector"  [attr-defined]
+simulation\initialization\initializer.py:127:9: error: Item "None" of "IGlobalRegistry | None" has no attribute "set"  [union-attr]
+simulation\initialization\initializer.py:164:28: error: Cannot instantiate abstract class "CentralBank" with abstract attributes "get_liquid_assets" and "get_total_debt"  [abstract]
+simulation\initialization\initializer.py:170:9: error: Type cannot be declared in assignment to non-self attribute  [misc]
+simulation\initialization\initializer.py:182:9: error: Type cannot be declared in assignment to non-self attribute  [misc]
+simulation\initialization\initializer.py:186:28: error: Argument "id" to "Bank" has incompatible type "int"; expected "AgentID"  [arg-type]
+simulation\initialization\initializer.py:206:28: error: Cannot instantiate abstract class "EscrowAgent" with abstract attributes "balance_pennies", "deposit", "get_liquid_assets", "get_total_debt" and "withdraw"  [abstract]
+simulation\initialization\initializer.py:206:28: note: The following methods were marked implicitly abstract because they have empty function bodies: "deposit" and "withdraw". If they are not meant to be abstract, explicitly `return` or `return None`.
+simulation\initialization\initializer.py:212:30: error: Cannot instantiate abstract class "PublicManager" with abstract attributes "balance_pennies", "deposit", "get_liquid_assets", "get_total_debt" and "withdraw"  [abstract]
+simulation\initialization\initializer.py:212:30: note: The following methods were marked implicitly abstract because they have empty function bodies: "deposit" and "withdraw". If they are not meant to be abstract, explicitly `return` or `return None`.
+simulation\initialization\initializer.py:237:9: error: Type cannot be declared in assignment to non-self attribute  [misc]
+simulation\initialization\initializer.py:248:9: error: Type cannot be declared in assignment to non-self attribute  [misc]
+simulation\initialization\initializer.py:249:32: error: Cannot instantiate abstract class "LaborMarket" with abstract attribute "configure"  [abstract]
+simulation\initialization\initializer.py:249:32: note: "configure" is implicitly abstract because it has an empty function body. If it is not meant to be abstract, explicitly `return` or `return None`.
+simulation\initialization\initializer.py:315:9: error: Item "None" of "IGlobalRegistry | None" has no attribute "set"  [union-attr]
+simulation\initialization\initializer.py:380:9: error: Type cannot be declared in assignment to non-self attribute  [misc]
+simulation\initialization\initializer.py:405:9: error: "WorldState" has no attribute "scenario_verifier"  [attr-defined]
+modules\system\builders\simulation_builder.py:33:51: error: Incompatible default for argument "overrides" (default has type "None", argument has type "dict[str, Any]")  [assignment]
+modules\system\builders\simulation_builder.py:33:51: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+modules\system\builders\simulation_builder.py:33:51: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+modules\system\builders\simulation_builder.py:161:54: error: Argument "agent_id" to "HouseholdAI" has incompatible type "int"; expected "str"  [arg-type]
+modules\system\builders\simulation_builder.py:169:42: error: Incompatible types in assignment (expression has type "AIDrivenHouseholdDecisionEngine", variable has type "RuleBasedHouseholdDecisionEngine")  [assignment]
+modules\system\builders\simulation_builder.py:180:16: error: Argument "id" to "AgentCoreConfigDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+modules\system\builders\simulation_builder.py:193:20: error: Argument "engine" to "Household" has incompatible type "RuleBasedHouseholdDecisionEngine"; expected "IDecisionEngine"  [arg-type]
+modules\system\builders\simulation_builder.py:199:35: error: Argument "initial_assets_record" to "Household" has incompatible type "float"; expected "int | None"  [arg-type]
+modules\system\builders\simulation_builder.py:249:22: error: Argument "agent_id" to "FirmAI" has incompatible type "int"; expected "str"  [arg-type]
+modules\system\builders\simulation_builder.py:262:37: error: Incompatible types in assignment (expression has type "AIDrivenFirmDecisionEngine", variable has type "RuleBasedFirmDecisionEngine")  [assignment]
+modules\system\builders\simulation_builder.py:267:16: error: Argument "id" to "AgentCoreConfigDTO" has incompatible type "int"; expected "AgentID"  [arg-type]
+modules\system\builders\simulation_builder.py:276:16: error: Cannot instantiate abstract class "Firm" with abstract attributes "add_property", "owned_properties", "remove_property", "update_learning" and "update_needs"  [abstract]
+modules\system\builders\simulation_builder.py:276:16: note: The following methods were marked implicitly abstract because they have empty function bodies: "add_property", "remove_property", "update_learning" and "update_needs". If they are not meant to be abstract, explicitly `return` or `return None`.
+modules\system\builders\simulation_builder.py:278:20: error: Argument "engine" to "Firm" has incompatible type "RuleBasedFirmDecisionEngine"; expected "IDecisionEngine"  [arg-type]
+modules\system\builders\simulation_builder.py:310:9: error: "Firm" has no attribute "owner_id"  [attr-defined]
+modules\system\builders\simulation_builder.py:311:9: error: "Firm" has no attribute "founder_id"  [attr-defined]
+modules\system\builders\simulation_builder.py:336:17: error: "EconStateDTO" has no attribute "current_wage"  [attr-defined]
+modules\system\builders\simulation_builder.py:345:24: error: Argument "config_manager" to "SimulationInitializer" has incompatible type "ConfigManagerImpl"; expected "ConfigManager"  [arg-type]
+Found 832 errors in 169 files (checked 453 source files)

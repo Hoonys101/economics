@@ -3,13 +3,13 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-STABILIZE-POST-MERGE": {
-      "key": "WO-STABILIZE-POST-MERGE",
-      "title": "Post-Merge Test Stabilization",
+    "WO-LIQUID-W1-STARTUP-GOV-FIX": {
+      "key": "WO-LIQUID-W1-STARTUP-GOV-FIX",
+      "title": "Wave 1 - Government Singleton Fixes",
       "type": "jules",
-      "instruction_raw": "\ub2e4\uc74c 6\uac00\uc9c0 \ud14c\uc2a4\ud2b8 \uc2e4\ud328\ub97c \ud574\uacb0\ud558\uc2ed\uc2dc\uc624:\n\n1. [Initializer Type Error]\n   - \ud30c\uc77c: `simulation/initialization/initializer.py:282`\n   - \ud604\uc0c1: `initial_balances` \ub8e8\ud504\uc5d0\uc11c MagicMock\uacfc int \ube44\uad50 \uc2dc TypeError \ubc1c\uc0dd.\n   - \ud574\uacb0: `int(amount) > 0`\uc640 \uac19\uc774 \ud0c0\uc785 \uce90\uc2a4\ud305 \ubc0f \uac80\uc99d \uac00\ub4dc \ucd94\uac00.\n\n2. [CommandService Rollback Logic]\n   - \ud30c\uc77c: `modules/system/services/command_service.py`\n   - \ud604\uc0c1: `rollback_last_tick`\uc5d0\uc11c `IRestorableRegistry` \uccb4\ud06c\uac00 \ub108\ubb34 \uc5c4\uaca9\ud558\uc5ec fallback(set)\uc774 \uc791\ub3d9\ud558\uc9c0 \uc54a\uc74c.\n   - \ud574\uacb0: \uccb4\ud06c \ub85c\uc9c1\uc744 \uc644\ud654\ud558\uc5ec `INJECT_ASSET` \ub4f1\uc758 \ub2e4\ub978 \ub864\ubc31 \ub808\ucf54\ub4dc\ub294 \ucc98\ub9ac\ub418\ub3c4\ub85d \uc218\uc815.\n\n3. [Market Precision & Rounding]\n   - \ud30c\uc77c: `simulation/orchestration/matching_engine.py` \ub610\ub294 \uad00\ub828 \ub9c8\ucf13 \ucf54\ub4dc\n   - \ud604\uc0c1: `100 != 99` (Zero-Sum \uc704\ubc18), `1.02 == 1.01` (\ubc18\uc62c\ub9bc \uc624\ucc28).\n   - \ud574\uacb0: \ud398\ub2c8 \ud45c\uc900(Integer) \uc900\uc218 \uc5ec\ubd80 \ubc0f \ub9e4\uce6d \uc5d4\uc9c4\uc758 \uc18c\uc218\uc810 \ucc98\ub9ac \ub85c\uc9c1 \uc810\uac80/\uc218\uc815.\n\n4. [Unit Test Fixes]\n   - \ud30c\uc77c: `tests/unit/modules/system/test_command_service_unit.py`\n   - \ud604\uc0c1: \ub864\ubc31 \uc2e4\ud328 \uad00\ub828 \uc5b4\uc124\uc158 \uc5d0\ub7ec.\n   - \ud574\uacb0: 2\ubc88 \uc218\uc815 \ud6c4 \ud14c\uc2a4\ud2b8\uac00 \uc815\uc0c1 \ud1b5\uacfc\ud558\ub3c4\ub85d \uc870\uc815.",
+      "instruction_raw": "Wave 1 \uba85\uc138\uc5d0 \ub530\ub77c Government \uc2f1\uae00\ud1a4 \uc811\uadfc \ubc29\uc2dd \ubc0f \ucd08\uae30\ud654 \ub85c\uc9c1\uc744 \uac70\ubc84\ub108 \ud328\ud134\uc73c\ub85c \ub9ac\ud329\ud1a0\ub9c1\ud558\uc2ed\uc2dc\uc624.",
       "command": "create",
-      "file_path": null,
+      "file_path": "gemini-output/spec/MISSION_grand_liquidation_SPEC.md",
       "wait": true,
       "session_id": null,
       "worker": null,
@@ -18,13 +18,43 @@
       "model": null,
       "audit_requirements": null
     },
-    "WO-LIQUID-W1-STARTUP-GOV-FIX": {
-      "key": "WO-LIQUID-W1-STARTUP-GOV-FIX",
-      "title": "Wave 1 - Government Singleton Fixes",
+    "WO-MYPY-CONTRACT-ALIGNMENT": {
+      "key": "WO-MYPY-CONTRACT-ALIGNMENT",
+      "title": "Mypy Stage A: Contract Alignment (DTO & API)",
       "type": "jules",
-      "instruction_raw": "Wave 1 \uba85\uc138\uc5d0 \ub530\ub77c Government \uc2f1\uae00\ud1a4 \uc811\uadfc \ubc29\uc2dd \ubc0f \ucd08\uae30\ud654 \ub85c\uc9c1\uc744 \uac70\ubc84\ub108 \ud328\ud134\uc73c\ub85c \ub9ac\ud329\ud1a0\ub9c1\ud558\uc2ed\uc2dc\uc624.",
+      "instruction_raw": "[\uacc4\uc57d \ud655\uc815 \ub2e8\uacc4]\n\uc804\uccb4 \uc2dc\uc2a4\ud15c\uc758 \uc778\ud130\ud398\uc774\uc2a4\uc640 \ub370\uc774\ud130 \uad6c\uc870(SSoT)\ub97c \uba3c\uc800 \ub9de\ucda5\ub2c8\ub2e4. \ub85c\uc9c1(Function body)\uc740 \uc218\uc815\ud558\uc9c0 \ub9c8\uc2ed\uc2dc\uc624.\n\n1. **DTO Penny Standard Hardening**:\n   - `modules/*/dtos.py`, `simulation/dtos/*.py` \ub0b4\uc758 \ubaa8\ub4e0 \ud1b5\ud654/\uc790\uc0b0 \ud544\ub4dc\ub97c `int`\ub85c \ud1b5\uc77c.\n2. **Protocol & Interface Sync**:\n   - `modules/*/api.py`, `simulation/interfaces/*.py` \ub0b4\uc758 \ud504\ub85c\ud1a0\ucf5c \uc815\uc758 \uc218\uc815.\n   - `IAgent`, `IFinancialAgent` \ub4f1 \ub204\ub77d\ub418\uac70\ub098 \uc798\ubabb\ub41c \ud0c0\uc785 \ucc38\uc870 \ud574\uacb0.\n3. **Liskov Substitution (LSP) Alignment**:\n   - \uc0c1\uc18d \uad00\uacc4(Override)\uc5d0\uc11c \ubd80\ubaa8\uc640 \ub2e4\ub978 \uba54\uc11c\ub4dc \uc2dc\uadf8\ub2c8\ucc98\ub97c \uc77c\uce58\uc2dc\ud0b4.\n4. **Member Validation**:\n   - DTO \ubcc0\uacbd\uc5d0 \ub530\ub77c `api.py`\uc5d0\uc11c \ucc38\uc870\ud558\ub294 \ud544\ub4dc\ub4e4\uc774 \uc2e4\uc81c \uc874\uc7ac\ud558\ub294\uc9c0 \ud655\uc778 \ubc0f \uc218\uc815.\n\n*\ubaa9\ud45c*: \uc778\ud130\ud398\uc774\uc2a4 \ud30c\uc77c(`api.py`, `dtos.py`, `interfaces.py`) \ub0b4\uc758 mypy \uc5d0\ub7ec 0\uac1c \ub2ec\uc131.",
       "command": "create",
-      "file_path": "gemini-output/spec/MISSION_grand_liquidation_SPEC.md",
+      "file_path": "communications/audit/MYPY_AUDIT_REPORT.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "WO-MYPY-LOGIC-STABILIZATION": {
+      "key": "WO-MYPY-LOGIC-STABILIZATION",
+      "title": "Mypy Stage B: Logic Hardening (Function Bodies)",
+      "type": "jules",
+      "instruction_raw": "[\uad6c\ud604 \ub2e8\uacc4]\n\ud655\uc815\ub41c \uacc4\uc57d(Stage A)\uc5d0 \ub9de\ucdb0 \ubaa8\ub4e0 \ud568\uc218\uc758 \ub0b4\ubd80 \ub85c\uc9c1\uc744 \uc218\uc815\ud569\ub2c8\ub2e4.\n\n1. **Internal Type Casting**: \ud568\uc218 \ub0b4\ubd80\uc5d0\uc11c `float` \uc5f0\uc0b0 \uacb0\uacfc\ub97c `int()`\ub85c \uce90\uc2a4\ud305\ud558\uc5ec \uacc4\uc57d \uc900\uc218.\n2. **Index & Attribute Fixes**: \ud568\uc218 \ubc14\ub514 \ub0b4\uc758 \uc798\ubabb\ub41c \uc778\ub371\uc2f1(`[]`) \ub610\ub294 \uc18d\uc131(`.`) \uc811\uadfc \uc218\uc815.\n3. **Logic Hardening**: \ub9c8\ucf13 \ub9e4\uce6d \uc5d4\uc9c4, \uc138\ud2c0\uba3c\ud2b8 \uc2dc\uc2a4\ud15c \ub4f1\uc758 \ub0b4\ubd80 \uc815\ubc00\ub3c4 \uacc4\uc0b0 \ubcf4\uc815.\n\n*\ubaa9\ud45c*: \ud504\ub85c\uc81d\ud2b8 \uc804\uccb4 mypy \uc5d0\ub7ec 0\uac1c \ub2ec\uc131.",
+      "command": "create",
+      "file_path": "communications/audit/MYPY_AUDIT_REPORT.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "WO-STABILIZE-POST-MERGE": {
+      "key": "WO-STABILIZE-POST-MERGE",
+      "title": "Post-Merge Test Stabilization",
+      "type": "jules",
+      "instruction_raw": "\ub2e4\uc74c 6\uac00\uc9c0 \ud14c\uc2a4\ud2b8 \uc2e4\ud328 \ud574\uacb0: Initializer(Mock vs int), CommandService(Rollback), Market Precision.",
+      "command": "create",
+      "file_path": null,
       "wait": true,
       "session_id": null,
       "worker": null,
