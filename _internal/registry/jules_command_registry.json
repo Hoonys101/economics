@@ -3,21 +3,6 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-WAVE-B-1-API": {
-      "key": "WO-WAVE-B-1-API",
-      "title": "Wave B.1: Finance API & DTO Hardening",
-      "type": "jules",
-      "instruction_raw": "\uba85\uc138\uc11c(MISSION_WAVE_B_1_API_SPEC.md)\uc5d0 \ub530\ub77c MoneySupplyDTO \uc815\uc758 \ubc0f Agent Liveness Protocol \uc778\ud130\ud398\uc774\uc2a4\ub97c \uad6c\ud604\ud558\uc2ed\uc2dc\uc624.",
-      "command": "create",
-      "file_path": "gemini-output/spec/MISSION_WAVE_B_1_API_SPEC.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-WAVE-B-2-M2": {
       "key": "WO-WAVE-B-2-M2",
       "title": "Wave B.2: Monetary Ledger & M2 Implementation",
