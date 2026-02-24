@@ -207,8 +207,9 @@ class AgingSystem(IAgingSystem):
         Calculates total inventory value in integer pennies.
         """
         total_pennies = 0
-        default_price_float = getattr(self.config, "GOODS_INITIAL_PRICE", {}).get("default", 10.0)
-        default_price_pennies = int(default_price_float * 100)
+        # MIGRATION: Use integer default price (Penny Standard)
+        raw_price = getattr(self.config, "DEFAULT_FALLBACK_PRICE", 1000)
+        default_price_pennies = int(raw_price)
 
         for item_id, qty in inventory.items():
             price_pennies = default_price_pennies

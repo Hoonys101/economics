@@ -125,6 +125,11 @@ class TestPhase29Depression(unittest.TestCase):
             # Added for FirmConfigDTO completeness
             MARKET_CIRCUIT_BREAKER_BASE_LIMIT=0.15,
             CIRCUIT_BREAKER_MIN_HISTORY=7,
+
+            # New Fiscal Policy Constants
+            FISCAL_TAX_RATE_MIN=0.05,
+            FISCAL_TAX_RATE_MAX=0.60,
+            DEBT_CEILING_HARD_LIMIT_RATIO=1.5,
         )
 
         # Create dummy agents

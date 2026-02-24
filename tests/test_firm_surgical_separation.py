@@ -60,6 +60,9 @@ class TestFirmSurgicalSeparation:
         # Ensure execute_internal_orders delegates to action_executor or we mock execute_internal_orders directly
         firm.execute_internal_orders = MagicMock()
 
+        # Ensure firm has enough capital to pass any internal sanity checks
+        firm.wallet.load_balances({"USD": 10000000})
+
         return firm
 
     def test_make_decision_orchestrates_engines(self, mock_firm):

@@ -103,6 +103,11 @@ def mock_config():
     mock_config.QE_INTERVENTION_YIELD_THRESHOLD = 0.10
     mock_config.BAILOUT_PENALTY_PREMIUM = 0.05
 
+    # New Fiscal Policy Constants (WO-IMPL-CONFIG-SCALING)
+    mock_config.FISCAL_TAX_RATE_MIN = 0.05
+    mock_config.FISCAL_TAX_RATE_MAX = 0.60
+    mock_config.DEBT_CEILING_HARD_LIMIT_RATIO = 1.5
+
     return mock_config
 
 @pytest.fixture

@@ -1,18 +1,16 @@
-from typing import List, Any
+from typing import List, Any, Union
 import logging
 from modules.government.engines.api import (
     IFiscalEngine,
     FiscalStateDTO,
     FiscalRequestDTO,
     FiscalDecisionDTO,
-    GrantedBailoutDTO
+    GrantedBailoutDTO,
+    FiscalConfigDTO
 )
 from modules.system.api import MarketSnapshotDTO, CurrencyCode, DEFAULT_CURRENCY
 
 logger = logging.getLogger(__name__)
-
-DEBT_CEILING_RATIO = 1.5
-AUSTERITY_TRIGGER_RATIO = 1.0
 
 class FiscalEngine(IFiscalEngine):
     """
@@ -21,8 +19,8 @@ class FiscalEngine(IFiscalEngine):
     Enforces Solvency Guardrails (Debt Brake, Bailout Limits).
     """
 
-    def __init__(self, config_module: Any = None):
-        self.config = config_module
+    def __init__(self, config_module: Union[FiscalConfigDTO, Any] = None):
+        self.config_dto = config_module
 
     def decide(
         self,
@@ -68,16 +66,35 @@ class FiscalEngine(IFiscalEngine):
         new_corporate_tax_rate = state.corporate_tax_rate
         fiscal_stance = 0.0
 
+        # Config Access
+        tax_min = getattr(self.config_dto, "tax_rate_min", 0.05)
+        tax_max = getattr(self.config_dto, "tax_rate_max", 0.60)
+        debt_ceiling = getattr(self.config_dto, "debt_ceiling_ratio", 1.5)
+
         if potential_gdp > 0:
             gdp_gap = (current_gdp - potential_gdp) / potential_gdp
 
             # Counter-Cyclical Logic
-            auto_cyclical = getattr(self.config, "AUTO_COUNTER_CYCLICAL_ENABLED", True)
+            auto_cyclical = getattr(self.config_dto, "auto_counter_cyclical_enabled", True)
+            # Legacy Fallback
+            if hasattr(self.config_dto, "AUTO_COUNTER_CYCLICAL_ENABLED"):
+                 auto_cyclical = getattr(self.config_dto, "AUTO_COUNTER_CYCLICAL_ENABLED")
 
             if auto_cyclical:
-                sensitivity = getattr(self.config, "FISCAL_SENSITIVITY_ALPHA", 0.5)
-                base_income_tax = getattr(self.config, "INCOME_TAX_RATE", 0.1)
-                base_corp_tax = getattr(self.config, "CORPORATE_TAX_RATE", 0.2)
+                sensitivity = getattr(self.config_dto, "fiscal_sensitivity_alpha", 0.5)
+                # Legacy Fallback
+                if hasattr(self.config_dto, "FISCAL_SENSITIVITY_ALPHA"):
+                     sensitivity = getattr(self.config_dto, "FISCAL_SENSITIVITY_ALPHA")
+
+                base_income_tax = getattr(self.config_dto, "base_income_tax_rate", 0.1)
+                # Legacy
+                if hasattr(self.config_dto, "INCOME_TAX_RATE"):
+                     base_income_tax = getattr(self.config_dto, "INCOME_TAX_RATE")
+
+                base_corp_tax = getattr(self.config_dto, "base_corporate_tax_rate", 0.2)
+                # Legacy
+                if hasattr(self.config_dto, "CORPORATE_TAX_RATE"):
+                     base_corp_tax = getattr(self.config_dto, "CORPORATE_TAX_RATE")
 
                 fiscal_stance = -sensitivity * gdp_gap
 
@@ -89,23 +106,30 @@ class FiscalEngine(IFiscalEngine):
                 new_corporate_tax_rate = base_corp_tax * (1.0 - fiscal_stance)
 
                 # Clamp values
-                new_income_tax_rate = max(0.05, min(0.6, new_income_tax_rate))
-                new_corporate_tax_rate = max(0.05, min(0.6, new_corporate_tax_rate))
+                new_income_tax_rate = max(tax_min, min(tax_max, new_income_tax_rate))
+                new_corporate_tax_rate = max(tax_min, min(tax_max, new_corporate_tax_rate))
 
         # --- DEBT BRAKE OVERRIDE ---
         # If debt is too high, force tax hikes (or prevent cuts) regardless of recession
-        if debt_to_gdp > DEBT_CEILING_RATIO:
+        if debt_to_gdp > debt_ceiling:
             # Force rate towards higher end or at least base rate + penalty
-            base_income_tax = getattr(self.config, "INCOME_TAX_RATE", 0.1)
-            base_corp_tax = getattr(self.config, "CORPORATE_TAX_RATE", 0.2)
+            base_income_tax = getattr(self.config_dto, "base_income_tax_rate", 0.1)
+            # Legacy
+            if hasattr(self.config_dto, "INCOME_TAX_RATE"):
+                 base_income_tax = getattr(self.config_dto, "INCOME_TAX_RATE")
+
+            base_corp_tax = getattr(self.config_dto, "base_corporate_tax_rate", 0.2)
+            # Legacy
+            if hasattr(self.config_dto, "CORPORATE_TAX_RATE"):
+                 base_corp_tax = getattr(self.config_dto, "CORPORATE_TAX_RATE")
 
             # Simple logic: Ensure rates are at least base, and add surcharge
             new_income_tax_rate = max(new_income_tax_rate, base_income_tax * 1.1)
             new_corporate_tax_rate = max(new_corporate_tax_rate, base_corp_tax * 1.1)
 
             # Ensure we don't go crazy
-            new_income_tax_rate = min(0.6, new_income_tax_rate)
-            new_corporate_tax_rate = min(0.6, new_corporate_tax_rate)
+            new_income_tax_rate = min(tax_max, new_income_tax_rate)
+            new_corporate_tax_rate = min(tax_max, new_corporate_tax_rate)
 
         return new_income_tax_rate, new_corporate_tax_rate, fiscal_stance
 
@@ -113,20 +137,23 @@ class FiscalEngine(IFiscalEngine):
         total_debt = state.total_debt
         potential_gdp = state.potential_gdp
 
+        debt_ceiling = getattr(self.config_dto, "debt_ceiling_ratio", 1.5)
+        austerity_trigger = getattr(self.config_dto, "austerity_trigger_ratio", 1.0)
+
         if potential_gdp <= 0:
             return 1.0
 
         debt_to_gdp = total_debt / potential_gdp
 
-        if debt_to_gdp > DEBT_CEILING_RATIO:
+        if debt_to_gdp > debt_ceiling:
             # Drastic Cut
             return 0.5
-        elif debt_to_gdp > AUSTERITY_TRIGGER_RATIO:
+        elif debt_to_gdp > austerity_trigger:
             # Linear reduction from 1.0 to 0.5 as debt goes from 1.0 to 1.5
             # Formula: 1.0 - (ratio - 1.0)
             # if ratio = 1.0 -> 1.0
             # if ratio = 1.5 -> 0.5
-            return max(0.5, 1.0 - (debt_to_gdp - AUSTERITY_TRIGGER_RATIO))
+            return max(0.5, 1.0 - (debt_to_gdp - austerity_trigger))
 
         return 1.0
 
@@ -135,12 +162,15 @@ class FiscalEngine(IFiscalEngine):
         potential_gdp = state.potential_gdp
         current_assets = state.assets.get(DEFAULT_CURRENCY, 0)
 
+        debt_ceiling = getattr(self.config_dto, "debt_ceiling_ratio", 1.5)
+        austerity_trigger = getattr(self.config_dto, "austerity_trigger_ratio", 1.0)
+
         debt_to_gdp = 0.0
         if potential_gdp > 0:
             debt_to_gdp = total_debt / potential_gdp
 
         # Reject all if Debt Ceiling breached
-        if debt_to_gdp > DEBT_CEILING_RATIO:
+        if debt_to_gdp > debt_ceiling:
             return []
 
         granted = []
@@ -158,7 +188,7 @@ class FiscalEngine(IFiscalEngine):
                 can_afford = False
                 if current_assets >= amount:
                     can_afford = True
-                elif debt_to_gdp < AUSTERITY_TRIGGER_RATIO:
+                elif debt_to_gdp < austerity_trigger:
                     can_afford = True # Assume bond market access
 
                 if not can_afford:

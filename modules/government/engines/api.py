@@ -3,6 +3,21 @@ from dataclasses import dataclass, field
 from modules.system.api import CurrencyCode, MarketSnapshotDTO
 
 @dataclass(frozen=True)
+class FiscalConfigDTO:
+    """
+    Configuration parameters for the Fiscal Engine.
+    Enforces Type Safety and prevents magic number usage.
+    """
+    tax_rate_min: float
+    tax_rate_max: float
+    base_income_tax_rate: float
+    base_corporate_tax_rate: float
+    debt_ceiling_ratio: float
+    austerity_trigger_ratio: float
+    fiscal_sensitivity_alpha: float
+    auto_counter_cyclical_enabled: bool
+
+@dataclass(frozen=True)
 class FiscalStateDTO:
     """Input state from Government agent."""
     tick: int

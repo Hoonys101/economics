@@ -1,17 +1,21 @@
 import pytest
 from unittest.mock import MagicMock
 from modules.government.engines.fiscal_engine import FiscalEngine
-from modules.government.engines.api import FiscalStateDTO, FiscalRequestDTO, FirmBailoutRequestDTO, FirmFinancialsDTO
+from modules.government.engines.api import FiscalStateDTO, FiscalRequestDTO, FirmBailoutRequestDTO, FirmFinancialsDTO, FiscalConfigDTO
 from modules.system.api import MarketSnapshotDTO, DEFAULT_CURRENCY
 
 @pytest.fixture
 def mock_config():
-    config = MagicMock()
-    config.AUTO_COUNTER_CYCLICAL_ENABLED = True
-    config.FISCAL_SENSITIVITY_ALPHA = 0.5
-    config.INCOME_TAX_RATE = 0.1
-    config.CORPORATE_TAX_RATE = 0.2
-    return config
+    return FiscalConfigDTO(
+        tax_rate_min=0.05,
+        tax_rate_max=0.60,
+        base_income_tax_rate=0.1,
+        base_corporate_tax_rate=0.2,
+        debt_ceiling_ratio=1.5,
+        austerity_trigger_ratio=1.0,
+        fiscal_sensitivity_alpha=0.5,
+        auto_counter_cyclical_enabled=True
+    )
 
 @pytest.fixture
 def fiscal_engine(mock_config):

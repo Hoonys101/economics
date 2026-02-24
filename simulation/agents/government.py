@@ -51,7 +51,7 @@ from modules.simulation.api import ISensoryDataProvider, AgentSensorySnapshotDTO
 # New Engines
 from modules.government.engines.execution_engine import PolicyExecutionEngine
 from modules.government.engines.fiscal_engine import FiscalEngine
-from modules.government.engines.api import FiscalStateDTO, FiscalRequestDTO, FirmBailoutRequestDTO, FirmFinancialsDTO
+from modules.government.engines.api import FiscalStateDTO, FiscalRequestDTO, FirmBailoutRequestDTO, FirmFinancialsDTO, FiscalConfigDTO
 
 if TYPE_CHECKING:
     from simulation.finance.api import ISettlementSystem
@@ -98,7 +98,19 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
 
         # Initialize engines
         policy_mode = getattr(config_module, "GOVERNMENT_POLICY_MODE", "TAYLOR_RULE")
-        self.fiscal_engine = FiscalEngine(config_module)
+
+        # Create FiscalConfigDTO
+        fiscal_config = FiscalConfigDTO(
+            tax_rate_min=getattr(config_module, "FISCAL_TAX_RATE_MIN", 0.05),
+            tax_rate_max=getattr(config_module, "FISCAL_TAX_RATE_MAX", 0.60),
+            base_income_tax_rate=getattr(config_module, "INCOME_TAX_RATE", 0.1),
+            base_corporate_tax_rate=getattr(config_module, "CORPORATE_TAX_RATE", 0.2),
+            debt_ceiling_ratio=getattr(config_module, "DEBT_CEILING_HARD_LIMIT_RATIO", 1.5),
+            austerity_trigger_ratio=1.0,
+            fiscal_sensitivity_alpha=getattr(config_module, "FISCAL_SENSITIVITY_ALPHA", 0.5),
+            auto_counter_cyclical_enabled=getattr(config_module, "AUTO_COUNTER_CYCLICAL_ENABLED", True)
+        )
+        self.fiscal_engine = FiscalEngine(fiscal_config)
         self.execution_engine = PolicyExecutionEngine()
 
         # Initialize default fiscal policy

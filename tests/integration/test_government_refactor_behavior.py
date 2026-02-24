@@ -59,6 +59,21 @@ class TestGovernmentRefactor:
         # Added for Social Policy (Wealth Tax)
         config.ANNUAL_WEALTH_TAX_RATE = 0.02
         config.CB_INFLATION_TARGET = 0.02
+
+        # New Fiscal Policy Constants
+        config.FISCAL_TAX_RATE_MIN = 0.05
+        config.FISCAL_TAX_RATE_MAX = 0.60
+        config.DEBT_CEILING_HARD_LIMIT_RATIO = 1.5
+
+        # DTO Compatibility (Lowercase)
+        config.tax_rate_min = 0.05
+        config.tax_rate_max = 0.60
+        config.debt_ceiling_ratio = 1.5
+        config.auto_counter_cyclical_enabled = True
+        config.fiscal_sensitivity_alpha = 0.5
+        config.base_income_tax_rate = 0.1
+        config.base_corporate_tax_rate = 0.2
+        config.austerity_trigger_ratio = 1.0
         return config
 
     @pytest.fixture

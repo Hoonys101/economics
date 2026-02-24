@@ -23,6 +23,11 @@ def mock_config():
     config.AUTO_COUNTER_CYCLICAL_ENABLED = True
     config.FISCAL_SENSITIVITY_ALPHA = 0.5
     config.CB_INFLATION_TARGET = 0.02
+
+    # New Fiscal Policy Constants
+    config.FISCAL_TAX_RATE_MIN = 0.05
+    config.FISCAL_TAX_RATE_MAX = 0.60
+    config.DEBT_CEILING_HARD_LIMIT_RATIO = 1.5
     return config
 
 def test_execute_social_policy_integration(mock_config):

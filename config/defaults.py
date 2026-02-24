@@ -8,7 +8,7 @@ NUM_FIRMS = 10
 NUM_HOUSING_UNITS = 60
 INITIAL_PROPERTY_VALUE = 2000000
 INITIAL_RENT_PRICE = 10000
-INITIAL_HOUSEHOLD_ASSETS_MEAN = 1000000
+INITIAL_HOUSEHOLD_ASSETS_MEAN = 200000
 INITIAL_HOUSEHOLD_ASSETS_RANGE = 0.2
 INITIAL_HOUSEHOLD_LIQUIDITY_NEED_MEAN = 0.5
 INITIAL_HOUSEHOLD_LIQUIDITY_NEED_RANGE = 0.1
@@ -111,7 +111,7 @@ INITIAL_HOUSEHOLD_NEEDS_MEAN = {
 INITIAL_HOUSEHOLD_NEEDS_RANGE = 0.1
 INITIAL_EMPLOYMENT_RATE = 0.5  # 초기 고용률
 
-INITIAL_FIRM_CAPITAL_MEAN = 10000000 # High Initial Capital for Laissez-Faire Runway - MIGRATION: Int pennies (10M)
+INITIAL_FIRM_CAPITAL_MEAN = 5000000 # High Initial Capital for Laissez-Faire Runway - MIGRATION: Int pennies (10M)
 INITIAL_FIRM_CAPITAL_RANGE = 0.2
 INITIAL_FIRM_LIQUIDITY_NEED_MEAN = 20000 # MIGRATION: Int pennies
 INITIAL_FIRM_LIQUIDITY_NEED_RANGE = 0.2
@@ -455,8 +455,8 @@ AI_GROWTH_REWARD_WEIGHT = 7.0
 AI_WEALTH_REWARD_WEIGHT = 3.0
 
 # --- Genesis: Activation Energy (WO-047: Capital Injection) ---
-INITIAL_HOUSEHOLD_ASSETS_MEAN = 1000000  # 50.0 -> 5000.0 (100x Booster) -> Pennies
-INITIAL_FIRM_CAPITAL_MEAN = 10000000   # 1000.0 -> 50000.0 (50x Runway for Regulations) -> Pennies (10M)
+INITIAL_HOUSEHOLD_ASSETS_MEAN = 200000  # 50.0 -> 5000.0 (100x Booster) -> Pennies
+INITIAL_FIRM_CAPITAL_MEAN = 5000000   # 1000.0 -> 50000.0 (50x Runway for Regulations) -> Pennies (10M)
 
 # --- Genesis: Market Flexibility Multipliers ---
 GENESIS_PRICE_ADJUSTMENT_MULTIPLIER = 2.0  # Speed up price slashing
@@ -686,7 +686,7 @@ SALES_TAX_RATE = 0.0                 # Laissez-Faire: Zero Tax
 INHERITANCE_TAX_RATE = 0.0            # Laissez-Faire: Zero Tax
 
 RD_SUBSIDY_RATE = 0.2                 # R&D(자본투자) 보조금 (투자액의 20%)
-INFRASTRUCTURE_INVESTMENT_COST = 500000  # 인프라 투자 1회당 비용
+INFRASTRUCTURE_INVESTMENT_COST = 2000000  # 인프라 투자 1회당 비용
 INFRASTRUCTURE_TFP_BOOST = 0.05       # 인프라 투자 시 전체 생산성(TFP) 증가율
 
 # --- 배당 관련 (기존 DIVIDEND_RATE 참조) ---
@@ -706,6 +706,10 @@ MITOSIS_MUTATION_PROBABILITY = 0.2  # 성격 돌연변이 확률
 MITOSIS_Q_TABLE_MUTATION_RATE = 0.05  # Q-table 노이즈 비율
 
 # --- Phase 4: Fiscal Policy ---
+FISCAL_TAX_RATE_MIN = 0.05
+FISCAL_TAX_RATE_MAX = 0.60
+FISCAL_TAX_ADJUSTMENT_STEP = 0.01
+DEBT_CEILING_HARD_LIMIT_RATIO = 1.5
 
 # --- Phase 7: Adaptive Fiscal Policy ---
 DEFICIT_SPENDING_ENABLED = True
@@ -736,7 +740,7 @@ TAX_BRACKETS = [
 
 # 2. Wealth Tax
 # WEALTH_TAX_THRESHOLD is defined below
-WEALTH_TAX_THRESHOLD = 50000000
+WEALTH_TAX_THRESHOLD = 10000000
 ANNUAL_WEALTH_TAX_RATE = 0.02   # Annual 2% wealth tax
 
 # 3. Welfare
@@ -776,8 +780,8 @@ QUALITY_PREF_MISER_MAX = 0.3      # Threshold for Miser behavior
 # Task #9: Entrepreneurship Constants
 # ==============================================================================
 MIN_FIRMS_THRESHOLD = 5          # 최소 기업 수 (이하로 떨어지면 창업 유도)
-STARTUP_COST = 3000000           # 창업 비용 (30,000으로 상향)
-FIRM_MAINTENANCE_FEE = 5000       # WO-021: 1/4 of legacy 200.0
+STARTUP_COST = 1000000           # 창업 비용 (30,000으로 상향)
+FIRM_MAINTENANCE_FEE = 10000       # WO-021: 1/4 of legacy 200.0
 CORPORATE_TAX_RATE = 0.05         # Laissez-Faire: Zero Tax
 ENTREPRENEURSHIP_SPIRIT = 0.05   # 자격 있는 가계의 창업 확률 (5%)
 STARTUP_CAPITAL_MULTIPLIER = 1.2 # 창업 자격: cash > STARTUP_COST * 이 값 (자격: 3600)
@@ -838,7 +842,7 @@ NUM_HOUSING_UNITS = 100
 INITIAL_PROPERTY_VALUE = 1000000
 INITIAL_RENT_PRICE = 10000
 MAINTENANCE_RATE_PER_TICK = 0.001  # 0.1%
-HOMELESS_PENALTY_PER_TICK = 5000
+HOMELESS_PENALTY_PER_TICK = 1000
 
 # ==============================================================================
 # Phase 19: Population Dynamics

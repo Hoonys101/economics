@@ -33,6 +33,7 @@ def econ_state():
     state.is_homeless = True
     state.current_wage_pennies = 0
     state.residing_property_id = None
+    state.last_fired_tick = 0
     state.copy.return_value = state
     return state
 
