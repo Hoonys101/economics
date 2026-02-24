@@ -18,21 +18,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "WO-MYPY-LOGIC-B4-MARKETS": {
-      "key": "WO-MYPY-LOGIC-B4-MARKETS",
-      "title": "Mypy Stage B4: Logic Hardening (Markets)",
-      "type": "jules",
-      "instruction_raw": "Market \ubaa8\ub4c8(`simulation/markets`, `modules/market`)\uc758 \ub9e4\uce6d \uc5d4\uc9c4 \ubc0f \uac00\uaca9 \uc815\ubc00\ub3c4 \uad00\ub828 \ub0b4\ubd80 \ub85c\uc9c1\uc744 \uc218\uc815\ud558\uc2ed\uc2dc\uc624.",
-      "command": "create",
-      "file_path": "communications/audit/MYPY_AUDIT_REPORT.md",
-      "wait": true,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-MYPY-LOGIC-B5-ANALYTICS": {
       "key": "WO-MYPY-LOGIC-B5-ANALYTICS",
       "title": "Mypy Stage B5: Logic Hardening (Analytics/DB)",
