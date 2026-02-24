@@ -3,13 +3,43 @@
     "version": "1.0"
   },
   "missions": {
-    "WO-INFRA-MYPY-CLEANUP": {
-      "key": "WO-INFRA-MYPY-CLEANUP",
-      "title": "Final MyPy Infra Cleanup & Zero-Error Target",
+    "WO-WAVE-A-1-GOV-PROTOCOL": {
+      "key": "WO-WAVE-A-1-GOV-PROTOCOL",
+      "title": "Wave A.1: Government Protocol Harmonization",
       "type": "jules",
-      "instruction_raw": "\uba85\uc138\uc11c(spec_mypy_infra_cleanup.md)\uc5d0 \ub530\ub77c \uc22b\uc790\ub85c \uc2dc\uc791\ud558\ub294 \ud3f4\ub354\uc758 __init__.py\ub97c \uc81c\uac70\ud558\uace0 \uc804\uc5ed MyPy \uc5d0\ub7ec 0\uac74\uc744 \ub2ec\uc131\ud558\uc2ed\uc2dc\uc624.",
+      "instruction_raw": "\uba85\uc138\uc11c(MISSION_WAVE_A_1_GOV_PROTOCOL_SPEC.md)\uc5d0 \ub530\ub77c IGovernment \ud1b5\ud569 \ubc0f Penny Standard\ub97c \uac15\uc81c\ud558\uc2ed\uc2dc\uc624. \uba54\ud2b8\ub9ad \ud2b8\ub798\ucee4 \ubc0f \ud14c\uc2a4\ud2b8 Mock \uc218\uc815\uc774 \ud3ec\ud568\ub429\ub2c8\ub2e4.",
       "command": "create",
-      "file_path": "design/3_work_artifacts/specs/spec_mypy_infra_cleanup.md",
+      "file_path": "gemini-output/spec/MISSION_WAVE_A_1_GOV_PROTOCOL_SPEC.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "WO-WAVE-A-2-INIT-SEQ": {
+      "key": "WO-WAVE-A-2-INIT-SEQ",
+      "title": "Wave A.2: 5-Phase Atomic Initialization Sequence",
+      "type": "jules",
+      "instruction_raw": "\uba85\uc138\uc11c(MISSION_WAVE_A_2_INIT_SEQ_SPEC.md)\uc5d0 \ub530\ub77c SimulationInitializer\ub97c 5\ub2e8\uacc4 \uc2dc\ud000\uc2a4\ub85c \ub9ac\ud329\ud1a0\ub9c1\ud558\uc2ed\uc2dc\uc624. \uc21c\ud658 \ucc38\uc870(DI) \ud574\uacb0 \ubc0f Genesis \uc815\uc218 \ubcc0\ud658\uc744 \ud3ec\ud568\ud569\ub2c8\ub2e4.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_WAVE_A_2_INIT_SEQ_SPEC.md",
+      "wait": true,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "WO-WAVE-A-3-GHOST-FIRM": {
+      "key": "WO-WAVE-A-3-GHOST-FIRM",
+      "title": "Wave A.3: Atomic Registration & Ghost Firm Prevention",
+      "type": "jules",
+      "instruction_raw": "\uba85\uc138\uc11c(MISSION_WAVE_A_3_GHOST_FIRM_SPEC.md)\uc5d0 \ub530\ub77c Phase 4 \uc778\uad6c \uc0dd\uc131 \uc2dc \uc6d0\uc790\uc801 \uacc4\uc815 \ub4f1\ub85d\uc744 \uad6c\ud604\ud558\uc5ec \uc720\ub839 \ud68c\uc0ac \ud604\uc0c1\uc744 \ucc28\ub2e8\ud558\uc2ed\uc2dc\uc624.",
+      "command": "create",
+      "file_path": "gemini-output/spec/MISSION_WAVE_A_3_GHOST_FIRM_SPEC.md",
       "wait": true,
       "session_id": null,
       "worker": null,
