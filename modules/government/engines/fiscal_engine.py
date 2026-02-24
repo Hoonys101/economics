@@ -83,8 +83,8 @@ class FiscalEngine(IFiscalEngine):
         tax_max = self.config_dto.tax_rate_max
         debt_ceiling = self.config_dto.debt_ceiling_ratio
 
-        # New constant: Hard Limit
-        debt_hard_limit = getattr(self.config_dto, 'debt_ceiling_hard_limit_ratio', 1.5)
+        # New constant: Hard Limit (Direct Access)
+        debt_hard_limit = self.config_dto.debt_ceiling_hard_limit_ratio
 
         if potential_gdp > 0:
             gdp_gap = (current_gdp - potential_gdp) / potential_gdp
