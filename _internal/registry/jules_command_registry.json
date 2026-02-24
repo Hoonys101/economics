@@ -17,21 +17,6 @@
       "output_path": null,
       "model": null,
       "audit_requirements": null
-    },
-    "WO-IMPL-MAINTENANCE-PH33": {
-      "key": "WO-IMPL-MAINTENANCE-PH33",
-      "title": "Maintenance & Mock Regression Fix (Surgical)",
-      "type": "jules",
-      "instruction_raw": "Execute the surgical \u2018Search & Replace\u2019 plan to fix mock regressions and deduplicate config/defaults.py.",
-      "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_WO-SPEC-MAINTENANCE-PH33_PLAN.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
     }
   }
 }
