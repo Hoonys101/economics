@@ -8,7 +8,9 @@ from modules.firm.api import (
     HRDecisionInputDTO, HRDecisionOutputDTO,
     FirmSnapshotDTO, HRIntentDTO, SalesIntentDTO, ProductionIntentDTO,
     FirmBrainScanContextDTO, FirmBrainScanResultDTO,
-    FirmConfigDTO
+    FirmConfigDTO,
+    IFinanceEngine, IHREngine, IProductionEngine, ISalesEngine, IPricingEngine,
+    IAssetManagementEngine, IRDEngine, IBrandEngine
 )
 from modules.simulation.dtos.api import FirmConfigDTO as OriginalFirmConfigDTO
 from simulation.models import Order
@@ -51,14 +53,14 @@ class TestFirmBrainScan:
         )
 
         # Inject Mock Engines
-        firm.finance_engine = MagicMock()
-        firm.hr_engine = MagicMock()
-        firm.production_engine = MagicMock()
-        firm.sales_engine = MagicMock()
-        firm.pricing_engine = MagicMock()
-        firm.asset_management_engine = MagicMock()
-        firm.rd_engine = MagicMock()
-        firm.brand_engine = MagicMock()
+        firm.finance_engine = MagicMock(spec=IFinanceEngine)
+        firm.hr_engine = MagicMock(spec=IHREngine)
+        firm.production_engine = MagicMock(spec=IProductionEngine)
+        firm.sales_engine = MagicMock(spec=ISalesEngine)
+        firm.pricing_engine = MagicMock(spec=IPricingEngine)
+        firm.asset_management_engine = MagicMock(spec=IAssetManagementEngine)
+        firm.rd_engine = MagicMock(spec=IRDEngine)
+        firm.brand_engine = MagicMock(spec=IBrandEngine)
 
         firm.action_executor = MagicMock() # Mock execute_internal_orders delegate
         firm.execute_internal_orders = MagicMock() # Mock directly too
