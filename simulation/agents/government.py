@@ -105,10 +105,12 @@ class Government(ICurrencyHolder, IFinancialAgent, ISensoryDataProvider):
             tax_rate_max=getattr(config_module, "FISCAL_TAX_RATE_MAX", 0.60),
             base_income_tax_rate=getattr(config_module, "INCOME_TAX_RATE", 0.1),
             base_corporate_tax_rate=getattr(config_module, "CORPORATE_TAX_RATE", 0.2),
-            debt_ceiling_ratio=getattr(config_module, "DEBT_CEILING_HARD_LIMIT_RATIO", 1.5),
+            debt_ceiling_ratio=getattr(config_module, "DEBT_CEILING_RATIO", 2.0),
             austerity_trigger_ratio=1.0,
             fiscal_sensitivity_alpha=getattr(config_module, "FISCAL_SENSITIVITY_ALPHA", 0.5),
-            auto_counter_cyclical_enabled=getattr(config_module, "AUTO_COUNTER_CYCLICAL_ENABLED", True)
+            auto_counter_cyclical_enabled=getattr(config_module, "AUTO_COUNTER_CYCLICAL_ENABLED", True),
+            tax_adjustment_step=getattr(config_module, "FISCAL_TAX_ADJUSTMENT_STEP", 0.01),
+            debt_ceiling_hard_limit_ratio=getattr(config_module, "DEBT_CEILING_HARD_LIMIT_RATIO", 1.5)
         )
         self.fiscal_engine = FiscalEngine(fiscal_config)
         self.execution_engine = PolicyExecutionEngine()

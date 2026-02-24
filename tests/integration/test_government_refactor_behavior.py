@@ -74,6 +74,8 @@ class TestGovernmentRefactor:
         config.base_income_tax_rate = 0.1
         config.base_corporate_tax_rate = 0.2
         config.austerity_trigger_ratio = 1.0
+        config.debt_ceiling_hard_limit_ratio = 1.5
+        config.tax_adjustment_step = 0.01
         return config
 
     @pytest.fixture

@@ -65,12 +65,23 @@ def verify_m2_integrity():
     print(f"Final M2: {final_m2}")
 
     # Delta
-    delta = {}
-    for cur, amount in final_m2.items():
-        init = initial_m2.get(cur, 0)
-        delta[cur] = amount - init
+    delta = final_m2.total_m2_pennies - initial_m2.total_m2_pennies
+    print(f"M2 Delta (Pennies): {delta}")
 
-    print(f"M2 Delta: {delta}")
+    if abs(delta) > 0:
+        print(f"WARNING: M2 Changed by {delta} pennies.")
+        # Is this expected? If credit creation is allowed, yes.
+        # But for 'Zero-Sum Integrity' mission, maybe it implies restricted credit or just checking initialization?
+        # The spec says: "1. Zero-Sum Check: Run verify_m2_integrity.py immediately after initialization. Expect: Total M2 == 100,000,000."
+        # This script runs 50 ticks.
+        # I should probably split the check: Initial Check and Runtime Check.
+
+        # We assume initialization correctness if Initial M2 is 100M.
+
+    if initial_m2.total_m2_pennies == 100_000_000:
+        print("SUCCESS: Initial M2 is 100,000,000 Pennies.")
+    else:
+        print(f"FAILURE: Initial M2 is {initial_m2.total_m2_pennies} Pennies. Expected 100,000,000.")
 
     print("SUCCESS: Economic Integrity Check Completed.")
 

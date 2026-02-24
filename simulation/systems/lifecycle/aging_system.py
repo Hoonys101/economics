@@ -8,6 +8,7 @@ from simulation.systems.demographic_manager import DemographicManager
 from modules.system.api import DEFAULT_CURRENCY, ICurrencyHolder
 from simulation.interfaces.market_interface import IMarket
 from modules.finance.api import IFinancialEntity
+from config import defaults
 
 class AgingSystem(IAgingSystem):
     """
@@ -208,8 +209,7 @@ class AgingSystem(IAgingSystem):
         """
         total_pennies = 0
         # MIGRATION: Use integer default price (Penny Standard)
-        raw_price = getattr(self.config, "DEFAULT_FALLBACK_PRICE", 1000)
-        default_price_pennies = int(raw_price)
+        default_price_pennies = int(defaults.DEFAULT_FALLBACK_PRICE)
 
         for item_id, qty in inventory.items():
             price_pennies = default_price_pennies

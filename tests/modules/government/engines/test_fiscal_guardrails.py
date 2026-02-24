@@ -14,7 +14,9 @@ def mock_config():
         debt_ceiling_ratio=1.5,
         austerity_trigger_ratio=1.0,
         fiscal_sensitivity_alpha=0.5,
-        auto_counter_cyclical_enabled=True
+        auto_counter_cyclical_enabled=True,
+        tax_adjustment_step=0.01,
+        debt_ceiling_hard_limit_ratio=1.5
     )
 
 @pytest.fixture

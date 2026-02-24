@@ -16,18 +16,15 @@ class FiscalConfigDTO:
     austerity_trigger_ratio: float
     fiscal_sensitivity_alpha: float
     auto_counter_cyclical_enabled: bool
+    tax_adjustment_step: float
+    debt_ceiling_hard_limit_ratio: float
 
 @dataclass(frozen=True)
 class FiscalStateDTO:
     """Input state from Government agent."""
     tick: int
     assets: Dict[CurrencyCode, int] # Penny Standard
-    total_debt: float # Keeping as float for ratio calcs, or should be int? Debt is usually tracked in pennies but ratios use float.
-                      # Ideally debt is int (pennies) for ledger accuracy, but ratio calculation converts it.
-                      # Let's keep total_debt as float for now as it often comes from a sum of bond face values (int) but might be used as float.
-                      # Wait, debt is a liability. It should be int if it represents actual money owed.
-                      # However, the original code had it as float. Let's stick to float for debt to minimize friction,
-                      # but ASSETS must be int.
+    total_debt: float
     income_tax_rate: float
     corporate_tax_rate: float
     approval_rating: float
@@ -38,7 +35,7 @@ class FiscalStateDTO:
 class FirmFinancialsDTO:
     """A snapshot of a firm's health, NOT the live object."""
     assets: int # Penny Standard
-    profit: float # Profit can be float? Usually accounting is int. But let's stick to assets/amounts being int.
+    profit: float
     is_solvent: bool
 
 @dataclass(frozen=True)
