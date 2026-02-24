@@ -94,7 +94,9 @@ class TestHousingTransactionHandler(unittest.TestCase):
 
         # Defaults
         self.state.settlement_system.transfer.return_value = True
-        self.state.bank.grant_loan.return_value = ({"loan_id": "loan_123"}, MagicMock(transaction_type="credit_creation"))
+        mock_loan_dto = MagicMock()
+        mock_loan_dto.loan_id = "loan_123"
+        self.state.bank.grant_loan.return_value = (mock_loan_dto, MagicMock(transaction_type="credit_creation"))
         self.state.bank.withdraw_for_customer.return_value = True
         self.state.bank.terminate_loan.return_value = MagicMock(transaction_type="credit_destruction")
         self.state.bank.void_loan.return_value = MagicMock(transaction_type="credit_destruction")
@@ -144,7 +146,7 @@ class TestHousingTransactionHandler(unittest.TestCase):
         # self.assertEqual(self.unit.mortgage_id, "loan_123")
         # Check liens instead
         self.assertEqual(len(self.unit.liens), 1)
-        self.assertEqual(self.unit.liens[0]['loan_id'], "loan_123")
+        self.assertEqual(self.unit.liens[0].loan_id, "loan_123")
 
     def test_handle_disbursement_failure(self):
         # Testing failure at Loan Disbursement (Bank -> Escrow)

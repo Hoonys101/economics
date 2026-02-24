@@ -50,7 +50,9 @@ def test_housing_handler_with_protocol_agent():
 
     # Bank
     context.bank = MagicMock()
-    context.bank.grant_loan.return_value = ({"loan_id": "loan_1"}, MagicMock())
+    mock_loan = MagicMock()
+    mock_loan.loan_id = "loan_1"
+    context.bank.grant_loan.return_value = (mock_loan, MagicMock())
     context.bank.withdraw_for_customer.return_value = True
     context.bank.id = 8888
 

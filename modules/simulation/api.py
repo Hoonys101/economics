@@ -65,7 +65,7 @@ class InventorySlotDTO:
 @dataclass
 class AgentStateDTO:
     """A snapshot of an agent's mutable state."""
-    assets: Dict[CurrencyCode, float]
+    assets: Dict[CurrencyCode, int]
     is_active: bool
     inventories: Dict[str, InventorySlotDTO] = field(default_factory=dict)
     inventory: Optional[Dict[str, float]] = None # Deprecated
@@ -167,7 +167,8 @@ class IInventoryHandler(Protocol):
 
 class IDecisionEngine(Protocol):
     """Interface for the 'brain' of an agent."""
-    def make_decision(self, state: AgentStateDTO, world_context: Any) -> DecisionDTO | Any: ...
+    # Updated to match BaseDecisionEngine signature
+    def make_decisions(self, context: Any, macro_context: Any = None) -> Any: ...
 
 @runtime_checkable
 class IAgent(Protocol):

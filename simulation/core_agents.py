@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import List, Dict, Any, Optional, override, Tuple, TYPE_CHECKING
+from typing import List, Dict, Any, Optional, Tuple, TYPE_CHECKING
+from typing_extensions import override
 import logging
 from logging import Logger
 from collections import deque, defaultdict

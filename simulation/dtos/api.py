@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
+from uuid import UUID
 from typing import Dict, Any, Optional, List, TYPE_CHECKING, Union, TypedDict
 from modules.simulation.dtos.api import FirmStateDTO, HouseholdConfigDTO, FirmConfigDTO
 from simulation.models import Order
@@ -269,12 +270,12 @@ class SimulationState:
     next_agent_id: int = 0 # Added for WO-103
     real_estate_units: List[Any] = field(default_factory=list) # Added for WO-103
     # Mutable state for the tick
-    transactions: List[Any] = None # List[Transaction]
-    inter_tick_queue: List[Any] = None # List[Transaction]
-    effects_queue: List[Dict[str, Any]] = None # WO-109: Queue for side-effects
-    inactive_agents: Dict[AgentID, Any] = None # WO-109: Store inactive agents
+    transactions: Optional[List[Any]] = None # List[Transaction]
+    inter_tick_queue: Optional[List[Any]] = None # List[Transaction]
+    effects_queue: Optional[List[Dict[str, Any]]] = None # WO-109: Queue for side-effects
+    inactive_agents: Optional[Dict[AgentID, Any]] = None # WO-109: Store inactive agents
     taxation_system: Optional[Any] = None # WO-116: Taxation System
-    currency_holders: List[Any] = None # Added for M2 tracking (Phase 33/5)
+    currency_holders: Optional[List[Any]] = None # Added for M2 tracking (Phase 33/5)
     stress_scenario_config: Optional[StressScenarioConfig] = None # Phase 28
     transaction_processor: Optional[Any] = None # Added for system delegation compatibility
     shareholder_registry: Optional[Any] = None # TD-275 Shareholder Registry
@@ -291,15 +292,15 @@ class SimulationState:
 
     # --- NEW TRANSIENT FIELDS ---
     # From Phase 1 (Decisions)
-    firm_pre_states: Dict[AgentID, Any] = None
-    household_pre_states: Dict[AgentID, Any] = None
-    household_time_allocation: Dict[AgentID, float] = None
+    firm_pre_states: Optional[Dict[AgentID, Any]] = None
+    household_pre_states: Optional[Dict[AgentID, Any]] = None
+    household_time_allocation: Optional[Dict[AgentID, float]] = None
 
     # From Commerce System (planned in Phase 1, used in PostSequence)
     planned_consumption: Optional[Dict[AgentID, Dict[str, Any]]] = None # TD-118
 
     # From Lifecycle (used in PostSequence for Learning)
-    household_leisure_effects: Dict[AgentID, float] = None
+    household_leisure_effects: Optional[Dict[AgentID, float]] = None
 
     # Injection
     injectable_sensory_dto: Optional[Any] = None # GovernmentStateDTO
@@ -320,7 +321,7 @@ class SimulationState:
              if holder in self.currency_holders:
                  self.currency_holders.remove(holder) # Fallback
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.transactions is None:
             self.transactions = []
         if self.system_commands is None:

@@ -108,7 +108,8 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
     context.settlement_system.transfer.side_effect = [True, True, True]
 
     # Mock Bank Success
-    loan_dto = {"loan_id": "loan_123"}
+    loan_dto = MagicMock()
+    loan_dto.loan_id = "loan_123"
     context.bank.grant_loan.return_value = (loan_dto, None)
 
     # Execute
@@ -138,7 +139,7 @@ def test_housing_transaction_success(handler, context, buyer, seller, unit, escr
     assert unit.owner_id == buyer.id
     # Note: mortgage_id property on unit assumes list traversal, but we appended directly to liens list in handler.
     # We need to verify liens list content.
-    has_mortgage = any(l['loan_id'] == "loan_123" and l['lien_type'] == 'MORTGAGE' for l in unit.liens)
+    has_mortgage = any(l.loan_id == "loan_123" and l.lien_type == 'MORTGAGE' for l in unit.liens)
     assert has_mortgage
 
     # Check method calls instead of state mutation for Mocks
@@ -209,7 +210,8 @@ def test_housing_transaction_disbursement_failed(handler, context, buyer, seller
     # 2. Loan Proceeds Transfer Fails
     context.settlement_system.transfer.side_effect = [True, False, True]
 
-    loan_dto = {"loan_id": "loan_123"}
+    loan_dto = MagicMock()
+    loan_dto.loan_id = "loan_123"
     context.bank.grant_loan.return_value = (loan_dto, None)
 
     result = handler.handle(tx, buyer, seller, context)

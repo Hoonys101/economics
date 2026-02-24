@@ -1,0 +1,62 @@
+verify_no_init.py:4: error: Function is missing a return type annotation  [no-untyped-def]
+verify_no_init.py:4: note: Use "-> None" if function does not return a value
+config/defaults.py:357: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+config/defaults.py:545: error: Dict entry 0 has incompatible type "str": "dict[str, object]"; expected "str": "float"  [dict-item]
+config/defaults.py:550: error: Dict entry 1 has incompatible type "str": "dict[str, object]"; expected "str": "float"  [dict-item]
+config/defaults.py:555: error: Dict entry 2 has incompatible type "str": "dict[str, float | None]"; expected "str": "float"  [dict-item]
+config/defaults.py:677: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+_internal/registry/api.py:109: error: Function is missing a return type annotation  [no-untyped-def]
+_internal/registry/api.py:109: note: Use "-> None" if function does not return a value
+_internal/registry/api.py:149: error: Function is missing a type annotation for one or more arguments  [no-untyped-def]
+_internal/registry/service.py:20: error: Function is missing a type annotation  [no-untyped-def]
+_internal/registry/service.py:42: error: Function is missing a type annotation  [no-untyped-def]
+_internal/registry/service.py:64: error: Function is missing a return type annotation  [no-untyped-def]
+_internal/registry/service.py:124: error: Function is missing a return type annotation  [no-untyped-def]
+_internal/registry/service.py:216: error: Function is missing a return type annotation  [no-untyped-def]
+_internal/registry/missions.py:24: error: Function is missing a return type annotation  [no-untyped-def]
+_internal/registry/missions.py:24: note: Use "-> None" if function does not return a value
+_internal/registry/missions.py:38: error: Function is missing a return type annotation  [no-untyped-def]
+_internal/registry/missions.py:38: note: Use "-> None" if function does not return a value
+_internal/registry/missions.py:54: error: Function is missing a return type annotation  [no-untyped-def]
+_internal/registry/missions.py:54: note: Use "-> None" if function does not return a value
+_internal/registry/missions.py:69: error: Function is missing a return type annotation  [no-untyped-def]
+_internal/registry/missions.py:69: note: Use "-> None" if function does not return a value
+_internal/registry/missions.py:87: error: Function is missing a return type annotation  [no-untyped-def]
+_internal/registry/missions.py:87: note: Use "-> None" if function does not return a value
+_internal/registry/missions.py:103: error: Function is missing a return type annotation  [no-untyped-def]
+_internal/registry/missions.py:103: note: Use "-> None" if function does not return a value
+_internal/registry/missions.py:119: error: Function is missing a return type annotation  [no-untyped-def]
+_internal/registry/missions.py:119: note: Use "-> None" if function does not return a value
+_internal/registry/commands/git.py:7: error: Cannot find implementation or library stub for module named "_internal.scripts.core.commands"  [import-not-found]
+_internal/registry/commands/core.py:6: error: Cannot find implementation or library stub for module named "_internal.scripts.core.commands"  [import-not-found]
+_internal/registry/commands/core.py:6: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#missing-imports
+verification/verify_macro_canvas.py:5: error: Function is missing a type annotation  [no-untyped-def]
+verify_persistence.py:6: error: Function is missing a return type annotation  [no-untyped-def]
+verify_persistence.py:6: note: Use "-> None" if function does not return a value
+_internal/registry/commands/dispatchers.py:7: error: Cannot find implementation or library stub for module named "_internal.scripts.core.commands"  [import-not-found]
+_internal/registry/commands/dispatchers.py:8: error: Cannot find implementation or library stub for module named "_internal.scripts.core.context"  [import-not-found]
+_internal/registry/fixed_commands.py:9: error: Function is missing a return type annotation  [no-untyped-def]
+_internal/registry/fixed_commands.py:9: note: Use "-> None" if function does not return a value
+_internal/registry/fixed_commands.py:24: error: Function is missing a return type annotation  [no-untyped-def]
+verify_firm.py:8: error: Function is missing a return type annotation  [no-untyped-def]
+verify_firm.py:8: note: Use "-> None" if function does not return a value
+verify_firm.py:31: error: Cannot instantiate abstract class "Firm" with abstract attributes "add_property", "owned_properties", "remove_property", "update_learning" and "update_needs"  [abstract]
+verify_firm.py:31: note: The following methods were marked implicitly abstract because they have empty function bodies: "add_property", "remove_property", "update_learning" and "update_needs". If they are not meant to be abstract, explicitly `return` or `return None`.
+config/__init__.py:20: error: Function is missing a return type annotation  [no-untyped-def]
+config/__init__.py:20: note: Use "-> None" if function does not return a value
+config/__init__.py:37: error: Function is missing a return type annotation  [no-untyped-def]
+config/__init__.py:37: note: Use "-> None" if function does not return a value
+config/__init__.py:59: error: Function is missing a type annotation  [no-untyped-def]
+config/__init__.py:67: error: Function is missing a return type annotation  [no-untyped-def]
+verify_sys_registry.py:25: error: Function is missing a return type annotation  [no-untyped-def]
+verify_sys_registry.py:25: note: Use "-> None" if function does not return a value
+verify_sys_registry.py:31: error: Function is missing a return type annotation  [no-untyped-def]
+verify_sys_registry.py:31: note: Use "-> None" if function does not return a value
+verify_sys_registry.py:49: error: Argument "ai_trainer" to "SimulationInitializer" has incompatible type "None"; expected "AIEngineRegistry"  [arg-type]
+verify_m2_integrity.py:19: error: Function is missing a return type annotation  [no-untyped-def]
+verify_m2_integrity.py:19: note: Use "-> None" if function does not return a value
+verify_m2_integrity.py:24: error: Function is missing a return type annotation  [no-untyped-def]
+verify_m2_integrity.py:24: note: Use "-> None" if function does not return a value
+verify_m2_integrity.py:41: error: Argument "ai_trainer" to "SimulationInitializer" has incompatible type "None"; expected "AIEngineRegistry"  [arg-type]
+tools/run_diagnostics.py:21: error: Function is missing a type annotation  [no-untyped-def]
+Found 41 errors in 16 files (checked 1069 source files)
