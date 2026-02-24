@@ -65,7 +65,7 @@ class TransactionProcessor(SystemInterface):
                         tx, buyer, None, context
                     )
 
-                    amount = 0.0
+                    amount = 0
                     if success:
                         if getattr(tx, 'total_pennies', 0) > 0:
                             amount = tx.total_pennies
@@ -82,7 +82,7 @@ class TransactionProcessor(SystemInterface):
                     return SettlementResultDTO(
                         original_transaction=tx,
                         success=False,
-                        amount_settled=0.0
+                        amount_settled=0
                     )
         return None
 
@@ -209,7 +209,7 @@ class TransactionProcessor(SystemInterface):
                 )
                 results.append(
                     SettlementResultDTO(
-                        original_transaction=tx, success=False, amount_settled=0.0
+                        original_transaction=tx, success=False, amount_settled=0
                     )
                 )
                 continue
@@ -222,7 +222,7 @@ class TransactionProcessor(SystemInterface):
                 )
                 results.append(
                     SettlementResultDTO(
-                        original_transaction=tx, success=False, amount_settled=0.0
+                        original_transaction=tx, success=False, amount_settled=0
                     )
                 )
                 continue
@@ -255,7 +255,7 @@ class TransactionProcessor(SystemInterface):
                 state.logger.error(f"Transaction Handler Failed for {tx.transaction_type} (ID: {getattr(tx, 'id', 'unknown')}): {e}", exc_info=True)
                 results.append(
                     SettlementResultDTO(
-                        original_transaction=tx, success=False, amount_settled=0.0
+                        original_transaction=tx, success=False, amount_settled=0
                     )
                 )
 

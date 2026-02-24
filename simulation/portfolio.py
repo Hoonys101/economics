@@ -21,6 +21,7 @@ class Portfolio:
 
         if firm_id in self.holdings:
             share = self.holdings[firm_id]
+            # Use integer math as much as possible, but quantity is float
             total_cost = (share.quantity * share.acquisition_price) + (quantity * price)
             total_qty = share.quantity + quantity
 

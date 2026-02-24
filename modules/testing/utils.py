@@ -97,10 +97,9 @@ class SimulationStateBuilder:
             return SimulationState(**self._state_data)
         except TypeError as e:
             # Check for missing arguments
-            missing_args = []
-            sim_fields = {f.name for f in fields(SimulationState)}
-            provided_fields = set(self._state_data.keys())
-            missing_fields = sim_fields - provided_fields
+            sim_fields: set[str] = {f.name for f in fields(SimulationState)}
+            provided_fields: set[str] = set(self._state_data.keys())
+            missing_fields: set[str] = sim_fields - provided_fields
             if missing_fields:
                 raise ValueError(f"SimulationStateBuilder is missing required fields: {missing_fields}") from e
             raise e

@@ -36,8 +36,9 @@ if TYPE_CHECKING:
     from simulation.interfaces.market_interface import IMarket
     from modules.housing.api import IHousingService
     from modules.memory.api import MemoryV2Interface
-    from modules.system.api import CurrencyCode
     from modules.finance.kernel.api import IMonetaryLedger
+
+from modules.system.api import CurrencyCode, IAgent
 
 # --- DTOs ---
 

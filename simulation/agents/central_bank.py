@@ -281,6 +281,8 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
 
     def deposit(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
         """Deposits a given amount into the central bank's cash reserves."""
+        if isinstance(amount, float):
+            raise TypeError(f"CentralBank.deposit requires integer amount (pennies). Got float: {amount}")
         if amount > 0:
             self.wallet.add(amount, currency, memo="Deposit")
 
@@ -289,6 +291,8 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
         Mints new currency (adds to cash reserves).
         Alias for deposit but semantically distinct for Genesis Protocol.
         """
+        if isinstance(amount, float):
+            raise TypeError(f"CentralBank.mint requires integer amount (pennies). Got float: {amount}")
         self.deposit(amount, currency)
 
     def withdraw(self, amount: int, currency: CurrencyCode = DEFAULT_CURRENCY) -> None:
@@ -296,6 +300,8 @@ class CentralBank(ICurrencyHolder, IFinancialAgent, IFinancialEntity, ICentralBa
         Withdraws a given amount from the central bank's cash reserves.
         As a Fiat Currency Issuer, the Central Bank can have a negative balance (creating money).
         """
+        if isinstance(amount, float):
+            raise TypeError(f"CentralBank.withdraw requires integer amount (pennies). Got float: {amount}")
         if amount > 0:
             self.wallet.subtract(amount, currency, memo="Withdraw")
 
