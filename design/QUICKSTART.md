@@ -61,6 +61,33 @@ Any task that exceeds the following thresholds MUST be delegated to Jules (Imple
 - **격리된 부채 해결**: 메인 개발을 방해하지 않는 자잘한 기술 부채들은 꼼꼼히 챙겨 메인 엔진과 병행 처리함으로써 개발 속도를 극대화합니다.
 - **설계형 부채 상환 (Spec-as-Repayment)**: 기술 부채는 코드 수정으로만 갚는 것이 아닙니다. 상세 명세(Spec)를 작성하고, 영역을 분리(Domain Segregation)하여 실행 시점을 확정하는 것만으로도 부채의 상당 부분은 이미 상환(SPECCED 상태)된 것으로 간주합니다. 충돌 위험으로 코딩(Jules)이 지연되더라도 명세 작성(Gemini)은 멈추지 않습니다.
 
+### 5.5. Sprint Execution Methodology (Agile × Waterfall Hybrid)
+> **"우리는 애자일을 따라 스프린트를 수행하지만, 각 스프린트는 폭포수 기법을 따릅니다."**
+
+각 스프린트(Wave/Phase) 내부는 아래의 **엄격한 순차적 단계**를 따릅니다:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  Sprint N (Wave/Phase)                                           │
+│                                                                  │
+│  ① API/DTO 확정 ──→ ② 모듈별 병렬 구현 ──→ ③ 통합 테스트         │
+│     (파생문제 검토)    (Jules × N)            (pytest 100%)       │
+│                                                                  │
+│  Spec: gemini-manifest  │  Impl: jules-manifest                  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+| 단계 | 행동 | 원칙 | 도구 |
+| :--- | :--- | :--- | :--- |
+| **① API/DTO 확정** | 인터페이스 계약 확정 및 파생 문제(Breaking Changes, 참조 사이트) 검토 | **SDD** (Spec-Driven Development) | `gemini-manifest` → `gemini-go` |
+| **② 모듈별 병렬 구현** | 확정된 Spec 기반으로 독립 모듈을 동시 구현 | 모듈 격리 (충돌 방지) | `jules-manifest` → `jules-go` |
+| **③ 통합 테스트** | 전체 테스트 스위트 통과 확인 | Zero Regression | `pytest tests/` |
+
+**SDD (Spec-Driven Development) 원칙**:
+- 코드를 먼저 작성하지 않습니다. **명세(Spec)가 먼저**입니다.
+- Spec은 `gemini-manifest`를 통해 Gemini 워커가 생성합니다.
+- Spec이 승인된 후에만 Jules가 구현에 착수합니다.
+- API/DTO 변경 시 **전수조사(Call Site Audit)**가 Spec 단계에서 완료되어야 합니다.
 ### 6. 복명복창 및 능동적 보고 (Communication & Coordination)
 - **응답 우선순위**: 질문을 받으면 질문에 대답을 우선하고, 질문의 의도를 파악하여 할 일을 제안드립니다.
 - **지시 이행 절차**: 무언가를 시키면 해당 내용이 무엇인지 구체화하여 확인 후 그것을 실행하겠습니다.
