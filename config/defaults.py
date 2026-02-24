@@ -73,7 +73,7 @@ CONFORMITY_RANGES = {
 # --- Gold Standard Mode (WO-016) ---
 GOLD_STANDARD_MODE = False  # True: 금본위 (Full Reserve), False: 현대 금융 (Credit Creation)
 RESERVE_REQ_RATIO = 0.1    # 지급준비율 (10%) - WO-064
-INITIAL_MONEY_SUPPLY = 10000000  # 초기 화폐 총량 (검증용 기준값) - MIGRATION: Int pennies
+INITIAL_MONEY_SUPPLY = 100000000  # 초기 화폐 총량 (검증용 기준값) - MIGRATION: Int pennies (100M)
 
 # --- Simulation Parameters ---
 NUM_HOUSEHOLDS = 20
@@ -111,7 +111,7 @@ INITIAL_HOUSEHOLD_NEEDS_MEAN = {
 INITIAL_HOUSEHOLD_NEEDS_RANGE = 0.1
 INITIAL_EMPLOYMENT_RATE = 0.5  # 초기 고용률
 
-INITIAL_FIRM_CAPITAL_MEAN = 1000000 # High Initial Capital for Laissez-Faire Runway - MIGRATION: Int pennies
+INITIAL_FIRM_CAPITAL_MEAN = 10000000 # High Initial Capital for Laissez-Faire Runway - MIGRATION: Int pennies (10M)
 INITIAL_FIRM_CAPITAL_RANGE = 0.2
 INITIAL_FIRM_LIQUIDITY_NEED_MEAN = 20000 # MIGRATION: Int pennies
 INITIAL_FIRM_LIQUIDITY_NEED_RANGE = 0.2
@@ -456,7 +456,7 @@ AI_WEALTH_REWARD_WEIGHT = 3.0
 
 # --- Genesis: Activation Energy (WO-047: Capital Injection) ---
 INITIAL_HOUSEHOLD_ASSETS_MEAN = 500000  # 50.0 -> 5000.0 (100x Booster) -> Pennies
-INITIAL_FIRM_CAPITAL_MEAN = 5000000   # 1000.0 -> 50000.0 (50x Runway for Regulations) -> Pennies
+INITIAL_FIRM_CAPITAL_MEAN = 10000000   # 1000.0 -> 50000.0 (50x Runway for Regulations) -> Pennies (10M)
 
 # --- Genesis: Market Flexibility Multipliers ---
 GENESIS_PRICE_ADJUSTMENT_MULTIPLIER = 2.0  # Speed up price slashing

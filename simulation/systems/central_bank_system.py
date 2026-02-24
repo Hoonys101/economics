@@ -30,16 +30,38 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
         Takes an instruction and creates market orders to fulfill it.
         """
         orders = []
-        op_type = instruction['operation_type']
-        amount = instruction['target_amount']
+        # Protocol Purity: Access DTO via attributes, not dict subscription
+        op_type = instruction.operation_type
+        amount = instruction.target_amount
+
+        # Bond Par Value (100.00 currency units) used for quantity calculation
+        par_value_pennies = 10000
+
         if op_type == 'purchase':
-            order = Order(agent_id=self.id, side='buy', item_id='government_bond', quantity=amount, price_pennies=int(9999 * 100), price_limit=9999, market_id=self.security_market_id)
-            orders.append(order)
-            self.logger.info(f'OMO: Placing BUY order for {amount} bonds.')
+            # Buy Limit: 110.00 (10% premium over Par)
+            limit_price_pennies = 11000
+            limit_price = 110.0
+
+            # Dimensional Correction: Calculate quantity based on par value
+            quantity = amount // par_value_pennies
+
+            if quantity > 0:
+                order = Order(agent_id=self.id, side='buy', item_id='government_bond', quantity=quantity, price_pennies=limit_price_pennies, price_limit=limit_price, market_id=self.security_market_id)
+                orders.append(order)
+                self.logger.info(f'OMO: Placing BUY order for {quantity} bonds (Target: {amount}).')
+
         elif op_type == 'sale':
-            order = Order(agent_id=self.id, side='sell', item_id='government_bond', quantity=amount, price_pennies=int(0 * 100), price_limit=0, market_id=self.security_market_id)
-            orders.append(order)
-            self.logger.info(f'OMO: Placing SELL order for {amount} bonds.')
+            # Sell Limit: 90.00 (10% discount under Par)
+            limit_price_pennies = 9000
+            limit_price = 90.0
+
+            # Dimensional Correction: Calculate quantity based on par value
+            quantity = amount // par_value_pennies
+
+            if quantity > 0:
+                order = Order(agent_id=self.id, side='sell', item_id='government_bond', quantity=quantity, price_pennies=limit_price_pennies, price_limit=limit_price, market_id=self.security_market_id)
+                orders.append(order)
+                self.logger.info(f'OMO: Placing SELL order for {quantity} bonds (Target: {amount}).')
         return orders
 
     def process_omo_settlement(self, transaction: Transaction) -> None:
@@ -49,8 +71,19 @@ class CentralBankSystem(IMintingAuthority, ICentralBank):
         """
         if transaction.transaction_type == 'omo_purchase':
             self.logger.info(f'OMO_PURCHASE_SETTLED | CB Bought {transaction.quantity} bonds for {transaction.price}. Money Injected (Minted).')
+            # FIX: Update Money Supply Tracker
+            if hasattr(self.central_bank, 'total_money_issued'):
+                # Handle potential attribute types (int/float)
+                # transaction.total_pennies is int.
+                current = self.central_bank.total_money_issued
+                self.central_bank.total_money_issued = current + transaction.total_pennies
+
         elif transaction.transaction_type == 'omo_sale':
             self.logger.info(f'OMO_SALE_SETTLED | CB Sold {transaction.quantity} bonds for {transaction.price}. Money Drained (Burned).')
+            # FIX: Update Money Supply Tracker
+            if hasattr(self.central_bank, 'total_money_destroyed'):
+                current = self.central_bank.total_money_destroyed
+                self.central_bank.total_money_destroyed = current + transaction.total_pennies
 
     def mint_and_transfer(self, target_agent: Any, amount: float, memo: str) -> bool:
         """

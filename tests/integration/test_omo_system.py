@@ -130,16 +130,18 @@ def omo_setup():
 def test_execute_omo_purchase_order_creation(omo_setup):
     cb_system, _, _, _, _, _, _ = omo_setup
 
-    instruction: OMOInstructionDTO = {
-        "operation_type": "purchase",
-        "target_amount": 100
-    }
+    # Use DTO and sufficient amount for at least 1 bond (Price ~10000)
+    instruction = OMOInstructionDTO(
+        operation_type="purchase",
+        target_amount=1_000_000 # 1M pennies
+    )
 
     orders = cb_system.execute_open_market_operation(instruction)
 
     assert len(orders) == 1
     assert orders[0].agent_id == cb_system.id
     assert orders[0].order_type == "buy"
+    # Quantity = 1,000,000 // 10000 = 100
     assert orders[0].quantity == 100
     assert orders[0].price > 0 # High price for purchase
     assert orders[0].market_id == "security_market"
@@ -147,18 +149,20 @@ def test_execute_omo_purchase_order_creation(omo_setup):
 def test_execute_omo_sale_order_creation(omo_setup):
     cb_system, _, _, _, _, _, _ = omo_setup
 
-    instruction: OMOInstructionDTO = {
-        "operation_type": "sale",
-        "target_amount": 50
-    }
+    # Use DTO and sufficient amount
+    instruction = OMOInstructionDTO(
+        operation_type="sale",
+        target_amount=500_000 # 500k pennies
+    )
 
     orders = cb_system.execute_open_market_operation(instruction)
 
     assert len(orders) == 1
     assert orders[0].agent_id == cb_system.id
     assert orders[0].order_type == "sell"
+    # Quantity = 500,000 // 10000 = 50
     assert orders[0].quantity == 50
-    assert orders[0].price == 0 # Market order
+    assert orders[0].price > 0 # Limit price is no longer 0
     assert orders[0].market_id == "security_market"
 
 def test_process_omo_purchase_transaction(omo_setup):
@@ -189,17 +193,13 @@ def test_process_omo_purchase_transaction(omo_setup):
 
     tp.execute(state)
 
-    # Manually update mock agent counters (Simulating orchestrator/ledger phase)
-    # This aligns with the new "Settle-then-Record" architecture where handlers do not mutate agents.
-    for tx in state.transactions:
-        if tx.transaction_type == "omo_purchase":
-            gov_agent.total_money_issued += tx.total_pennies
-
     # Verify Household got paid via SSoT
     assert settlement.get_balance(household.id) == initial_hh_assets + trade_price
 
-    # Verify Gov Ledger Updated (Minting)
-    assert gov_agent.total_money_issued == initial_money_issued + trade_price
+    # Verify CB Ledger Updated (Minting) - Automated by Handler
+    # Note: Handler updates context.central_bank which is cb_agent in this setup
+    # gov_agent.total_money_issued remains unchanged as CB is the actor
+    assert cb_agent.total_money_issued == trade_price
 
     # Verify Zero-Sum Integrity (M2 Expansion)
     # New money entered the system (minted by CB). M2 should increase by trade_price.
@@ -234,17 +234,11 @@ def test_process_omo_sale_transaction(omo_setup):
 
     tp.execute(state)
 
-    # Manually update mock agent counters (Simulating orchestrator/ledger phase)
-    # This aligns with the new "Settle-then-Record" architecture where handlers do not mutate agents.
-    for tx in state.transactions:
-        if tx.transaction_type == "omo_sale":
-            gov_agent.total_money_destroyed += tx.total_pennies
-
     # Verify Household paid via SSoT
     assert settlement.get_balance(household.id) == initial_hh_assets - trade_price
 
-    # Verify Gov Ledger Updated (Burning)
-    assert gov_agent.total_money_destroyed == initial_money_destroyed + trade_price
+    # Verify CB Ledger Updated (Burning) - Automated by Handler
+    assert cb_agent.total_money_destroyed == trade_price
 
     # Verify Zero-Sum Integrity (M2 Contraction)
     # Money left the system (burned by CB). M2 should decrease by trade_price.

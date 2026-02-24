@@ -57,7 +57,12 @@ class MonetaryTransactionHandler(ITransactionHandler):
                 buyer, seller, int(trade_value), tx_type
             )
             if success:
-                 context.logger.info(
+                # Update Money Supply Tracker
+                if hasattr(context.central_bank, 'total_money_issued'):
+                    current = getattr(context.central_bank, 'total_money_issued', 0)
+                    context.central_bank.total_money_issued = current + int(trade_value)
+
+                context.logger.info(
                      f"QE | Central Bank purchased bond/asset {trade_value:.2f}.",
                      extra={"tick": context.time, "tag": "QE"}
                  )
@@ -69,6 +74,11 @@ class MonetaryTransactionHandler(ITransactionHandler):
                 buyer, seller, int(trade_value), tx_type
             )
             if success:
+                # Update Money Supply Tracker
+                if hasattr(context.central_bank, 'total_money_destroyed'):
+                    current = getattr(context.central_bank, 'total_money_destroyed', 0)
+                    context.central_bank.total_money_destroyed = current + int(trade_value)
+
                 context.logger.info(
                     f"QT | Central Bank sold bond/asset {trade_value:.2f}.",
                     extra={"tick": context.time, "tag": "QT"}

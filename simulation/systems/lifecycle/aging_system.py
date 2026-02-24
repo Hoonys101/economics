@@ -116,6 +116,11 @@ class AgingSystem(IAgingSystem):
                 firm.finance_state.distress_tick_counter = 0
 
             # Standard Closure Check
+            # WO-FINAL-MACRO-REPAIR: Solvency Bypass
+            # If firm has assets above threshold, do NOT kill it based on loss turns.
+            if current_assets_pennies > assets_threshold_pennies:
+                continue
+
             if (current_assets_pennies <= assets_threshold_pennies or
                     firm.finance_state.consecutive_loss_turns >= closure_turns_threshold):
 
