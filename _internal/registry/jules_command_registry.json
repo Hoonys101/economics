@@ -183,21 +183,6 @@
       "model": null,
       "audit_requirements": null
     },
-    "WO-LIQUID-W2-FINANCE": {
-      "key": "WO-LIQUID-W2-FINANCE",
-      "title": "Phase 22 [W2]: Financial Integrity & Saga Recovery",
-      "type": "jules",
-      "instruction_raw": "MISSION_grand_liquidation_SPEC.md\uc758 Wave 2 \uae08\uc735/\ud68c\uacc4 \ud56d\ubaa9\uc744 \ud574\uacb0\ud558\uc2ed\uc2dc\uc624.\n\n1. **TD-ECON-M2-REGRESSION (M2 Calculation)**: `calculate_total_money()`\uc5d0\uc11c \uc74c\uc218 \uc794\uc561\uc744 \ud569\uc0b0\ud558\uc9c0 \uc54a\uace0 `SystemDebt`\ub85c \ubd84\ub9ac\ud558\uc2ed\uc2dc\uc624.\n2. **TD-FIN-SAGA-REGRESSION (Saga Cleanup)**: `SagaOrchestrator`\uc5d0 \uc790\ub3d9 \uc815\ub9ac \ub85c\uc9c1\uc744 \ucd94\uac00\ud558\uc5ec \uc8fd\uc740 \uc5d0\uc774\uc804\ud2b8 \ucc38\uc870\ub85c \uc778\ud55c `SAGA_SKIP` \uc2a4\ud338\uc744 \ubc29\uc9c0\ud558\uc2ed\uc2dc\uc624.\n3. **TD-INT-BANK-ROLLBACK (Strict Protocols)**: `hasattr` \uccb4\ud06c \ub300\uc2e0 `isinstance(agent, ITransactionRollback)` \ud504\ub85c\ud1a0\ucf5c \uccb4\ud06c\ub97c \uc801\uc6a9\ud558\uc2ed\uc2dc\uc624.\n4. **TD-MARKET-FLOAT-TRUNC (Match Rounding)**: `MatchingEngine` \ub0b4 `int()` \uc808\uc0ad\uc744 `round_to_pennies()`\ub85c \uad50\uccb4\ud558\uc2ed\uc2dc\uc624.\n\n\uac80\uc99d: `pytest tests/unit/systems/` \ubc0f `tests/unit/finance/` \ud1b5\uacfc \ud655\uc778.",
-      "command": "create",
-      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_grand_liquidation_SPEC.md",
-      "wait": false,
-      "session_id": null,
-      "worker": null,
-      "context_files": [],
-      "output_path": null,
-      "model": null,
-      "audit_requirements": null
-    },
     "WO-LIQUID-W3-EVOLUTION": {
       "key": "WO-LIQUID-W3-EVOLUTION",
       "title": "Phase 22 [W3]: Domain Evolution & Test Hardening",
@@ -218,6 +203,21 @@
       "title": "Phase 22 [W1]: Startup Foundation & FirmFactory",
       "type": "jules",
       "instruction_raw": "MISSION_grand_liquidation_SPEC.md\uc758 Wave 1 \ud56d\ubaa9 \uc911 \ucd08\uae30\ud654 \ubc0f \uc0dd\uc131 \ub85c\uc9c1\uc744 \ud574\uacb0\ud558\uc2ed\uc2dc\uc624.\n\n1. **TD-FIN-INVISIBLE-HAND (Init Order)**: `initializer.py`\uc5d0\uc11c `AgentRegistry` \uc2a4\ub0c5\uc0f7 \uc774\uc804\uc5d0 `CentralBank`, `PublicManager`, `Government` \ub4f1 \uc2dc\uc2a4\ud15c \uc5d0\uc774\uc804\ud2b8\uac00 \uc644\uc804\ud788 \ub4f1\ub85d\ub418\ub3c4\ub85d `build_simulation` \uc2dc\ud000\uc2a4\ub97c \uc870\uc815\ud558\uc2ed\uc2dc\uc624.\n2. **TD-LIFECYCLE-GHOST-FIRM (FirmFactory)**: `FirmFactory` \ud074\ub798\uc2a4\ub97c \ub3c4\uc785(\ub610\ub294 `Firm` \ubaa8\ub4c8 \ub0b4 \uad6c\ud604)\ud558\uc5ec [\uc0dd\uc131 -> \uacc4\uc88c \uac1c\uc124 -> \uc720\ub3d9\uc131 \uc8fc\uc785]\uc774 \uc6d0\uc790\uc801\uc73c\ub85c \uc218\ud589\ub418\ub3c4\ub85d `initializer.py`\uc758 `_setup_starting_firms`\ub97c \ub9ac\ud329\ud1a0\ub9c1\ud558\uc2ed\uc2dc\uc624.\n3. **TD-LIFECYCLE-NAMING**: `capital_stock_pennies`\uc640 \uac19\uc774 \ub2e8\uc704\uac00 \ubaa8\ud638\ud55c \ubcc0\uc218\ub4e4\uc744 `capital_stock_pennies` (\uba85\uc2dc\uc801) \ub610\ub294 DTO\ub97c \ud1b5\ud55c \ud0c0\uc785 \uc548\uc815\uc131 \ud655\ubcf4\ub85c \uc815\ub9ac\ud558\uc2ed\uc2dc\uc624.\n\n\uac80\uc99d: `pytest tests/unit/lifecycle/` \ubc0f `tests/system/test_engine.py` \ud1b5\uacfc \ud655\uc778.",
+      "command": "create",
+      "file_path": "c:/coding/economics/gemini-output/spec/MISSION_grand_liquidation_SPEC.md",
+      "wait": false,
+      "session_id": null,
+      "worker": null,
+      "context_files": [],
+      "output_path": null,
+      "model": null,
+      "audit_requirements": null
+    },
+    "WO-LIQUID-W2-FINANCE": {
+      "key": "WO-LIQUID-W2-FINANCE",
+      "title": "Phase 22 [W2]: Financial Integrity & Saga Recovery",
+      "type": "jules",
+      "instruction_raw": "MISSION_grand_liquidation_SPEC.md\uc758 Wave 2 \uae08\uc735/\ud68c\uacc4 \ud56d\ubaa9\uc744 \ud574\uacb0\ud558\uc2ed\uc2dc\uc624.\n\n1. **TD-ECON-M2-REGRESSION (M2 Calculation)**: `calculate_total_money()`\uc5d0\uc11c \uc74c\uc218 \uc794\uc561\uc744 \ud569\uc0b0\ud558\uc9c0 \uc54a\uace0 `SystemDebt`\ub85c \ubd84\ub9ac\ud558\uc2ed\uc2dc\uc624.\n2. **TD-FIN-SAGA-REGRESSION (Saga Cleanup)**: `SagaOrchestrator`\uc5d0 \uc790\ub3d9 \uc815\ub9ac \ub85c\uc9c1\uc744 \ucd94\uac00\ud558\uc5ec \uc8fd\uc740 \uc5d0\uc774\uc804\ud2b8 \ucc38\uc870\ub85c \uc778\ud55c `SAGA_SKIP` \uc2a4\ud338\uc744 \ubc29\uc9c0\ud558\uc2ed\uc2dc\uc624.\n3. **TD-INT-BANK-ROLLBACK (Strict Protocols)**: `hasattr` \uccb4\ud06c \ub300\uc2e0 `isinstance(agent, ITransactionRollback)` \ud504\ub85c\ud1a0\ucf5c \uccb4\ud06c\ub97c \uc801\uc6a9\ud558\uc2ed\uc2dc\uc624.\n4. **TD-MARKET-FLOAT-TRUNC (Match Rounding)**: `MatchingEngine` \ub0b4 `int()` \uc808\uc0ad\uc744 `round_to_pennies()`\ub85c \uad50\uccb4\ud558\uc2ed\uc2dc\uc624.\n\n\uac80\uc99d: `pytest tests/unit/systems/` \ubc0f `tests/unit/finance/` \ud1b5\uacfc \ud655\uc778.",
       "command": "create",
       "file_path": "c:/coding/economics/gemini-output/spec/MISSION_grand_liquidation_SPEC.md",
       "wait": false,
