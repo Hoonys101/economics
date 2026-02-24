@@ -17,7 +17,8 @@ class FiscalMonitor(IFiscalMonitor):
         Returns:
             float: The debt-to-GDP ratio. Returns 0.0 if GDP is invalid.
         """
-        debt = government.total_debt
+        # Convert debt (pennies) to dollars for ratio calculation against GDP (dollars)
+        debt = government.total_debt / 100.0
 
         # GDP is strictly in EconomicIndicatorsDTO
         gdp = indicators.gdp

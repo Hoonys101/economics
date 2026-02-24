@@ -40,8 +40,11 @@ class StormVerifier:
             spending_dict = self._simulation.government.expenditure_this_tick
             revenue_dict = self._simulation.government.revenue_this_tick
 
-            spending = sum(spending_dict.values())
-            revenue = sum(revenue_dict.values())
+            spending_pennies = sum(spending_dict.values())
+            revenue_pennies = sum(revenue_dict.values())
+
+            spending = spending_pennies / 100.0
+            revenue = revenue_pennies / 100.0
 
             # Only trigger if significant spending happens (avoid trivial 0 > 0 cases)
             if spending > revenue and spending > deficit_threshold:
