@@ -289,6 +289,7 @@ class ISimulationState(Protocol):
     bank: "IBankService"
     markets: Dict[str, "IMarket"]
     monetary_ledger: Optional["IMonetaryLedger"]
+    estate_registry: Optional["IEstateRegistry"]
 
     def get_economic_indicators(self) -> EconomicIndicatorsDTO:
         """
