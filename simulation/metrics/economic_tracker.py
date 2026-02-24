@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Dict, Any, TYPE_CHECKING
+from typing import List, Dict, Any, TYPE_CHECKING, Mapping, Optional
 import logging
 import statistics
 from collections import deque
@@ -53,9 +53,9 @@ class EconomicIndicatorTracker:
 
         # Watchtower Hardening: SMA History (Window=50)
         self.history_window = 50
-        self.gdp_history = deque(maxlen=self.history_window)
-        self.cpi_history = deque(maxlen=self.history_window)
-        self.m2_leak_history = deque(maxlen=self.history_window)
+        self.gdp_history: deque[float] = deque(maxlen=self.history_window)
+        self.cpi_history: deque[float] = deque(maxlen=self.history_window)
+        self.m2_leak_history: deque[float] = deque(maxlen=self.history_window)
 
         self.config_module = config_module  # Store config_module
         self.exchange_engine = CurrencyExchangeEngine(config_module) # TD-213: Initialize Exchange Engine
@@ -94,7 +94,7 @@ class EconomicIndicatorTracker:
             benchmark_rates={}
         )
 
-    def _calculate_total_wallet_value(self, wallet_dict: Dict[CurrencyCode, float]) -> float:
+    def _calculate_total_wallet_value(self, wallet_dict: Mapping[CurrencyCode, float | int]) -> float:
         """
         TD-213: Calculates total value of a wallet in DEFAULT_CURRENCY.
         Iterates over all currencies and converts them using CurrencyExchangeEngine.
@@ -105,11 +105,11 @@ class EconomicIndicatorTracker:
 
         # Optimize: if only DEFAULT_CURRENCY exists
         if len(wallet_dict) == 1 and DEFAULT_CURRENCY in wallet_dict:
-            return wallet_dict[DEFAULT_CURRENCY]
+            return float(wallet_dict[DEFAULT_CURRENCY])
 
         for currency, amount in wallet_dict.items():
             if amount == 0: continue
-            total += self.exchange_engine.convert(amount, currency, DEFAULT_CURRENCY)
+            total += self.exchange_engine.convert(float(amount), currency, DEFAULT_CURRENCY)
         return total
 
     def calculate_gini_coefficient(self, values: List[float]) -> float:
@@ -142,7 +142,7 @@ class EconomicIndicatorTracker:
         total_trust = sum(h._social_state.trust_score for h in active_households)
         return total_trust / len(active_households)
 
-    def calculate_population_metrics(self, households: List[Household], markets: Dict[str, Market] = None) -> Dict[str, Any]:
+    def calculate_population_metrics(self, households: List[Household], markets: Optional[Dict[str, Market]] = None) -> Dict[str, Any]:
         """
         TD-015: Calculate Population Metrics (Distribution, Active Count).
         Returns a dictionary with 'distribution' (quintiles) and 'active_count'.
@@ -346,7 +346,9 @@ class EconomicIndicatorTracker:
         record["total_food_consumption"] = total_food_consumption
 
         total_inventory = sum(
-            sum(f.get_all_items().values()) for f in firms if getattr(f, "is_active", False)
+            sum(f.get_all_items().values()) if f.get_all_items() else 0.0
+            for f in firms
+            if getattr(f, "is_active", False)
         )
         record["total_inventory"] = total_inventory
 

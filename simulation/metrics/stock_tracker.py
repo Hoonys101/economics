@@ -26,7 +26,7 @@ class StockMarketTracker:
         
         # 이전 틱의 기업 데이터 (수익률 계산용)
         self.previous_firm_data: Dict[int, Dict[str, float]] = {}
-        self.market_price_history = deque(maxlen=30)
+        self.market_price_history: deque[float] = deque(maxlen=30)
         
     def get_market_volatility(self) -> float:
         """
@@ -66,7 +66,7 @@ class StockMarketTracker:
         
         # 기업 실적
         # Refactor: Use finance component
-        firm_assets = firm.wallet.get_all_balances()
+        firm_assets = sum(firm.wallet.get_all_balances().values())
         firm_profit = firm.finance_state.current_profit
         if hasattr(firm.finance_state, "dividends_paid_last_tick"):
             dividend_paid = firm.finance_state.dividends_paid_last_tick
@@ -202,7 +202,7 @@ class PersonalityStatisticsTracker:
         n = len(members)
         
         # 기본 자산 통계
-        assets = [h._econ_state.assets for h in members]
+        assets = [h.total_wealth for h in members]
         avg_assets = sum(assets) / n
         median_assets = median(assets)
         
@@ -238,7 +238,7 @@ class PersonalityStatisticsTracker:
         growth_rates = []
         for h in members:
             prev_assets = self.previous_assets.get(h.id)
-            current_assets = h._econ_state.assets
+            current_assets = h.total_wealth
             if prev_assets is not None and prev_assets > 0:
                 growth_rate = (current_assets - prev_assets) / prev_assets
                 growth_rates.append(growth_rate)
