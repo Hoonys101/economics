@@ -65,39 +65,16 @@ class ResetCommand(ICommand):
         return "Resets manifest and registry files to factory defaults."
 
     def execute(self, ctx: CommandContext) -> CommandResult:
-        print("🧹 Resetting manifests and registries...")
+        print("🧹 Resetting JSON registries (manifests are preserved)...")
         
-        # Load templates from _internal/templates/
-        template_dir = ctx.base_dir / "_internal" / "templates"
-        
-        gemini_manual_path = template_dir / "gemini_manual.py"
-        jules_manual_path = template_dir / "jules_manual.py"
-        
-        def read_template(p: Path) -> str:
-            if not p.exists():
-                return ""
-            # Extract content between triple quotes if possible, or just read all
-            content = p.read_text(encoding='utf-8').strip()
-            if content.startswith('"""') and content.endswith('"""'):
-                return content[3:-3].strip()
-            return content
-
-        gemini_manual = read_template(gemini_manual_path)
-        jules_manual = read_template(jules_manual_path)
-
-        gemini_content = f'"""\n{gemini_manual}\n"""\nfrom typing import Dict, Any\n\nGEMINI_MISSIONS: Dict[str, Dict[str, Any]] = {{\n    # Add missions here\n}}\n'
-        jules_content = f'"""\n{jules_manual}\n"""\nfrom typing import Dict, Any\n\nJULES_MISSIONS: Dict[str, Dict[str, Any]] = {{\n    # Add missions here\n}}\n'
-        
-        ctx.gemini_manifest_path.write_text(gemini_content, encoding='utf-8')
-        ctx.jules_manifest_path.write_text(jules_content, encoding='utf-8')
-        
-        # Reset JSON Registries
+        # Reset JSON Registries only
         empty_reg = {"_meta": {"version": "1.0"}, "missions": {}}
         for reg_path in [ctx.gemini_registry_json, ctx.jules_registry_json]:
             reg_path.write_text(json.dumps(empty_reg, indent=2), encoding='utf-8')
             lock = reg_path.with_suffix('.lock')
             if lock.exists():
                 lock.unlink()
+            print(f"  🗑️ Cleared: {reg_path.name}")
 
         # Remove legacy files
         legacy_files = [
@@ -107,6 +84,7 @@ class ResetCommand(ICommand):
         for f in legacy_files:
             if f.exists():
                 f.unlink()
-                print(f"🗑️ Removed legacy: {f.name}")
+                print(f"  🗑️ Removed legacy: {f.name}")
 
-        return CommandResult(success=True, message="System reset complete.")
+        print("ℹ️ Manifest files (.py) were NOT touched. Use them to re-arm missions.")
+        return CommandResult(success=True, message="JSON registry reset complete. Manifests preserved.")

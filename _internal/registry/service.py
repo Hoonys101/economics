@@ -128,8 +128,11 @@ class MissionRegistryService:
     def migrate_from_registry_dir(self) -> int:
         """
         Scans _internal/registry/ for any *_manifest.py files and migrates missions.
+        After migration, standard manifests (gemini/jules) are auto-reset to their
+        manual-only template state to prevent re-migration of completed missions.
         """
         registry_dir = Path("_internal/registry")
+        template_dir = Path("_internal/templates")
         manifest_files = list(registry_dir.glob("*_manifest.py"))
         
         count = 0
@@ -140,13 +143,26 @@ class MissionRegistryService:
         if str(registry_dir) not in sys.path:
             sys.path.append(str(registry_dir))
 
+        # Track which standard manifests had missions migrated
+        manifests_to_reset = []
+
         for manifest_path in manifest_files:
             spec = importlib.util.spec_from_file_location(manifest_path.stem, manifest_path)
             if spec is None or spec.loader is None:
                 continue
 
+            # Force re-import to pick up changes
+            if manifest_path.stem in sys.modules:
+                del sys.modules[manifest_path.stem]
+
             module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
+            try:
+                spec.loader.exec_module(module)
+            except Exception as e:
+                print(f"⚠️ Error loading manifest {manifest_path.name}: {e}")
+                continue
+
+            manifest_mission_count = 0
 
             # JULES
             if hasattr(module, "JULES_MISSIONS"):
@@ -163,6 +179,7 @@ class MissionRegistryService:
                     )
                     self.register_mission(dto)
                     count += 1
+                    manifest_mission_count += 1
 
             # GEMINI
             if hasattr(module, "GEMINI_MISSIONS"):
@@ -180,12 +197,48 @@ class MissionRegistryService:
                     )
                     self.register_mission(dto)
                     count += 1
+                    manifest_mission_count += 1
 
-            # Move to .bak to avoid re-migration, except for standard manifests
-            if manifest_path.name not in ["gemini_manifest.py", "jules_manifest.py"]:
+            # Standard manifests: auto-reset to template state after migration
+            if manifest_path.name in ["gemini_manifest.py", "jules_manifest.py"]:
+                if manifest_mission_count > 0:
+                    manifests_to_reset.append(manifest_path)
+            else:
+                # Non-standard manifests: move to .bak
                 shutil.move(str(manifest_path), str(manifest_path.with_suffix('.py.bak')))
 
+        # Auto-reset standard manifests that had missions migrated
+        for manifest_path in manifests_to_reset:
+            self._reset_manifest_to_template(manifest_path, template_dir)
+
         return count
+
+    def _reset_manifest_to_template(self, manifest_path: Path, template_dir: Path):
+        """Resets a standard manifest file to its manual-only template state."""
+        template_map = {
+            "gemini_manifest.py": ("gemini_manual.py", "GEMINI_MISSIONS"),
+            "jules_manifest.py": ("jules_manual.py", "JULES_MISSIONS"),
+        }
+        
+        template_info = template_map.get(manifest_path.name)
+        if not template_info:
+            return
+            
+        template_filename, dict_name = template_info
+        template_path = template_dir / template_filename
+        
+        # Read the manual docstring from the template
+        manual_text = ""
+        if template_path.exists():
+            content = template_path.read_text(encoding='utf-8').strip()
+            if content.startswith('"""') and content.endswith('"""'):
+                manual_text = content[3:-3].strip()
+            else:
+                manual_text = content
+
+        reset_content = f'"""\n{manual_text}\n"""\nfrom typing import Dict, Any\n\n{dict_name}: Dict[str, Dict[str, Any]] = {{\n    # Add missions here\n}}\n'
+        manifest_path.write_text(reset_content, encoding='utf-8')
+        print(f"  🔄 Auto-reset: {manifest_path.name} (missions transferred to JSON)")
 
     def migrate_from_legacy(self, legacy_file_path: str, archive: bool = True) -> int:
         """
