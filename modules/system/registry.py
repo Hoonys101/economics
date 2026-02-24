@@ -26,7 +26,15 @@ class AgentRegistry(IAgentRegistry):
     def get_agent(self, agent_id: Any) -> Optional[Agent]:
         if self._state is None:
             return None
-        return self._state.agents.get(agent_id)
+        agent = self._state.agents.get(agent_id)
+        if agent:
+             return agent
+
+        # Check Estate Registry
+        if hasattr(self._state, 'estate_registry') and self._state.estate_registry:
+             return self._state.estate_registry.get_agent(agent_id)
+
+        return None
 
     def get_all_financial_agents(self) -> List[Any]:
         if self._state is None:

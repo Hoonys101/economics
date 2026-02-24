@@ -10,6 +10,7 @@ from simulation.finance.api import ISettlementSystem
 from modules.finance.api import ILiquidatable, IShareholderRegistry, IFinancialEntity
 from modules.system.api import IAssetRecoverySystem, ICurrencyHolder, DEFAULT_CURRENCY, AssetBuyoutRequestDTO
 from simulation.interfaces.market_interface import IMarket
+from modules.simulation.api import IEstateRegistry
 
 class DeathSystem(IDeathSystem):
     """
@@ -21,13 +22,15 @@ class DeathSystem(IDeathSystem):
                  liquidation_manager: LiquidationManager,
                  settlement_system: ISettlementSystem,
                  public_manager: IAssetRecoverySystem,
-                 logger: logging.Logger):
+                 logger: logging.Logger,
+                 estate_registry: Optional[IEstateRegistry] = None):
         self.config = config_module
         self.inheritance_manager = inheritance_manager
         self.liquidation_manager = liquidation_manager
         self.settlement_system = settlement_system
         self.public_manager = public_manager
         self.logger = logger
+        self.estate_registry = estate_registry
 
     def execute(self, state: SimulationState) -> List[Transaction]:
         """
@@ -111,10 +114,14 @@ class DeathSystem(IDeathSystem):
         # O(1) Dictionary Cleanup - TD-SYS-PERF-DEATH
         for firm in inactive_firms:
             if firm.id in state.agents:
+                if self.estate_registry:
+                    self.estate_registry.add_to_estate(firm)
                 del state.agents[firm.id]
 
         for household in inactive_households:
              if household.id in state.agents:
+                if self.estate_registry:
+                    self.estate_registry.add_to_estate(household)
                 del state.agents[household.id]
 
         # Modify lists in place to reflect removals

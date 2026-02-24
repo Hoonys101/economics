@@ -178,6 +178,13 @@ class IAgent(Protocol):
     name: str # Added for logging/telemetry
 
 @runtime_checkable
+class IEstateRegistry(Protocol):
+    """Protocol for the Estate Registry managing dead/liquidated agents."""
+    def add_to_estate(self, agent: IAgent) -> None: ...
+    def get_agent(self, agent_id: Any) -> Optional[IAgent]: ...
+    def get_all_estate_agents(self) -> List[IAgent]: ...
+
+@runtime_checkable
 class IOrchestratorAgent(IAgent, Protocol):
     """Public interface for an agent 'Orchestrator' supporting 2-stage initialization."""
     def get_core_config(self) -> AgentCoreConfigDTO: ...
