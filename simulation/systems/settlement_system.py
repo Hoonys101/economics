@@ -42,13 +42,15 @@ class SettlementSystem(IMonetaryAuthority):
         bank: Optional[IBank] = None,
         metrics_service: Optional[IEconomicMetricsService] = None,
         agent_registry: Optional[IAgentRegistry] = None,
-        account_registry: Optional[IAccountRegistry] = None
+        account_registry: Optional[IAccountRegistry] = None,
+        estate_registry: Optional[Any] = None
     ):
         self.logger = logger if logger else logging.getLogger(__name__)
         self.bank = bank # TD-179: Reference to Bank for Seamless Payments
         self.metrics_service = metrics_service
         self.total_liquidation_losses: int = 0
         self.agent_registry = agent_registry # Injected by SimulationInitializer
+        self.estate_registry = estate_registry # Graveyard for dead agents
         self.panic_recorder: Optional[IPanicRecorder] = None # Injected by SimulationInitializer
         self.monetary_authority: Optional[ICentralBank] = None # Added for LLR Linkage
 
@@ -83,6 +85,12 @@ class SettlementSystem(IMonetaryAuthority):
                 executor = TransactionExecutor(accessor)
                 ledger = SimpleTransactionLedger(self.logger)
                 self._transaction_engine = LedgerEngine(validator, executor, ledger)
+            
+            # Inject Estate Registry into Account Accessor if available
+            if self.estate_registry and hasattr(self._transaction_engine.validator.accessor, 'set_estate_registry'):
+                self._transaction_engine.validator.accessor.set_estate_registry(self.estate_registry)
+                self._transaction_engine.executor.accessor.set_estate_registry(self.estate_registry)
+
             return self._transaction_engine
 
         # Fallback for Tests: Create temporary engine with local map
@@ -148,9 +156,17 @@ class SettlementSystem(IMonetaryAuthority):
                     if currency == DEFAULT_CURRENCY and isinstance(agent, IFinancialEntity):
                         return agent.balance_pennies
 
-                    # Fallback to IFinancialAgent for multi-currency or legacy
                     if isinstance(agent, IFinancialAgent):
                         return agent.get_balance(currency)
+
+            # Check EstateRegistry if missing from primary registry
+            if self.estate_registry:
+                dead_agent = self.estate_registry.get_agent(agent_id)
+                if dead_agent:
+                    if currency == DEFAULT_CURRENCY and isinstance(dead_agent, IFinancialEntity):
+                        return dead_agent.balance_pennies
+                    if isinstance(dead_agent, IFinancialAgent):
+                        return dead_agent.get_balance(currency)
         except Exception:
             # Dead/Removed agent access
             self.logger.debug(f"get_balance: Agent {agent_id} access failed (Dead/Removed).")

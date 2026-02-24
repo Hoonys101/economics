@@ -63,6 +63,11 @@ WORKER_MODEL_MAP = {
     "audit": "gemini-3-flash-preview",
 }
 
+DEFAULT_MODELS = {
+    "pro": "gemini-3-pro-preview",
+    "flash": "gemini-3-flash-preview"
+}
+
 def construct_mission_prompt(key: str, title: str, instruction_raw: str) -> str:
     """
     Constructs the full mission prompt by injecting protocols.
